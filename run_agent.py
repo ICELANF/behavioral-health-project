@@ -36,6 +36,7 @@ index = load_index_from_storage(storage)
 
 # 4. 定义强制中文与角色对齐的模板
 context_prompt_template = PromptTemplate(
+    "【重要指令】你必须完全使用中文回复，严禁使用任何英文单词。\n\n"
     "你现在的身份是：\n"
     "----------\n"
     f"{system_prompt_content}\n"
@@ -43,7 +44,11 @@ context_prompt_template = PromptTemplate(
     "以下是参考的背景资料：\n"
     "{context_str}\n"
     "----------\n"
-    "请基于以上资料和你的身份设定，回答用户的问题：{query_str}\n"
+    "用户问题：{query_str}\n\n"
+    "【回复要求】\n"
+    "1. 必须100%使用中文，包括所有医学术语\n"
+    "2. 禁止出现任何英文单词\n"
+    "3. 遵循中国临床医学术语标准\n"
 )
 
 # 5. 启动对话引擎
