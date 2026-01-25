@@ -1,0 +1,1494 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "core_data_schema_v1.0_final",
+  "title": "行健行为教练 Core Data Schema v1.0 · 最终工程规范版",
+  "description": "行健行为教练多Agent协作调度系统核心数据契约 - 系统内核标准",
+  "version": "1.0.0",
+  "last_updated": "2026-01-24",
+  "authors": ["System Architecture Team"],
+
+  "_design_principles": {
+    "data_driven": "数据结构先行，所有模块围绕六大核心结构体展开",
+    "traceable": "状态可追踪、路径可回放、评估可量化",
+    "modular": "Agent模块化、Skills可插拔、调度可演化",
+    "long_term": "支持长期陪伴型行为改变与科研级数据沉淀",
+    "single_source": "UserMasterProfile为系统唯一权威用户状态对象"
+  },
+
+  "_six_core_structures": {
+    "summary_table": [
+      {"id": 1, "name": "UserProfile/UserState", "status": "已定义", "file": "user_profile_schema.json + core_data_schema.json"},
+      {"id": 2, "name": "BehaviorState", "status": "本文档补齐", "role": "描述当前行为模式、风险与阻抗"},
+      {"id": 3, "name": "Goal/Task", "status": "本文档补齐", "role": "描述干预目标、阶段任务与行动计划"},
+      {"id": 4, "name": "AgentProfile", "status": "本文档补齐", "role": "描述各Agent角色、能力与权限"},
+      {"id": 5, "name": "SkillDescriptor", "status": "本文档补齐", "role": "描述Skills定义、输入输出与调用条件"},
+      {"id": 6, "name": "Session/Trajectory", "status": "本文档补齐", "role": "描述陪伴过程、决策路径与评估轨迹"}
+    ],
+    "object_relations": {
+      "core": "UserMasterProfile为系统主状态核心",
+      "behavior": "BehaviorState绑定UserMasterProfile并作为评估与干预输入",
+      "planning": "Goal/Task由Orchestrator基于UserMasterProfile+BehaviorState生成",
+      "execution": "AgentProfile+SkillDescriptor共同构成执行能力池",
+      "history": "Session/Trajectory记录所有调度、干预、评估历史"
+    }
+  },
+
+  "definitions": {
+
+    "BehaviorState": {
+      "type": "object",
+      "$id": "#/definitions/BehaviorState",
+      "title": "结构体二：BehaviorState（行为状态模型）",
+
+      "_meta": {
+        "role": "描述用户当前行为模式、风险因素、改变阻力与阶段状态",
+        "lifecycle": {
+          "creation": "首次评估时由AssessmentEngine创建",
+          "updates": "每次交互/评估/设备数据同步时更新",
+          "persistence": "作为UserMasterProfile.behavior_state子对象持久化",
+          "retention": "永久保留，支持历史版本追溯"
+        },
+        "permissions": {
+          "read": ["MasterOrchestrator", "AllAgents", "AssessmentEngine", "ReportGenerator"],
+          "write": ["MasterOrchestrator"],
+          "write_channels": ["AgentResult.data_updates", "AssessmentResult.behavior_updates"]
+        },
+        "relation_to_user_state": "BehaviorState是UserMasterProfile的核心子域，通过user_id关联",
+        "skill_mapping": {
+          "analysis_skills": ["behavior_pattern_recognition", "stage_detection", "risk_assessment"],
+          "intervention_skills": ["motivation_enhancement", "barrier_resolution", "habit_formation"]
+        }
+      },
+
+      "required": ["behavior_state_id", "user_id", "current_stage", "psychological_readiness_level"],
+      "properties": {
+        "behavior_state_id": {
+          "type": "string",
+          "pattern": "^BS-[A-Z0-9]{8}$",
+          "description": "行为状态唯一标识"
+        },
+        "user_id": {
+          "type": "string",
+          "description": "关联的用户ID"
+        },
+        "schema_version": {
+          "type": "string",
+          "const": "1.0"
+        },
+
+        "current_stage": {
+          "type": "object",
+          "description": "当前行为改变阶段（TTM映射）",
+          "properties": {
+            "ttm_stage": {
+              "type": "string",
+              "enum": ["precontemplation", "contemplation", "preparation", "action", "maintenance"],
+              "description": "跨理论模型阶段"
+            },
+            "stage_cn": {
+              "type": "string",
+              "enum": ["前意图期", "意图期", "准备期", "行动期", "维持期"]
+            },
+            "detected_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "detection_method": {
+              "type": "string",
+              "enum": ["questionnaire", "behavior_analysis", "conversation_inference", "device_data"]
+            },
+            "confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "weeks_in_stage": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+
+        "psychological_readiness_level": {
+          "type": "object",
+          "description": "五层次心理准备度（自研模型）",
+          "properties": {
+            "level": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "level_id": {
+              "type": "string",
+              "enum": ["total_resistance", "resistance_reflection", "selective_acceptance", "adaptive_alignment", "full_internalization"]
+            },
+            "level_name": {
+              "type": "string",
+              "enum": ["完全对抗", "抗拒与反思", "妥协与接受", "顺应与调整", "全面臣服"]
+            },
+            "core_psychology": {
+              "type": "string",
+              "description": "核心心理特征"
+            },
+            "spi_coefficient": {
+              "type": "number",
+              "minimum": 0.3,
+              "maximum": 1.0,
+              "description": "成功可能性指数系数"
+            },
+            "intervention_strategy": {
+              "type": "string",
+              "enum": ["safety_building", "ambivalence_processing", "threshold_lowering", "habit_strengthening", "identity_consolidation"]
+            },
+            "max_tasks_allowed": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            },
+            "max_difficulty_allowed": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 5
+            }
+          }
+        },
+
+        "cultivation_phase": {
+          "type": "object",
+          "description": "四阶段养成进度",
+          "properties": {
+            "phase_id": {
+              "type": "string",
+              "enum": ["startup", "adaptation", "stabilization", "internalization"]
+            },
+            "phase_name": {
+              "type": "string",
+              "enum": ["启动期", "适应期", "稳定期", "内化期"]
+            },
+            "start_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "expected_end_date": {
+              "type": "string",
+              "format": "date"
+            },
+            "coaching_frequency": {
+              "type": "string",
+              "enum": ["daily", "weekly", "monthly", "on_demand"]
+            },
+            "progress_percent": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        },
+
+        "behavior_patterns": {
+          "type": "object",
+          "description": "识别到的行为模式",
+          "properties": {
+            "primary_pattern": {
+              "type": "string",
+              "enum": ["overcompensation", "stress_avoidance", "somatization", "emotional_dysregulation", "balanced", "hidden_fatigue", "organism_depletion"],
+              "description": "主要行为模式"
+            },
+            "secondary_patterns": {
+              "type": "array",
+              "items": {"type": "string"},
+              "maxItems": 3
+            },
+            "pattern_confidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "typical_behaviors": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "典型行为表现"
+            },
+            "recommended_experts": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "建议咨询的专家类型"
+            }
+          }
+        },
+
+        "motivation_state": {
+          "type": "object",
+          "description": "动机状态评估",
+          "properties": {
+            "motivation_score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "motivation_level": {
+              "type": "string",
+              "enum": ["optimal", "mismatched_active", "mismatched_passive", "depleted"]
+            },
+            "energy_mood_match": {
+              "type": "object",
+              "properties": {
+                "energy_level": {"type": "number", "minimum": 0, "maximum": 100},
+                "mood_level": {"type": "number", "minimum": 0, "maximum": 100},
+                "match_score": {"type": "number", "minimum": 0, "maximum": 1}
+              }
+            },
+            "trigger_factors": {
+              "type": "object",
+              "description": "六类改变触发原因得分",
+              "properties": {
+                "intrinsic_drivers": {"type": "number", "maximum": 20},
+                "external_events": {"type": "number", "maximum": 20},
+                "emotional_triggers": {"type": "number", "maximum": 20},
+                "cognitive_shifts": {"type": "number", "maximum": 20},
+                "capability_resources": {"type": "number", "maximum": 20},
+                "social_support": {"type": "number", "maximum": 25}
+              }
+            },
+            "total_trigger_score": {
+              "type": "number",
+              "maximum": 125
+            }
+          }
+        },
+
+        "spi": {
+          "type": "object",
+          "description": "成功可能性指数(SPI)",
+          "properties": {
+            "score": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "level": {
+              "type": "string",
+              "enum": ["very_low", "low", "medium", "high"]
+            },
+            "interpretation": {
+              "type": "string"
+            },
+            "recommendation": {
+              "type": "string"
+            },
+            "calculated_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "formula_components": {
+              "type": "object",
+              "properties": {
+                "trigger_score": {"type": "number"},
+                "level_coefficient": {"type": "number"},
+                "urgency_score": {"type": "number"}
+              }
+            }
+          }
+        },
+
+        "barriers": {
+          "type": "array",
+          "description": "行为改变障碍",
+          "items": {
+            "type": "object",
+            "properties": {
+              "barrier_id": {"type": "string"},
+              "category": {
+                "type": "string",
+                "enum": ["knowledge", "skill", "motivation", "environment", "time", "social", "physical", "emotional"]
+              },
+              "description": {"type": "string"},
+              "severity": {
+                "type": "string",
+                "enum": ["minor", "moderate", "major"]
+              },
+              "resolution_strategy": {"type": "string"},
+              "status": {
+                "type": "string",
+                "enum": ["identified", "addressing", "resolved"]
+              }
+            }
+          }
+        },
+
+        "risk_flags": {
+          "type": "array",
+          "description": "风险标记",
+          "items": {
+            "type": "object",
+            "properties": {
+              "flag_id": {"type": "string"},
+              "risk_type": {
+                "type": "string",
+                "enum": ["metabolic", "cardiovascular", "mental", "sleep", "crisis"]
+              },
+              "risk_level": {
+                "type": "string",
+                "enum": ["low", "moderate", "high", "critical"]
+              },
+              "description": {"type": "string"},
+              "triggered_at": {"type": "string", "format": "date-time"},
+              "source": {"type": "string"},
+              "requires_escalation": {"type": "boolean"}
+            }
+          }
+        },
+
+        "adherence_metrics": {
+          "type": "object",
+          "description": "依从性指标",
+          "properties": {
+            "overall_adherence_rate": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "task_completion_rate_7d": {"type": "number"},
+            "task_completion_rate_30d": {"type": "number"},
+            "streak_days": {"type": "integer"},
+            "longest_streak": {"type": "integer"},
+            "dropout_risk": {
+              "type": "string",
+              "enum": ["low", "moderate", "high"]
+            }
+          }
+        },
+
+        "last_updated": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "version_history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "version": {"type": "integer"},
+              "updated_at": {"type": "string", "format": "date-time"},
+              "update_source": {"type": "string"},
+              "changes_summary": {"type": "string"}
+            }
+          },
+          "maxItems": 50
+        },
+        "extensions": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+
+
+    "Goal": {
+      "type": "object",
+      "$id": "#/definitions/Goal",
+      "title": "结构体三A：Goal（目标模型）",
+
+      "_meta": {
+        "role": "描述用户的中长期健康干预目标，指导任务生成与评估",
+        "lifecycle": {
+          "creation": "初次评估后由InterventionPlanner创建",
+          "updates": "每次阶段评估时更新进度与状态",
+          "persistence": "独立存储，通过goal_id与UserMasterProfile关联",
+          "retention": "目标完成后归档，保留至少2年"
+        },
+        "permissions": {
+          "read": ["MasterOrchestrator", "AllAgents", "InterventionPlanner", "DashboardGenerator"],
+          "write": ["MasterOrchestrator", "InterventionPlanner"],
+          "write_channels": ["InterventionPlan.goals", "UserConfirmation"]
+        },
+        "relation_to_user_state": "Goal从BehaviorState派生目标，反向更新UserMasterProfile.intervention_state",
+        "skill_mapping": {
+          "planning_skills": ["goal_decomposition", "milestone_setting", "success_criteria_definition"],
+          "monitoring_skills": ["progress_tracking", "goal_adjustment", "outcome_evaluation"]
+        }
+      },
+
+      "required": ["goal_id", "user_id", "goal_type", "target_description", "status"],
+      "properties": {
+        "goal_id": {
+          "type": "string",
+          "pattern": "^G-[A-Z0-9]{8}$"
+        },
+        "user_id": {"type": "string"},
+        "schema_version": {"type": "string", "const": "1.0"},
+
+        "goal_type": {
+          "type": "string",
+          "enum": ["health_outcome", "behavior_change", "skill_acquisition", "habit_formation", "risk_reduction"],
+          "description": "目标类型"
+        },
+        "domain": {
+          "type": "string",
+          "enum": ["glucose", "sleep", "exercise", "nutrition", "stress", "weight", "cardiovascular", "mental_health", "comprehensive"],
+          "description": "健康领域"
+        },
+
+        "target_description": {
+          "type": "string",
+          "description": "目标描述（SMART格式）"
+        },
+        "target_metrics": {
+          "type": "array",
+          "description": "量化目标指标",
+          "items": {
+            "type": "object",
+            "properties": {
+              "metric_name": {"type": "string"},
+              "baseline_value": {"type": "number"},
+              "target_value": {"type": "number"},
+              "unit": {"type": "string"},
+              "direction": {"type": "string", "enum": ["increase", "decrease", "maintain"]},
+              "deadline": {"type": "string", "format": "date"}
+            }
+          }
+        },
+
+        "priority": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "目标优先级(1最高)"
+        },
+        "source": {
+          "type": "string",
+          "enum": ["user_stated", "clinician_recommended", "system_derived", "assessment_based"],
+          "description": "目标来源"
+        },
+
+        "milestones": {
+          "type": "array",
+          "description": "里程碑",
+          "items": {
+            "type": "object",
+            "properties": {
+              "milestone_id": {"type": "string"},
+              "description": {"type": "string"},
+              "target_date": {"type": "string", "format": "date"},
+              "success_criteria": {"type": "string"},
+              "status": {"type": "string", "enum": ["pending", "in_progress", "completed", "missed"]},
+              "completed_at": {"type": "string", "format": "date-time"}
+            }
+          }
+        },
+
+        "related_tasks": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "关联的Task ID列表"
+        },
+        "related_intervention_plan_id": {
+          "type": "string",
+          "description": "关联的干预计划ID"
+        },
+
+        "progress": {
+          "type": "object",
+          "properties": {
+            "percent_complete": {"type": "number", "minimum": 0, "maximum": 100},
+            "current_value": {"type": "number"},
+            "trend": {"type": "string", "enum": ["improving", "stable", "declining"]},
+            "last_measured_at": {"type": "string", "format": "date-time"}
+          }
+        },
+
+        "status": {
+          "type": "string",
+          "enum": ["draft", "active", "paused", "completed", "abandoned", "archived"]
+        },
+        "status_reason": {"type": "string"},
+
+        "created_at": {"type": "string", "format": "date-time"},
+        "target_completion_date": {"type": "string", "format": "date"},
+        "actual_completion_date": {"type": "string", "format": "date-time"},
+        "last_updated": {"type": "string", "format": "date-time"},
+
+        "extensions": {"type": "object"}
+      }
+    },
+
+
+    "Task": {
+      "type": "object",
+      "$id": "#/definitions/Task",
+      "title": "结构体三B：Task（任务模型）",
+
+      "_meta": {
+        "role": "描述具体的行为任务，是系统产生行为改变的最小执行单元",
+        "lifecycle": {
+          "creation": "由TaskGenerator基于Goal和BehaviorState生成",
+          "updates": "用户完成/跳过时更新状态",
+          "persistence": "独立存储，通过task_id与Goal/Session关联",
+          "retention": "完成后保留用于轨迹分析，至少保留1年"
+        },
+        "permissions": {
+          "read": ["MasterOrchestrator", "AllAgents", "TaskGenerator", "UserApp"],
+          "write": ["MasterOrchestrator", "TaskGenerator", "UserFeedback"],
+          "write_channels": ["DailyTask.completion", "UserApp.feedback"]
+        },
+        "relation_to_user_state": "Task执行反馈写回BehaviorState.adherence_metrics",
+        "skill_mapping": {
+          "generation_skills": ["task_decomposition", "difficulty_calibration", "timing_optimization"],
+          "coaching_skills": ["task_reminder", "completion_celebration", "barrier_support"]
+        }
+      },
+
+      "required": ["task_id", "user_id", "task_type", "description", "status"],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "pattern": "^T-[A-Z0-9]{8}$"
+        },
+        "user_id": {"type": "string"},
+        "schema_version": {"type": "string", "const": "1.0"},
+
+        "related_goal_id": {"type": "string"},
+        "related_plan_id": {"type": "string"},
+        "session_id": {"type": "string"},
+
+        "task_type": {
+          "type": "string",
+          "enum": ["micro_habit", "reflection", "training", "measurement", "education", "check_in", "exercise", "nutrition", "relaxation", "social", "medical"]
+        },
+        "domain": {
+          "type": "string",
+          "enum": ["glucose", "sleep", "exercise", "nutrition", "stress", "emotion", "comprehensive"]
+        },
+
+        "description": {"type": "string"},
+        "instruction": {"type": "string", "description": "详细执行指导"},
+
+        "difficulty": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "任务难度(1最易)"
+        },
+        "estimated_duration_minutes": {"type": "integer"},
+        "priority": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5
+        },
+
+        "scheduling": {
+          "type": "object",
+          "properties": {
+            "scheduled_date": {"type": "string", "format": "date"},
+            "scheduled_time": {"type": "string", "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"},
+            "frequency": {"type": "string", "enum": ["once", "daily", "weekly", "custom"]},
+            "reminder_enabled": {"type": "boolean"},
+            "reminder_minutes_before": {"type": "integer"}
+          }
+        },
+
+        "success_criteria": {
+          "type": "object",
+          "properties": {
+            "completion_type": {"type": "string", "enum": ["binary", "quantitative", "qualitative"]},
+            "target_value": {"type": "number"},
+            "unit": {"type": "string"},
+            "verification_method": {"type": "string", "enum": ["self_report", "device_data", "photo", "timer"]}
+          }
+        },
+
+        "resources": {
+          "type": "object",
+          "properties": {
+            "knowledge_link": {"type": "string"},
+            "video_link": {"type": "string"},
+            "audio_link": {"type": "string"},
+            "product_id": {"type": "string"},
+            "external_tool": {"type": "string"}
+          }
+        },
+
+        "coach_guidance": {
+          "type": "object",
+          "properties": {
+            "pre_task_message": {"type": "string"},
+            "encouragement": {"type": "string"},
+            "completion_celebration": {"type": "string"},
+            "skip_support": {"type": "string"}
+          }
+        },
+
+        "status": {
+          "type": "string",
+          "enum": ["pending", "in_progress", "completed", "skipped", "failed", "rescheduled"]
+        },
+        "completion": {
+          "type": "object",
+          "properties": {
+            "completed_at": {"type": "string", "format": "date-time"},
+            "actual_value": {"type": "number"},
+            "self_rating": {"type": "integer", "minimum": 1, "maximum": 5},
+            "effort_rating": {"type": "integer", "minimum": 1, "maximum": 5},
+            "user_notes": {"type": "string"}
+          }
+        },
+        "skip_reason": {"type": "string"},
+
+        "tracking_points": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "需要追踪的数据点"
+        },
+
+        "created_at": {"type": "string", "format": "date-time"},
+        "last_updated": {"type": "string", "format": "date-time"},
+
+        "extensions": {"type": "object"}
+      }
+    },
+
+
+    "AgentProfile": {
+      "type": "object",
+      "$id": "#/definitions/AgentProfile",
+      "title": "结构体四：AgentProfile（Agent身份模型）",
+
+      "_meta": {
+        "role": "描述各专业Agent的身份、能力边界、权限与协作规则",
+        "lifecycle": {
+          "creation": "系统初始化时由配置加载",
+          "updates": "版本升级时更新能力定义",
+          "persistence": "配置文件存储，运行时缓存",
+          "retention": "永久保留，版本化管理"
+        },
+        "permissions": {
+          "read": ["MasterOrchestrator", "AgentRouter", "AllAgents"],
+          "write": ["SystemAdmin"],
+          "write_channels": ["ConfigurationUpdate"]
+        },
+        "relation_to_user_state": "AgentProfile不直接关联UserState，通过AgentTask间接服务用户",
+        "skill_mapping": {
+          "self_skills": "每个Agent拥有自己的SkillDescriptor集合",
+          "collaboration": "通过AgentRouter协调多Agent协作"
+        }
+      },
+
+      "required": ["agent_id", "agent_type", "display_name", "capabilities"],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "pattern": "^AGT-[A-Z0-9]{4}$"
+        },
+        "agent_type": {
+          "type": "string",
+          "enum": ["SleepAgent", "GlucoseAgent", "StressAgent", "NutritionAgent", "ExerciseAgent", "MentalHealthAgent", "TCMWellnessAgent", "CrisisAgent", "CoachingAgent"]
+        },
+        "schema_version": {"type": "string", "const": "1.0"},
+
+        "display_name": {"type": "string"},
+        "display_name_cn": {"type": "string"},
+        "description": {"type": "string"},
+        "avatar_url": {"type": "string"},
+
+        "expertise_domains": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "专业领域"
+        },
+        "primary_focus": {
+          "type": "string",
+          "description": "核心聚焦点"
+        },
+
+        "capabilities": {
+          "type": "object",
+          "properties": {
+            "analysis_types": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "可执行的分析类型"
+            },
+            "intervention_types": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "可提供的干预类型"
+            },
+            "data_requirements": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "需要的数据类型"
+            },
+            "output_formats": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "输出格式"
+            }
+          }
+        },
+
+        "skill_ids": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "拥有的技能ID列表"
+        },
+
+        "model_config": {
+          "type": "object",
+          "properties": {
+            "llm_model": {"type": "string"},
+            "temperature": {"type": "number"},
+            "max_tokens": {"type": "integer"},
+            "system_prompt_template": {"type": "string"}
+          }
+        },
+
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "can_read_profile_sections": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "可读取的Profile字段"
+            },
+            "can_suggest_updates": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "可建议更新的字段"
+            },
+            "can_escalate": {"type": "boolean"},
+            "can_generate_tasks": {"type": "boolean"},
+            "can_access_history": {"type": "boolean"},
+            "max_task_difficulty": {"type": "integer"}
+          }
+        },
+
+        "collaboration_rules": {
+          "type": "object",
+          "properties": {
+            "can_collaborate_with": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "requires_coordination_for": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "conflict_resolution_priority": {"type": "integer"}
+          }
+        },
+
+        "triggering_conditions": {
+          "type": "array",
+          "description": "触发该Agent的条件",
+          "items": {
+            "type": "object",
+            "properties": {
+              "condition_type": {"type": "string", "enum": ["keyword", "data_threshold", "risk_flag", "user_preference", "time_based"]},
+              "condition_value": {"type": "object"},
+              "priority": {"type": "integer"}
+            }
+          }
+        },
+
+        "rate_limits": {
+          "type": "object",
+          "properties": {
+            "max_calls_per_session": {"type": "integer"},
+            "max_calls_per_day": {"type": "integer"},
+            "cooldown_minutes": {"type": "integer"}
+          }
+        },
+
+        "version": {"type": "string"},
+        "last_updated": {"type": "string", "format": "date-time"},
+        "extensions": {"type": "object"}
+      }
+    },
+
+
+    "SkillDescriptor": {
+      "type": "object",
+      "$id": "#/definitions/SkillDescriptor",
+      "title": "结构体五：SkillDescriptor（技能描述模型）",
+
+      "_meta": {
+        "role": "描述可插拔的技能单元，定义输入输出规范与调用条件",
+        "lifecycle": {
+          "creation": "技能开发完成后注册",
+          "updates": "技能升级时更新版本",
+          "persistence": "技能注册表存储",
+          "retention": "永久保留，支持版本回退"
+        },
+        "permissions": {
+          "read": ["MasterOrchestrator", "AllAgents", "SkillRegistry"],
+          "write": ["SystemAdmin", "SkillDeveloper"],
+          "write_channels": ["SkillRegistry.register"]
+        },
+        "relation_to_user_state": "Skill执行时读取UserState作为输入上下文",
+        "skill_mapping": {
+          "self": "SkillDescriptor描述技能元数据",
+          "execution": "通过SkillExecutor执行具体逻辑"
+        }
+      },
+
+      "required": ["skill_id", "skill_name", "skill_type", "input_schema", "output_schema"],
+      "properties": {
+        "skill_id": {
+          "type": "string",
+          "pattern": "^SKL-[A-Z0-9]{6}$"
+        },
+        "skill_name": {"type": "string"},
+        "skill_name_cn": {"type": "string"},
+        "schema_version": {"type": "string", "const": "1.0"},
+
+        "skill_type": {
+          "type": "string",
+          "enum": ["analysis", "assessment", "intervention", "generation", "transformation", "validation", "notification", "integration"]
+        },
+        "category": {
+          "type": "string",
+          "enum": ["core", "domain_specific", "utility", "experimental"]
+        },
+
+        "description": {"type": "string"},
+        "use_cases": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+
+        "owner_agents": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "拥有此技能的Agent"
+        },
+
+        "input_schema": {
+          "type": "object",
+          "description": "输入参数Schema",
+          "properties": {
+            "required_fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field_name": {"type": "string"},
+                  "field_type": {"type": "string"},
+                  "description": {"type": "string"},
+                  "source": {"type": "string", "description": "数据来源路径"}
+                }
+              }
+            },
+            "optional_fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field_name": {"type": "string"},
+                  "field_type": {"type": "string"},
+                  "default_value": {},
+                  "description": {"type": "string"}
+                }
+              }
+            },
+            "context_requirements": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "需要的上下文信息"
+            }
+          }
+        },
+
+        "output_schema": {
+          "type": "object",
+          "description": "输出结果Schema",
+          "properties": {
+            "output_fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "field_name": {"type": "string"},
+                  "field_type": {"type": "string"},
+                  "description": {"type": "string"},
+                  "target_path": {"type": "string", "description": "写入目标路径"}
+                }
+              }
+            },
+            "side_effects": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "可能产生的副作用"
+            }
+          }
+        },
+
+        "invocation_conditions": {
+          "type": "object",
+          "properties": {
+            "preconditions": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "前置条件"
+            },
+            "data_freshness_requirements": {
+              "type": "object",
+              "properties": {
+                "max_age_hours": {"type": "integer"},
+                "required_data_types": {"type": "array", "items": {"type": "string"}}
+              }
+            },
+            "user_state_requirements": {
+              "type": "object",
+              "properties": {
+                "min_behavior_stage": {"type": "string"},
+                "excluded_risk_flags": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          }
+        },
+
+        "execution_config": {
+          "type": "object",
+          "properties": {
+            "executor_type": {"type": "string", "enum": ["llm_prompt", "rule_engine", "ml_model", "external_api", "hybrid"]},
+            "timeout_ms": {"type": "integer"},
+            "retry_config": {
+              "type": "object",
+              "properties": {
+                "max_retries": {"type": "integer"},
+                "retry_delay_ms": {"type": "integer"}
+              }
+            },
+            "fallback_skill_id": {"type": "string"}
+          }
+        },
+
+        "quality_metrics": {
+          "type": "object",
+          "properties": {
+            "accuracy_score": {"type": "number"},
+            "avg_latency_ms": {"type": "number"},
+            "success_rate": {"type": "number"},
+            "last_evaluated_at": {"type": "string", "format": "date-time"}
+          }
+        },
+
+        "version": {"type": "string"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "last_updated": {"type": "string", "format": "date-time"},
+        "deprecated": {"type": "boolean", "default": false},
+        "deprecation_reason": {"type": "string"},
+
+        "extensions": {"type": "object"}
+      }
+    },
+
+
+    "Session": {
+      "type": "object",
+      "$id": "#/definitions/Session",
+      "title": "结构体六A：Session（会话模型）",
+
+      "_meta": {
+        "role": "描述单次用户交互会话，包含对话、任务、决策的完整上下文",
+        "lifecycle": {
+          "creation": "用户发起交互时创建",
+          "updates": "会话过程中持续追加事件",
+          "persistence": "实时持久化，支持断点续传",
+          "retention": "完成后归档，保留至少1年用于分析"
+        },
+        "permissions": {
+          "read": ["MasterOrchestrator", "AllAgents", "SessionManager", "AnalyticsEngine"],
+          "write": ["MasterOrchestrator", "SessionManager"],
+          "write_channels": ["SessionEvent.append"]
+        },
+        "relation_to_user_state": "Session关联UserMasterProfile，记录状态变化快照",
+        "skill_mapping": {
+          "management_skills": ["session_initialization", "context_maintenance", "session_summary"],
+          "analysis_skills": ["conversation_analysis", "intent_tracking", "engagement_scoring"]
+        }
+      },
+
+      "required": ["session_id", "user_id", "start_time", "status"],
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "pattern": "^SES-[A-Z0-9]{12}$"
+        },
+        "user_id": {"type": "string"},
+        "schema_version": {"type": "string", "const": "1.0"},
+
+        "session_type": {
+          "type": "string",
+          "enum": ["chat", "assessment", "task_review", "daily_briefing", "crisis_support", "coaching_call"]
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["app", "web", "wechat_mini", "api", "voice"]
+        },
+
+        "start_time": {"type": "string", "format": "date-time"},
+        "end_time": {"type": "string", "format": "date-time"},
+        "duration_seconds": {"type": "integer"},
+
+        "status": {
+          "type": "string",
+          "enum": ["active", "paused", "completed", "abandoned", "error"]
+        },
+
+        "context_snapshot": {
+          "type": "object",
+          "description": "会话开始时的用户状态快照",
+          "properties": {
+            "behavior_stage": {"type": "string"},
+            "readiness_level": {"type": "integer"},
+            "spi_score": {"type": "number"},
+            "active_goals": {"type": "array", "items": {"type": "string"}},
+            "active_tasks": {"type": "array", "items": {"type": "string"}},
+            "risk_flags": {"type": "array", "items": {"type": "string"}},
+            "recent_device_data": {"type": "object"}
+          }
+        },
+
+        "conversation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "message_id": {"type": "string"},
+              "role": {"type": "string", "enum": ["user", "assistant", "system"]},
+              "content": {"type": "string"},
+              "timestamp": {"type": "string", "format": "date-time"},
+              "intent": {"type": "string"},
+              "sentiment": {"type": "string", "enum": ["positive", "neutral", "negative"]},
+              "entities": {"type": "array", "items": {"type": "object"}}
+            }
+          }
+        },
+
+        "agent_invocations": {
+          "type": "array",
+          "description": "会话中调用的Agent记录",
+          "items": {
+            "type": "object",
+            "properties": {
+              "invocation_id": {"type": "string"},
+              "agent_type": {"type": "string"},
+              "task_id": {"type": "string"},
+              "invoked_at": {"type": "string", "format": "date-time"},
+              "completed_at": {"type": "string", "format": "date-time"},
+              "status": {"type": "string"},
+              "result_summary": {"type": "string"}
+            }
+          }
+        },
+
+        "decisions_made": {
+          "type": "array",
+          "description": "会话中的决策记录",
+          "items": {
+            "type": "object",
+            "properties": {
+              "decision_id": {"type": "string"},
+              "decision_type": {"type": "string", "enum": ["routing", "intervention", "escalation", "task_generation", "goal_adjustment"]},
+              "decision_point": {"type": "string"},
+              "options_considered": {"type": "array", "items": {"type": "string"}},
+              "chosen_option": {"type": "string"},
+              "rationale": {"type": "string"},
+              "confidence": {"type": "number"},
+              "decided_at": {"type": "string", "format": "date-time"}
+            }
+          }
+        },
+
+        "tasks_generated": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "会话中生成的任务ID"
+        },
+
+        "profile_updates": {
+          "type": "array",
+          "description": "会话中对Profile的更新",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field_path": {"type": "string"},
+              "old_value": {},
+              "new_value": {},
+              "update_source": {"type": "string"},
+              "updated_at": {"type": "string", "format": "date-time"}
+            }
+          }
+        },
+
+        "session_metrics": {
+          "type": "object",
+          "properties": {
+            "message_count": {"type": "integer"},
+            "user_message_count": {"type": "integer"},
+            "avg_response_time_ms": {"type": "number"},
+            "engagement_score": {"type": "number"},
+            "satisfaction_rating": {"type": "integer", "minimum": 1, "maximum": 5},
+            "tasks_completed_in_session": {"type": "integer"}
+          }
+        },
+
+        "session_summary": {
+          "type": "object",
+          "properties": {
+            "main_topics": {"type": "array", "items": {"type": "string"}},
+            "key_insights": {"type": "array", "items": {"type": "string"}},
+            "action_items": {"type": "array", "items": {"type": "string"}},
+            "follow_up_needed": {"type": "boolean"},
+            "next_session_suggestions": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+
+        "metadata": {
+          "type": "object",
+          "properties": {
+            "device_info": {"type": "string"},
+            "app_version": {"type": "string"},
+            "location": {"type": "string"},
+            "timezone": {"type": "string"}
+          }
+        },
+
+        "extensions": {"type": "object"}
+      }
+    },
+
+
+    "Trajectory": {
+      "type": "object",
+      "$id": "#/definitions/Trajectory",
+      "title": "结构体六B：Trajectory（轨迹模型）",
+
+      "_meta": {
+        "role": "描述用户的长期陪伴轨迹，支持科研导出与效果评估",
+        "lifecycle": {
+          "creation": "用户首次入组时创建",
+          "updates": "定期聚合Session、Task、Assessment数据",
+          "persistence": "独立存储，支持大数据量",
+          "retention": "永久保留，支持匿名化科研导出"
+        },
+        "permissions": {
+          "read": ["MasterOrchestrator", "AnalyticsEngine", "ResearchExporter", "DashboardGenerator"],
+          "write": ["TrajectoryAggregator", "SystemScheduler"],
+          "write_channels": ["ScheduledAggregation", "ManualSnapshot"]
+        },
+        "relation_to_user_state": "Trajectory是UserMasterProfile的时序扩展，记录状态演化历史",
+        "skill_mapping": {
+          "aggregation_skills": ["session_aggregation", "metric_calculation", "trend_analysis"],
+          "export_skills": ["anonymization", "format_conversion", "cohort_extraction"]
+        }
+      },
+
+      "required": ["trajectory_id", "user_id", "start_date"],
+      "properties": {
+        "trajectory_id": {
+          "type": "string",
+          "pattern": "^TRJ-[A-Z0-9]{12}$"
+        },
+        "user_id": {"type": "string"},
+        "schema_version": {"type": "string", "const": "1.0"},
+
+        "start_date": {"type": "string", "format": "date"},
+        "current_phase": {"type": "string"},
+        "total_days_in_program": {"type": "integer"},
+
+        "stage_transitions": {
+          "type": "array",
+          "description": "行为阶段转换历史",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from_stage": {"type": "string"},
+              "to_stage": {"type": "string"},
+              "transition_date": {"type": "string", "format": "date"},
+              "trigger": {"type": "string"},
+              "days_in_previous_stage": {"type": "integer"}
+            }
+          }
+        },
+
+        "goal_history": {
+          "type": "array",
+          "description": "目标完成历史",
+          "items": {
+            "type": "object",
+            "properties": {
+              "goal_id": {"type": "string"},
+              "goal_description": {"type": "string"},
+              "status": {"type": "string"},
+              "started_at": {"type": "string", "format": "date"},
+              "completed_at": {"type": "string", "format": "date"},
+              "success_rate": {"type": "number"}
+            }
+          }
+        },
+
+        "intervention_history": {
+          "type": "array",
+          "description": "干预计划历史",
+          "items": {
+            "type": "object",
+            "properties": {
+              "plan_id": {"type": "string"},
+              "plan_type": {"type": "string"},
+              "started_at": {"type": "string", "format": "date"},
+              "ended_at": {"type": "string", "format": "date"},
+              "outcome": {"type": "string"},
+              "effectiveness_score": {"type": "number"}
+            }
+          }
+        },
+
+        "assessment_timeline": {
+          "type": "array",
+          "description": "评估时间线",
+          "items": {
+            "type": "object",
+            "properties": {
+              "assessment_id": {"type": "string"},
+              "assessment_type": {"type": "string"},
+              "date": {"type": "string", "format": "date"},
+              "key_scores": {"type": "object"},
+              "risk_level_at_time": {"type": "string"}
+            }
+          }
+        },
+
+        "metric_trends": {
+          "type": "object",
+          "description": "关键指标趋势",
+          "properties": {
+            "spi_trend": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "date": {"type": "string", "format": "date"},
+                  "value": {"type": "number"}
+                }
+              }
+            },
+            "adherence_trend": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "week": {"type": "string"},
+                  "rate": {"type": "number"}
+                }
+              }
+            },
+            "health_metrics": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": {"type": "string", "format": "date"},
+                    "value": {"type": "number"}
+                  }
+                }
+              }
+            }
+          }
+        },
+
+        "session_statistics": {
+          "type": "object",
+          "properties": {
+            "total_sessions": {"type": "integer"},
+            "total_messages": {"type": "integer"},
+            "avg_session_duration_minutes": {"type": "number"},
+            "avg_sessions_per_week": {"type": "number"},
+            "most_active_time": {"type": "string"},
+            "engagement_trend": {"type": "string", "enum": ["increasing", "stable", "decreasing"]}
+          }
+        },
+
+        "task_statistics": {
+          "type": "object",
+          "properties": {
+            "total_tasks_assigned": {"type": "integer"},
+            "total_tasks_completed": {"type": "integer"},
+            "overall_completion_rate": {"type": "number"},
+            "avg_difficulty_completed": {"type": "number"},
+            "most_successful_task_types": {"type": "array", "items": {"type": "string"}},
+            "most_challenging_task_types": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+
+        "milestones_achieved": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "milestone_type": {"type": "string"},
+              "description": {"type": "string"},
+              "achieved_at": {"type": "string", "format": "date"},
+              "significance": {"type": "string"}
+            }
+          }
+        },
+
+        "risk_events": {
+          "type": "array",
+          "description": "风险事件记录",
+          "items": {
+            "type": "object",
+            "properties": {
+              "event_id": {"type": "string"},
+              "risk_type": {"type": "string"},
+              "severity": {"type": "string"},
+              "occurred_at": {"type": "string", "format": "date-time"},
+              "resolved_at": {"type": "string", "format": "date-time"},
+              "resolution": {"type": "string"}
+            }
+          }
+        },
+
+        "outcome_summary": {
+          "type": "object",
+          "description": "阶段性成果摘要",
+          "properties": {
+            "primary_outcome_achieved": {"type": "boolean"},
+            "secondary_outcomes": {"type": "array", "items": {"type": "string"}},
+            "improvement_areas": {"type": "array", "items": {"type": "string"}},
+            "remaining_challenges": {"type": "array", "items": {"type": "string"}},
+            "next_phase_recommendations": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+
+        "research_export_config": {
+          "type": "object",
+          "description": "科研导出配置",
+          "properties": {
+            "consent_for_research": {"type": "boolean"},
+            "anonymization_level": {"type": "string", "enum": ["none", "pseudonymized", "fully_anonymized"]},
+            "exportable_fields": {"type": "array", "items": {"type": "string"}},
+            "cohort_tags": {"type": "array", "items": {"type": "string"}}
+          }
+        },
+
+        "last_aggregated_at": {"type": "string", "format": "date-time"},
+        "aggregation_version": {"type": "integer"},
+
+        "extensions": {"type": "object"}
+      }
+    }
+  },
+
+
+  "data_flow_specification": {
+    "main_pipeline": [
+      {"step": 1, "name": "INPUT_HANDLER", "input": "ExternalInput", "output": "UserInput", "structures_involved": ["UserInput"]},
+      {"step": 2, "name": "PROFILE_MANAGER", "input": "UserInput", "output": "UserMasterProfile", "structures_involved": ["UserMasterProfile", "BehaviorState"]},
+      {"step": 3, "name": "RISK_ANALYZER", "input": "UserMasterProfile+UserInput", "output": "RiskAssessment", "structures_involved": ["BehaviorState"]},
+      {"step": 4, "name": "AGENT_ROUTER", "input": "RiskAssessment+Intent", "output": "RoutingDecision", "structures_involved": ["AgentProfile", "SkillDescriptor"]},
+      {"step": 5, "name": "MULTI_AGENT_COORDINATOR", "input": "RoutingDecision", "output": "CoordinatedResult", "structures_involved": ["AgentProfile", "SkillDescriptor", "Session"]},
+      {"step": 6, "name": "INTERVENTION_PLANNER", "input": "CoordinatedResult+BehaviorState", "output": "InterventionPlan", "structures_involved": ["Goal", "Task", "BehaviorState"]},
+      {"step": 7, "name": "RESPONSE_SYNTHESIZER", "input": "InterventionPlan", "output": "SynthesizedResponse", "structures_involved": ["Session"]},
+      {"step": 8, "name": "TASK_GENERATOR", "input": "InterventionPlan", "output": "DailyTasks", "structures_involved": ["Task", "Goal"]},
+      {"step": 9, "name": "PROFILE_WRITER", "input": "AllResults", "output": "UpdatedProfile", "structures_involved": ["UserMasterProfile", "BehaviorState", "Session", "Trajectory"]}
+    ],
+
+    "write_back_channels": {
+      "AgentResult.data_updates": {
+        "target": "UserMasterProfile",
+        "authority": "MasterOrchestrator",
+        "validation": "SchemaValidation + BusinessRuleCheck"
+      },
+      "InterventionPlan.adjustment": {
+        "target": "BehaviorState + Goal",
+        "authority": "MasterOrchestrator",
+        "validation": "StageCompatibilityCheck"
+      },
+      "Task.completion_feedback": {
+        "target": "BehaviorState.adherence_metrics + Trajectory",
+        "authority": "MasterOrchestrator",
+        "validation": "None"
+      },
+      "Session.summary": {
+        "target": "Trajectory",
+        "authority": "TrajectoryAggregator",
+        "validation": "None"
+      }
+    },
+
+    "prohibited_actions": [
+      "Agent私自维护UserMasterProfile",
+      "模块私自新增/删除/重命名核心结构体字段",
+      "绕过AgentTask/AgentResult直接跨模块通信",
+      "未经MasterOrchestrator直接写入BehaviorState",
+      "Session外创建Trajectory记录"
+    ]
+  },
+
+
+  "cross_structure_relationships": {
+    "UserMasterProfile": {
+      "contains": ["BehaviorState (as sub-domain)"],
+      "references": ["Goal (via active_goal_ids)", "Task (via active_task_ids)", "Session (via recent_session_ids)"],
+      "referenced_by": ["Session", "Trajectory", "Goal", "Task"]
+    },
+    "BehaviorState": {
+      "belongs_to": "UserMasterProfile",
+      "influences": ["Goal (target setting)", "Task (difficulty calibration)", "AgentProfile (routing)"],
+      "updated_by": ["AssessmentEngine", "AgentResult", "TaskCompletion"]
+    },
+    "Goal": {
+      "belongs_to": "UserMasterProfile",
+      "derived_from": "BehaviorState",
+      "contains": ["Task (via related_tasks)"],
+      "tracked_in": "Trajectory"
+    },
+    "Task": {
+      "belongs_to": ["Goal", "Session"],
+      "constrained_by": "BehaviorState (difficulty limits)",
+      "executed_by": "SkillDescriptor",
+      "tracked_in": "Trajectory"
+    },
+    "AgentProfile": {
+      "owns": ["SkillDescriptor"],
+      "invoked_by": "MasterOrchestrator",
+      "reads": ["UserMasterProfile", "BehaviorState"],
+      "writes_to": "AgentResult (only)"
+    },
+    "SkillDescriptor": {
+      "owned_by": "AgentProfile",
+      "operates_on": ["UserMasterProfile", "BehaviorState", "Task"],
+      "produces": "SkillOutput"
+    },
+    "Session": {
+      "belongs_to": "UserMasterProfile",
+      "contains": ["Conversation", "AgentInvocations", "Decisions"],
+      "generates": ["Task", "ProfileUpdates"],
+      "aggregated_to": "Trajectory"
+    },
+    "Trajectory": {
+      "belongs_to": "UserMasterProfile",
+      "aggregates": ["Session", "Goal", "Task", "Assessment"],
+      "supports": ["ResearchExport", "OutcomeEvaluation", "TrendAnalysis"]
+    }
+  },
+
+
+  "versioning_and_migration": {
+    "schema_version": "1.0.0",
+    "compatibility": {
+      "backward_compatible_to": "0.9.0",
+      "migration_scripts_required_from": ["0.8.x", "0.7.x"]
+    },
+    "extension_policy": {
+      "allowed": "All structures support 'extensions' field for custom data",
+      "naming_convention": "Extensions must use snake_case with org prefix (e.g., 'org_custom_field')",
+      "prohibited": "Extensions must NOT duplicate or shadow core fields"
+    }
+  }
+}

@@ -1,0 +1,202 @@
+{
+  "description": "示例信号数据 - 用于测试和演示",
+  "user_id": "user-demo-001",
+  "signals": [
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 5.6,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-15T07:00:00Z",
+      "context": {
+        "fasting": true,
+        "activity_state": "rest"
+      }
+    },
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 7.8,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-15T08:30:00Z",
+      "context": {
+        "fasting": false,
+        "post_meal_minutes": 60,
+        "meal_type": "breakfast"
+      }
+    },
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 11.2,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-15T09:00:00Z",
+      "context": {
+        "fasting": false,
+        "post_meal_minutes": 90,
+        "meal_type": "breakfast"
+      }
+    },
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 9.5,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-15T09:30:00Z",
+      "context": {
+        "fasting": false,
+        "post_meal_minutes": 120,
+        "meal_type": "breakfast"
+      }
+    },
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 6.8,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-15T12:00:00Z",
+      "context": {
+        "fasting": true,
+        "activity_state": "rest"
+      }
+    },
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 12.5,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-15T13:30:00Z",
+      "context": {
+        "fasting": false,
+        "post_meal_minutes": 90,
+        "meal_type": "lunch"
+      }
+    },
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 7.2,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-15T18:00:00Z",
+      "context": {
+        "fasting": true,
+        "activity_state": "rest"
+      }
+    },
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 10.8,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-15T19:30:00Z",
+      "context": {
+        "fasting": false,
+        "post_meal_minutes": 90,
+        "meal_type": "dinner"
+      }
+    },
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 6.5,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-15T23:00:00Z",
+      "context": {
+        "sleep_state": "awake",
+        "activity_state": "rest"
+      }
+    },
+    {
+      "device_type": "cgm",
+      "metric": "glucose",
+      "value": 3.6,
+      "unit": "mmol/L",
+      "timestamp": "2024-01-16T03:00:00Z",
+      "context": {
+        "sleep_state": "deep_sleep"
+      }
+    },
+    {
+      "device_type": "bp",
+      "metric": "systolic_bp",
+      "value": 128,
+      "unit": "mmHg",
+      "timestamp": "2024-01-15T07:30:00Z",
+      "context": {
+        "activity_state": "rest"
+      }
+    },
+    {
+      "device_type": "bp",
+      "metric": "diastolic_bp",
+      "value": 82,
+      "unit": "mmHg",
+      "timestamp": "2024-01-15T07:30:00Z",
+      "context": {
+        "activity_state": "rest"
+      }
+    },
+    {
+      "device_type": "hrv",
+      "metric": "rmssd",
+      "value": 18,
+      "unit": "ms",
+      "timestamp": "2024-01-15T09:00:00Z",
+      "context": {
+        "stress_level": 7,
+        "activity_state": "rest"
+      }
+    },
+    {
+      "device_type": "hrv",
+      "metric": "rmssd",
+      "value": 22,
+      "unit": "ms",
+      "timestamp": "2024-01-15T21:00:00Z",
+      "context": {
+        "stress_level": 5,
+        "activity_state": "rest"
+      }
+    },
+    {
+      "device_type": "watch",
+      "metric": "steps",
+      "value": 4200,
+      "unit": "steps",
+      "timestamp": "2024-01-15T23:59:00Z",
+      "context": {}
+    },
+    {
+      "device_type": "watch",
+      "metric": "sleep_duration",
+      "value": 5.5,
+      "unit": "hours",
+      "timestamp": "2024-01-15T07:00:00Z",
+      "context": {}
+    },
+    {
+      "device_type": "watch",
+      "metric": "deep_sleep_ratio",
+      "value": 12,
+      "unit": "%",
+      "timestamp": "2024-01-15T07:00:00Z",
+      "context": {}
+    },
+    {
+      "device_type": "scale",
+      "metric": "weight",
+      "value": 78.5,
+      "unit": "kg",
+      "timestamp": "2024-01-15T07:15:00Z",
+      "context": {}
+    },
+    {
+      "device_type": "scale",
+      "metric": "fat_percent",
+      "value": 28.5,
+      "unit": "%",
+      "timestamp": "2024-01-15T07:15:00Z",
+      "context": {}
+    }
+  ]
+}

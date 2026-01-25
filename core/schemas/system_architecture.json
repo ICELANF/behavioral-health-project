@@ -1,0 +1,195 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "system_architecture_v1.0",
+  "title": "行健行为教练系统架构",
+  "description": "Master Agent 9步处理流程架构定义",
+
+  "architecture": {
+    "input_layer": {
+      "name": "Input Handler",
+      "description": "输入处理层 - 接收多源输入",
+      "sources": ["API", "WebSocket", "Device"],
+      "data_types": ["text", "voice", "device", "form", "assessment", "task_report"],
+      "implementation": {
+        "class": "UserInput",
+        "methods": ["from_dict", "from_json"],
+        "file": "core/master_agent.py"
+      }
+    },
+
+    "profile_layer": {
+      "name": "Profile Manager",
+      "description": "画像管理层 - 用户主画像CRUD",
+      "functions": [
+        "get_profile",
+        "update_profile",
+        "save_profile",
+        "cache_profile"
+      ],
+      "schema": "user_profile_schema.json",
+      "implementation": {
+        "class": "UserMasterProfile",
+        "file": "core/master_agent.py"
+      }
+    },
+
+    "analysis_layer": {
+      "name": "Intent & Risk Analyzer",
+      "description": "意图与风险分析层",
+      "functions": [
+        "问题类型分类",
+        "行为阶段识别",
+        "风险分级"
+      ],
+      "risk_levels": ["critical", "high", "moderate", "low"],
+      "implementation": {
+        "class": "RiskPriorityAssessor",
+        "methods": ["assess", "_check_crisis_keywords", "_assess_physiological_risk"],
+        "file": "core/master_agent.py"
+      }
+    },
+
+    "routing_layer": {
+      "name": "Agent Router",
+      "description": "Agent路由层 - 专家选择",
+      "functions": [
+        "选择 1-2 个主 Agent",
+        "可选协同 Agent"
+      ],
+      "agents": [
+        "SleepAgent",
+        "GlucoseAgent",
+        "StressAgent",
+        "NutritionAgent",
+        "ExerciseAgent",
+        "MentalHealthAgent",
+        "TCMWellnessAgent",
+        "CrisisAgent"
+      ],
+      "implementation": {
+        "methods": ["_route_request", "_determine_primary_agent", "_determine_secondary_agents"],
+        "file": "core/master_agent.py"
+      }
+    },
+
+    "coordination_layer": {
+      "name": "Multi-Agent Coordinator",
+      "description": "多Agent协调层",
+      "functions": [
+        "并发调用 Agents",
+        "冲突检测",
+        "结果融合"
+      ],
+      "output": "CoordinatedResult",
+      "implementation": {
+        "methods": ["_coordinate_agents", "execute_agent_task", "collect_multi_agent_analysis"],
+        "classes": ["AgentTask", "AgentTaskResponse", "AgentAnalysisResult"],
+        "file": "core/master_agent.py"
+      }
+    },
+
+    "planning_layer": {
+      "name": "Intervention Planner",
+      "description": "干预规划层",
+      "functions": [
+        "目标设定",
+        "阶段划分",
+        "行为处方生成"
+      ],
+      "output": ["InterventionPlan", "ActionPlan"],
+      "implementation": {
+        "methods": ["_generate_intervention_plan", "create_action_plan", "generate_phased_plan"],
+        "file": "core/master_agent.py"
+      }
+    },
+
+    "synthesis_layer": {
+      "name": "Response Synthesizer",
+      "description": "响应合成层",
+      "functions": [
+        "对话输出",
+        "教练语气适配",
+        "内容推荐"
+      ],
+      "coach_styles": ["empathetic", "supportive", "motivational", "educational"],
+      "output": "SynthesizedResponse",
+      "implementation": {
+        "methods": ["_synthesize_response", "_determine_coach_style", "_generate_follow_up_questions"],
+        "file": "core/master_agent.py"
+      }
+    },
+
+    "output_layer": {
+      "name": "Task Generator + Profile Writer",
+      "description": "输出层 - 任务生成与画像写回",
+      "functions": [
+        "写回画像",
+        "生成今日任务"
+      ],
+      "outputs": ["DailyTask", "DailyBriefing", "ProfileUpdates"],
+      "implementation": {
+        "methods": ["_generate_tasks_and_tracking", "_finalize_and_save_profile", "generate_daily_briefing"],
+        "file": "core/master_agent.py"
+      }
+    }
+  },
+
+  "data_flow": [
+    {
+      "step": 1,
+      "from": "Input Handler",
+      "to": "Profile Manager",
+      "data": "UserInput"
+    },
+    {
+      "step": 2,
+      "from": "Profile Manager",
+      "to": "Intent & Risk Analyzer",
+      "data": "UserInput + Profile"
+    },
+    {
+      "step": 3,
+      "from": "Intent & Risk Analyzer",
+      "to": "Agent Router",
+      "data": "RiskAssessment"
+    },
+    {
+      "step": 4,
+      "from": "Agent Router",
+      "to": "Multi-Agent Coordinator",
+      "data": "RoutingDecision"
+    },
+    {
+      "step": 5,
+      "from": "Multi-Agent Coordinator",
+      "to": "Intervention Planner",
+      "data": "CoordinatedResult"
+    },
+    {
+      "step": 6,
+      "from": "Intervention Planner",
+      "to": "Response Synthesizer",
+      "data": "InterventionPlan + ActionPlan"
+    },
+    {
+      "step": 7,
+      "from": "Response Synthesizer",
+      "to": "Task Generator + Profile Writer",
+      "data": "SynthesizedResponse"
+    },
+    {
+      "step": 8,
+      "from": "Task Generator + Profile Writer",
+      "to": "Output",
+      "data": "MasterAgentResponse + DailyBriefing"
+    }
+  ],
+
+  "schemas": {
+    "input": "master_io_schema.json#input_schema",
+    "output": "master_io_schema.json#output_schema",
+    "profile": "user_profile_schema.json",
+    "agent_task": "agent_task_schema.json",
+    "action_plan": "action_plan_schema.json"
+  }
+}

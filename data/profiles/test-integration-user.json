@@ -1,0 +1,118 @@
+{
+  "user_id": "test-integration-user",
+  "created_at": "2026-01-23T23:16:08.855338",
+  "updated_at": "2026-01-23T23:16:08.855077",
+  "basic": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null
+  },
+  "medical": {
+    "diabetes": "none",
+    "bp": null,
+    "bp_category": null,
+    "medications": [],
+    "conditions": []
+  },
+  "behavior": {
+    "stage": "resistance",
+    "stage_chinese": "完全对抗",
+    "spi_coefficient": 0.3,
+    "patterns": [],
+    "adherence_score": 0.0,
+    "task_completion_rate": 0.0,
+    "streak_days": 0,
+    "cultivation_phase": "startup"
+  },
+  "psych": {
+    "stress_level": "medium",
+    "stress_score": 50,
+    "motivation": "medium",
+    "motivation_score": 50,
+    "efficacy_score": 50.0,
+    "anxiety_level": "normal",
+    "depression_level": "normal",
+    "mood_trend": "stable",
+    "social_support": "moderate"
+  },
+  "constitution": {
+    "bmi": null,
+    "bmi_category": null,
+    "visceral_fat": null,
+    "inflammation_risk": null,
+    "tcm_constitution": null
+  },
+  "biometrics": {
+    "glucose": {
+      "fasting": null,
+      "hba1c": null,
+      "tir": null,
+      "trend": "stable"
+    },
+    "hrv": {
+      "sdnn": 42,
+      "rmssd": null,
+      "trend": "declining"
+    },
+    "sleep": {
+      "avg_duration": 5,
+      "avg_quality": 50,
+      "trend": "declining",
+      "deep_sleep_percent": null
+    },
+    "activity": {
+      "avg_steps": 0,
+      "active_minutes_weekly": 0,
+      "exercise_frequency": "none"
+    }
+  },
+  "preferences": {
+    "focus": [],
+    "coaching_style": "gentle",
+    "max_tasks_per_day": 2,
+    "language": "zh-CN"
+  },
+  "goals": {
+    "primary": null,
+    "secondary": []
+  },
+  "risk_flags": [],
+  "history": {
+    "total_sessions": 2,
+    "first_session": null,
+    "last_session": "2026-01-23T23:16:08.911819",
+    "total_tasks_assigned": 1,
+    "total_tasks_completed": 0,
+    "assessments_count": 0
+  },
+  "current_intervention": null,
+  "today": {
+    "tasks": [
+      {
+        "task_id": "task_853d37de-f0aa-4b25-ba81-a4f5accbebfc_0",
+        "title": "今日任务：15分钟轻度运动",
+        "status": "pending"
+      }
+    ],
+    "mood_log": [],
+    "device_sync_time": "2026-01-23T23:16:08.855077",
+    "check_ins": 0
+  },
+  "session_history": [
+    {
+      "session_id": "853d37de-f0aa-4b25-ba81-a4f5accbebfc",
+      "timestamp": "2026-01-23T23:16:08.855077",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    }
+  ],
+  "last_updated": "2026-01-23T23:16:08.911838",
+  "tracking_points": [
+    "今日任务完成情况 (1项)",
+    "睡眠质量记录",
+    "心情变化记录",
+    "明天同一时间签到",
+    "记录今日心情变化"
+  ]
+}

@@ -1,0 +1,186 @@
+# =============================================================================
+# 行健行为教练 - 多专家 Agent 系统配置
+# =============================================================================
+
+# === 模型配置 ===
+model:
+  embed: "nomic-embed-text:latest"
+  llm: "qwen2.5:14b"
+  ollama_base_url: "http://localhost:11434"
+  temperature: 0.3
+  request_timeout: 600.0
+
+# === 路径配置 ===
+paths:
+  obsidian_vault: "J:/Knowledge-Hub-Obsidian-Vault/02-Knowledge-Base"
+  vectordb_base: "J:/xingjian-agent/data/vectordb"
+  prompts: "J:/xingjian-agent/prompts"
+
+# === 专家配置 ===
+experts:
+  mental_health:
+    name: "心理咨询师"
+    description: "专业心理健康顾问，擅长情绪管理、压力调节、睡眠改善、认知行为技术"
+    knowledge_folder: "Psychology"
+    vectordb_folder: "mental_health"
+    system_prompt: "mental_health.txt"
+    keywords:
+      - "焦虑"
+      - "抑郁"
+      - "情绪"
+      - "压力"
+      - "睡眠"
+      - "失眠"
+      - "心理"
+      - "心情"
+      - "紧张"
+      - "担忧"
+      - "恐惧"
+      - "悲伤"
+      - "愤怒"
+      - "烦躁"
+      - "冥想"
+      - "放松"
+      - "正念"
+      - "认知"
+      - "行为"
+      - "咨询"
+    can_consult:
+      - "nutrition"
+      - "sports_rehab"
+      - "tcm_wellness"
+    priority: 1
+
+  nutrition:
+    name: "营养师"
+    description: "注册营养师，提供个性化膳食指导、营养素建议和体重管理方案"
+    knowledge_folder: "Nutrition"
+    vectordb_folder: "nutrition"
+    system_prompt: "nutrition.txt"
+    keywords:
+      - "饮食"
+      - "营养"
+      - "食物"
+      - "吃"
+      - "喝"
+      - "膳食"
+      - "蛋白质"
+      - "碳水"
+      - "脂肪"
+      - "维生素"
+      - "矿物质"
+      - "热量"
+      - "卡路里"
+      - "减肥"
+      - "增重"
+      - "健康饮食"
+      - "食谱"
+      - "早餐"
+      - "午餐"
+      - "晚餐"
+    can_consult:
+      - "mental_health"
+      - "sports_rehab"
+      - "tcm_wellness"
+    priority: 2
+
+  sports_rehab:
+    name: "运动康复师"
+    description: "运动医学专家，提供运动处方、损伤康复和体态矫正指导"
+    knowledge_folder: "Sports"
+    vectordb_folder: "sports_rehab"
+    system_prompt: "sports_rehab.txt"
+    keywords:
+      - "运动"
+      - "锻炼"
+      - "健身"
+      - "康复"
+      - "损伤"
+      - "拉伸"
+      - "肌肉"
+      - "关节"
+      - "疼痛"
+      - "酸痛"
+      - "体能"
+      - "力量"
+      - "耐力"
+      - "柔韧"
+      - "姿势"
+      - "跑步"
+      - "游泳"
+      - "瑜伽"
+      - "热身"
+      - "恢复"
+    can_consult:
+      - "nutrition"
+      - "tcm_wellness"
+    priority: 3
+
+  tcm_wellness:
+    name: "中医养生师"
+    description: "传统中医养生专家，提供体质调理、四季养生和经络穴位保健建议"
+    knowledge_folder: "TCM"
+    vectordb_folder: "tcm_wellness"
+    system_prompt: "tcm_wellness.txt"
+    keywords:
+      - "中医"
+      - "养生"
+      - "调理"
+      - "体质"
+      - "阴阳"
+      - "气血"
+      - "经络"
+      - "穴位"
+      - "按摩"
+      - "推拿"
+      - "针灸"
+      - "艾灸"
+      - "食疗"
+      - "药膳"
+      - "茶饮"
+      - "节气"
+      - "四季"
+      - "脾胃"
+      - "祛湿"
+      - "补气"
+    can_consult:
+      - "nutrition"
+      - "mental_health"
+    priority: 4
+
+# === 协调器配置 ===
+orchestrator:
+  name: "行健行为教练"
+  default_expert: "mental_health"
+  enable_multi_expert: true
+  max_consultations: 2
+  synthesis_mode: "hierarchical"
+
+# === 协作配置 ===
+collaboration:
+  consultation_prompt_template: |
+    你是{consultant_name}，正在被{requester_name}咨询。
+    用户原始问题：{user_query}
+    {requester_name}的初步分析：{initial_analysis}
+
+    请从你的专业角度提供补充建议，聚焦于：
+    1. 你专业领域相关的建议
+    2. 需要注意的跨学科协作点
+    3. 潜在的风险或注意事项
+
+    【重要】请用中文简洁回复，控制在200字以内。
+
+  synthesis_prompt_template: |
+    你是教练组的协调员，请综合以下专家意见为用户提供完整建议：
+
+    用户问题：{user_query}
+
+    专家意见：
+    {expert_responses}
+
+    请综合以上意见，提供：
+    1. 核心建议（最重要的2-3点）
+    2. 分步行动计划
+    3. 注意事项
+
+    【要求】使用中文，语气温和专业，避免评判性语言。

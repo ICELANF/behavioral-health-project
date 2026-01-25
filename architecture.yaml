@@ -1,0 +1,335 @@
+# ============================================================
+# 行为健康平台 - 整体架构设计
+# 主动健康 · 吃动守恒
+# ============================================================
+
+project:
+  name: 行为健康管理平台
+  version: "1.0.0"
+  concept: 主动健康 · 吃动守恒
+  description: |
+    基于TTM跨理论模型的慢性病行为干预平台，
+    以"吃动守恒"为核心理念，帮助用户实现
+    能量摄入与消耗的动态平衡，达成健康目标。
+
+# ============================================================
+# 核心理念：吃动守恒
+# ============================================================
+core_concept:
+  name: 吃动守恒
+  principle: |
+    健康的本质是能量平衡：
+    - 吃：饮食摄入的能量
+    - 动：运动消耗的能量
+    - 守恒：摄入 ≈ 消耗 = 体重稳定
+    - 摄入 > 消耗 = 体重增加
+    - 摄入 < 消耗 = 体重减少
+
+  pillars:
+    - name: 科学饮食
+      icon: "🥗"
+      description: 低GI、均衡营养、定时定量
+      metrics:
+        - 每日热量摄入
+        - 碳水化合物占比
+        - 蛋白质摄入量
+        - 膳食纤维摄入
+
+    - name: 合理运动
+      icon: "🏃"
+      description: 有氧+力量、循序渐进、持之以恒
+      metrics:
+        - 每周运动频次
+        - 单次运动时长
+        - 运动消耗热量
+        - 运动强度(心率)
+
+    - name: 血糖管理
+      icon: "🩸"
+      description: 规律监测、波动分析、趋势预警
+      metrics:
+        - 空腹血糖
+        - 餐后血糖
+        - 血糖波动幅度
+        - 糖化血红蛋白
+
+    - name: 行为改变
+      icon: "🎯"
+      description: TTM阶段匹配、动机访谈、习惯养成
+      metrics:
+        - 行为阶段
+        - 任务完成率
+        - 连续打卡天数
+        - 健康评分
+
+# ============================================================
+# 系统架构
+# ============================================================
+architecture:
+  layers:
+    # 用户层
+    - name: 用户端 (C端)
+      components:
+        - name: 患者小程序/H5
+          path: /client
+          features:
+            - 健康首页仪表盘
+            - AI健康教练对话
+            - 血糖/饮食/运动记录
+            - 任务打卡系统
+            - 课程学习中心
+            - 商城推荐
+
+        - name: 教练工作台
+          path: /coach-portal
+          features:
+            - 学员管理
+            - 干预计划制定
+            - 督导日志
+            - 消息沟通
+
+        - name: 督导专家台
+          path: /expert-portal
+          features:
+            - 教练培训管理
+            - 案例督导审核
+            - 质量评估
+
+    # 业务层
+    - name: 业务服务层
+      components:
+        - name: 用户服务
+          apis:
+            - POST /intake          # 用户信息采集
+            - GET /user/profile     # 用户档案
+            - PUT /user/focus-areas # 关注领域
+
+        - name: 健康数据服务
+          apis:
+            - POST /glucose/record  # 血糖记录
+            - POST /diet/record     # 饮食记录
+            - POST /exercise/record # 运动记录
+            - GET /health/summary   # 健康汇总
+
+        - name: 行为评估服务
+          apis:
+            - POST /stage/evaluate  # TTM阶段评估
+            - POST /risk/evaluate   # 风险评估
+            - GET /recommendations  # 个性化推荐
+
+        - name: 干预服务
+          apis:
+            - POST /intervention/plan   # 干预计划
+            - POST /followup/register   # 随访注册
+            - POST /agent/handover      # Agent移交
+
+    # AI层
+    - name: AI智能层
+      components:
+        - name: 本地模型 (Ollama)
+          url: http://localhost:11434
+          models:
+            - qwen2.5:14b      # 主模型
+            - deepseek-r1:7b   # 备选模型
+            - nomic-embed-text # 向量嵌入
+
+        - name: Dify Agent平台
+          url: http://localhost:80
+          apps:
+            - 主动健康教练 (吃动守恒)
+            - 饮食顾问
+            - 运动指导
+            - 心理支持
+
+        - name: RAG知识库
+          sources:
+            - 糖尿病管理指南
+            - 低GI食物库
+            - 运动处方库
+            - TTM行为干预策略
+
+    # 数据层
+    - name: 数据存储层
+      components:
+        - name: PostgreSQL
+          usage: 结构化业务数据
+          tables:
+            - users
+            - health_records
+            - interventions
+            - tasks
+
+        - name: Redis
+          usage: 缓存、会话、实时数据
+
+        - name: 向量数据库
+          usage: RAG知识检索
+          engine: Chroma / Milvus
+
+# ============================================================
+# Agent 类型定义
+# ============================================================
+agents:
+  - id: A1
+    name: 主动健康教练
+    icon: "🌿"
+    role: 综合健康管理，吃动守恒指导
+    capabilities:
+      - 健康状况评估
+      - 吃动平衡分析
+      - 行为阶段匹配
+      - 个性化建议
+      - 动机访谈
+    triggers:
+      - 首次使用
+      - 主动咨询
+      - 健康评分变化
+
+  - id: A2
+    name: 运动指导师
+    icon: "🏋️"
+    role: 运动处方制定与指导
+    capabilities:
+      - 运动能力评估
+      - 运动处方制定
+      - 运动风险预警
+      - 进度追踪
+    triggers:
+      - 运动相关咨询
+      - 运动目标设定
+      - 运动数据异常
+
+  - id: A3
+    name: 饮食顾问
+    icon: "🥗"
+    role: 营养指导与饮食规划
+    capabilities:
+      - 饮食习惯分析
+      - 低GI饮食指导
+      - 热量计算
+      - 食谱推荐
+    triggers:
+      - 饮食相关咨询
+      - 血糖波动分析
+      - 饮食记录
+
+  - id: A4
+    name: 心理支持师
+    icon: "🧘"
+    role: 情绪疏导与心理支持
+    capabilities:
+      - 情绪识别
+      - 压力管理
+      - 动机激励
+      - 复发预防
+    triggers:
+      - 负面情绪表达
+      - 行为阶段倒退
+      - 坚持困难
+
+# ============================================================
+# TTM 行为改变模型
+# ============================================================
+ttm_model:
+  name: 跨理论模型 (Transtheoretical Model)
+  stages:
+    - id: precontemplation
+      name: 前意向期
+      description: 无改变意愿，未意识到问题
+      strategy:
+        - 提升健康认知
+        - 风险教育
+        - 不施压
+      duration: 无固定时间
+
+    - id: contemplation
+      name: 意向期
+      description: 开始考虑改变，权衡利弊
+      strategy:
+        - 利弊分析
+        - 增强改变信心
+        - 解决顾虑
+      duration: 约6个月
+
+    - id: preparation
+      name: 准备期
+      description: 准备采取行动，制定计划
+      strategy:
+        - 设定具体目标
+        - 制定行动计划
+        - 准备资源
+      duration: 约1个月
+
+    - id: action
+      name: 行动期
+      description: 正在实施改变行为
+      strategy:
+        - 持续支持鼓励
+        - 监测进度
+        - 应对障碍
+      duration: 约6个月
+
+    - id: maintenance
+      name: 维持期
+      description: 维持改变，形成习惯
+      strategy:
+        - 预防复发
+        - 强化成就
+        - 应对高风险情境
+      duration: 6个月以上
+
+# ============================================================
+# 技术栈
+# ============================================================
+tech_stack:
+  frontend:
+    framework: Vue 3 + TypeScript
+    ui: Ant Design Vue 4
+    build: Vite
+    state: Pinia
+
+  backend:
+    framework: FastAPI (Python)
+    orm: SQLAlchemy
+    validation: Pydantic
+
+  ai:
+    local_llm: Ollama
+    agent_platform: Dify
+    models:
+      - qwen2.5:14b
+      - deepseek-r1:7b
+    embedding: nomic-embed-text
+
+  infrastructure:
+    container: Docker
+    database: PostgreSQL
+    cache: Redis
+    vector_db: Chroma
+
+# ============================================================
+# 部署信息
+# ============================================================
+deployment:
+  services:
+    - name: 前端服务
+      port: 5180
+      path: D:\behavioral-health-project\admin-portal
+
+    - name: 后端API
+      port: 8001
+      path: D:\behavior_health_core
+
+    - name: Ollama
+      port: 11434
+      models: qwen2.5:14b
+
+    - name: Dify
+      port: 80
+      path: D:\behavioral-health-project\dify
+
+    - name: PostgreSQL
+      port: 5432
+
+    - name: Redis
+      port: 6379

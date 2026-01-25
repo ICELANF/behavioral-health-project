@@ -1,0 +1,364 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "user_state_model_v1.0",
+  "title": "用户状态模型 (User State Model)",
+  "description": "用户实时状态数据，用于解析层的状态建模",
+  "type": "object",
+  "required": ["user_id", "snapshot_time", "data_sources"],
+
+  "properties": {
+    "user_id": {
+      "type": "string",
+      "description": "用户唯一标识"
+    },
+
+    "snapshot_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "状态快照时间"
+    },
+
+    "data_sources": {
+      "type": "object",
+      "description": "数据来源追踪",
+      "properties": {
+        "wearable": {
+          "type": "object",
+          "properties": {
+            "device_type": {"type": "string"},
+            "last_sync": {"type": "string", "format": "date-time"},
+            "data_freshness": {"type": "string", "enum": ["realtime", "today", "stale"]}
+          }
+        },
+        "assessment": {
+          "type": "object",
+          "properties": {
+            "last_assessment_date": {"type": "string", "format": "date"},
+            "assessment_type": {"type": "string"},
+            "source_file": {"type": "string"}
+          }
+        },
+        "self_report": {
+          "type": "object",
+          "properties": {
+            "last_report_time": {"type": "string", "format": "date-time"}
+          }
+        }
+      }
+    },
+
+    "physiological_state": {
+      "type": "object",
+      "description": "生理状态 (来自穿戴设备/PDF/Excel)",
+      "properties": {
+        "hrv": {
+          "type": "object",
+          "properties": {
+            "sdnn": {"type": "number", "description": "ms, 正常范围 50-100"},
+            "rmssd": {"type": "number", "description": "ms"},
+            "lf_hf_ratio": {"type": "number", "description": "低频/高频比值"},
+            "trend": {"type": "string", "enum": ["improving", "stable", "declining"]},
+            "last_7d_avg": {"type": "number"}
+          }
+        },
+        "heart_rate": {
+          "type": "object",
+          "properties": {
+            "current": {"type": "number"},
+            "resting": {"type": "number"},
+            "max_today": {"type": "number"},
+            "variability_today": {"type": "number"}
+          }
+        },
+        "sleep": {
+          "type": "object",
+          "properties": {
+            "last_night_duration": {"type": "number", "description": "小时"},
+            "last_night_quality": {"type": "number", "minimum": 0, "maximum": 100},
+            "deep_sleep_percentage": {"type": "number"},
+            "rem_percentage": {"type": "number"},
+            "awakenings": {"type": "integer"},
+            "sleep_onset_latency": {"type": "number", "description": "入睡时间(分钟)"},
+            "weekly_avg_duration": {"type": "number"},
+            "weekly_avg_quality": {"type": "number"}
+          }
+        },
+        "activity": {
+          "type": "object",
+          "properties": {
+            "steps_today": {"type": "integer"},
+            "steps_weekly_avg": {"type": "integer"},
+            "active_minutes_today": {"type": "integer"},
+            "sedentary_hours_today": {"type": "number"},
+            "calories_burned": {"type": "integer"}
+          }
+        }
+      }
+    },
+
+    "psychological_state": {
+      "type": "object",
+      "description": "心理状态 (来自问卷评估)",
+      "properties": {
+        "anxiety": {
+          "type": "object",
+          "properties": {
+            "score": {"type": "number", "minimum": 0, "maximum": 100},
+            "level": {"type": "string", "enum": ["normal", "mild", "moderate", "severe"]},
+            "tool": {"type": "string", "enum": ["GAD-7", "SAS", "HAMA", "custom"]},
+            "assessed_date": {"type": "string", "format": "date"}
+          }
+        },
+        "depression": {
+          "type": "object",
+          "properties": {
+            "score": {"type": "number", "minimum": 0, "maximum": 100},
+            "level": {"type": "string", "enum": ["normal", "mild", "moderate", "severe"]},
+            "tool": {"type": "string", "enum": ["PHQ-9", "SDS", "HAMD", "custom"]},
+            "assessed_date": {"type": "string", "format": "date"}
+          }
+        },
+        "stress": {
+          "type": "object",
+          "properties": {
+            "score": {"type": "number", "minimum": 0, "maximum": 100},
+            "level": {"type": "string", "enum": ["low", "moderate", "high", "severe"]},
+            "tool": {"type": "string", "enum": ["PSS-10", "custom"]},
+            "assessed_date": {"type": "string", "format": "date"}
+          }
+        },
+        "scl90": {
+          "type": "object",
+          "properties": {
+            "total_score": {"type": "number"},
+            "positive_items": {"type": "integer"},
+            "factors": {
+              "type": "object",
+              "properties": {
+                "somatization": {"type": "number"},
+                "obsessive_compulsive": {"type": "number"},
+                "interpersonal_sensitivity": {"type": "number"},
+                "depression": {"type": "number"},
+                "anxiety": {"type": "number"},
+                "hostility": {"type": "number"},
+                "phobic_anxiety": {"type": "number"},
+                "paranoid_ideation": {"type": "number"},
+                "psychoticism": {"type": "number"}
+              }
+            },
+            "assessed_date": {"type": "string", "format": "date"}
+          }
+        },
+        "big_five": {
+          "type": "object",
+          "properties": {
+            "openness": {"type": "number", "minimum": 0, "maximum": 100},
+            "conscientiousness": {"type": "number", "minimum": 0, "maximum": 100},
+            "extraversion": {"type": "number", "minimum": 0, "maximum": 100},
+            "agreeableness": {"type": "number", "minimum": 0, "maximum": 100},
+            "neuroticism": {"type": "number", "minimum": 0, "maximum": 100},
+            "assessed_date": {"type": "string", "format": "date"}
+          }
+        }
+      }
+    },
+
+    "subjective_state": {
+      "type": "object",
+      "description": "主观状态 (用户自报告)",
+      "properties": {
+        "energy_level": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "精力水平"
+        },
+        "mood_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "心情评分"
+        },
+        "pain_level": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "description": "疼痛程度 0-10"
+        },
+        "appetite": {
+          "type": "string",
+          "enum": ["poor", "normal", "excessive"],
+          "description": "食欲状况"
+        },
+        "reported_symptoms": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "自述症状列表"
+        }
+      }
+    },
+
+    "behavioral_history": {
+      "type": "object",
+      "description": "行为历史记录",
+      "properties": {
+        "assessment_count": {
+          "type": "integer",
+          "description": "总评估次数"
+        },
+        "first_assessment_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "days_since_first_assessment": {
+          "type": "integer"
+        },
+        "prescription_history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "prescription_id": {"type": "string"},
+              "date": {"type": "string", "format": "date"},
+              "completion_rate": {"type": "number"},
+              "outcome": {"type": "string"}
+            }
+          }
+        },
+        "task_completion": {
+          "type": "object",
+          "properties": {
+            "total_assigned": {"type": "integer"},
+            "total_completed": {"type": "integer"},
+            "completion_rate": {"type": "number"},
+            "streak_days": {"type": "integer", "description": "连续完成天数"}
+          }
+        },
+        "improvement_trend": {
+          "type": "object",
+          "properties": {
+            "consecutive_improvements": {"type": "integer"},
+            "last_improvement_date": {"type": "string", "format": "date"},
+            "relapse_count": {"type": "integer"}
+          }
+        }
+      }
+    },
+
+    "engagement": {
+      "type": "object",
+      "description": "用户参与度指标",
+      "properties": {
+        "score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "app_usage_days_last_week": {"type": "integer"},
+        "avg_session_minutes": {"type": "number"},
+        "knowledge_articles_read": {"type": "integer"},
+        "videos_watched": {"type": "integer"},
+        "community_interactions": {"type": "integer"}
+      }
+    },
+
+    "computed_indicators": {
+      "type": "object",
+      "description": "计算指标 (解析层输出)",
+      "properties": {
+        "behavior_pattern": {
+          "type": "object",
+          "properties": {
+            "primary": {"type": "string"},
+            "secondary": {"type": "array", "items": {"type": "string"}},
+            "confidence": {"type": "number"}
+          }
+        },
+        "change_stage": {
+          "type": "object",
+          "properties": {
+            "current": {"type": "string"},
+            "confidence": {"type": "number"},
+            "days_in_stage": {"type": "integer"}
+          }
+        },
+        "motivation": {
+          "type": "object",
+          "properties": {
+            "score": {"type": "number"},
+            "level": {"type": "string"},
+            "energy_mood_match": {"type": "number"}
+          }
+        },
+        "efficacy_score": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "综合效能感评分"
+        },
+        "risk_flags": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "flag": {"type": "string"},
+              "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+              "description": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+
+    "tcm_constitution": {
+      "type": "object",
+      "description": "中医体质 (可选)",
+      "properties": {
+        "primary_constitution": {
+          "type": "string",
+          "enum": [
+            "balanced",
+            "qi_deficiency",
+            "yang_deficiency",
+            "yin_deficiency",
+            "phlegm_dampness",
+            "damp_heat",
+            "blood_stasis",
+            "qi_stagnation",
+            "special_constitution"
+          ]
+        },
+        "secondary_constitutions": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "assessment_date": {"type": "string", "format": "date"}
+      }
+    },
+
+    "user_profile": {
+      "type": "object",
+      "description": "用户基本信息",
+      "properties": {
+        "age": {"type": "integer"},
+        "gender": {"type": "string"},
+        "occupation": {"type": "string"},
+        "health_goals": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "goal_clarity_score": {"type": "number", "minimum": 0, "maximum": 100},
+        "social_support_score": {"type": "number", "minimum": 0, "maximum": 100},
+        "preferences": {
+          "type": "object",
+          "properties": {
+            "preferred_exercise_types": {"type": "array", "items": {"type": "string"}},
+            "dietary_restrictions": {"type": "array", "items": {"type": "string"}},
+            "preferred_intervention_time": {"type": "string"},
+            "notification_preferences": {"type": "object"}
+          }
+        }
+      }
+    }
+  }
+}

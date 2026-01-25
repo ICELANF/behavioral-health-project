@@ -2,6 +2,8 @@
 .venv/
 venv/
 env/
+*/.venv/
+*/venv/
 
 # Python cache
 __pycache__/
@@ -9,18 +11,59 @@ __pycache__/
 *$py.class
 *.so
 
-# Vector database (large files, can be regenerated)
-data/vectordb/
+# Node modules
+node_modules/
+*/node_modules/
+
+# Environment files (secrets)
+.env
+.env.*
+!.env.example
+
+# Docker volumes (data)
+volumes/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+.claude/
+CodeBuddy/
+
+# Obsidian
+.obsidian/
 
 # OS
 .DS_Store
 Thumbs.db
+nul
 
 # Logs
 *.log
+logs/
+
+# Vector database (large files, can be regenerated)
+data/vectordb/
+
+# Temp files
+temp_*.txt
+*.tmp
+
+# Build outputs
+dist/
+build/
+*.egg-info/
+
+# Large model files
+ollama_models/
+
+# Test outputs
+*.docx
+test-chat.json
+
+# Dify source code (use submodule or separate repo)
+dify/
+
+# Smart Environment
+.smart-env

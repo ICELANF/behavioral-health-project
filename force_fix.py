@@ -1,0 +1,14 @@
+import json
+import os
+
+data = {
+    "xingjian_coach": {
+        "name": "行健教练",
+        "role": "程序员颈椎康复专家",
+        "instructions": "专注行为干预，推荐麦肯基伸展法。"
+    }
+}
+
+paths = [
+    r"D:\behavioral-health-project\experts.json",
+    r"D:\behavioral

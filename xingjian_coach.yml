@@ -1,0 +1,44 @@
+app-QCFUzK1Fp05DD2OrlqkbVYx5
+  description: "行健教练-核心闭环：包含 TTM 评估与麦肯基处方逻辑"
+  icon: 🤖
+  mode: workflow
+  name: 行健教练-核心版
+workflow:
+  graph:
+    nodes:
+      - id: start
+        data:
+          type: start
+          variables:
+            - variable: query
+              type: string
+              required: true
+      - id: assessor
+        data:
+          type: llm
+          title: "A1 TTM 评估官"
+          model:
+            provider: ollama
+            name: qwen2.5:14b
+          prompt_template:
+            prompt: "你是一个 TTM 评估专家... (此处粘贴你 PROMPT_A1 的全文)"
+      - id: prescriber
+        data:
+          type: llm
+          title: "A2 麦肯基处方师"
+          model:
+            provider: ollama
+            name: qwen2.5:14b
+          variables:
+            - variable: stage
+              value_selector: [assessor, text]
+            - variable: query
+              value_selector: [sys, query]
+          prompt_template:
+            prompt: "你是一个麦肯基治疗专家... {{stage}} {{query}} (此处粘贴你 PROMPT_A2 的全文)"
+      - id: answer
+        data:
+          type: end
+          outputs:
+            - variable: answer
+              value_selector: [prescriber, text]

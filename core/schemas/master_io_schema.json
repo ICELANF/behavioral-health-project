@@ -1,0 +1,406 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "master_agent_io_v1.0",
+  "title": "Master Agent 输入输出 Schema",
+  "description": "定义 Master Agent 的标准输入输出数据格式",
+
+  "definitions": {
+    "CGMData": {
+      "type": "object",
+      "description": "连续血糖监测数据 (Continuous Glucose Monitoring)",
+      "properties": {
+        "current_glucose": {"type": "number", "description": "当前血糖 mg/dL"},
+        "trend": {"type": "string", "enum": ["rising_fast", "rising", "stable", "falling", "falling_fast"]},
+        "time_in_range_percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "avg_glucose_24h": {"type": "number"},
+        "high_events_24h": {"type": "integer", "description": ">180 mg/dL 次数"},
+        "low_events_24h": {"type": "integer", "description": "<70 mg/dL 次数"},
+        "gmi": {"type": "number", "description": "血糖管理指标 GMI"},
+        "cv": {"type": "number", "description": "血糖变异系数 CV%"}
+      }
+    },
+
+    "HRVData": {
+      "type": "object",
+      "description": "心率变异性数据",
+      "properties": {
+        "sdnn": {"type": "number", "description": "ms, 正常范围 50-100"},
+        "rmssd": {"type": "number", "description": "ms"},
+        "lf_hf_ratio": {"type": "number"},
+        "stress_index": {"type": "number", "minimum": 0, "maximum": 100},
+        "recovery_score": {"type": "number", "minimum": 0, "maximum": 100},
+        "readiness_score": {"type": "number", "minimum": 0, "maximum": 100}
+      }
+    },
+
+    "SleepData": {
+      "type": "object",
+      "description": "睡眠数据",
+      "properties": {
+        "duration_hours": {"type": "number"},
+        "quality_score": {"type": "number", "minimum": 0, "maximum": 100},
+        "deep_sleep_percent": {"type": "number"},
+        "rem_percent": {"type": "number"},
+        "light_sleep_percent": {"type": "number"},
+        "awakenings": {"type": "integer"},
+        "sleep_onset_latency_min": {"type": "number"},
+        "sleep_efficiency": {"type": "number", "minimum": 0, "maximum": 100},
+        "bed_time": {"type": "string", "format": "time"},
+        "wake_time": {"type": "string", "format": "time"}
+      }
+    },
+
+    "DeviceData": {
+      "type": "object",
+      "description": "穿戴设备综合数据",
+      "properties": {
+        "cgm": {"$ref": "#/definitions/CGMData"},
+        "hrv": {"$ref": "#/definitions/HRVData"},
+        "steps": {"type": "integer"},
+        "sleep": {"$ref": "#/definitions/SleepData"},
+        "heart_rate": {
+          "type": "object",
+          "properties": {
+            "current": {"type": "integer"},
+            "resting": {"type": "integer"},
+            "max_today": {"type": "integer"}
+          }
+        },
+        "calories_burned": {"type": "integer"},
+        "active_minutes": {"type": "integer"},
+        "stress_level": {"type": "number", "minimum": 0, "maximum": 100},
+        "body_battery": {"type": "number", "minimum": 0, "maximum": 100},
+        "spo2": {"type": "number", "minimum": 0, "maximum": 100}
+      }
+    }
+  },
+
+  "input_schema": {
+    "type": "object",
+    "title": "Master Agent 输入",
+    "required": ["user_id", "input_type", "timestamp"],
+    "properties": {
+      "user_id": {
+        "type": "string",
+        "description": "用户唯一标识"
+      },
+      "input_type": {
+        "type": "string",
+        "enum": ["text", "voice", "device", "form", "assessment", "task_report"],
+        "description": "输入类型"
+      },
+      "content": {
+        "type": "string",
+        "description": "用户输入内容 (文本/语音转文字)"
+      },
+      "timestamp": {
+        "type": "string",
+        "format": "date-time",
+        "description": "请求时间戳"
+      },
+      "session_id": {
+        "type": "string",
+        "description": "会话ID，用于上下文关联"
+      },
+      "device_data": {
+        "$ref": "#/definitions/DeviceData"
+      },
+      "form_data": {
+        "type": "object",
+        "description": "表单数据 (问卷/评估)",
+        "properties": {
+          "form_type": {"type": "string", "enum": ["efficacy", "mood", "symptom", "assessment", "feedback"]},
+          "responses": {"type": "object"}
+        }
+      },
+      "efficacy_score": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100,
+        "description": "用户自评效能感"
+      },
+      "context": {
+        "type": "object",
+        "description": "附加上下文",
+        "properties": {
+          "source": {"type": "string", "enum": ["app", "wechat", "web", "api"]},
+          "platform": {"type": "string"},
+          "locale": {"type": "string"},
+          "timezone": {"type": "string"}
+        }
+      }
+    }
+  },
+
+  "output_schema": {
+    "type": "object",
+    "title": "Master Agent 输出",
+    "required": ["session_id", "user_id", "timestamp", "response"],
+    "properties": {
+      "session_id": {
+        "type": "string"
+      },
+      "user_id": {
+        "type": "string"
+      },
+      "timestamp": {
+        "type": "string",
+        "format": "date-time"
+      },
+      "routing": {
+        "type": "object",
+        "description": "路由决策信息",
+        "properties": {
+          "input_type": {"type": "string"},
+          "risk_level": {"type": "string", "enum": ["critical", "high", "moderate", "low"]},
+          "risk_score": {"type": "number", "minimum": 0, "maximum": 100},
+          "risk_factors": {"type": "array", "items": {"type": "string"}},
+          "primary_agent": {"type": "string"},
+          "secondary_agents": {"type": "array", "items": {"type": "string"}},
+          "requires_intervention": {"type": "boolean"}
+        }
+      },
+      "response": {
+        "type": "object",
+        "description": "合成后的响应",
+        "properties": {
+          "text": {"type": "string", "description": "响应文本"},
+          "coach_style": {"type": "string", "enum": ["empathetic", "supportive", "motivational", "educational"]},
+          "tone": {"type": "string"},
+          "key_messages": {"type": "array", "items": {"type": "string"}},
+          "action_items": {"type": "array", "items": {"type": "string"}},
+          "follow_up_questions": {"type": "array", "items": {"type": "string"}}
+        }
+      },
+      "insights": {
+        "type": "object",
+        "description": "数据洞察",
+        "properties": {
+          "health_summary": {"type": "string"},
+          "alerts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {"type": "string"},
+                "severity": {"type": "string", "enum": ["info", "warning", "critical"]},
+                "message": {"type": "string"},
+                "recommendation": {"type": "string"}
+              }
+            }
+          },
+          "trends": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "metric": {"type": "string"},
+                "direction": {"type": "string", "enum": ["improving", "stable", "declining"]},
+                "change_percent": {"type": "number"},
+                "interpretation": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "intervention_plan": {
+        "type": "object",
+        "description": "干预计划",
+        "properties": {
+          "plan_id": {"type": "string"},
+          "strategy": {"type": "string"},
+          "difficulty_level": {"type": "integer", "minimum": 1, "maximum": 5},
+          "duration_days": {"type": "integer"},
+          "coach_script": {"type": "string"}
+        }
+      },
+      "daily_tasks": {
+        "type": "array",
+        "description": "今日任务列表",
+        "items": {
+          "type": "object",
+          "properties": {
+            "task_id": {"type": "string"},
+            "title": {"type": "string"},
+            "description": {"type": "string"},
+            "type": {"type": "string", "enum": ["breathing", "meditation", "exercise", "nutrition", "sleep", "social", "cognitive"]},
+            "difficulty": {"type": "integer", "minimum": 1, "maximum": 5},
+            "duration_minutes": {"type": "integer"},
+            "scheduled_time": {"type": "string"},
+            "priority": {"type": "integer"},
+            "resources": {
+              "type": "object",
+              "properties": {
+                "knowledge_link": {"type": "string"},
+                "video_link": {"type": "string"},
+                "product_id": {"type": "string"}
+              }
+            },
+            "tracking_points": {"type": "array", "items": {"type": "string"}},
+            "completion_criteria": {"type": "string"}
+          }
+        }
+      },
+      "tracking": {
+        "type": "object",
+        "description": "追踪信息",
+        "properties": {
+          "points": {"type": "array", "items": {"type": "string"}},
+          "next_check_in": {"type": "string", "format": "date-time"},
+          "reminders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "time": {"type": "string"},
+                "message": {"type": "string"}
+              }
+            }
+          }
+        }
+      },
+      "profile_updates": {
+        "type": "object",
+        "description": "画像更新摘要",
+        "properties": {
+          "updated_fields": {"type": "array", "items": {"type": "string"}},
+          "new_risk_flags": {"type": "array", "items": {"type": "string"}},
+          "stage_change": {"type": "boolean"},
+          "efficacy_change": {"type": "number"}
+        }
+      },
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "processing_time_ms": {"type": "number"},
+          "agents_consulted": {"type": "array", "items": {"type": "string"}},
+          "model_version": {"type": "string"}
+        }
+      }
+    }
+  },
+
+  "examples": {
+    "input_example": {
+      "user_id": "U12345",
+      "input_type": "text",
+      "content": "最近晚上总是睡不好，血糖也高",
+      "timestamp": "2026-01-23T10:12:00",
+      "session_id": "sess_abc123",
+      "efficacy_score": 45,
+      "device_data": {
+        "cgm": {
+          "current_glucose": 145,
+          "trend": "stable",
+          "time_in_range_percent": 68,
+          "avg_glucose_24h": 138,
+          "high_events_24h": 3,
+          "low_events_24h": 0
+        },
+        "hrv": {
+          "sdnn": 42,
+          "rmssd": 28,
+          "stress_index": 65,
+          "recovery_score": 55
+        },
+        "steps": 5321,
+        "sleep": {
+          "duration_hours": 5.5,
+          "quality_score": 58,
+          "deep_sleep_percent": 12,
+          "awakenings": 4
+        }
+      },
+      "context": {
+        "source": "app",
+        "platform": "ios",
+        "timezone": "Asia/Shanghai"
+      }
+    },
+
+    "output_example": {
+      "session_id": "sess_abc123",
+      "user_id": "U12345",
+      "timestamp": "2026-01-23T10:12:05",
+      "routing": {
+        "input_type": "text",
+        "risk_level": "moderate",
+        "risk_score": 52,
+        "risk_factors": ["睡眠不足: 5.5小时", "HRV SDNN 偏低: 42ms", "血糖波动: TIR 68%"],
+        "primary_agent": "mental_health",
+        "secondary_agents": ["nutrition"],
+        "requires_intervention": true
+      },
+      "response": {
+        "text": "我注意到您最近睡眠和血糖都不太理想，这两者其实是相互影响的。睡眠不足会影响胰岛素敏感性，让血糖更难控制；而血糖波动也会影响睡眠质量。\n\n从您的数据来看，昨晚只睡了5.5小时，深度睡眠也偏少。我们先从改善睡眠入手，这样血糖管理也会更轻松。\n\n今天我给您安排了一个简单的任务，晚上试试看？",
+        "coach_style": "supportive",
+        "tone": "empathetic",
+        "key_messages": ["睡眠与血糖相互影响", "从睡眠改善入手"],
+        "action_items": ["今晚10:30前上床", "睡前做5分钟呼吸练习"],
+        "follow_up_questions": ["您平时几点睡觉？", "睡前有使用手机的习惯吗？"]
+      },
+      "insights": {
+        "health_summary": "睡眠质量下降影响代谢调节，建议优先改善睡眠",
+        "alerts": [
+          {
+            "type": "sleep",
+            "severity": "warning",
+            "message": "连续睡眠不足，深度睡眠比例偏低",
+            "recommendation": "建议调整作息，增加睡前放松"
+          },
+          {
+            "type": "glucose",
+            "severity": "info",
+            "message": "血糖时间在范围内比例略低于目标",
+            "recommendation": "配合睡眠改善后观察变化"
+          }
+        ],
+        "trends": [
+          {
+            "metric": "sleep_quality",
+            "direction": "declining",
+            "change_percent": -15,
+            "interpretation": "近一周睡眠质量下降15%"
+          }
+        ]
+      },
+      "daily_tasks": [
+        {
+          "task_id": "task_20260123_001",
+          "title": "睡前呼吸放松",
+          "description": "躺在床上，进行4-7-8呼吸法：吸气4秒，屏住7秒，呼气8秒，重复4次",
+          "type": "breathing",
+          "difficulty": 1,
+          "duration_minutes": 5,
+          "scheduled_time": "22:30",
+          "priority": 1,
+          "resources": {
+            "knowledge_link": "/knowledge/sleep/breathing-478",
+            "video_link": "/videos/breathing-relaxation-5min"
+          },
+          "tracking_points": ["完成时间", "入睡感受"],
+          "completion_criteria": "完成4轮呼吸练习"
+        }
+      ],
+      "tracking": {
+        "points": ["今晚睡眠时长", "明早血糖", "呼吸练习完成情况"],
+        "next_check_in": "2026-01-24T08:00:00",
+        "reminders": [
+          {"time": "22:00", "message": "准备开始睡前放松啦～"},
+          {"time": "22:25", "message": "5分钟后开始呼吸练习"}
+        ]
+      },
+      "profile_updates": {
+        "updated_fields": ["physiological_state.sleep", "physiological_state.cgm", "computed_indicators.risk_flags"],
+        "new_risk_flags": ["睡眠质量下降"],
+        "stage_change": false,
+        "efficacy_change": 0
+      },
+      "metadata": {
+        "processing_time_ms": 1250,
+        "agents_consulted": ["mental_health", "nutrition"],
+        "model_version": "xingjian-coach-v1.0"
+      }
+    }
+  }
+}

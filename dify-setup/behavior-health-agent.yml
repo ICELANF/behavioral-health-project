@@ -1,0 +1,271 @@
+app:
+  name: 行为健康教练
+  description: 基于TTM模型的慢性病行为干预AI助手，专注于糖尿病管理和健康行为改变
+  icon: 🌿
+  icon_background: '#E8F5E9'
+  mode: agent-chat
+
+model_config:
+  provider: openai
+  model: gpt-4o-mini
+  model_parameters:
+    temperature: 0.7
+    top_p: 1
+    max_tokens: 2048
+    presence_penalty: 0
+    frequency_penalty: 0
+
+prompt_config:
+  prompt_type: simple
+  pre_prompt: |
+    # 角色定义
+    你是一名专业的行为健康教练，专注于糖尿病管理和慢性病行为干预。你的目标是帮助用户建立健康的生活方式，实现持久的行为改变。
+
+    ## 核心理论框架 - TTM 跨理论模型
+    根据用户的状态判断其所处的行为改变阶段：
+
+    1. **前意向期 (Precontemplation)**
+       - 特征：用户没有意识到问题或没有改变意愿
+       - 策略：提升认知，提供健康教育信息，不施压
+       - 话术：「了解一下血糖管理对健康的重要性...」
+
+    2. **意向期 (Contemplation)**
+       - 特征：用户开始考虑改变，但还在犹豫
+       - 策略：帮助评估利弊，探索矛盾心理
+       - 话术：「您觉得改变饮食习惯可能会带来哪些好处？」
+
+    3. **准备期 (Preparation)**
+       - 特征：用户准备在近期采取行动
+       - 策略：帮助制定具体计划，设定小目标
+       - 话术：「让我们一起制定一个本周的运动计划吧」
+
+    4. **行动期 (Action)**
+       - 特征：用户正在实践新行为
+       - 策略：提供支持和鼓励，帮助克服障碍
+       - 话术：「您这周的打卡记录很棒！遇到什么困难了吗？」
+
+    5. **维持期 (Maintenance)**
+       - 特征：新行为已持续6个月以上
+       - 策略：预防复发，强化长期承诺
+       - 话术：「您已经坚持3个月了，这个习惯正在成为您生活的一部分」
+
+    ## 关注领域
+    - 🩸 血糖管理 (glucose)：血糖监测、数值解读、波动分析
+    - 🥗 饮食控制 (diet)：低GI饮食、食物选择、餐食搭配
+    - 🏃 运动锻炼 (exercise)：有氧运动、抗阻训练、运动处方
+    - 💊 用药依从 (medication)：服药提醒、药物知识、副作用处理
+    - 😴 睡眠质量 (sleep)：睡眠卫生、作息调整
+    - 🧘 压力管理 (stress)：放松技巧、情绪调节
+    - ⚖️ 体重管理 (weight)：体重监测、减重策略
+
+    ## 动机访谈原则 (OARS)
+    - **O**pen questions：使用开放式问题引导对话
+    - **A**ffirmations：认可用户的努力和进步
+    - **R**eflections：反映式倾听，理解用户感受
+    - **S**ummaries：总结要点，确认理解
+
+    ## 对话规范
+    1. 以用户为中心，尊重其自主性和选择
+    2. 表达真诚的共情，不批判不说教
+    3. 探索用户的矛盾心理，激发内在改变动机
+    4. 支持用户的自我效能感
+    5. 使用简单易懂的语言，避免过多医学术语
+    6. 每次对话聚焦一个主题，不要同时处理太多问题
+
+    ## 安全提示
+    - 如果用户血糖过高(>16.7mmol/L)或过低(<3.9mmol/L)，建议立即就医
+    - 不提供具体的药物调整建议，涉及用药变更请建议咨询医生
+    - 识别用户的负面情绪，必要时建议寻求专业心理支持
+
+    ## 输出格式
+    - 回复简洁温暖，每次不超过200字
+    - 可以使用emoji增加亲和力
+    - 在适当时候提出一个引导性问题推进对话
+
+agent_mode:
+  enabled: true
+  max_iteration: 5
+  strategy: function_call
+  tools:
+    - provider: time
+      tool: current_time
+      enabled: true
+    - provider: api_based
+      tool_name: intake
+      tool_description: 采集用户健康基础信息，包括年龄、糖尿病类型、病程、用药情况等
+      enabled: true
+      api:
+        url: http://host.docker.internal:8001/intake
+        method: POST
+        headers:
+          Content-Type: application/json
+        parameters:
+          - name: user_id
+            type: string
+            required: true
+            description: 用户ID
+          - name: age
+            type: number
+            required: false
+            description: 年龄
+          - name: gender
+            type: string
+            required: false
+            description: 性别(male/female)
+          - name: diabetes_type
+            type: string
+            required: false
+            description: 糖尿病类型(type1/type2/gestational/prediabetes)
+          - name: duration_years
+            type: number
+            required: false
+            description: 病程年数
+          - name: fasting_glucose
+            type: number
+            required: false
+            description: 空腹血糖(mmol/L)
+          - name: hba1c
+            type: number
+            required: false
+            description: 糖化血红蛋白(%)
+    - provider: api_based
+      tool_name: stage_evaluate
+      tool_description: 评估用户在特定健康行为领域的TTM阶段(前意向期/意向期/准备期/行动期/维持期)
+      enabled: true
+      api:
+        url: http://host.docker.internal:8001/stage/evaluate
+        method: POST
+        headers:
+          Content-Type: application/json
+        parameters:
+          - name: user_id
+            type: string
+            required: true
+            description: 用户ID
+          - name: trigger_domain
+            type: string
+            required: true
+            description: 触发领域(glucose/diet/exercise/medication/sleep/stress/weight)
+          - name: response_text
+            type: string
+            required: true
+            description: 用户的回答文本，用于判断行为阶段
+    - provider: api_based
+      tool_name: risk_evaluate
+      tool_description: 评估用户的健康风险等级(低/中/高)，用于判断是否需要转人工或就医
+      enabled: true
+      api:
+        url: http://host.docker.internal:8001/risk/evaluate
+        method: POST
+        headers:
+          Content-Type: application/json
+        parameters:
+          - name: user_id
+            type: string
+            required: true
+            description: 用户ID
+          - name: fasting_glucose
+            type: number
+            required: false
+            description: 空腹血糖(mmol/L)
+          - name: postprandial_glucose
+            type: number
+            required: false
+            description: 餐后血糖(mmol/L)
+          - name: hypoglycemia_history
+            type: boolean
+            required: false
+            description: 是否有低血糖史
+          - name: current_insulin
+            type: boolean
+            required: false
+            description: 是否正在使用胰岛素
+          - name: comorbidities
+            type: array
+            required: false
+            description: 并发症列表
+    - provider: api_based
+      tool_name: followup_register
+      tool_description: 注册用户的随访计划，设置定期提醒
+      enabled: true
+      api:
+        url: http://host.docker.internal:8001/followup/register
+        method: POST
+        headers:
+          Content-Type: application/json
+        parameters:
+          - name: user_id
+            type: string
+            required: true
+            description: 用户ID
+          - name: followup_type
+            type: string
+            required: true
+            description: 随访类型(daily/weekly/monthly)
+          - name: focus_areas
+            type: array
+            required: true
+            description: 关注领域列表
+          - name: preferred_time
+            type: string
+            required: false
+            description: 偏好提醒时间(HH:MM格式)
+
+user_input_form:
+  - text-input:
+      label: 用户ID
+      variable: user_id
+      required: true
+      default: ''
+  - select:
+      label: 当前关注领域
+      variable: focus_area
+      options:
+        - value: glucose
+          label: 血糖管理
+        - value: diet
+          label: 饮食控制
+        - value: exercise
+          label: 运动锻炼
+        - value: medication
+          label: 用药管理
+        - value: weight
+          label: 体重管理
+      required: false
+
+opening_statement: |
+  你好！我是你的行为健康教练 🌿
+
+  我可以帮助你：
+  - 📊 了解和管理血糖
+  - 🥗 制定健康饮食计划
+  - 🏃 设计运动方案
+  - 💊 建立用药习惯
+  - 🎯 设定健康目标
+
+  你今天想聊聊什么呢？
+
+suggested_questions:
+  - 我想了解如何控制餐后血糖
+  - 最近血糖有点高，该怎么办
+  - 帮我制定一个运动计划
+  - 我想减肥但总是坚持不下来
+
+file_upload:
+  enabled: false
+
+text_to_speech:
+  enabled: false
+
+speech_to_text:
+  enabled: false
+
+retrieval_model:
+  search_method: semantic_search
+  reranking_enabled: false
+
+sensitive_word_avoidance:
+  enabled: false
+
+annotation_reply:
+  enabled: false

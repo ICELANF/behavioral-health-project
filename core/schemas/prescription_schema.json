@@ -1,0 +1,379 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "prescription_package_v1.0",
+  "title": "行为处方包 (Prescription Package)",
+  "description": "自适应行为健康干预处方的完整输出结构",
+  "type": "object",
+  "required": ["prescription_id", "user_id", "created_at", "assessment_summary", "prescription_content"],
+
+  "properties": {
+    "prescription_id": {
+      "type": "string",
+      "description": "处方唯一标识",
+      "pattern": "^RX-[0-9]{8}-[A-Z0-9]{6}$",
+      "example": "RX-20260119-A1B2C3"
+    },
+
+    "user_id": {
+      "type": "string",
+      "description": "用户唯一标识"
+    },
+
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "处方生成时间"
+    },
+
+    "valid_until": {
+      "type": "string",
+      "format": "date-time",
+      "description": "处方有效期"
+    },
+
+    "version": {
+      "type": "string",
+      "default": "1.0",
+      "description": "处方版本号"
+    },
+
+    "assessment_summary": {
+      "type": "object",
+      "description": "评估摘要 (输入层 + 解析层输出)",
+      "required": ["physiological", "psychological", "behavior_pattern", "change_stage", "motivation"],
+      "properties": {
+        "physiological": {
+          "type": "object",
+          "description": "生理指标",
+          "properties": {
+            "hrv_sdnn": {"type": "number", "description": "心率变异性SDNN (ms)"},
+            "hrv_rmssd": {"type": "number", "description": "心率变异性RMSSD (ms)"},
+            "resting_hr": {"type": "number", "description": "静息心率 (bpm)"},
+            "sleep_quality": {"type": "number", "minimum": 0, "maximum": 100},
+            "sleep_duration": {"type": "number", "description": "睡眠时长 (小时)"},
+            "daily_steps": {"type": "integer"},
+            "data_source": {"type": "string", "enum": ["wearable", "manual", "excel", "pdf"]}
+          }
+        },
+
+        "psychological": {
+          "type": "object",
+          "description": "心理指标",
+          "properties": {
+            "anxiety_score": {"type": "number", "minimum": 0, "maximum": 100},
+            "depression_score": {"type": "number", "minimum": 0, "maximum": 100},
+            "stress_score": {"type": "number", "minimum": 0, "maximum": 100},
+            "scl90": {
+              "type": "object",
+              "properties": {
+                "total_score": {"type": "number"},
+                "somatization": {"type": "number"},
+                "obsessive_compulsive": {"type": "number"},
+                "interpersonal_sensitivity": {"type": "number"},
+                "depression": {"type": "number"},
+                "anxiety": {"type": "number"},
+                "hostility": {"type": "number"},
+                "phobic_anxiety": {"type": "number"},
+                "paranoid_ideation": {"type": "number"},
+                "psychoticism": {"type": "number"}
+              }
+            },
+            "energy_level": {"type": "number", "minimum": 0, "maximum": 100},
+            "mood_score": {"type": "number", "minimum": 0, "maximum": 100},
+            "assessment_tool": {"type": "string"}
+          }
+        },
+
+        "behavior_pattern": {
+          "type": "object",
+          "description": "行为模式判定",
+          "properties": {
+            "primary_pattern": {
+              "type": "string",
+              "enum": ["overcompensation", "stress_avoidance", "somatization", "emotional_dysregulation", "balanced"]
+            },
+            "secondary_patterns": {
+              "type": "array",
+              "items": {"type": "string"}
+            },
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "matching_indicators": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "indicator": {"type": "string"},
+                  "value": {"type": "number"},
+                  "contribution": {"type": "number"}
+                }
+              }
+            }
+          }
+        },
+
+        "change_stage": {
+          "type": "object",
+          "description": "改变阶段判定",
+          "properties": {
+            "current_stage": {
+              "type": "string",
+              "enum": ["precontemplation", "contemplation", "preparation", "action", "maintenance"]
+            },
+            "stage_name": {"type": "string"},
+            "detection_evidence": {
+              "type": "object",
+              "properties": {
+                "assessment_count": {"type": "integer"},
+                "consecutive_improvements": {"type": "integer"},
+                "task_completion_rate": {"type": "number"},
+                "engagement_score": {"type": "number"}
+              }
+            },
+            "recommended_strategy": {"type": "string"}
+          }
+        },
+
+        "motivation": {
+          "type": "object",
+          "description": "动机强度评估",
+          "properties": {
+            "score": {"type": "number", "minimum": 0, "maximum": 100},
+            "level": {"type": "string", "enum": ["low", "moderate", "high"]},
+            "components": {
+              "type": "object",
+              "properties": {
+                "energy_mood_match": {"type": "number"},
+                "goal_clarity": {"type": "number"},
+                "past_success": {"type": "number"},
+                "social_support": {"type": "number"}
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "prescription_content": {
+      "type": "object",
+      "description": "处方内容 (策略层 + 输出层)",
+      "required": ["guidance", "tasks"],
+      "properties": {
+        "guidance": {
+          "type": "object",
+          "description": "指导意见",
+          "properties": {
+            "summary": {"type": "string", "description": "核心建议摘要 (100字内)"},
+            "detailed_advice": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "expert": {"type": "string"},
+                  "advice": {"type": "string"},
+                  "priority": {"type": "integer", "minimum": 1, "maximum": 5}
+                }
+              }
+            },
+            "warnings": {
+              "type": "array",
+              "items": {"type": "string"},
+              "description": "注意事项和安全提醒"
+            },
+            "tone": {
+              "type": "string",
+              "enum": ["gentle_informative", "encouraging", "practical", "supportive", "empowering"]
+            }
+          }
+        },
+
+        "tasks": {
+          "type": "array",
+          "description": "限幅后的任务列表",
+          "items": {
+            "type": "object",
+            "required": ["task_id", "content", "difficulty", "type"],
+            "properties": {
+              "task_id": {"type": "string"},
+              "content": {"type": "string", "description": "任务描述"},
+              "difficulty": {"type": "integer", "minimum": 1, "maximum": 5},
+              "type": {
+                "type": "string",
+                "enum": ["mental", "physical", "nutrition", "social", "tcm", "general"]
+              },
+              "duration_minutes": {"type": "integer"},
+              "frequency": {"type": "string", "description": "如: 每日1次, 每周3次"},
+              "time_suggestion": {"type": "string", "description": "建议执行时间"},
+              "expert_source": {"type": "string"},
+              "linked_knowledge": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "关联知识点ID"
+              },
+              "linked_video": {"type": "string", "description": "关联视频ID"},
+              "linked_product": {"type": "string", "description": "关联产品ID"}
+            }
+          }
+        },
+
+        "knowledge": {
+          "type": "array",
+          "description": "知识点列表",
+          "items": {
+            "type": "object",
+            "properties": {
+              "knowledge_id": {"type": "string"},
+              "title": {"type": "string"},
+              "category": {
+                "type": "string",
+                "enum": ["sleep", "nutrition", "exercise", "mental_health", "tcm", "lifestyle"]
+              },
+              "summary": {"type": "string", "maxLength": 200},
+              "content_url": {"type": "string", "format": "uri"},
+              "reading_time_minutes": {"type": "integer"},
+              "difficulty_level": {"type": "string", "enum": ["beginner", "intermediate", "advanced"]}
+            }
+          }
+        },
+
+        "videos": {
+          "type": "array",
+          "description": "教学视频列表",
+          "items": {
+            "type": "object",
+            "properties": {
+              "video_id": {"type": "string"},
+              "title": {"type": "string"},
+              "category": {"type": "string"},
+              "duration_seconds": {"type": "integer"},
+              "thumbnail_url": {"type": "string", "format": "uri"},
+              "video_url": {"type": "string", "format": "uri"},
+              "instructor": {"type": "string"},
+              "description": {"type": "string"}
+            }
+          }
+        },
+
+        "products": {
+          "type": "array",
+          "description": "商城产品推荐",
+          "items": {
+            "type": "object",
+            "properties": {
+              "product_id": {"type": "string"},
+              "name": {"type": "string"},
+              "category": {"type": "string"},
+              "description": {"type": "string"},
+              "price": {"type": "number"},
+              "currency": {"type": "string", "default": "CNY"},
+              "image_url": {"type": "string", "format": "uri"},
+              "purchase_url": {"type": "string", "format": "uri"},
+              "recommendation_reason": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+
+    "clamping_info": {
+      "type": "object",
+      "description": "效能限幅信息",
+      "properties": {
+        "input_efficacy": {"type": "number", "minimum": 0, "maximum": 100},
+        "final_efficacy": {"type": "number", "minimum": 0, "maximum": 100},
+        "clamping_level": {"type": "string", "enum": ["strict", "moderate", "relaxed", "none"]},
+        "max_tasks_allowed": {"type": "integer"},
+        "max_difficulty_allowed": {"type": "integer"},
+        "wearable_adjustment": {
+          "type": "object",
+          "properties": {
+            "applied": {"type": "boolean"},
+            "reason": {"type": "string"},
+            "hr_impact": {"type": "number"}
+          }
+        },
+        "reasoning_path": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "phase": {"type": "string"},
+              "input": {"type": "string"},
+              "output": {"type": "string"},
+              "decision": {"type": "string"},
+              "timestamp": {"type": "string", "format": "date-time"}
+            }
+          }
+        }
+      }
+    },
+
+    "feedback_tracking": {
+      "type": "object",
+      "description": "反馈追踪 (反馈层)",
+      "properties": {
+        "tracking_id": {"type": "string"},
+        "baseline_metrics": {
+          "type": "object",
+          "description": "基线指标 (处方生成时)",
+          "additionalProperties": {"type": "number"}
+        },
+        "checkpoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "checkpoint_date": {"type": "string", "format": "date"},
+              "days_since_prescription": {"type": "integer"},
+              "metrics_snapshot": {
+                "type": "object",
+                "additionalProperties": {"type": "number"}
+              },
+              "task_completion": {
+                "type": "object",
+                "properties": {
+                  "completed": {"type": "integer"},
+                  "total": {"type": "integer"},
+                  "rate": {"type": "number"}
+                }
+              },
+              "user_feedback": {
+                "type": "object",
+                "properties": {
+                  "satisfaction": {"type": "integer", "minimum": 1, "maximum": 5},
+                  "difficulty_perception": {"type": "string", "enum": ["too_easy", "appropriate", "too_hard"]},
+                  "comments": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "outcome": {
+          "type": "object",
+          "properties": {
+            "status": {"type": "string", "enum": ["in_progress", "completed", "expired", "replaced"]},
+            "improvement_score": {"type": "number", "description": "整体改善评分"},
+            "next_prescription_id": {"type": "string"}
+          }
+        }
+      }
+    },
+
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "generated_by": {"type": "string", "default": "xingjian_coach"},
+        "model_version": {"type": "string"},
+        "rules_version": {"type": "string"},
+        "primary_expert": {"type": "string"},
+        "consulted_experts": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "matched_rules": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    }
+  }
+}

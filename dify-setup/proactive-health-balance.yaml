@@ -1,0 +1,288 @@
+# ============================================================
+# Dify Agent 应用配置
+# 主动健康教练 - 吃动守恒
+# ============================================================
+
+version: 0.1.2
+kind: app
+
+app:
+  name: 主动健康教练
+  description: |
+    基于"吃动守恒"理念的智能健康管理助手。
+    帮助用户实现饮食摄入与运动消耗的动态平衡，
+    结合TTM行为改变模型，提供个性化健康指导。
+  icon: "\U0001F33F"
+  icon_background: '#E8F5E9'
+  mode: agent-chat
+  use_icon_as_answer_icon: true
+
+workflow: null
+
+model_config:
+  model:
+    provider: ollama
+    name: qwen2.5:14b
+    mode: chat
+    completion_params:
+      temperature: 0.7
+      top_p: 0.9
+      max_tokens: 1024
+
+  pre_prompt: |
+    # 角色定义
+    你是"主动健康教练"，专注于帮助用户实现"吃动守恒"的健康生活方式。
+
+    ## 核心理念：吃动守恒
+    健康的本质是能量平衡：
+    - **吃**：科学饮食，合理摄入
+    - **动**：规律运动，有效消耗
+    - **守恒**：摄入与消耗动态平衡
+
+    ### 能量平衡公式
+    - 摄入 = 消耗 → 体重稳定
+    - 摄入 > 消耗 → 体重增加
+    - 摄入 < 消耗 → 体重减少
+
+    ## 四大健康支柱
+
+    ### 🥗 科学饮食
+    - 低GI饮食原则
+    - 定时定量，三餐规律
+    - 控制总热量摄入
+    - 增加膳食纤维
+    - 减少精制碳水
+
+    ### 🏃 合理运动
+    - 有氧运动：每周150分钟
+    - 力量训练：每周2-3次
+    - 餐后30分钟轻度活动
+    - 循序渐进，持之以恒
+
+    ### 🩸 血糖管理
+    - 规律自我监测
+    - 空腹目标：4.4-7.0 mmol/L
+    - 餐后2h目标：<10.0 mmol/L
+    - 识别血糖波动规律
+
+    ### 🎯 行为改变（TTM模型）
+    根据用户所处阶段提供匹配的支持：
+
+    1. **前意向期**：提升认知，不施压
+    2. **意向期**：分析利弊，增强信心
+    3. **准备期**：制定计划，设定目标
+    4. **行动期**：持续支持，监测进度
+    5. **维持期**：预防复发，巩固习惯
+
+    ## 对话原则
+
+    ### 动机访谈技巧
+    - 使用开放式问题引导对话
+    - 认可用户的努力和进步
+    - 反映式倾听，理解感受
+    - 不批判不说教，尊重自主性
+    - 引发改变性谈话
+
+    ### 沟通风格
+    - 温暖亲切，像朋友一样交流
+    - 使用简单易懂的语言
+    - 适当使用emoji增加亲和力
+    - 给出具体可执行的建议
+    - 每次回复不超过200字
+
+    ## 安全边界
+
+    ### 风险预警
+    - 血糖 > 16.7 mmol/L → 建议立即就医
+    - 血糖 < 3.9 mmol/L → 立即补充糖分并就医
+    - 严重低血糖症状 → 紧急就医
+
+    ### 不提供
+    - 具体药物调整建议
+    - 替代医生的诊断
+    - 极端减肥方案
+
+    ### 需要转介
+    - 识别严重负面情绪
+    - 发现自伤倾向
+    - 需要专业心理支持
+
+    ## 回复格式示例
+
+    用户：我今天血糖有点高
+
+    教练：血糖偏高确实让人担心 😟 能告诉我具体数值吗？
+
+    另外想了解一下：
+    - 今天的饮食和平时有什么不同吗？
+    - 昨晚睡眠质量怎么样？
+
+    这些信息能帮我更好地分析原因，一起找到解决办法 💪
+
+  prompt_type: simple
+  chat_prompt_config: {}
+  completion_prompt_config: {}
+
+  user_input_form:
+    - text-input:
+        label: 用户ID
+        variable: user_id
+        required: true
+        max_length: 48
+        default: ''
+
+    - select:
+        label: 行为阶段
+        variable: behavior_stage
+        required: false
+        options:
+          - precontemplation
+          - contemplation
+          - preparation
+          - action
+          - maintenance
+        default: preparation
+
+    - select:
+        label: 主要关注
+        variable: focus_area
+        required: false
+        options:
+          - glucose
+          - diet
+          - exercise
+          - weight
+          - all
+        default: all
+
+  dataset_query_variable: ''
+
+  opening_statement: |
+    你好！我是你的主动健康教练 🌿
+
+    我相信健康的秘诀是**吃动守恒**——
+    科学饮食 + 合理运动 = 健康人生
+
+    我可以帮助你：
+    - 🥗 制定健康饮食计划
+    - 🏃 设计适合你的运动方案
+    - 🩸 分析血糖波动原因
+    - 🎯 建立持久的健康习惯
+    - 💪 陪伴你度过改变的每一步
+
+    今天想从哪个话题开始呢？
+
+  suggested_questions:
+    - 什么是吃动守恒？
+    - 帮我分析一下今天的饮食
+    - 我想开始运动但不知道从哪开始
+    - 血糖总是控制不好怎么办
+    - 我想减肥但总是坚持不下来
+
+  suggested_questions_after_answer:
+    enabled: true
+
+  speech_to_text:
+    enabled: false
+
+  text_to_speech:
+    enabled: false
+    language: ''
+    voice: ''
+
+  retriever_resource:
+    enabled: true
+
+  sensitive_word_avoidance:
+    enabled: true
+    configs:
+      - type: keywords
+        words:
+          - 自杀
+          - 自残
+
+  file_upload:
+    enabled: true
+    allowed_file_types:
+      - image
+    allowed_file_extensions:
+      - jpg
+      - jpeg
+      - png
+    allowed_file_upload_methods:
+      - local_file
+    number_limits: 3
+    image:
+      enabled: true
+      number_limits: 3
+      transfer_methods:
+        - local_file
+
+  annotation_reply:
+    enabled: false
+
+  more_like_this:
+    enabled: false
+
+  agent_mode:
+    enabled: true
+    max_iteration: 8
+    strategy: function_call
+    tools:
+      # HTTP工具 - 需要在Dify中手动配置
+      # 参考 http-tools-config.md
+
+# ============================================================
+# 知识库配置
+# ============================================================
+datasets:
+  - name: 糖尿病管理知识库
+    description: 糖尿病自我管理、血糖控制、并发症预防
+
+  - name: 低GI食物库
+    description: 食物GI值、热量、营养成分
+
+  - name: 运动处方库
+    description: 各类运动的消耗热量、适应症、注意事项
+
+  - name: TTM行为干预策略
+    description: 各阶段匹配的干预话术和策略
+
+# ============================================================
+# 工作流配置（可选）
+# ============================================================
+workflow_config:
+  # 评估工作流
+  assessment:
+    steps:
+      - name: 信息采集
+        action: intake
+        required_fields:
+          - age
+          - diabetes_type
+          - current_weight
+          - target_weight
+
+      - name: 阶段评估
+        action: stage_evaluate
+        domains:
+          - diet
+          - exercise
+          - glucose
+
+      - name: 风险评估
+        action: risk_evaluate
+
+      - name: 生成建议
+        action: generate_recommendations
+
+  # 随访工作流
+  followup:
+    triggers:
+      - daily_reminder
+      - weekly_summary
+      - monthly_review
+    actions:
+      - check_goals
+      - analyze_trends
+      - adjust_plan

@@ -1,0 +1,212 @@
+# 行健行为教练 - BAPS行为评估工作流
+# 版本: 1.0.0
+# 用途: 通过对话收集用户答案，调用BAPS API完成评估
+
+app:
+  description: |
+    行健行为教练 BAPS工作流
+    基于行为评估系统与处方（BAPS）进行用户行为评估
+    支持: 大五人格、BPT-6分型、CAPACITY潜力、SPI成功预测
+  icon: "🎯"
+  icon_background: "#E4FBCC"
+  mode: workflow
+  name: 行健行为评估系统
+  use_icon_as_answer_icon: true
+
+kind: app
+version: 0.1.3
+
+workflow:
+  conversation_variables: []
+  environment_variables:
+    - name: BAPS_API_URL
+      value: "http://host.docker.internal:8001"
+      description: "BAPS API服务地址"
+
+  graph:
+    edges:
+      - source: start
+        target: assessment_router
+      - source: assessment_router
+        target: bpt6_assessment
+        condition: "assessment_type == 'bpt6'"
+      - source: assessment_router
+        target: spi_assessment
+        condition: "assessment_type == 'spi'"
+      - source: assessment_router
+        target: full_assessment
+        condition: "assessment_type == 'full'"
+      - source: bpt6_assessment
+        target: generate_report
+      - source: spi_assessment
+        target: generate_report
+      - source: full_assessment
+        target: generate_report
+      - source: generate_report
+        target: end
+
+    nodes:
+      - data:
+          title: "开始"
+          type: start
+          desc: "接收用户评估请求"
+          variables:
+            - variable: user_input
+              label: 用户输入
+              type: string
+              required: true
+        id: start
+        position:
+          x: 0
+          y: 0
+        type: start
+
+      - data:
+          title: "评估类型路由"
+          type: llm
+          desc: "识别用户请求的评估类型"
+          model:
+            provider: ollama
+            name: qwen2.5:7b
+            mode: chat
+            completion_params:
+              temperature: 0.1
+          prompt_template: |
+            你是行健行为教练的评估助手。分析用户输入，判断需要进行哪种评估。
+
+            用户输入: {{user_input}}
+
+            可选评估类型:
+            1. bpt6 - 行为模式分型（快速，18题，了解行为类型）
+            2. spi - 成功可能性评估（中等，50题，预测成功率）
+            3. full - 完整综合评估（完整，150题，全面报告）
+
+            请只回复一个评估类型代码（bpt6/spi/full），不要其他内容。
+          output_variable: assessment_type
+        id: assessment_router
+        position:
+          x: 200
+          y: 0
+        type: llm
+
+      - data:
+          title: "BPT-6评估"
+          type: http-request
+          desc: "调用BAPS API进行行为分型评估"
+          method: POST
+          url: "{{BAPS_API_URL}}/test/full-assessment"
+          headers:
+            Content-Type: application/json
+          timeout: 60
+        id: bpt6_assessment
+        position:
+          x: 400
+          y: -100
+        type: http-request
+
+      - data:
+          title: "SPI评估"
+          type: http-request
+          desc: "调用BAPS API进行成功可能性评估"
+          method: POST
+          url: "{{BAPS_API_URL}}/test/full-assessment"
+          headers:
+            Content-Type: application/json
+          timeout: 60
+        id: spi_assessment
+        position:
+          x: 400
+          y: 0
+        type: http-request
+
+      - data:
+          title: "完整评估"
+          type: http-request
+          desc: "调用BAPS API进行综合评估"
+          method: POST
+          url: "{{BAPS_API_URL}}/test/full-assessment"
+          headers:
+            Content-Type: application/json
+          timeout: 120
+        id: full_assessment
+        position:
+          x: 400
+          y: 100
+        type: http-request
+
+      - data:
+          title: "生成报告"
+          type: llm
+          desc: "基于评估结果生成用户友好的报告"
+          model:
+            provider: ollama
+            name: qwen2.5:14b
+            mode: chat
+            completion_params:
+              temperature: 0.3
+          prompt_template: |
+            你是行健行为教练，请基于以下评估结果，用温暖专业的语气向用户解读报告。
+
+            评估结果:
+            {{#assessment_result}}
+
+            请用以下格式呈现:
+
+            ## 🎯 您的评估报告
+
+            ### 人格画像
+            [简要描述人格特点]
+
+            ### 行为类型
+            [解释主导行为类型及其特点]
+
+            ### 改变潜力
+            [评估改变准备度]
+
+            ### 成功预测
+            [SPI分数解读]
+
+            ### 💡 个性化建议
+            [3-5条具体可行的建议]
+
+            ---
+            *如需深入了解，可以询问具体问题*
+        id: generate_report
+        position:
+          x: 600
+          y: 0
+        type: llm
+
+      - data:
+          title: "结束"
+          type: end
+          desc: "返回评估报告"
+          outputs:
+            - variable: report
+              value: "{{generate_report.output}}"
+        id: end
+        position:
+          x: 800
+          y: 0
+        type: end
+
+  features:
+    file_upload:
+      image:
+        enabled: false
+    opening_statement: |
+      你好！我是行健行为教练 🎯
+
+      我可以帮你进行专业的行为评估，了解你的：
+      - **行为模式** - 你是行动型、知识型还是情绪型？
+      - **改变潜力** - 你准备好改变了吗？
+      - **成功可能性** - 预测你达成目标的概率
+
+      你想进行哪种评估？
+      1. 快速分型（3分钟）
+      2. 成功预测（8分钟）
+      3. 完整评估（15分钟）
+    suggested_questions:
+      - "帮我做一个快速的行为分型"
+      - "评估一下我改变习惯的成功率"
+      - "我想做一个完整的行为评估"

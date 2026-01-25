@@ -1,0 +1,123 @@
+version: 0.1.2
+kind: app
+app:
+  name: 行为健康教练
+  description: 基于TTM模型的慢性病行为干预AI助手
+  icon: "\U0001F33F"
+  icon_background: '#E8F5E9'
+  mode: agent-chat
+  use_icon_as_answer_icon: true
+workflow: null
+model_config:
+  model:
+    provider: openai
+    name: gpt-4o-mini
+    mode: chat
+    completion_params:
+      temperature: 0.7
+      top_p: 1
+      max_tokens: 2048
+  pre_prompt: |
+    # 角色定义
+    你是一名专业的行为健康教练，专注于糖尿病管理和慢性病行为干预。
+
+    ## TTM 跨理论模型 - 行为改变阶段
+
+    1. **前意向期** - 无改变意愿，需要提升认知
+    2. **意向期** - 开始考虑改变，帮助评估利弊
+    3. **准备期** - 准备行动，帮助制定计划
+    4. **行动期** - 正在改变，提供支持鼓励
+    5. **维持期** - 已形成习惯，预防复发
+
+    ## 关注领域
+    - 🩸 血糖管理：监测、解读、波动分析
+    - 🥗 饮食控制：低GI饮食、食物选择
+    - 🏃 运动锻炼：有氧运动、运动处方
+    - 💊 用药依从：服药提醒、药物知识
+    - 😴 睡眠质量：作息调整
+    - 🧘 压力管理：放松技巧
+    - ⚖️ 体重管理：减重策略
+
+    ## 动机访谈原则
+    - 使用开放式问题引导对话
+    - 认可用户的努力和进步
+    - 反映式倾听，理解感受
+    - 不批判不说教，尊重自主性
+
+    ## 安全提示
+    - 血糖>16.7或<3.9 mmol/L，建议立即就医
+    - 不提供具体药物调整建议
+    - 识别负面情绪，必要时建议专业支持
+
+    ## 输出格式
+    - 回复简洁温暖，不超过200字
+    - 使用emoji增加亲和力
+    - 适时提出引导性问题
+  prompt_type: simple
+  chat_prompt_config: {}
+  completion_prompt_config: {}
+  user_input_form:
+    - text-input:
+        label: 用户ID
+        variable: user_id
+        required: true
+        max_length: 48
+        default: ''
+    - select:
+        label: 关注领域
+        variable: focus_area
+        required: false
+        options:
+          - glucose
+          - diet
+          - exercise
+          - medication
+          - weight
+  dataset_query_variable: ''
+  opening_statement: |
+    你好！我是你的行为健康教练 🌿
+
+    我可以帮助你：
+    - 📊 了解和管理血糖
+    - 🥗 制定健康饮食计划
+    - 🏃 设计运动方案
+    - 💊 建立用药习惯
+    - 🎯 设定健康目标
+
+    今天想聊点什么呢？
+  suggested_questions:
+    - 我想了解如何控制餐后血糖
+    - 最近血糖有点高，该怎么办
+    - 帮我制定一个运动计划
+    - 我想减肥但总是坚持不下来
+  suggested_questions_after_answer:
+    enabled: true
+  speech_to_text:
+    enabled: false
+  text_to_speech:
+    enabled: false
+    language: ''
+    voice: ''
+  retriever_resource:
+    enabled: false
+  sensitive_word_avoidance:
+    enabled: false
+  file_upload:
+    enabled: false
+    allowed_file_types: []
+    allowed_file_extensions: []
+    allowed_file_upload_methods: []
+    number_limits: 0
+    image:
+      enabled: false
+      number_limits: 0
+      transfer_methods: []
+  annotation_reply:
+    enabled: false
+  more_like_this:
+    enabled: false
+  agent_mode:
+    enabled: true
+    max_iteration: 5
+    strategy: function_call
+    tools: []

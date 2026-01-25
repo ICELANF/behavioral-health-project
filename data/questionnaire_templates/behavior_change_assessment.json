@@ -1,0 +1,273 @@
+{
+  "template_id": "behavior_change_assessment",
+  "name": "行为改变成功可能性评估",
+  "description": "评估用户行为改变的动机、准备度、自我效能和潜在障碍",
+  "domain": "stage",
+  "version": "1.0",
+  "target_stages": ["precontemplation", "contemplation", "preparation", "action"],
+  "target_population": ["general", "diabetes", "hypertension", "obesity"],
+  "estimated_minutes": 15,
+  "question_blocks": [
+    {
+      "block_id": "B1_TRIGGER",
+      "title": "改变触发原因",
+      "description": "了解您想要改变的原因",
+      "domain": "motivation",
+      "questions": [
+        {
+          "question_id": "Q1_1",
+          "text": "您认为改变当前的健康行为对您的生活有多重要？",
+          "type": "scale",
+          "scale_min": 1,
+          "scale_max": 10,
+          "scale_labels": {"1": "完全不重要", "5": "一般重要", "10": "非常重要"},
+          "required": true,
+          "scoring_weight": 1.5,
+          "maps_to_field": "behavior_profile.motivation_level"
+        },
+        {
+          "question_id": "Q1_2",
+          "text": "您最近是否经历过促使您想要改变的健康事件？",
+          "type": "single_choice",
+          "options": [
+            {"value": "yes_serious", "label": "是，严重的健康问题", "score": 5},
+            {"value": "yes_mild", "label": "是，轻微的健康问题", "score": 3},
+            {"value": "warning", "label": "收到医生警告", "score": 4},
+            {"value": "family", "label": "家人健康问题让我警醒", "score": 3},
+            {"value": "no", "label": "没有特别事件", "score": 1}
+          ],
+          "required": true,
+          "scoring_weight": 1.2
+        },
+        {
+          "question_id": "Q1_3",
+          "text": "改变成功后，您最期待的是什么？",
+          "type": "multiple_choice",
+          "options": [
+            {"value": "health", "label": "身体更健康", "score": 2},
+            {"value": "energy", "label": "精力更充沛", "score": 2},
+            {"value": "appearance", "label": "外表更好", "score": 1.5},
+            {"value": "family", "label": "为家人树立榜样", "score": 2},
+            {"value": "longevity", "label": "活得更长", "score": 2},
+            {"value": "quality", "label": "生活质量提升", "score": 2}
+          ],
+          "required": true,
+          "scoring_weight": 1.0
+        }
+      ]
+    },
+    {
+      "block_id": "B2_READINESS",
+      "title": "准备度评估",
+      "description": "评估您目前的改变准备程度",
+      "domain": "stage",
+      "questions": [
+        {
+          "question_id": "Q2_1",
+          "text": "您目前处于哪个阶段？",
+          "type": "single_choice",
+          "options": [
+            {"value": "not_thinking", "label": "还没想过要改变", "score": 1},
+            {"value": "thinking", "label": "在考虑是否要改变", "score": 2},
+            {"value": "preparing", "label": "准备在近期开始改变", "score": 3},
+            {"value": "acting", "label": "已经开始改变，但不到6个月", "score": 4},
+            {"value": "maintaining", "label": "已经改变超过6个月", "score": 5}
+          ],
+          "required": true,
+          "scoring_weight": 2.0,
+          "maps_to_field": "behavior_profile.current_stage"
+        },
+        {
+          "question_id": "Q2_2",
+          "text": "如果1-10分，您现在准备好改变的程度是？",
+          "type": "scale",
+          "scale_min": 1,
+          "scale_max": 10,
+          "scale_labels": {"1": "完全没准备好", "5": "一般", "10": "完全准备好"},
+          "required": true,
+          "scoring_weight": 1.5
+        },
+        {
+          "question_id": "Q2_3",
+          "text": "您计划什么时候开始改变？",
+          "type": "single_choice",
+          "options": [
+            {"value": "now", "label": "立即开始", "score": 5},
+            {"value": "this_week", "label": "本周内", "score": 4},
+            {"value": "this_month", "label": "本月内", "score": 3},
+            {"value": "later", "label": "以后再说", "score": 1},
+            {"value": "not_sure", "label": "不确定", "score": 2}
+          ],
+          "required": true,
+          "scoring_weight": 1.2
+        }
+      ]
+    },
+    {
+      "block_id": "B3_EFFICACY",
+      "title": "自我效能评估",
+      "description": "评估您对成功改变的信心",
+      "domain": "self_efficacy",
+      "questions": [
+        {
+          "question_id": "Q3_1",
+          "text": "您有多大信心能够成功改变？",
+          "type": "scale",
+          "scale_min": 1,
+          "scale_max": 10,
+          "scale_labels": {"1": "完全没信心", "5": "一般", "10": "非常有信心"},
+          "required": true,
+          "scoring_weight": 1.5,
+          "maps_to_field": "behavior_profile.self_efficacy"
+        },
+        {
+          "question_id": "Q3_2",
+          "text": "您过去尝试改变健康行为的经历如何？",
+          "type": "single_choice",
+          "options": [
+            {"value": "success", "label": "成功过，保持了很长时间", "score": 5},
+            {"value": "partial", "label": "成功过一段时间，后来放弃了", "score": 3},
+            {"value": "tried", "label": "尝试过但失败了", "score": 2},
+            {"value": "never", "label": "从未认真尝试过", "score": 1}
+          ],
+          "required": true,
+          "scoring_weight": 1.3
+        },
+        {
+          "question_id": "Q3_3",
+          "text": "面对困难时，您通常会怎么做？",
+          "type": "single_choice",
+          "options": [
+            {"value": "persist", "label": "坚持下去，想办法克服", "score": 5},
+            {"value": "seek_help", "label": "寻求他人帮助", "score": 4},
+            {"value": "adapt", "label": "调整目标，降低难度", "score": 3},
+            {"value": "pause", "label": "暂时休息，之后再试", "score": 2},
+            {"value": "give_up", "label": "容易放弃", "score": 1}
+          ],
+          "required": true,
+          "scoring_weight": 1.2
+        }
+      ]
+    },
+    {
+      "block_id": "B4_BARRIERS",
+      "title": "障碍识别",
+      "description": "了解可能阻碍您改变的因素",
+      "domain": "barrier_identification",
+      "questions": [
+        {
+          "question_id": "Q4_1",
+          "text": "以下哪些因素可能阻碍您的改变？（可多选）",
+          "type": "multiple_choice",
+          "options": [
+            {"value": "time", "label": "没有足够时间", "score": 1},
+            {"value": "money", "label": "经济限制", "score": 1},
+            {"value": "knowledge", "label": "不知道怎么做", "score": 1},
+            {"value": "support", "label": "缺乏家人支持", "score": 1},
+            {"value": "environment", "label": "环境不支持", "score": 1},
+            {"value": "habit", "label": "旧习惯太难改", "score": 1},
+            {"value": "motivation", "label": "动力不足", "score": 1},
+            {"value": "health", "label": "身体条件限制", "score": 1}
+          ],
+          "required": true,
+          "scoring_weight": 1.0
+        },
+        {
+          "question_id": "Q4_2",
+          "text": "您最大的障碍是什么？",
+          "type": "text",
+          "required": false,
+          "scoring_weight": 0
+        },
+        {
+          "question_id": "Q4_3",
+          "text": "您身边有人支持您的改变吗？",
+          "type": "single_choice",
+          "options": [
+            {"value": "strong", "label": "有很强的支持", "score": 5},
+            {"value": "some", "label": "有一些支持", "score": 3},
+            {"value": "neutral", "label": "家人态度中立", "score": 2},
+            {"value": "oppose", "label": "有人反对", "score": 1},
+            {"value": "alone", "label": "没有人知道", "score": 1}
+          ],
+          "required": true,
+          "scoring_weight": 1.2,
+          "maps_to_field": "inner_need_profile.social_support_level"
+        }
+      ]
+    }
+  ],
+  "scoring_rules": [
+    {
+      "dimension": "motivation",
+      "calculation": "weighted_sum",
+      "question_ids": ["Q1_1", "Q1_2", "Q1_3"],
+      "normalization_min": 0,
+      "normalization_max": 30
+    },
+    {
+      "dimension": "readiness",
+      "calculation": "weighted_sum",
+      "question_ids": ["Q2_1", "Q2_2", "Q2_3"],
+      "normalization_min": 0,
+      "normalization_max": 25
+    },
+    {
+      "dimension": "self_efficacy",
+      "calculation": "weighted_sum",
+      "question_ids": ["Q3_1", "Q3_2", "Q3_3"],
+      "normalization_min": 0,
+      "normalization_max": 25
+    },
+    {
+      "dimension": "barrier_count",
+      "calculation": "sum",
+      "question_ids": ["Q4_1"],
+      "normalization_min": 0,
+      "normalization_max": 8
+    },
+    {
+      "dimension": "social_support",
+      "calculation": "sum",
+      "question_ids": ["Q4_3"],
+      "normalization_min": 0,
+      "normalization_max": 5
+    }
+  ],
+  "interpretation_rules": [
+    {
+      "dimension": "motivation",
+      "ranges": [
+        {"min": 0, "max": 30, "level": "low", "label": "低动机", "description": "目前改变动机较低", "recommended_actions": ["建立健康危机意识", "探索改变的价值"]},
+        {"min": 31, "max": 60, "level": "moderate", "label": "中等动机", "description": "有一定改变意愿", "recommended_actions": ["强化改变收益认知", "设立小目标"]},
+        {"min": 61, "max": 100, "level": "high", "label": "高动机", "description": "改变动机强烈", "recommended_actions": ["制定具体计划", "立即开始行动"]}
+      ],
+      "maps_to_profile_field": "behavior_profile.motivation_level"
+    },
+    {
+      "dimension": "readiness",
+      "ranges": [
+        {"min": 0, "max": 30, "level": "precontemplation", "label": "前意向期", "description": "还未准备好改变", "recommended_actions": ["认知唤醒", "信息提供"]},
+        {"min": 31, "max": 50, "level": "contemplation", "label": "意向期", "description": "正在考虑改变", "recommended_actions": ["矛盾处理", "决策平衡"]},
+        {"min": 51, "max": 70, "level": "preparation", "label": "准备期", "description": "准备开始改变", "recommended_actions": ["降低门槛", "具体规划"]},
+        {"min": 71, "max": 100, "level": "action", "label": "行动期", "description": "已开始行动", "recommended_actions": ["习惯强化", "障碍应对"]}
+      ],
+      "maps_to_profile_field": "behavior_profile.current_stage"
+    },
+    {
+      "dimension": "self_efficacy",
+      "ranges": [
+        {"min": 0, "max": 30, "level": "low", "label": "低效能感", "description": "对成功信心不足", "recommended_actions": ["设立微目标", "成功体验积累", "榜样示范"]},
+        {"min": 31, "max": 60, "level": "moderate", "label": "中等效能感", "description": "有一定信心", "recommended_actions": ["技能培训", "渐进挑战"]},
+        {"min": 61, "max": 100, "level": "high", "label": "高效能感", "description": "信心充足", "recommended_actions": ["自主管理", "挑战升级"]}
+      ],
+      "maps_to_profile_field": "behavior_profile.self_efficacy"
+    }
+  ],
+  "schema_version": "1.0",
+  "extensions": {
+    "source": "行为改变成功可能性评估表",
+    "theory_base": ["TTM", "Self-Efficacy Theory", "SDT"],
+    "validated": false
+  }
+}

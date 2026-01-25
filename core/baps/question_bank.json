@@ -1,0 +1,381 @@
+{
+  "$schema": "BAPS Question Bank v1.0",
+  "version": "1.0.0",
+  "last_updated": "2026-01-24",
+  "description": "行健行为教练 - 行为评估系统完整题库",
+
+  "questionnaires": {
+    "big_five": {
+      "id": "BIG_FIVE_50",
+      "name": "大五人格测评",
+      "description": "基于大五人格理论的人格特质评估",
+      "total_items": 50,
+      "estimated_minutes": 10,
+      "scale": {
+        "type": "bipolar",
+        "range": [-4, 4],
+        "labels": {
+          "-4": "完全不符合",
+          "-3": "很不符合",
+          "-2": "比较不符合",
+          "-1": "有些不符合",
+          "0": "中立",
+          "1": "有些符合",
+          "2": "比较符合",
+          "3": "很符合",
+          "4": "完全符合"
+        }
+      },
+      "dimensions": {
+        "E": {"name": "外向性", "name_en": "Extraversion", "items": 10, "score_range": [-40, 40]},
+        "N": {"name": "神经质", "name_en": "Neuroticism", "items": 10, "score_range": [-40, 40]},
+        "C": {"name": "尽责性", "name_en": "Conscientiousness", "items": 10, "score_range": [-40, 40]},
+        "A": {"name": "宜人性", "name_en": "Agreeableness", "items": 10, "score_range": [-40, 40]},
+        "O": {"name": "开放性", "name_en": "Openness", "items": 10, "score_range": [-40, 40]}
+      },
+      "reverse_items": ["E3"],
+      "items": [
+        {"id": "E1", "dimension": "E", "text": "我喜欢参加社交聚会和活动"},
+        {"id": "E2", "dimension": "E", "text": "我很容易和陌生人开始交谈"},
+        {"id": "E3", "dimension": "E", "text": "我更喜欢独处而不是和他人在一起", "reverse": true},
+        {"id": "E4", "dimension": "E", "text": "在团队中我经常是话题的发起者"},
+        {"id": "E5", "dimension": "E", "text": "我喜欢成为关注的焦点"},
+        {"id": "E6", "dimension": "E", "text": "我精力充沛，充满活力"},
+        {"id": "E7", "dimension": "E", "text": "我喜欢尝试新的社交活动"},
+        {"id": "E8", "dimension": "E", "text": "我在人群中感到舒适自在"},
+        {"id": "E9", "dimension": "E", "text": "我很容易表达自己的想法和感受"},
+        {"id": "E10", "dimension": "E", "text": "我认为自己是一个外向的人"},
+
+        {"id": "N1", "dimension": "N", "text": "我经常感到焦虑或担忧"},
+        {"id": "N2", "dimension": "N", "text": "我的情绪容易波动"},
+        {"id": "N3", "dimension": "N", "text": "我经常感到紧张或压力很大"},
+        {"id": "N4", "dimension": "N", "text": "小事情也会让我感到烦躁"},
+        {"id": "N5", "dimension": "N", "text": "我经常担心事情会出问题"},
+        {"id": "N6", "dimension": "N", "text": "我容易感到沮丧或低落"},
+        {"id": "N7", "dimension": "N", "text": "批评会让我感到非常不安"},
+        {"id": "N8", "dimension": "N", "text": "我经常对自己的决定感到后悔"},
+        {"id": "N9", "dimension": "N", "text": "我很难放松下来"},
+        {"id": "N10", "dimension": "N", "text": "我经常感到不安全或缺乏自信"},
+
+        {"id": "C1", "dimension": "C", "text": "我做事有计划、有条理"},
+        {"id": "C2", "dimension": "C", "text": "我总是按时完成任务"},
+        {"id": "C3", "dimension": "C", "text": "我注重细节，追求完美"},
+        {"id": "C4", "dimension": "C", "text": "我对自己的承诺非常认真"},
+        {"id": "C5", "dimension": "C", "text": "我有很强的自律能力"},
+        {"id": "C6", "dimension": "C", "text": "我总是努力做到最好"},
+        {"id": "C7", "dimension": "C", "text": "我喜欢把事情安排得井井有条"},
+        {"id": "C8", "dimension": "C", "text": "我做决定前会仔细考虑"},
+        {"id": "C9", "dimension": "C", "text": "我对工作和生活有明确的目标"},
+        {"id": "C10", "dimension": "C", "text": "我很少拖延重要的事情"},
+
+        {"id": "A1", "dimension": "A", "text": "我相信大多数人是善良的"},
+        {"id": "A2", "dimension": "A", "text": "我愿意帮助需要帮助的人"},
+        {"id": "A3", "dimension": "A", "text": "我很容易原谅别人的错误"},
+        {"id": "A4", "dimension": "A", "text": "我在意他人的感受"},
+        {"id": "A5", "dimension": "A", "text": "我尽量避免与他人发生冲突"},
+        {"id": "A6", "dimension": "A", "text": "我喜欢与他人合作而非竞争"},
+        {"id": "A7", "dimension": "A", "text": "我对他人的需求很敏感"},
+        {"id": "A8", "dimension": "A", "text": "我很容易与他人建立信任"},
+        {"id": "A9", "dimension": "A", "text": "我尊重他人的意见和观点"},
+        {"id": "A10", "dimension": "A", "text": "我认为自己是一个友善的人"},
+
+        {"id": "O1", "dimension": "O", "text": "我喜欢尝试新事物和新体验"},
+        {"id": "O2", "dimension": "O", "text": "我对艺术和美学很感兴趣"},
+        {"id": "O3", "dimension": "O", "text": "我喜欢思考抽象的概念和问题"},
+        {"id": "O4", "dimension": "O", "text": "我有丰富的想象力"},
+        {"id": "O5", "dimension": "O", "text": "我对不同的文化和观念持开放态度"},
+        {"id": "O6", "dimension": "O", "text": "我喜欢探索新的想法和理论"},
+        {"id": "O7", "dimension": "O", "text": "我经常有创新的想法"},
+        {"id": "O8", "dimension": "O", "text": "我喜欢挑战传统的做法"},
+        {"id": "O9", "dimension": "O", "text": "我对学习新知识充满热情"},
+        {"id": "O10", "dimension": "O", "text": "我认为自己是一个有创造力的人"}
+      ],
+      "interpretation": {
+        "levels": [
+          {"range": [25, 40], "level": "very_high", "label": "很高", "description": "该特质非常显著"},
+          {"range": [10, 24], "level": "high", "label": "偏高", "description": "该特质较为明显"},
+          {"range": [-9, 9], "level": "medium", "label": "中等", "description": "该特质处于平均水平"},
+          {"range": [-24, -10], "level": "low", "label": "偏低", "description": "该特质较不明显"},
+          {"range": [-40, -25], "level": "very_low", "label": "很低", "description": "该特质很不明显"}
+        ]
+      }
+    },
+
+    "bpt6": {
+      "id": "BPT6_18",
+      "name": "BPT-6行为模式分型",
+      "description": "识别个体主要的行为改变模式类型",
+      "total_items": 18,
+      "estimated_minutes": 5,
+      "scale": {
+        "type": "likert",
+        "range": [1, 5],
+        "labels": {
+          "1": "完全不符合",
+          "2": "基本不符合",
+          "3": "不确定",
+          "4": "基本符合",
+          "5": "完全符合"
+        }
+      },
+      "dimensions": {
+        "action": {"name": "行动型", "items": 3, "score_range": [3, 15], "threshold": 12},
+        "knowledge": {"name": "知识型", "items": 3, "score_range": [3, 15], "threshold": 12},
+        "emotion": {"name": "情绪型", "items": 3, "score_range": [3, 15], "threshold": 12},
+        "relation": {"name": "关系型", "items": 3, "score_range": [3, 15], "threshold": 12},
+        "environment": {"name": "环境型", "items": 3, "score_range": [3, 15], "threshold": 12},
+        "ambivalent": {"name": "矛盾型", "items": 3, "score_range": [3, 15], "threshold": 12}
+      },
+      "items": [
+        {"id": "BPT1", "dimension": "action", "text": "当我决定做某事时，我会立即行动而不是过多思考"},
+        {"id": "BPT2", "dimension": "action", "text": "我更喜欢边做边学，而不是先学习再行动"},
+        {"id": "BPT3", "dimension": "action", "text": "我认为做比想更重要"},
+
+        {"id": "BPT4", "dimension": "knowledge", "text": "在开始任何新事物之前，我需要充分了解相关知识"},
+        {"id": "BPT5", "dimension": "knowledge", "text": "我喜欢收集信息和研究最佳方法"},
+        {"id": "BPT6", "dimension": "knowledge", "text": "知道为什么要做某事对我很重要"},
+
+        {"id": "BPT7", "dimension": "emotion", "text": "我的行为很大程度上受当时情绪的影响"},
+        {"id": "BPT8", "dimension": "emotion", "text": "当我感觉不好时，很难坚持计划"},
+        {"id": "BPT9", "dimension": "emotion", "text": "情绪状态决定了我是否能完成任务"},
+
+        {"id": "BPT10", "dimension": "relation", "text": "有人陪伴或支持时，我更容易坚持"},
+        {"id": "BPT11", "dimension": "relation", "text": "我需要他人的鼓励才能持续行动"},
+        {"id": "BPT12", "dimension": "relation", "text": "和他人一起做事比独自做更有动力"},
+
+        {"id": "BPT13", "dimension": "environment", "text": "我的行为很大程度上取决于周围环境"},
+        {"id": "BPT14", "dimension": "environment", "text": "改变环境对我改变行为很有帮助"},
+        {"id": "BPT15", "dimension": "environment", "text": "当环境不支持时，我很难保持行为"},
+
+        {"id": "BPT16", "dimension": "ambivalent", "text": "我经常在想要改变和害怕改变之间挣扎"},
+        {"id": "BPT17", "dimension": "ambivalent", "text": "我知道应该做什么，但总是犹豫不决"},
+        {"id": "BPT18", "dimension": "ambivalent", "text": "我对改变既期待又恐惧"}
+      ],
+      "type_profiles": {
+        "action": {
+          "core_trait": "说干就干，执行力强",
+          "personality_base": "高尽责+低神经质",
+          "intervention_focus": "防止过度、增加反思",
+          "strategies": ["执行意图", "数据追踪"],
+          "avoid": ["过度分析"]
+        },
+        "knowledge": {
+          "core_trait": "知识充分，行动不足",
+          "personality_base": "高开放+低尽责",
+          "intervention_focus": "启动行动、降低完美主义",
+          "strategies": ["MVP启动", "实验心态"],
+          "avoid": ["无限研究"]
+        },
+        "emotion": {
+          "core_trait": "情绪主导行为",
+          "personality_base": "高神经质+高开放",
+          "intervention_focus": "情绪管理、自我关怀",
+          "strategies": ["情绪解耦", "自我关怀"],
+          "avoid": ["刚性目标"]
+        },
+        "relation": {
+          "core_trait": "需要关系支持",
+          "personality_base": "高外向+高宜人",
+          "intervention_focus": "培养独立性",
+          "strategies": ["社交嵌入", "公开承诺"],
+          "avoid": ["完全独立"]
+        },
+        "environment": {
+          "core_trait": "环境驱动行为",
+          "personality_base": "中等各维度",
+          "intervention_focus": "培养内在动机",
+          "strategies": ["环境工程", "默认选项"],
+          "avoid": ["意志力依赖"]
+        },
+        "ambivalent": {
+          "core_trait": "意愿与恐惧并存",
+          "personality_base": "高神经质",
+          "intervention_focus": "接纳矛盾、小步实验",
+          "strategies": ["ACT技术", "小步实验"],
+          "avoid": ["催促决定"]
+        }
+      },
+      "classification_rules": {
+        "pure_type": "单一类型 >= 12分",
+        "mixed_type": "两种类型 >= 10分",
+        "dispersed_type": "所有类型 7-9分（需进一步访谈）"
+      }
+    },
+
+    "capacity": {
+      "id": "CAPACITY_32",
+      "name": "CAPACITY改变潜力诊断",
+      "description": "评估个体的行为改变潜力与资源",
+      "total_items": 32,
+      "estimated_minutes": 8,
+      "scale": {
+        "type": "likert",
+        "range": [1, 5],
+        "labels": {
+          "1": "完全不符合",
+          "2": "不太符合",
+          "3": "不确定",
+          "4": "比较符合",
+          "5": "完全符合"
+        }
+      },
+      "dimensions": {
+        "C1": {"name": "觉察力", "name_en": "Consciousness", "items": 4, "score_range": [4, 20]},
+        "A1": {"name": "自主感", "name_en": "Autonomy", "items": 4, "score_range": [4, 20]},
+        "P": {"name": "匹配度", "name_en": "Personality Match", "items": 4, "score_range": [4, 20]},
+        "A2": {"name": "资源", "name_en": "Action Resources", "items": 4, "score_range": [4, 20]},
+        "C2": {"name": "承诺", "name_en": "Commitment", "items": 4, "score_range": [4, 20]},
+        "I": {"name": "身份", "name_en": "Identity", "items": 4, "score_range": [4, 20]},
+        "T": {"name": "时间", "name_en": "Timeline", "items": 4, "score_range": [4, 20]},
+        "Y": {"name": "期待", "name_en": "Yield Expectation", "items": 4, "score_range": [4, 20]}
+      },
+      "items": [
+        {"id": "CAP1", "dimension": "C1", "text": "我清楚地知道自己当前行为存在什么问题"},
+        {"id": "CAP2", "dimension": "C1", "text": "我能觉察到自己的行为模式和习惯"},
+        {"id": "CAP3", "dimension": "C1", "text": "我了解这些行为对我生活的影响"},
+        {"id": "CAP4", "dimension": "C1", "text": "我能识别触发不良行为的情境和因素"},
+
+        {"id": "CAP5", "dimension": "A1", "text": "改变是我自己的选择，不是被迫的"},
+        {"id": "CAP6", "dimension": "A1", "text": "我有权决定是否改变以及如何改变"},
+        {"id": "CAP7", "dimension": "A1", "text": "我觉得自己能掌控改变的过程"},
+        {"id": "CAP8", "dimension": "A1", "text": "改变的方向符合我内心真正的需要"},
+
+        {"id": "CAP9", "dimension": "P", "text": "这个改变目标与我的性格特点相匹配"},
+        {"id": "CAP10", "dimension": "P", "text": "我过去有过类似成功改变的经验"},
+        {"id": "CAP11", "dimension": "P", "text": "这个目标对我来说难度适中"},
+        {"id": "CAP12", "dimension": "P", "text": "我具备实现这个改变所需的基本能力"},
+
+        {"id": "CAP13", "dimension": "A2", "text": "我有足够的时间来实施改变计划"},
+        {"id": "CAP14", "dimension": "A2", "text": "我有必要的工具和资源支持改变"},
+        {"id": "CAP15", "dimension": "A2", "text": "我的生活环境有利于这个改变"},
+        {"id": "CAP16", "dimension": "A2", "text": "我能获得他人的支持和帮助"},
+
+        {"id": "CAP17", "dimension": "C2", "text": "我已经下定决心要进行这个改变"},
+        {"id": "CAP18", "dimension": "C2", "text": "我愿意为这个改变付出努力"},
+        {"id": "CAP19", "dimension": "C2", "text": "即使遇到困难我也会坚持"},
+        {"id": "CAP20", "dimension": "C2", "text": "我已经向他人表达了我的改变意愿"},
+
+        {"id": "CAP21", "dimension": "I", "text": "这个改变符合我对自己的期望"},
+        {"id": "CAP22", "dimension": "I", "text": "改变后的我会更接近理想中的自己"},
+        {"id": "CAP23", "dimension": "I", "text": "我能想象自己改变后的样子"},
+        {"id": "CAP24", "dimension": "I", "text": "这个改变与我的核心价值观一致"},
+
+        {"id": "CAP25", "dimension": "T", "text": "我有明确的改变时间表"},
+        {"id": "CAP26", "dimension": "T", "text": "我知道什么时候开始第一步"},
+        {"id": "CAP27", "dimension": "T", "text": "我对改变需要的时间有合理的预期"},
+        {"id": "CAP28", "dimension": "T", "text": "我能接受改变是一个渐进的过程"},
+
+        {"id": "CAP29", "dimension": "Y", "text": "我清楚改变会带来什么好处"},
+        {"id": "CAP30", "dimension": "Y", "text": "这些好处对我来说很重要"},
+        {"id": "CAP31", "dimension": "Y", "text": "我相信改变带来的收益大于付出"},
+        {"id": "CAP32", "dimension": "Y", "text": "我对改变的结果有积极的期待"}
+      ],
+      "interpretation": {
+        "dimension_levels": [
+          {"range": [16, 20], "level": "high", "stars": 5, "label": "高"},
+          {"range": [12, 15], "level": "medium_high", "stars": 4, "label": "中高"},
+          {"range": [8, 11], "level": "medium", "stars": 3, "label": "中等"},
+          {"range": [4, 7], "level": "low", "stars": 2, "label": "较低"}
+        ],
+        "total_levels": [
+          {"range": [128, 160], "level": "high", "label": "高潜力", "strategy": "可挑战高目标"},
+          {"range": [96, 127], "level": "medium_high", "label": "中高潜力", "strategy": "稳步推进"},
+          {"range": [64, 95], "level": "medium", "label": "中等潜力", "strategy": "降低难度，加强支持"},
+          {"range": [32, 63], "level": "low", "label": "需要准备", "strategy": "先解决前置问题"}
+        ]
+      }
+    },
+
+    "spi": {
+      "id": "SPI_50",
+      "name": "SPI成功可能性评估",
+      "description": "评估行为改变的成功可能性指数",
+      "total_items": 50,
+      "estimated_minutes": 12,
+      "scale": {
+        "type": "likert",
+        "range": [1, 5],
+        "labels": {
+          "1": "完全不符合",
+          "2": "不太符合",
+          "3": "不确定",
+          "4": "比较符合",
+          "5": "完全符合"
+        }
+      },
+      "dimensions": {
+        "M": {"name": "动机", "name_en": "Motivation", "items": 10, "score_range": [10, 50], "weight": 0.30},
+        "A": {"name": "能力", "name_en": "Ability", "items": 10, "score_range": [10, 50], "weight": 0.25},
+        "S": {"name": "支持", "name_en": "Support", "items": 10, "score_range": [10, 50], "weight": 0.20},
+        "E": {"name": "环境", "name_en": "Environment", "items": 10, "score_range": [10, 50], "weight": 0.15},
+        "H": {"name": "历史", "name_en": "History", "items": 10, "score_range": [10, 50], "weight": 0.10}
+      },
+      "formula": "SPI = M×0.30 + A×0.25 + S×0.20 + E×0.15 + H×0.10",
+      "items": [
+        {"id": "SPI1", "dimension": "M", "text": "改变这个行为对我来说非常重要"},
+        {"id": "SPI2", "dimension": "M", "text": "我有强烈的意愿想要改变"},
+        {"id": "SPI3", "dimension": "M", "text": "我已经厌倦了现在的状态"},
+        {"id": "SPI4", "dimension": "M", "text": "改变会让我的生活变得更好"},
+        {"id": "SPI5", "dimension": "M", "text": "不改变会给我带来严重的后果"},
+        {"id": "SPI6", "dimension": "M", "text": "我清楚知道为什么要改变"},
+        {"id": "SPI7", "dimension": "M", "text": "改变是我主动选择的，不是被迫的"},
+        {"id": "SPI8", "dimension": "M", "text": "我对改变充满期待"},
+        {"id": "SPI9", "dimension": "M", "text": "我愿意为改变付出代价"},
+        {"id": "SPI10", "dimension": "M", "text": "我已经准备好开始改变了"},
+
+        {"id": "SPI11", "dimension": "A", "text": "我知道如何进行这个改变"},
+        {"id": "SPI12", "dimension": "A", "text": "我具备改变所需的知识"},
+        {"id": "SPI13", "dimension": "A", "text": "我有足够的技能来执行改变计划"},
+        {"id": "SPI14", "dimension": "A", "text": "我能够制定合理的改变计划"},
+        {"id": "SPI15", "dimension": "A", "text": "我能够监控自己的进度"},
+        {"id": "SPI16", "dimension": "A", "text": "我知道如何应对可能遇到的困难"},
+        {"id": "SPI17", "dimension": "A", "text": "我有足够的自控能力"},
+        {"id": "SPI18", "dimension": "A", "text": "我能够在压力下保持行动"},
+        {"id": "SPI19", "dimension": "A", "text": "我能够调整策略应对变化"},
+        {"id": "SPI20", "dimension": "A", "text": "我相信自己有能力成功改变"},
+
+        {"id": "SPI21", "dimension": "S", "text": "我的家人支持我的改变"},
+        {"id": "SPI22", "dimension": "S", "text": "我的朋友会鼓励我"},
+        {"id": "SPI23", "dimension": "S", "text": "我有可以倾诉的对象"},
+        {"id": "SPI24", "dimension": "S", "text": "有人愿意和我一起改变"},
+        {"id": "SPI25", "dimension": "S", "text": "我能获得专业的指导和帮助"},
+        {"id": "SPI26", "dimension": "S", "text": "我的社交圈支持健康的生活方式"},
+        {"id": "SPI27", "dimension": "S", "text": "我有可以学习的榜样"},
+        {"id": "SPI28", "dimension": "S", "text": "我能加入支持性的社群或团体"},
+        {"id": "SPI29", "dimension": "S", "text": "我的工作环境支持我的改变"},
+        {"id": "SPI30", "dimension": "S", "text": "需要帮助时我知道可以找谁"},
+
+        {"id": "SPI31", "dimension": "E", "text": "我的生活环境有利于这个改变"},
+        {"id": "SPI32", "dimension": "E", "text": "我有足够的时间进行改变"},
+        {"id": "SPI33", "dimension": "E", "text": "我有必要的物质资源"},
+        {"id": "SPI34", "dimension": "E", "text": "我的日常安排允许我实施改变"},
+        {"id": "SPI35", "dimension": "E", "text": "我的居住环境支持健康行为"},
+        {"id": "SPI36", "dimension": "E", "text": "我能方便地获取所需的工具和设备"},
+        {"id": "SPI37", "dimension": "E", "text": "我的经济状况允许我进行这个改变"},
+        {"id": "SPI38", "dimension": "E", "text": "我的工作压力在可控范围内"},
+        {"id": "SPI39", "dimension": "E", "text": "我没有太多外部干扰"},
+        {"id": "SPI40", "dimension": "E", "text": "我的生活相对稳定"},
+
+        {"id": "SPI41", "dimension": "H", "text": "我过去成功改变过类似的行为"},
+        {"id": "SPI42", "dimension": "H", "text": "我有坚持完成目标的记录"},
+        {"id": "SPI43", "dimension": "H", "text": "我从过去的失败中学到了经验"},
+        {"id": "SPI44", "dimension": "H", "text": "我之前的尝试让我更了解自己"},
+        {"id": "SPI45", "dimension": "H", "text": "我知道什么方法对我有效"},
+        {"id": "SPI46", "dimension": "H", "text": "我克服过比这更大的困难"},
+        {"id": "SPI47", "dimension": "H", "text": "我在逆境中能够坚持"},
+        {"id": "SPI48", "dimension": "H", "text": "我的过往经历让我更有信心"},
+        {"id": "SPI49", "dimension": "H", "text": "我善于从经验中学习"},
+        {"id": "SPI50", "dimension": "H", "text": "我相信这次会比以前做得更好"}
+      ],
+      "interpretation": {
+        "levels": [
+          {"range": [40, 50], "level": "very_high", "label": "很高", "success_rate": ">75%", "strategy": "可挑战高目标"},
+          {"range": [30, 39.99], "level": "high", "label": "较高", "success_rate": "50-75%", "strategy": "稳步推进"},
+          {"range": [20, 29.99], "level": "medium", "label": "中等", "success_rate": "30-50%", "strategy": "降低难度，加强支持"},
+          {"range": [10, 19.99], "level": "low", "label": "较低", "success_rate": "15-30%", "strategy": "从微习惯起步"},
+          {"range": [0, 9.99], "level": "very_low", "label": "很低", "success_rate": "<15%", "strategy": "暂缓，先解决前置问题"}
+        ]
+      }
+    }
+  }
+}

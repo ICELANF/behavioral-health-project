@@ -1,0 +1,996 @@
+{
+  "$schema": "行为处方库 v1.0",
+  "version": "1.0.0",
+  "last_updated": "2026-01-19",
+  "description": "行健行为教练行为处方库 - 包含各类行为需求的分阶段干预方案",
+
+  "categories": {
+    "sleep_regulation": "睡眠调节",
+    "stress_management": "压力管理",
+    "exercise_habit": "运动养成",
+    "nutrition_management": "营养管理",
+    "emotional_regulation": "情绪调节",
+    "tcm_wellness": "中医养生",
+    "social_connection": "社交连接",
+    "cognitive_improvement": "认知提升"
+  },
+
+  "prescriptions": [
+    {
+      "rx_id": "RX-SLEEP-001",
+      "name": "睡眠质量改善基础方案",
+      "category": "sleep_regulation",
+      "target_problems": ["入睡困难", "睡眠浅", "早醒", "睡眠时间不足"],
+      "applicable_patterns": ["stress_avoidance", "emotional_dysregulation"],
+      "expert_source": "mental_health",
+
+      "stage_strategy": {
+        "intention": {
+          "stage_name": "意向期",
+          "readiness_level": [1, 2],
+          "core_goal": "建立改变意愿，降低防御",
+          "tone": "gentle_accepting",
+          "script_opening": "我注意到您的睡眠数据显示有些困扰，这在现代生活中很常见。您愿意和我聊聊睡眠对您的影响吗？",
+          "script_motivation": "很多人都经历过类似的困扰。了解一下睡眠的重要性，也许能帮助您做出对自己有益的选择。",
+          "script_closing": "不急于做任何改变，先让我们了解一下您的情况。",
+          "do": ["倾听", "理解", "不施压"],
+          "dont": ["急于给建议", "说教", "批评睡眠习惯"]
+        },
+        "preparation": {
+          "stage_name": "准备期",
+          "readiness_level": [3],
+          "core_goal": "降低行动门槛，提供简单起步",
+          "tone": "encouraging_practical",
+          "script_opening": "看起来您已经意识到改善睡眠的重要性了。让我们从最简单的一步开始，您觉得怎么样？",
+          "script_motivation": "研究表明，即使是很小的改变，比如固定起床时间，也能带来明显的改善。",
+          "script_closing": "这周我们就专注于这一个小改变，不贪多。有任何困难随时告诉我。",
+          "do": ["设微目标", "提供选择", "庆祝小进步"],
+          "dont": ["目标过大", "一次改太多", "忽视困难"]
+        },
+        "action": {
+          "stage_name": "行动期",
+          "readiness_level": [4, 5],
+          "core_goal": "强化习惯，系统化改善",
+          "tone": "supportive_systematic",
+          "script_opening": "您的睡眠改善进展很好！现在让我们建立更完整的睡眠卫生系统。",
+          "script_motivation": "您已经证明了自己能够做到。现在是时候把这些好习惯固化下来，让它成为您生活的一部分。",
+          "script_closing": "继续保持，同时注意记录睡眠日志，我们下周回顾进展。",
+          "do": ["系统规划", "环境优化", "监测反馈"],
+          "dont": ["松懈", "忽视波动", "过度干预"]
+        }
+      },
+
+      "content": {
+        "constructive_advice": [
+          {
+            "advice_id": "ADV-SLEEP-001",
+            "title": "固定作息时间",
+            "description": "每天在固定时间上床和起床，包括周末。生物钟的稳定是改善睡眠质量的基础。",
+            "difficulty": 2,
+            "priority": 1,
+            "duration_to_form_habit": "2-3周"
+          },
+          {
+            "advice_id": "ADV-SLEEP-002",
+            "title": "睡前1小时屏幕断电",
+            "description": "蓝光会抑制褪黑素分泌。睡前1小时关闭手机、电脑等电子设备，改用暖光阅读。",
+            "difficulty": 3,
+            "priority": 2,
+            "duration_to_form_habit": "3-4周"
+          },
+          {
+            "advice_id": "ADV-SLEEP-003",
+            "title": "建立睡前放松仪式",
+            "description": "每晚睡前进行固定的放松活动，如温水泡脚、轻音乐、呼吸练习，向身体发送'该睡觉了'的信号。",
+            "difficulty": 2,
+            "priority": 3,
+            "duration_to_form_habit": "2周"
+          },
+          {
+            "advice_id": "ADV-SLEEP-004",
+            "title": "优化睡眠环境",
+            "description": "保持卧室凉爽(18-22°C)、黑暗、安静。床只用于睡眠，不在床上工作或玩手机。",
+            "difficulty": 2,
+            "priority": 4,
+            "duration_to_form_habit": "1周"
+          }
+        ],
+
+        "knowledge_points": [
+          {
+            "knowledge_id": "KP-SLEEP-001",
+            "title": "睡眠周期与深睡眠的重要性",
+            "summary": "一个完整睡眠周期约90分钟，包括浅睡、深睡和REM阶段。深睡眠是身体修复的关键时期，占比应达到15-20%。",
+            "content_url": "/knowledge/sleep/sleep_cycle.md",
+            "reading_time_minutes": 5,
+            "difficulty_level": "beginner"
+          },
+          {
+            "knowledge_id": "KP-SLEEP-002",
+            "title": "生物钟与昼夜节律",
+            "summary": "人体内置的生物钟受光照调节。规律的作息时间能帮助校准生物钟，提高睡眠效率。",
+            "content_url": "/knowledge/sleep/circadian_rhythm.md",
+            "reading_time_minutes": 8,
+            "difficulty_level": "beginner"
+          },
+          {
+            "knowledge_id": "KP-SLEEP-003",
+            "title": "咖啡因与酒精对睡眠的影响",
+            "summary": "咖啡因半衰期5-6小时，下午2点后应避免摄入。酒精虽助入睡但会破坏睡眠结构，减少深睡眠。",
+            "content_url": "/knowledge/sleep/caffeine_alcohol.md",
+            "reading_time_minutes": 6,
+            "difficulty_level": "intermediate"
+          }
+        ],
+
+        "teaching_videos": [
+          {
+            "video_id": "VID-SLEEP-001",
+            "title": "4-7-8呼吸法助眠教学",
+            "description": "著名的4-7-8呼吸技术，吸气4秒、屏气7秒、呼气8秒，帮助快速放松入睡。",
+            "duration_seconds": 420,
+            "video_path": "/videos/sleep/478_breathing.mp4",
+            "thumbnail_path": "/videos/sleep/thumbnails/478_breathing.jpg",
+            "instructor": "心理咨询师"
+          },
+          {
+            "video_id": "VID-SLEEP-002",
+            "title": "渐进式肌肉放松练习",
+            "description": "从脚趾到头顶，逐步紧绷和放松各肌肉群，释放身体紧张，促进深度放松。",
+            "duration_seconds": 900,
+            "video_path": "/videos/sleep/pmr_relaxation.mp4",
+            "thumbnail_path": "/videos/sleep/thumbnails/pmr_relaxation.jpg",
+            "instructor": "运动康复师"
+          },
+          {
+            "video_id": "VID-SLEEP-003",
+            "title": "睡前瑜伽放松序列",
+            "description": "15分钟温和瑜伽序列，包含猫牛式、婴儿式等体式，帮助身心过渡到睡眠状态。",
+            "duration_seconds": 900,
+            "video_path": "/videos/sleep/bedtime_yoga.mp4",
+            "thumbnail_path": "/videos/sleep/thumbnails/bedtime_yoga.jpg",
+            "instructor": "运动康复师"
+          }
+        ]
+      },
+
+      "product_mapping": [
+        {
+          "product_id": "PROD-SLEEP-001",
+          "name": "睡眠香薰精油套装",
+          "category": "aromatherapy",
+          "relevance": "薰衣草精油有助于放松神经，改善睡眠质量",
+          "recommendation_trigger": "anxiety_score > 50 OR sleep_quality < 60"
+        },
+        {
+          "product_id": "PROD-SLEEP-002",
+          "name": "遮光眼罩",
+          "category": "sleep_accessories",
+          "relevance": "阻挡光线干扰，帮助大脑分泌褪黑素",
+          "recommendation_trigger": "environment_light_issue = true"
+        },
+        {
+          "product_id": "PROD-SLEEP-003",
+          "name": "白噪音睡眠仪",
+          "category": "sleep_accessories",
+          "relevance": "掩盖环境噪音，创造稳定的睡眠声音环境",
+          "recommendation_trigger": "environment_noise_issue = true"
+        },
+        {
+          "product_id": "PROD-SLEEP-004",
+          "name": "助眠茶（酸枣仁配方）",
+          "category": "tcm_products",
+          "relevance": "中医经典安神配方，温和调理睡眠",
+          "recommendation_trigger": "tcm_constitution IN ['qi_deficiency', 'yin_deficiency']"
+        }
+      ]
+    },
+
+    {
+      "rx_id": "RX-STRESS-001",
+      "name": "压力管理综合方案",
+      "category": "stress_management",
+      "target_problems": ["工作压力大", "焦虑情绪", "心理疲劳", "身心紧张"],
+      "applicable_patterns": ["overcompensation", "somatization", "emotional_dysregulation"],
+      "expert_source": "mental_health",
+
+      "stage_strategy": {
+        "intention": {
+          "stage_name": "意向期",
+          "readiness_level": [1, 2],
+          "core_goal": "承认压力存在，探索压力来源",
+          "tone": "gentle_accepting",
+          "script_opening": "从您的数据来看，身体正在承受一些压力。这很正常，现代生活节奏确实很快。您愿意聊聊最近的感受吗？",
+          "script_motivation": "了解自己的压力状态是照顾自己的第一步。很多人都有类似的经历。",
+          "script_closing": "今天不需要做任何改变，只是觉察和了解。",
+          "do": ["倾听共情", "正常化压力", "不急于解决"],
+          "dont": ["否定感受", "急于给方案", "说教"]
+        },
+        "preparation": {
+          "stage_name": "准备期",
+          "readiness_level": [3],
+          "core_goal": "学习简单减压技巧，体验放松感",
+          "tone": "encouraging_practical",
+          "script_opening": "既然您想尝试管理压力，我们从最简单有效的方法开始。只需要每天3分钟。",
+          "script_motivation": "研究显示，规律的短暂放松比偶尔的长时间放松更有效。关键是坚持。",
+          "script_closing": "这周的任务就是每天做一次3分钟呼吸练习。我们一起记录感受。",
+          "do": ["低门槛起步", "即时反馈", "灵活调整"],
+          "dont": ["要求太多", "忽视进展", "增加压力"]
+        },
+        "action": {
+          "stage_name": "行动期",
+          "readiness_level": [4, 5],
+          "core_goal": "建立系统的压力管理习惯",
+          "tone": "supportive_systematic",
+          "script_opening": "您的压力管理技能正在提升！现在让我们建立更全面的应对系统。",
+          "script_motivation": "您已经体验到了放松的好处。把这些技巧融入日常，它们会成为您的'心理免疫力'。",
+          "script_closing": "继续实践，同时注意识别压力信号，及早干预。",
+          "do": ["深化技能", "场景应用", "预防为主"],
+          "dont": ["过度依赖", "忽视预警", "追求完美"]
+        }
+      },
+
+      "content": {
+        "constructive_advice": [
+          {
+            "advice_id": "ADV-STRESS-001",
+            "title": "腹式呼吸练习",
+            "description": "每天3次，每次3分钟。吸气时腹部隆起，呼气时腹部收缩。激活副交感神经，降低应激反应。",
+            "difficulty": 1,
+            "priority": 1,
+            "duration_to_form_habit": "1-2周"
+          },
+          {
+            "advice_id": "ADV-STRESS-002",
+            "title": "正念觉察练习",
+            "description": "每天抽出5-10分钟，专注于当下的感受，不评判、不分析。可以从觉察呼吸开始。",
+            "difficulty": 2,
+            "priority": 2,
+            "duration_to_form_habit": "3-4周"
+          },
+          {
+            "advice_id": "ADV-STRESS-003",
+            "title": "时间边界设定",
+            "description": "设定明确的工作结束时间，下班后不查看工作信息。保护个人恢复时间。",
+            "difficulty": 3,
+            "priority": 3,
+            "duration_to_form_habit": "4-6周"
+          },
+          {
+            "advice_id": "ADV-STRESS-004",
+            "title": "身体活动释压",
+            "description": "压力激素需要通过运动代谢。每天进行20-30分钟中等强度运动，如快走、游泳。",
+            "difficulty": 3,
+            "priority": 4,
+            "duration_to_form_habit": "4周"
+          }
+        ],
+
+        "knowledge_points": [
+          {
+            "knowledge_id": "KP-STRESS-001",
+            "title": "压力的生理机制",
+            "summary": "压力触发HPA轴反应，释放皮质醇。短期压力是适应性的，长期压力会损害身心健康。",
+            "content_url": "/knowledge/stress/stress_physiology.md",
+            "reading_time_minutes": 7,
+            "difficulty_level": "intermediate"
+          },
+          {
+            "knowledge_id": "KP-STRESS-002",
+            "title": "认识你的压力信号",
+            "summary": "压力有身体信号（肌肉紧张、头痛）、情绪信号（烦躁、焦虑）和行为信号（暴饮暴食、失眠）。",
+            "content_url": "/knowledge/stress/stress_signals.md",
+            "reading_time_minutes": 5,
+            "difficulty_level": "beginner"
+          },
+          {
+            "knowledge_id": "KP-STRESS-003",
+            "title": "HRV与压力监测",
+            "summary": "心率变异性(HRV)是评估自主神经功能的指标。SDNN越高，说明压力应对能力越强。",
+            "content_url": "/knowledge/stress/hrv_stress.md",
+            "reading_time_minutes": 8,
+            "difficulty_level": "intermediate"
+          }
+        ],
+
+        "teaching_videos": [
+          {
+            "video_id": "VID-STRESS-001",
+            "title": "3分钟腹式呼吸教学",
+            "description": "跟随引导进行腹式呼吸，随时随地可以练习的快速减压方法。",
+            "duration_seconds": 240,
+            "video_path": "/videos/stress/belly_breathing.mp4",
+            "thumbnail_path": "/videos/stress/thumbnails/belly_breathing.jpg",
+            "instructor": "心理咨询师"
+          },
+          {
+            "video_id": "VID-STRESS-002",
+            "title": "办公室5分钟减压操",
+            "description": "适合久坐人群的简单伸展动作，缓解肩颈紧张，提神醒脑。",
+            "duration_seconds": 360,
+            "video_path": "/videos/stress/office_stretch.mp4",
+            "thumbnail_path": "/videos/stress/thumbnails/office_stretch.jpg",
+            "instructor": "运动康复师"
+          },
+          {
+            "video_id": "VID-STRESS-003",
+            "title": "身体扫描冥想引导",
+            "description": "15分钟身体扫描冥想，从头到脚觉察身体感受，释放紧张。",
+            "duration_seconds": 900,
+            "video_path": "/videos/stress/body_scan.mp4",
+            "thumbnail_path": "/videos/stress/thumbnails/body_scan.jpg",
+            "instructor": "心理咨询师"
+          }
+        ]
+      },
+
+      "product_mapping": [
+        {
+          "product_id": "PROD-STRESS-001",
+          "name": "减压握力球",
+          "category": "stress_relief",
+          "relevance": "通过挤压动作释放身体紧张，简单有效的物理减压",
+          "recommendation_trigger": "stress_score > 60"
+        },
+        {
+          "product_id": "PROD-STRESS-002",
+          "name": "正念冥想APP会员",
+          "category": "digital_service",
+          "relevance": "提供引导式冥想内容，帮助建立规律的冥想习惯",
+          "recommendation_trigger": "readiness_level >= 3"
+        },
+        {
+          "product_id": "PROD-STRESS-003",
+          "name": "舒压精油滚珠",
+          "category": "aromatherapy",
+          "relevance": "便携设计，随时涂抹太阳穴或手腕，快速舒缓紧张",
+          "recommendation_trigger": "anxiety_score > 50"
+        }
+      ]
+    },
+
+    {
+      "rx_id": "RX-EXERCISE-001",
+      "name": "运动习惯养成方案",
+      "category": "exercise_habit",
+      "target_problems": ["久坐不动", "运动量不足", "体能下降", "缺乏运动习惯"],
+      "applicable_patterns": ["stress_avoidance", "balanced"],
+      "expert_source": "sports_rehab",
+
+      "stage_strategy": {
+        "intention": {
+          "stage_name": "意向期",
+          "readiness_level": [1, 2],
+          "core_goal": "消除运动恐惧，建立运动正向认知",
+          "tone": "gentle_accepting",
+          "script_opening": "我注意到您的活动量有些偏低。很多人都有类似的情况，尤其是工作忙碌的时候。您对运动有什么想法吗？",
+          "script_motivation": "运动不一定要去健身房或跑步。哪怕是每天多走几步，身体也会有感受。",
+          "script_closing": "不急于开始运动计划。先想想，有没有什么形式的身体活动是您不排斥的？",
+          "do": ["了解顾虑", "消除误解", "降低期望"],
+          "dont": ["强调运动好处", "制定计划", "催促行动"]
+        },
+        "preparation": {
+          "stage_name": "准备期",
+          "readiness_level": [3],
+          "core_goal": "从微运动开始，建立运动自信",
+          "tone": "encouraging_practical",
+          "script_opening": "既然您愿意尝试，我们从最简单的开始——每天5分钟，在家就能做。",
+          "script_motivation": "5分钟的运动听起来很少，但坚持一周，您会感受到身体的变化。关键是开始。",
+          "script_closing": "这周就专注于每天5分钟。不管什么形式，动起来就好。",
+          "do": ["极低门槛", "灵活形式", "及时肯定"],
+          "dont": ["规定时间地点", "要求强度", "批评漏打卡"]
+        },
+        "action": {
+          "stage_name": "行动期",
+          "readiness_level": [4, 5],
+          "core_goal": "建立规律运动习惯，逐步提升",
+          "tone": "supportive_systematic",
+          "script_opening": "您已经建立了运动的基础习惯！现在我们可以逐步增加时间和多样性。",
+          "script_motivation": "运动已经成为您生活的一部分。接下来是让它更有趣、更有效。",
+          "script_closing": "保持现有习惯，这周尝试增加一个新的运动形式。",
+          "do": ["渐进提升", "多样化", "科学规划"],
+          "dont": ["急于求成", "忽视恢复", "过度训练"]
+        }
+      },
+
+      "content": {
+        "constructive_advice": [
+          {
+            "advice_id": "ADV-EX-001",
+            "title": "5分钟晨起激活",
+            "description": "起床后进行5分钟简单拉伸和关节活动，唤醒身体，开启元气满满的一天。",
+            "difficulty": 1,
+            "priority": 1,
+            "duration_to_form_habit": "2周"
+          },
+          {
+            "advice_id": "ADV-EX-002",
+            "title": "碎片化运动",
+            "description": "利用工作间隙进行微运动：每小时起身活动2分钟，爬楼梯代替电梯，站着接电话。",
+            "difficulty": 1,
+            "priority": 2,
+            "duration_to_form_habit": "2-3周"
+          },
+          {
+            "advice_id": "ADV-EX-003",
+            "title": "步行目标递进",
+            "description": "从每天3000步开始，每周增加500步，逐步达到7000-10000步的健康目标。",
+            "difficulty": 2,
+            "priority": 3,
+            "duration_to_form_habit": "4-6周"
+          },
+          {
+            "advice_id": "ADV-EX-004",
+            "title": "每周2-3次有氧运动",
+            "description": "选择喜欢的有氧运动（快走、游泳、骑车、跳舞），每次20-30分钟，心率达到中等强度。",
+            "difficulty": 3,
+            "priority": 4,
+            "duration_to_form_habit": "6-8周"
+          }
+        ],
+
+        "knowledge_points": [
+          {
+            "knowledge_id": "KP-EX-001",
+            "title": "运动对心理健康的益处",
+            "summary": "运动释放内啡肽，被称为'天然抗抑郁药'。规律运动能显著改善焦虑、抑郁症状。",
+            "content_url": "/knowledge/exercise/exercise_mental_health.md",
+            "reading_time_minutes": 6,
+            "difficulty_level": "beginner"
+          },
+          {
+            "knowledge_id": "KP-EX-002",
+            "title": "久坐的健康风险",
+            "summary": "每天久坐超过8小时，心血管疾病风险增加147%。每小时起身活动可以有效降低风险。",
+            "content_url": "/knowledge/exercise/sedentary_risks.md",
+            "reading_time_minutes": 5,
+            "difficulty_level": "beginner"
+          },
+          {
+            "knowledge_id": "KP-EX-003",
+            "title": "运动强度与心率区间",
+            "summary": "中等强度运动心率约为最大心率的50-70%。计算公式：最大心率=220-年龄。",
+            "content_url": "/knowledge/exercise/heart_rate_zones.md",
+            "reading_time_minutes": 7,
+            "difficulty_level": "intermediate"
+          }
+        ],
+
+        "teaching_videos": [
+          {
+            "video_id": "VID-EX-001",
+            "title": "5分钟晨起拉伸",
+            "description": "适合早晨的温和拉伸序列，唤醒身体，提升一天的活力。",
+            "duration_seconds": 360,
+            "video_path": "/videos/exercise/morning_stretch.mp4",
+            "thumbnail_path": "/videos/exercise/thumbnails/morning_stretch.jpg",
+            "instructor": "运动康复师"
+          },
+          {
+            "video_id": "VID-EX-002",
+            "title": "零基础居家有氧20分钟",
+            "description": "不需要任何器械，在家就能完成的有氧运动，适合运动新手。",
+            "duration_seconds": 1200,
+            "video_path": "/videos/exercise/home_cardio.mp4",
+            "thumbnail_path": "/videos/exercise/thumbnails/home_cardio.jpg",
+            "instructor": "运动康复师"
+          },
+          {
+            "video_id": "VID-EX-003",
+            "title": "办公室久坐族拯救计划",
+            "description": "针对久坐导致的肩颈腰背问题，提供简单有效的矫正动作。",
+            "duration_seconds": 600,
+            "video_path": "/videos/exercise/office_rescue.mp4",
+            "thumbnail_path": "/videos/exercise/thumbnails/office_rescue.jpg",
+            "instructor": "运动康复师"
+          }
+        ]
+      },
+
+      "product_mapping": [
+        {
+          "product_id": "PROD-EX-001",
+          "name": "弹力带套装",
+          "category": "fitness_equipment",
+          "relevance": "多阻力级别，适合居家力量训练，携带方便",
+          "recommendation_trigger": "readiness_level >= 3"
+        },
+        {
+          "product_id": "PROD-EX-002",
+          "name": "瑜伽垫",
+          "category": "fitness_equipment",
+          "relevance": "居家运动必备，保护关节，防滑安全",
+          "recommendation_trigger": "exercise_location = 'home'"
+        },
+        {
+          "product_id": "PROD-EX-003",
+          "name": "智能手环",
+          "category": "wearable",
+          "relevance": "实时监测心率、步数、睡眠，提供运动数据反馈",
+          "recommendation_trigger": "motivation_level IN ['moderate', 'high']"
+        }
+      ]
+    },
+
+    {
+      "rx_id": "RX-NUTRITION-001",
+      "name": "健康饮食调整方案",
+      "category": "nutrition_management",
+      "target_problems": ["饮食不规律", "营养不均衡", "情绪性进食", "体重管理困难"],
+      "applicable_patterns": ["overcompensation", "emotional_dysregulation"],
+      "expert_source": "nutrition",
+
+      "stage_strategy": {
+        "intention": {
+          "stage_name": "意向期",
+          "readiness_level": [1, 2],
+          "core_goal": "建立饮食觉察，不批判现状",
+          "tone": "gentle_accepting",
+          "script_opening": "饮食习惯的形成有很多原因，不只是'管不住嘴'那么简单。您愿意聊聊您的饮食模式吗？",
+          "script_motivation": "了解自己的饮食习惯是第一步。很多时候，吃什么和怎么吃反映了我们的情绪和生活状态。",
+          "script_closing": "这周不需要改变任何饮食习惯，只是观察和记录。",
+          "do": ["不评判", "探索原因", "建立觉察"],
+          "dont": ["限制饮食", "强调热量", "制造愧疚"]
+        },
+        "preparation": {
+          "stage_name": "准备期",
+          "readiness_level": [3],
+          "core_goal": "从一个小改变开始，体验积极变化",
+          "tone": "encouraging_practical",
+          "script_opening": "既然您想尝试改善饮食，我们从最简单的一点开始——每天多喝一杯水。",
+          "script_motivation": "饮食改变不是'全有或全无'。一个小习惯的建立，会带动其他积极的变化。",
+          "script_closing": "这周就专注于每天多喝一杯水，其他不变。",
+          "do": ["单点突破", "不贪多", "正向激励"],
+          "dont": ["全面改变", "严格计划", "过度限制"]
+        },
+        "action": {
+          "stage_name": "行动期",
+          "readiness_level": [4, 5],
+          "core_goal": "建立均衡饮食模式",
+          "tone": "supportive_systematic",
+          "script_opening": "您的饮食习惯正在积极变化！现在我们可以建立更全面的营养方案。",
+          "script_motivation": "健康饮食不是节食，而是给身体提供它需要的营养。您正在学会善待自己的身体。",
+          "script_closing": "保持现有好习惯，这周尝试增加一份蔬菜的摄入。",
+          "do": ["均衡营养", "灵活搭配", "享受美食"],
+          "dont": ["过度限制", "追求完美", "忽视口味"]
+        }
+      },
+
+      "content": {
+        "constructive_advice": [
+          {
+            "advice_id": "ADV-NUT-001",
+            "title": "每天8杯水",
+            "description": "保持充足水分摄入（约2000ml），可以帮助代谢、减少饥饿感、改善皮肤状态。",
+            "difficulty": 1,
+            "priority": 1,
+            "duration_to_form_habit": "1-2周"
+          },
+          {
+            "advice_id": "ADV-NUT-002",
+            "title": "规律三餐时间",
+            "description": "固定早中晚三餐时间，避免饥一顿饱一顿。规律进食有助于血糖稳定和代谢健康。",
+            "difficulty": 2,
+            "priority": 2,
+            "duration_to_form_habit": "2-3周"
+          },
+          {
+            "advice_id": "ADV-NUT-003",
+            "title": "每餐一份蔬菜",
+            "description": "确保每餐都有蔬菜，优先选择深绿色蔬菜。蔬菜提供膳食纤维、维生素和矿物质。",
+            "difficulty": 2,
+            "priority": 3,
+            "duration_to_form_habit": "3-4周"
+          },
+          {
+            "advice_id": "ADV-NUT-004",
+            "title": "减少加工食品",
+            "description": "逐步减少高糖、高盐、高油的加工食品，选择新鲜食材烹饪。",
+            "difficulty": 3,
+            "priority": 4,
+            "duration_to_form_habit": "4-6周"
+          }
+        ],
+
+        "knowledge_points": [
+          {
+            "knowledge_id": "KP-NUT-001",
+            "title": "均衡膳食的基本原则",
+            "summary": "中国居民膳食指南建议：谷物为主，蔬果充足，蛋奶适量，少油少盐。",
+            "content_url": "/knowledge/nutrition/balanced_diet.md",
+            "reading_time_minutes": 6,
+            "difficulty_level": "beginner"
+          },
+          {
+            "knowledge_id": "KP-NUT-002",
+            "title": "情绪性进食的识别与应对",
+            "summary": "情绪性进食是用食物应对情绪而非饥饿。识别触发因素，寻找替代性应对方式是关键。",
+            "content_url": "/knowledge/nutrition/emotional_eating.md",
+            "reading_time_minutes": 8,
+            "difficulty_level": "intermediate"
+          },
+          {
+            "knowledge_id": "KP-NUT-003",
+            "title": "血糖与能量管理",
+            "summary": "选择低GI食物有助于血糖稳定，避免能量过山车，减少疲劳和情绪波动。",
+            "content_url": "/knowledge/nutrition/blood_sugar.md",
+            "reading_time_minutes": 7,
+            "difficulty_level": "intermediate"
+          }
+        ],
+
+        "teaching_videos": [
+          {
+            "video_id": "VID-NUT-001",
+            "title": "正念进食练习",
+            "description": "学习正念进食技巧，放慢进食速度，感受食物的味道和身体的饱腹信号。",
+            "duration_seconds": 480,
+            "video_path": "/videos/nutrition/mindful_eating.mp4",
+            "thumbnail_path": "/videos/nutrition/thumbnails/mindful_eating.jpg",
+            "instructor": "营养师"
+          },
+          {
+            "video_id": "VID-NUT-002",
+            "title": "健康便当制作教学",
+            "description": "15分钟快速制作营养均衡的工作便当，省时省力又健康。",
+            "duration_seconds": 600,
+            "video_path": "/videos/nutrition/healthy_bento.mp4",
+            "thumbnail_path": "/videos/nutrition/thumbnails/healthy_bento.jpg",
+            "instructor": "营养师"
+          }
+        ]
+      },
+
+      "product_mapping": [
+        {
+          "product_id": "PROD-NUT-001",
+          "name": "营养代餐奶昔",
+          "category": "meal_replacement",
+          "relevance": "忙碌时的健康选择，营养均衡，方便快捷",
+          "recommendation_trigger": "meal_regularity < 50"
+        },
+        {
+          "product_id": "PROD-NUT-002",
+          "name": "智能水杯",
+          "category": "health_gadgets",
+          "relevance": "记录饮水量，定时提醒喝水，帮助养成饮水习惯",
+          "recommendation_trigger": "water_intake_issue = true"
+        },
+        {
+          "product_id": "PROD-NUT-003",
+          "name": "全谷物燕麦片",
+          "category": "health_food",
+          "relevance": "低GI早餐选择，富含膳食纤维，帮助血糖稳定",
+          "recommendation_trigger": "breakfast_skip_rate > 30"
+        }
+      ]
+    },
+
+    {
+      "rx_id": "RX-TCM-001",
+      "name": "中医体质调理方案",
+      "category": "tcm_wellness",
+      "target_problems": ["体质偏颇", "亚健康状态", "季节性不适", "慢性疲劳"],
+      "applicable_patterns": ["somatization", "stress_avoidance"],
+      "expert_source": "tcm_wellness",
+
+      "stage_strategy": {
+        "intention": {
+          "stage_name": "意向期",
+          "readiness_level": [1, 2],
+          "core_goal": "了解中医体质概念，建立调理意识",
+          "tone": "gentle_accepting",
+          "script_opening": "中医认为每个人都有不同的体质特点，了解自己的体质可以更有针对性地调理。您对中医养生有了解吗？",
+          "script_motivation": "中医调理是温和渐进的过程，不是吃药治病，而是顺应自然、调整生活方式。",
+          "script_closing": "先了解一下自己的体质类型，不急于开始调理。",
+          "do": ["科普体质知识", "引发兴趣", "不强推"],
+          "dont": ["急于辨证", "开方调理", "否定现代医学"]
+        },
+        "preparation": {
+          "stage_name": "准备期",
+          "readiness_level": [3],
+          "core_goal": "从简单的养生方法入手",
+          "tone": "encouraging_practical",
+          "script_opening": "根据您的体质特点，有一些简单的日常调理方法。比如每天一杯养生茶。",
+          "script_motivation": "中医讲究'治未病'。在还没生病的时候调理，比生病后治疗更重要。",
+          "script_closing": "这周尝试每天喝一杯适合您体质的养生茶，观察身体感受。",
+          "do": ["简单易行", "顺应体质", "循序渐进"],
+          "dont": ["复杂方剂", "频繁更换", "忽视个体差异"]
+        },
+        "action": {
+          "stage_name": "行动期",
+          "readiness_level": [4, 5],
+          "core_goal": "建立系统的体质调理方案",
+          "tone": "supportive_systematic",
+          "script_opening": "您对中医调理已经有了基础认识，现在可以建立更系统的养生方案。",
+          "script_motivation": "中医养生是一种生活方式。饮食、起居、情志、运动，都可以按体质调整。",
+          "script_closing": "继续现有的养生习惯，这周关注一下四季养生的原则。",
+          "do": ["系统调理", "四季养生", "身心兼顾"],
+          "dont": ["过度依赖", "迷信偏方", "忽视体检"]
+        }
+      },
+
+      "content": {
+        "constructive_advice": [
+          {
+            "advice_id": "ADV-TCM-001",
+            "title": "每日一杯养生茶",
+            "description": "根据体质选择适合的养生茶：气虚选黄芪茶，阴虚选枸杞菊花茶，湿热选薏米茶。",
+            "difficulty": 1,
+            "priority": 1,
+            "duration_to_form_habit": "1-2周"
+          },
+          {
+            "advice_id": "ADV-TCM-002",
+            "title": "穴位按摩保健",
+            "description": "每天按摩合谷、足三里、三阴交等常用保健穴位，每个穴位2-3分钟。",
+            "difficulty": 2,
+            "priority": 2,
+            "duration_to_form_habit": "2-3周"
+          },
+          {
+            "advice_id": "ADV-TCM-003",
+            "title": "顺应四时起居",
+            "description": "春夏晚睡早起，秋冬早睡晚起。顺应自然节律，调整作息时间。",
+            "difficulty": 2,
+            "priority": 3,
+            "duration_to_form_habit": "持续调整"
+          },
+          {
+            "advice_id": "ADV-TCM-004",
+            "title": "食疗调体质",
+            "description": "根据体质选择食物：气虚多吃山药、红枣；阴虚多吃银耳、百合；痰湿少油腻多清淡。",
+            "difficulty": 2,
+            "priority": 4,
+            "duration_to_form_habit": "长期坚持"
+          }
+        ],
+
+        "knowledge_points": [
+          {
+            "knowledge_id": "KP-TCM-001",
+            "title": "九种体质类型介绍",
+            "summary": "中医将人分为平和质、气虚质、阳虚质、阴虚质、痰湿质、湿热质、血瘀质、气郁质、特禀质九种体质。",
+            "content_url": "/knowledge/tcm/nine_constitutions.md",
+            "reading_time_minutes": 10,
+            "difficulty_level": "beginner"
+          },
+          {
+            "knowledge_id": "KP-TCM-002",
+            "title": "四季养生原则",
+            "summary": "春养肝、夏养心、秋养肺、冬养肾。顺应四季变化调整饮食起居，是中医养生的基本原则。",
+            "content_url": "/knowledge/tcm/seasonal_wellness.md",
+            "reading_time_minutes": 8,
+            "difficulty_level": "intermediate"
+          },
+          {
+            "knowledge_id": "KP-TCM-003",
+            "title": "常用保健穴位图解",
+            "summary": "合谷、足三里、三阴交、内关等常用穴位的定位方法和保健功效。",
+            "content_url": "/knowledge/tcm/acupoints.md",
+            "reading_time_minutes": 12,
+            "difficulty_level": "intermediate"
+          }
+        ],
+
+        "teaching_videos": [
+          {
+            "video_id": "VID-TCM-001",
+            "title": "常用保健穴位按摩教学",
+            "description": "详细演示合谷、足三里、三阴交等穴位的定位和按摩方法。",
+            "duration_seconds": 720,
+            "video_path": "/videos/tcm/acupoint_massage.mp4",
+            "thumbnail_path": "/videos/tcm/thumbnails/acupoint_massage.jpg",
+            "instructor": "中医养生师"
+          },
+          {
+            "video_id": "VID-TCM-002",
+            "title": "八段锦完整教学",
+            "description": "传统养生功法八段锦的完整教学，适合日常练习，强身健体。",
+            "duration_seconds": 1200,
+            "video_path": "/videos/tcm/baduanjin.mp4",
+            "thumbnail_path": "/videos/tcm/thumbnails/baduanjin.jpg",
+            "instructor": "中医养生师"
+          }
+        ]
+      },
+
+      "product_mapping": [
+        {
+          "product_id": "PROD-TCM-001",
+          "name": "体质调理养生茶礼盒",
+          "category": "tcm_products",
+          "relevance": "包含多种体质调理茶包，根据体质选择饮用",
+          "recommendation_trigger": "tcm_constitution != 'balanced'"
+        },
+        {
+          "product_id": "PROD-TCM-002",
+          "name": "艾灸盒套装",
+          "category": "tcm_tools",
+          "relevance": "居家艾灸工具，温经散寒，适合阳虚体质",
+          "recommendation_trigger": "tcm_constitution IN ['yang_deficiency', 'qi_deficiency']"
+        },
+        {
+          "product_id": "PROD-TCM-003",
+          "name": "刮痧板套装",
+          "category": "tcm_tools",
+          "relevance": "疏通经络，活血化瘀，适合血瘀、湿热体质",
+          "recommendation_trigger": "tcm_constitution IN ['blood_stasis', 'damp_heat']"
+        }
+      ]
+    },
+
+    {
+      "rx_id": "RX-EMOTION-001",
+      "name": "情绪调节基础方案",
+      "category": "emotional_regulation",
+      "target_problems": ["情绪波动大", "焦虑情绪", "低落情绪", "情绪管理困难"],
+      "applicable_patterns": ["emotional_dysregulation", "overcompensation"],
+      "expert_source": "mental_health",
+
+      "stage_strategy": {
+        "intention": {
+          "stage_name": "意向期",
+          "readiness_level": [1, 2],
+          "core_goal": "接纳情绪，建立情绪觉察",
+          "tone": "gentle_accepting",
+          "script_opening": "情绪是我们的一部分，没有好坏之分。焦虑、低落、愤怒都是正常的人类体验。您最近的情绪状态怎么样？",
+          "script_motivation": "学会与情绪相处，比消除情绪更重要。情绪是信使，告诉我们内心的需求。",
+          "script_closing": "这周不需要改变情绪，只是觉察和记录。",
+          "do": ["接纳情绪", "不评判", "探索意义"],
+          "dont": ["否定情绪", "急于改变", "过度分析"]
+        },
+        "preparation": {
+          "stage_name": "准备期",
+          "readiness_level": [3],
+          "core_goal": "学习基本的情绪调节技巧",
+          "tone": "encouraging_practical",
+          "script_opening": "既然您想学习调节情绪，我们从最简单的技巧开始——情绪日记和呼吸练习。",
+          "script_motivation": "情绪调节是可以学习的技能。每天一点练习，您会越来越擅长。",
+          "script_closing": "这周每天记录一次情绪，做一次呼吸练习。观察变化。",
+          "do": ["简单技巧", "规律练习", "耐心陪伴"],
+          "dont": ["复杂方法", "过高期望", "忽视困难"]
+        },
+        "action": {
+          "stage_name": "行动期",
+          "readiness_level": [4, 5],
+          "core_goal": "建立情绪调节系统",
+          "tone": "supportive_systematic",
+          "script_opening": "您的情绪调节能力在提升！现在我们可以学习更多的技巧，建立您的情绪工具箱。",
+          "script_motivation": "情绪智慧是一生的财富。您正在成为情绪的主人，而不是被情绪控制。",
+          "script_closing": "继续现有练习，这周学习一个新的情绪调节技巧。",
+          "do": ["丰富技巧", "灵活应用", "深化理解"],
+          "dont": ["压抑情绪", "过度控制", "忽视身体"]
+        }
+      },
+
+      "content": {
+        "constructive_advice": [
+          {
+            "advice_id": "ADV-EMO-001",
+            "title": "情绪日记记录",
+            "description": "每天记录情绪状态、触发事件和身体感受。觉察是调节的第一步。",
+            "difficulty": 1,
+            "priority": 1,
+            "duration_to_form_habit": "2周"
+          },
+          {
+            "advice_id": "ADV-EMO-002",
+            "title": "STOP技术",
+            "description": "情绪激动时使用STOP：Stop(停)、Take a breath(呼吸)、Observe(观察)、Proceed(继续)。",
+            "difficulty": 2,
+            "priority": 2,
+            "duration_to_form_habit": "3-4周"
+          },
+          {
+            "advice_id": "ADV-EMO-003",
+            "title": "情绪命名练习",
+            "description": "准确命名情绪（如：这是焦虑，这是失望）。研究显示，命名情绪能降低其强度。",
+            "difficulty": 2,
+            "priority": 3,
+            "duration_to_form_habit": "2-3周"
+          },
+          {
+            "advice_id": "ADV-EMO-004",
+            "title": "建立情绪调节工具箱",
+            "description": "列出对您有效的情绪调节方法清单，如：散步、听音乐、和朋友聊天、写作等。",
+            "difficulty": 2,
+            "priority": 4,
+            "duration_to_form_habit": "持续完善"
+          }
+        ],
+
+        "knowledge_points": [
+          {
+            "knowledge_id": "KP-EMO-001",
+            "title": "情绪的功能与意义",
+            "summary": "情绪是进化赋予我们的生存工具。恐惧保护我们，愤怒让我们维护边界，悲伤帮助我们疗愈。",
+            "content_url": "/knowledge/emotion/emotion_function.md",
+            "reading_time_minutes": 6,
+            "difficulty_level": "beginner"
+          },
+          {
+            "knowledge_id": "KP-EMO-002",
+            "title": "认知与情绪的关系",
+            "summary": "想法影响情绪。同一事件，不同的解读会产生不同的情绪反应。改变想法可以调节情绪。",
+            "content_url": "/knowledge/emotion/cognition_emotion.md",
+            "reading_time_minutes": 8,
+            "difficulty_level": "intermediate"
+          },
+          {
+            "knowledge_id": "KP-EMO-003",
+            "title": "情绪调节的神经科学",
+            "summary": "杏仁核是情绪反应的中心，前额叶皮层负责调控。规律的正念练习能增强前额叶功能。",
+            "content_url": "/knowledge/emotion/neuroscience.md",
+            "reading_time_minutes": 10,
+            "difficulty_level": "advanced"
+          }
+        ],
+
+        "teaching_videos": [
+          {
+            "video_id": "VID-EMO-001",
+            "title": "STOP情绪调节技术教学",
+            "description": "学习STOP技术，在情绪激动时快速稳定自己。",
+            "duration_seconds": 360,
+            "video_path": "/videos/emotion/stop_technique.mp4",
+            "thumbnail_path": "/videos/emotion/thumbnails/stop_technique.jpg",
+            "instructor": "心理咨询师"
+          },
+          {
+            "video_id": "VID-EMO-002",
+            "title": "情绪接纳冥想",
+            "description": "15分钟引导冥想，学习接纳和允许情绪存在，而不是对抗。",
+            "duration_seconds": 900,
+            "video_path": "/videos/emotion/emotion_acceptance.mp4",
+            "thumbnail_path": "/videos/emotion/thumbnails/emotion_acceptance.jpg",
+            "instructor": "心理咨询师"
+          }
+        ]
+      },
+
+      "product_mapping": [
+        {
+          "product_id": "PROD-EMO-001",
+          "name": "情绪日记本",
+          "category": "stationery",
+          "relevance": "专门设计的情绪记录本，包含情绪轮和记录模板",
+          "recommendation_trigger": "emotion_awareness < 50"
+        },
+        {
+          "product_id": "PROD-EMO-002",
+          "name": "情绪调节卡片套装",
+          "category": "tools",
+          "relevance": "包含多种情绪调节技巧的卡片，便于随时查阅和练习",
+          "recommendation_trigger": "readiness_level >= 3"
+        }
+      ]
+    }
+  ],
+
+  "stage_mapping": {
+    "_comment": "改变阶段与心理准备度层次的映射关系",
+    "intention": {
+      "readiness_levels": [1, 2],
+      "level_names": ["完全对抗", "抗拒与反思"],
+      "intervention_focus": "安全感建立、矛盾处理"
+    },
+    "preparation": {
+      "readiness_levels": [3],
+      "level_names": ["妥协与接受"],
+      "intervention_focus": "门槛降低、成功体验"
+    },
+    "action": {
+      "readiness_levels": [4, 5],
+      "level_names": ["顺应与调整", "全面臣服"],
+      "intervention_focus": "习惯强化、身份巩固"
+    }
+  },
+
+  "content_type_definitions": {
+    "constructive_advice": "具体可执行的行为建议",
+    "knowledge_points": "科学知识和原理解释",
+    "teaching_videos": "示范教学视频",
+    "product_mapping": "相关产品推荐"
+  }
+}

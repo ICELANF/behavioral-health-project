@@ -1,0 +1,244 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "action_plan_v1.0",
+  "title": "Action Plan Schema",
+  "description": "定义阶段性行动计划格式，用于行为干预方案管理",
+
+  "definitions": {
+    "ActionType": {
+      "type": "string",
+      "enum": ["behavior", "monitor", "education", "exercise", "nutrition", "relaxation", "social", "medical"],
+      "description": "行动类型"
+    },
+
+    "PlanPhase": {
+      "type": "string",
+      "pattern": "^(week_[1-9][0-9]?|month_[1-9][0-9]?|day_[1-9][0-9]?|startup|adaptation|stability|internalization)$",
+      "description": "计划阶段: week_1, month_2, 或四阶段名称"
+    },
+
+    "CultivationPhase": {
+      "type": "string",
+      "enum": ["startup", "adaptation", "stability", "internalization"],
+      "description": "四阶段养成: 启动期/适应期/稳定期/内化期"
+    },
+
+    "PlanAction": {
+      "type": "object",
+      "required": ["type", "content"],
+      "properties": {
+        "type": {"$ref": "#/definitions/ActionType"},
+        "content": {
+          "type": "string",
+          "description": "行动内容描述"
+        },
+        "timing": {
+          "type": "string",
+          "description": "执行时间 (如 22:30)"
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["once", "daily", "weekly", "as_needed"],
+          "default": "daily"
+        },
+        "duration_minutes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 180
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "knowledge_link": {"type": "string"},
+            "video_link": {"type": "string"},
+            "product_id": {"type": "string"}
+          }
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3,
+          "default": 2,
+          "description": "优先级: 1最高, 3最低"
+        },
+        "completed": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+
+    "PlanEvaluation": {
+      "type": "object",
+      "properties": {
+        "metrics": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "评估指标列表"
+        },
+        "targets": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "目标值 (如 {sleep_hours: 7, tir_percent: 70})"
+        },
+        "checkpoints": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "检查点时间 (如 week_1_end)"
+        }
+      }
+    }
+  },
+
+  "type": "object",
+  "required": ["goal", "phase", "actions"],
+  "properties": {
+    "plan_id": {
+      "type": "string",
+      "pattern": "^AP[A-Z0-9]+$",
+      "description": "计划唯一标识"
+    },
+    "user_id": {
+      "type": "string"
+    },
+    "goal": {
+      "type": "string",
+      "description": "干预目标"
+    },
+    "phase": {
+      "$ref": "#/definitions/PlanPhase"
+    },
+    "cultivation_phase": {
+      "$ref": "#/definitions/CultivationPhase",
+      "description": "对应的四阶段养成阶段"
+    },
+    "actions": {
+      "type": "array",
+      "items": {"$ref": "#/definitions/PlanAction"},
+      "minItems": 1,
+      "maxItems": 10,
+      "description": "行动项列表"
+    },
+    "evaluation": {
+      "$ref": "#/definitions/PlanEvaluation"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "paused", "completed", "abandoned"],
+      "default": "active"
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "标签 (用于分类/检索)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "备注"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+
+  "examples": [
+    {
+      "plan_id": "AP3F8C2D1E",
+      "user_id": "U12345",
+      "goal": "改善睡眠 + 稳定夜间血糖",
+      "phase": "week_1",
+      "cultivation_phase": "startup",
+      "actions": [
+        {
+          "type": "behavior",
+          "content": "22:30 上床，睡前不进食",
+          "timing": "22:30",
+          "frequency": "daily",
+          "priority": 1,
+          "completed": false
+        },
+        {
+          "type": "monitor",
+          "content": "连续3晚查看夜间CGM曲线",
+          "frequency": "daily",
+          "priority": 2,
+          "completed": false
+        },
+        {
+          "type": "education",
+          "content": "观看《睡眠与血糖》视频",
+          "frequency": "once",
+          "duration_minutes": 10,
+          "priority": 3,
+          "resources": {
+            "video_link": "/videos/sleep-glucose-connection"
+          },
+          "completed": false
+        }
+      ],
+      "evaluation": {
+        "metrics": ["sleep_efficiency", "night_glucose", "tir_percent"],
+        "targets": {
+          "sleep_hours": 7,
+          "tir_percent": 70
+        },
+        "checkpoints": ["week_1_end"]
+      },
+      "status": "active",
+      "tags": ["sleep", "glucose", "circadian"],
+      "notes": "启动期计划，重点建立睡眠规律",
+      "created_at": "2026-01-23T10:00:00"
+    },
+    {
+      "goal": "改善睡眠 + 稳定夜间血糖 - 巩固行为、应对障碍",
+      "phase": "week_3",
+      "cultivation_phase": "adaptation",
+      "actions": [
+        {
+          "type": "behavior",
+          "content": "维持22:30入睡，即使周末也不超过23:00",
+          "timing": "22:30",
+          "priority": 1
+        },
+        {
+          "type": "relaxation",
+          "content": "睡前15分钟进行4-7-8呼吸练习",
+          "timing": "22:15",
+          "duration_minutes": 5,
+          "priority": 1,
+          "resources": {
+            "video_link": "/videos/breathing-478"
+          }
+        },
+        {
+          "type": "monitor",
+          "content": "记录睡眠质量和次日精神状态",
+          "frequency": "daily",
+          "priority": 2
+        },
+        {
+          "type": "behavior",
+          "content": "应对障碍: 如有应酬，提前告知22:00需离开",
+          "frequency": "as_needed",
+          "priority": 2
+        }
+      ],
+      "evaluation": {
+        "metrics": ["sleep_efficiency", "sleep_consistency", "night_glucose"],
+        "targets": {
+          "sleep_hours": 7,
+          "sleep_consistency": 0.8,
+          "tir_percent": 75
+        },
+        "checkpoints": ["week_3_mid", "week_3_end"]
+      },
+      "tags": ["sleep", "glucose", "habit_formation"],
+      "notes": "适应期计划，增加呼吸练习，开始处理社交障碍"
+    }
+  ]
+}

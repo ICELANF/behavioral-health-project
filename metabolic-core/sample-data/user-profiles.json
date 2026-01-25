@@ -1,0 +1,125 @@
+{
+  "description": "示例用户档案 - 用于测试和演示",
+  "profiles": [
+    {
+      "user_id": "user-demo-001",
+      "name": "张先生",
+      "age": 52,
+      "gender": "male",
+      "condition": {
+        "primary": "2型糖尿病",
+        "duration_years": 3,
+        "complications": [],
+        "medications": ["二甲双胍 500mg bid"]
+      },
+      "baseline_metrics": {
+        "HbA1c": 7.8,
+        "fasting_glucose": 7.2,
+        "BMI": 26.8,
+        "blood_pressure": "130/85"
+      },
+      "lifestyle": {
+        "occupation": "办公室职员",
+        "work_hours": "9:00-18:00",
+        "exercise_frequency": "偶尔",
+        "diet_pattern": "不规律，外食为主",
+        "sleep_pattern": "熬夜，平均5-6小时",
+        "stress_level": "较高"
+      },
+      "behavior_profile": {
+        "stage": "contemplation",
+        "awareness_score": 45,
+        "motivation_score": 55,
+        "self_efficacy_score": 35,
+        "main_barriers": ["时间不足", "工作压力", "不知道如何开始"],
+        "main_motivators": ["家人健康担忧", "避免并发症"]
+      },
+      "preferences": {
+        "communication_style": "直接简洁",
+        "preferred_content_type": "短视频",
+        "notification_frequency": "适中",
+        "language": "zh-CN"
+      }
+    },
+    {
+      "user_id": "user-demo-002",
+      "name": "李女士",
+      "age": 45,
+      "gender": "female",
+      "condition": {
+        "primary": "2型糖尿病",
+        "duration_years": 1,
+        "complications": [],
+        "medications": []
+      },
+      "baseline_metrics": {
+        "HbA1c": 6.8,
+        "fasting_glucose": 6.5,
+        "BMI": 24.2,
+        "blood_pressure": "118/75"
+      },
+      "lifestyle": {
+        "occupation": "教师",
+        "work_hours": "8:00-17:00",
+        "exercise_frequency": "每周2-3次",
+        "diet_pattern": "较规律，在家做饭",
+        "sleep_pattern": "规律，7小时左右",
+        "stress_level": "中等"
+      },
+      "behavior_profile": {
+        "stage": "preparation",
+        "awareness_score": 70,
+        "motivation_score": 75,
+        "self_efficacy_score": 60,
+        "main_barriers": ["知识不足", "社交场合饮食控制难"],
+        "main_motivators": ["保持健康", "为家人树立榜样"]
+      },
+      "preferences": {
+        "communication_style": "详细解释",
+        "preferred_content_type": "文章",
+        "notification_frequency": "较少",
+        "language": "zh-CN"
+      }
+    },
+    {
+      "user_id": "user-demo-003",
+      "name": "王先生",
+      "age": 38,
+      "gender": "male",
+      "condition": {
+        "primary": "糖尿病前期",
+        "duration_years": 0.5,
+        "complications": [],
+        "medications": []
+      },
+      "baseline_metrics": {
+        "HbA1c": 6.2,
+        "fasting_glucose": 6.0,
+        "BMI": 28.5,
+        "blood_pressure": "125/80"
+      },
+      "lifestyle": {
+        "occupation": "IT工程师",
+        "work_hours": "10:00-22:00（不规律）",
+        "exercise_frequency": "几乎不运动",
+        "diet_pattern": "不规律，外卖为主",
+        "sleep_pattern": "熬夜，4-5小时",
+        "stress_level": "很高"
+      },
+      "behavior_profile": {
+        "stage": "precontemplation",
+        "awareness_score": 25,
+        "motivation_score": 30,
+        "self_efficacy_score": 20,
+        "main_barriers": ["否认问题严重性", "工作太忙", "觉得自己还年轻"],
+        "main_motivators": ["体检异常"]
+      },
+      "preferences": {
+        "communication_style": "简短有趣",
+        "preferred_content_type": "信息图",
+        "notification_frequency": "最少",
+        "language": "zh-CN"
+      }
+    }
+  ]
+}

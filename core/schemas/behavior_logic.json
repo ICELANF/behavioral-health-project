@@ -1,0 +1,524 @@
+{
+  "$schema": "行为逻辑专家规则库 v1.0",
+  "version": "1.0.0",
+  "last_updated": "2026-01-19",
+
+  "behavior_patterns": {
+    "overcompensation": {
+      "id": "overcompensation",
+      "name": "过度补偿型",
+      "description": "通过过度行为来弥补内心不安全感",
+      "indicators": {
+        "hrv_sdnn": {"range": [20, 40], "weight": 0.3},
+        "anxiety_score": {"range": [60, 100], "weight": 0.3},
+        "energy_mood_gap": {"range": [30, 100], "weight": 0.2},
+        "sleep_quality": {"range": [0, 50], "weight": 0.2}
+      },
+      "typical_behaviors": ["过度工作", "强迫性锻炼", "情绪化进食"],
+      "recommended_experts": ["mental_health", "nutrition"]
+    },
+    "stress_avoidance": {
+      "id": "stress_avoidance",
+      "name": "应激逃避型",
+      "description": "面对压力选择回避和退缩",
+      "indicators": {
+        "hrv_sdnn": {"range": [15, 35], "weight": 0.25},
+        "stress_score": {"range": [70, 100], "weight": 0.3},
+        "activity_level": {"range": [0, 30], "weight": 0.25},
+        "social_engagement": {"range": [0, 40], "weight": 0.2}
+      },
+      "typical_behaviors": ["社交退缩", "久坐不动", "睡眠过多"],
+      "recommended_experts": ["mental_health", "sports_rehab"]
+    },
+    "somatization": {
+      "id": "somatization",
+      "name": "躯体化型",
+      "description": "心理压力通过身体症状表现",
+      "indicators": {
+        "scl90_somatization": {"range": [2.0, 5.0], "weight": 0.35},
+        "hrv_sdnn": {"range": [10, 30], "weight": 0.25},
+        "pain_complaints": {"range": [3, 10], "weight": 0.2},
+        "medical_visits": {"range": [3, 20], "weight": 0.2}
+      },
+      "typical_behaviors": ["频繁就医", "关注身体症状", "回避心理问题"],
+      "recommended_experts": ["mental_health", "tcm_wellness"]
+    },
+    "emotional_dysregulation": {
+      "id": "emotional_dysregulation",
+      "name": "情绪失调型",
+      "description": "情绪波动大，难以自我调节",
+      "indicators": {
+        "mood_variability": {"range": [60, 100], "weight": 0.3},
+        "anxiety_score": {"range": [50, 100], "weight": 0.25},
+        "depression_score": {"range": [40, 100], "weight": 0.25},
+        "hrv_rmssd": {"range": [10, 25], "weight": 0.2}
+      },
+      "typical_behaviors": ["情绪爆发", "冲动行为", "人际冲突"],
+      "recommended_experts": ["mental_health"]
+    },
+    "balanced": {
+      "id": "balanced",
+      "name": "平衡型",
+      "description": "身心状态相对平衡稳定",
+      "indicators": {
+        "hrv_sdnn": {"range": [50, 100], "weight": 0.25},
+        "anxiety_score": {"range": [0, 40], "weight": 0.25},
+        "energy_level": {"range": [60, 100], "weight": 0.25},
+        "sleep_quality": {"range": [70, 100], "weight": 0.25}
+      },
+      "typical_behaviors": ["规律作息", "适度运动", "良好社交"],
+      "recommended_experts": ["nutrition", "tcm_wellness"]
+    }
+  },
+
+  "psychological_readiness_levels": {
+    "_comment": "自研五层次心理准备度模型 - 替代跨理论模型",
+    "level_1_total_resistance": {
+      "id": "total_resistance",
+      "level": 1,
+      "name": "完全对抗",
+      "name_en": "Total Resistance",
+      "core_psychology": "改变是威胁",
+      "description": "感到愤怒，拒绝接受需要改变的事实；争辩、否认问题存在；认为改变是外界强加的",
+      "typical_responses": ["愤怒拒绝", "否认问题", "争辩反驳", "反向行为"],
+      "spi_coefficient": 0.3,
+      "success_rate": {"max": 30},
+      "detection_rules": {
+        "questionnaire_section2_level1_score": {"min": 16},
+        "engagement_score": {"max": 20},
+        "denial_indicators": true
+      },
+      "strategy": "safety_building",
+      "intervention_approach": {
+        "core_task": "降低防御，建立安全感",
+        "techniques": ["不急于推动改变，先倾听理解", "承认情绪，给予自主选择权", "探索不舒服的根源", "探索担心失去什么"],
+        "key_questions": ["对你来说最不舒服的是什么？", "你担心改变会失去什么？"]
+      },
+      "max_tasks": 1,
+      "max_difficulty": 1
+    },
+    "level_2_resistance_reflection": {
+      "id": "resistance_reflection",
+      "level": 2,
+      "name": "抗拒与反思",
+      "name_en": "Resistance with Reflection",
+      "core_psychology": "我不想改变，但我开始看见改变的必要性",
+      "description": "虽然抗拒，但开始理解改变的必要性；内心矛盾，一部分想改变一部分不想",
+      "typical_responses": ["矛盾心理", "开始思考其他方式", "问'保持现状有什么风险'"],
+      "spi_coefficient": 0.5,
+      "success_rate": {"max": 30},
+      "detection_rules": {
+        "questionnaire_section2_level2_score": {"min": 16},
+        "ambivalence_indicators": true,
+        "engagement_score": {"min": 20, "max": 40}
+      },
+      "strategy": "ambivalence_processing",
+      "intervention_approach": {
+        "core_task": "处理矛盾心理",
+        "techniques": ["动机性访谈技术", "促进自我洞察而非说服", "探索两面性"],
+        "key_questions": ["你的一部分想改变，另一部分不想，能说说吗？", "如果保持现状一年，会有什么风险？"]
+      },
+      "max_tasks": 1,
+      "max_difficulty": 2
+    },
+    "level_3_selective_acceptance": {
+      "id": "selective_acceptance",
+      "level": 3,
+      "name": "妥协与接受",
+      "name_en": "Selective Acceptance",
+      "core_psychology": "改变可能是必要的，但我想可控地去做",
+      "description": "接受改变是必要的现实；想要小步尝试，不想一次改变太多；担心失败或坚持不住",
+      "typical_responses": ["接受现实", "小步尝试", "担心失败", "象征性改变"],
+      "spi_coefficient": 0.7,
+      "success_rate": {"min": 40, "max": 60},
+      "detection_rules": {
+        "questionnaire_section2_level3_score": {"min": 16},
+        "engagement_score": {"min": 40, "max": 60},
+        "trial_behavior_indicators": true
+      },
+      "strategy": "threshold_lowering",
+      "intervention_approach": {
+        "core_task": "降低行动门槛，提供成功体验",
+        "techniques": ["设置非常具体的小目标", "从最容易的1%开始", "提供支持资源和工具", "庆祝每一个小成功"],
+        "key_questions": ["这周你能做到的最小一步是什么？", "什么会让这件事变得更容易？"]
+      },
+      "max_tasks": 2,
+      "max_difficulty": 2
+    },
+    "level_4_adaptive_alignment": {
+      "id": "adaptive_alignment",
+      "level": 4,
+      "name": "顺应与调整",
+      "name_en": "Adaptive Alignment",
+      "core_psychology": "改变对我来说是合理的，我愿意适应它",
+      "description": "主动寻求方法来实现改变；自发调整行为来适应新要求；希望把行为融入生活方式",
+      "typical_responses": ["主动寻求方法", "自发调整行为", "寻找可持续模式", "融入生活方式"],
+      "spi_coefficient": 0.9,
+      "success_rate": {"min": 70, "max": 85},
+      "detection_rules": {
+        "questionnaire_section2_level4_score": {"min": 16},
+        "task_completion_rate": {"min": 0.6},
+        "proactive_behavior_indicators": true,
+        "engagement_score": {"min": 60, "max": 80}
+      },
+      "strategy": "habit_strengthening",
+      "intervention_approach": {
+        "core_task": "强化习惯，环境设计",
+        "techniques": ["制作详细的行为方案", "设计支持性环境", "建立提醒和监测机制", "应对可能的障碍情境"],
+        "key_questions": ["什么情况下你最容易坚持？", "如何让环境支持你的新习惯？"]
+      },
+      "max_tasks": 3,
+      "max_difficulty": 4
+    },
+    "level_5_full_internalization": {
+      "id": "full_internalization",
+      "level": 5,
+      "name": "全面臣服",
+      "name_en": "Full Internalization",
+      "core_psychology": "这不再是改变，而是我是谁的一部分",
+      "description": "新的行为已成为自然的一部分；不需要外部监督就能维持；会自发推广给他人；已成为身份的一部分",
+      "typical_responses": ["行为自然化", "无需外部监督", "主动推广", "身份认同"],
+      "spi_coefficient": 1.0,
+      "success_rate": {"min": 90},
+      "detection_rules": {
+        "questionnaire_section2_level5_score": {"min": 16},
+        "task_completion_rate": {"min": 0.8},
+        "stable_weeks": {"min": 8},
+        "self_efficacy_score": {"min": 80},
+        "engagement_score": {"min": 80}
+      },
+      "strategy": "identity_consolidation",
+      "intervention_approach": {
+        "core_task": "巩固身份认同",
+        "techniques": ["深化意义感与价值连接", "强化'这是我'的身份叙事", "考虑成为他人榜样", "维持而非过度控制"],
+        "key_questions": ["这个习惯对你意味着什么？", "你会如何向他人描述现在的自己？"]
+      },
+      "max_tasks": 5,
+      "max_difficulty": 5
+    }
+  },
+
+  "cultivation_phases": {
+    "_comment": "自研四阶段养成方案",
+    "startup": {
+      "id": "startup",
+      "name": "启动期",
+      "duration": "第1-2周",
+      "description": "建立初步行为，形成基本框架",
+      "focus": ["建立打卡习惯", "适应新行为", "解决初期困难"],
+      "coaching_frequency": "每日",
+      "key_tasks": ["每天打卡记录", "每天教练点评", "及时解决困难"]
+    },
+    "adaptation": {
+      "id": "adaptation",
+      "name": "适应期",
+      "duration": "第3-8周",
+      "description": "巩固行为，建立稳定模式",
+      "focus": ["强化习惯", "应对障碍", "建立自动化"],
+      "coaching_frequency": "每周",
+      "key_tasks": ["电话回顾15-30分钟", "总结进展与困难", "调整下周计划"]
+    },
+    "stabilization": {
+      "id": "stabilization",
+      "name": "稳定期",
+      "duration": "第2-4月",
+      "description": "行为稳定，开始内化",
+      "focus": ["减少外部依赖", "应对高风险情境", "建立自我调节"],
+      "coaching_frequency": "每月",
+      "key_tasks": ["面对面深度访谈", "评估健康指标", "重新评估SPI", "调整方案"]
+    },
+    "internalization": {
+      "id": "internalization",
+      "name": "内化期",
+      "duration": "4月以上",
+      "description": "行为成为身份的一部分",
+      "focus": ["身份认同", "自主维持", "成为榜样"],
+      "coaching_frequency": "按需",
+      "key_tasks": ["维持期支持", "复发预防", "推广分享"]
+    }
+  },
+
+  "stage_detection": {
+    "_comment": "解析层 - 改变阶段自动判定规则（基于历史数据频率）",
+    "rules": {
+      "first_assessment": {
+        "condition": "assessment_count == 1",
+        "detected_stage": "intention",
+        "stage_name": "意向期",
+        "description": "初次测评，尚无历史数据对比"
+      },
+      "continuous_improvement": {
+        "condition": "consecutive_improvement_weeks >= 2",
+        "detected_stage": "action",
+        "stage_name": "行动期",
+        "description": "连续2周以上指标好转，已进入行动阶段"
+      },
+      "stable_maintenance": {
+        "condition": "stable_weeks >= 8 AND task_completion_rate >= 0.8",
+        "detected_stage": "maintenance",
+        "stage_name": "维持期",
+        "description": "持续8周稳定，进入习惯维持阶段"
+      },
+      "fluctuation": {
+        "condition": "improvement_then_decline",
+        "detected_stage": "preparation",
+        "stage_name": "准备期",
+        "description": "指标波动，需要重新准备"
+      },
+      "no_change": {
+        "condition": "assessment_count > 1 AND no_improvement",
+        "detected_stage": "contemplation",
+        "stage_name": "思考期",
+        "description": "多次测评但无明显改变"
+      }
+    },
+    "detection_indicators": {
+      "improvement_metrics": ["hrv_sdnn", "sleep_quality", "energy_level", "mood_score", "anxiety_score_inverse"],
+      "improvement_threshold": 0.1,
+      "consecutive_weeks_for_action": 2,
+      "stable_weeks_for_maintenance": 8
+    },
+    "stage_to_readiness_mapping": {
+      "_comment": "将检测到的阶段映射到五层次心理准备度",
+      "intention": "level_2_resistance_reflection",
+      "contemplation": "level_2_resistance_reflection",
+      "preparation": "level_3_selective_acceptance",
+      "action": "level_4_adaptive_alignment",
+      "maintenance": "level_5_full_internalization"
+    }
+  },
+
+  "spi_calculation": {
+    "_comment": "成功可能性指数(SPI)计算模型 - 自研公式",
+    "formula": "SPI = (trigger_score/125) × level_coefficient × (urgency_score/30) × 100",
+    "components": {
+      "trigger_score": {
+        "description": "改变触发原因得分 (第一部分问卷)",
+        "max_score": 125,
+        "dimensions": {
+          "intrinsic_drivers": {"questions": "1-4", "max": 20},
+          "external_events": {"questions": "5-8", "max": 20},
+          "emotional_triggers": {"questions": "9-12", "max": 20},
+          "cognitive_shifts": {"questions": "13-16", "max": 20},
+          "capability_resources": {"questions": "17-20", "max": 20},
+          "social_support": {"questions": "21-25", "max": 25}
+        }
+      },
+      "level_coefficient": {
+        "description": "心理层次系数",
+        "values": {
+          "level_1": 0.3,
+          "level_2": 0.5,
+          "level_3": 0.7,
+          "level_4": 0.9,
+          "level_5": 1.0
+        }
+      },
+      "urgency_score": {
+        "description": "改变迫切程度得分 (第三部分问卷)",
+        "max_score": 30,
+        "dimensions": {
+          "urgency": {"question": 46, "max": 10},
+          "importance": {"question": 49, "max": 10},
+          "readiness": {"question": 50, "max": 10}
+        }
+      }
+    },
+    "interpretation": {
+      "high": {"range": [60, 100], "label": "高成功可能性", "recommendation": "立即开始系统化改变计划"},
+      "medium": {"range": [40, 59], "label": "中等成功可能性", "recommendation": "强化部分要素后启动"},
+      "low": {"range": [20, 39], "label": "较低成功可能性", "recommendation": "先进行准备工作"},
+      "very_low": {"range": [0, 19], "label": "成功可能性低", "recommendation": "时机尚未成熟，持续支持"}
+    }
+  },
+
+  "motivation_calculation": {
+    "_comment": "解析层 - 动机强度计算（核心：精力与心情匹配度）",
+    "formula": "energy_mood_based",
+    "primary_method": {
+      "name": "精力-心情匹配度",
+      "description": "根据'精力'与'心情'指标的匹配度计算动机强度",
+      "calculation": {
+        "step_1": "match_score = 1 - abs(energy - mood) / 100",
+        "step_2": "base_motivation = (energy + mood) / 2",
+        "step_3": "motivation = base_motivation * (0.5 + 0.5 * match_score)",
+        "explanation": "匹配度高时动机更强，不匹配时动机打折"
+      },
+      "energy_source": "user_state.physiological.energy_level",
+      "mood_source": "user_state.psychological.mood_score",
+      "weight": 0.6
+    },
+    "secondary_factors": {
+      "goal_clarity": {
+        "description": "目标清晰度",
+        "source": "user_profile.goals",
+        "weight": 0.15
+      },
+      "past_success": {
+        "description": "历史任务完成率",
+        "source": "task_history.completion_rate",
+        "weight": 0.15
+      },
+      "social_support": {
+        "description": "社会支持度",
+        "source": "user_profile.support_score",
+        "weight": 0.1
+      }
+    },
+    "interpretation": {
+      "high_energy_high_mood": {
+        "condition": "energy >= 70 AND mood >= 70",
+        "motivation_level": "optimal",
+        "label": "最佳状态",
+        "recommendation": "适合挑战性任务"
+      },
+      "high_energy_low_mood": {
+        "condition": "energy >= 70 AND mood < 50",
+        "motivation_level": "mismatched_active",
+        "label": "精力充沛但情绪低落",
+        "recommendation": "先进行情绪调节，再安排任务"
+      },
+      "low_energy_high_mood": {
+        "condition": "energy < 50 AND mood >= 70",
+        "motivation_level": "mismatched_passive",
+        "label": "心情好但精力不足",
+        "recommendation": "安排轻松愉快的小任务"
+      },
+      "low_energy_low_mood": {
+        "condition": "energy < 50 AND mood < 50",
+        "motivation_level": "depleted",
+        "label": "双低状态",
+        "recommendation": "优先休息恢复，暂缓行为任务"
+      }
+    },
+    "thresholds": {
+      "low": {"range": [0, 40], "label": "动机不足", "max_task_difficulty": 1},
+      "moderate": {"range": [40, 70], "label": "动机中等", "max_task_difficulty": 3},
+      "high": {"range": [70, 100], "label": "动机充足", "max_task_difficulty": 5}
+    }
+  },
+
+  "intervention_strategies": {
+    "_comment": "与自研五层次心理准备度模型对应的干预策略",
+    "safety_building": {
+      "name": "安全感建立",
+      "target_level": 1,
+      "description": "降低防御，建立安全感，不急于推动改变",
+      "techniques": ["倾听理解", "承认情绪", "给予自主权", "探索担忧"],
+      "content_types": ["knowledge", "video"],
+      "tone": "gentle_accepting",
+      "do": ["倾听", "理解", "承认情绪"],
+      "dont": ["说服", "施压", "急于改变"]
+    },
+    "ambivalence_processing": {
+      "name": "矛盾处理",
+      "target_level": 2,
+      "description": "运用动机性访谈处理矛盾心理",
+      "techniques": ["动机性访谈", "利弊分析", "风险可视化", "自我洞察促进"],
+      "content_types": ["knowledge", "exercise", "video"],
+      "tone": "curious_supportive",
+      "do": ["探索两面性", "促进洞察", "保持好奇"],
+      "dont": ["说服", "评判", "给答案"]
+    },
+    "threshold_lowering": {
+      "name": "门槛降低",
+      "target_level": 3,
+      "description": "降低行动门槛，提供成功体验",
+      "techniques": ["微目标设定", "1%起步法", "资源支持", "小成功庆祝"],
+      "content_types": ["task", "product", "video"],
+      "tone": "encouraging_practical",
+      "do": ["设小目标", "提供工具", "庆祝进步"],
+      "dont": ["目标过大", "急于求成", "批评失败"]
+    },
+    "habit_strengthening": {
+      "name": "习惯强化",
+      "target_level": 4,
+      "description": "强化习惯，设计支持性环境",
+      "techniques": ["详细方案", "环境设计", "提醒机制", "障碍预案"],
+      "content_types": ["task", "product", "feedback"],
+      "tone": "supportive_systematic",
+      "do": ["系统规划", "环境优化", "监测反馈"],
+      "dont": ["松懈", "忽视障碍"]
+    },
+    "identity_consolidation": {
+      "name": "身份巩固",
+      "target_level": 5,
+      "description": "深化意义感，巩固身份认同",
+      "techniques": ["意义深化", "身份叙事", "榜样角色", "适度放手"],
+      "content_types": ["knowledge", "community"],
+      "tone": "empowering",
+      "do": ["深化意义", "鼓励分享", "适度放手"],
+      "dont": ["过度控制", "制造依赖"]
+    }
+  },
+
+  "matching_rules": [
+    {
+      "id": "rule_001",
+      "name": "高焦虑+低HRV规则",
+      "conditions": {
+        "anxiety_score": {"min": 60},
+        "hrv_sdnn": {"max": 30}
+      },
+      "actions": {
+        "primary_expert": "mental_health",
+        "priority_interventions": ["breathing_exercise", "progressive_relaxation"],
+        "exclude_interventions": ["high_intensity_exercise"]
+      }
+    },
+    {
+      "id": "rule_002",
+      "name": "睡眠障碍规则",
+      "conditions": {
+        "sleep_quality": {"max": 50},
+        "sleep_duration": {"max": 5}
+      },
+      "actions": {
+        "primary_expert": "mental_health",
+        "consult_experts": ["tcm_wellness"],
+        "priority_interventions": ["sleep_hygiene", "relaxation_before_bed"],
+        "knowledge_topics": ["healthy_sleep"]
+      }
+    },
+    {
+      "id": "rule_003",
+      "name": "情绪化进食规则",
+      "conditions": {
+        "eating_pattern": "emotional",
+        "mood_variability": {"min": 50}
+      },
+      "actions": {
+        "primary_expert": "nutrition",
+        "consult_experts": ["mental_health"],
+        "priority_interventions": ["mindful_eating", "emotion_diary"],
+        "product_categories": ["healthy_snacks", "meal_planning"]
+      }
+    },
+    {
+      "id": "rule_004",
+      "name": "久坐不动规则",
+      "conditions": {
+        "daily_steps": {"max": 3000},
+        "sedentary_hours": {"min": 8}
+      },
+      "actions": {
+        "primary_expert": "sports_rehab",
+        "priority_interventions": ["micro_movement", "standing_breaks"],
+        "video_categories": ["office_exercise", "stretching"]
+      }
+    },
+    {
+      "id": "rule_005",
+      "name": "体质失衡规则",
+      "conditions": {
+        "tcm_constitution": ["qi_deficiency", "yang_deficiency", "damp_heat"]
+      },
+      "actions": {
+        "primary_expert": "tcm_wellness",
+        "consult_experts": ["nutrition"],
+        "priority_interventions": ["dietary_therapy", "acupoint_massage"],
+        "product_categories": ["herbal_tea", "health_supplements"]
+      }
+    }
+  ]
+}

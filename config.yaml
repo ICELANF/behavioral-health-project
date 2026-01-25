@@ -1,9 +1,18 @@
-model:
-  embed: "nomic-embed-text:latest"
-  llm: "llama3:latest"
-paths:
-  obsidian_vault: "J:/Knowledge-Hub-Obsidian-Vault/02-Knowledge-Base/Books"
-  vectordb: "J:/xingjian-agent/data/vectordb"
-
-agent:
-  name: 行健AGENT
+project_name: "行健行为教练 [八爪鱼引擎版]"
+agents:
+  mental_health:
+    name: "心理咨询师"
+    path: "xingjian-agent/prompts/mental_health.txt"
+    model: "qwen2.5:7b"
+  nutrition:
+    name: "营养师"
+    path: "xingjian-agent/prompts/nutrition.txt"
+    model: "qwen2.5:7b"
+  sports_rehab:
+    name: "运动康复师"
+    path: "xingjian-agent/prompts/sports_rehab.txt"
+    model: "qwen2.5:7b"
+  tcm_wellness:
+    name: "中医养生师"
+    path: "xingjian-agent/prompts/tcm_wellness.txt"
+    model: "qwen2.5:7b"

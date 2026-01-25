@@ -1,0 +1,79 @@
+@import './variables.scss';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-size: $font-size-md;
+  color: $text-color;
+  background-color: $background-color;
+  -webkit-tap-highlight-color: transparent;
+}
+
+// 页面容器
+.page-container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: $background-color;
+}
+
+// 内容区域
+.page-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: $spacing-md;
+}
+
+// 卡片样式
+.card {
+  background-color: $background-color-light;
+  border-radius: $border-radius-lg;
+  padding: $spacing-md;
+  margin-bottom: $spacing-md;
+  box-shadow: $shadow-sm;
+}
+
+// 效能感样式
+.efficacy-low {
+  color: $efficacy-low;
+  background-color: rgba($efficacy-low, 0.1);
+}
+
+.efficacy-medium {
+  color: $efficacy-medium;
+  background-color: rgba($efficacy-medium, 0.1);
+}
+
+.efficacy-high {
+  color: $efficacy-high;
+  background-color: rgba($efficacy-high, 0.1);
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-radius: 2px;
+}
+
+::-webkit-scrollbar-track {
+  background-color: transparent;
+}
+
+// 安全区域适配
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-top {
+  padding-top: env(safe-area-inset-top);
+}

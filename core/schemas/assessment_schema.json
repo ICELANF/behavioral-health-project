@@ -1,0 +1,415 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "assessment_schema_v1.0",
+  "title": "问卷评估系统 Schema",
+  "description": "Assessment Engine 核心数据结构定义 - 与 Core Data Schema v1.0 并列的系统宪法",
+  "version": "1.0",
+
+  "system_position": {
+    "parent": "Master Orchestrator",
+    "role": "Core Assessment Engine（核心评估引擎）",
+    "functions": [
+      "用户画像生成引擎",
+      "行为模式识别引擎",
+      "干预路径触发器"
+    ],
+    "integration_layers": {
+      "frontend": "画像初始化 / 阶段识别",
+      "middle": "各AGENT调用过程中的专项评估",
+      "backend": "干预路径效果评估 / 动态追踪"
+    }
+  },
+
+  "definitions": {
+    "QuestionnaireDomain": {
+      "type": "string",
+      "enum": [
+        "metabolic",
+        "emotion",
+        "motivation",
+        "stage",
+        "adherence",
+        "sleep",
+        "nutrition",
+        "exercise",
+        "stress",
+        "cognition",
+        "social_support",
+        "self_efficacy",
+        "barrier_identification"
+      ],
+      "description": "问卷领域"
+    },
+
+    "QuestionType": {
+      "type": "string",
+      "enum": ["single_choice", "multiple_choice", "scale", "text", "numeric", "date", "matrix"],
+      "description": "题目类型"
+    },
+
+    "TriggerEvent": {
+      "type": "string",
+      "enum": [
+        "onboarding",
+        "agent_request",
+        "planner_request",
+        "followup_7day",
+        "followup_14day",
+        "followup_30day",
+        "glucose_abnormal",
+        "sleep_abnormal",
+        "task_incomplete_3days",
+        "stage_change",
+        "risk_elevated",
+        "manual"
+      ],
+      "description": "问卷触发事件"
+    },
+
+    "QuestionBlock": {
+      "type": "object",
+      "description": "问卷题块",
+      "required": ["block_id", "title", "questions"],
+      "properties": {
+        "block_id": {"type": "string"},
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "domain": {"$ref": "#/definitions/QuestionnaireDomain"},
+        "questions": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/Question"}
+        },
+        "skip_logic": {
+          "type": "object",
+          "description": "跳转逻辑"
+        },
+        "required_for_stages": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "仅在特定阶段显示"
+        }
+      }
+    },
+
+    "Question": {
+      "type": "object",
+      "required": ["question_id", "text", "type"],
+      "properties": {
+        "question_id": {"type": "string"},
+        "text": {"type": "string"},
+        "type": {"$ref": "#/definitions/QuestionType"},
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "value": {"type": ["string", "number"]},
+              "label": {"type": "string"},
+              "score": {"type": "number"}
+            }
+          }
+        },
+        "scale_config": {
+          "type": "object",
+          "properties": {
+            "min": {"type": "number"},
+            "max": {"type": "number"},
+            "step": {"type": "number"},
+            "labels": {"type": "object"}
+          }
+        },
+        "validation": {
+          "type": "object",
+          "properties": {
+            "required": {"type": "boolean"},
+            "min_length": {"type": "integer"},
+            "max_length": {"type": "integer"},
+            "pattern": {"type": "string"}
+          }
+        },
+        "scoring_weight": {"type": "number", "default": 1.0},
+        "maps_to_field": {"type": "string", "description": "映射到Profile字段"}
+      }
+    },
+
+    "ScoringRule": {
+      "type": "object",
+      "properties": {
+        "dimension": {"type": "string"},
+        "calculation": {
+          "type": "string",
+          "enum": ["sum", "average", "weighted_sum", "max", "custom"]
+        },
+        "question_ids": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "normalization": {
+          "type": "object",
+          "properties": {
+            "method": {"type": "string"},
+            "min": {"type": "number"},
+            "max": {"type": "number"}
+          }
+        }
+      }
+    },
+
+    "InterpretationRule": {
+      "type": "object",
+      "properties": {
+        "dimension": {"type": "string"},
+        "ranges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "min": {"type": "number"},
+              "max": {"type": "number"},
+              "level": {"type": "string"},
+              "label": {"type": "string"},
+              "description": {"type": "string"},
+              "recommended_actions": {
+                "type": "array",
+                "items": {"type": "string"}
+              }
+            }
+          }
+        },
+        "maps_to_profile": {
+          "type": "object",
+          "description": "结果映射到UserMasterProfile的字段"
+        }
+      }
+    },
+
+    "QuestionnaireTemplate": {
+      "type": "object",
+      "description": "结构体1: 问卷模板定义",
+      "required": ["template_id", "name", "domain", "question_blocks"],
+      "properties": {
+        "template_id": {"type": "string"},
+        "name": {"type": "string"},
+        "description": {"type": "string"},
+        "domain": {"$ref": "#/definitions/QuestionnaireDomain"},
+        "version": {"type": "string"},
+        "target_stage": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "适用的行为阶段"
+        },
+        "target_population": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "适用人群标签"
+        },
+        "estimated_minutes": {"type": "integer"},
+        "question_blocks": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/QuestionBlock"}
+        },
+        "scoring_rules": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/ScoringRule"}
+        },
+        "interpretation_rules": {
+          "type": "array",
+          "items": {"$ref": "#/definitions/InterpretationRule"}
+        },
+        "schema_version": {"type": "string", "default": "1.0"},
+        "extensions": {"type": "object"}
+      }
+    },
+
+    "QuestionnaireInstance": {
+      "type": "object",
+      "description": "结构体2: 问卷实例（一次具体填写）",
+      "required": ["instance_id", "user_id", "template_id", "status"],
+      "properties": {
+        "instance_id": {"type": "string"},
+        "user_id": {"type": "string"},
+        "template_id": {"type": "string"},
+        "trigger_source": {"$ref": "#/definitions/TriggerEvent"},
+        "trigger_agent": {"type": "string", "description": "触发的AGENT"},
+        "status": {
+          "type": "string",
+          "enum": ["draft", "in_progress", "completed", "abandoned"]
+        },
+        "answers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "question_id": {"type": "string"},
+              "value": {},
+              "answered_at": {"type": "string", "format": "date-time"}
+            }
+          }
+        },
+        "started_at": {"type": "string", "format": "date-time"},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "time_spent_seconds": {"type": "integer"},
+        "schema_version": {"type": "string", "default": "1.0"},
+        "extensions": {"type": "object"}
+      }
+    },
+
+    "AssessmentResult": {
+      "type": "object",
+      "description": "结构体3: 评估结果对象（进入中枢的关键对象）",
+      "required": ["result_id", "user_id", "instance_id", "domain"],
+      "properties": {
+        "result_id": {"type": "string"},
+        "user_id": {"type": "string"},
+        "instance_id": {"type": "string"},
+        "template_id": {"type": "string"},
+        "domain": {"$ref": "#/definitions/QuestionnaireDomain"},
+        "assessed_at": {"type": "string", "format": "date-time"},
+        "core_scores": {
+          "type": "object",
+          "properties": {
+            "motivation_score": {"type": "number"},
+            "self_efficacy_score": {"type": "number"},
+            "resistance_level": {"type": "number"},
+            "stage_score": {"type": "number"},
+            "adherence_score": {"type": "number"},
+            "risk_score": {"type": "number"}
+          },
+          "additionalProperties": {"type": "number"}
+        },
+        "dimension_scores": {
+          "type": "object",
+          "additionalProperties": {"type": "number"},
+          "description": "各维度得分"
+        },
+        "behavior_pattern_tags": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "inner_need_tags": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "identified_barriers": {
+          "type": "array",
+          "items": {"type": "string"},
+          "description": "识别的行为障碍"
+        },
+        "risk_level": {
+          "type": "string",
+          "enum": ["low", "moderate", "high", "critical"]
+        },
+        "confidence_level": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "interpretation_summary": {"type": "string"},
+        "recommended_interventions": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "profile_updates": {
+          "type": "object",
+          "description": "建议写回UserMasterProfile的字段"
+        },
+        "schema_version": {"type": "string", "default": "1.0"},
+        "extensions": {"type": "object"}
+      }
+    },
+
+    "QuestionnaireTriggerRule": {
+      "type": "object",
+      "description": "结构体4: 问卷触发规则",
+      "required": ["rule_id", "trigger_event", "template_id"],
+      "properties": {
+        "rule_id": {"type": "string"},
+        "name": {"type": "string"},
+        "trigger_event": {"$ref": "#/definitions/TriggerEvent"},
+        "conditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "field": {"type": "string"},
+              "operator": {"type": "string", "enum": ["eq", "ne", "gt", "lt", "gte", "lte", "in", "contains"]},
+              "value": {}
+            }
+          },
+          "description": "触发条件"
+        },
+        "target_agent": {"type": "string"},
+        "template_id": {"type": "string"},
+        "priority": {
+          "type": "string",
+          "enum": ["high", "normal", "low"]
+        },
+        "cooldown_hours": {
+          "type": "integer",
+          "description": "触发冷却时间（小时）"
+        },
+        "max_frequency_per_week": {"type": "integer"},
+        "enabled": {"type": "boolean", "default": true},
+        "schema_version": {"type": "string", "default": "1.0"},
+        "extensions": {"type": "object"}
+      }
+    }
+  },
+
+  "assessment_engine_architecture": {
+    "components": [
+      {
+        "name": "Questionnaire Generator",
+        "description": "动态问卷生成器 - 根据目标+人群+阶段+风险自动生成问卷",
+        "inputs": ["assessment_goal", "user_profile_snapshot", "current_stage", "calling_agent"],
+        "outputs": ["QuestionnaireInstance"]
+      },
+      {
+        "name": "Scoring Engine",
+        "description": "评分引擎 - 根据ScoringRules计算各维度得分",
+        "inputs": ["QuestionnaireInstance", "ScoringRules"],
+        "outputs": ["dimension_scores", "core_scores"]
+      },
+      {
+        "name": "Interpretation Engine",
+        "description": "解读引擎 - 根据InterpretationRules生成结果解读",
+        "inputs": ["dimension_scores", "InterpretationRules"],
+        "outputs": ["AssessmentResult"]
+      },
+      {
+        "name": "Profile Writer",
+        "description": "画像写入器 - 将评估结果写入UserMasterProfile",
+        "inputs": ["AssessmentResult"],
+        "outputs": ["profile_updates"],
+        "note": "必须通过Master Orchestrator统一写回"
+      }
+    ]
+  },
+
+  "integration_with_agents": {
+    "as_router_tool": {
+      "description": "作为Router的判别工具",
+      "flow": "用户进入 → 自动生成行为改变可能性评估 → Router根据结果选择AGENT",
+      "example_rules": [
+        "高阻抗 → 先走动机AGENT",
+        "高风险 → 直接调用代谢+医疗AGENT"
+      ]
+    },
+    "as_agent_sensor": {
+      "description": "作为AGENT的外挂感知器",
+      "task_type": "assessment_request",
+      "example": {
+        "task_type": "assessment_request",
+        "domain": "nutrition_behavior",
+        "goal": "identify_barriers"
+      }
+    },
+    "as_planner_input": {
+      "description": "作为Intervention Planner的决策输入",
+      "example_rules": [
+        "IF 阶段=准备前期 AND 自我效能<40 → 干预路径=认知唤醒+微任务",
+        "IF 动机高+阻抗低 → 干预路径=情绪支持型教练"
+      ]
+    }
+  }
+}

@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五大人格特质测评</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1rem;
+        }
+
+        .progress-container {
+            padding: 20px 40px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .instructions {
+            padding: 30px 40px;
+            background: #f0f4ff;
+            border-bottom: 1px solid #e0e8ff;
+        }
+
+        .instructions h3 {
+            color: #4a5568;
+            margin-bottom: 15px;
+        }
+
+        .scale-legend {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .scale-item {
+            text-align: center;
+        }
+
+        .scale-value {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .question-section {
+            padding: 30px 40px;
+        }
+
+        .question-card {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .question-card.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question-number {
+            color: #667eea;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            color: #2d3748;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            padding: 15px 5px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .option-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .option-btn.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+
+        .option-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .option-label {
+            font-size: 0.7rem;
+            margin-top: 5px;
+            color: #888;
+        }
+
+        .option-btn.selected .option-label {
+            color: rgba(255,255,255,0.8);
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .nav-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .nav-btn.prev {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .nav-btn.next {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Results Section */
+        .results-section {
+            display: none;
+            padding: 40px;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .results-header h2 {
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+
+        .trait-result {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .trait-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .trait-name {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .trait-score {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .trait-bar-container {
+            position: relative;
+            height: 30px;
+            background: linear-gradient(90deg, #ff6b6b 0%, #ffd93d 25%, #6bcb77 50%, #ffd93d 75%, #ff6b6b 100%);
+            border-radius: 15px;
+            margin-bottom: 10px;
+        }
+
+        .trait-marker {
+            position: absolute;
+            top: -5px;
+            width: 20px;
+            height: 40px;
+            background: #2d3748;
+            border-radius: 4px;
+            transform: translateX(-50%);
+        }
+
+        .trait-scale {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .trait-level {
+            text-align: center;
+            padding: 8px 16px;
+            background: #667eea;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: inline-block;
+            margin: 10px 0;
+        }
+
+        .trait-description {
+            color: #4a5568;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .profile-chart {
+            margin: 40px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .profile-chart h3 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2d3748;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .action-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .action-btn.secondary {
+            background: #e0e0e0;
+            color: #666;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        @media (max-width: 600px) {
+            .options-grid {
+                grid-template-columns: repeat(5, 1fr);
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .question-section, .results-section {
+                padding: 20px;
+            }
+
+            .question-text {
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+
+            .nav-buttons, .actions {
+                display: none;
+            }
+
+            .question-section {
+                display: none;
+            }
+
+            .results-section {
+                display: block !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>五大人格特质测评</h1>
+            <p>Big Five Personality Assessment</p>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">第 1 题 / 共 50 题</div>
+        </div>
+
+        <div class="instructions" id="instructions">
+            <h3>答题说明</h3>
+            <p style="margin-bottom: 15px; color: #4a5568;">请根据您的实际情况，选择最符合您的选项。没有对错之分，请如实作答。</p>
+            <div class="scale-legend">
+                <div class="scale-item"><span class="scale-value">-4</span><br>完全不符合</div>
+                <div class="scale-item"><span class="scale-value">-3</span><br>比较不符合</div>
+                <div class="scale-item"><span class="scale-value">-2</span><br>有点不符合</div>
+                <div class="scale-item"><span class="scale-value">-1</span><br>略微不符合</div>
+                <div class="scale-item"><span class="scale-value">0</span><br>中立</div>
+                <div class="scale-item"><span class="scale-value">+1</span><br>略微符合</div>
+                <div class="scale-item"><span class="scale-value">+2</span><br>有点符合</div>
+                <div class="scale-item"><span class="scale-value">+3</span><br>比较符合</div>
+                <div class="scale-item"><span class="scale-value">+4</span><br>完全符合</div>
+            </div>
+        </div>
+
+        <div class="question-section" id="questionSection">
+            <!-- Questions will be inserted here -->
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>您的测评结果</h2>
+                <p style="color: #666;">基于您的回答，以下是您的五大人格特质分析</p>
+            </div>
+
+            <div id="resultsContent"></div>
+
+            <div class="profile-chart">
+                <h3>人格剖面图</h3>
+                <div id="profileChart"></div>
+            </div>
+
+            <div class="actions">
+                <button class="action-btn secondary" onclick="window.print()">打印报告</button>
+                <button class="action-btn secondary" onclick="downloadReport()">下载报告</button>
+                <button class="action-btn primary" onclick="restartTest()">重新测评</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 题目数据
+        const questions = [
+            // 外向性 (E)
+            { id: 'E1', text: '我是聚会中的活跃分子', trait: 'E', reverse: false },
+            { id: 'E2', text: '我不太爱说话', trait: 'E', reverse: true },
+            { id: 'E3', text: '我在人群中感到自在', trait: 'E', reverse: false },
+            { id: 'E4', text: '我喜欢待在幕后', trait: 'E', reverse: true },
+            { id: 'E5', text: '我喜欢主导谈话', trait: 'E', reverse: false },
+            { id: 'E6', text: '在社交场合我很少发言', trait: 'E', reverse: true },
+            { id: 'E7', text: '我喜欢成为关注的焦点', trait: 'E', reverse: false },
+            { id: 'E8', text: '我觉得和陌生人交谈很困难', trait: 'E', reverse: true },
+            { id: 'E9', text: '我精力充沛', trait: 'E', reverse: false },
+            { id: 'E10', text: '我是一个安静的人', trait: 'E', reverse: true },
+
+            // 情绪稳定性 (N)
+            { id: 'N1', text: '我很少感到忧郁', trait: 'N', reverse: false },
+            { id: 'N2', text: '我容易受到干扰', trait: 'N', reverse: true },
+            { id: 'N3', text: '我大多数时候都很放松', trait: 'N', reverse: false },
+            { id: 'N4', text: '我容易感到不安', trait: 'N', reverse: true },
+            { id: 'N5', text: '我不容易烦躁', trait: 'N', reverse: false },
+            { id: 'N6', text: '我的情绪变化很大', trait: 'N', reverse: true },
+            { id: 'N7', text: '我很少感到沮丧', trait: 'N', reverse: false },
+            { id: 'N8', text: '我很容易感到压力', trait: 'N', reverse: true },
+            { id: 'N9', text: '我情绪稳定', trait: 'N', reverse: false },
+            { id: 'N10', text: '我经常担心事情会出错', trait: 'N', reverse: true },
+
+            // 尽责性 (C)
+            { id: 'C1', text: '我总是做好准备', trait: 'C', reverse: false },
+            { id: 'C2', text: '我会把东西乱放', trait: 'C', reverse: true },
+            { id: 'C3', text: '我注重细节', trait: 'C', reverse: false },
+            { id: 'C4', text: '我会把事情搞得一团糟', trait: 'C', reverse: true },
+            { id: 'C5', text: '我会立即完成任务', trait: 'C', reverse: false },
+            { id: 'C6', text: '我经常忘记把东西放回原处', trait: 'C', reverse: true },
+            { id: 'C7', text: '我喜欢秩序', trait: 'C', reverse: false },
+            { id: 'C8', text: '我逃避我的责任', trait: 'C', reverse: true },
+            { id: 'C9', text: '我遵循计划', trait: 'C', reverse: false },
+            { id: 'C10', text: '我做事粗心大意', trait: 'C', reverse: true },
+
+            // 宜人性 (A)
+            { id: 'A1', text: '我对他人的感受感兴趣', trait: 'A', reverse: false },
+            { id: 'A2', text: '我对他人的问题不感兴趣', trait: 'A', reverse: true },
+            { id: 'A3', text: '我能感受到他人的情绪', trait: 'A', reverse: false },
+            { id: 'A4', text: '我不太关心他人', trait: 'A', reverse: true },
+            { id: 'A5', text: '我愿意花时间帮助他人', trait: 'A', reverse: false },
+            { id: 'A6', text: '我有时对人不友好', trait: 'A', reverse: true },
+            { id: 'A7', text: '我能让人感到轻松', trait: 'A', reverse: false },
+            { id: 'A8', text: '我有时会侮辱他人', trait: 'A', reverse: true },
+            { id: 'A9', text: '我善于体谅他人', trait: 'A', reverse: false },
+            { id: 'A10', text: '我有时会说一些伤人的话', trait: 'A', reverse: true },
+
+            // 开放性 (O)
+            { id: 'O1', text: '我想象力丰富', trait: 'O', reverse: false },
+            { id: 'O2', text: '我对抽象概念不感兴趣', trait: 'O', reverse: true },
+            { id: 'O3', text: '我有很多创意', trait: 'O', reverse: false },
+            { id: 'O4', text: '我不喜欢思考理论问题', trait: 'O', reverse: true },
+            { id: 'O5', text: '我喜欢思考深奥的事物', trait: 'O', reverse: false },
+            { id: 'O6', text: '我缺乏想象力', trait: 'O', reverse: true },
+            { id: 'O7', text: '我能快速理解事物', trait: 'O', reverse: false },
+            { id: 'O8', text: '我使用复杂的词汇', trait: 'O', reverse: false },
+            { id: 'O9', text: '我喜欢探索新想法', trait: 'O', reverse: false },
+            { id: 'O10', text: '我理解抽象概念有困难', trait: 'O', reverse: true }
+        ];
+
+        const traitInfo = {
+            E: {
+                name: '外向性',
+                nameEn: 'Extraversion',
+                high: '你精力充沛，热情开朗，喜欢社交活动，善于表达自己。你乐于成为人群中的焦点，从与他人的互动中获得能量。',
+                mid: '你在社交和独处之间保持良好的平衡，能够根据情境灵活调整自己的社交风格。',
+                low: '你更喜欢安静的环境和深度的人际关系。你善于倾听和独立思考，从独处中获得能量。'
+            },
+            N: {
+                name: '情绪稳定性',
+                nameEn: 'Emotional Stability',
+                high: '你情绪稳定，心态平和，能够从容应对压力和挫折。你很少感到焦虑或情绪波动。',
+                mid: '你的情绪稳定性处于正常水平，能够应对大多数日常压力，偶尔会有情绪起伏。',
+                low: '你情感丰富，对环境变化较为敏感。建议学习一些情绪调节技巧，以更好地应对压力。'
+            },
+            C: {
+                name: '尽责性',
+                nameEn: 'Conscientiousness',
+                high: '你做事有条理，自律性强，目标明确。你可靠、勤奋，善于规划和执行任务，是值得信赖的人。',
+                mid: '你在组织性和灵活性之间保持平衡，既能按计划行事，也能适应变化。',
+                low: '你更喜欢灵活自由的方式，不喜欢过多的规则约束。你可能更注重当下体验而非长期规划。'
+            },
+            A: {
+                name: '宜人性',
+                nameEn: 'Agreeableness',
+                high: '你善解人意，乐于助人，与人相处融洽。你富有同情心，重视和谐的人际关系，容易赢得他人信任。',
+                mid: '你在合作与坚持自我之间保持平衡，既能体谅他人，也能在必要时坚持自己的立场。',
+                low: '你更注重客观和理性分析，不会轻易被情感左右。你独立思考，敢于表达不同意见。'
+            },
+            O: {
+                name: '开放性',
+                nameEn: 'Openness',
+                high: '你富有想象力和创造力，喜欢探索新事物和新观点。你对艺术、美学有较高的敏感度，思维活跃开放。',
+                mid: '你在接受新事物方面持平衡态度，既能欣赏创新，也重视传统经验和实际验证。',
+                low: '你更偏好实际和具体的事物，喜欢熟悉的环境和经过验证的方法。你务实稳重，注重实际效果。'
+            }
+        };
+
+        const scoreLevels = [
+            { range: [28, 40], level: '极高水平' },
+            { range: [16, 27], level: '高水平' },
+            { range: [4, 15], level: '中高水平' },
+            { range: [-3, 3], level: '中等水平' },
+            { range: [-15, -4], level: '中低水平' },
+            { range: [-27, -16], level: '低水平' },
+            { range: [-40, -28], level: '极低水平' }
+        ];
+
+        let currentQuestion = 0;
+        let answers = {};
+
+        // 初始化问卷
+        function initQuestions() {
+            const container = document.getElementById('questionSection');
+
+            questions.forEach((q, index) => {
+                const card = document.createElement('div');
+                card.className = `question-card ${index === 0 ? 'active' : ''}`;
+                card.id = `question-${index}`;
+
+                card.innerHTML = `
+                    <div class="question-number">第 ${index + 1} 题 / 共 ${questions.length} 题</div>
+                    <div class="question-text">${q.text}</div>
+                    <div class="options-grid">
+                        ${[-4,-3,-2,-1,0,1,2,3,4].map(val => `
+                            <button class="option-btn" data-value="${val}" onclick="selectOption(${index}, ${val})">
+                                <div class="option-value">${val > 0 ? '+' + val : val}</div>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="nav-buttons">
+                        <button class="nav-btn prev" onclick="prevQuestion()" ${index === 0 ? 'disabled' : ''}>上一题</button>
+                        <button class="nav-btn next" onclick="nextQuestion()" id="nextBtn-${index}">
+                            ${index === questions.length - 1 ? '查看结果' : '下一题'}
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function selectOption(questionIndex, value) {
+            answers[questionIndex] = value;
+
+            // 更新按钮样式
+            const card = document.getElementById(`question-${questionIndex}`);
+            card.querySelectorAll('.option-btn').forEach(btn => {
+                btn.classList.remove('selected');
+                if (parseInt(btn.dataset.value) === value) {
+                    btn.classList.add('selected');
+                }
+            });
+        }
+
+        function nextQuestion() {
+            if (answers[currentQuestion] === undefined) {
+                alert('请选择一个选项');
+                return;
+            }
+
+            if (currentQuestion < questions.length - 1) {
+                document.getElementById(`question-${currentQuestion}`).classList.remove('active');
+                currentQuestion++;
+                document.getElementById(`question-${currentQuestion}`).classList.add('active');
+                updateProgress();
+            } else {
+                showResults();
+            }
+        }
+
+        function prevQuestion() {
+            if (currentQuestion > 0) {
+                document.getElementById(`question-${currentQuestion}`).classList.remove('active');
+                currentQuestion--;
+                document.getElementById(`question-${currentQuestion}`).classList.add('active');
+                updateProgress();
+            }
+        }
+
+        function updateProgress() {
+            const progress = ((currentQuestion + 1) / questions.length) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('progressText').textContent = `第 ${currentQuestion + 1} 题 / 共 ${questions.length} 题`;
+        }
+
+        function calculateScores() {
+            const scores = { E: 0, N: 0, C: 0, A: 0, O: 0 };
+
+            questions.forEach((q, index) => {
+                let score = answers[index] || 0;
+                if (q.reverse) {
+                    score = -score;
+                }
+                scores[q.trait] += score;
+            });
+
+            return scores;
+        }
+
+        function getLevel(score) {
+            for (const level of scoreLevels) {
+                if (score >= level.range[0] && score <= level.range[1]) {
+                    return level.level;
+                }
+            }
+            return '中等水平';
+        }
+
+        function getDescription(trait, score) {
+            const info = traitInfo[trait];
+            if (score >= 16) return info.high;
+            if (score >= -3) return info.mid;
+            return info.low;
+        }
+
+        function showResults() {
+            document.getElementById('questionSection').style.display = 'none';
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('instructions').style.display = 'none';
+            document.getElementById('resultsSection').classList.add('active');
+
+            const scores = calculateScores();
+            const resultsContent = document.getElementById('resultsContent');
+            const traitOrder = ['E', 'N', 'C', 'A', 'O'];
+
+            let html = '';
+            traitOrder.forEach(trait => {
+                const score = scores[trait];
+                const level = getLevel(score);
+                const description = getDescription(trait, score);
+                const info = traitInfo[trait];
+                const position = ((score + 40) / 80) * 100;
+
+                html += `
+                    <div class="trait-result">
+                        <div class="trait-header">
+                            <span class="trait-name">${info.name} (${info.nameEn})</span>
+                            <span class="trait-score">${score > 0 ? '+' : ''}${score}</span>
+                        </div>
+                        <div class="trait-bar-container">
+                            <div class="trait-marker" style="left: ${position}%"></div>
+                        </div>
+                        <div class="trait-scale">
+                            <span>-40 (极低)</span>
+                            <span>0 (中等)</span>
+                            <span>+40 (极高)</span>
+                        </div>
+                        <div class="trait-level">${level}</div>
+                        <div class="trait-description">${description}</div>
+                    </div>
+                `;
+            });
+
+            resultsContent.innerHTML = html;
+
+            // 生成剖面图
+            let profileHtml = '';
+            traitOrder.forEach(trait => {
+                const score = scores[trait];
+                const info = traitInfo[trait];
+                const position = ((score + 40) / 80) * 100;
+
+                profileHtml += `
+                    <div style="margin-bottom: 15px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>${info.name}</span>
+                            <span style="font-weight: bold; color: #667eea;">${score > 0 ? '+' : ''}${score}</span>
+                        </div>
+                        <div style="position: relative; height: 20px; background: linear-gradient(90deg, #e74c3c, #f39c12, #2ecc71, #f39c12, #e74c3c); border-radius: 10px;">
+                            <div style="position: absolute; left: ${position}%; top: -3px; width: 16px; height: 26px; background: #2d3748; border-radius: 4px; transform: translateX(-50%);"></div>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: #888; margin-top: 3px;">
+                            <span>-40</span>
+                            <span>0</span>
+                            <span>+40</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            document.getElementById('profileChart').innerHTML = profileHtml;
+        }
+
+        function restartTest() {
+            answers = {};
+            currentQuestion = 0;
+
+            document.getElementById('questionSection').style.display = 'block';
+            document.getElementById('progressContainer').style.display = 'block';
+            document.getElementById('instructions').style.display = 'block';
+            document.getElementById('resultsSection').classList.remove('active');
+
+            document.querySelectorAll('.question-card').forEach((card, index) => {
+                card.classList.toggle('active', index === 0);
+                card.querySelectorAll('.option-btn').forEach(btn => btn.classList.remove('selected'));
+            });
+
+            updateProgress();
+        }
+
+        function downloadReport() {
+            const scores = calculateScores();
+            const traitOrder = ['E', 'N', 'C', 'A', 'O'];
+
+            let report = '五大人格特质测评报告\n';
+            report += '=' .repeat(50) + '\n\n';
+            report += '测评时间: ' + new Date().toLocaleString() + '\n\n';
+            report += '各维度得分:\n';
+            report += '-'.repeat(50) + '\n';
+
+            traitOrder.forEach(trait => {
+                const score = scores[trait];
+                const level = getLevel(score);
+                const info = traitInfo[trait];
+                report += `${info.name} (${info.nameEn}): ${score > 0 ? '+' : ''}${score} [${level}]\n`;
+            });
+
+            report += '\n详细解读:\n';
+            report += '-'.repeat(50) + '\n';
+
+            traitOrder.forEach(trait => {
+                const score = scores[trait];
+                const info = traitInfo[trait];
+                const description = getDescription(trait, score);
+                report += `\n${info.name}:\n${description}\n`;
+            });
+
+            report += '\n' + '='.repeat(50) + '\n';
+            report += '注：本测评仅供参考，不作为专业心理诊断依据。\n';
+
+            const blob = new Blob([report], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '五大人格测评报告.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 初始化
+        initQuestions();
+    </script>
+</body>
+</html>
