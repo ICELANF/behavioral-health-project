@@ -1,0 +1,22 @@
+# -*- coding: utf-8 -*-
+"""
+集中配置 - 从环境变量读取，提供默认值
+"""
+
+import os
+
+# LLM 提供者: "ollama" | "dify" | "auto"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto")
+
+# Dify 配置
+DIFY_API_URL = os.getenv("DIFY_API_URL", "http://localhost:8080/v1")
+DIFY_API_KEY = os.getenv("DIFY_API_KEY", "app-TSdoLNkz636aipfD9zTtHdEY")
+DIFY_TIMEOUT = float(os.getenv("DIFY_TIMEOUT", "120.0"))
+
+# Ollama 配置
+OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
+OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "300.0"))
+
+# 健康检查缓存时间（秒）
+HEALTH_CACHE_TTL = int(os.getenv("HEALTH_CACHE_TTL", "30"))

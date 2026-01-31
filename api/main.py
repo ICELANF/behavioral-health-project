@@ -97,10 +97,8 @@ class CoordinateRequest(BaseModel):
 
 app = FastAPI(title="Xingjian Agent Gateway", version="2.0")
 
-# --- 配置中心 (后续可移入 .env 文件) ---
-DIFY_API_URL = "http://localhost/v1"  # Dify Docker 默认地址
-DIFY_API_KEY = "app-your-dify-api-key-here"  # 替换为你的 Dify API Key
-OLLAMA_API_URL = "http://localhost:11434/api/generate"
+# --- 配置中心 (从 api.config 集中读取) ---
+from api.config import DIFY_API_URL, DIFY_API_KEY, OLLAMA_API_URL, OLLAMA_MODEL
 
 app.add_middleware(
     CORSMiddleware,
@@ -108,6 +106,38 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 注册认证路由
+try:
+    from api.auth_api import router as auth_router
+    app.include_router(auth_router)
+    print("[API] 认证路由已注册")
+except ImportError as e:
+    print(f"[API] 认证路由注册失败: {e}")
+
+# 注册评估路由
+try:
+    from api.assessment_api import router as assessment_router
+    app.include_router(assessment_router)
+    print("[API] 评估路由已注册")
+except ImportError as e:
+    print(f"[API] 评估路由注册失败: {e}")
+
+# 注册小程序路由
+try:
+    from api.miniprogram import router as mp_router
+    app.include_router(mp_router, prefix="/api/v1")
+    print("[API] 小程序路由已注册")
+except ImportError as e:
+    print(f"[API] 小程序路由注册失败: {e}")
+
+# 注册设备数据路由
+try:
+    from api.device_data import router as device_router
+    app.include_router(device_router, prefix="/api/v1/mp")
+    print("[API] 设备数据路由已注册")
+except ImportError as e:
+    print(f"[API] 设备数据路由注册失败: {e}")
 
 class AgentGateway:
     """行健行为教练网关：连接编排层与模型层"""
@@ -126,7 +156,7 @@ class AgentGateway:
             "user": user_id
         }
         
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=120.0) as client:
             try:
                 response = await client.post(f"{DIFY_API_URL}/chat-messages", json=payload, headers=headers)
                 response.raise_for_status()
@@ -149,13 +179,13 @@ class AgentGateway:
         full_prompt = f"系统：{system_prompt}\n\n用户：{prompt}\n\n助手："
 
         payload = {
-            "model": "qwen2.5:14b",
+            "model": OLLAMA_MODEL,
             "prompt": full_prompt,
             "stream": False
         }
         try:
             async with httpx.AsyncClient(timeout=180.0) as client:
-                response = await client.post(OLLAMA_API_URL, json=payload)
+                response = await client.post(f"{OLLAMA_API_URL}/api/generate", json=payload)
                 return response.json()
         except httpx.TimeoutException:
             return {"response": "抱歉，服务响应超时，请稍后重试。"}
