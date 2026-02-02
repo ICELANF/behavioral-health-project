@@ -4,7 +4,7 @@ verify_octopus_logic.py
 八爪鱼核心逻辑验证 — 3 个场景:
   1. SOP 6.2 公共防火墙 (UI-1 → SILENCE, 绕过大脑)
   2. S2 → S3 阶段跃迁 (UI-3, belief=0.8)
-  3. L6 热重写 (英雄之旅叙事, 非原始 JSON)
+  3. L6 热重写 (成长之旅叙事, 非原始 JSON)
 """
 import sys, os, json, unittest
 
@@ -57,10 +57,10 @@ class TestOctopusLogic(unittest.TestCase):
         self.assertTrue(result["is_transition"], "belief=0.8 应触发 S2→S3 跃迁")
 
     # ------------------------------------------------------------------ #
-    # 场景 3: L6 热重写 — 英雄之旅叙事
+    # 场景 3: L6 热重写 — 成长之旅叙事
     # ------------------------------------------------------------------ #
     def test_l6_hero_journey_rewrite(self):
-        """跃迁响应必须包含英雄之旅风格叙事, 而非原始 JSON 数据"""
+        """跃迁响应必须包含成长之旅风格叙事, 而非原始 JSON 数据"""
         result = self.brain.process(
             source_ui="UI-3",
             current_state={"current_stage": "S2", "belief": 0.8, "action_count_3d": 2},
@@ -71,8 +71,8 @@ class TestOctopusLogic(unittest.TestCase):
 
         narrative = result["narrative"]
 
-        # 叙事文本应包含英雄之旅关键词
-        self.assertIn("英雄之旅", narrative, "叙事文本应包含'英雄之旅'")
+        # 叙事文本应包含成长之旅关键词
+        self.assertIn("成长之旅", narrative, "叙事文本应包含'成长之旅'")
         self.assertIn("行动", narrative, "叙事文本应包含'行动'关键词")
 
         # 叙事文本不应是原始 JSON 数据

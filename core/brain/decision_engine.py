@@ -5,11 +5,11 @@ from datetime import datetime, timedelta
 # SOP 6.2 公共防火墙：这些 UI 来源直接返回 SILENCE，不经过大脑判定
 FIREWALL_SILENT_SOURCES = {"UI-1"}
 
-# L6 英雄之旅叙事模板
+# L6 成长之旅叙事模板
 HERO_JOURNEY_TEMPLATES = {
     "S2_to_S3": (
         "你已经走过了准备期的考验，内心的信念之火已被点燃。"
-        "现在，你正式踏上行动的旅程——这是英雄之旅中最关键的一步。"
+        "现在，你正式踏上行动的旅程——这是成长之旅中最关键的一步。"
         "每一个小小的行动，都是你迈向新生活的勋章。"
     ),
 }
@@ -69,11 +69,11 @@ class BehavioralBrain:
         }
 
     # ------------------------------------------------------------------
-    # L6 热重写：英雄之旅叙事化
+    # L6 热重写：成长之旅叙事化
     # ------------------------------------------------------------------
     def l6_humanize(self, transition_result: Dict[str, Any]) -> Dict[str, Any]:
         """
-        如果发生阶段跃迁，用英雄之旅风格的叙事替换原始数据，
+        如果发生阶段跃迁，用成长之旅风格的叙事替换原始数据，
         让患者端看到的是温暖的故事而不是冰冷的 JSON 指标。
         """
         result = dict(transition_result)
@@ -94,7 +94,7 @@ class BehavioralBrain:
         完整处理流水线:
         1. SOP 6.2 防火墙检查
         2. TTM 阶段跃迁判定
-        3. L6 英雄之旅叙事重写
+        3. L6 成长之旅叙事重写
         """
         # Step 1: 防火墙
         firewall = self.firewall_check(source_ui)

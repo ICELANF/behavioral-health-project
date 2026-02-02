@@ -4,7 +4,7 @@ final_api_check.py
 端到端 API 验证 — 直接调用运行中的 /api/v1/brain/evaluate 端点
   1. UI-1 被 SOP 6.2 防火墙拦截 → SILENCE
   2. UI-3 触发 S2→S3 跃迁
-  3. 英雄之旅叙事内容正确返回
+  3. 成长之旅叙事内容正确返回
   4. 跃迁事件持久化到 behavior_audit_logs 表
 """
 import sys, os, unittest
@@ -81,10 +81,10 @@ class TestFinalAPICheck(unittest.TestCase):
         self.assertTrue(data["is_transition"])
 
     # ------------------------------------------------------------------ #
-    # 场景 3: 英雄之旅叙事正确返回
+    # 场景 3: 成长之旅叙事正确返回
     # ------------------------------------------------------------------ #
     def test_hero_journey_narrative_in_response(self):
-        """跃迁响应中 narrative 字段包含英雄之旅中文叙事"""
+        """跃迁响应中 narrative 字段包含成长之旅中文叙事"""
         data = _post(
             headers={"X-Source-UI": "UI-3"},
             payload={"user_id": TEST_USER_ID, "current_stage": "S2", "belief": 0.8, "action_count_3d": 2},
@@ -93,7 +93,7 @@ class TestFinalAPICheck(unittest.TestCase):
         narrative = data["narrative"]
         self.assertIsInstance(narrative, str)
         self.assertGreater(len(narrative), 10, "叙事文本不应为空或过短")
-        self.assertIn("英雄之旅", narrative)
+        self.assertIn("成长之旅", narrative)
         self.assertIn("行动", narrative)
         # 确认不是原始 JSON 字符串
         self.assertNotIn("{", narrative)
@@ -133,7 +133,7 @@ class TestFinalAPICheck(unittest.TestCase):
         self.assertEqual(latest.to_stage, "S3")
         self.assertEqual(latest.source_ui, "UI-3")
         self.assertIsNotNone(latest.narrative)
-        self.assertIn("英雄之旅", latest.narrative)
+        self.assertIn("成长之旅", latest.narrative)
 
 
 if __name__ == "__main__":
