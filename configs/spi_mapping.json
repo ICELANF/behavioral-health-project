@@ -1,0 +1,1 @@
+{"dimensions": ["capability", "belief", "environment"], "thresholds": {"S2_to_S3": {"min_belief": 0.6, "min_capability": 0.5}}}

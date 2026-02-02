@@ -5,7 +5,7 @@ import httpx
 import json
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, Body, HTTPException
+from fastapi import FastAPI, Body, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -669,6 +669,62 @@ async def orchestrator_status():
         },
         "timestamp": datetime.now().isoformat()
     }
+
+
+# ============================================================================
+# [v16-NEW] TTM 大脑判定 API (SOP 6.2 + L6 叙事)
+# ============================================================================
+
+class BrainEvaluateRequest(BaseModel):
+    """TTM 阶段跃迁判定请求"""
+    user_id: str = Field(..., description="用户ID")
+    current_stage: str = Field("S0", description="当前 TTM 阶段: S0-S5")
+    belief: float = Field(0.0, ge=0.0, le=1.0, description="信念指数")
+    action_count_3d: int = Field(0, ge=0, description="近 3 天行动次数")
+
+
+@app.post("/api/v1/brain/evaluate")
+async def brain_evaluate(
+    request: BrainEvaluateRequest,
+    x_source_ui: Optional[str] = Header(None, alias="X-Source-UI"),
+):
+    """
+    TTM 阶段跃迁判定入口
+
+    - X-Source-UI: UI-1 → SOP 6.2 防火墙静默
+    - X-Source-UI: UI-3 等 → 进入大脑判定 + L6 叙事重写
+    - 发生阶段跃迁时自动写入 behavior_audit_logs 表
+    """
+    from core.brain.decision_engine import BehavioralBrain
+    from core.database import db_transaction
+    from core.models import BehaviorAuditLog
+
+    config_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "configs", "spi_mapping.json",
+    )
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    brain = BehavioralBrain(config)
+    result = brain.process(
+        source_ui=x_source_ui,
+        current_state=request.dict(),
+    )
+
+    # 发生阶段跃迁时持久化到审计日志
+    if result.get("is_transition"):
+        with db_transaction() as db:
+            log = BehaviorAuditLog(
+                user_id=request.user_id,
+                from_stage=result["from_stage"],
+                to_stage=result["to_stage"],
+                narrative=result.get("narrative"),
+                source_ui=x_source_ui,
+            )
+            db.add(log)
+
+    return result
 
 
 # ============================================================================

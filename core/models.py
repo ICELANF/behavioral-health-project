@@ -407,7 +407,7 @@ class ChatSession(Base):
 
     # 会话信息
     title = Column(String(200), nullable=True)  # 会话标题（可选）
-    model = Column(String(50), default="qwen2.5:14b")  # 使用的模型
+    model = Column(String(50), default="qwen2.5:0.5b")  # 使用的模型
 
     # 会话状态
     is_active = Column(Boolean, default=True, index=True)
@@ -769,6 +769,35 @@ class VitalSign(Base):
     )
 
 
+class BehaviorAuditLog(Base):
+    """
+    行为跃迁审计日志表
+
+    记录每次 TTM 阶段跃迁事件，用于审计追踪和数据分析
+    """
+    __tablename__ = "behavior_audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(50), nullable=False, index=True)
+
+    # 跃迁信息
+    from_stage = Column(String(10), nullable=False)
+    to_stage = Column(String(10), nullable=False)
+    narrative = Column(Text, nullable=True)
+    source_ui = Column(String(20), nullable=True)
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_audit_user_created', 'user_id', 'created_at'),
+        Index('idx_audit_stages', 'from_stage', 'to_stage'),
+    )
+
+    def __repr__(self):
+        return f"<BehaviorAuditLog(user={self.user_id}, {self.from_stage}->{self.to_stage})>"
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -788,7 +817,9 @@ def get_table_names():
         "sleep_records",
         "activity_records",
         "workout_records",
-        "vital_signs"
+        "vital_signs",
+        # 行为审计
+        "behavior_audit_logs",
     ]
 
 
@@ -812,5 +843,6 @@ def get_model_by_name(name: str):
         "ActivityRecord": ActivityRecord,
         "WorkoutRecord": WorkoutRecord,
         "VitalSign": VitalSign,
+        "BehaviorAuditLog": BehaviorAuditLog,
     }
     return models.get(name)
