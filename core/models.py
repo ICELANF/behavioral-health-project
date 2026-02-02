@@ -798,6 +798,74 @@ class BehaviorAuditLog(Base):
         return f"<BehaviorAuditLog(user={self.user_id}, {self.from_stage}->{self.to_stage})>"
 
 
+class BehaviorHistory(Base):
+    """
+    行为评估全量历史表
+
+    记录每次 TTM 评估结果（无论是否发生跃迁），
+    用于趋势分析、信念变化曲线和叙事回溯。
+    """
+    __tablename__ = "behavior_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(50), nullable=False, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    # 阶段
+    from_stage = Column(String(10), nullable=False)
+    to_stage = Column(String(10), nullable=False)
+    is_transition = Column(Boolean, default=False, nullable=False)
+
+    # 快照指标
+    belief_score = Column(Float, nullable=True)
+    narrative_sent = Column(Text, nullable=True)
+
+    __table_args__ = (
+        Index('idx_bh_user_ts', 'user_id', 'timestamp'),
+        Index('idx_bh_transition', 'is_transition'),
+    )
+
+    def __repr__(self):
+        arrow = "→" if self.is_transition else "="
+        return f"<BehaviorHistory(user={self.user_id}, {self.from_stage}{arrow}{self.to_stage}, belief={self.belief_score})>"
+
+
+class BehaviorTrace(Base):
+    """
+    行为长期记忆表
+
+    每次 TTM 判定的完整快照，作为系统的"长期记忆"，
+    供周报生成 (analyze_weekly_trend) 和信念变化回溯使用。
+    """
+    __tablename__ = "behavior_traces"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(String(50), nullable=False, index=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    # 阶段跃迁
+    from_stage = Column(String(10), nullable=False)
+    to_stage = Column(String(10), nullable=False)
+    is_transition = Column(Boolean, default=False, nullable=False)
+
+    # 判定时刻的指标快照
+    belief_score = Column(Float, nullable=True)
+    action_count = Column(Integer, nullable=True)
+
+    # 系统响应
+    narrative_sent = Column(Text, nullable=True)
+    source_ui = Column(String(20), nullable=True)
+
+    __table_args__ = (
+        Index('idx_bt_user_ts', 'user_id', 'timestamp'),
+        Index('idx_bt_user_transition', 'user_id', 'is_transition'),
+    )
+
+    def __repr__(self):
+        arrow = "→" if self.is_transition else "="
+        return f"<BehaviorTrace(user={self.user_id}, {self.from_stage}{arrow}{self.to_stage}, belief={self.belief_score})>"
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -818,8 +886,10 @@ def get_table_names():
         "activity_records",
         "workout_records",
         "vital_signs",
-        # 行为审计
+        # 行为审计 + 历史 + 长期记忆
         "behavior_audit_logs",
+        "behavior_history",
+        "behavior_traces",
     ]
 
 
@@ -844,5 +914,7 @@ def get_model_by_name(name: str):
         "WorkoutRecord": WorkoutRecord,
         "VitalSign": VitalSign,
         "BehaviorAuditLog": BehaviorAuditLog,
+        "BehaviorHistory": BehaviorHistory,
+        "BehaviorTrace": BehaviorTrace,
     }
     return models.get(name)

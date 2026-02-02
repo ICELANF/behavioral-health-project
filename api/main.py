@@ -5,7 +5,7 @@ import httpx
 import json
 from datetime import datetime
 from typing import Optional, Dict, Any, List
-from fastapi import FastAPI, Body, Header, HTTPException
+from fastapi import BackgroundTasks, FastAPI, Body, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -683,9 +683,64 @@ class BrainEvaluateRequest(BaseModel):
     action_count_3d: int = Field(0, ge=0, description="近 3 天行动次数")
 
 
+def save_behavior_to_db(
+    user_id: str,
+    result: Dict[str, Any],
+    source_ui: Optional[str],
+    belief: float,
+    action_count: int,
+):
+    """
+    后台写入数据库 — 被 BackgroundTasks 调用，不阻塞 API 响应。
+    同时写入三张表：behavior_traces / behavior_history / behavior_audit_logs
+    """
+    from core.database import db_transaction
+    from core.models import BehaviorAuditLog, BehaviorHistory, BehaviorTrace
+    from loguru import logger
+
+    try:
+        with db_transaction() as db:
+            # 长期记忆：完整快照（周报分析数据源）
+            db.add(BehaviorTrace(
+                user_id=user_id,
+                from_stage=result["from_stage"],
+                to_stage=result["to_stage"],
+                is_transition=result.get("is_transition", False),
+                belief_score=belief,
+                action_count=action_count,
+                narrative_sent=result.get("narrative"),
+                source_ui=source_ui,
+            ))
+
+            # 全量历史：每次评估都记录
+            db.add(BehaviorHistory(
+                user_id=user_id,
+                from_stage=result["from_stage"],
+                to_stage=result["to_stage"],
+                is_transition=result.get("is_transition", False),
+                belief_score=belief,
+                narrative_sent=result.get("narrative"),
+            ))
+
+            # 审计日志：仅跃迁时记录
+            if result.get("is_transition"):
+                db.add(BehaviorAuditLog(
+                    user_id=user_id,
+                    from_stage=result["from_stage"],
+                    to_stage=result["to_stage"],
+                    narrative=result.get("narrative"),
+                    source_ui=source_ui,
+                ))
+
+        logger.info(f"[Brain] 行为记录已写入 user={user_id} transition={result.get('is_transition')}")
+    except Exception as e:
+        logger.error(f"[Brain] 行为记录写入失败 user={user_id}: {e}")
+
+
 @app.post("/api/v1/brain/evaluate")
 async def brain_evaluate(
     request: BrainEvaluateRequest,
+    background_tasks: BackgroundTasks,
     x_source_ui: Optional[str] = Header(None, alias="X-Source-UI"),
 ):
     """
@@ -693,11 +748,9 @@ async def brain_evaluate(
 
     - X-Source-UI: UI-1 → SOP 6.2 防火墙静默
     - X-Source-UI: UI-3 等 → 进入大脑判定 + L6 叙事重写
-    - 发生阶段跃迁时自动写入 behavior_audit_logs 表
+    - 数据库写入通过 BackgroundTasks 异步执行，不阻塞响应
     """
     from core.brain.decision_engine import BehavioralBrain
-    from core.database import db_transaction
-    from core.models import BehaviorAuditLog
 
     config_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -712,17 +765,16 @@ async def brain_evaluate(
         current_state=request.dict(),
     )
 
-    # 发生阶段跃迁时持久化到审计日志
-    if result.get("is_transition"):
-        with db_transaction() as db:
-            log = BehaviorAuditLog(
-                user_id=request.user_id,
-                from_stage=result["from_stage"],
-                to_stage=result["to_stage"],
-                narrative=result.get("narrative"),
-                source_ui=x_source_ui,
-            )
-            db.add(log)
+    # 非防火墙请求 → 后台写入数据库，不阻塞 UI 响应
+    if not result.get("bypass_brain"):
+        background_tasks.add_task(
+            save_behavior_to_db,
+            user_id=request.user_id,
+            result=result,
+            source_ui=x_source_ui,
+            belief=request.belief,
+            action_count=request.action_count_3d,
+        )
 
     return result
 

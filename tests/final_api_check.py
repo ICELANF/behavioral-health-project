@@ -104,11 +104,16 @@ class TestFinalAPICheck(unittest.TestCase):
     # ------------------------------------------------------------------ #
     def test_transition_persisted_to_db(self):
         """跃迁发生后 behavior_audit_logs 表中应有对应记录"""
+        import time
+
         # 先触发一次跃迁
         _post(
             headers={"X-Source-UI": "UI-3"},
             payload={"user_id": TEST_USER_ID, "current_stage": "S2", "belief": 0.8, "action_count_3d": 2},
         )
+
+        # BackgroundTasks 异步写入，等待完成
+        time.sleep(1)
 
         # 直接查询数据库验证
         from core.database import get_db_session
