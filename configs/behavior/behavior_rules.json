@@ -1,0 +1,385 @@
+{
+  "version": "1.0.0",
+  "name": "behavior_health_default",
+  "description": "行为健康平台默认行为母库",
+  
+  "stages": {
+    "S0": {
+      "id": "S0",
+      "name": "前意向期",
+      "name_display": "探索期",
+      "description": "用户尚未意识到需要改变，无改变意愿",
+      "next_possible": ["S1"],
+      "intervention_intensity": "minimal",
+      "allow_action_push": false,
+      "coach_guidance": "此阶段用户尚无改变意愿，不要强推行动计划，以健康科普和温和引导为主"
+    },
+    "S1": {
+      "id": "S1",
+      "name": "意向期",
+      "name_display": "思考期",
+      "description": "用户开始考虑改变，但尚未准备行动",
+      "next_possible": ["S0", "S2"],
+      "intervention_intensity": "moderate",
+      "allow_action_push": false,
+      "coach_guidance": "用户开始思考改变，可以提供信息支持，帮助其认识改变的好处"
+    },
+    "S2": {
+      "id": "S2",
+      "name": "准备期",
+      "name_display": "规划期",
+      "description": "用户准备在近期采取行动",
+      "next_possible": ["S1", "S3"],
+      "intervention_intensity": "active",
+      "allow_action_push": true,
+      "coach_guidance": "用户已准备好行动，可以提供具体的行动计划和小目标"
+    },
+    "S3": {
+      "id": "S3",
+      "name": "行动期",
+      "name_display": "成长期",
+      "description": "用户正在积极改变行为",
+      "next_possible": ["S2", "S4"],
+      "intervention_intensity": "active",
+      "allow_action_push": true,
+      "coach_guidance": "用户正在行动，需要持续鼓励和支持，关注执行情况"
+    },
+    "S4": {
+      "id": "S4",
+      "name": "维持期",
+      "name_display": "巩固期",
+      "description": "用户已维持改变超过6个月",
+      "next_possible": ["S3", "S5"],
+      "intervention_intensity": "moderate",
+      "allow_action_push": true,
+      "coach_guidance": "用户已形成习惯，重点是防止复发，强化积极行为"
+    },
+    "S5": {
+      "id": "S5",
+      "name": "终结期",
+      "name_display": "收获期",
+      "description": "行为已完全融入生活，无复发风险",
+      "next_possible": ["S4"],
+      "intervention_intensity": "minimal",
+      "allow_action_push": false,
+      "coach_guidance": "用户已建立稳定习惯，保持关注即可"
+    }
+  },
+  
+  "triggers": [
+    {
+      "id": "T_EMO_EAT",
+      "name": "情绪化进食",
+      "description": "检测到用户可能存在情绪化进食行为",
+      "condition": "snippet.sentiment == 'negative' and any(kw in snippet.text for kw in ['零食', '停不下来', '深夜', '吃东西', '暴食'])",
+      "keyword_match": ["零食", "停不下来", "深夜", "吃东西", "暴食", "压力大"],
+      "risk_level": "L2",
+      "priority": "High",
+      "action_ref": "PKG_STRESS_RELIEF",
+      "applicable_stages": null,
+      "cooldown_minutes": 60,
+      "max_daily_triggers": 3,
+      "enabled": true
+    },
+    {
+      "id": "T_SLEEP_ISSUE",
+      "name": "睡眠问题",
+      "description": "检测到用户睡眠质量问题",
+      "condition": "any(kw in snippet.text for kw in ['失眠', '睡不着', '半夜醒', '睡眠差', '熬夜'])",
+      "keyword_match": ["失眠", "睡不着", "半夜醒", "睡眠差", "熬夜", "早醒"],
+      "risk_level": "L2",
+      "priority": "Medium",
+      "action_ref": "PKG_SLEEP_HYGIENE",
+      "applicable_stages": null,
+      "cooldown_minutes": 120,
+      "max_daily_triggers": 2,
+      "enabled": true
+    },
+    {
+      "id": "T_LOW_MOTIVATION",
+      "name": "动力不足",
+      "description": "检测到用户动力下降",
+      "condition": "snippet.sentiment == 'negative' and any(kw in snippet.text for kw in ['没动力', '不想动', '放弃', '太难了'])",
+      "keyword_match": ["没动力", "不想动", "放弃", "太难了", "坚持不了"],
+      "risk_level": "L2",
+      "priority": "Medium",
+      "action_ref": "PKG_MOTIVATION_BOOST",
+      "applicable_stages": ["S2", "S3"],
+      "cooldown_minutes": 180,
+      "max_daily_triggers": 2,
+      "enabled": true
+    },
+    {
+      "id": "T_GLUCOSE_HIGH",
+      "name": "血糖偏高",
+      "description": "检测到血糖数据异常偏高",
+      "condition": "data.cgm_value > 10.0 or data.glucose_level == 'high'",
+      "risk_level": "L3",
+      "priority": "High",
+      "action_ref": "PKG_GLUCOSE_INTERVENTION",
+      "applicable_stages": null,
+      "cooldown_minutes": 30,
+      "max_daily_triggers": 5,
+      "enabled": true
+    },
+    {
+      "id": "T_GLUCOSE_LOW",
+      "name": "血糖偏低",
+      "description": "检测到血糖数据异常偏低",
+      "condition": "data.cgm_value < 3.9 or data.glucose_level == 'low'",
+      "risk_level": "L4",
+      "priority": "Critical",
+      "action_ref": "PKG_GLUCOSE_EMERGENCY",
+      "applicable_stages": null,
+      "cooldown_minutes": 15,
+      "max_daily_triggers": 10,
+      "enabled": true
+    },
+    {
+      "id": "T_TASK_SKIP",
+      "name": "任务跳过",
+      "description": "用户连续跳过任务",
+      "condition": "user.task_skip_count >= 3",
+      "risk_level": "L2",
+      "priority": "Medium",
+      "action_ref": "PKG_TASK_ADJUSTMENT",
+      "applicable_stages": ["S2", "S3", "S4"],
+      "cooldown_minutes": 1440,
+      "max_daily_triggers": 1,
+      "enabled": true
+    },
+    {
+      "id": "T_MOOD_CRISIS",
+      "name": "情绪危机",
+      "description": "检测到严重情绪问题",
+      "condition": "any(kw in snippet.text for kw in ['不想活', '自杀', '自残', '结束', '活着没意思'])",
+      "keyword_match": ["不想活", "自杀", "自残", "结束生命", "活着没意思"],
+      "risk_level": "L4",
+      "priority": "Critical",
+      "action_ref": "PKG_CRISIS_ESCALATION",
+      "applicable_stages": null,
+      "cooldown_minutes": 0,
+      "max_daily_triggers": 100,
+      "enabled": true
+    },
+    {
+      "id": "T_PROGRESS_GOOD",
+      "name": "进展良好",
+      "description": "检测到用户进展良好",
+      "condition": "user.streak_days >= 7 and user.task_completion_rate > 0.8",
+      "risk_level": "L1",
+      "priority": "Low",
+      "action_ref": "PKG_CELEBRATION",
+      "applicable_stages": ["S3", "S4"],
+      "cooldown_minutes": 1440,
+      "max_daily_triggers": 1,
+      "enabled": true
+    }
+  ],
+  
+  "action_packages": {
+    "PKG_STRESS_RELIEF": {
+      "action_id": "PKG_STRESS_RELIEF",
+      "name": "压力缓解包",
+      "description": "帮助用户缓解压力，减少情绪化进食",
+      "render_type": "INTERACTIVE_CARD",
+      "payload": {
+        "title": "感觉到你有些压力",
+        "content": "深呼吸可以帮助放松身心，要不要试试？",
+        "components": [
+          {"type": "BUTTON", "id": "btn_breathe", "text": "开始深呼吸练习", "action": "START_BREATHING"},
+          {"type": "BUTTON", "id": "btn_later", "text": "稍后再说", "action": "DISMISS"}
+        ]
+      },
+      "policy_gate": {
+        "visibility": "client_only",
+        "audit_level": "L1",
+        "require_expert_approval": false,
+        "disclosure_level": "none"
+      },
+      "version": "1.0",
+      "enabled": true
+    },
+    "PKG_SLEEP_HYGIENE": {
+      "action_id": "PKG_SLEEP_HYGIENE",
+      "name": "睡眠健康包",
+      "description": "改善睡眠质量的建议",
+      "render_type": "COMPANION_MESSAGE",
+      "payload": {
+        "title": "睡眠小贴士",
+        "content": "良好的睡眠很重要。建议睡前1小时放下手机，让身体自然放松。",
+        "components": [
+          {"type": "SLIDER", "id": "sleep_quality", "label": "今天的睡眠质量", "min": 1, "max": 10, "step": 1},
+          {"type": "BUTTON", "id": "btn_submit", "text": "记录", "action": "SUBMIT_DATA"}
+        ]
+      },
+      "policy_gate": {
+        "visibility": "client_only",
+        "audit_level": "L1",
+        "require_expert_approval": false
+      },
+      "version": "1.0",
+      "enabled": true
+    },
+    "PKG_MOTIVATION_BOOST": {
+      "action_id": "PKG_MOTIVATION_BOOST",
+      "name": "动力提升包",
+      "description": "帮助用户恢复动力",
+      "render_type": "QUICK_REPLY",
+      "payload": {
+        "title": "每一小步都是进步",
+        "content": "目标大了就拆小，我们一起来调整？",
+        "quick_replies": [
+          {"id": "reduce_goal", "text": "调整今日目标"},
+          {"id": "chat_coach", "text": "和教练聊聊"},
+          {"id": "skip_today", "text": "今天休息一下"}
+        ]
+      },
+      "policy_gate": {
+        "visibility": "client_only",
+        "audit_level": "L1",
+        "require_expert_approval": false
+      },
+      "version": "1.0",
+      "enabled": true
+    },
+    "PKG_GLUCOSE_INTERVENTION": {
+      "action_id": "PKG_GLUCOSE_INTERVENTION",
+      "name": "血糖干预包",
+      "description": "血糖偏高时的干预建议",
+      "render_type": "NOTIFICATION",
+      "payload": {
+        "title": "血糖提醒",
+        "content": "您当前血糖略高，建议进行15分钟的轻度活动，如散步。",
+        "components": [
+          {"type": "BUTTON", "id": "btn_walk", "text": "开始散步计时", "action": "START_WALKING"},
+          {"type": "BUTTON", "id": "btn_log", "text": "记录当前状态", "action": "LOG_STATE"}
+        ]
+      },
+      "policy_gate": {
+        "visibility": "client_only",
+        "audit_level": "L2",
+        "require_expert_approval": false
+      },
+      "on_complete_action": "LOG_INTERVENTION",
+      "version": "1.0",
+      "enabled": true
+    },
+    "PKG_GLUCOSE_EMERGENCY": {
+      "action_id": "PKG_GLUCOSE_EMERGENCY",
+      "name": "血糖紧急包",
+      "description": "血糖危险时的紧急干预",
+      "render_type": "NOTIFICATION",
+      "payload": {
+        "title": "⚠️ 血糖偏低警报",
+        "content": "请立即补充15克碳水化合物（如3-4块糖果或半杯果汁），15分钟后重新测量。",
+        "components": [
+          {"type": "BUTTON", "id": "btn_done", "text": "已处理", "action": "CONFIRM_HANDLED"},
+          {"type": "BUTTON", "id": "btn_help", "text": "需要帮助", "action": "ESCALATE_TO_HUMAN"}
+        ]
+      },
+      "policy_gate": {
+        "visibility": "all",
+        "audit_level": "L3",
+        "require_expert_approval": false
+      },
+      "on_complete_action": "LOG_EMERGENCY",
+      "version": "1.0",
+      "enabled": true
+    },
+    "PKG_TASK_ADJUSTMENT": {
+      "action_id": "PKG_TASK_ADJUSTMENT",
+      "name": "任务调整包",
+      "description": "当用户连续跳过任务时调整难度",
+      "render_type": "INTERACTIVE_CARD",
+      "payload": {
+        "title": "我们来调整一下",
+        "content": "最近的任务可能有点难，让我们降低一下强度？",
+        "components": [
+          {"type": "RADIO", "id": "difficulty", "label": "选择合适的难度", "options": [
+            {"value": "easy", "label": "轻松一点"},
+            {"value": "keep", "label": "保持现状"},
+            {"value": "pause", "label": "暂停几天"}
+          ]},
+          {"type": "BUTTON", "id": "btn_confirm", "text": "确认调整", "action": "ADJUST_TASK"}
+        ]
+      },
+      "policy_gate": {
+        "visibility": "client_only",
+        "audit_level": "L1",
+        "require_expert_approval": false
+      },
+      "version": "1.0",
+      "enabled": true
+    },
+    "PKG_CRISIS_ESCALATION": {
+      "action_id": "PKG_CRISIS_ESCALATION",
+      "name": "危机升级包",
+      "description": "检测到危机时立即升级",
+      "render_type": "COMPANION_MESSAGE",
+      "payload": {
+        "title": "我在这里陪着你",
+        "content": "听起来你现在很不好受。如果你愿意，可以拨打心理援助热线：400-161-9995（24小时），或者我帮你联系专业人员？",
+        "components": [
+          {"type": "BUTTON", "id": "btn_hotline", "text": "查看援助资源", "action": "SHOW_CRISIS_RESOURCES"},
+          {"type": "BUTTON", "id": "btn_talk", "text": "我想聊聊", "action": "CONTINUE_CHAT"}
+        ]
+      },
+      "policy_gate": {
+        "visibility": "all",
+        "audit_level": "L3",
+        "require_expert_approval": false
+      },
+      "on_complete_action": "ESCALATE_TO_EXPERT",
+      "version": "1.0",
+      "enabled": true
+    },
+    "PKG_CELEBRATION": {
+      "action_id": "PKG_CELEBRATION",
+      "name": "庆祝包",
+      "description": "用户达成里程碑时的庆祝",
+      "render_type": "INTERACTIVE_CARD",
+      "payload": {
+        "title": "🎉 太棒了！",
+        "content": "你已经坚持了一周，完成率超过80%！继续保持！",
+        "components": [
+          {"type": "BUTTON", "id": "btn_share", "text": "分享成就", "action": "SHARE_ACHIEVEMENT"},
+          {"type": "BUTTON", "id": "btn_continue", "text": "继续前进", "action": "DISMISS"}
+        ]
+      },
+      "policy_gate": {
+        "visibility": "client_only",
+        "audit_level": "L0",
+        "require_expert_approval": false
+      },
+      "version": "1.0",
+      "enabled": true
+    },
+    "PKG_WAKE_UP_CALL": {
+      "action_id": "PKG_WAKE_UP_CALL",
+      "name": "晨间觉察包",
+      "description": "早晨的状态记录",
+      "render_type": "INTERACTIVE_CARD",
+      "payload": {
+        "title": "晨间觉察",
+        "content": "昨晚睡得怎么样？滑动滑块告诉我你的体感。",
+        "components": [
+          {"type": "SLIDER", "id": "fatigue_score", "label": "疲劳度", "min": 0, "max": 10, "step": 1},
+          {"type": "SLIDER", "id": "mood_score", "label": "心情", "min": 0, "max": 10, "step": 1},
+          {"type": "BUTTON", "id": "btn_submit", "text": "完成记录", "action": "SUBMIT_DATA"}
+        ]
+      },
+      "policy_gate": {
+        "visibility": "client_only",
+        "audit_level": "L1",
+        "require_expert_approval": false
+      },
+      "version": "1.0",
+      "enabled": true
+    }
+  },
+  
+  "created_at": "2026-02-01T00:00:00Z",
+  "updated_at": "2026-02-01T00:00:00Z",
+  "author": "system"
+}

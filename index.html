@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>主动健康指挥舱</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --main-green: #00b894; }
+        body { background: #f0f2f5; }
+        .dashboard-card { border-radius: 15px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .coach-fab { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; background: var(--main-green); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; cursor: pointer; box-shadow: 0 4px 15px rgba(0,184,148,0.4); z-index: 1000; }
+        #coach-chat { position: fixed; bottom: 100px; right: 30px; width: 300px; height: 400px; background: white; border-radius: 10px; display: none; flex-direction: column; box-shadow: 0 5px 25px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+<div class="container py-4">
+    <header class="mb-4 text-center">
+        <h1 class="display-6 fw-bold text-dark">主动健康 · 数字化身</h1>
+        <span class="badge bg-success">实时数据链路已接通</span>
+    </header>
+
+    <div class="row">
+        <div class="col-lg-5">
+            <div class="card dashboard-card p-4">
+                <h5 class="mb-3">数据输入</h5>
+                <div class="mb-3">
+                    <input type="number" id="glucoseValue" class="form-control form-control-lg" placeholder="输入当前血糖值">
+                </div>
+                <div class="mb-3">
+                    <div id="tag-container">
+                        <span class="badge bg-secondary p-2 mb-2" onclick="toggleTag(this, 'compliance_low')">依从性低</span>
+                        <span class="badge bg-secondary p-2 mb-2" onclick="toggleTag(this, 'diet_excess')">饮食超标</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100" onclick="sendIntervention()">分析并生成建议</button>
+                
+                <div id="ai-response" class="mt-4" style="display:none;">
+                    <hr>
+                    <p class="fw-bold text-success" id="strategy-label"></p>
+                    <div id="content-text" class="small text-muted border-start ps-3"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="card dashboard-card p-4">
+                <h5 class="mb-3">血糖波动趋势 (近12小时)</h5>
+                <canvas id="glucoseChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="coach-fab" onclick="toggleChat()">📞</div>
+<div id="coach-chat">
+    <div class="p-3 bg-success text-white rounded-top d-flex justify-content-between">
+        <span>健康教练 - 李医生</span>
+        <button class="btn-close btn-close-white" onclick="toggleChat()"></button>
+    </div>
+    <div class="flex-grow-1 p-3 overflow-auto small" id="chat-messages">
+        <div class="bg-light p-2 rounded mb-2">您好，我是您的专属教练。系统提示您刚才血糖波动较大，请问您现在感觉如何？</div>
+    </div>
+    <div class="p-2 border-top d-flex">
+        <input type="text" id="chat-input" class="form-control form-control-sm me-2" placeholder="输入消息..." onkeydown="if(event.key==='Enter')sendChat()">
+        <button class="btn btn-sm btn-success" onclick="sendChat()">发送</button>
+    </div>
+</div>
+
+<script>
+    let myChart = null;
+    let selectedTags = [];
+
+    function toggleTag(el, tag) {
+        if (selectedTags.includes(tag)) {
+            selectedTags = selectedTags.filter(t => t !== tag);
+            el.classList.replace('bg-primary', 'bg-secondary');
+        } else {
+            selectedTags.push(tag);
+            el.classList.replace('bg-secondary', 'bg-primary');
+        }
+    }
+
+    function toggleChat() {
+        const chat = document.getElementById('coach-chat');
+        chat.style.display = chat.style.display === 'flex' ? 'none' : 'flex';
+    }
+
+    function updateChart(labels, data) {
+        const ctx = document.getElementById('glucoseChart').getContext('2d');
+        if (myChart) myChart.destroy();
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '血糖浓度 (mmol/L)',
+                    data: data,
+                    borderColor: '#00b894',
+                    backgroundColor: 'rgba(0, 184, 148, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { min: 3, max: 15 } }
+            }
+        });
+    }
+
+    async function sendIntervention() {
+        const glucose = document.getElementById('glucoseValue').value;
+        if (!glucose) return;
+
+        try {
+            const response = await fetch('http://127.0.0.1:8002/intervene', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id: 1001,
+                    user_name: "老张",
+                    current_glucose: parseFloat(glucose),
+                    behavioral_tags: selectedTags
+                })
+            });
+            const res = await response.json();
+            
+            // 更新 UI
+            document.getElementById('ai-response').style.display = 'block';
+            document.getElementById('strategy-label').innerText = res.strategy_name;
+            document.getElementById('content-text').innerText = res.content;
+            
+            // 更新图表
+            updateChart(res.timestamps, res.history);
+
+            // 如果血糖过高，自动弹窗联系教练
+            if (parseFloat(glucose) > 10) {
+                setTimeout(() => {
+                    document.getElementById('coach-chat').style.display = 'flex';
+                }, 1000);
+            }
+        } catch (e) { alert("后端连接失败"); }
+    }
+
+    // ---------- 教练聊天（SSE 流式） ----------
+    async function sendChat() {
+        const input = document.getElementById('chat-input');
+        const msg = input.value.trim();
+        if (!msg) return;
+        input.value = '';
+
+        const container = document.getElementById('chat-messages');
+        // 用户气泡
+        container.innerHTML += `<div class="text-end mb-2"><span class="bg-success text-white p-2 rounded d-inline-block">${msg}</span></div>`;
+        // AI 气泡（逐字填充）
+        const aiId = 'ai-' + Date.now();
+        container.innerHTML += `<div class="bg-light p-2 rounded mb-2" id="${aiId}"><span class="text-muted">思考中...</span></div>`;
+        container.scrollTop = container.scrollHeight;
+
+        try {
+            const resp = await fetch('http://127.0.0.1:8002/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg, user_id: '1001' })
+            });
+            const reader = resp.body.getReader();
+            const decoder = new TextDecoder();
+            let buf = '';
+            let fullText = '';
+            const aiBubble = document.getElementById(aiId);
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buf += decoder.decode(value, { stream: true });
+                const lines = buf.split('\n');
+                buf = lines.pop();
+                for (const line of lines) {
+                    if (!line.startsWith('data: ')) continue;
+                    try {
+                        const ev = JSON.parse(line.slice(6));
+                        if (ev.chunk) { fullText += ev.chunk; aiBubble.innerText = fullText; }
+                        if (ev.error) { aiBubble.innerText = '出错: ' + ev.error; }
+                    } catch {}
+                }
+                container.scrollTop = container.scrollHeight;
+            }
+            if (!fullText) aiBubble.innerText = '教练暂时无法响应';
+        } catch (e) {
+            document.getElementById(aiId).innerText = '连接失败: ' + e.message;
+        }
+    }
+
+    // 初始化空白图表
+    updateChart(["0:00","4:00","8:00"], [5.5, 6.0, 5.8]);
+</script>
+</body>
+</html>

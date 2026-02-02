@@ -300,9 +300,9 @@
         <MessageOutlined />
         <span>消息</span>
       </div>
-      <div class="nav-item" @click="goToProfile">
-        <UserOutlined />
-        <span>我的</span>
+      <div class="nav-item" @click="handleLogout">
+        <LogoutOutlined />
+        <span>退出</span>
       </div>
     </div>
   </div>
@@ -330,7 +330,8 @@ import {
   BarChartOutlined,
   HomeOutlined,
   MessageOutlined,
-  UserOutlined
+  UserOutlined,
+  LogoutOutlined
 } from '@ant-design/icons-vue'
 
 const router = useRouter()

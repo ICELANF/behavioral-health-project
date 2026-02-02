@@ -61,6 +61,12 @@ class DifyChatService:
             return self._health_cache
 
         try:
+            if not self.api_key:
+                result = {"status": "skip", "detail": "DIFY_API_KEY not configured"}
+                self._health_cache = result
+                self._health_cache_ts = now
+                return result
+
             response = await self.client.get(
                 f"{self.api_url}/parameters",
                 headers=self._headers,

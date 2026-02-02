@@ -1,0 +1,431 @@
+{
+  "schema_version": "1.0",
+  "last_updated": "2026-01-28",
+  "description": "行为健康平台 Trigger Tag 字典 v1.0",
+  "total_triggers": 28,
+
+  "categories": {
+    "physiological": "生理类",
+    "psychological": "心理类",
+    "behavioral": "行为类",
+    "environmental": "环境类"
+  },
+
+  "severity_levels": {
+    "critical": {
+      "name": "危急",
+      "priority": 1,
+      "response_time": "立即",
+      "description": "需要紧急干预，可能涉及生命安全"
+    },
+    "high": {
+      "name": "高风险",
+      "priority": 2,
+      "response_time": "1小时内",
+      "description": "需要优先处理，可能导致严重后果"
+    },
+    "moderate": {
+      "name": "中等",
+      "priority": 3,
+      "response_time": "24小时内",
+      "description": "常规处理，影响用户健康目标"
+    },
+    "low": {
+      "name": "低风险",
+      "priority": 4,
+      "response_time": "48小时内",
+      "description": "维护性干预，预防性措施"
+    }
+  },
+
+  "triggers": {
+
+    "_comment_physiological": "========== 生理类 Triggers ==========",
+
+    "high_glucose": {
+      "name": "高血糖",
+      "category": "physiological",
+      "severity": "high",
+      "description": "血糖值超过正常范围上限",
+      "threshold": {
+        "value": ">10.0",
+        "unit": "mmol/L",
+        "reference": "空腹或餐后2小时"
+      },
+      "detection_source": ["cgm_signal", "manual_log"],
+      "routed_agents": ["GlucoseAgent", "MetabolicAgent"],
+      "intervention_types": ["diet_adjustment", "medication_review", "education"],
+      "keywords": ["血糖高", "糖高了", "测出来偏高"]
+    },
+
+    "low_glucose": {
+      "name": "低血糖",
+      "category": "physiological",
+      "severity": "critical",
+      "description": "血糖值低于安全范围，存在危险",
+      "threshold": {
+        "value": "<3.9",
+        "unit": "mmol/L"
+      },
+      "detection_source": ["cgm_signal", "manual_log", "text_symptom"],
+      "routed_agents": ["CrisisAgent", "GlucoseAgent"],
+      "intervention_types": ["emergency_glucose", "monitoring", "prevention"],
+      "keywords": ["头晕", "出冷汗", "心慌", "手抖", "饿得慌"]
+    },
+
+    "glucose_spike": {
+      "name": "血糖波动",
+      "category": "physiological",
+      "severity": "moderate",
+      "description": "血糖波动幅度过大，提示控制不佳",
+      "threshold": {
+        "variation": ">3.0",
+        "unit": "mmol/L",
+        "timeframe": "2小时内"
+      },
+      "detection_source": ["cgm_signal"],
+      "routed_agents": ["GlucoseAgent", "NutritionAgent"],
+      "intervention_types": ["meal_timing", "gi_education", "stress_management"]
+    },
+
+    "low_hrv": {
+      "name": "低心率变异性",
+      "category": "physiological",
+      "severity": "moderate",
+      "description": "HRV-SDNN低，提示自主神经功能下降或压力过载",
+      "threshold": {
+        "sdnn": "<30",
+        "unit": "ms"
+      },
+      "detection_source": ["ppg_signal", "ecg_signal"],
+      "routed_agents": ["StressAgent", "SleepAgent"],
+      "intervention_types": ["stress_reduction", "sleep_optimization", "breathing_exercise"],
+      "correlation": ["poor_sleep", "high_stress", "overtraining"]
+    },
+
+    "high_stress_hrv": {
+      "name": "压力指标异常",
+      "category": "physiological",
+      "severity": "high",
+      "description": "HRV压力指数超标，提示慢性压力",
+      "threshold": {
+        "stress_index": ">80"
+      },
+      "detection_source": ["ppg_signal"],
+      "routed_agents": ["StressAgent", "MentalHealthAgent"],
+      "intervention_types": ["stress_management", "relaxation", "counseling"]
+    },
+
+    "high_heartrate": {
+      "name": "心率过高",
+      "category": "physiological",
+      "severity": "moderate",
+      "description": "静息心率超过正常范围",
+      "threshold": {
+        "hr": ">100",
+        "unit": "bpm",
+        "context": "静息状态"
+      },
+      "detection_source": ["ppg_signal", "hr_monitor"],
+      "routed_agents": ["StressAgent", "ExerciseAgent"],
+      "intervention_types": ["relaxation", "activity_adjustment"]
+    },
+
+    "low_heartrate": {
+      "name": "心率过低",
+      "category": "physiological",
+      "severity": "moderate",
+      "description": "静息心率过低，非训练性",
+      "threshold": {
+        "hr": "<60",
+        "unit": "bpm",
+        "exclude": "运动员"
+      },
+      "detection_source": ["ppg_signal", "hr_monitor"],
+      "routed_agents": ["CrisisAgent"],
+      "intervention_types": ["medical_referral"]
+    },
+
+    "poor_sleep": {
+      "name": "睡眠质量差",
+      "category": "physiological",
+      "severity": "moderate",
+      "description": "睡眠效率低或深睡不足",
+      "threshold": {
+        "efficiency": "<70",
+        "unit": "%",
+        "or_deep_sleep": "<15%"
+      },
+      "detection_source": ["sleep_monitor", "text_report"],
+      "routed_agents": ["SleepAgent"],
+      "intervention_types": ["sleep_hygiene", "schedule_adjustment"],
+      "keywords": ["没睡好", "失眠", "睡不着", "半夜醒"]
+    },
+
+    "_comment_psychological": "========== 心理类 Triggers ==========",
+
+    "high_anxiety": {
+      "name": "高焦虑",
+      "category": "psychological",
+      "severity": "high",
+      "description": "文本或量表显示明显焦虑症状",
+      "threshold": {
+        "emotion_confidence": ">0.6",
+        "or_gad7": ">=10"
+      },
+      "detection_source": ["text_emotion", "questionnaire"],
+      "routed_agents": ["MentalHealthAgent", "StressAgent"],
+      "intervention_types": ["cognitive_behavioral", "relaxation", "counseling"],
+      "keywords": ["焦虑", "担心", "紧张", "不安", "恐慌"]
+    },
+
+    "depression_sign": {
+      "name": "抑郁倾向",
+      "category": "psychological",
+      "severity": "high",
+      "description": "文本或量表显示抑郁症状",
+      "threshold": {
+        "emotion": "sad",
+        "duration": ">7days",
+        "or_phq9": ">=10"
+      },
+      "detection_source": ["text_emotion", "questionnaire", "behavior_pattern"],
+      "routed_agents": ["MentalHealthAgent", "CrisisAgent"],
+      "intervention_types": ["counseling", "medical_referral", "social_support"],
+      "keywords": ["抑郁", "没意思", "不想动", "没劲", "想哭"]
+    },
+
+    "stress_overload": {
+      "name": "压力过载",
+      "category": "psychological",
+      "severity": "high",
+      "description": "自评压力水平过高",
+      "threshold": {
+        "stress_level": ">80"
+      },
+      "detection_source": ["text_report", "questionnaire", "hrv_signal"],
+      "routed_agents": ["StressAgent", "MentalHealthAgent"],
+      "intervention_types": ["stress_management", "time_management", "resource_support"],
+      "keywords": ["压力大", "受不了", "崩溃", "撑不住"]
+    },
+
+    "negative_sentiment": {
+      "name": "负面情绪",
+      "category": "psychological",
+      "severity": "moderate",
+      "description": "文本情感持续负面",
+      "threshold": {
+        "sentiment": "negative",
+        "score": "<-0.5"
+      },
+      "detection_source": ["text_emotion"],
+      "routed_agents": ["MentalHealthAgent", "MotivationAgent"],
+      "intervention_types": ["emotional_support", "reframing"]
+    },
+
+    "low_motivation": {
+      "name": "动机低下",
+      "category": "psychological",
+      "severity": "moderate",
+      "description": "行为改变动机不足",
+      "threshold": {
+        "motivation_score": "<30"
+      },
+      "detection_source": ["questionnaire", "behavior_pattern"],
+      "routed_agents": ["MotivationAgent", "CoachingAgent"],
+      "intervention_types": ["motivational_interview", "goal_setting", "success_reinforcement"]
+    },
+
+    "crisis_keyword": {
+      "name": "危机关键词",
+      "category": "psychological",
+      "severity": "critical",
+      "description": "检测到自杀/自残等危机信号",
+      "threshold": {
+        "risk_score": ">0.5"
+      },
+      "detection_source": ["text_analysis"],
+      "routed_agents": ["CrisisAgent"],
+      "intervention_types": ["immediate_intervention", "crisis_hotline", "medical_referral"],
+      "keywords": ["不想活", "自杀", "自残", "结束生命"]
+    },
+
+    "_comment_behavioral": "========== 行为类 Triggers ==========",
+
+    "task_failure": {
+      "name": "任务失败",
+      "category": "behavioral",
+      "severity": "moderate",
+      "description": "连续未完成任务，提示执行障碍",
+      "threshold": {
+        "consecutive_failures": ">=3"
+      },
+      "detection_source": ["task_tracking"],
+      "routed_agents": ["CoachingAgent", "MotivationAgent"],
+      "intervention_types": ["task_simplification", "barrier_removal", "support_increase"]
+    },
+
+    "missing_checkin": {
+      "name": "漏打卡",
+      "category": "behavioral",
+      "severity": "low",
+      "description": "连续多日未打卡，可能脱离系统",
+      "threshold": {
+        "days_missing": ">=2"
+      },
+      "detection_source": ["system_log"],
+      "routed_agents": ["CoachingAgent"],
+      "intervention_types": ["re_engagement", "reminder_adjustment"]
+    },
+
+    "low_adherence": {
+      "name": "依从性低",
+      "category": "behavioral",
+      "severity": "high",
+      "description": "整体依从率低，行为改变停滞",
+      "threshold": {
+        "adherence_rate": "<50",
+        "unit": "%",
+        "timeframe": "过去7天"
+      },
+      "detection_source": ["task_tracking", "behavior_log"],
+      "routed_agents": ["CoachingAgent", "MotivationAgent"],
+      "intervention_types": ["motivational_interview", "plan_adjustment", "barrier_assessment"]
+    },
+
+    "high_gi_meal": {
+      "name": "高GI饮食",
+      "category": "behavioral",
+      "severity": "moderate",
+      "description": "频繁摄入高GI食物",
+      "threshold": {
+        "gi_level": "high",
+        "frequency": ">=3次/周"
+      },
+      "detection_source": ["food_log", "image_recognition"],
+      "routed_agents": ["NutritionAgent", "GlucoseAgent"],
+      "intervention_types": ["gi_education", "meal_planning", "substitution"]
+    },
+
+    "irregular_meal": {
+      "name": "饮食不规律",
+      "category": "behavioral",
+      "severity": "moderate",
+      "description": "进餐时间不固定，影响血糖控制",
+      "threshold": {
+        "meal_time_variance": ">2hours"
+      },
+      "detection_source": ["food_log", "glucose_pattern"],
+      "routed_agents": ["NutritionAgent"],
+      "intervention_types": ["schedule_planning", "habit_formation"]
+    },
+
+    "sedentary": {
+      "name": "久坐",
+      "category": "behavioral",
+      "severity": "moderate",
+      "description": "活动量不足",
+      "threshold": {
+        "activity_level": "<3000",
+        "unit": "steps/day"
+      },
+      "detection_source": ["activity_tracker"],
+      "routed_agents": ["ExerciseAgent"],
+      "intervention_types": ["activity_increase", "micro_exercise", "goal_setting"]
+    },
+
+    "_comment_environmental": "========== 环境类 Triggers ==========",
+
+    "support_lack": {
+      "name": "缺乏支持",
+      "category": "environmental",
+      "severity": "moderate",
+      "description": "社会支持系统薄弱",
+      "threshold": {
+        "social_support": "<30"
+      },
+      "detection_source": ["questionnaire", "text_report"],
+      "routed_agents": ["CoachingAgent"],
+      "intervention_types": ["support_building", "peer_connection", "family_education"]
+    },
+
+    "resource_barrier": {
+      "name": "资源障碍",
+      "category": "environmental",
+      "severity": "moderate",
+      "description": "缺乏时间/金钱/设施等资源",
+      "threshold": {
+        "resource_score": "<30"
+      },
+      "detection_source": ["questionnaire", "text_report"],
+      "routed_agents": ["CoachingAgent"],
+      "intervention_types": ["resource_optimization", "low_cost_alternatives", "time_management"]
+    },
+
+    "work_stress": {
+      "name": "工作压力",
+      "category": "environmental",
+      "severity": "moderate",
+      "description": "工作环境压力源",
+      "threshold": {
+        "work_stress": ">70"
+      },
+      "detection_source": ["text_report", "questionnaire"],
+      "routed_agents": ["StressAgent", "CoachingAgent"],
+      "intervention_types": ["work_life_balance", "stress_management"],
+      "keywords": ["加班", "工作压力", "职场", "领导"]
+    },
+
+    "family_conflict": {
+      "name": "家庭冲突",
+      "category": "environmental",
+      "severity": "moderate",
+      "description": "家庭关系压力",
+      "threshold": {
+        "family_stress": ">70"
+      },
+      "detection_source": ["text_report", "questionnaire"],
+      "routed_agents": ["MentalHealthAgent", "CoachingAgent"],
+      "intervention_types": ["family_counseling", "communication_skill"],
+      "keywords": ["家里", "老公", "老婆", "孩子", "父母", "吵架"]
+    }
+  },
+
+  "trigger_combinations": {
+    "metabolic_syndrome_cluster": {
+      "description": "代谢综合征聚类",
+      "triggers": ["high_glucose", "glucose_spike", "sedentary", "high_gi_meal"],
+      "severity": "high",
+      "routed_agents": ["MetabolicAgent", "NutritionAgent", "ExerciseAgent"]
+    },
+    "burnout_cluster": {
+      "description": "职业倦怠聚类",
+      "triggers": ["stress_overload", "poor_sleep", "low_motivation", "work_stress"],
+      "severity": "high",
+      "routed_agents": ["MentalHealthAgent", "StressAgent", "CoachingAgent"]
+    },
+    "depression_cluster": {
+      "description": "抑郁风险聚类",
+      "triggers": ["depression_sign", "negative_sentiment", "low_motivation", "sedentary"],
+      "severity": "high",
+      "routed_agents": ["MentalHealthAgent", "CrisisAgent"]
+    }
+  },
+
+  "usage_guide": {
+    "detection_workflow": [
+      "1. 多模态系统处理输入（文本/信号/图像）",
+      "2. Trigger引擎根据阈值识别标签",
+      "3. 按严重程度排序（critical > high > moderate > low）",
+      "4. 路由到对应Agent",
+      "5. Agent生成个性化干预",
+      "6. 记录到用户画像"
+    ],
+    "best_practices": [
+      "优先处理 critical 和 high 级别 Triggers",
+      "关注 Trigger 聚类，识别复杂问题",
+      "定期更新阈值（基于数据反馈）",
+      "避免过度警报（设置冷却期）"
+    ]
+  }
+}

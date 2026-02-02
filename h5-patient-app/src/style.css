@@ -1,0 +1,112 @@
+/* 全局样式重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+    'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 全局容器样式 */
+.page-container {
+  width: 100%;
+  min-height: 100vh;
+  background-color: #f7f8fa;
+}
+
+/* 内容区域 */
+.content-wrapper {
+  padding: 16px;
+}
+
+/* 按钮组样式 */
+.button-group {
+  padding: 16px;
+}
+
+.button-group .van-button {
+  margin-bottom: 12px;
+}
+
+.button-group .van-button:last-child {
+  margin-bottom: 0;
+}
+
+/* 卡片间距 */
+.van-card,
+.van-cell-group {
+  margin-bottom: 16px;
+}
+
+/* 空状态 */
+.empty-state {
+  padding: 60px 20px;
+  text-align: center;
+  color: #969799;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.empty-state-text {
+  font-size: 14px;
+}
+
+/* 加载状态 */
+.loading-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* 风险等级颜色 */
+.risk-level-R0 {
+  color: #07c160;
+}
+
+.risk-level-R1 {
+  color: #1989fa;
+}
+
+.risk-level-R2 {
+  color: #ff976a;
+}
+
+.risk-level-R3 {
+  color: #ee0a24;
+}
+
+.risk-level-R4 {
+  color: #ad0000;
+  font-weight: bold;
+}
+
+/* Trigger严重程度颜色 */
+.severity-low {
+  color: #969799;
+}
+
+.severity-moderate {
+  color: #ff976a;
+}
+
+.severity-high {
+  color: #ee0a24;
+}
+
+.severity-critical {
+  color: #ad0000;
+  font-weight: bold;
+}

@@ -10,7 +10,7 @@ LLM_PROVIDER = os.getenv("LLM_PROVIDER", "auto")
 
 # Dify 配置
 DIFY_API_URL = os.getenv("DIFY_API_URL", "http://localhost:8080/v1")
-DIFY_API_KEY = os.getenv("DIFY_API_KEY", "app-TSdoLNkz636aipfD9zTtHdEY")
+DIFY_API_KEY = os.getenv("DIFY_API_KEY", "")
 DIFY_TIMEOUT = float(os.getenv("DIFY_TIMEOUT", "120.0"))
 
 # Ollama 配置

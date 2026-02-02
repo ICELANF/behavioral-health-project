@@ -1,7 +1,7 @@
 {
   "user_id": "test-integration-user",
   "created_at": "2026-01-23T23:16:08.855338",
-  "updated_at": "2026-01-23T23:16:08.855077",
+  "updated_at": "2026-01-28T12:21:16.154665",
   "basic": {
     "age": null,
     "sex": null,
@@ -79,10 +79,10 @@
   },
   "risk_flags": [],
   "history": {
-    "total_sessions": 2,
+    "total_sessions": 10,
     "first_session": null,
-    "last_session": "2026-01-23T23:16:08.911819",
-    "total_tasks_assigned": 1,
+    "last_session": "2026-01-28T12:21:16.517035",
+    "total_tasks_assigned": 5,
     "total_tasks_completed": 0,
     "assessments_count": 0
   },
@@ -90,13 +90,13 @@
   "today": {
     "tasks": [
       {
-        "task_id": "task_853d37de-f0aa-4b25-ba81-a4f5accbebfc_0",
+        "task_id": "task_2fc75219-4705-493c-9ad5-0a71eb23fc85_0",
         "title": "今日任务：15分钟轻度运动",
         "status": "pending"
       }
     ],
     "mood_log": [],
-    "device_sync_time": "2026-01-23T23:16:08.855077",
+    "device_sync_time": "2026-01-28T12:21:16.154665",
     "check_ins": 0
   },
   "session_history": [
@@ -105,9 +105,33 @@
       "timestamp": "2026-01-23T23:16:08.855077",
       "input_type": "text",
       "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "aa8a7852-cd02-4048-b172-91631da270e0",
+      "timestamp": "2026-01-28T11:42:58.638192",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "b25c3a17-72a9-497b-be9a-1d4ed7e9e66d",
+      "timestamp": "2026-01-28T12:01:37.214375",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "4aa8a810-f306-4436-94de-87797d497a88",
+      "timestamp": "2026-01-28T12:05:14.437379",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "2fc75219-4705-493c-9ad5-0a71eb23fc85",
+      "timestamp": "2026-01-28T12:21:16.154665",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
     }
   ],
-  "last_updated": "2026-01-23T23:16:08.911838",
+  "last_updated": "2026-01-28T12:21:16.517049",
   "tracking_points": [
     "今日任务完成情况 (1项)",
     "睡眠质量记录",

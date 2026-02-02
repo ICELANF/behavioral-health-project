@@ -120,7 +120,7 @@
           <div class="metric-icon">💊</div>
           <div class="metric-info">
             <div class="metric-value">{{ medication.adherenceRate }}%</div>
-            <div class="metric-label">用药依从</div>
+            <div class="metric-label">用药提醒</div>
           </div>
           <a-progress
             :percent="medication.adherenceRate"
@@ -267,44 +267,6 @@
         </div>
       </div>
 
-      <!-- 推荐产品 -->
-      <div class="section-card" v-if="recommendations.products.length">
-        <div class="card-header">
-          <span class="card-title">🛒 健康好物</span>
-          <a class="more-link">更多 ›</a>
-        </div>
-        <div class="product-grid">
-          <div
-            v-for="product in recommendations.products"
-            :key="product.id"
-            class="product-card"
-            @click="openProduct(product)"
-          >
-            <div class="product-image">
-              <img :src="product.image" :alt="product.name" />
-              <div class="product-tags">
-                <span v-for="tag in product.tags.slice(0, 1)" :key="tag" class="product-tag">
-                  {{ tag }}
-                </span>
-              </div>
-            </div>
-            <div class="product-info">
-              <div class="product-name">{{ product.name }}</div>
-              <div class="product-price-row">
-                <span class="product-price">¥{{ product.price }}</span>
-                <span class="product-original" v-if="product.originalPrice">
-                  ¥{{ product.originalPrice }}
-                </span>
-              </div>
-              <div class="product-rating">
-                <StarFilled style="color: #fbbf24; font-size: 12px" />
-                <span>{{ product.rating }}</span>
-                <span class="product-sales">{{ product.salesCount }}人购买</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- AI 助手入口 -->
       <div class="section-card ai-card">
@@ -342,7 +304,7 @@
         <HomeOutlined />
         <span>首页</span>
       </div>
-      <div class="nav-item">
+      <div class="nav-item" @click="startChat('A1')">
         <LineChartOutlined />
         <span>数据</span>
       </div>
@@ -351,15 +313,66 @@
           <MessageOutlined />
         </div>
       </div>
-      <div class="nav-item">
+      <div class="nav-item" @click="startChat('A1')">
         <ReadOutlined />
         <span>学习</span>
       </div>
-      <div class="nav-item">
-        <UserOutlined />
-        <span>我的</span>
+      <div class="nav-item" @click="handleLogout">
+        <LogoutOutlined />
+        <span>退出</span>
       </div>
     </div>
+
+    <!-- 用药提醒抽屉 -->
+    <a-drawer
+      v-model:open="showMedDrawer"
+      title="💊 用药提醒"
+      placement="bottom"
+      :height="'85vh'"
+      class="med-drawer"
+    >
+      <div style="max-width:500px;margin:0 auto">
+        <!-- 今日用药打卡 -->
+        <div class="med-section">
+          <h4 style="margin-bottom:12px;font-size:16px">📋 今日用药打卡</h4>
+          <div v-for="med in medReminders" :key="med.id" class="med-item" :class="{taken: med.taken}" @click="toggleMedTaken(med)">
+            <div class="med-check">
+              <div class="med-checkbox" :class="{checked: med.taken}">
+                <CheckOutlined v-if="med.taken" />
+              </div>
+            </div>
+            <div class="med-info">
+              <div class="med-name">{{ med.name }} <span class="med-dosage">{{ med.dosage }}</span></div>
+              <div class="med-time">⏰ {{ med.time }} · {{ med.frequency }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 药物说明 -->
+        <div class="med-section">
+          <h4 style="margin-bottom:12px;font-size:16px">💡 药物功能说明</h4>
+          <div v-for="med in medReminders" :key="'info-'+med.id" class="drug-info-card">
+            <div class="drug-header">
+              <span class="drug-name">{{ med.name }}</span>
+              <span class="drug-dose">{{ med.dosage }} / {{ med.frequency }}</span>
+            </div>
+            <div class="drug-note">{{ med.notes }}</div>
+          </div>
+        </div>
+
+        <!-- 注意事项 -->
+        <div class="med-section">
+          <h4 style="margin-bottom:12px;font-size:16px">⚠️ 用药注意事项</h4>
+          <div v-for="(p, i) in medPrecautions" :key="i" class="precaution-item">
+            <div class="precaution-icon">{{ p.icon }}</div>
+            <div class="precaution-body">
+              <div class="precaution-title">{{ p.title }}</div>
+              <div class="precaution-desc">{{ p.desc }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </a-drawer>
 
     <!-- 关注领域编辑弹窗 -->
     <a-modal
@@ -387,7 +400,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   UserOutlined,
@@ -401,7 +414,8 @@ import {
   MinusOutlined,
   PlayCircleOutlined,
   StarFilled,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  LogoutOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { BEHAVIOR_STAGE_MAP, AGENT_TYPE_MAP, TRIGGER_DOMAINS } from '@/constants/index'
@@ -484,7 +498,7 @@ const focusAreaStyles: Record<FocusArea, { icon: string; label: string; bg: stri
   glucose: { icon: '🩸', label: '血糖管理', bg: '#fef2f2', color: '#dc2626' },
   diet: { icon: '🥗', label: '饮食控制', bg: '#f0fdf4', color: '#16a34a' },
   exercise: { icon: '🏃', label: '运动锻炼', bg: '#eff6ff', color: '#2563eb' },
-  medication: { icon: '💊', label: '用药依从', bg: '#faf5ff', color: '#9333ea' },
+  medication: { icon: '💊', label: '用药提醒', bg: '#faf5ff', color: '#9333ea' },
   sleep: { icon: '😴', label: '睡眠质量', bg: '#ecfeff', color: '#0891b2' },
   stress: { icon: '🧘', label: '压力管理', bg: '#fdf4ff', color: '#c026d3' },
   weight: { icon: '⚖️', label: '体重控制', bg: '#fffbeb', color: '#d97706' }
@@ -574,31 +588,78 @@ const getDifficultyLabel = (difficulty: string) => {
 // 点击事件
 const openVideo = (video: RecommendedVideo) => {
   trackRecommendationClick('video', video.id)
-  message.info(`正在打开视频: ${video.title}`)
+  message.success(`正在播放: ${video.title}`)
 }
 
 const openCourse = (course: RecommendedCourse) => {
   trackRecommendationClick('course', course.id)
-  message.info(`正在打开课程: ${course.title}`)
+  message.success(`正在打开课程: ${course.title}`)
 }
 
 const openProduct = (product: RecommendedProduct) => {
   trackRecommendationClick('product', product.id)
-  message.info(`正在打开产品: ${product.name}`)
+  message.success(`正在查看: ${product.name}`)
 }
 
 const openCoachAction = (action: RecommendedCoachAction) => {
   trackRecommendationClick('coachAction', action.id)
-  message.info(`正在预约: ${action.title}`)
+  message.success(`已预约: ${action.title}`)
+}
+
+// 用药提醒
+const showMedDrawer = ref(false)
+const medReminders = ref([
+  { id: 1, name: '二甲双胍', dosage: '500mg', time: '08:00', frequency: '每日2次（早/晚餐后）', taken: false, notes: '餐后服用，避免空腹；如出现胃肠不适可随餐服用' },
+  { id: 2, name: '格列美脲', dosage: '2mg', time: '07:30', frequency: '每日1次（早餐前）', taken: true, notes: '早餐前15分钟服用；注意低血糖风险，随身携带糖果' },
+  { id: 3, name: '阿卡波糖', dosage: '50mg', time: '12:00', frequency: '每日3次（随餐）', taken: false, notes: '与第一口饭同时嚼服；可能引起腹胀、排气增多' },
+])
+const medPrecautions = [
+  { icon: '⏰', title: '按时服药', desc: '设定闹钟提醒，固定时间服药，不要随意更改服药时间' },
+  { icon: '🚫', title: '不可自行停药', desc: '即使血糖正常也不要自行停药或减量，需遵医嘱调整' },
+  { icon: '🍺', title: '避免饮酒', desc: '服药期间避免饮酒，酒精可能加重低血糖风险' },
+  { icon: '📋', title: '记录不良反应', desc: '如出现恶心、腹泻、头晕等不适，及时记录并告知医生' },
+  { icon: '💊', title: '勿与部分食物同服', desc: '避免与柚子汁同服；二甲双胍避免与含碘造影剂同用' },
+  { icon: '🔄', title: '定期复查', desc: '每1-3个月复查糖化血红蛋白和肝肾功能' },
+]
+const toggleMedTaken = (med: typeof medReminders.value[0]) => {
+  med.taken = !med.taken
+  if (med.taken) message.success(`${med.name} 已打卡服药 ✓`)
 }
 
 const goToDetail = (type: string) => {
-  message.info(`查看${type}详情`)
+  if (type === 'medication') {
+    showMedDrawer.value = true
+    return
+  }
+  message.success(`正在加载${type}详情...`)
 }
 
 const startChat = (agentType: keyof typeof AGENT_TYPE_MAP) => {
   router.push({ path: '/client/chat', query: { agent: agentType } })
 }
+
+const handleLogout = () => {
+  localStorage.removeItem('admin_token')
+  localStorage.removeItem('admin_username')
+  localStorage.removeItem('admin_role')
+  localStorage.removeItem('admin_level')
+  localStorage.removeItem('admin_name')
+  router.push('/login')
+}
+
+// 刷新健康数据
+const refreshHealth = async () => {
+  const health = await getHealthSummary()
+  if (health) {
+    bloodGlucose.value = health.bloodGlucose
+    weight.value = health.weight
+    exercise.value = health.exercise
+    medication.value = health.medication
+  }
+}
+
+// 定时刷新
+let refreshTimer: ReturnType<typeof setInterval> | null = null
 
 // 初始化
 onMounted(async () => {
@@ -615,16 +676,17 @@ onMounted(async () => {
   }
 
   // 加载健康数据
-  const health = await getHealthSummary()
-  if (health) {
-    bloodGlucose.value = health.bloodGlucose
-    weight.value = health.weight
-    exercise.value = health.exercise
-    medication.value = health.medication
-  }
+  await refreshHealth()
 
   // 加载推荐
   await loadRecommendations()
+
+  // 每10秒自动刷新健康指标
+  refreshTimer = setInterval(refreshHealth, 10000)
+})
+
+onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer)
 })
 </script>
 
@@ -898,4 +960,36 @@ onMounted(async () => {
 .check-icon { color: #667eea; }
 
 :deep(.ant-progress-circle .ant-progress-text) { color: #fff !important; }
+
+/* 用药提醒抽屉 */
+.med-section { margin-bottom: 24px; }
+.med-item {
+  display: flex; align-items: center; gap: 12px; padding: 14px;
+  background: #f9fafb; border-radius: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s;
+}
+.med-item:hover { background: #f3f4f6; }
+.med-item.taken { opacity: 0.6; }
+.med-checkbox {
+  width: 24px; height: 24px; border: 2px solid #d1d5db; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.med-checkbox.checked { background: #10b981; border-color: #10b981; color: #fff; }
+.med-info { flex: 1; }
+.med-name { font-weight: 600; font-size: 15px; color: #1f2937; }
+.med-dosage { font-weight: 400; font-size: 13px; color: #6b7280; margin-left: 6px; }
+.med-time { font-size: 12px; color: #6b7280; margin-top: 4px; }
+.drug-info-card {
+  background: #f0f5ff; border-radius: 12px; padding: 14px; margin-bottom: 10px;
+  border-left: 4px solid #667eea;
+}
+.drug-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.drug-name { font-weight: 600; font-size: 15px; color: #1f2937; }
+.drug-dose { font-size: 12px; color: #667eea; background: #e0e7ff; padding: 2px 8px; border-radius: 10px; }
+.drug-note { font-size: 13px; color: #4b5563; line-height: 1.6; }
+.precaution-item {
+  display: flex; gap: 12px; padding: 12px; background: #fffbeb; border-radius: 12px; margin-bottom: 10px;
+}
+.precaution-icon { font-size: 24px; flex-shrink: 0; }
+.precaution-title { font-weight: 600; font-size: 14px; color: #1f2937; margin-bottom: 4px; }
+.precaution-desc { font-size: 13px; color: #6b7280; line-height: 1.5; }
 </style>

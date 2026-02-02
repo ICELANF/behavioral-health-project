@@ -1,0 +1,767 @@
+{
+  "version": "1.0.0",
+  "name": "spi_implicit_data_mapping",
+  "description": "SPI评估问卷50题与隐性数据源的完整映射规则",
+  "compatible_with": {
+    "behavior_rules": "1.0.0",
+    "state_sync_manager": "1.0.0",
+    "trigger_engine": "1.0.0"
+  },
+  
+  "stage_mapping": {
+    "description": "心理层次(L1-L5)与行为阶段(S0-S5)的双向映射",
+    "psychological_to_behavioral": {
+      "L1": {"primary": "S0", "secondary": null, "coefficient": 0.3, "display_name": "探索期"},
+      "L2": {"primary": "S0", "secondary": "S1", "coefficient": 0.4, "display_name": "思考期"},
+      "L3": {"primary": "S1", "secondary": "S2", "coefficient": 0.6, "display_name": "准备期"},
+      "L4": {"primary": "S2", "secondary": "S3", "coefficient": 0.85, "display_name": "成长期"},
+      "L5": {"primary": "S4", "secondary": "S5", "coefficient": 1.0, "display_name": "收获期"}
+    },
+    "behavioral_to_psychological": {
+      "S0": {"levels": ["L1", "L2"], "default": "L1"},
+      "S1": {"levels": ["L2", "L3"], "default": "L2"},
+      "S2": {"levels": ["L3", "L4"], "default": "L3"},
+      "S3": {"levels": ["L4"], "default": "L4"},
+      "S4": {"levels": ["L4", "L5"], "default": "L4"},
+      "S5": {"levels": ["L5"], "default": "L5"}
+    }
+  },
+
+  "implicit_data_sources": {
+    "description": "平台可用的隐性数据源定义，与现有数据库表对接",
+    "sources": {
+      "conversation": {
+        "id": "CONV",
+        "description": "对话内容分析",
+        "table": "chat_messages",
+        "fields": ["text", "sentiment", "intent", "keywords", "emotion_score", "created_at"],
+        "update_frequency": "realtime",
+        "extraction_window_days": 14
+      },
+      "task": {
+        "id": "TASK",
+        "description": "任务执行表现",
+        "table": "user_tasks",
+        "fields": ["completion_rate", "streak_days", "skip_count", "avg_completion_time", "skip_reasons"],
+        "update_frequency": "daily",
+        "extraction_window_days": 30
+      },
+      "device": {
+        "id": "DEVICE",
+        "description": "可穿戴设备数据",
+        "table": "health_data",
+        "fields": ["cgm_value", "hrv_sdnn", "hrv_rmssd", "steps", "sleep_hours", "sleep_quality"],
+        "update_frequency": "realtime",
+        "extraction_window_days": 7
+      },
+      "trigger": {
+        "id": "TRIGGER",
+        "description": "触发事件历史",
+        "table": "trigger_records",
+        "fields": ["trigger_id", "trigger_count", "risk_level", "last_trigger_time"],
+        "update_frequency": "realtime",
+        "extraction_window_days": 30
+      },
+      "interaction": {
+        "id": "INTERACT",
+        "description": "交互行为模式",
+        "table": "user_activity",
+        "fields": ["daily_active_time", "message_count", "response_latency", "app_usage_duration"],
+        "update_frequency": "daily",
+        "extraction_window_days": 14
+      },
+      "profile": {
+        "id": "PROFILE",
+        "description": "用户画像提取",
+        "table": "user_profile",
+        "fields": ["stated_goals", "value_keywords", "identity_expressions", "support_network", "preferences"],
+        "update_frequency": "on_detection",
+        "extraction_window_days": 90
+      }
+    }
+  },
+
+  "questionnaire_mapping": {
+    "part1": {
+      "name": "改变触发原因评估",
+      "total_questions": 25,
+      "total_score": 125,
+      "dimensions": {
+        "D1_internal_drive": {
+          "name": "内在驱动力",
+          "description": "来自个人内部的愿望、价值与意义",
+          "max_score": 20,
+          "questions": [
+            {
+              "q_id": "Q01",
+              "text": "我意识到健康、家庭、自由等价值观变得更加重要",
+              "max_score": 5,
+              "implicit": {
+                "source": "PROFILE",
+                "method": "value_keyword_frequency",
+                "config": {
+                  "keywords": ["健康", "家人", "家庭", "自由", "生活质量", "有意义", "重要", "珍惜"],
+                  "field": "value_keywords",
+                  "window_days": 30
+                },
+                "scoring": {
+                  "0": 1, "1-2": 2, "3-5": 3, "6-10": 4, ">10": 5
+                },
+                "confidence": 0.65,
+                "fallback": "explicit_recommended"
+              }
+            },
+            {
+              "q_id": "Q02",
+              "text": "我希望成为一个'更健康的人'或'能量型父母'",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "identity_pattern_match",
+                "config": {
+                  "patterns": ["我想成为", "我希望是", "我要做一个", "更好的自己", "理想中的我"],
+                  "window_days": 30
+                },
+                "scoring": {
+                  "0_matches": 1, "1_match": 2, "2_matches": 3, "3_matches": 4, ">3_matches": 5
+                },
+                "confidence": 0.55,
+                "fallback": "explicit_required"
+              }
+            },
+            {
+              "q_id": "Q03",
+              "text": "我希望自己的生活更有目的或活得更久",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "purpose_statement_detection",
+                "config": {
+                  "patterns": ["活久一点", "长寿", "陪伴孩子", "看到孙子", "人生目标", "为了家人"],
+                  "window_days": 60
+                },
+                "scoring": {
+                  "none": 1, "weak": 2, "moderate": 3, "strong": 4, "very_strong": 5
+                },
+                "confidence": 0.50,
+                "fallback": "explicit_required"
+              }
+            },
+            {
+              "q_id": "Q04",
+              "text": "我想对自己的身体和生活负责任",
+              "max_score": 5,
+              "implicit": {
+                "source": "TASK",
+                "method": "proactive_behavior_score",
+                "config": {
+                  "indicators": ["主动打卡", "主动提问", "主动记录", "提前完成"],
+                  "field": "completion_rate",
+                  "bonus_for_proactive": true
+                },
+                "scoring": {
+                  "rate<0.2": 1, "0.2-0.4": 2, "0.4-0.6": 3, "0.6-0.8": 4, ">0.8": 5
+                },
+                "confidence": 0.75,
+                "fallback": "can_infer"
+              }
+            }
+          ]
+        },
+        "D2_external_events": {
+          "name": "外在事件与压力",
+          "description": "由环境事件或危机触发",
+          "max_score": 20,
+          "questions": [
+            {
+              "q_id": "Q05",
+              "text": "我最近经历了健康事件（如体检异常、家人生病、住院等）",
+              "max_score": 5,
+              "implicit": {
+                "source": "TRIGGER",
+                "method": "health_event_count",
+                "config": {
+                  "trigger_ids": ["T_GLUCOSE_HIGH", "T_GLUCOSE_LOW", "T_HEALTH_ALERT"],
+                  "window_days": 30
+                },
+                "scoring": {
+                  "0_events": 1, "1_event": 2, "2-3_events": 3, "4-6_events": 4, ">6_events": 5
+                },
+                "confidence": 0.85,
+                "fallback": "can_infer"
+              }
+            },
+            {
+              "q_id": "Q06",
+              "text": "我最近经历了重要生活事件（如生育、离婚、升职、搬家等）",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "life_event_keyword_detection",
+                "config": {
+                  "keywords": ["搬家", "换工作", "离婚", "结婚", "生孩子", "退休", "升职", "失业"],
+                  "window_days": 60
+                },
+                "scoring": {
+                  "none": 1, "mentioned_once": 3, "mentioned_multiple": 5
+                },
+                "confidence": 0.50,
+                "fallback": "explicit_required"
+              }
+            },
+            {
+              "q_id": "Q07",
+              "text": "我面临社会压力（如工作要求、体重指标、医嘱等）",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "pressure_keyword_detection",
+                "config": {
+                  "keywords": ["医生说", "体检报告", "公司要求", "必须", "不得不", "指标"],
+                  "window_days": 30
+                },
+                "scoring": {
+                  "0": 1, "1-2": 2, "3-5": 3, "6-10": 4, ">10": 5
+                },
+                "confidence": 0.60,
+                "fallback": "explicit_required"
+              }
+            },
+            {
+              "q_id": "Q08",
+              "text": "我看到身边人因不健康生活方式受到影响",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "vicarious_experience_detection",
+                "config": {
+                  "patterns": ["我朋友", "我同事", "我爸妈", "身边的人", "亲戚"],
+                  "context_keywords": ["生病", "住院", "去世", "查出来"],
+                  "window_days": 60
+                },
+                "scoring": {
+                  "none": 1, "mentioned_once": 3, "mentioned_with_impact": 5
+                },
+                "confidence": 0.45,
+                "fallback": "explicit_required"
+              }
+            }
+          ]
+        },
+        "D3_emotional_experience": {
+          "name": "情绪体验",
+          "description": "情绪是最直接的行为激活器",
+          "max_score": 20,
+          "questions": [
+            {
+              "q_id": "Q09",
+              "text": "我对生病、老化感到恐惧",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "secondary_source": "DEVICE",
+                "method": "fear_emotion_detection",
+                "config": {
+                  "emotion_labels": ["fear", "anxiety", "worry"],
+                  "keywords": ["害怕", "担心", "恐惧", "焦虑", "老了", "怕死"],
+                  "hrv_indicator": "hrv_rmssd < 30"
+                },
+                "scoring": {
+                  "intensity_0-0.2": 1, "0.2-0.4": 2, "0.4-0.6": 3, "0.6-0.8": 4, "0.8-1.0": 5
+                },
+                "confidence": 0.75,
+                "fallback": "can_infer"
+              }
+            },
+            {
+              "q_id": "Q10",
+              "text": "我对现状感到愤怒，觉得'不能再这样下去了'",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "anger_frustration_detection",
+                "config": {
+                  "emotion_labels": ["anger", "frustration"],
+                  "keywords": ["受够了", "不能再", "必须改", "烦死了", "受不了"]
+                },
+                "scoring": {
+                  "intensity_0-0.2": 1, "0.2-0.4": 2, "0.4-0.6": 3, "0.6-0.8": 4, "0.8-1.0": 5
+                },
+                "confidence": 0.70,
+                "fallback": "can_infer"
+              }
+            },
+            {
+              "q_id": "Q11",
+              "text": "我对不健康的生活习惯感到羞愧或内疚",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "guilt_shame_detection",
+                "config": {
+                  "emotion_labels": ["guilt", "shame"],
+                  "keywords": ["惭愧", "内疚", "对不起", "不应该", "后悔", "自责"]
+                },
+                "scoring": {
+                  "intensity_0-0.2": 1, "0.2-0.4": 2, "0.4-0.6": 3, "0.6-0.8": 4, "0.8-1.0": 5
+                },
+                "confidence": 0.65,
+                "fallback": "can_infer"
+              }
+            },
+            {
+              "q_id": "Q12",
+              "text": "我受到榜样激励，体验到积极情绪和鼓舞",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "positive_inspiration_detection",
+                "config": {
+                  "emotion_labels": ["inspired", "hopeful", "motivated"],
+                  "keywords": ["榜样", "激励", "也想像他", "受到鼓舞", "羡慕"]
+                },
+                "scoring": {
+                  "intensity_0-0.2": 1, "0.2-0.4": 2, "0.4-0.6": 3, "0.6-0.8": 4, "0.8-1.0": 5
+                },
+                "confidence": 0.55,
+                "fallback": "explicit_required"
+              }
+            }
+          ]
+        },
+        "D4_cognitive_knowledge": {
+          "name": "认知与知识",
+          "description": "理解方式改变→行为改变",
+          "max_score": 20,
+          "questions": [
+            {
+              "q_id": "Q13",
+              "text": "我对健康有了新的洞察和理解",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "insight_statement_detection",
+                "config": {
+                  "patterns": ["原来", "我明白了", "现在知道", "突然意识到", "终于理解"],
+                  "window_days": 30
+                },
+                "scoring": {
+                  "0_insights": 1, "1_insight": 2, "2_insights": 3, "3_insights": 4, ">3_insights": 5
+                },
+                "confidence": 0.60,
+                "fallback": "explicit_required"
+              }
+            },
+            {
+              "q_id": "Q14",
+              "text": "我学习了新的健康知识（如饮食策略、代谢原理等）",
+              "max_score": 5,
+              "implicit": {
+                "source": "TASK",
+                "method": "learning_task_completion",
+                "config": {
+                  "task_types": ["knowledge_learning", "video_watching", "article_reading"],
+                  "field": "completion_rate"
+                },
+                "scoring": {
+                  "rate<0.2": 1, "0.2-0.4": 2, "0.4-0.6": 3, "0.6-0.8": 4, ">0.8": 5
+                },
+                "confidence": 0.85,
+                "fallback": "can_infer"
+              }
+            },
+            {
+              "q_id": "Q15",
+              "text": "我更清楚地认识到疾病风险与后果",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "risk_awareness_detection",
+                "config": {
+                  "keywords": ["风险", "后果", "并发症", "如果不改变", "严重"],
+                  "window_days": 30
+                },
+                "scoring": {
+                  "0_mentions": 1, "1-2": 2, "3-5": 3, "6-10": 4, ">10": 5
+                },
+                "confidence": 0.60,
+                "fallback": "explicit_required"
+              }
+            },
+            {
+              "q_id": "Q16",
+              "text": "我能够想象不改变会带来的未来场景",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "future_thinking_detection",
+                "config": {
+                  "patterns": ["如果继续", "将来会", "几年后", "不想变成", "到时候"],
+                  "window_days": 30
+                },
+                "scoring": {
+                  "0_patterns": 1, "1_pattern": 2, "2_patterns": 3, "3_patterns": 4, ">3_patterns": 5
+                },
+                "confidence": 0.50,
+                "fallback": "explicit_required"
+              }
+            }
+          ]
+        },
+        "D5_capability_resources": {
+          "name": "能力与资源",
+          "description": "行为改变能力受到资源影响",
+          "max_score": 20,
+          "questions": [
+            {
+              "q_id": "Q17",
+              "text": "我有固定的时间来执行改变计划",
+              "max_score": 5,
+              "implicit": {
+                "source": "TASK",
+                "method": "time_consistency_analysis",
+                "config": {
+                  "indicators": ["fixed_time_completion", "schedule_adherence"],
+                  "field": "avg_completion_time",
+                  "variance_threshold": 2
+                },
+                "scoring": {
+                  "high_variance": 1, "moderate_variance": 2, "some_consistency": 3, "good_consistency": 4, "excellent_consistency": 5
+                },
+                "confidence": 0.80,
+                "fallback": "can_infer"
+              }
+            },
+            {
+              "q_id": "Q18",
+              "text": "我有足够的经济资源支持改变（如购买健康食材、器械等）",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "resource_sentiment_analysis",
+                "config": {
+                  "positive_keywords": ["买了", "订购", "会员", "投资"],
+                  "negative_keywords": ["太贵", "买不起", "没钱", "负担不起"]
+                },
+                "scoring": {
+                  "negative_sentiment": 1, "mixed": 3, "positive_sentiment": 5
+                },
+                "confidence": 0.45,
+                "fallback": "explicit_required"
+              }
+            },
+            {
+              "q_id": "Q19",
+              "text": "我掌握了必要的技能（如烹饪技巧、运动方法等）",
+              "max_score": 5,
+              "implicit": {
+                "source": "TASK",
+                "method": "skill_task_performance",
+                "config": {
+                  "task_types": ["cooking_record", "exercise_record", "skill_demo"],
+                  "field": "completion_rate"
+                },
+                "scoring": {
+                  "rate<0.2": 1, "0.2-0.4": 2, "0.4-0.6": 3, "0.6-0.8": 4, ">0.8": 5
+                },
+                "confidence": 0.70,
+                "fallback": "can_infer"
+              }
+            },
+            {
+              "q_id": "Q20",
+              "text": "我的物理环境支持改变（如有健身房、步行路线、厨房等）",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "environment_mention_detection",
+                "config": {
+                  "positive_keywords": ["健身房", "公园", "厨房", "跑步机", "设备"],
+                  "negative_keywords": ["没地方", "不方便", "环境不行", "没条件"]
+                },
+                "scoring": {
+                  "negative_sentiment": 1, "mixed": 3, "positive_sentiment": 5
+                },
+                "confidence": 0.50,
+                "fallback": "explicit_required"
+              }
+            }
+          ]
+        },
+        "D6_social_support": {
+          "name": "社会支持",
+          "description": "人是社会性动物",
+          "max_score": 25,
+          "questions": [
+            {
+              "q_id": "Q21",
+              "text": "我身边有成功的榜样可以参考学习",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "role_model_mention_detection",
+                "config": {
+                  "patterns": ["我朋友成功", "他做到了", "学习他的方法", "像他一样"],
+                  "window_days": 60
+                },
+                "scoring": {
+                  "no_mention": 1, "vague_mention": 2, "specific_mention": 4, "detailed_reference": 5
+                },
+                "confidence": 0.50,
+                "fallback": "explicit_required"
+              }
+            },
+            {
+              "q_id": "Q22",
+              "text": "我有同伴或社群一起打卡、互相监督",
+              "max_score": 5,
+              "implicit": {
+                "source": "INTERACT",
+                "method": "community_engagement_analysis",
+                "config": {
+                  "indicators": ["group_participation", "peer_interaction", "shared_challenges"],
+                  "field": "message_count"
+                },
+                "scoring": {
+                  "no_engagement": 1, "low": 2, "moderate": 3, "high": 4, "very_high": 5
+                },
+                "confidence": 0.80,
+                "fallback": "can_infer"
+              }
+            },
+            {
+              "q_id": "Q23",
+              "text": "我的家人支持我的改变计划",
+              "max_score": 5,
+              "implicit": {
+                "source": "PROFILE",
+                "secondary_source": "CONV",
+                "method": "family_support_detection",
+                "config": {
+                  "keywords": ["老公支持", "老婆帮我", "家人鼓励", "一起做", "家里人"],
+                  "negative_keywords": ["家人反对", "不支持", "不理解"]
+                },
+                "scoring": {
+                  "negative": 1, "neutral": 3, "positive": 5
+                },
+                "confidence": 0.60,
+                "fallback": "explicit_required"
+              }
+            },
+            {
+              "q_id": "Q24",
+              "text": "我得到了专业人士的指导（如医护、教练、营养师等）",
+              "max_score": 5,
+              "implicit": {
+                "source": "INTERACT",
+                "method": "professional_interaction_count",
+                "config": {
+                  "interaction_types": ["coach_session", "expert_consult", "ai_guidance"],
+                  "field": "message_count",
+                  "window_days": 14
+                },
+                "scoring": {
+                  "0_interactions": 1, "1-2": 2, "3-5": 3, "6-10": 4, ">10": 5
+                },
+                "confidence": 0.90,
+                "fallback": "can_infer"
+              }
+            },
+            {
+              "q_id": "Q25",
+              "text": "我所在的文化或社会环境鼓励健康行为",
+              "max_score": 5,
+              "implicit": {
+                "source": "CONV",
+                "method": "cultural_context_detection",
+                "config": {
+                  "keywords": ["大家都在", "流行", "风气", "公司提倡", "社会风气"],
+                  "window_days": 60
+                },
+                "scoring": {
+                  "no_mention": 2, "negative_context": 1, "positive_context": 4, "strong_positive": 5
+                },
+                "confidence": 0.35,
+                "fallback": "explicit_required"
+              }
+            }
+          ]
+        }
+      }
+    },
+    
+    "part2": {
+      "name": "心理状态层次评估",
+      "total_questions": 20,
+      "description": "评估面对改变时的心理准备状态",
+      "levels": {
+        "L1": {"name": "完全对抗", "name_en": "Total Resistance", "coefficient": 0.3},
+        "L2": {"name": "抗拒与反思", "name_en": "Resistance with Reflection", "coefficient": 0.4},
+        "L3": {"name": "妥协与接受", "name_en": "Selective Acceptance", "coefficient": 0.6},
+        "L4": {"name": "顺应与调整", "name_en": "Adaptive Alignment", "coefficient": 0.85},
+        "L5": {"name": "全面内化", "name_en": "Full Internalization", "coefficient": 1.0}
+      },
+      "implicit_level_determination": {
+        "description": "基于综合行为数据判断心理层次",
+        "primary_indicators": [
+          {
+            "level": "L1",
+            "source": "CONV",
+            "patterns": ["不想", "不行", "做不到", "别管我", "没用的", "不可能"],
+            "task_indicator": {"completion_rate": "<0.1", "skip_count": ">10"},
+            "weight": 1.0
+          },
+          {
+            "level": "L2",
+            "source": "CONV",
+            "patterns": ["也许", "可能", "但是", "一方面", "矛盾", "纠结"],
+            "task_indicator": {"completion_rate": "0.1-0.3", "trend": "fluctuating"},
+            "weight": 1.0
+          },
+          {
+            "level": "L3",
+            "source": "CONV",
+            "patterns": ["试试看", "先做一点", "可以接受", "愿意尝试", "慢慢来"],
+            "task_indicator": {"completion_rate": "0.3-0.6", "trend": "slightly_improving"},
+            "weight": 1.0
+          },
+          {
+            "level": "L4",
+            "source": "TASK",
+            "patterns": ["主动", "找方法", "调整", "适应"],
+            "task_indicator": {"completion_rate": "0.6-0.85", "streak_days": ">7"},
+            "weight": 1.0
+          },
+          {
+            "level": "L5",
+            "source": "TASK",
+            "patterns": ["习惯了", "自然", "就是这样", "一部分"],
+            "task_indicator": {"completion_rate": ">0.85", "streak_days": ">30"},
+            "weight": 1.0
+          }
+        ],
+        "confidence_threshold": 0.70,
+        "verification_required": true
+      },
+      "questions": {
+        "L1_questions": [
+          {"q_id": "Q26", "text": "我感到愤怒，拒绝接受需要改变的事实", "implicit_source": "CONV", "method": "resistance_pattern_scoring"},
+          {"q_id": "Q27", "text": "我会争辩、否认问题的存在", "implicit_source": "CONV", "method": "denial_pattern_scoring"},
+          {"q_id": "Q28", "text": "我认为改变是外界强加给我的", "implicit_source": "CONV", "method": "external_attribution_scoring"},
+          {"q_id": "Q29", "text": "我会采取反向行为来对抗改变要求", "implicit_source": "TASK", "method": "contrary_behavior_scoring"}
+        ],
+        "L2_questions": [
+          {"q_id": "Q30", "text": "我虽然抗拒，但开始理解改变的必要性", "implicit_source": "CONV", "method": "ambivalence_scoring"},
+          {"q_id": "Q31", "text": "我的内心很矛盾，一部分想改变，一部分不想", "implicit_source": "CONV", "method": "conflict_expression_scoring"},
+          {"q_id": "Q32", "text": "我开始思考'是不是有别的方式'", "implicit_source": "CONV", "method": "alternative_seeking_scoring"},
+          {"q_id": "Q33", "text": "我会问'如果保持现状会有什么风险'", "implicit_source": "CONV", "method": "risk_questioning_scoring"}
+        ],
+        "L3_questions": [
+          {"q_id": "Q34", "text": "我接受改变是必要的现实", "implicit_source": "CONV", "method": "acceptance_statement_scoring"},
+          {"q_id": "Q35", "text": "我想要小步尝试，不想一次改变太多", "implicit_source": "TASK", "method": "incremental_approach_scoring"},
+          {"q_id": "Q36", "text": "我担心失败或坚持不住", "implicit_source": "CONV", "method": "worry_expression_scoring"},
+          {"q_id": "Q37", "text": "我开始采取一些'象征性改变'的行动", "implicit_source": "TASK", "method": "symbolic_action_scoring"}
+        ],
+        "L4_questions": [
+          {"q_id": "Q38", "text": "我主动寻求方法来实现改变", "implicit_source": "INTERACT", "method": "proactive_seeking_scoring"},
+          {"q_id": "Q39", "text": "我会自发调整行为来适应新要求", "implicit_source": "TASK", "method": "self_adjustment_scoring"},
+          {"q_id": "Q40", "text": "我在不同情境下都能找到可持续的模式", "implicit_source": "TASK", "method": "adaptability_scoring"},
+          {"q_id": "Q41", "text": "我能够处理障碍而不轻易放弃", "implicit_source": "TASK", "method": "resilience_scoring"}
+        ],
+        "L5_questions": [
+          {"q_id": "Q42", "text": "改变已经成为我身份的一部分", "implicit_source": "CONV", "method": "identity_integration_scoring"},
+          {"q_id": "Q43", "text": "我不再需要刻意提醒自己去做", "implicit_source": "TASK", "method": "automaticity_scoring"},
+          {"q_id": "Q44", "text": "我会主动帮助他人进行类似的改变", "implicit_source": "INTERACT", "method": "helping_others_scoring"},
+          {"q_id": "Q45", "text": "即使遇到困难，我也能自然恢复", "implicit_source": "TASK", "method": "natural_recovery_scoring"}
+        ]
+      }
+    },
+    
+    "part3": {
+      "name": "改变迫切程度评估",
+      "total_questions": 5,
+      "total_score": 30,
+      "description": "评估主观迫切感，必须显式收集",
+      "implicit_coverage": 0.20,
+      "questions": [
+        {
+          "q_id": "Q46",
+          "text": "您觉得改变有多迫切？",
+          "type": "slider",
+          "max_score": 10,
+          "explicit_required": true,
+          "implicit": null
+        },
+        {
+          "q_id": "Q47",
+          "text": "这个改变对您的人生有多重要？",
+          "type": "slider",
+          "max_score": 10,
+          "explicit_required": true,
+          "implicit": null
+        },
+        {
+          "q_id": "Q48",
+          "text": "您现在有多准备好开始行动？",
+          "type": "slider",
+          "max_score": 10,
+          "explicit_required": true,
+          "implicit": {
+            "source": "TASK",
+            "method": "readiness_inference",
+            "confidence": 0.40
+          }
+        },
+        {
+          "q_id": "Q49",
+          "text": "您对成功改变有多大信心？",
+          "type": "slider",
+          "max_score": 10,
+          "explicit_required": true,
+          "implicit": {
+            "source": "TASK",
+            "method": "self_efficacy_inference",
+            "confidence": 0.45
+          }
+        },
+        {
+          "q_id": "Q50",
+          "text": "如果现在不改变，您有多担心后果？",
+          "type": "slider",
+          "max_score": 10,
+          "explicit_required": true,
+          "implicit": null
+        }
+      ]
+    }
+  },
+
+  "spi_calculation": {
+    "formula": "SPI = (part1_total / 125) × level_coefficient × (part3_total / 30) × 100",
+    "components": {
+      "reason_score": {"source": "part1", "max": 125},
+      "level_coefficient": {"source": "part2", "values": {"L1": 0.3, "L2": 0.4, "L3": 0.6, "L4": 0.85, "L5": 1.0}},
+      "urgency_score": {"source": "part3", "max": 30}
+    },
+    "interpretation": {
+      ">=70": {"level": "high", "success_rate": "70-90%", "intervention": "active", "stage_mapping": "S2-S3"},
+      "50-69": {"level": "medium_high", "success_rate": "50-70%", "intervention": "moderate", "stage_mapping": "S1-S2"},
+      "30-49": {"level": "medium_low", "success_rate": "30-50%", "intervention": "supportive", "stage_mapping": "S0-S1"},
+      "<30": {"level": "low", "success_rate": "<30%", "intervention": "minimal", "stage_mapping": "S0"}
+    }
+  },
+
+  "adaptive_questionnaire_rules": {
+    "description": "自适应问卷生成规则",
+    "confidence_threshold": 0.70,
+    "always_explicit": ["Q46", "Q47", "Q48", "Q50"],
+    "high_confidence_skip": ["Q04", "Q05", "Q14", "Q17", "Q19", "Q22", "Q24"],
+    "verification_needed_below_threshold": true,
+    "estimated_reduction": {
+      "full_questionnaire": 50,
+      "adaptive_minimum": 15,
+      "average_adaptive": 22,
+      "time_saved_minutes": 8
+    }
+  }
+}

@@ -49,14 +49,34 @@ const mockPatientDashboard: PatientDashboard = {
 }
 
 /**
- * 模拟获取患者端 Dashboard 数据
+ * 获取患者端 Dashboard 数据 - 从后端引擎获取实时数据
  */
 export async function getPatientDashboard(): Promise<PatientDashboard> {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve(mockPatientDashboard)
-    }, 500) // 模拟网络延迟
-  })
+  try {
+    const res = await fetch('http://127.0.0.1:8002/api/v1/mp/task/today', {
+      headers: { 'Content-Type': 'application/json', 'X-User-ID': '1' }
+    })
+    const data = await res.json()
+
+    // 将后端任务映射为前端格式
+    const stage = (data.stage || 'preparation') as keyof typeof BEHAVIOR_STAGE_MAP
+    return {
+      currentBehaviorStage: stage,
+      stageProgress: Math.round((data.progress || 0) * 100),
+      todayTasks: [
+        {
+          id: data.task_code || 't001',
+          name: data.task || '今日健康任务',
+          description: data.agent_greeting || '完成每日健康打卡',
+          completed: false,
+          priority: data.risk_level === 'HIGH' ? 'high' : data.risk_level === 'MEDIUM' ? 'medium' : 'low'
+        },
+        ...mockPatientDashboard.todayTasks.slice(1)  // 保留其他模拟任务
+      ]
+    }
+  } catch {
+    return mockPatientDashboard
+  }
 }
 
 /**
@@ -104,32 +124,79 @@ export interface HealthSummary {
   }
 }
 
+const ENGINE_API = 'http://127.0.0.1:8002'
+const MP_HEADERS = { 'Content-Type': 'application/json', 'X-User-ID': '1' }
+
+// 上次已知的血糖值（用于计算趋势）
+let lastKnownGlucose = 0
+
 export async function getHealthSummary(): Promise<HealthSummary> {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      resolve({
-        bloodGlucose: {
-          fasting: 6.8,
-          postprandial: 9.2,
-          trend: 'down'
-        },
-        weight: {
-          current: 75.5,
-          target: 70,
-          trend: 'down'
-        },
-        exercise: {
-          weeklyMinutes: 150,
-          targetMinutes: 150,
-          streak: 7
-        },
-        medication: {
-          adherenceRate: 92,
-          missedDoses: 2
-        }
-      })
-    }, 500)
-  })
+  try {
+    // 并行请求后端三个接口
+    const [statusRes, stateRes, progressRes] = await Promise.all([
+      fetch(`${ENGINE_API}/latest_status`).then(r => r.json()).catch(() => null),
+      fetch(`${ENGINE_API}/api/v1/mp/user/state`, { headers: MP_HEADERS }).then(r => r.json()).catch(() => null),
+      fetch(`${ENGINE_API}/api/v1/mp/progress/summary`, { headers: MP_HEADERS }).then(r => r.json()).catch(() => null)
+    ])
+
+    // 从 latest_status 获取血糖数据
+    const currentGlucose = statusRes?.current_glucose || 0
+    const history: number[] = statusRes?.history || []
+
+    // 计算趋势
+    let glucoseTrend: 'up' | 'down' | 'stable' = 'stable'
+    if (lastKnownGlucose > 0 && currentGlucose > 0) {
+      if (currentGlucose > lastKnownGlucose + 0.3) glucoseTrend = 'up'
+      else if (currentGlucose < lastKnownGlucose - 0.3) glucoseTrend = 'down'
+    }
+    if (currentGlucose > 0) lastKnownGlucose = currentGlucose
+
+    // 计算餐后血糖（取历史最高值作为餐后参考）
+    const recentHistory = history.slice(-5)
+    const postprandial = recentHistory.length > 0 ? Math.max(...recentHistory) : null
+
+    // 从 user/state 获取积分和天数
+    const points = stateRes?.points || 0
+    const dayIndex = stateRes?.day_index || 1
+
+    // 从 progress/summary 获取完成数据
+    const totalCompleted = progressRes?.total_completed || 0
+    const streakDays = progressRes?.streak_days || 0
+    const completionRate = progressRes?.completion_rate || 0
+
+    // 运动量基于完成率估算
+    const exerciseMinutes = Math.round(completionRate * 150)
+
+    return {
+      bloodGlucose: {
+        fasting: currentGlucose > 0 ? currentGlucose : null,
+        postprandial: postprandial,
+        trend: glucoseTrend
+      },
+      weight: {
+        current: 75.5 - (totalCompleted * 0.1),  // 模拟体重随任务完成减少
+        target: 70,
+        trend: totalCompleted > 3 ? 'down' : 'stable'
+      },
+      exercise: {
+        weeklyMinutes: exerciseMinutes,
+        targetMinutes: 150,
+        streak: streakDays
+      },
+      medication: {
+        adherenceRate: Math.round(completionRate * 100) || 85,
+        missedDoses: Math.max(0, 7 - totalCompleted)
+      }
+    }
+  } catch {
+    // 后端不可用时返回默认值
+    return {
+      bloodGlucose: { fasting: null, postprandial: null, trend: 'stable' },
+      weight: { current: 75.5, target: 70, trend: 'stable' },
+      exercise: { weeklyMinutes: 0, targetMinutes: 150, streak: 0 },
+      medication: { adherenceRate: 0, missedDoses: 0 }
+    }
+  }
 }
 
 /**

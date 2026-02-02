@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>老张的健康数字空间</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --primary-green: #2ecc71; }
+        body { background-color: #f4f7f6; }
+        .status-bar { background: linear-gradient(135deg, #27ae60, #2ecc71); color: white; padding: 20px 0; border-radius: 0 0 20px 20px; }
+        .main-card { border: none; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .ai-box { background: #eefdf5; border-left: 5px solid var(--primary-green); padding: 15px; border-radius: 8px; }
+        .coach-chat { position: fixed; bottom: 20px; right: 20px; width: 320px; height: 450px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.15); display: none; flex-direction: column; overflow: hidden; }
+        .chat-msgs { flex-grow: 1; padding: 15px; overflow-y: auto; background: #f9f9f9; }
+        .msg-bubble { padding: 8px 12px; border-radius: 10px; margin-bottom: 10px; max-width: 85%; font-size: 0.9rem; }
+        .msg-user { background: var(--primary-green); color: white; margin-left: auto; }
+        .msg-coach { background: white; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+
+<div class="status-bar text-center mb-4">
+    <div class="container">
+        <h3 class="fw-bold">老张的实时动态看板</h3>
+        <div class="d-flex justify-content-center gap-5 mt-2">
+            <div><small>当前血糖</small><div class="h4" id="top-val">--</div></div>
+            <div><small>决策状态</small><div class="h4" id="top-status">同步中</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card main-card p-4">
+                <h6 class="fw-bold">📈 血糖实时趋势 (CGM)</h6>
+                <canvas id="glucoseChart" height="140"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card main-card p-4 h-100">
+                <h6 class="fw-bold text-success">🤖 AI 实时决策建议</h6>
+                <div id="ai-content" class="ai-box mt-3 small">正在分析历史数据...</div>
+                <hr>
+                <div class="mt-auto">
+                    <input type="number" id="manualIn" class="form-control form-control-sm mb-2" placeholder="手工校准值">
+                    <button class="btn btn-dark btn-sm w-100" onclick="manualPush()">手动同步数据</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="coachBtn" style="position:fixed; bottom:20px; right:20px; cursor:pointer;" onclick="toggleCoach()">
+    <div class="bg-success text-white p-3 rounded-circle shadow-lg">👨‍⚕️ 教练</div>
+</div>
+
+<div class="coach-chat" id="coachBox">
+    <div class="p-3 bg-dark text-white d-flex justify-content-between">
+        <span>AI 健康教练</span>
+        <button class="btn-close btn-close-white" onclick="toggleCoach()"></button>
+    </div>
+    <div class="chat-msgs d-flex flex-column" id="msgList">
+        <div class="msg-bubble msg-coach shadow-sm">您好，老张。我是您的数字教练，您可以随时向我咨询饮食或运动建议。</div>
+    </div>
+    <div class="p-2 border-top bg-white">
+        <div class="input-group">
+            <input type="text" id="chatIn" class="form-control" placeholder="输入问题..." onkeypress="if(event.key==='Enter') sendChat()">
+            <button class="btn btn-success" onclick="sendChat()">发送</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let chart;
+    const ctx = document.getElementById('glucoseChart').getContext('2d');
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: { labels: [], datasets: [{ label: '血糖', data: [], borderColor: '#2ecc71', fill: true, tension: 0.4 }] }
+    });
+
+    // 1. 核心逻辑：每 5 秒同步一次后端状态
+    async function syncData() {
+        try {
+            const res = await fetch('http://127.0.0.1:8002/latest_status');
+            const data = await res.json();
+            
+            // 更新看板
+            document.getElementById('top-val').innerText = data.current_glucose + " mmol/L";
+            document.getElementById('top-status').innerText = data.strategy_name;
+            document.getElementById('ai-content').innerText = data.ai_content;
+            
+            // 更新图表
+            chart.data.labels = data.timestamps;
+            chart.data.datasets[0].data = data.history;
+            chart.update('none'); // 静默更新
+
+            // 如果血糖过高自动提醒
+            if (data.current_glucose > 10.0 && document.getElementById('coachBox').style.display === 'none') {
+                toggleCoach();
+            }
+        } catch (e) { console.warn("等待后端数据..."); }
+    }
+    setInterval(syncData, 5000);
+
+    // 2. 核心逻辑：调用 Dify 进行聊天
+    async function sendChat() {
+        const input = document.getElementById('chatIn');
+        const text = input.value.trim();
+        if (!text) return;
+
+        appendMsg('user', text);
+        input.value = '';
+        const tempId = 't-' + Date.now();
+        appendMsg('coach', '正在思考...', tempId);
+
+        try {
+            const res = await fetch('http://127.0.0.1:8002/chat_sync', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ message: text })
+            });
+            const data = await res.json();
+            document.getElementById(tempId).innerText = data.reply;
+        } catch (e) { document.getElementById(tempId).innerText = "连接教练失败。"; }
+    }
+
+    function appendMsg(role, text, id) {
+        const list = document.getElementById('msgList');
+        const div = document.createElement('div');
+        div.className = `msg-bubble msg-${role} shadow-sm`;
+        if (id) div.id = id;
+        div.innerText = text;
+        list.appendChild(div);
+        list.scrollTop = list.scrollHeight;
+    }
+
+    function manualPush() {
+        const val = document.getElementById('manualIn').value;
+        if (!val) return;
+        fetch('http://127.0.0.1:8002/intervene', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ user_id: 1001, user_name: "老张", current_glucose: parseFloat(val) })
+        });
+    }
+
+    function toggleCoach() {
+        const box = document.getElementById('coachBox');
+        box.style.display = box.style.display === 'flex' ? 'none' : 'flex';
+    }
+</script>
+</body>
+</html>

@@ -95,17 +95,14 @@ class CoordinateRequest(BaseModel):
     agent_results: List[AgentAnalysisInput]
 
 
-app = FastAPI(title="Xingjian Agent Gateway", version="2.0")
+app = FastAPI(title="Xingjian Agent Gateway", version="16.0.0")
 
 # --- 配置中心 (从 api.config 集中读取) ---
 from api.config import DIFY_API_URL, DIFY_API_KEY, OLLAMA_API_URL, OLLAMA_MODEL
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# --- 生产级中间件 (CORS白名单 + 安全头 + 日志 + 限流 + Sentry) ---
+from core.middleware import setup_production_middleware
+setup_production_middleware(app)
 
 # 注册认证路由
 try:
@@ -222,7 +219,15 @@ async def dispatch_request(
 
 @app.get("/health")
 async def health():
-    return {"status": "online", "version": "Phase 1 - Gateway"}
+    """基础健康检查（快速）"""
+    return {"status": "online", "version": "16.0.0"}
+
+
+@app.get("/api/v1/health")
+async def comprehensive_health():
+    """综合健康检查（检测所有依赖）"""
+    from core.health import full_health_check
+    return await full_health_check()
 
 
 # --- 专家列表接口 ---
@@ -664,6 +669,17 @@ async def orchestrator_status():
         },
         "timestamp": datetime.now().isoformat()
     }
+
+
+# ============================================================================
+# [v16-NEW] 注册 Admin 行为配置路由
+# ============================================================================
+try:
+    from api.v14.admin_routes import router as admin_behavior_router
+    app.include_router(admin_behavior_router, prefix="/api/v1")
+    print("[API] v16 Admin行为配置路由已注册")
+except ImportError as e:
+    print(f"[API] v16 Admin行为配置路由注册失败: {e}")
 
 
 if __name__ == "__main__":

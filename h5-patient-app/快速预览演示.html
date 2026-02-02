@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>H5患者应用 - 页面预览</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f7f8fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #323233;
+            margin-bottom: 30px;
+        }
+
+        .info-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .info-box h2 {
+            color: #1989fa;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-box li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-box li:last-child {
+            border-bottom: none;
+        }
+
+        .phone-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .phone-mockup {
+            background: #fff;
+            border-radius: 30px;
+            padding: 40px 15px 30px 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            position: relative;
+        }
+
+        .phone-mockup::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 5px;
+            background: #323233;
+            border-radius: 3px;
+        }
+
+        .phone-screen {
+            background: #f7f8fa;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .navbar {
+            background: #1989fa;
+            color: white;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .page-content {
+            padding: 16px;
+            background: #f7f8fa;
+            min-height: 500px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #1989fa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .user-details h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .user-details p {
+            font-size: 12px;
+            color: #969799;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 999px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: #1989fa;
+            color: white;
+        }
+
+        .btn-outline {
+            background: white;
+            color: #1989fa;
+            border: 1px solid #1989fa;
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .risk-r0 { background: #52c41a; }
+        .risk-r1 { background: #1890ff; }
+        .risk-r2 { background: #fa8c16; }
+        .risk-r3 { background: #ff4d4f; }
+        .risk-r4 { background: #a8071a; }
+
+        .risk-score {
+            text-align: center;
+        }
+
+        .risk-score .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #323233;
+        }
+
+        .risk-score .label {
+            font-size: 12px;
+            color: #969799;
+        }
+
+        .trigger-item {
+            border-left: 3px solid #1989fa;
+            padding-left: 12px;
+            margin-bottom: 12px;
+        }
+
+        .trigger-item h4 {
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .trigger-item .meta {
+            font-size: 12px;
+            color: #969799;
+        }
+
+        .tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            margin-right: 4px;
+        }
+
+        .tag-warning { background: #fff7e6; color: #fa8c16; }
+        .tag-danger { background: #fff1f0; color: #ff4d4f; }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .action-btn {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .action-btn .icon {
+            font-size: 32px;
+            margin-bottom: 8px;
+        }
+
+        .action-btn .text {
+            font-size: 14px;
+            color: #323233;
+        }
+
+        .section-title {
+            font-size: 14px;
+            color: #969799;
+            margin: 16px 0 8px 0;
+        }
+
+        .hint-box {
+            background: #f0f9ff;
+            border: 1px solid #91d5ff;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 12px;
+            color: #1890ff;
+            margin-top: 12px;
+        }
+
+        .page-title {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏥 H5患者应用 - 页面预览</h1>
+
+        <div class="info-box">
+            <h2>📱 访问信息</h2>
+            <ul>
+                <li><strong>移动端访问</strong>: http://192.168.1.103:5176</li>
+                <li><strong>本地访问</strong>: http://localhost:5176</li>
+                <li><strong>测试账号</strong>: patient_alice / password123</li>
+                <li><strong>状态</strong>: ✅ 前端运行中 | ⚠️ 后端API调试中</li>
+            </ul>
+        </div>
+
+        <div class="phone-grid">
+            <!-- 登录页 -->
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="navbar">行为健康平台</div>
+                    <div class="page-content">
+                        <div class="page-title">
+                            <div style="font-size: 48px; margin-bottom: 20px;">🏥</div>
+                            <h2>欢迎使用</h2>
+                        </div>
+                        <input type="text" class="input-field" placeholder="用户名" value="patient_alice">
+                        <input type="password" class="input-field" placeholder="密码" value="••••••••••••">
+                        <button class="btn btn-primary">登 录</button>
+                        <div style="text-align: center; font-size: 14px; color: #1989fa;">
+                            还没有账号？<a href="#" style="color: #1989fa;">去注册 →</a>
+                        </div>
+                        <div class="hint-box">
+                            💡 <strong>测试账号</strong><br>
+                            用户名: patient_alice<br>
+                            密码: password123
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 首页 -->
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="navbar">行为健康平台</div>
+                    <div class="page-content">
+                        <div class="card">
+                            <div class="user-info">
+                                <div class="avatar">👤</div>
+                                <div class="user-details">
+                                    <h3>Alice Wang</h3>
+                                    <p>patient_alice</p>
+                                    <p>alice@example.com</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">快捷操作</div>
+                        <div class="action-buttons">
+                            <div class="action-btn">
+                                <div class="icon">📝</div>
+                                <div class="text">新建评估</div>
+                            </div>
+                            <div class="action-btn">
+                                <div class="icon">📊</div>
+                                <div class="text">历史记录</div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">最近的评估</div>
+                        <div class="card">
+                            <div style="font-size: 12px; color: #969799; margin-bottom: 8px;">
+                                2026-01-28 12:30
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <span class="risk-badge risk-r2">R2 中度</span>
+                                <span style="font-size: 20px; font-weight: bold;">45.3</span>
+                            </div>
+                            <div style="text-align: right;">
+                                <a href="#" style="color: #1989fa; font-size: 14px;">查看详情 →</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据输入页 -->
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="navbar">数据输入</div>
+                    <div class="page-content">
+                        <div class="card">
+                            <label style="font-size: 14px; font-weight: bold; display: block; margin-bottom: 8px;">
+                                文字日记
+                            </label>
+                            <textarea class="input-field" rows="4" placeholder="记录您今天的感受和状态..."></textarea>
+                        </div>
+
+                        <div class="card">
+                            <label style="font-size: 14px; font-weight: bold; display: block; margin-bottom: 8px;">
+                                血糖值 (mg/dL)
+                            </label>
+                            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                                <input type="number" class="input-field" placeholder="输入血糖值" style="margin: 0; flex: 1;">
+                                <button class="btn btn-primary" style="margin: 0; width: auto; padding: 12px 20px;">添加</button>
+                            </div>
+                            <div>
+                                <span class="tag tag-warning">95.5 mg/dL ×</span>
+                                <span class="tag tag-warning">110.2 mg/dL ×</span>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <label style="font-size: 14px; font-weight: bold; display: block; margin-bottom: 8px;">
+                                HRV值 (ms)
+                            </label>
+                            <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                                <input type="number" class="input-field" placeholder="输入HRV值" style="margin: 0; flex: 1;">
+                                <button class="btn btn-primary" style="margin: 0; width: auto; padding: 12px 20px;">添加</button>
+                            </div>
+                            <div>
+                                <span class="tag tag-warning">45 ms ×</span>
+                                <span class="tag tag-warning">52 ms ×</span>
+                            </div>
+                        </div>
+
+                        <button class="btn btn-primary">提交评估</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 结果展示页 -->
+            <div class="phone-mockup">
+                <div class="phone-screen">
+                    <div class="navbar">评估结果</div>
+                    <div class="page-content">
+                        <div class="section-title">风险评估</div>
+                        <div class="card">
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                                <span class="risk-badge risk-r2">R2<br>中度</span>
+                                <div class="risk-score">
+                                    <div class="value">45.3</div>
+                                    <div class="label">风险分数</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 14px; border-top: 1px solid #eee; padding-top: 12px;">
+                                <div style="margin-bottom: 8px;">
+                                    <strong>主要关注:</strong> 血糖波动
+                                </div>
+                                <div style="margin-bottom: 8px;">
+                                    <strong>紧急程度:</strong> 中等
+                                </div>
+                                <div style="color: #969799; font-size: 12px;">
+                                    评估时间: 2026-01-28 12:30
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">识别的风险信号</div>
+                        <div class="card">
+                            <div class="trigger-item">
+                                <h4>血糖波动过大</h4>
+                                <div class="meta">
+                                    <span class="tag tag-danger">high</span>
+                                    <span class="tag tag-warning">physiological</span>
+                                    置信度: 85%
+                                </div>
+                            </div>
+                            <div class="trigger-item">
+                                <h4>睡眠质量下降</h4>
+                                <div class="meta">
+                                    <span class="tag tag-warning">moderate</span>
+                                    <span class="tag tag-warning">behavioral</span>
+                                    置信度: 72%
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-title">专业建议</div>
+                        <div class="card" style="font-size: 13px; line-height: 1.6;">
+                            <div style="margin-bottom: 8px;">
+                                <strong>主要Agent:</strong> GlucoseAgent
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <strong>辅助Agent:</strong> SleepAgent
+                            </div>
+                            <div style="margin-bottom: 8px;">
+                                <strong>优先级:</strong> P2
+                            </div>
+                            <div style="color: #969799;">
+                                建议响应时间: 24小时内
+                            </div>
+                        </div>
+
+                        <div class="section-title">推荐行动</div>
+                        <div class="card" style="font-size: 13px;">
+                            <ol style="padding-left: 20px; line-height: 1.8;">
+                                <li>监测餐后血糖变化</li>
+                                <li>调整饮食结构</li>
+                                <li>保持规律作息</li>
+                            </ol>
+                        </div>
+
+                        <button class="btn btn-primary">继续评估</button>
+                        <button class="btn btn-outline">返回首页</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-box" style="margin-top: 30px;">
+            <h2>🎨 设计特点</h2>
+            <ul>
+                <li>✅ 移动优先设计，触摸友好</li>
+                <li>✅ Vant UI组件库，统一视觉风格</li>
+                <li>✅ 风险等级颜色编码（R0绿→R4深红）</li>
+                <li>✅ 响应式布局，适配各种屏幕</li>
+                <li>✅ 清晰的信息层级和视觉引导</li>
+                <li>✅ 圆角卡片和按钮，现代化界面</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h2>⚠️ 当前状态</h2>
+            <ul>
+                <li><strong style="color: #52c41a;">✅ 前端页面</strong>: 所有24个文件已完成</li>
+                <li><strong style="color: #52c41a;">✅ UI组件</strong>: 登录、首页、数据输入、结果展示全部实现</li>
+                <li><strong style="color: #fa8c16;">⚠️ 后端API</strong>: 认证端点正在调试中</li>
+                <li><strong style="color: #1890ff;">🔧 待修复</strong>: 登录/注册API路径问题</li>
+            </ul>
+        </div>
+
+        <div class="info-box">
+            <h2>📋 下一步工作</h2>
+            <ul>
+                <li>1. 修复后端 /api/v1/auth/* 端点路径配置</li>
+                <li>2. 测试完整的用户流程（登录→评估→查看结果）</li>
+                <li>3. 在实际移动设备上测试响应式布局</li>
+                <li>4. 添加页面切换动画和加载状态</li>
+                <li>5. 优化错误处理和用户反馈</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

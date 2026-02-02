@@ -1,0 +1,97 @@
+# ==============================================
+# Behavioral Health Platform - Application Services
+# Use alongside docker-compose.yaml (Dify infrastructure)
+# ==============================================
+#
+# Usage:
+#   docker compose -f docker-compose.yaml -f docker-compose.app.yaml up -d
+#
+
+version: '3.8'
+
+services:
+  # ==================================
+  # Python API Service
+  # ==================================
+  bhp-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bhp-api
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+      - "8002:8002"
+    volumes:
+      - ./logs:/app/logs
+      - ./data:/app/data
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+        reservations:
+          memory: 1g
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    networks:
+      - dify-network
+
+  # ==================================
+  # H5 Patient Frontend
+  # ==================================
+  bhp-h5:
+    build:
+      context: ./h5
+      dockerfile: Dockerfile
+    container_name: bhp-h5
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      bhp-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+    networks:
+      - dify-network
+
+  # ==================================
+  # Admin Portal Frontend
+  # ==================================
+  bhp-admin-portal:
+    build:
+      context: ./admin-portal
+      dockerfile: Dockerfile
+    container_name: bhp-admin-portal
+    restart: unless-stopped
+    ports:
+      - "5174:80"
+    depends_on:
+      bhp-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 64m
+    networks:
+      - dify-network
+
+networks:
+  dify-network:
+    external: true
+    name: behavioral-health-project_dify-network

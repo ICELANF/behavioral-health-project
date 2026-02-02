@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "behavioral-health-platform"
+version = "16.0.0"
+description = "Behavioral Health Digital Platform"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+pythonpath = ["."]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+
+[tool.coverage.run]
+source = ["core", "api", "services"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+]
+
+[tool.coverage.report]
+fail_under = 50
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.",
+    "raise NotImplementedError",
+]

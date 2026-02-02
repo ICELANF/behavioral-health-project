@@ -1,0 +1,856 @@
+{
+  "version": "1.0.0",
+  "name": "behavior_prescription_library",
+  "description": "行为处方与养成策略库，与behavior_rules.json格式兼容",
+  "compatible_with": {
+    "behavior_rules": "1.0.0",
+    "state_sync_manager": "1.0.0",
+    "spi_implicit_mapping": "1.0.0"
+  },
+
+  "prescription_framework": {
+    "description": "行为处方制定框架",
+    
+    "smart_goal_rules": {
+      "description": "基于SPI的SMART目标设定规则",
+      "spi_ranges": {
+        ">=70": {
+          "level": "challenging",
+          "description": "可以设定有挑战的目标",
+          "example_goals": ["3个月减重8%", "每周运动5次", "HbA1c降低0.5%"],
+          "difficulty_stars": "★★★★☆",
+          "intensity_multiplier": 1.0
+        },
+        "50-69": {
+          "level": "moderate",
+          "description": "中等难度，分阶段目标",
+          "example_goals": ["1个月减重3%", "每周运动3次", "HbA1c降低0.3%"],
+          "difficulty_stars": "★★★☆☆",
+          "intensity_multiplier": 0.7
+        },
+        "30-49": {
+          "level": "easy",
+          "description": "降低门槛，微习惯起步",
+          "example_goals": ["每天多走1000步", "每餐多吃一口菜", "每周测1次血糖"],
+          "difficulty_stars": "★★☆☆☆",
+          "intensity_multiplier": 0.4
+        },
+        "<30": {
+          "level": "minimal",
+          "description": "最小可行，仅建立意识",
+          "example_goals": ["每天记录心情", "每周了解一个健康知识", "观察自己的饮食"],
+          "difficulty_stars": "★☆☆☆☆",
+          "intensity_multiplier": 0.2
+        }
+      },
+      "smart_checklist": [
+        {"criterion": "Specific", "check": "目标是具体可测量的行为吗？"},
+        {"criterion": "Measurable", "check": "如何判断是否达成？"},
+        {"criterion": "Achievable", "check": "基于当前能力，3个月内可以达成吗？"},
+        {"criterion": "Relevant", "check": "与深层目的一致吗？"},
+        {"criterion": "Time-bound", "check": "有明确的时间节点吗？"}
+      ]
+    },
+
+    "prescription_elements": {
+      "description": "行为处方六要素",
+      "elements": [
+        {
+          "id": "target_behavior",
+          "name": "目标行为",
+          "description": "具体要做什么",
+          "example": "每天晚餐后散步30分钟",
+          "required": true
+        },
+        {
+          "id": "frequency_dose",
+          "name": "频次剂量",
+          "description": "多久做一次，做多少",
+          "example": "每周5-7次，每次至少30分钟",
+          "required": true
+        },
+        {
+          "id": "time_place",
+          "name": "时间地点",
+          "description": "何时何地做",
+          "example": "晚餐后19:30-20:00，小区花园",
+          "required": true
+        },
+        {
+          "id": "trigger_cue",
+          "name": "启动线索",
+          "description": "用什么提醒自己",
+          "example": "吃完饭看到运动鞋就出门",
+          "required": true
+        },
+        {
+          "id": "obstacle_plan",
+          "name": "障碍预案",
+          "description": "遇到困难怎么办",
+          "example": "下雨天改为室内原地踏步",
+          "required": true
+        },
+        {
+          "id": "support_resource",
+          "name": "支持资源",
+          "description": "谁或什么帮助你",
+          "example": "约邻居一起走，用手机记步",
+          "required": false
+        }
+      ]
+    }
+  },
+
+  "psychological_level_strategies": {
+    "description": "基于心理层次的处方策略",
+    "strategies": {
+      "L1": {
+        "level_name": "完全对抗",
+        "prescription_core": "暂不开处方，先建立关系",
+        "key_strategies": [
+          {
+            "id": "STR_L1_MI",
+            "name": "动机性访谈",
+            "description": "运用开放问题、肯定、反映、总结(OARS)技术",
+            "implementation": "每次对话至少包含2个开放性问题"
+          },
+          {
+            "id": "STR_L1_VALUE",
+            "name": "探索价值观",
+            "description": "帮助用户连接健康与个人价值观",
+            "implementation": "使用价值卡片或价值清单工具"
+          },
+          {
+            "id": "STR_L1_NO_GOAL",
+            "name": "不设目标",
+            "description": "此阶段不要求任何行为改变承诺",
+            "implementation": "仅提供信息和陪伴"
+          }
+        ],
+        "avoid": ["设定行为目标", "强调后果", "施加压力"],
+        "action_packages": ["PKG_STRESS_RELIEF"],
+        "coach_guidance": "此阶段用户处于对抗状态，不要强推行动计划。重点是建立信任关系，探索价值观，让用户感到被理解而非被说教。"
+      },
+      "L2": {
+        "level_name": "抗拒与反思",
+        "prescription_core": "探索性尝试，低承诺",
+        "key_strategies": [
+          {
+            "id": "STR_L2_EXPERIENCE",
+            "name": "体验式活动",
+            "description": "提供无压力的体验机会",
+            "implementation": "邀请参加一次活动，不要求后续承诺"
+          },
+          {
+            "id": "STR_L2_NO_COMMIT",
+            "name": "不要求承诺",
+            "description": "允许随时退出，降低心理负担",
+            "implementation": "明确表达'试试看，不喜欢可以停'"
+          },
+          {
+            "id": "STR_L2_PROS_CONS",
+            "name": "讨论利弊",
+            "description": "引导用户自己分析改变的利弊",
+            "implementation": "使用决策平衡表工具"
+          }
+        ],
+        "avoid": ["要求长期承诺", "设定严格目标", "批评现状"],
+        "action_packages": ["PKG_STRESS_RELIEF", "PKG_MOTIVATION_BOOST"],
+        "coach_guidance": "用户开始矛盾和反思，但还没准备好行动。提供信息和体验机会，让用户自己发现改变的必要性。"
+      },
+      "L3": {
+        "level_name": "妥协与接受",
+        "prescription_core": "微习惯处方，降低门槛",
+        "key_strategies": [
+          {
+            "id": "STR_L3_MICRO",
+            "name": "微习惯策略",
+            "description": "从最小可行行为开始",
+            "implementation": "目标缩小到'不可能失败'的程度，如'1分钟运动'"
+          },
+          {
+            "id": "STR_L3_LOW_BAR",
+            "name": "降低门槛",
+            "description": "移除所有不必要的障碍",
+            "implementation": "提供迷你版本、替代方案、灵活时间"
+          },
+          {
+            "id": "STR_L3_FEEDBACK",
+            "name": "频繁反馈",
+            "description": "每次完成都给予即时正向反馈",
+            "implementation": "使用庆祝消息、徽章、进度可视化"
+          },
+          {
+            "id": "STR_L3_CELEBRATE",
+            "name": "及时庆祝",
+            "description": "每个小成就都值得庆祝",
+            "implementation": "设置里程碑：第1天、第3天、第7天"
+          }
+        ],
+        "avoid": ["设定过高目标", "强调失败后果", "批评不完美"],
+        "action_packages": ["PKG_MOTIVATION_BOOST", "PKG_TASK_ADJUSTMENT", "PKG_CELEBRATION"],
+        "coach_guidance": "用户愿意尝试但担心失败。关键是提供成功体验，建立自信。每次完成都要强化，失败了也不批评。"
+      },
+      "L4": {
+        "level_name": "顺应与调整",
+        "prescription_core": "系统化处方，多维度干预",
+        "key_strategies": [
+          {
+            "id": "STR_L4_PLAN",
+            "name": "详细计划",
+            "description": "制定完整的行动计划",
+            "implementation": "使用SMART目标，明确时间地点频次"
+          },
+          {
+            "id": "STR_L4_ENV",
+            "name": "环境设计",
+            "description": "优化物理环境支持行为",
+            "implementation": "移除阻碍因素，增加提示因素"
+          },
+          {
+            "id": "STR_L4_STACK",
+            "name": "习惯堆叠",
+            "description": "将新习惯附着在已有习惯上",
+            "implementation": "'在[现有习惯]之后，我会[新习惯]'"
+          },
+          {
+            "id": "STR_L4_MONITOR",
+            "name": "监测调整",
+            "description": "定期评估并优化方案",
+            "implementation": "每周回顾，根据数据调整"
+          }
+        ],
+        "avoid": ["过度放松监督", "忽视障碍信号"],
+        "action_packages": ["PKG_TASK_ADJUSTMENT", "PKG_CELEBRATION", "PKG_GLUCOSE_INTERVENTION"],
+        "coach_guidance": "用户主动适应改变，可以设定有挑战性的目标。重点是提供方法支持，帮助处理障碍，保持稳定进展。"
+      },
+      "L5": {
+        "level_name": "全面内化",
+        "prescription_core": "维持性处方，深化内化",
+        "key_strategies": [
+          {
+            "id": "STR_L5_IDENTITY",
+            "name": "身份强化",
+            "description": "强化'健康人'的身份认同",
+            "implementation": "使用身份语言：'作为一个注重健康的人...'"
+          },
+          {
+            "id": "STR_L5_MEANING",
+            "name": "意义深化",
+            "description": "连接行为与生命意义",
+            "implementation": "定期回顾为什么这样做对自己重要"
+          },
+          {
+            "id": "STR_L5_ROLE_MODEL",
+            "name": "榜样角色",
+            "description": "鼓励帮助他人，强化身份",
+            "implementation": "邀请分享经验，指导新学员"
+          },
+          {
+            "id": "STR_L5_MAINTAIN",
+            "name": "自主维持",
+            "description": "减少外部支持，培养自主能力",
+            "implementation": "降低跟进频率，按需提供支持"
+          }
+        ],
+        "avoid": ["过度干预", "削弱自主性"],
+        "action_packages": ["PKG_CELEBRATION"],
+        "coach_guidance": "用户已完全内化，重点是巩固身份认同，预防复发，鼓励帮助他人。可以大幅减少跟进频率。"
+      }
+    }
+  },
+
+  "stage_plans": {
+    "description": "分阶段行为养成方案",
+    "stages": {
+      "launch_phase": {
+        "id": "PHASE_LAUNCH",
+        "name": "启动期",
+        "name_display": "启动期",
+        "duration": {"min_weeks": 1, "max_weeks": 2, "typical_weeks": 2},
+        "core_task": "建立初步行为，体验成功",
+        "key_challenges": ["新鲜感消退", "难度估计不足"],
+        "support_focus": ["高频反馈", "及时鼓励", "降低门槛"],
+        
+        "config": {
+          "behavior_requirement": "降低难度，保证完成",
+          "difficulty_ratio": 0.5,
+          "monitoring_frequency": "daily",
+          "review_frequency": "every_3_days",
+          "contact_frequency": {
+            "ai": "daily",
+            "coach": "every_3_days"
+          },
+          "celebration_milestones": [1, 3, 7, 14]
+        },
+        
+        "success_criteria": {
+          "completion_rate": ">=0.5",
+          "streak_days": ">=3"
+        },
+        
+        "common_problems": [
+          {
+            "problem": "过度兴奋",
+            "solution": "设定现实目标",
+            "trigger_id": "T_OVER_ENTHUSIASM"
+          },
+          {
+            "problem": "遇到困难",
+            "solution": "立即提供支持",
+            "trigger_id": "T_EARLY_OBSTACLE"
+          }
+        ],
+        
+        "transition_criteria": {
+          "to_next": {
+            "completion_rate": ">=0.5",
+            "days_completed": ">=7",
+            "no_critical_obstacles": true
+          },
+          "extend": {
+            "completion_rate": "<0.3",
+            "extend_weeks": 1
+          }
+        }
+      },
+      
+      "adaptation_phase": {
+        "id": "PHASE_ADAPT",
+        "name": "适应期",
+        "name_display": "适应期",
+        "duration": {"min_weeks": 3, "max_weeks": 8, "typical_weeks": 6},
+        "core_task": "度过'放弃高峰期'，建立稳定节奏",
+        "key_challenges": ["放弃冲动强", "遇到障碍"],
+        "support_focus": ["陪伴支持", "障碍预案", "灵活调整"],
+        
+        "config": {
+          "behavior_requirement": "保持频次，适度增加强度",
+          "difficulty_ratio": 0.8,
+          "monitoring_frequency": "every_3_days",
+          "review_frequency": "weekly",
+          "contact_frequency": {
+            "ai": "daily",
+            "coach": "weekly"
+          },
+          "crisis_plan_count": "3-5"
+        },
+        
+        "success_criteria": {
+          "completion_rate": ">=0.7",
+          "streak_days": ">=7"
+        },
+        
+        "common_problems": [
+          {
+            "problem": "放弃冲动",
+            "solution": "重新连接深层目的",
+            "trigger_id": "T_LOW_MOTIVATION"
+          },
+          {
+            "problem": "遇到平台期",
+            "solution": "调整方案",
+            "trigger_id": "T_PLATEAU"
+          }
+        ],
+        
+        "transition_criteria": {
+          "to_next": {
+            "completion_rate": ">=0.7",
+            "streak_days": ">=14",
+            "weeks_in_phase": ">=4"
+          },
+          "regress_to_launch": {
+            "completion_rate": "<0.3",
+            "streak_days": 0,
+            "consecutive_skip_days": ">=5"
+          }
+        }
+      },
+      
+      "stabilization_phase": {
+        "id": "PHASE_STABLE",
+        "name": "稳定期",
+        "name_display": "稳定期",
+        "duration": {"min_weeks": 4, "max_weeks": 16, "typical_weeks": 8},
+        "core_task": "行为自动化，减少意志力消耗",
+        "key_challenges": ["枯燥乏味", "平台期"],
+        "support_focus": ["多样化", "突破平台", "社会强化"],
+        
+        "config": {
+          "behavior_requirement": "达到目标强度，形成固定模式",
+          "difficulty_ratio": 1.0,
+          "monitoring_frequency": "weekly",
+          "review_frequency": "biweekly",
+          "contact_frequency": {
+            "ai": "weekly",
+            "coach": "biweekly"
+          },
+          "introduce_variety": true,
+          "new_challenges": true
+        },
+        
+        "success_criteria": {
+          "completion_rate": ">=0.8",
+          "streak_days": ">=21"
+        },
+        
+        "transition_criteria": {
+          "to_next": {
+            "completion_rate": ">=0.85",
+            "streak_days": ">=30",
+            "weeks_in_phase": ">=8",
+            "psychological_level": "L5"
+          },
+          "regress_to_adapt": {
+            "completion_rate": "<0.5",
+            "streak_broken": true
+          }
+        }
+      },
+      
+      "internalization_phase": {
+        "id": "PHASE_INTERNAL",
+        "name": "内化期",
+        "name_display": "收获期",
+        "duration": {"min_weeks": 16, "max_weeks": null, "typical_weeks": null},
+        "core_task": "完全内化，成为身份的一部分",
+        "key_challenges": ["自满松懈"],
+        "support_focus": ["深化意义", "榜样角色", "自主维持"],
+        
+        "config": {
+          "behavior_requirement": "自主维持，不需要外部监督",
+          "difficulty_ratio": 1.0,
+          "monitoring_frequency": "monthly",
+          "review_frequency": "monthly",
+          "contact_frequency": {
+            "ai": "on_demand",
+            "coach": "monthly"
+          },
+          "encourage_helping_others": true
+        },
+        
+        "success_criteria": {
+          "completion_rate": ">=0.85",
+          "streak_days": ">=60",
+          "self_maintained": true
+        },
+        
+        "graduation_criteria": {
+          "months_stable": ">=6",
+          "health_goals_achieved": true,
+          "psychological_level": "L5",
+          "self_efficacy_high": true
+        }
+      }
+    }
+  },
+
+  "companion_strategies": {
+    "description": "陪跑策略设计",
+    
+    "principles": [
+      {
+        "id": "PRINCIPLE_GRADUAL",
+        "name": "渐进放手原则",
+        "description": "启动期高频陪伴 → 逐步降低频率 → 最终独立维持"
+      },
+      {
+        "id": "PRINCIPLE_ON_DEMAND",
+        "name": "按需支持原则",
+        "description": "不是固定模式，而是根据个体需求灵活调整"
+      },
+      {
+        "id": "PRINCIPLE_EMPOWER",
+        "name": "赋能原则",
+        "description": "目标是培养自主能力，而非依赖"
+      }
+    ],
+    
+    "toolkits": {
+      "communication_tools": [
+        {"id": "TOOL_DAILY_CHECKIN", "name": "每日打卡", "methods": ["微信群", "App", "表单"]},
+        {"id": "TOOL_WEEKLY_CALL", "name": "每周通话", "duration": "15-30分钟", "purpose": "回顾与规划"},
+        {"id": "TOOL_MONTHLY_MEETING", "name": "每月面谈", "purpose": "深度访谈与方案调整"}
+      ],
+      "monitoring_tools": [
+        {"id": "TOOL_BEHAVIOR_LOG", "name": "行为日志", "content": "每日行为执行情况"},
+        {"id": "TOOL_HEALTH_METRICS", "name": "健康指标", "content": "体重、血糖、血压等"},
+        {"id": "TOOL_SUBJECTIVE", "name": "主观感受", "content": "情绪、困难、体验"}
+      ],
+      "motivation_tools": [
+        {"id": "TOOL_MILESTONE", "name": "里程碑庆祝", "milestones": [7, 21, 90]},
+        {"id": "TOOL_VISUAL", "name": "进步可视化", "methods": ["曲线图", "对比照片"]},
+        {"id": "TOOL_SOCIAL", "name": "社会强化", "methods": ["群内分享", "表扬"]}
+      ],
+      "coping_tools": [
+        {"id": "TOOL_OBSTACLE_CARD", "name": "障碍预案卡", "content": "常见障碍的应对方法"},
+        {"id": "TOOL_HOTLINE", "name": "紧急支持热线", "purpose": "遇到危机时的联系方式"},
+        {"id": "TOOL_RESOURCE_LIB", "name": "资源库", "content": ["视频", "文章", "食谱", "运动计划"]}
+      ]
+    },
+    
+    "stage_companion_config": {
+      "launch_phase": {
+        "contact_frequency": "每天或隔天",
+        "main_forms": ["消息打卡", "每周见面"],
+        "support_focus": ["及时反馈", "解决困难", "庆祝成功"],
+        "ai_interaction": "每日主动触达",
+        "coach_interaction": "每3天主动联系"
+      },
+      "adaptation_phase": {
+        "contact_frequency": "每周2-3次",
+        "main_forms": ["消息+通话", "每2周见面"],
+        "support_focus": ["障碍应对", "调整方案", "情感支持"],
+        "ai_interaction": "每日打卡提醒，异常时主动触达",
+        "coach_interaction": "每周1-2次主动联系"
+      },
+      "stabilization_phase": {
+        "contact_frequency": "每周1次",
+        "main_forms": ["通话回顾", "每月见面"],
+        "support_focus": ["保持动力", "多样化", "深化理解"],
+        "ai_interaction": "每周总结，按需响应",
+        "coach_interaction": "每2周主动联系"
+      },
+      "internalization_phase": {
+        "contact_frequency": "每月1次",
+        "main_forms": ["按需联系", "季度见面"],
+        "support_focus": ["巩固身份", "预防复发", "持续成长"],
+        "ai_interaction": "按需响应",
+        "coach_interaction": "每月联系或按需"
+      }
+    }
+  },
+
+  "monitoring_adjustment": {
+    "description": "监测与调整机制",
+    
+    "monitoring_levels": {
+      "daily": {
+        "id": "MONITOR_DAILY",
+        "name": "日常监测",
+        "content": ["行为执行", "主观感受"],
+        "indicators": ["打卡率", "完成质量", "情绪"],
+        "responsible": "system_auto"
+      },
+      "weekly": {
+        "id": "MONITOR_WEEKLY",
+        "name": "过程监测",
+        "content": ["进展情况", "障碍困难"],
+        "indicators": ["周达成率", "困难次数"],
+        "responsible": "coach"
+      },
+      "monthly": {
+        "id": "MONITOR_MONTHLY",
+        "name": "结果监测",
+        "content": ["健康指标", "目标达成"],
+        "indicators": ["体重", "血糖", "血压"],
+        "responsible": "coach_expert"
+      }
+    },
+    
+    "adjustment_triggers": {
+      "description": "方案调整触发条件",
+      "triggers": [
+        {
+          "id": "ADJ_CONSECUTIVE_MISS",
+          "condition": "连续3天未完成",
+          "possible_causes": ["目标太难", "失去动力"],
+          "adjustment_direction": "降低难度/重新连接目的",
+          "trigger_ref": "T_TASK_SKIP",
+          "action_ref": "PKG_TASK_ADJUSTMENT"
+        },
+        {
+          "id": "ADJ_PAINFUL_COMPLETION",
+          "condition": "完成但很痛苦",
+          "possible_causes": ["方法不对", "不适合"],
+          "adjustment_direction": "调整方法/寻找替代",
+          "trigger_ref": "T_LOW_SATISFACTION",
+          "action_ref": "PKG_METHOD_REVIEW"
+        },
+        {
+          "id": "ADJ_PLATEAU",
+          "condition": "进展停滞2周",
+          "possible_causes": ["遇到平台期"],
+          "adjustment_direction": "增加挑战/调整策略",
+          "trigger_ref": "T_PLATEAU",
+          "action_ref": "PKG_BREAKTHROUGH"
+        },
+        {
+          "id": "ADJ_HEALTH_ISSUE",
+          "condition": "出现健康问题",
+          "possible_causes": ["方案不当", "过度"],
+          "adjustment_direction": "医学评估/调整强度",
+          "trigger_ref": "T_HEALTH_CONCERN",
+          "action_ref": "PKG_SAFETY_CHECK"
+        },
+        {
+          "id": "ADJ_LIFE_CHANGE",
+          "condition": "生活变化",
+          "possible_causes": ["环境改变", "时间冲突"],
+          "adjustment_direction": "重新规划/灵活调整",
+          "trigger_ref": "T_LIFE_CHANGE",
+          "action_ref": "PKG_REPLAN"
+        },
+        {
+          "id": "ADJ_SPI_CHANGE",
+          "condition": "重新评估后SPI显著变化(±10分)",
+          "possible_causes": ["准备度改变"],
+          "adjustment_direction": "重新制定处方",
+          "trigger_ref": "T_SPI_DROP",
+          "action_ref": "PKG_PRESCRIPTION_REVIEW"
+        }
+      ]
+    },
+    
+    "evaluation_schedule": {
+      "description": "定期评估时间表",
+      "checkpoints": [
+        {"week": 1, "content": "启动情况、初步适应", "decision": "是否需要降低难度"},
+        {"week": 3, "content": "度过最初阶段", "decision": "是否进入适应期"},
+        {"week": 6, "content": "适应期中期", "decision": "是否需要调整方案"},
+        {"month": 3, "content": "稳定期评估", "decision": "是否进入自动化"},
+        {"month": 6, "content": "中期总结", "decision": "是否达到预期目标"},
+        {"month": 12, "content": "长期评估", "decision": "是否完全内化"}
+      ]
+    }
+  },
+
+  "new_triggers": {
+    "description": "新增触发器定义，扩展behavior_rules.json",
+    "triggers": [
+      {
+        "id": "T_OVER_ENTHUSIASM",
+        "name": "过度兴奋",
+        "description": "检测到启动期用户设定过高目标",
+        "condition": "user.phase == 'launch' and user.initial_goal_difficulty > 3",
+        "risk_level": "L1",
+        "priority": "Low",
+        "action_ref": "PKG_GOAL_CALIBRATION",
+        "applicable_stages": ["S1", "S2"],
+        "cooldown_minutes": 1440,
+        "max_daily_triggers": 1,
+        "enabled": true
+      },
+      {
+        "id": "T_EARLY_OBSTACLE",
+        "name": "早期障碍",
+        "description": "启动期遇到困难",
+        "condition": "user.phase == 'launch' and user.skip_count >= 1",
+        "risk_level": "L2",
+        "priority": "High",
+        "action_ref": "PKG_EARLY_SUPPORT",
+        "applicable_stages": ["S1", "S2"],
+        "cooldown_minutes": 60,
+        "max_daily_triggers": 3,
+        "enabled": true
+      },
+      {
+        "id": "T_PLATEAU",
+        "name": "平台期",
+        "description": "检测到进展停滞",
+        "condition": "user.phase in ['adaptation', 'stabilization'] and user.progress_stall_days >= 14",
+        "risk_level": "L2",
+        "priority": "Medium",
+        "action_ref": "PKG_BREAKTHROUGH",
+        "applicable_stages": ["S2", "S3"],
+        "cooldown_minutes": 1440,
+        "max_daily_triggers": 1,
+        "enabled": true
+      },
+      {
+        "id": "T_STAGE_COMPLETE",
+        "name": "阶段完成",
+        "description": "检测到达成阶段转换条件",
+        "condition": "user.phase_criteria_met == true",
+        "risk_level": "L1",
+        "priority": "Medium",
+        "action_ref": "PKG_STAGE_TRANSITION",
+        "applicable_stages": null,
+        "cooldown_minutes": 0,
+        "max_daily_triggers": 1,
+        "enabled": true
+      },
+      {
+        "id": "T_REGRESSION_RISK",
+        "name": "退行风险",
+        "description": "检测到可能退行到上一阶段",
+        "condition": "user.completion_rate < 0.3 and user.streak_broken == true",
+        "risk_level": "L3",
+        "priority": "High",
+        "action_ref": "PKG_REGRESSION_PREVENTION",
+        "applicable_stages": ["S2", "S3", "S4"],
+        "cooldown_minutes": 1440,
+        "max_daily_triggers": 1,
+        "enabled": true
+      }
+    ]
+  },
+
+  "new_action_packages": {
+    "description": "新增动作包定义，扩展behavior_rules.json",
+    "packages": {
+      "PKG_GOAL_CALIBRATION": {
+        "action_id": "PKG_GOAL_CALIBRATION",
+        "name": "目标校准包",
+        "description": "帮助用户设定更现实的目标",
+        "render_type": "INTERACTIVE_CARD",
+        "payload": {
+          "title": "让我们调整一下目标",
+          "content": "刚开始不用设太高的目标，我们先从简单的开始，慢慢来？",
+          "components": [
+            {"type": "RADIO", "id": "goal_level", "label": "选择适合的目标难度", "options": [
+              {"value": "mini", "label": "迷你版 (最简单)"},
+              {"value": "easy", "label": "轻松版"},
+              {"value": "keep", "label": "保持原计划"}
+            ]},
+            {"type": "BUTTON", "id": "btn_confirm", "text": "确认调整", "action": "ADJUST_GOAL"}
+          ]
+        },
+        "policy_gate": {
+          "visibility": "client_only",
+          "audit_level": "L1",
+          "require_expert_approval": false
+        },
+        "version": "1.0",
+        "enabled": true
+      },
+      "PKG_EARLY_SUPPORT": {
+        "action_id": "PKG_EARLY_SUPPORT",
+        "name": "早期支持包",
+        "description": "启动期遇到困难时的即时支持",
+        "render_type": "COMPANION_MESSAGE",
+        "payload": {
+          "title": "遇到困难了吗？",
+          "content": "刚开始遇到点困难很正常，我们一起看看怎么解决？",
+          "components": [
+            {"type": "BUTTON", "id": "btn_simplify", "text": "换个更简单的方式", "action": "SIMPLIFY_TASK"},
+            {"type": "BUTTON", "id": "btn_chat", "text": "聊一聊", "action": "START_CHAT"},
+            {"type": "BUTTON", "id": "btn_skip", "text": "今天跳过", "action": "SKIP_TODAY"}
+          ]
+        },
+        "policy_gate": {
+          "visibility": "client_only",
+          "audit_level": "L1",
+          "require_expert_approval": false
+        },
+        "version": "1.0",
+        "enabled": true
+      },
+      "PKG_BREAKTHROUGH": {
+        "action_id": "PKG_BREAKTHROUGH",
+        "name": "突破平台包",
+        "description": "帮助用户突破停滞期",
+        "render_type": "INTERACTIVE_CARD",
+        "payload": {
+          "title": "是时候尝试点新东西了！",
+          "content": "感觉最近进步不明显？这很正常，我们来点变化？",
+          "components": [
+            {"type": "RADIO", "id": "challenge_type", "label": "选择新挑战", "options": [
+              {"value": "variety", "label": "换个运动方式"},
+              {"value": "intensity", "label": "增加一点强度"},
+              {"value": "social", "label": "找个同伴一起"},
+              {"value": "reward", "label": "设置一个奖励"}
+            ]},
+            {"type": "BUTTON", "id": "btn_try", "text": "试试看", "action": "TRY_NEW_CHALLENGE"}
+          ]
+        },
+        "policy_gate": {
+          "visibility": "client_only",
+          "audit_level": "L1",
+          "require_expert_approval": false
+        },
+        "version": "1.0",
+        "enabled": true
+      },
+      "PKG_STAGE_TRANSITION": {
+        "action_id": "PKG_STAGE_TRANSITION",
+        "name": "阶段转换包",
+        "description": "庆祝阶段完成，进入下一阶段",
+        "render_type": "INTERACTIVE_CARD",
+        "payload": {
+          "title": "🎉 恭喜！你进入了新阶段！",
+          "content": "你的坚持得到了回报，现在可以迎接更大的挑战了！",
+          "components": [
+            {"type": "TEXT", "id": "achievement", "content": "完成阶段目标"},
+            {"type": "BUTTON", "id": "btn_next", "text": "查看下阶段计划", "action": "VIEW_NEXT_PHASE"},
+            {"type": "BUTTON", "id": "btn_share", "text": "分享成就", "action": "SHARE_ACHIEVEMENT"}
+          ]
+        },
+        "policy_gate": {
+          "visibility": "client_only",
+          "audit_level": "L0",
+          "require_expert_approval": false
+        },
+        "version": "1.0",
+        "enabled": true
+      },
+      "PKG_REGRESSION_PREVENTION": {
+        "action_id": "PKG_REGRESSION_PREVENTION",
+        "name": "退行预防包",
+        "description": "检测到退行风险时的干预",
+        "render_type": "COMPANION_MESSAGE",
+        "payload": {
+          "title": "最近好像有点艰难",
+          "content": "我注意到最近有些困难，没关系的，我们可以调整一下步伐。你愿意聊聊吗？",
+          "components": [
+            {"type": "BUTTON", "id": "btn_chat", "text": "聊一聊", "action": "START_CHAT"},
+            {"type": "BUTTON", "id": "btn_adjust", "text": "调整计划", "action": "ADJUST_PLAN"},
+            {"type": "BUTTON", "id": "btn_rest", "text": "休息几天", "action": "TAKE_BREAK"}
+          ]
+        },
+        "policy_gate": {
+          "visibility": "all",
+          "audit_level": "L2",
+          "require_expert_approval": false
+        },
+        "on_complete_action": "NOTIFY_COACH",
+        "version": "1.0",
+        "enabled": true
+      },
+      "PKG_SPI_ALERT": {
+        "action_id": "PKG_SPI_ALERT",
+        "name": "SPI预警包",
+        "description": "SPI显著下降时的预警",
+        "render_type": "NOTIFICATION",
+        "payload": {
+          "title": "需要关注",
+          "content": "检测到用户准备度可能下降，建议教练跟进",
+          "for_role": "coach",
+          "components": [
+            {"type": "BUTTON", "id": "btn_view", "text": "查看详情", "action": "VIEW_DIAGNOSIS"},
+            {"type": "BUTTON", "id": "btn_contact", "text": "联系用户", "action": "CONTACT_USER"}
+          ]
+        },
+        "policy_gate": {
+          "visibility": "coach_only",
+          "audit_level": "L2",
+          "require_expert_approval": false
+        },
+        "version": "1.0",
+        "enabled": true
+      },
+      "PKG_ASSESSMENT_REMINDER": {
+        "action_id": "PKG_ASSESSMENT_REMINDER",
+        "name": "评估提醒包",
+        "description": "定期评估到期提醒",
+        "render_type": "NOTIFICATION",
+        "payload": {
+          "title": "该做个小测评了",
+          "content": "距离上次评估已经一个月了，花几分钟更新一下状态？",
+          "components": [
+            {"type": "BUTTON", "id": "btn_start", "text": "开始评估", "action": "START_ASSESSMENT"},
+            {"type": "BUTTON", "id": "btn_later", "text": "稍后提醒", "action": "REMIND_LATER"}
+          ]
+        },
+        "policy_gate": {
+          "visibility": "client_only",
+          "audit_level": "L1",
+          "require_expert_approval": false
+        },
+        "version": "1.0",
+        "enabled": true
+      }
+    }
+  }
+}

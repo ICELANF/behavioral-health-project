@@ -84,6 +84,11 @@ class Mode(str, Enum):
 
 # 阶段配置
 STAGE_CONFIG = {
+    Stage.INIT: {
+        "days": (0, 0),
+        "focus_template": "初始评估",
+        "tasks": ["CHECKIN_MEAL"]
+    },
     Stage.ONBOARDING: {
         "days": (1, 3),
         "focus_template": "建立基础习惯",
@@ -435,7 +440,19 @@ async def submit_task_feedback(
     触发状态机流转，返回Agent响应和下一阶段
     """
     state = get_user_state(user_id)
-    current_stage = Stage(request.stage) if request.stage else get_stage_for_day(state["day_index"])
+
+    # 容错：映射非法 stage 值
+    STAGE_ALIAS = {"startup": "INIT", "init": "INIT", "onboarding": "ONBOARDING"}
+    stage_raw = request.stage.strip() if request.stage else ""
+    stage_resolved = STAGE_ALIAS.get(stage_raw.lower(), stage_raw)
+    try:
+        current_stage = Stage(stage_resolved) if stage_resolved else get_stage_for_day(state["day_index"])
+    except ValueError:
+        valid = [s.value for s in Stage]
+        raise HTTPException(
+            status_code=400,
+            detail=f"无效的阶段值: '{request.stage}'，合法值: {valid}"
+        )
     mode = state.get("mode", Mode.PILOT.value)
     
     # 生成反馈消息
