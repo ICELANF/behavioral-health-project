@@ -23,6 +23,35 @@ from sqlalchemy.pool import StaticPool
 from core.models import Base
 
 
+@pytest.fixture(autouse=True)
+async def reset_singletons():
+    """Reset global singletons after each test to avoid event-loop-is-closed errors.
+
+    pytest-asyncio creates a new event loop per test function. The singleton
+    clients (especially MultimodalClient) bind an httpx.AsyncClient to the
+    loop that was active at creation time. If a subsequent test reuses the
+    stale singleton, the underlying loop is already closed.
+    """
+    yield  # run the test first
+
+    # --- MultimodalClient ---
+    import core.multimodal_client as _mc
+    if _mc._multimodal_client is not None:
+        try:
+            await _mc._multimodal_client.close()
+        except Exception:
+            pass
+        _mc._multimodal_client = None
+
+    # --- AssessmentEngine ---
+    import core.assessment_engine as _ae
+    _ae._assessment_engine = None
+
+    # --- TriggerEngine ---
+    import core.trigger_engine as _te
+    _te._trigger_engine = None
+
+
 @pytest.fixture(scope="session")
 def db_engine():
     """Create an in-memory SQLite engine for the entire test session."""

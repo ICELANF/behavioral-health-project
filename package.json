@@ -1,0 +1,13 @@
+{
+  "devDependencies": {
+    "@playwright/test": "^1.58.1"
+  },
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:h5": "playwright test --project=h5",
+    "test:e2e:patient": "playwright test --project=h5-patient",
+    "test:e2e:admin": "playwright test --project=admin-portal",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
+  }
+}
