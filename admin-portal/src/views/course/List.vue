@@ -28,7 +28,7 @@
         </a-col>
         <a-col :span="4">
           <a-select v-model:value="filters.domain" placeholder="内容领域" allowClear style="width: 100%">
-            <a-select-option v-for="domain in TRIGGER_DOMAINS" :key="domain.value" :value="domain.value">
+            <a-select-option v-for="(domain, key) in TRIGGER_DOMAINS" :key="key" :value="key">
               {{ domain.label }}
             </a-select-option>
           </a-select>
@@ -251,7 +251,7 @@ const columns = [
 // 辅助函数
 const getSourceLabel = (source: ContentSource) => CONTENT_SOURCE_CONFIG[source]?.label || source
 const getSourceColor = (source: ContentSource) => CONTENT_SOURCE_CONFIG[source]?.color || '#666'
-const getDomainLabel = (domain: string) => TRIGGER_DOMAINS.find(d => d.value === domain)?.label || domain
+const getDomainLabel = (domain: string) => (TRIGGER_DOMAINS as any)[domain]?.label || domain
 const formatNumber = (num: number) => {
   if (num >= 10000) return (num / 10000).toFixed(1) + 'w'
   if (num >= 1000) return (num / 1000).toFixed(1) + 'k'

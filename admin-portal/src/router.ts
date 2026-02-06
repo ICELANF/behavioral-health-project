@@ -432,6 +432,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./views/coach/StudentBehavioralProfile.vue'),
         meta: { title: '学员行为画像' }
       },
+      // Coach 学员消息
+      {
+        path: 'coach/messages',
+        name: 'CoachStudentMessages',
+        component: () => import('./views/coach/StudentMessages.vue'),
+        meta: { title: '学员消息' }
+      },
       // ============ Expert "我的" 模块 ============
       {
         path: 'expert/my/supervision',

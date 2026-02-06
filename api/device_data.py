@@ -1155,6 +1155,26 @@ async def sync_device_data_batch(
 
         logger.info(f"[Sync] {sync_id}: processed={records_processed}, new={records_new}, errors={len(errors)}")
 
+        # 设备→行为事实桥接
+        try:
+            from core.device_behavior_bridge import DeviceBehaviorBridge
+            bridge = DeviceBehaviorBridge()
+            with db_transaction() as bridge_db:
+                # 活动数据: 步数达标自动完成exercise任务
+                if "activity" in data and data["activity"].get("records"):
+                    for rec in data["activity"]["records"]:
+                        steps = rec.get("steps", 0)
+                        if steps > 0:
+                            bridge.process_activity(bridge_db, user_id, steps)
+                # 睡眠数据: 评分达标自动完成sleep任务
+                if "sleep" in data and data["sleep"].get("records"):
+                    for rec in data["sleep"]["records"]:
+                        score = rec.get("sleep_score")
+                        if score and score > 0:
+                            bridge.process_sleep(bridge_db, user_id, score)
+        except Exception as e:
+            logger.warning(f"DeviceBehaviorBridge batch处理失败: {e}")
+
         return {
             "success": True,
             "sync_id": sync_id,

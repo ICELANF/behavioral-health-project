@@ -1,0 +1,111 @@
+# ============================================================================
+# 行为健康平台 - 端口注册表 (Port Registry)
+# ============================================================================
+# 规则:
+#   1. 所有已分配端口不得更改或复用
+#   2. 新功能/新服务必须申请新端口
+#   3. 前端开发服务器使用 strictPort: true
+#   4. 后端服务绑定固定端口
+#   5. 新端口分配范围: 前端 3100-3199, 后端 8100-8199
+# ============================================================================
+
+# ======================== 前端服务 (Frontend) ========================
+frontend:
+  h5:
+    port: 3000
+    description: "H5 患者端移动应用 (Vant 4 + Vue 3)"
+    config_file: "h5/vite.config.ts"
+    strictPort: true
+    status: locked
+
+  h5-patient-app:
+    port: 3001
+    description: "H5 患者端应用 (独立版)"
+    config_file: "h5-patient-app/vite.config.ts"
+    strictPort: true
+    status: locked
+
+  admin-portal:
+    port: 5177
+    description: "管理后台 (Ant Design Vue 4 + Vue 3)"
+    config_file: "admin-portal/vite.config.ts"
+    strictPort: true
+    status: locked
+
+# ======================== 后端服务 (Backend) ========================
+backend:
+  main-api:
+    port: 8000
+    description: "主 API 服务 (FastAPI) - 用户/设备/对话/微行动/消息/提醒"
+    config_file: "api/main.py"
+    bind: "127.0.0.1"
+    status: locked
+
+  baps-api:
+    port: 8001
+    description: "BAPS 评估引擎 API - 行为评估与画像服务"
+    config_file: "api/baps_api.py"
+    bind: "0.0.0.0"
+    status: locked
+
+  decision-engine:
+    port: 8002
+    description: "决策引擎 - v14/v16 行为决策与代谢核心"
+    config_file: "main.py"
+    bind: "0.0.0.0"
+    status: locked
+
+# ======================== 基础设施 (Infrastructure) ========================
+infrastructure:
+  postgresql:
+    port: 5432
+    description: "PostgreSQL 数据库"
+    status: locked
+
+  redis:
+    port: 6379
+    description: "Redis 缓存 & Celery Broker"
+    status: locked
+
+  ollama:
+    port: 11434
+    description: "Ollama 本地 LLM 推理服务"
+    status: locked
+
+  dify-gateway:
+    port: 8080
+    description: "Dify AI 平台网关"
+    status: locked
+
+  dify-ssl:
+    port: 8443
+    description: "Dify HTTPS 入口"
+    status: locked
+
+  streamlit-workbench:
+    port: 8501
+    description: "专家督导工作台 (Streamlit)"
+    status: locked
+
+# ======================== 反向代理 (Nginx) ========================
+proxy:
+  http:
+    port: 80
+    description: "Nginx HTTP 入口"
+    status: locked
+
+  https:
+    port: 443
+    description: "Nginx HTTPS 入口"
+    status: locked
+
+# ======================== 新端口分配池 ========================
+# 前端新服务: 3100 ~ 3199
+# 后端新服务: 8100 ~ 8199
+# 下一个可用前端端口: 3100
+# 下一个可用后端端口: 8100
+allocation:
+  frontend_range: "3100-3199"
+  backend_range: "8100-8199"
+  next_frontend: 3100
+  next_backend: 8100

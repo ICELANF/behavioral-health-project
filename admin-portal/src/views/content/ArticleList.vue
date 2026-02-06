@@ -15,7 +15,7 @@
         </a-form-item>
         <a-form-item label="领域">
           <a-select v-model:value="filters.domain" placeholder="全部领域" allow-clear style="width: 120px">
-            <a-select-option v-for="domain in TRIGGER_DOMAINS" :key="domain.value" :value="domain.value">
+            <a-select-option v-for="(domain, key) in TRIGGER_DOMAINS" :key="key" :value="key">
               {{ domain.label }}
             </a-select-option>
           </a-select>
@@ -158,7 +158,7 @@
         </a-form-item>
         <a-form-item label="领域" required>
           <a-select v-model:value="editForm.domain" placeholder="选择所属领域">
-            <a-select-option v-for="domain in TRIGGER_DOMAINS" :key="domain.value" :value="domain.value">
+            <a-select-option v-for="(domain, key) in TRIGGER_DOMAINS" :key="key" :value="key">
               {{ domain.label }}
             </a-select-option>
           </a-select>
@@ -295,7 +295,7 @@ const columns = [
 // 辅助函数
 const getSourceLabel = (source: ContentSource) => CONTENT_SOURCE_CONFIG[source]?.label || source
 const getSourceColor = (source: ContentSource) => CONTENT_SOURCE_CONFIG[source]?.color || '#666'
-const getDomainLabel = (domain: string) => TRIGGER_DOMAINS.find(d => d.value === domain)?.label || domain
+const getDomainLabel = (domain: string) => (TRIGGER_DOMAINS as any)[domain]?.label || domain
 const getStatusLabel = (status: ContentStatus) => {
   const map: Record<ContentStatus, string> = {
     draft: '草稿',

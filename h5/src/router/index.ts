@@ -81,6 +81,11 @@ const router = createRouter({
       component: () => import('@/views/MyStage.vue')
     },
     {
+      path: '/my-plan',
+      name: 'my-plan',
+      component: () => import('@/views/MyPlan.vue')
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/'
     }

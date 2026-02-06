@@ -24,6 +24,7 @@ from core.behavioral_profile_service import BehavioralProfileService
 from core.brain.stage_runtime import StageRuntimeBuilder, StageInput
 from core.brain.policy_gate import RuntimePolicyGate
 from core.intervention_matcher import InterventionMatcher
+from core.behavior_facts_service import BehaviorFactsService
 from api.dependencies import get_current_user, require_coach_or_admin
 
 router = APIRouter(prefix="/api/v1/assessment", tags=["评估管道"])
@@ -34,6 +35,7 @@ profile_service = BehavioralProfileService()
 stage_runtime = StageRuntimeBuilder()
 policy_gate = RuntimePolicyGate()
 intervention_matcher = InterventionMatcher()
+behavior_facts_service = BehaviorFactsService()
 
 
 # ============ Pydantic 模型 ============
@@ -122,6 +124,9 @@ async def evaluate_full_pipeline(
         )
 
         # === Step 3: StageRuntimeBuilder 阶段判定 ===
+        # 从微行动系统获取真实行为事实
+        db_facts = behavior_facts_service.get_facts(db, user_id)
+        # 合并: 请求中的 behavior_facts 优先（允许前端覆盖）
         facts = request.behavior_facts or {}
         stage_input = StageInput(
             user_id=user_id,
@@ -130,9 +135,9 @@ async def evaluate_full_pipeline(
             belief_score=facts.get("belief_score", (profile.spi_score or 0) / 100),
             awareness_score=facts.get("awareness_score", 0.0),
             capability_score=facts.get("capability_score", 0.0),
-            action_completed_7d=facts.get("action_completed_7d", 0),
-            action_interrupt_72h=facts.get("action_interrupt_72h", False),
-            streak_days=facts.get("streak_days", 0),
+            action_completed_7d=facts.get("action_completed_7d", db_facts.action_completed_7d),
+            action_interrupt_72h=facts.get("action_interrupt_72h", db_facts.action_interrupt_72h),
+            streak_days=facts.get("streak_days", db_facts.streak_days),
             spi_score=profile.spi_score or 0,
         )
 

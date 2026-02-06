@@ -68,10 +68,54 @@
         </div>
       </div>
 
-      <!-- 今日任务 -->
+      <!-- 今日微行动 -->
+      <div class="micro-actions-card card">
+        <div class="tasks-header">
+          <h3>
+            今日微行动
+            <van-tag v-if="microStreak > 0" type="warning" size="small" round>
+              &#x1F525; {{ microStreak }}天
+            </van-tag>
+          </h3>
+          <router-link to="/tasks" class="view-all">查看全部</router-link>
+        </div>
+        <van-loading v-if="loadingMicro" size="20" />
+        <template v-else-if="microTasks.length > 0">
+          <div class="micro-progress-bar">
+            <span>{{ microCompleted }}/{{ microTasks.length }} 已完成</span>
+            <van-progress
+              :percentage="microProgressRate"
+              stroke-width="4"
+              color="#07c160"
+              track-color="#ebedf0"
+              :show-pivot="false"
+            />
+          </div>
+          <div
+            v-for="task in microTasks"
+            :key="task.id"
+            class="micro-item"
+            :class="{ done: task.status === 'completed' }"
+          >
+            <div
+              class="micro-check"
+              :class="{ checked: task.status === 'completed' }"
+              @click="quickCompleteMicro(task)"
+            >
+              <van-icon v-if="task.status === 'completed'" name="success" />
+            </div>
+            <span class="micro-title">{{ task.title }}</span>
+          </div>
+        </template>
+        <div v-else class="micro-empty">
+          今日暂无微行动
+        </div>
+      </div>
+
+      <!-- 旧的今日任务 (来自AI对话) -->
       <div v-if="chatStore.pendingTasks.length > 0" class="tasks-preview card">
         <div class="tasks-header">
-          <h3>今日任务</h3>
+          <h3>AI推荐任务</h3>
           <router-link to="/tasks" class="view-all">查看全部</router-link>
         </div>
         <TaskCard
@@ -177,7 +221,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { useUserStore } from '@/stores/user'
@@ -193,6 +237,42 @@ const chatStore = useChatStore()
 function goToChat(expertId: string) {
   chatStore.setCurrentExpert(expertId)
   router.push('/chat')
+}
+
+// ---- 微行动 ----
+const loadingMicro = ref(false)
+const microTasks = ref<any[]>([])
+const microStreak = ref(0)
+
+const microCompleted = computed(() => microTasks.value.filter(t => t.status === 'completed').length)
+const microProgressRate = computed(() => {
+  if (microTasks.value.length === 0) return 0
+  return Math.round((microCompleted.value / microTasks.value.length) * 100)
+})
+
+async function loadMicroActions() {
+  loadingMicro.value = true
+  try {
+    const [todayRes, statsRes] = await Promise.all([
+      api.get('/api/v1/micro-actions/today').catch(() => null),
+      api.get('/api/v1/micro-actions/stats').catch(() => null),
+    ])
+    microTasks.value = (todayRes as any)?.tasks || []
+    microStreak.value = (statsRes as any)?.streak_days || 0
+  } catch {
+    microTasks.value = []
+  } finally {
+    loadingMicro.value = false
+  }
+}
+
+async function quickCompleteMicro(task: any) {
+  if (task.status === 'completed') return
+  try {
+    await api.post(`/api/v1/micro-actions/${task.id}/complete`)
+    task.status = 'completed'
+    showToast({ message: '完成!', type: 'success' })
+  } catch { /* ignore */ }
 }
 
 // ---- 健康指标 ----
@@ -258,6 +338,7 @@ function toggleMedTaken(med: typeof medReminders.value[0]) {
 let refreshTimer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
   refreshHealth()
+  loadMicroActions()
   refreshTimer = setInterval(refreshHealth, 10000)
 })
 onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
@@ -406,6 +487,39 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
   .expert-arrow {
     color: $text-color-placeholder;
   }
+}
+
+.micro-actions-card {
+  .micro-progress-bar {
+    font-size: $font-size-sm;
+    color: $text-color-secondary;
+    margin-bottom: 8px;
+    :deep(.van-progress) { margin-top: 4px; }
+  }
+}
+
+.micro-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+  &:last-child { border-bottom: none; }
+  &.done { opacity: 0.6; }
+
+  .micro-check {
+    width: 22px; height: 22px;
+    border: 2px solid #d9d9d9; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; cursor: pointer;
+    &.checked { background: #07c160; border-color: #07c160; color: #fff; }
+  }
+  .micro-title { font-size: $font-size-md; }
+}
+
+.micro-empty {
+  text-align: center; padding: $spacing-md;
+  color: $text-color-placeholder; font-size: $font-size-sm;
 }
 
 .tasks-preview {

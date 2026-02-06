@@ -216,6 +216,38 @@ try:
 except ImportError as e:
     print(f"[API] 评估管道路由注册失败: {e}")
 
+# 注册微行动路由
+try:
+    from api.micro_action_api import router as micro_action_router
+    app.include_router(micro_action_router)
+    print("[API] 微行动路由已注册")
+except ImportError as e:
+    print(f"[API] 微行动路由注册失败: {e}")
+
+# 注册教练消息路由
+try:
+    from api.coach_message_api import router as coach_message_router
+    app.include_router(coach_message_router)
+    print("[API] 教练消息路由已注册")
+except ImportError as e:
+    print(f"[API] 教练消息路由注册失败: {e}")
+
+# 注册提醒管理路由
+try:
+    from api.reminder_api import router as reminder_router
+    app.include_router(reminder_router)
+    print("[API] 提醒管理路由已注册")
+except ImportError as e:
+    print(f"[API] 提醒管理路由注册失败: {e}")
+
+# 注册评估推送与审核路由
+try:
+    from api.assessment_assignment_api import router as assessment_assignment_router
+    app.include_router(assessment_assignment_router)
+    print("[API] 评估推送与审核路由已注册")
+except ImportError as e:
+    print(f"[API] 评估推送与审核路由注册失败: {e}")
+
 class AgentGateway:
     """行健行为教练网关：连接编排层与模型层"""
     

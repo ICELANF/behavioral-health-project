@@ -510,6 +510,15 @@ def create_glucose_reading(
     db.commit()
     db.refresh(reading)
 
+    # 设备→行为事实桥接: 餐后血糖达标自动完成nutrition任务
+    if req.meal_tag == "after_meal" and req.value > 0:
+        try:
+            from core.device_behavior_bridge import DeviceBehaviorBridge
+            bridge = DeviceBehaviorBridge()
+            bridge.process_glucose(db, current_user.id, req.value)
+        except Exception as e:
+            logger.warning(f"DeviceBehaviorBridge glucose处理失败: {e}")
+
     logger.info("create_glucose | success | id={}", reading.id)
     return reading
 

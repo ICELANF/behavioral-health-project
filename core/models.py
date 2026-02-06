@@ -997,6 +997,235 @@ class BehaviorTrace(Base):
         return f"<BehaviorTrace(user={self.user_id}, {self.from_stage}{arrow}{self.to_stage}, belief={self.belief_score})>"
 
 
+# ============================================
+# 微行动跟踪模型
+# ============================================
+
+class MicroActionTask(Base):
+    """
+    微行动任务表
+
+    存储从干预计划生成的每日微行动任务
+    """
+    __tablename__ = "micro_action_tasks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # 任务信息
+    domain = Column(String(30), nullable=False)  # nutrition/exercise/sleep/emotion/stress/cognitive/social
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    difficulty = Column(String(20), default="easy")  # easy/moderate/challenging
+    source = Column(String(30), default="intervention_plan")  # intervention_plan/coach/system
+    source_id = Column(String(50), nullable=True)  # intervention_plan rx_id or coach user_id
+
+    # 状态
+    status = Column(String(20), default="pending")  # pending/completed/skipped/expired
+    scheduled_date = Column(String(10), nullable=False, index=True)  # YYYY-MM-DD
+    completed_at = Column(DateTime, nullable=True)
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 关系
+    logs = relationship("MicroActionLog", back_populates="task", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index('idx_micro_task_user_date', 'user_id', 'scheduled_date'),
+        Index('idx_micro_task_status', 'status'),
+        Index('idx_micro_task_domain', 'domain'),
+    )
+
+    def __repr__(self):
+        return f"<MicroActionTask(id={self.id}, user={self.user_id}, title='{self.title[:30]}', status={self.status})>"
+
+
+class MicroActionLog(Base):
+    """
+    微行动完成日志表
+
+    记录每次任务完成/跳过的详细信息
+    """
+    __tablename__ = "micro_action_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("micro_action_tasks.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # 操作
+    action = Column(String(20), nullable=False)  # completed/skipped/partial
+    note = Column(Text, nullable=True)  # 用户备注
+    mood_score = Column(Integer, nullable=True)  # 1-5 完成后心情
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    # 关系
+    task = relationship("MicroActionTask", back_populates="logs")
+
+    __table_args__ = (
+        Index('idx_micro_log_user_created', 'user_id', 'created_at'),
+    )
+
+    def __repr__(self):
+        return f"<MicroActionLog(id={self.id}, task={self.task_id}, action={self.action})>"
+
+
+# ============================================
+# 提醒与教练消息模型
+# ============================================
+
+class Reminder(Base):
+    """
+    提醒表
+
+    存储用户的定时提醒（药物、随访、行为、评估等）
+    """
+    __tablename__ = "reminders"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # 提醒信息
+    type = Column(String(30), nullable=False)  # medication/visit/behavior/assessment
+    title = Column(String(200), nullable=False)
+    content = Column(Text, nullable=True)
+    cron_expr = Column(String(50), nullable=True)  # "0 8 * * *" or null for one-time
+    next_fire_at = Column(DateTime, nullable=True, index=True)
+    is_active = Column(Boolean, default=True)
+
+    # 来源
+    source = Column(String(20), default="self")  # system/coach/self
+    created_by = Column(Integer, nullable=True)  # coach user_id or null
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    __table_args__ = (
+        Index('idx_reminder_user_active', 'user_id', 'is_active'),
+        Index('idx_reminder_next_fire', 'next_fire_at'),
+    )
+
+    def __repr__(self):
+        return f"<Reminder(id={self.id}, user={self.user_id}, type={self.type}, title='{self.title[:30]}')>"
+
+
+class AssessmentAssignment(Base):
+    """
+    评估任务表
+
+    教练推送评估量表给学员，学员完成后自动生成管理处方，
+    教练审核修改后推送给学员。
+
+    状态流转: pending → completed → reviewed → pushed
+    """
+    __tablename__ = "assessment_assignments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # 选定量表
+    scales = Column(JSON, nullable=False)  # ["ttm7", "big5", "bpt6", "capacity", "spi"]
+
+    # 状态
+    status = Column(String(20), default="pending", nullable=False)  # pending/completed/reviewed/pushed
+    note = Column(Text, nullable=True)  # 教练备注
+
+    # 管道输出
+    pipeline_result = Column(JSON, nullable=True)  # 评估管道完整输出
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    pushed_at = Column(DateTime, nullable=True)
+
+    # 关系
+    review_items = relationship("CoachReviewItem", back_populates="assignment", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index('idx_aa_coach_student', 'coach_id', 'student_id'),
+        Index('idx_aa_student_status', 'student_id', 'status'),
+        Index('idx_aa_status', 'status'),
+    )
+
+    def __repr__(self):
+        return f"<AssessmentAssignment(id={self.id}, coach={self.coach_id}, student={self.student_id}, status={self.status})>"
+
+
+class CoachReviewItem(Base):
+    """
+    教练审核条目表
+
+    评估管道自动生成的目标/处方/建议拆解为单条审核条目，
+    教练逐条审核（采纳/修改/拒绝）后推送给学员。
+    """
+    __tablename__ = "coach_review_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    assignment_id = Column(Integer, ForeignKey("assessment_assignments.id"), nullable=False, index=True)
+
+    # 条目分类
+    category = Column(String(20), nullable=False)  # goal / prescription / suggestion
+    domain = Column(String(30), nullable=False)  # nutrition / exercise / sleep / emotion / stress / cognitive / social
+
+    # 内容
+    original_content = Column(JSON, nullable=False)  # 系统生成的原始内容
+    coach_content = Column(JSON, nullable=True)  # 教练修改后内容（null=采用原始）
+    status = Column(String(20), default="pending", nullable=False)  # pending/approved/modified/rejected
+    coach_note = Column(Text, nullable=True)  # 教练批注
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 关系
+    assignment = relationship("AssessmentAssignment", back_populates="review_items")
+
+    __table_args__ = (
+        Index('idx_cri_assignment', 'assignment_id'),
+        Index('idx_cri_category', 'category'),
+    )
+
+    def __repr__(self):
+        return f"<CoachReviewItem(id={self.id}, assignment={self.assignment_id}, category={self.category}, status={self.status})>"
+
+
+class CoachMessage(Base):
+    """
+    教练消息表
+
+    教练与学员之间的单向消息（教练→学员）
+    """
+    __tablename__ = "coach_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # 消息内容
+    content = Column(Text, nullable=False)
+    message_type = Column(String(20), default="text")  # text/encouragement/reminder/advice
+
+    # 状态
+    is_read = Column(Boolean, default=False)
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_coach_msg_student_read', 'student_id', 'is_read'),
+        Index('idx_coach_msg_coach_student', 'coach_id', 'student_id'),
+    )
+
+    def __repr__(self):
+        return f"<CoachMessage(id={self.id}, coach={self.coach_id}, student={self.student_id}, read={self.is_read})>"
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -1023,6 +1252,15 @@ def get_table_names():
         "behavior_audit_logs",
         "behavior_history",
         "behavior_traces",
+        # 微行动跟踪
+        "micro_action_tasks",
+        "micro_action_logs",
+        # 提醒与教练消息
+        "reminders",
+        "coach_messages",
+        # 评估任务与审核
+        "assessment_assignments",
+        "coach_review_items",
     ]
 
 
@@ -1050,5 +1288,14 @@ def get_model_by_name(name: str):
         "BehaviorAuditLog": BehaviorAuditLog,
         "BehaviorHistory": BehaviorHistory,
         "BehaviorTrace": BehaviorTrace,
+        # 微行动跟踪
+        "MicroActionTask": MicroActionTask,
+        "MicroActionLog": MicroActionLog,
+        # 提醒与教练消息
+        "Reminder": Reminder,
+        "CoachMessage": CoachMessage,
+        # 评估任务与审核
+        "AssessmentAssignment": AssessmentAssignment,
+        "CoachReviewItem": CoachReviewItem,
     }
     return models.get(name)

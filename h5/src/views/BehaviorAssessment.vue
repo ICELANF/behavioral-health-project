@@ -9,6 +9,12 @@
     <div class="page-content">
       <!-- 问卷模式 -->
       <template v-if="currentStep === 'questionnaire'">
+        <!-- 教练推送信息 -->
+        <div v-if="assignmentInfo" class="card" style="margin-bottom:12px;padding:12px;background:linear-gradient(135deg,#e6f7ff,#f0f5ff)">
+          <div style="font-size:13px;color:#1890ff;font-weight:500">教练推送的评估</div>
+          <div style="font-size:12px;color:#666;margin-top:4px">来自: {{ assignmentInfo.coach_name }}</div>
+          <div v-if="assignmentInfo.note" style="font-size:12px;color:#666;margin-top:2px">备注: {{ assignmentInfo.note }}</div>
+        </div>
         <!-- 进度 -->
         <div class="progress-section">
           <van-progress
@@ -109,17 +115,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import api from '@/api/index'
 
 const router = useRouter()
+const route = useRoute()
 const currentStep = ref<'questionnaire' | 'result'>('questionnaire')
 const currentIndex = ref(0)
 const submitting = ref(false)
 const result = ref<any>(null)
 const answers = ref<Record<string, number>>({})
+
+// 教练推送的评估任务
+const assignmentId = ref<number | null>(null)
+const assignmentInfo = ref<any>(null)
+const loadingAssignment = ref(false)
 
 // TTM7 21 题
 const questions = [
@@ -212,10 +224,20 @@ async function submitAssessment() {
   }
   submitting.value = true
   try {
-    const res = await api.post('/api/v1/assessment/evaluate', {
-      ttm7: answers.value,
-    })
-    result.value = res.data
+    if (assignmentId.value) {
+      // 教练推送的评估 → 提交到 assignment 端点
+      const res = await api.post(`/api/v1/assessment-assignments/${assignmentId.value}/submit`, {
+        ttm7: answers.value,
+      })
+      result.value = res.pipeline_result || res
+      showToast('评估已提交，等待教练审核')
+    } else {
+      // 自主评估 → 原有逻辑
+      const res = await api.post('/api/v1/assessment/evaluate', {
+        ttm7: answers.value,
+      })
+      result.value = res
+    }
     currentStep.value = 'result'
   } catch (e: any) {
     showToast(e.response?.data?.detail || '评估提交失败')
@@ -223,6 +245,23 @@ async function submitAssessment() {
     submitting.value = false
   }
 }
+
+// 加载教练推送的评估任务详情
+onMounted(async () => {
+  const aid = route.query.assignment_id
+  if (aid) {
+    assignmentId.value = Number(aid)
+    loadingAssignment.value = true
+    try {
+      const res: any = await api.get('/api/v1/assessment-assignments/my-pending')
+      const found = (res.assignments || []).find((a: any) => a.id === assignmentId.value)
+      if (found) {
+        assignmentInfo.value = found
+      }
+    } catch { /* ignore */ }
+    finally { loadingAssignment.value = false }
+  }
+})
 </script>
 
 <style lang="scss" scoped>

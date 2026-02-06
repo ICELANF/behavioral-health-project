@@ -4,118 +4,135 @@
       <h2>我的认证</h2>
     </div>
 
-    <!-- Current Level -->
-    <a-card class="level-card" style="margin-bottom: 16px">
-      <div class="current-level">
-        <div class="level-badge" :style="{ background: currentLevel.color }">
-          {{ currentLevel.badge }}
-        </div>
-        <div class="level-info">
-          <h3>{{ currentLevel.name }}</h3>
-          <p class="level-desc">{{ currentLevel.description }}</p>
-          <p class="level-since">认证时间: {{ currentLevel.since }}</p>
-        </div>
-      </div>
+    <!-- Loading -->
+    <div v-if="loading" style="text-align: center; padding: 60px 0">
+      <a-spin size="large" tip="加载认证信息..." />
+    </div>
 
-      <!-- Upgrade progress -->
-      <div class="upgrade-section">
-        <div class="upgrade-header">
-          <span>升级至 {{ nextLevel.name }}</span>
-          <span class="upgrade-pct">{{ upgradeProgress }}%</span>
-        </div>
-        <a-progress :percent="upgradeProgress" :stroke-color="{ from: currentLevel.color, to: nextLevel.color }" :show-info="false" />
-        <div class="upgrade-requirements">
-          <div v-for="req in requirements" :key="req.label" class="req-item" :class="{ completed: req.completed }">
-            <span class="req-check">{{ req.completed ? '✓' : '○' }}</span>
-            <span class="req-label">{{ req.label }}</span>
-            <span class="req-value">{{ req.current }} / {{ req.target }}</span>
+    <template v-if="!loading">
+      <!-- Current Level -->
+      <a-card class="level-card" style="margin-bottom: 16px">
+        <div class="current-level">
+          <div class="level-badge" :style="{ background: currentLevel.color }">
+            {{ currentLevel.code }}
+          </div>
+          <div class="level-info">
+            <h3>{{ currentLevel.name }}</h3>
+            <p class="level-desc">{{ currentLevel.description }}</p>
+            <p class="level-since">认证时间: {{ currentLevel.since ?? '--' }}</p>
           </div>
         </div>
-        <a-button type="primary" :disabled="upgradeProgress < 100" block style="margin-top: 12px">
-          {{ upgradeProgress >= 100 ? '申请晋级' : '未达到晋级条件' }}
-        </a-button>
-      </div>
-    </a-card>
 
-    <!-- Completed Courses -->
-    <a-card title="已完成课程" style="margin-bottom: 16px">
-      <div v-for="course in completedCourses" :key="course.id" class="course-item">
-        <div class="course-info">
-          <span class="course-name">{{ course.name }}</span>
-          <span class="course-date">完成于 {{ course.completedDate }}</span>
+        <!-- Upgrade progress -->
+        <div v-if="nextLevel.code" class="upgrade-section">
+          <div class="upgrade-header">
+            <span>升级至 {{ nextLevel.name }}</span>
+            <span class="upgrade-pct">{{ upgradeProgress }}%</span>
+          </div>
+          <a-progress :percent="upgradeProgress" :stroke-color="{ from: currentLevel.color, to: '#722ed1' }" :show-info="false" />
+          <div class="upgrade-requirements">
+            <div v-for="req in requirements" :key="req.label" class="req-item" :class="{ completed: req.completed }">
+              <span class="req-check">{{ req.completed ? '\u2713' : '\u25CB' }}</span>
+              <span class="req-label">{{ req.label }}</span>
+              <span class="req-value">{{ req.current }} / {{ req.target }}</span>
+            </div>
+          </div>
+          <a-button type="primary" :disabled="upgradeProgress < 100" block style="margin-top: 12px">
+            {{ upgradeProgress >= 100 ? '申请晋级' : '未达到晋级条件' }}
+          </a-button>
         </div>
-        <div class="course-right">
-          <a-tag :color="course.required ? 'blue' : 'default'">{{ course.required ? '必修' : '选修' }}</a-tag>
-          <span class="course-score">{{ course.score }}分</span>
-        </div>
-      </div>
-    </a-card>
 
-    <!-- Exam History -->
-    <a-card title="考试记录">
-      <a-table :dataSource="examHistory" :columns="examColumns" rowKey="id" size="small" :pagination="false">
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'result'">
-            <a-tag :color="record.passed ? 'green' : 'red'">{{ record.passed ? '通过' : '未通过' }}</a-tag>
-          </template>
-          <template v-if="column.key === 'score'">
-            <span :style="{ color: record.passed ? '#389e0d' : '#cf1322', fontWeight: 600 }">{{ record.score }}</span> / {{ record.total }}
-          </template>
-        </template>
-      </a-table>
-    </a-card>
+        <div v-else class="upgrade-section" style="text-align: center;">
+          <a-result status="success" title="已达最高等级" sub-title="恭喜！您已达到行为健康教练最高认证等级。" />
+        </div>
+      </a-card>
+
+      <!-- Real Stats -->
+      <a-card title="执业数据" style="margin-bottom: 16px">
+        <a-row :gutter="16">
+          <a-col :span="6">
+            <a-statistic title="服务学员数" :value="stats.total_students" />
+          </a-col>
+          <a-col :span="6">
+            <a-statistic title="发送消息数" :value="stats.total_messages" />
+          </a-col>
+          <a-col :span="6">
+            <a-statistic title="学员测评数" :value="stats.total_assessments" />
+          </a-col>
+          <a-col :span="6">
+            <a-statistic title="风险改善学员" :value="stats.improved_students" :value-style="{ color: '#3f8600' }" />
+          </a-col>
+        </a-row>
+      </a-card>
+
+      <!-- Level Roadmap -->
+      <a-card title="认证路径">
+        <a-steps :current="levelIndex" direction="vertical" size="small">
+          <a-step v-for="(lv, i) in levelRoadmap" :key="lv.code" :title="`${lv.code} ${lv.name}`"
+            :description="lv.desc"
+            :status="i < levelIndex ? 'finish' : i === levelIndex ? 'process' : 'wait'" />
+        </a-steps>
+      </a-card>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, onMounted } from 'vue'
+import { message } from 'ant-design-vue'
 
-const currentLevel = ref({
-  badge: 'L2',
-  name: '中级健康教练',
-  description: '具备独立开展行为健康干预的能力，可指导初级教练',
-  color: '#1890ff',
-  since: '2024-08-15',
-})
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const token = localStorage.getItem('token') || ''
+const authHeaders: Record<string, string> = {
+  'Content-Type': 'application/json',
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+}
 
-const nextLevel = ref({
-  name: '高级健康教练 (L3)',
-  color: '#722ed1',
-})
+const loading = ref(true)
 
-const requirements = ref([
-  { label: '服务学员数', current: 28, target: 30, completed: false },
-  { label: '干预成功率', current: 74, target: 70, completed: true },
-  { label: '必修课程完成', current: 5, target: 5, completed: true },
-  { label: '督导评分', current: 4.2, target: 4.0, completed: true },
-  { label: '通过L3考试', current: 0, target: 1, completed: false },
-])
+const currentLevel = ref<any>({ code: '--', name: '加载中', description: '', color: '#d9d9d9', since: null })
+const nextLevel = ref<any>({ code: null, name: '' })
+const upgradeProgress = ref(0)
+const requirements = ref<any[]>([])
+const stats = ref({ total_students: 0, total_messages: 0, total_assessments: 0, improved_students: 0 })
 
-const upgradeProgress = computed(() => {
-  const completed = requirements.value.filter(r => r.completed).length
-  return Math.round((completed / requirements.value.length) * 100)
-})
-
-const completedCourses = ref([
-  { id: '1', name: '行为健康教练核心能力', completedDate: '2024-12-20', required: true, score: 92 },
-  { id: '2', name: '动机访谈技术进阶', completedDate: '2024-11-15', required: true, score: 88 },
-  { id: '3', name: 'TTM模型在慢病管理中的应用', completedDate: '2024-10-28', required: true, score: 95 },
-  { id: '4', name: '压力管理与正念技术', completedDate: '2024-10-10', required: false, score: 90 },
-  { id: '5', name: '营养学基础与饮食干预', completedDate: '2024-09-20', required: true, score: 85 },
-])
-
-const examHistory = ref([
-  { id: '1', name: 'L2认证考试', date: '2024-08-10', score: 86, total: 100, passed: true },
-  { id: '2', name: 'L1认证考试', date: '2024-03-15', score: 92, total: 100, passed: true },
-  { id: '3', name: 'L0入门考试', date: '2024-01-20', score: 78, total: 100, passed: true },
-])
-
-const examColumns = [
-  { title: '考试名称', dataIndex: 'name' },
-  { title: '考试日期', dataIndex: 'date', width: 120 },
-  { title: '成绩', key: 'score', width: 100 },
-  { title: '结果', key: 'result', width: 80 },
+const levelRoadmap = [
+  { code: 'L0', name: '见习教练', desc: '入门阶段，学习基础知识' },
+  { code: 'L1', name: '初级教练', desc: '可在督导下开展干预' },
+  { code: 'L2', name: '中级教练', desc: '独立开展干预，指导初级教练' },
+  { code: 'L3', name: '高级教练', desc: '处理复杂案例，带教' },
+  { code: 'L4', name: '专家教练', desc: '行为健康领域专家' },
 ]
+
+const levelIndex = ref(0)
+
+const loadData = async () => {
+  loading.value = true
+  try {
+    const resp = await fetch(`${API_BASE}/api/v1/coach/my-certification`, {
+      headers: authHeaders,
+    })
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const data = await resp.json()
+
+    currentLevel.value = data.current_level || currentLevel.value
+    nextLevel.value = data.next_level || { code: null, name: '' }
+    upgradeProgress.value = data.upgrade_progress ?? 0
+    requirements.value = data.requirements || []
+    stats.value = data.stats || stats.value
+
+    // Calculate level index for roadmap
+    const idx = levelRoadmap.findIndex(l => l.code === currentLevel.value.code)
+    levelIndex.value = idx >= 0 ? idx : 0
+  } catch (e: any) {
+    console.error('加载认证数据失败:', e)
+    message.error('加载认证数据失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(loadData)
 </script>
 
 <style scoped>
@@ -137,10 +154,4 @@ const examColumns = [
 .req-check { font-size: 14px; min-width: 20px; }
 .req-label { flex: 1; }
 .req-value { font-weight: 500; }
-
-.course-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; }
-.course-name { font-size: 14px; font-weight: 500; display: block; }
-.course-date { font-size: 12px; color: #999; }
-.course-right { display: flex; align-items: center; gap: 8px; }
-.course-score { font-size: 14px; font-weight: 600; color: #1890ff; }
 </style>

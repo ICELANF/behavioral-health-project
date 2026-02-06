@@ -4,95 +4,146 @@
       <h2>我的工具箱</h2>
     </div>
 
-    <!-- Tool Grid -->
-    <div class="tools-grid">
-      <div v-for="tool in tools" :key="tool.key" class="tool-card" :style="{ borderColor: tool.color }" @click="useTool(tool)">
-        <div class="tool-icon" :style="{ background: tool.bgColor }">{{ tool.icon }}</div>
-        <div class="tool-info">
-          <span class="tool-name">{{ tool.name }}</span>
-          <span class="tool-desc">{{ tool.description }}</span>
-        </div>
-        <div class="tool-stats">
-          <span class="stat-num">{{ tool.useCount }}</span>
-          <span class="stat-label">使用次数</span>
-        </div>
-      </div>
+    <!-- Loading -->
+    <div v-if="loading" style="text-align: center; padding: 60px 0">
+      <a-spin size="large" tip="加载工具数据..." />
     </div>
 
-    <!-- Recent Usage -->
-    <a-card title="最近使用" style="margin-top: 16px; margin-bottom: 16px">
-      <div v-for="item in recentUsage" :key="item.id" class="usage-item">
-        <span class="usage-icon">{{ item.icon }}</span>
-        <div class="usage-info">
-          <span class="usage-name">{{ item.toolName }}</span>
-          <span class="usage-context">学员: {{ item.student }} · {{ item.action }}</span>
-        </div>
-        <span class="usage-time">{{ item.time }}</span>
-      </div>
-      <p v-if="recentUsage.length === 0" style="text-align: center; color: #ccc">暂无使用记录</p>
-    </a-card>
-
-    <!-- Usage Statistics -->
-    <a-card title="使用统计">
-      <a-row :gutter="16">
-        <a-col :span="8">
-          <a-statistic title="本月总使用" :value="totalMonthUsage" suffix="次" />
-        </a-col>
-        <a-col :span="8">
-          <a-statistic title="最常用工具" :value="mostUsedTool" />
-        </a-col>
-        <a-col :span="8">
-          <a-statistic title="工具有效率" :value="effectiveRate" suffix="%" value-style="color: #3f8600" />
-        </a-col>
-      </a-row>
-      <div class="usage-chart" style="margin-top: 16px">
-        <div v-for="tool in tools" :key="tool.key" class="chart-item">
-          <span class="chart-label">{{ tool.name }}</span>
-          <div class="chart-bar-bg">
-            <div class="chart-bar" :style="{ width: (tool.useCount / maxUseCount * 100) + '%', background: tool.color }"></div>
+    <template v-if="!loading">
+      <!-- Tool Grid -->
+      <div class="tools-grid">
+        <div v-for="tool in tools" :key="tool.key" class="tool-card" :style="{ borderColor: tool.color }" @click="useTool(tool)">
+          <div class="tool-icon" :style="{ background: tool.color + '18', color: tool.color }">
+            {{ toolIcon(tool.key) }}
           </div>
-          <span class="chart-count">{{ tool.useCount }}</span>
+          <div class="tool-info">
+            <span class="tool-name">{{ tool.name }}</span>
+            <span class="tool-desc">{{ tool.description }}</span>
+          </div>
+          <div class="tool-stats">
+            <span class="stat-num">{{ tool.use_count }}</span>
+            <span class="stat-label">本月</span>
+          </div>
         </div>
       </div>
-    </a-card>
+
+      <!-- Recent Usage -->
+      <a-card title="最近活动" style="margin-top: 16px; margin-bottom: 16px">
+        <a-empty v-if="recentActivity.length === 0" description="暂无活动记录" />
+        <div v-for="item in recentActivity" :key="item.id" class="usage-item">
+          <div class="usage-info">
+            <span class="usage-name">{{ item.tool_name }}</span>
+            <span class="usage-context">学员: {{ item.student }} &middot; {{ item.action }}</span>
+          </div>
+          <span class="usage-time">{{ item.time }}</span>
+        </div>
+      </a-card>
+
+      <!-- Usage Statistics -->
+      <a-card title="使用统计">
+        <a-row :gutter="16">
+          <a-col :span="8">
+            <a-statistic title="本月总使用" :value="totalMonthUsage" suffix="次" />
+          </a-col>
+          <a-col :span="8">
+            <a-statistic title="最常用工具" :value="mostUsedTool" />
+          </a-col>
+          <a-col :span="8">
+            <a-statistic title="活跃天数" :value="activeDays" suffix="天" value-style="color: #3f8600" />
+          </a-col>
+        </a-row>
+        <div class="usage-chart" style="margin-top: 16px">
+          <div v-for="tool in tools" :key="tool.key" class="chart-item">
+            <span class="chart-label">{{ tool.name }}</span>
+            <div class="chart-bar-bg">
+              <div class="chart-bar" :style="{ width: (tool.use_count / maxUseCount * 100) + '%', background: tool.color }"></div>
+            </div>
+            <span class="chart-count">{{ tool.use_count }}</span>
+          </div>
+        </div>
+      </a-card>
+    </template>
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 
 const router = useRouter()
 
-const tools = ref([
-  { key: 'stress', name: '压力快速测评', description: '引导学员完成压力筛查评估', icon: '📋', color: '#cf1322', bgColor: '#fff1f0', useCount: 45 },
-  { key: 'empathy', name: '同理心倾听', description: 'OARS动机访谈引导', icon: '💜', color: '#722ed1', bgColor: '#f9f0ff', useCount: 38 },
-  { key: 'habit', name: '习惯处方卡', description: '制定SMART微习惯目标', icon: '🎯', color: '#389e0d', bgColor: '#f6ffed', useCount: 28 },
-  { key: 'content', name: '内容分享', description: '发送教育内容给学员', icon: '📤', color: '#1890ff', bgColor: '#e6f7ff', useCount: 22 },
-  { key: 'assessment', name: '安排测评', description: '为学员安排问卷评估', icon: '📝', color: '#d46b08', bgColor: '#fff7e6', useCount: 15 },
-  { key: 'report', name: '学员报告', description: '生成学员干预报告', icon: '📊', color: '#13c2c2', bgColor: '#e6fffb', useCount: 10 },
-])
-
-const recentUsage = ref([
-  { id: 1, icon: '📋', toolName: '压力快速测评', student: '张伟', action: '完成评估，得分 32/80', time: '2小时前' },
-  { id: 2, icon: '💜', toolName: '同理心倾听', student: '王芳', action: '倾听模式 15分钟', time: '4小时前' },
-  { id: 3, icon: '🎯', toolName: '习惯处方卡', student: '赵强', action: '生成"每日散步5分钟"处方', time: '昨天' },
-  { id: 4, icon: '📤', toolName: '内容分享', student: '李娜', action: '分享《压力管理入门》', time: '昨天' },
-  { id: 5, icon: '📋', toolName: '压力快速测评', student: '陈静', action: '完成评估，得分 18/80', time: '2天前' },
-])
-
-const totalMonthUsage = computed(() => tools.value.reduce((s, t) => s + t.useCount, 0))
-const mostUsedTool = computed(() => {
-  const max = tools.value.reduce((a, b) => a.useCount > b.useCount ? a : b)
-  return max.name
-})
-const effectiveRate = ref(78)
-const maxUseCount = computed(() => Math.max(...tools.value.map(t => t.useCount), 1))
-
-const useTool = (tool) => {
-  message.info(`正在打开 ${tool.name}...`)
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const token = localStorage.getItem('token') || ''
+const authHeaders: Record<string, string> = {
+  'Content-Type': 'application/json',
+  ...(token ? { Authorization: `Bearer ${token}` } : {}),
 }
+
+const loading = ref(true)
+const tools = ref<any[]>([])
+const recentActivity = ref<any[]>([])
+const totalMonthUsage = ref(0)
+const mostUsedTool = ref('--')
+const activeDays = ref(0)
+
+const maxUseCount = computed(() => Math.max(...tools.value.map(t => t.use_count), 1))
+
+const toolIcon = (key: string) => {
+  const icons: Record<string, string> = {
+    message: '\u2709', encouragement: '\u2665', advice: '\u2605',
+    reminder: '\u23F0', assessment: '\u2611', micro_action: '\u2699',
+  }
+  return icons[key] || '\u2022'
+}
+
+const loadData = async () => {
+  loading.value = true
+  try {
+    const resp = await fetch(`${API_BASE}/api/v1/coach/my-tools-stats`, {
+      headers: authHeaders,
+    })
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    const data = await resp.json()
+
+    tools.value = data.tools || []
+    recentActivity.value = data.recent_activity || []
+    totalMonthUsage.value = data.total_month_usage ?? 0
+    mostUsedTool.value = data.most_used_tool || '--'
+
+    // Calculate active days from recent activity timestamps
+    const uniqueDays = new Set(
+      recentActivity.value
+        .filter((a: any) => a.time)
+        .map((a: any) => a.time.includes('分钟') || a.time.includes('小时') ? 'today' : a.time)
+    )
+    activeDays.value = Math.max(uniqueDays.size, totalMonthUsage.value > 0 ? 1 : 0)
+  } catch (e: any) {
+    console.error('加载工具统计失败:', e)
+    message.error('加载工具统计失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+const useTool = (tool: any) => {
+  const routes: Record<string, string> = {
+    message: '/coach/messages',
+    encouragement: '/coach/messages',
+    advice: '/coach/messages',
+    reminder: '/coach/messages',
+    assessment: '/coach/home',
+    micro_action: '/coach/home',
+  }
+  const target = routes[tool.key]
+  if (target) {
+    router.push(target)
+  } else {
+    message.info(`正在打开 ${tool.name}...`)
+  }
+}
+
+onMounted(loadData)
 </script>
 
 <style scoped>
@@ -111,7 +162,6 @@ const useTool = (tool) => {
 .stat-label { font-size: 11px; color: #999; }
 
 .usage-item { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f5f5f5; }
-.usage-icon { font-size: 20px; }
 .usage-info { flex: 1; }
 .usage-name { display: block; font-size: 13px; font-weight: 500; }
 .usage-context { font-size: 12px; color: #999; }

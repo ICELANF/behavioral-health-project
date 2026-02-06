@@ -54,6 +54,44 @@
           </div>
         </div>
 
+        <!-- 今日微行动快捷入口 -->
+        <div class="micro-actions-section">
+          <div class="section-header">
+            <h3>今日微行动</h3>
+            <router-link to="/tasks" class="view-all">查看全部</router-link>
+          </div>
+          <van-loading v-if="loadingTasks" size="20" />
+          <template v-else-if="todayTasks.length > 0">
+            <div class="today-progress">
+              <span>{{ todayCompleted }}/{{ todayTasks.length }} 已完成</span>
+              <van-progress
+                :percentage="todayProgressRate"
+                stroke-width="4"
+                color="#07c160"
+                track-color="#ebedf0"
+                :show-pivot="false"
+              />
+            </div>
+            <div
+              v-for="task in todayTasks.slice(0, 3)"
+              :key="task.id"
+              class="micro-task-item"
+              :class="{ done: task.status === 'completed' }"
+            >
+              <div class="micro-check" :class="{ checked: task.status === 'completed' }" @click="quickComplete(task)">
+                <van-icon v-if="task.status === 'completed'" name="success" />
+              </div>
+              <div class="micro-info">
+                <span class="micro-title">{{ task.title }}</span>
+                <van-tag size="small" :type="domainTagType(task.domain)">{{ domainLabel(task.domain) }}</van-tag>
+              </div>
+            </div>
+          </template>
+          <div v-else class="micro-empty">
+            <span>今日暂无微行动</span>
+          </div>
+        </div>
+
         <!-- 重新评估 -->
         <van-button
           type="primary"
@@ -84,10 +122,55 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { showSuccessToast } from 'vant'
 import api from '@/api/index'
 
 const loading = ref(false)
+const loadingTasks = ref(false)
 const profile = ref<any>(null)
+const todayTasks = ref<any[]>([])
+
+const todayCompleted = computed(() => todayTasks.value.filter(t => t.status === 'completed').length)
+const todayProgressRate = computed(() => {
+  if (todayTasks.value.length === 0) return 0
+  return Math.round((todayCompleted.value / todayTasks.value.length) * 100)
+})
+
+function domainLabel(domain: string) {
+  const map: Record<string, string> = {
+    nutrition: '营养', exercise: '运动', sleep: '睡眠',
+    emotion: '情绪', stress: '压力', cognitive: '认知', social: '社交',
+  }
+  return map[domain] || domain
+}
+function domainTagType(domain: string) {
+  const map: Record<string, string> = {
+    nutrition: 'success', exercise: 'warning', sleep: 'primary',
+    emotion: 'danger', stress: 'primary',
+  }
+  return map[domain] || 'default'
+}
+
+async function loadTodayTasks() {
+  loadingTasks.value = true
+  try {
+    const res: any = await api.get('/api/v1/micro-actions/today')
+    todayTasks.value = res.tasks || []
+  } catch {
+    todayTasks.value = []
+  } finally {
+    loadingTasks.value = false
+  }
+}
+
+async function quickComplete(task: any) {
+  if (task.status === 'completed') return
+  try {
+    await api.post(`/api/v1/micro-actions/${task.id}/complete`)
+    task.status = 'completed'
+    showSuccessToast('完成!')
+  } catch { /* ignore */ }
+}
 
 const stageJourney = [
   { code: 'S0', name: '觉醒' },
@@ -307,7 +390,7 @@ async function loadProfile() {
   loading.value = true
   try {
     const res = await api.get('/api/v1/assessment/profile/me')
-    profile.value = res.data
+    profile.value = res
   } catch {
     // 尝试用自己的用户ID
     try {
@@ -315,7 +398,7 @@ async function loadProfile() {
       const user = userStr ? JSON.parse(userStr) : null
       if (user?.id) {
         const res = await api.get(`/api/v1/assessment/profile/${user.id}`)
-        profile.value = res.data
+        profile.value = res
       }
     } catch {
       profile.value = null
@@ -325,7 +408,10 @@ async function loadProfile() {
   }
 }
 
-onMounted(loadProfile)
+onMounted(() => {
+  loadProfile()
+  loadTodayTasks()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -459,6 +545,77 @@ onMounted(loadProfile)
       margin-right: 4px;
     }
   }
+}
+
+.micro-actions-section {
+  margin-top: $spacing-md;
+  background: #fff;
+  border-radius: $border-radius;
+  padding: $spacing-md;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-sm;
+
+    h3 { font-size: $font-size-lg; margin: 0; }
+    .view-all { font-size: $font-size-sm; color: #1989fa; text-decoration: none; }
+  }
+
+  .today-progress {
+    margin-bottom: $spacing-sm;
+    font-size: $font-size-sm;
+    color: $text-color-secondary;
+
+    :deep(.van-progress) { margin-top: 4px; }
+  }
+}
+
+.micro-task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #f5f5f5;
+
+  &:last-child { border-bottom: none; }
+  &.done { opacity: 0.6; }
+
+  .micro-check {
+    width: 24px;
+    height: 24px;
+    border: 2px solid #d9d9d9;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    cursor: pointer;
+
+    &.checked {
+      background: #07c160;
+      border-color: #07c160;
+      color: #fff;
+    }
+  }
+
+  .micro-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    .micro-title { font-size: $font-size-md; }
+  }
+}
+
+.micro-empty {
+  text-align: center;
+  padding: $spacing-md;
+  color: $text-color-placeholder;
+  font-size: $font-size-sm;
 }
 
 .reassess-btn {

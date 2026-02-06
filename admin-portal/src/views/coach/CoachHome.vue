@@ -26,8 +26,13 @@
       </div>
     </div>
 
+    <!-- 加载状态 -->
+    <div v-if="loading" style="text-align:center;padding:60px 0">
+      <a-spin size="large" tip="加载工作台数据..." />
+    </div>
+
     <!-- 今日工作概览 -->
-    <div class="overview-section">
+    <div v-if="!loading" class="overview-section">
       <div class="section-title">
         <CalendarOutlined /> 今日工作概览
       </div>
@@ -64,7 +69,7 @@
     </div>
 
     <!-- 待跟进学员列表 -->
-    <div class="students-section">
+    <div v-if="!loading" class="students-section">
       <div class="section-header">
         <div class="section-title">
           <TeamOutlined /> 待跟进学员
@@ -108,7 +113,7 @@
     </div>
 
     <!-- AI 干预建议审核 -->
-    <div class="ai-section">
+    <div v-if="!loading" class="ai-section">
       <div class="section-header">
         <div class="section-title">
           <RobotOutlined /> AI 干预建议审核
@@ -176,7 +181,7 @@
     </div>
 
     <!-- 干预包快捷入口 -->
-    <div class="intervention-section">
+    <div v-if="!loading" class="intervention-section">
       <div class="section-header">
         <div class="section-title">
           <AppstoreOutlined /> 干预工具箱
@@ -197,7 +202,7 @@
     </div>
 
     <!-- 学习进度 -->
-    <div class="learning-section">
+    <div v-if="!loading" class="learning-section">
       <div class="section-header">
         <div class="section-title">
           <BookOutlined /> 我的学习
@@ -258,88 +263,197 @@
       </div>
     </div>
 
-    <!-- 评估量表抽屉 -->
+    <!-- 推送评估抽屉 -->
     <a-drawer
       v-model:open="assessmentDrawerVisible"
-      title="学员评估量表"
+      title="推送评估"
       placement="right"
-      width="100%"
+      :width="720"
       :closable="true"
+      destroyOnClose
     >
       <div class="assessment-panel">
-        <div v-for="student in pendingStudents" :key="student.id" class="assessment-student-card">
-          <div class="assess-header">
-            <a-avatar :size="40">{{ student.name?.charAt(0) }}</a-avatar>
-            <div class="assess-info">
-              <div class="assess-name">{{ student.name }}</div>
-              <div class="assess-condition">{{ student.condition }}</div>
-            </div>
-            <a-tag :color="getStageColor(student.stage)" size="small">{{ getStageLabel(student.stage) }}</a-tag>
+        <!-- 推送表单 -->
+        <div class="assign-form card" style="padding:16px;margin-bottom:16px;border:1px solid #f0f0f0;border-radius:8px">
+          <h4 style="margin-bottom:12px">推送评估给学员</h4>
+          <div style="margin-bottom:12px">
+            <div style="margin-bottom:4px;font-weight:500">选择学员</div>
+            <a-select
+              v-model:value="assignForm.studentId"
+              placeholder="请选择学员"
+              style="width:100%"
+              show-search
+              option-filter-prop="label"
+            >
+              <a-select-option
+                v-for="s in pendingStudents"
+                :key="s.id"
+                :value="s.id"
+                :label="s.name"
+              >{{ s.name }} ({{ getStageLabel(s.stage) }})</a-select-option>
+            </a-select>
           </div>
-          <div class="assess-metrics">
-            <div class="assess-metric">
-              <span class="assess-label">空腹血糖</span>
-              <span class="assess-value" :class="student.healthData.fastingGlucose > 7 ? 'text-danger' : 'text-normal'">{{ student.healthData.fastingGlucose }} mmol/L</span>
-            </div>
-            <div class="assess-metric">
-              <span class="assess-label">餐后血糖</span>
-              <span class="assess-value" :class="student.healthData.postprandialGlucose > 10 ? 'text-danger' : 'text-normal'">{{ student.healthData.postprandialGlucose }} mmol/L</span>
-            </div>
-            <div class="assess-metric">
-              <span class="assess-label">体重</span>
-              <span class="assess-value">{{ student.healthData.weight }} kg</span>
-            </div>
-            <div class="assess-metric">
-              <span class="assess-label">运动量</span>
-              <span class="assess-value">{{ student.healthData.exerciseMinutes }} 分/周</span>
-            </div>
+          <div style="margin-bottom:12px">
+            <div style="margin-bottom:4px;font-weight:500">选择量表</div>
+            <a-checkbox-group v-model:value="assignForm.scales" :options="scaleOptions" />
           </div>
-          <div class="assess-evaluation">
-            <div class="eval-title">综合评估</div>
-            <a-rate v-model:value="student.assessScore" allow-half />
-            <div class="eval-note">
-              <a-input placeholder="评估备注..." size="small" v-model:value="student.assessNote" />
-            </div>
+          <div style="margin-bottom:12px">
+            <div style="margin-bottom:4px;font-weight:500">教练备注（可选）</div>
+            <a-input v-model:value="assignForm.note" placeholder="给学员的备注说明..." />
           </div>
+          <a-button type="primary" block :loading="assignSubmitting" @click="submitAssign">
+            推送评估
+          </a-button>
+        </div>
+
+        <!-- 已推送列表 -->
+        <div style="margin-top:16px">
+          <h4 style="margin-bottom:12px">已推送的评估任务</h4>
+          <a-spin :spinning="loadingAssignments">
+            <div v-if="assignmentList.length === 0" style="text-align:center;padding:24px;color:#999">暂无评估任务</div>
+            <div v-for="a in assignmentList" :key="a.id" class="assignment-card" style="padding:12px;border:1px solid #f0f0f0;border-radius:8px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                <span style="font-weight:500">{{ a.student_name }}</span>
+                <a-tag
+                  :color="{ pending:'orange', completed:'blue', reviewed:'cyan', pushed:'green' }[a.status] || 'default'"
+                  size="small"
+                >{{ { pending:'待完成', completed:'待审核', reviewed:'已审核', pushed:'已推送' }[a.status] || a.status }}</a-tag>
+              </div>
+              <div style="font-size:12px;color:#999">
+                量表: {{ (a.scales || []).join(', ') }}
+                <span style="margin-left:12px">{{ a.completed_at ? '完成于 ' + a.completed_at.replace('T',' ').slice(0,16) : '创建于 ' + (a.created_at||'').replace('T',' ').slice(0,16) }}</span>
+              </div>
+              <a-button
+                v-if="a.status === 'completed'"
+                type="link"
+                size="small"
+                style="padding:0;margin-top:4px"
+                @click="openReviewDrawer(a)"
+              >去审核</a-button>
+            </div>
+          </a-spin>
         </div>
       </div>
     </a-drawer>
 
-    <!-- 目标设定抽屉 -->
+    <!-- 审核与推送抽屉 -->
     <a-drawer
       v-model:open="goalDrawerVisible"
-      title="学员目标设定"
+      :title="'审核与推送' + (reviewingAssignment ? ' - ' + reviewingAssignment.student_name : '')"
       placement="right"
-      width="100%"
+      :width="800"
       :closable="true"
+      destroyOnClose
     >
-      <div class="goal-panel">
-        <div v-for="student in pendingStudents" :key="student.id" class="goal-student-card">
-          <div class="goal-header">
-            <a-avatar :size="36">{{ student.name?.charAt(0) }}</a-avatar>
-            <span class="goal-name">{{ student.name }}</span>
-            <a-tag :color="getStageColor(student.stage)" size="small">{{ getStageLabel(student.stage) }}</a-tag>
+      <div class="review-panel">
+        <template v-if="!reviewingAssignment">
+          <!-- 待审核列表 -->
+          <a-spin :spinning="loadingReviewList">
+            <div v-if="reviewList.length === 0" style="text-align:center;padding:40px;color:#999">暂无待审核的评估</div>
+            <div
+              v-for="a in reviewList"
+              :key="a.id"
+              style="padding:12px;border:1px solid #f0f0f0;border-radius:8px;margin-bottom:12px;cursor:pointer"
+              @click="selectReviewAssignment(a)"
+            >
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-weight:600">{{ a.student_name }}</span>
+                <a-tag :color="a.status === 'completed' ? 'blue' : 'cyan'" size="small">
+                  {{ a.status === 'completed' ? '待审核' : '已审核' }}
+                </a-tag>
+              </div>
+              <div style="font-size:12px;color:#999;margin-top:4px">
+                完成于 {{ (a.completed_at||'').replace('T',' ').slice(0,16) }} | {{ (a.review_items||[]).length }} 条内容
+              </div>
+            </div>
+          </a-spin>
+        </template>
+
+        <template v-else>
+          <!-- 审核详情 -->
+          <a-button size="small" @click="reviewingAssignment = null" style="margin-bottom:12px">
+            返回列表
+          </a-button>
+
+          <div v-for="item in reviewingAssignment.review_items" :key="item.id"
+               style="padding:12px;border:1px solid #f0f0f0;border-radius:8px;margin-bottom:12px"
+               :style="{ borderLeftColor: { goal:'#1890ff',prescription:'#52c41a',suggestion:'#faad14' }[item.category] || '#d9d9d9', borderLeftWidth:'3px' }"
+          >
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+              <div>
+                <a-tag :color="{ goal:'blue',prescription:'green',suggestion:'orange' }[item.category]" size="small">
+                  {{ { goal:'管理目标',prescription:'行为处方',suggestion:'指导建议' }[item.category] || item.category }}
+                </a-tag>
+                <span style="margin-left:8px;font-weight:500">{{ item.original_content?.domain_name || item.domain }}</span>
+              </div>
+              <a-tag v-if="item.status !== 'pending'" :color="{ approved:'green',modified:'blue',rejected:'red' }[item.status]" size="small">
+                {{ { approved:'已采纳',modified:'已修改',rejected:'已拒绝' }[item.status] }}
+              </a-tag>
+            </div>
+
+            <!-- 原始内容 -->
+            <div style="background:#fafafa;padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:8px">
+              <template v-if="item.category === 'goal'">
+                <div><strong>目标: </strong>{{ item.original_content?.core_goal }}</div>
+                <div v-if="item.original_content?.strategy"><strong>策略: </strong>{{ item.original_content.strategy }}</div>
+              </template>
+              <template v-else-if="item.category === 'prescription'">
+                <div v-if="item.original_content?.recommended_behaviors?.length">
+                  <strong>推荐行为: </strong>
+                  <span v-for="(b,i) in item.original_content.recommended_behaviors" :key="i">{{ typeof b === 'string' ? b : b.name || b.title || JSON.stringify(b) }}{{ i < item.original_content.recommended_behaviors.length-1 ? '、' : '' }}</span>
+                </div>
+                <div v-if="item.original_content?.contraindicated_behaviors?.length">
+                  <strong>禁忌行为: </strong>
+                  <span v-for="(b,i) in item.original_content.contraindicated_behaviors" :key="i">{{ typeof b === 'string' ? b : b.name || b.title || JSON.stringify(b) }}{{ i < item.original_content.contraindicated_behaviors.length-1 ? '、' : '' }}</span>
+                </div>
+              </template>
+              <template v-else-if="item.category === 'suggestion'">
+                <div v-for="(adv,i) in (item.original_content?.advice || [])" :key="i" style="margin-bottom:4px">
+                  {{ i+1 }}. {{ typeof adv === 'string' ? adv : adv.title || adv.content || JSON.stringify(adv) }}
+                </div>
+              </template>
+            </div>
+
+            <!-- 修改输入 -->
+            <div v-if="item._editing" style="margin-bottom:8px">
+              <a-textarea v-model:value="item._editText" :rows="3" placeholder="输入修改后的内容..." />
+              <a-input v-model:value="item._editNote" placeholder="教练批注（可选）" style="margin-top:4px" />
+              <div style="margin-top:8px;display:flex;gap:8px">
+                <a-button type="primary" size="small" @click="confirmReviewModify(item)">确认修改</a-button>
+                <a-button size="small" @click="item._editing = false">取消</a-button>
+              </div>
+            </div>
+
+            <!-- 审核操作 -->
+            <div v-if="item.status === 'pending' && !item._editing" style="display:flex;gap:8px">
+              <a-button size="small" style="background:#52c41a;border-color:#52c41a;color:#fff" @click="reviewItem(item, 'approved')">
+                采纳
+              </a-button>
+              <a-button size="small" @click="item._editing = true; item._editText = ''; item._editNote = ''">
+                修改
+              </a-button>
+              <a-button size="small" danger @click="reviewItem(item, 'rejected')">
+                拒绝
+              </a-button>
+            </div>
           </div>
-          <div class="goal-items">
-            <div class="goal-item">
-              <span class="goal-label">血糖目标</span>
-              <span class="goal-value">空腹 &lt; 7.0 · 餐后 &lt; 10.0</span>
-            </div>
-            <div class="goal-item">
-              <span class="goal-label">运动目标</span>
-              <span class="goal-value">每周 150 分钟中等强度</span>
-            </div>
-            <div class="goal-item">
-              <span class="goal-label">体重目标</span>
-              <span class="goal-value">{{ Math.round(student.healthData.weight * 0.95) }} kg（减重5%）</span>
-            </div>
-            <div class="goal-item">
-              <span class="goal-label">阶段目标</span>
-              <span class="goal-value">{{ getNextStageGoal(student.stage) }}</span>
+
+          <!-- 推送按钮 -->
+          <div style="margin-top:16px">
+            <a-button
+              type="primary"
+              block
+              :loading="pushSubmitting"
+              :disabled="reviewingAssignment.review_items.some((i: any) => i.status === 'pending')"
+              @click="pushAssignment"
+            >
+              确认推送给学员
+            </a-button>
+            <div v-if="reviewingAssignment.review_items.some((i: any) => i.status === 'pending')" style="text-align:center;font-size:12px;color:#ff4d4f;margin-top:4px">
+              还有 {{ reviewingAssignment.review_items.filter((i: any) => i.status === 'pending').length }} 条未审核
             </div>
           </div>
-          <a-button type="primary" size="small" block @click="message.success(`已更新 ${student.name} 的目标`)">保存目标</a-button>
-        </div>
+        </template>
       </div>
     </a-drawer>
 
@@ -348,8 +462,9 @@
       v-model:open="profileDrawerVisible"
       title="个人中心"
       placement="right"
-      width="100%"
+      :width="480"
       :closable="true"
+      destroyOnClose
     >
       <div class="profile-panel">
         <div class="profile-card">
@@ -380,8 +495,9 @@
       v-model:open="settingsDrawerVisible"
       title="设置"
       placement="right"
-      width="100%"
+      :width="480"
       :closable="true"
+      destroyOnClose
     >
       <div class="settings-panel">
         <div class="setting-item">
@@ -410,8 +526,9 @@
       v-model:open="studentDrawerVisible"
       :title="currentStudent?.name"
       placement="right"
-      width="100%"
+      :width="800"
       :closable="true"
+      destroyOnClose
     >
       <template v-if="currentStudent">
         <div class="student-detail">
@@ -433,15 +550,15 @@
               <div class="health-metrics">
                 <div class="metric-item">
                   <div class="metric-label">空腹血糖</div>
-                  <div class="metric-value">{{ currentStudent.healthData?.fastingGlucose || '--' }} mmol/L</div>
+                  <div class="metric-value">{{ currentStudent.healthData?.fastingGlucose ?? '--' }} mmol/L</div>
                 </div>
                 <div class="metric-item">
                   <div class="metric-label">餐后血糖</div>
-                  <div class="metric-value">{{ currentStudent.healthData?.postprandialGlucose || '--' }} mmol/L</div>
+                  <div class="metric-value">{{ currentStudent.healthData?.postprandialGlucose ?? '--' }} mmol/L</div>
                 </div>
                 <div class="metric-item">
                   <div class="metric-label">体重</div>
-                  <div class="metric-value">{{ currentStudent.healthData?.weight || '--' }} kg</div>
+                  <div class="metric-value">{{ currentStudent.healthData?.weight ?? '--' }} kg</div>
                 </div>
                 <div class="metric-item">
                   <div class="metric-label">本周运动</div>
@@ -843,94 +960,34 @@ import {
 
 const router = useRouter()
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
+const token = localStorage.getItem('admin_token')
+const authHeaders = { Authorization: `Bearer ${token}` }
+
+const loading = ref(false)
+
 // 教练信息
 const coachInfo = reactive({
-  id: 'coach001',
-  name: localStorage.getItem('admin_name') || '李教练',
+  id: '',
+  name: localStorage.getItem('admin_name') || '教练',
   avatar: '',
-  level: 'L2',
-  levelName: '中级教练',
-  specialty: ['糖尿病逆转', '体重管理']
+  level: 'L0',
+  levelName: '见习教练',
+  specialty: [] as string[]
 })
 
-const notifications = ref(3)
+const notifications = ref(0)
 
 // 今日统计
 const todayStats = reactive({
-  pendingFollowups: 8,
-  completedFollowups: 5,
-  alertStudents: 2,
-  unreadMessages: 12
+  pendingFollowups: 0,
+  completedFollowups: 0,
+  alertStudents: 0,
+  unreadMessages: 0
 })
 
-// 待跟进学员
-const pendingStudents = ref([
-  {
-    id: 's001',
-    name: '张明华',
-    avatar: '',
-    condition: '2型糖尿病 · 高血压',
-    stage: 'action',
-    lastContact: '2天前',
-    priority: 'high',
-    healthData: {
-      fastingGlucose: 7.2,
-      postprandialGlucose: 10.5,
-      weight: 78,
-      exerciseMinutes: 90
-    },
-    records: [
-      { id: 'r1', type: 'call', time: '2024-01-23 14:30', content: '电话跟进，患者反馈血糖控制有所改善' },
-      { id: 'r2', type: 'message', time: '2024-01-21 09:15', content: '发送饮食指导资料' }
-    ],
-    interventionPlan: {
-      name: '血糖管理强化方案',
-      description: '针对餐后血糖控制的个性化干预'
-    },
-    assessScore: 3.5,
-    assessNote: ''
-  },
-  {
-    id: 's002',
-    name: '王小红',
-    avatar: '',
-    condition: '糖尿病前期 · 肥胖',
-    stage: 'preparation',
-    lastContact: '1天前',
-    priority: 'medium',
-    healthData: {
-      fastingGlucose: 6.5,
-      postprandialGlucose: 8.8,
-      weight: 85,
-      exerciseMinutes: 45
-    },
-    records: [
-      { id: 'r3', type: 'message', time: '2024-01-24 10:00', content: '提醒完成今日运动任务' }
-    ],
-    interventionPlan: null,
-    assessScore: 3,
-    assessNote: ''
-  },
-  {
-    id: 's003',
-    name: '李建国',
-    avatar: '',
-    condition: '2型糖尿病',
-    stage: 'contemplation',
-    lastContact: '3天前',
-    priority: 'low',
-    healthData: {
-      fastingGlucose: 8.1,
-      postprandialGlucose: 12.3,
-      weight: 72,
-      exerciseMinutes: 30
-    },
-    records: [],
-    interventionPlan: null,
-    assessScore: 2,
-    assessNote: ''
-  }
-])
+// 待跟进学员 (从 API 加载)
+const pendingStudents = ref<any[]>([])
 
 // 四层诊断数据
 const diagnosisData = reactive({
@@ -1122,7 +1179,7 @@ const aiRecommendations = ref([
 const interventionTools = ref([
   { id: 't1', icon: '📋', name: '评估量表' },
   { id: 't2', icon: '📚', name: '健康课程' },
-  { id: 't3', icon: '🎯', name: '目标设定' },
+  { id: 't3', icon: '🎯', name: '审核推送' },
   { id: 't4', icon: '💬', name: '话术模板' },
   { id: 't5', icon: '📊', name: '数据分析' },
   { id: 't6', icon: '🤖', name: 'AI 助手' }
@@ -1145,6 +1202,29 @@ const assessmentDrawerVisible = ref(false)
 const goalDrawerVisible = ref(false)
 const profileDrawerVisible = ref(false)
 const settingsDrawerVisible = ref(false)
+
+// 推送评估表单
+const assignForm = reactive({
+  studentId: null as number | null,
+  scales: ['ttm7'] as string[],
+  note: '',
+})
+const scaleOptions = [
+  { label: 'TTM7（必选）', value: 'ttm7', disabled: true },
+  { label: 'BIG5 大五人格', value: 'big5' },
+  { label: 'BPT-6 行为类型', value: 'bpt6' },
+  { label: 'CAPACITY 改变潜力', value: 'capacity' },
+  { label: 'SPI 成功可能性', value: 'spi' },
+]
+const assignSubmitting = ref(false)
+const loadingAssignments = ref(false)
+const assignmentList = ref<any[]>([])
+
+// 审核与推送
+const loadingReviewList = ref(false)
+const reviewList = ref<any[]>([])
+const reviewingAssignment = ref<any>(null)
+const pushSubmitting = ref(false)
 
 // 设置状态
 const settingsState = reactive({
@@ -1175,22 +1255,22 @@ const getLevelColor = (level: string) => {
 
 const getStageLabel = (stage: string) => {
   const labels: Record<string, string> = {
-    precontemplation: '前意向期',
-    contemplation: '意向期',
-    preparation: '准备期',
-    action: '行动期',
-    maintenance: '维持期'
+    S0: '觉醒期', S1: '松动期', S2: '探索期', S3: '准备期',
+    S4: '行动期', S5: '坚持期', S6: '融入期',
+    precontemplation: '前意向期', contemplation: '意向期',
+    preparation: '准备期', action: '行动期', maintenance: '维持期',
+    unknown: '未评估',
   }
   return labels[stage] || stage
 }
 
 const getStageColor = (stage: string) => {
   const colors: Record<string, string> = {
-    precontemplation: 'default',
-    contemplation: 'blue',
-    preparation: 'cyan',
-    action: 'green',
-    maintenance: 'purple'
+    S0: 'default', S1: 'default', S2: 'blue', S3: 'cyan',
+    S4: 'green', S5: 'purple', S6: 'gold',
+    precontemplation: 'default', contemplation: 'blue',
+    preparation: 'cyan', action: 'green', maintenance: 'purple',
+    unknown: 'default',
   }
   return colors[stage] || 'default'
 }
@@ -1257,11 +1337,24 @@ const generateFollowup = async (student: typeof pendingStudents.value[0]) => {
   aiFollowupLoading.value = false
 }
 
-const sendFollowup = (student: typeof pendingStudents.value[0]) => {
+const sendFollowup = async (student: typeof pendingStudents.value[0]) => {
   if (!followupText.value.trim()) return
 
   const now = new Date()
   const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`
+
+  // 调用真实 API 发送教练消息
+  try {
+    await fetch(`${API_BASE}/api/v1/coach/messages`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        student_id: student.id,
+        content: followupText.value,
+        message_type: followupText.value === aiFollowupSuggestion.value ? 'advice' : 'text',
+      }),
+    })
+  } catch { /* fallback: 即使 API 失败也更新本地状态 */ }
 
   // 添加到跟进历史
   followupHistory.value.push({
@@ -1283,7 +1376,7 @@ const sendFollowup = (student: typeof pendingStudents.value[0]) => {
 
   // 更新统计
   todayStats.completedFollowups++
-  todayStats.pendingFollowups--
+  todayStats.pendingFollowups = Math.max(0, todayStats.pendingFollowups - 1)
 }
 
 // AI 建议审核操作
@@ -1319,12 +1412,15 @@ const openTool = (tool: typeof interventionTools.value[0]) => {
   switch (tool.id) {
     case 't1': // 评估量表
       assessmentDrawerVisible.value = true
+      loadAssignmentList()
       break
     case 't2': // 健康课程
       router.push('/course/list')
       break
-    case 't3': // 目标设定
+    case 't3': // 审核与推送
       goalDrawerVisible.value = true
+      reviewingAssignment.value = null
+      loadReviewList()
       break
     case 't4': // 话术模板
       router.push('/prompts/list')
@@ -1359,13 +1455,171 @@ const getTaskColor = (rate: number) => {
 
 const getNextStageGoal = (stage: string) => {
   const goals: Record<string, string> = {
+    S0: '进入松动期：开始认识到改变的必要',
+    S1: '进入探索期：了解改变的可能性',
+    S2: '进入准备期：制定行动计划',
+    S3: '进入行动期：开始执行方案',
+    S4: '进入坚持期：稳定健康习惯',
+    S5: '进入融入期：让健康成为生活方式',
+    S6: '保持融入期：帮助他人成长',
     precontemplation: '进入意向期：建立健康意识',
     contemplation: '进入准备期：制定行动计划',
     preparation: '进入行动期：开始执行方案',
     action: '进入维持期：稳定健康习惯',
-    maintenance: '保持维持期：长期坚持'
+    maintenance: '保持维持期：长期坚持',
   }
   return goals[stage] || '持续改善'
+}
+
+// ============ 评估推送与审核 API ============
+
+async function submitAssign() {
+  if (!assignForm.studentId) { message.warning('请选择学员'); return }
+  if (!assignForm.scales.includes('ttm7')) { assignForm.scales.unshift('ttm7') }
+  assignSubmitting.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/assign`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        student_id: assignForm.studentId,
+        scales: assignForm.scales,
+        note: assignForm.note || undefined,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || '推送失败')
+    message.success(data.message || '评估已推送')
+    assignForm.studentId = null
+    assignForm.scales = ['ttm7']
+    assignForm.note = ''
+    loadAssignmentList()
+  } catch (e: any) {
+    message.error(e.message || '推送失败')
+  } finally {
+    assignSubmitting.value = false
+  }
+}
+
+async function loadAssignmentList() {
+  loadingAssignments.value = true
+  try {
+    // 加载教练的所有 assignment（复用 review-list 端点，显示所有状态）
+    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/review-list`, {
+      headers: authHeaders,
+    })
+    if (res.ok) {
+      const data = await res.json()
+      assignmentList.value = data.assignments || []
+    }
+  } catch { /* ignore */ }
+  finally { loadingAssignments.value = false }
+}
+
+function openReviewDrawer(assignment: any) {
+  reviewingAssignment.value = {
+    ...assignment,
+    review_items: (assignment.review_items || []).map((item: any) => ({
+      ...item,
+      _editing: false,
+      _editText: '',
+      _editNote: '',
+    })),
+  }
+  assessmentDrawerVisible.value = false
+  goalDrawerVisible.value = true
+}
+
+async function loadReviewList() {
+  loadingReviewList.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/review-list`, {
+      headers: authHeaders,
+    })
+    if (res.ok) {
+      const data = await res.json()
+      reviewList.value = data.assignments || []
+    }
+  } catch { /* ignore */ }
+  finally { loadingReviewList.value = false }
+}
+
+function selectReviewAssignment(assignment: any) {
+  reviewingAssignment.value = {
+    ...assignment,
+    review_items: (assignment.review_items || []).map((item: any) => ({
+      ...item,
+      _editing: false,
+      _editText: '',
+      _editNote: '',
+    })),
+  }
+}
+
+async function reviewItem(item: any, newStatus: string) {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/review-items/${item.id}`, {
+      method: 'PUT',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.detail || '操作失败')
+    }
+    item.status = newStatus
+    message.success(newStatus === 'approved' ? '已采纳' : '已拒绝')
+  } catch (e: any) {
+    message.error(e.message || '操作失败')
+  }
+}
+
+async function confirmReviewModify(item: any) {
+  if (!item._editText.trim()) { message.warning('请输入修改内容'); return }
+  try {
+    const coachContent = { ...item.original_content, modified_text: item._editText }
+    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/review-items/${item.id}`, {
+      method: 'PUT',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'modified',
+        coach_content: coachContent,
+        coach_note: item._editNote || undefined,
+      }),
+    })
+    if (!res.ok) {
+      const data = await res.json()
+      throw new Error(data.detail || '操作失败')
+    }
+    item.status = 'modified'
+    item.coach_content = coachContent
+    item.coach_note = item._editNote
+    item._editing = false
+    message.success('已修改')
+  } catch (e: any) {
+    message.error(e.message || '操作失败')
+  }
+}
+
+async function pushAssignment() {
+  if (!reviewingAssignment.value) return
+  pushSubmitting.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/${reviewingAssignment.value.id}/push`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || '推送失败')
+    message.success(data.message || '已推送')
+    reviewingAssignment.value = null
+    loadReviewList()
+    loadAssignmentList()
+  } catch (e: any) {
+    message.error(e.message || '推送失败')
+  } finally {
+    pushSubmitting.value = false
+  }
 }
 
 // 导航
@@ -1374,7 +1628,7 @@ const goToStudentList = () => {
 }
 
 const goToMessages = () => {
-  router.push('/student')
+  router.push('/coach/messages')
 }
 
 const goToLearning = () => {
@@ -1409,8 +1663,61 @@ const handleLogout = () => {
   router.push('/login')
 }
 
+async function loadDashboard() {
+  loading.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/coach/dashboard`, { headers: authHeaders })
+    if (!res.ok) throw new Error('Dashboard API failed')
+    const data = await res.json()
+
+    // 教练信息
+    const c = data.coach || {}
+    coachInfo.id = c.id || ''
+    coachInfo.name = c.name || coachInfo.name
+    coachInfo.level = c.level || 'L0'
+    coachInfo.levelName = c.level_name || '见习教练'
+    coachInfo.specialty = c.specialty || []
+
+    // 今日统计
+    const s = data.today_stats || {}
+    todayStats.pendingFollowups = s.pending_followups || 0
+    todayStats.completedFollowups = s.completed_followups || 0
+    todayStats.alertStudents = s.alert_students || 0
+    todayStats.unreadMessages = s.unread_messages || 0
+    notifications.value = s.unread_messages || 0
+
+    // 学员列表 → 适配前端字段名
+    pendingStudents.value = (data.students || []).map((st: any) => ({
+      id: st.id,
+      name: st.name,
+      avatar: st.avatar || '',
+      condition: st.condition || '行为健康管理',
+      stage: st.stage || 'unknown',
+      stageLabel: st.stage_label || '未评估',
+      lastContact: st.last_contact || '未知',
+      priority: st.priority || 'low',
+      healthData: {
+        fastingGlucose: st.health_data?.fasting_glucose ?? null,
+        postprandialGlucose: st.health_data?.postprandial_glucose ?? null,
+        weight: st.health_data?.weight ?? null,
+        exerciseMinutes: st.health_data?.exercise_minutes ?? 0,
+      },
+      microAction7d: st.micro_action_7d || { completed: 0, total: 0 },
+      riskFlags: st.risk_flags || [],
+      records: [],
+      interventionPlan: null,
+      assessScore: 0,
+      assessNote: '',
+    }))
+  } catch (e) {
+    console.warn('[CoachHome] Dashboard API 不可用，使用空数据:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
-  // 加载数据
+  loadDashboard()
 })
 </script>
 
