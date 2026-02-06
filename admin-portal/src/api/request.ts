@@ -12,11 +12,21 @@ const request = axios.create({
 
 // 请求拦截器
 request.interceptors.request.use(
-  (config) => {
+  async (config) => {
     const token = localStorage.getItem('admin_token')
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
+
+    // 注入 X-Source-UI 协议头，与后端 SOP 6.2 防火墙对齐
+    try {
+      const { default: router } = await import('../router')
+      const sourceUI = router.currentRoute.value.meta.sourceUI as string || 'UI-G'
+      config.headers['X-Source-UI'] = sourceUI
+    } catch {
+      config.headers['X-Source-UI'] = 'UI-G'
+    }
+
     return config
   },
   (error) => {

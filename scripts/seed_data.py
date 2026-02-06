@@ -285,6 +285,89 @@ def create_sample_assessments():
         return []
 
 
+def create_additional_users():
+    """创建更多中文名用户用于测试"""
+    additional_users = [
+        {
+            "username": "coach_zhang",
+            "email": "zhang@example.com",
+            "password": "coach123",
+            "role": UserRole.COACH,
+            "full_name": "张教练",
+            "profile": {
+                "specialization": "糖尿病行为干预",
+                "experience_years": 8,
+                "certification": "注册健康管理师",
+            }
+        },
+        {
+            "username": "wang_xiaoming",
+            "email": "wang@example.com",
+            "password": "patient123",
+            "role": UserRole.GROWER,
+            "full_name": "王小明",
+            "profile": {
+                "chronic_conditions": ["2型糖尿病"],
+                "medications": ["二甲双胍"],
+                "goals": ["血糖控制", "体重管理"],
+                "ttm_stage": "preparation",
+            }
+        },
+        {
+            "username": "zhao_lili",
+            "email": "zhao@example.com",
+            "password": "patient123",
+            "role": UserRole.GROWER,
+            "full_name": "赵丽丽",
+            "profile": {
+                "chronic_conditions": ["2型糖尿病", "高血压"],
+                "goals": ["血糖控制", "血压管理"],
+                "ttm_stage": "action",
+            }
+        },
+        {
+            "username": "chen_da",
+            "email": "chen@example.com",
+            "password": "patient123",
+            "role": UserRole.GROWER,
+            "full_name": "陈大",
+            "profile": {
+                "chronic_conditions": ["2型糖尿病", "高血脂"],
+                "goals": ["血糖控制"],
+                "ttm_stage": "contemplation",
+            }
+        },
+    ]
+
+    try:
+        with db_transaction() as db:
+            for user_data in additional_users:
+                existing = db.query(User).filter(
+                    User.username == user_data["username"]
+                ).first()
+
+                if existing:
+                    logger.info(f"用户 {user_data['username']} 已存在，跳过")
+                    continue
+
+                user = User(
+                    username=user_data["username"],
+                    email=user_data["email"],
+                    password_hash=hash_password(user_data["password"]),
+                    role=user_data["role"],
+                    full_name=user_data["full_name"],
+                    is_active=True,
+                    is_verified=True,
+                    profile=user_data["profile"],
+                    adherence_rate=65.0 if user_data["role"] in [UserRole.PATIENT, UserRole.GROWER] else 0.0
+                )
+                db.add(user)
+                logger.success(f"✓ 用户 {user_data['full_name']} ({user_data['username']}) 创建成功")
+
+    except Exception as e:
+        logger.error(f"创建额外用户失败: {e}")
+
+
 def seed_all():
     """执行完整的数据种子"""
     logger.info("=" * 60)
@@ -292,15 +375,19 @@ def seed_all():
     logger.info("=" * 60)
 
     # 1. 创建管理员
-    logger.info("\n[1/3] 创建管理员用户...")
+    logger.info("\n[1/4] 创建管理员用户...")
     admin = create_admin_user()
 
     # 2. 创建测试用户
-    logger.info("\n[2/3] 创建测试用户...")
+    logger.info("\n[2/4] 创建测试用户（英文名）...")
     test_users = create_test_users()
 
-    # 3. 创建示例评估
-    logger.info("\n[3/3] 创建示例评估数据...")
+    # 3. 创建额外中文名用户
+    logger.info("\n[3/4] 创建额外测试用户（中文名）...")
+    create_additional_users()
+
+    # 4. 创建示例评估
+    logger.info("\n[4/4] 创建示例评估数据...")
     assessments = create_sample_assessments()
 
     # 统计
@@ -314,15 +401,14 @@ def seed_all():
         logger.info(f"  {table}: {count}条")
 
     logger.info("\n默认账号信息:")
-    logger.info("  管理员:")
-    logger.info("    用户名: admin")
-    logger.info("    密码: admin123456")
-    logger.info("\n  测试患者:")
-    logger.info("    用户名: patient_alice / patient_bob")
-    logger.info("    密码: password123")
-    logger.info("\n  测试教练:")
-    logger.info("    用户名: coach_carol")
-    logger.info("    密码: coach123")
+    logger.info("  管理员:       admin / admin123456")
+    logger.info("  测试患者(EN): patient_alice / password123")
+    logger.info("  测试患者(EN): patient_bob / password123")
+    logger.info("  测试教练(EN): coach_carol / coach123")
+    logger.info("  教练(中文):   coach_zhang / coach123")
+    logger.info("  成长者(中文): wang_xiaoming / patient123")
+    logger.info("  成长者(中文): zhao_lili / patient123")
+    logger.info("  成长者(中文): chen_da / patient123")
 
     logger.success("\n✅ 种子数据加载成功！")
 

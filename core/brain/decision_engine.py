@@ -2,15 +2,43 @@
 from typing import Dict, Any, Optional, List
 from datetime import datetime, timedelta
 
+from core.brain.stage_runtime import StageRuntimeBuilder, StageInput, RuntimeState
+from core.brain.policy_gate import RuntimePolicyGate, PolicyDecision, PolicyDecisionType
+
 # SOP 6.2 公共防火墙：这些 UI 来源直接返回 SILENCE，不经过大脑判定
 FIREWALL_SILENT_SOURCES = {"UI-1"}
 
-# L6 成长之旅叙事模板
+# L6 成长之旅叙事模板 — 覆盖全部阶段跃迁
 HERO_JOURNEY_TEMPLATES = {
+    "S0_to_S1": (
+        "一粒种子在黑暗中悄悄裂开了壳。"
+        "你开始注意到一些以前忽略的信号——这就是觉醒的第一道光。"
+        "不需要急于行动，先让这份觉察陪伴你。"
+    ),
+    "S1_to_S2": (
+        "从抗拒到愿意倾听，这本身就是一次了不起的跨越。"
+        "你不再紧紧关着心门，而是留了一道缝。"
+        "阳光正从那道缝隙中照进来。"
+    ),
     "S2_to_S3": (
         "你已经走过了准备期的考验，内心的信念之火已被点燃。"
         "现在，你正式踏上行动的旅程——这是成长之旅中最关键的一步。"
         "每一个小小的行动，都是你迈向新生活的勋章。"
+    ),
+    "S3_to_S4": (
+        "从勉强接受到主动尝试，你跨过了最难的那道坎。"
+        "你不再是被推着前行的旅人，而是自己选择了方向。"
+        "这份主动，是你送给自己最好的礼物。"
+    ),
+    "S4_to_S5": (
+        "当尝试变成了习惯，当坚持不再需要意志力——"
+        "你正在经历从量变到质变的美妙蜕变。"
+        "规律践行的你，已经是自己生活的主人。"
+    ),
+    "S5_to_S6": (
+        "从刻意坚持到自然而然，你已经将健康融入了生命的节奏。"
+        "这不再是一项任务，而是你本来的样子。"
+        "恭喜你，完成了一段真正的内在成长之旅。"
     ),
 }
 
@@ -18,6 +46,8 @@ HERO_JOURNEY_TEMPLATES = {
 class BehavioralBrain:
     def __init__(self, config: Dict[str, Any]):
         self.config = config  # 来源于 configs/spi_mapping.json
+        self.stage_runtime = StageRuntimeBuilder()
+        self.policy_gate = RuntimePolicyGate()
 
     # ------------------------------------------------------------------
     # SOP 6.2 公共防火墙
@@ -37,35 +67,146 @@ class BehavioralBrain:
         return None
 
     # ------------------------------------------------------------------
-    # 核心判定：TTM 阶段跃迁
+    # 核心判定：TTM 阶段跃迁 (兼容旧接口)
     # ------------------------------------------------------------------
     def evaluate_transition(self, current_state: Dict[str, Any]) -> Dict[str, Any]:
         """
         输入: 包含 belief, action_count_3d, current_stage 的字典
         输出: 判定后的阶段及建议动作
+
+        兼容旧接口，内部委托给 StageRuntimeBuilder
         """
         last_stage = current_state.get("current_stage", "S0")
         belief = current_state.get("belief", 0.0)
         actions = current_state.get("action_count_3d", 0)
+        capability = current_state.get("capability", 0.0)
+        awareness = current_state.get("awareness", 0.0)
+        streak_days = current_state.get("streak_days", 0)
+        spi_score = current_state.get("spi_score", 0.0)
+        interrupt_72h = current_state.get("action_interrupt_72h", False)
 
-        target_stage = last_stage
-        triggered = False
+        # 简单启发式: 根据当前阶段推测下一阶段
+        thresholds = self.config.get("thresholds", {})
+        stage_order = ["S0", "S1", "S2", "S3", "S4", "S5", "S6"]
+        current_idx = stage_order.index(last_stage) if last_stage in stage_order else 0
+        next_stage = stage_order[min(current_idx + 1, 6)]
 
-        # 判定 S2 -> S3 的核心转化逻辑
-        if last_stage == "S2":
-            thresholds = self.config.get("thresholds", {}).get("S2_to_S3", {})
-            min_belief = thresholds.get("min_belief", 0.6)
-            min_capability = thresholds.get("min_capability", 0.5)
-            if belief >= min_belief and actions >= 1:
-                target_stage = "S3"
-                triggered = True
+        # 使用 StageRuntimeBuilder
+        stage_input = StageInput(
+            user_id=0,  # 旧接口不传 user_id
+            current_stage=last_stage,
+            stage_hypothesis=next_stage,
+            belief_score=belief,
+            awareness_score=awareness,
+            capability_score=capability,
+            action_completed_7d=actions,
+            action_interrupt_72h=interrupt_72h,
+            streak_days=streak_days,
+            spi_score=spi_score,
+        )
+
+        runtime_state, logs = self.stage_runtime.build(stage_input)
 
         return {
-            "from_stage": last_stage,
-            "to_stage": target_stage,
-            "is_transition": triggered,
+            "from_stage": runtime_state.previous_stage,
+            "to_stage": runtime_state.confirmed_stage,
+            "is_transition": runtime_state.is_transition,
+            "stability": runtime_state.stability,
+            "risk_flags": runtime_state.risk_flags,
+            "decision_reason": runtime_state.decision_reason,
             "timestamp": datetime.now().isoformat(),
             "spi_summary": {"belief": belief, "actions": actions},
+            "_decision_logs": logs,
+        }
+
+    # ------------------------------------------------------------------
+    # 新接口: 基于行为画像的完整处理
+    # ------------------------------------------------------------------
+    def process_with_profile(
+        self,
+        source_ui: Optional[str],
+        behavioral_profile: Dict[str, Any],
+        behavior_facts: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        基于行为画像的完整处理流水线:
+
+        1. SOP 6.2 防火墙检查
+        2. StageRuntimeBuilder.build() — 阶段判定
+        3. RuntimePolicyGate.evaluate() — 策略闸门
+        4. L6 叙事化
+        5. 返回: 决策结果 + 干预许可
+
+        Args:
+            source_ui: 来源 UI 标识
+            behavioral_profile: 用户行为画像 (从 BehavioralProfile 获取)
+            behavior_facts: 行为事实 (7天行为数、连续天数、中断等)
+        """
+        # Step 1: 防火墙
+        firewall = self.firewall_check(source_ui)
+        if firewall is not None:
+            return firewall
+
+        # Step 2: StageRuntimeBuilder
+        current_stage = behavioral_profile.get("current_stage", "S0")
+        stage_hypothesis = behavioral_profile.get("stage_hypothesis", current_stage)
+        spi_score = behavioral_profile.get("spi_score", 0.0)
+        interaction_mode = behavioral_profile.get("interaction_mode", "empathy")
+
+        stage_input = StageInput(
+            user_id=behavioral_profile.get("user_id", 0),
+            current_stage=current_stage,
+            stage_hypothesis=stage_hypothesis,
+            belief_score=behavior_facts.get("belief_score", 0.0),
+            awareness_score=behavior_facts.get("awareness_score", 0.0),
+            capability_score=behavior_facts.get("capability_score", 0.0),
+            action_completed_7d=behavior_facts.get("action_completed_7d", 0),
+            action_interrupt_72h=behavior_facts.get("action_interrupt_72h", False),
+            streak_days=behavior_facts.get("streak_days", 0),
+            spi_score=spi_score,
+        )
+
+        runtime_state, decision_logs = self.stage_runtime.build(stage_input)
+
+        # Step 3: PolicyGate
+        policy_decision = self.policy_gate.evaluate(
+            runtime_state=runtime_state,
+            recommended_mode=interaction_mode,
+            source=source_ui,
+        )
+
+        # Step 4: L6 叙事化
+        narrative = None
+        if runtime_state.is_transition:
+            key = f"{runtime_state.previous_stage}_to_{runtime_state.confirmed_stage}"
+            narrative = HERO_JOURNEY_TEMPLATES.get(
+                key,
+                "你正在经历一次重要的蜕变，每一步都值得被铭记。"
+            )
+
+        # Step 5: 组合返回
+        return {
+            "user_id": behavioral_profile.get("user_id"),
+            "source_ui": source_ui,
+            # 阶段判定
+            "from_stage": runtime_state.previous_stage,
+            "to_stage": runtime_state.confirmed_stage,
+            "is_transition": runtime_state.is_transition,
+            "stability": runtime_state.stability,
+            "risk_flags": runtime_state.risk_flags,
+            "decision_reason": runtime_state.decision_reason,
+            # 策略闸门
+            "policy_action": policy_decision.action.value,
+            "policy_reason": policy_decision.reason,
+            "intervention_allowed": policy_decision.intervention_allowed,
+            "escalation_target": policy_decision.escalation_target,
+            "allowed_modes": policy_decision.allowed_modes,
+            # 叙事
+            "narrative": narrative,
+            # 时间
+            "timestamp": datetime.now().isoformat(),
+            # 调试
+            "_decision_logs": decision_logs,
         }
 
     # ------------------------------------------------------------------

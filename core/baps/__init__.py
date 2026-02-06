@@ -11,7 +11,8 @@ from .questionnaires import (
     BigFiveQuestionnaire,
     BPT6Questionnaire,
     CAPACITYQuestionnaire,
-    SPIQuestionnaire
+    SPIQuestionnaire,
+    TTM7Questionnaire
 )
 from .scoring_engine import BAPSScoringEngine
 from .report_generator import BAPSReportGenerator
@@ -22,6 +23,7 @@ __all__ = [
     "BPT6Questionnaire",
     "CAPACITYQuestionnaire",
     "SPIQuestionnaire",
+    "TTM7Questionnaire",
     "BAPSScoringEngine",
     "BAPSReportGenerator"
 ]

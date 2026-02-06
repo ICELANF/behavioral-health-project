@@ -5,12 +5,13 @@
     <div class="page-content">
       <!-- 欢迎卡片 -->
       <div class="welcome-card card">
-        <div class="welcome-header">
+        <div class="welcome-header" @click="router.push('/profile')">
           <van-icon name="user-circle-o" size="48" color="#1989fa" />
           <div class="welcome-text">
             <h2>你好，{{ userStore.name }}</h2>
             <p>今天感觉如何？</p>
           </div>
+          <van-icon name="arrow" color="#c8c9cc" />
         </div>
         <div class="efficacy-display" :style="{ backgroundColor: userStore.efficacyColor + '20' }">
           <span class="efficacy-number" :style="{ color: userStore.efficacyColor }">
@@ -27,8 +28,22 @@
           <van-grid-item icon="chat-o" text="开始对话" to="/chat" />
           <van-grid-item icon="todo-list-o" text="我的任务" to="/tasks" />
           <van-grid-item icon="chart-trending-o" text="健康看板" to="/dashboard" />
-          <van-grid-item icon="records-o" text="健康档案" to="/profile" />
+          <van-grid-item icon="records-o" text="健康档案" to="/health-records" />
         </van-grid>
+      </div>
+
+      <!-- 行为评估入口 -->
+      <div class="assessment-entry card" @click="router.push('/behavior-assessment')">
+        <div class="entry-content">
+          <div class="entry-icon">
+            <van-icon name="aim" size="32" color="#1989fa" />
+          </div>
+          <div class="entry-text">
+            <h3>了解你的行为状态</h3>
+            <p>完成评估，获取专属行为改变方案</p>
+          </div>
+          <van-icon name="arrow" color="#c8c9cc" />
+        </div>
       </div>
 
       <!-- 专家团队 -->
@@ -66,7 +81,6 @@
           @toggle="chatStore.toggleTaskComplete"
         />
       </div>
-    </div>
 
       <!-- 健康指标卡片组 -->
       <div class="health-metrics card">
@@ -170,6 +184,7 @@ import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import TabBar from '@/components/common/TabBar.vue'
 import TaskCard from '@/components/chat/TaskCard.vue'
+import api from '@/api/index'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -180,9 +195,7 @@ function goToChat(expertId: string) {
   router.push('/chat')
 }
 
-// ---- 健康指标（与 admin-portal 同源数据） ----
-const ENGINE_API = 'http://127.0.0.1:8002'
-const MP_HEADERS = { 'Content-Type': 'application/json', 'X-User-ID': '1' }
+// ---- 健康指标 ----
 let lastKnownGlucose = 0
 
 const healthData = reactive({
@@ -194,13 +207,12 @@ const healthData = reactive({
 
 async function refreshHealth() {
   try {
-    const [statusRes, stateRes, progressRes] = await Promise.all([
-      fetch(`${ENGINE_API}/latest_status`).then(r => r.json()).catch(() => null),
-      fetch(`${ENGINE_API}/api/v1/mp/user/state`, { headers: MP_HEADERS }).then(r => r.json()).catch(() => null),
-      fetch(`${ENGINE_API}/api/v1/mp/progress/summary`, { headers: MP_HEADERS }).then(r => r.json()).catch(() => null),
+    const [statusRes, progressRes] = await Promise.all([
+      api.get('/latest_status').catch(() => null),
+      api.get('/api/v1/mp/progress/summary').catch(() => null),
     ])
-    const cg = statusRes?.current_glucose || 0
-    const history: number[] = statusRes?.history || []
+    const cg = (statusRes as any)?.current_glucose || 0
+    const history: number[] = (statusRes as any)?.history || []
     let trend: 'up' | 'down' | 'stable' = 'stable'
     if (lastKnownGlucose > 0 && cg > 0) {
       if (cg > lastKnownGlucose + 0.3) trend = 'up'
@@ -209,17 +221,17 @@ async function refreshHealth() {
     if (cg > 0) lastKnownGlucose = cg
     const recent = history.slice(-5)
     healthData.bloodGlucose = { fasting: cg > 0 ? cg : null, postprandial: recent.length ? Math.max(...recent) : null, trend }
-    const totalCompleted = progressRes?.total_completed || 0
-    const streakDays = progressRes?.streak_days || 0
-    const completionRate = progressRes?.completion_rate || 0
+    const totalCompleted = (progressRes as any)?.total_completed || 0
+    const streakDays = (progressRes as any)?.streak_days || 0
+    const completionRate = (progressRes as any)?.completion_rate || 0
     healthData.weight = { current: +(75.5 - totalCompleted * 0.1).toFixed(1), target: 70, trend: totalCompleted > 3 ? 'down' : 'stable' }
     healthData.exercise = { weeklyMinutes: Math.round(completionRate * 150), targetMinutes: 150, streak: streakDays }
     healthData.medication = { adherenceRate: Math.round(completionRate * 100) || 85, missedDoses: Math.max(0, 7 - totalCompleted) }
-  } catch { /* 后端不可用 */ }
+  } catch { /* 后端不可用时使用默认值 */ }
 }
 
-function goToDetail(type: string) {
-  showToast(`${type} 详情`)
+function goToDetail(_type: string) {
+  router.push('/health-records')
 }
 
 // ---- 用药提醒 ----
@@ -259,6 +271,9 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
     display: flex;
     align-items: center;
     margin-bottom: $spacing-md;
+    cursor: pointer;
+
+    &:active { opacity: 0.7; }
   }
 
   .welcome-text {
@@ -299,6 +314,43 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
   h3 {
     margin-bottom: $spacing-sm;
     font-size: $font-size-lg;
+  }
+}
+
+.assessment-entry {
+  cursor: pointer;
+
+  .entry-content {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .entry-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(25, 137, 250, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .entry-text {
+    flex: 1;
+
+    h3 {
+      margin: 0;
+      font-size: $font-size-md;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 2px 0 0;
+      font-size: $font-size-xs;
+      color: $text-color-secondary;
+    }
   }
 }
 

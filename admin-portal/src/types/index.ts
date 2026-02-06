@@ -2,6 +2,9 @@
  * 行为健康平台类型定义
  */
 
+// 导出内容管理类型
+export * from './content'
+
 // 风险等级类型
 export type RiskLevel = 'high' | 'mid' | 'low' | 'normal'
 

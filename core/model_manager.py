@@ -57,14 +57,14 @@ class OllamaModelManager:
     # 默认模型配置
     DEFAULT_MODELS = {
         ModelTier.FAST: ModelConfig(
-            name="qwen2.5:7b",
+            name="qwen2.5:0.5b",
             tier=ModelTier.FAST,
             temperature=0.2,
             request_timeout=120.0,
             description="快速响应，适用于简单对话和意图识别"
         ),
         ModelTier.STANDARD: ModelConfig(
-            name="qwen2.5:14b",
+            name="qwen2.5:0.5b",
             tier=ModelTier.STANDARD,
             temperature=0.3,
             request_timeout=300.0,
@@ -132,7 +132,7 @@ class OllamaModelManager:
         if not self._available_models:
             self._refresh_available_models()
 
-        # 支持部分匹配 (qwen2.5:14b 匹配 qwen2.5:14b-instruct-q4_0)
+        # 支持部分匹配 (qwen2.5:0.5b 匹配 qwen2.5:0.5b-instruct-q4_0)
         return any(model_name in m or m in model_name for m in self._available_models)
 
     def get_llm(

@@ -97,7 +97,7 @@ class TaskDecomposer:
         model_config = config.get("model", {})
 
         self.llm = Ollama(
-            model=model_config.get("llm", "qwen2.5:14b"),
+            model=model_config.get("llm", "qwen2.5:0.5b"),
             base_url=model_config.get("ollama_base_url", "http://localhost:11434"),
             temperature=0.2,  # 低温度保证输出稳定
             request_timeout=model_config.get("request_timeout", 600.0)

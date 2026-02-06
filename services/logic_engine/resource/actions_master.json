@@ -1,0 +1,50 @@
+{
+  "T_EMO_EAT": {
+    "risk": "L2",
+    "coach_directive": "【高风险预警】用户出现补偿性进食，请立即发起语音通话了解诱因并给予同理心支持。",
+    "tool_id": "STRESS_ASSESSMENT_FORM",
+    "tool_props": { "type": "quick_check", "limit_time": 300 },
+    "companion_template": "能感受到你现在的自责，其实偶尔的波动是正常的，我们聊聊刚才发生了什么？",
+    "violation_consequences": {
+      "regression_weight": 2,
+      "signals": ["anger", "withdrawal"],
+      "description": "违规忽视压力事件将导致用户情绪退缩"
+    }
+  },
+  "T_RESISTANCE": {
+    "risk": "L1",
+    "coach_directive": "用户处于阻抗期，严禁推送任务，保持同理心倾听，降低侵入感。",
+    "tool_id": "EMPATHY_MODULE_01",
+    "tool_props": { "type": "passive_listen", "timeout": 600 },
+    "companion_template": "改变确实不容易，感到压力时停下来休息也是一种进步，我一直在这陪你。",
+    "violation_consequences": {
+      "regression_weight": 3,
+      "signals": ["anger", "churn_risk"],
+      "description": "阻抗期强推任务将引发用户愤怒和流失风险"
+    }
+  },
+  "T_ACTION_WILL": {
+    "risk": "L1",
+    "coach_directive": "用户窗口期打开，建议立即下发'微习惯'制定卡片，趁热打铁。",
+    "tool_id": "HABIT_DESIGNER",
+    "tool_props": { "type": "micro_habit", "max_steps": 3 },
+    "companion_template": "太棒了！听到你想要开始尝试，这种觉察非常了不起。要不要先从一个小动作开始？",
+    "violation_consequences": {
+      "regression_weight": 1,
+      "signals": ["frustration"],
+      "description": "行动意愿期违规后果较轻，但可能浪费窗口期"
+    }
+  },
+  "T_COACH_VIOLATION": {
+    "risk": "L3",
+    "coach_directive": "【紧急】检测到教练操作违反处方建议，立即启动紧急倾听模式，修复用户信任。",
+    "tool_id": "EMPATHY_MODULE_01",
+    "tool_props": { "type": "emergency_listen", "timeout": 900 },
+    "companion_template": "我理解你的感受，我们慢慢来，不着急。",
+    "violation_consequences": {
+      "regression_weight": 3,
+      "signals": ["anger", "churn_risk", "trust_damage"],
+      "description": "教练违规操作将严重损害用户信任，可能导致阶段回退"
+    }
+  }
+}

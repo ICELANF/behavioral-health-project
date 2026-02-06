@@ -9,19 +9,19 @@ base_config = {
     'agents': {
         'mental_health': {
             'path': 'xingjian-agent/prompts/mental_health.txt',
-            'model': 'qwen2.5:7b'
+            'model': 'qwen2.5:0.5b'
         },
         'nutrition': {
             'path': 'xingjian-agent/prompts/nutrition.txt',
-            'model': 'qwen2.5:7b'
+            'model': 'qwen2.5:0.5b'
         },
         'sports_rehab': {
             'path': 'xingjian-agent/prompts/sports_rehab.txt',
-            'model': 'qwen2.5:7b'
+            'model': 'qwen2.5:0.5b'
         },
         'tcm_wellness': {
             'path': 'xingjian-agent/prompts/tcm_wellness.txt',
-            'model': 'qwen2.5:7b'
+            'model': 'qwen2.5:0.5b'
         }
     },
     'server': {

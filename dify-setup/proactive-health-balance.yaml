@@ -22,7 +22,7 @@ workflow: null
 model_config:
   model:
     provider: ollama
-    name: qwen2.5:14b
+    name: qwen2.5:0.5b
     mode: chat
     completion_params:
       temperature: 0.7

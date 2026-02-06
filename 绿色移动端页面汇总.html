@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行为健康数字平台 - 全平台服务导航总览</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .quick-access {
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .quick-access h3 {
+            color: #27ae60;
+            margin-bottom: 12px;
+        }
+        .quick-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .quick-link {
+            padding: 8px 16px;
+            background: #27ae60;
+            color: white;
+            text-decoration: none;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .quick-link:hover {
+            background: #2ecc71;
+            transform: translateY(-2px);
+        }
+        .section-title {
+            color: white;
+            font-size: 22px;
+            margin: 30px 0 16px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-badge {
+            background: rgba(255,255,255,0.3);
+            padding: 2px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+        .page-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .page-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            transition: transform 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .page-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 6px;
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+        }
+        .page-card.backend::before {
+            background: linear-gradient(90deg, #2980b9, #3498db);
+        }
+        .page-card.infra::before {
+            background: linear-gradient(90deg, #8e44ad, #9b59b6);
+        }
+        .page-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(39, 174, 96, 0.3);
+        }
+        .page-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .page-icon { font-size: 28px; }
+        .port-badge {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .port-badge.backend { background: #2980b9; }
+        .port-badge.infra { background: #8e44ad; }
+        .page-url {
+            font-size: 13px;
+            color: #27ae60;
+            background: #f0fdf4;
+            padding: 6px 12px;
+            border-radius: 6px;
+            margin: 12px 0;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+        }
+        .page-url a {
+            color: #27ae60;
+            text-decoration: none;
+        }
+        .page-url a:hover { text-decoration: underline; }
+        .page-desc {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+        .feature-tag {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .feature-tag.backend {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        .feature-tag.infra {
+            background: #f3e8ff;
+            color: #7c3aed;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-align: center;
+            width: 100%;
+            margin-top: 8px;
+        }
+        .btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4);
+        }
+        .btn.backend {
+            background: linear-gradient(135deg, #2980b9, #3498db);
+        }
+        .btn.backend:hover {
+            box-shadow: 0 4px 12px rgba(41, 128, 185, 0.4);
+        }
+        .btn.infra {
+            background: linear-gradient(135deg, #8e44ad, #9b59b6);
+        }
+        .btn.infra:hover {
+            box-shadow: 0 4px 12px rgba(142, 68, 173, 0.4);
+        }
+        .summary {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        .summary h2 {
+            color: #27ae60;
+            margin-bottom: 16px;
+        }
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 16px;
+        }
+        .summary-item {
+            text-align: center;
+            padding: 16px;
+            background: #f0fdf4;
+            border-radius: 12px;
+        }
+        .summary-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #27ae60;
+        }
+        .summary-label {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        .account-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+        .account-table th, .account-table td {
+            padding: 10px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .account-table th {
+            background: #f0fdf4;
+            color: #16a34a;
+            font-weight: 600;
+        }
+        .account-table td {
+            color: #374151;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .deploy-log {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 20px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        .deploy-log h2 {
+            color: #27ae60;
+            margin-bottom: 16px;
+        }
+        .log-entry {
+            padding: 12px 16px;
+            border-left: 4px solid #27ae60;
+            background: #f9fafb;
+            margin-bottom: 10px;
+            border-radius: 0 8px 8px 0;
+        }
+        .log-entry .log-time {
+            font-size: 12px;
+            color: #9ca3af;
+            font-family: 'Courier New', monospace;
+        }
+        .log-entry .log-text {
+            color: #374151;
+            font-size: 14px;
+            margin-top: 4px;
+        }
+        .core-entries {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .core-entry {
+            background: #f0fdf4;
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+        }
+        .core-entry a {
+            color: #27ae60;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        .core-entry a:hover { text-decoration: underline; }
+        .core-entry .core-desc {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>行为健康数字平台 - 全平台服务导航总览</h1>
+            <p>集成所有前端、后端、基础设施的端口 / 链接 / 功能说明 | 链接已固定，不再调整</p>
+        </div>
+
+        <!-- 快速访问栏 -->
+        <div class="quick-access">
+            <h3>快速访问 - 全部端口</h3>
+            <div class="quick-links">
+                <a href="http://localhost:5173" class="quick-link" target="_blank">H5 行为教练 (5173)</a>
+                <a href="http://localhost:5174" class="quick-link" target="_blank">Admin 管理后台 (5174)</a>
+                <a href="http://localhost:5175" class="quick-link" target="_blank">H5 患者端 (5175)</a>
+                <a href="http://localhost:5176" class="quick-link" target="_blank">UI 组件库 (5176)</a>
+                <a href="http://localhost:8888" class="quick-link" target="_blank">Django 管理 (8888)</a>
+                <a href="http://localhost:9000" class="quick-link" target="_blank">静态演示 (9000)</a>
+                <a href="http://localhost:8000/docs" class="quick-link" target="_blank" style="background:#2980b9;">Agent API (8000)</a>
+                <a href="http://localhost:8001/docs" class="quick-link" target="_blank" style="background:#2980b9;">BAPS API (8001)</a>
+                <a href="http://localhost:8002/docs" class="quick-link" target="_blank" style="background:#2980b9;">决策引擎 (8002)</a>
+                <a href="http://localhost:8501" class="quick-link" target="_blank" style="background:#e67e22;">专家工作台 (8501)</a>
+                <a href="http://localhost:8080" class="quick-link" target="_blank" style="background:#8e44ad;">Dify AI (8080)</a>
+                <a href="http://localhost:11434" class="quick-link" target="_blank" style="background:#8e44ad;">Ollama LLM (11434)</a>
+            </div>
+        </div>
+
+        <!-- ========== 前端应用 ========== -->
+        <div class="section-title">
+            <span>前端应用</span>
+            <span class="section-badge">7 项</span>
+        </div>
+        <div class="page-grid">
+            <div class="page-card">
+                <div class="page-title">
+                    <span class="page-icon">📱</span>
+                    <span>H5 行为教练</span>
+                    <span class="port-badge">:5173</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:5173" target="_blank">http://localhost:5173</a></div>
+                <div class="page-desc">患者端移动应用 (Vue3+Vant)，AI教练对话、每日任务、健康看板。</div>
+                <div class="features">
+                    <span class="feature-tag">AI教练对话</span>
+                    <span class="feature-tag">每日任务</span>
+                    <span class="feature-tag">健康看板</span>
+                    <span class="feature-tag">Vue3+Vant</span>
+                </div>
+                <a href="http://localhost:5173" target="_blank" class="btn">打开 H5 行为教练</a>
+            </div>
+
+            <div class="page-card">
+                <div class="page-title">
+                    <span class="page-icon">🖥️</span>
+                    <span>Admin Portal 管理后台</span>
+                    <span class="port-badge">:5174</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:5174" target="_blank">http://localhost:5174</a></div>
+                <div class="page-desc">四角色登录 (患者/教练/专家/管理员)，完整业务管理后台。</div>
+                <div class="features">
+                    <span class="feature-tag">四角色登录</span>
+                    <span class="feature-tag">业务管理</span>
+                    <span class="feature-tag">数据看板</span>
+                </div>
+                <a href="http://localhost:5174" target="_blank" class="btn">打开管理后台</a>
+            </div>
+
+            <div class="page-card">
+                <div class="page-title">
+                    <span class="page-icon">🏥</span>
+                    <span>H5 Patient App 患者端</span>
+                    <span class="port-badge">:5175</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:5175" target="_blank">http://localhost:5175</a></div>
+                <div class="page-desc">患者健康数据录入、评估结果、个人档案管理。</div>
+                <div class="features">
+                    <span class="feature-tag">健康数据录入</span>
+                    <span class="feature-tag">评估结果</span>
+                    <span class="feature-tag">个人档案</span>
+                </div>
+                <a href="http://localhost:5175" target="_blank" class="btn">打开患者端</a>
+            </div>
+
+            <div class="page-card">
+                <div class="page-title">
+                    <span class="page-icon">🧩</span>
+                    <span>行为健康UI组件库</span>
+                    <span class="port-badge">:5176</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:5176" target="_blank">http://localhost:5176</a></div>
+                <div class="page-desc">C端/B端/组件文档，行为处方、任务提醒等组件展示。</div>
+                <div class="features">
+                    <span class="feature-tag">C端组件</span>
+                    <span class="feature-tag">B端组件</span>
+                    <span class="feature-tag">组件文档</span>
+                    <span class="feature-tag">行为处方</span>
+                </div>
+                <a href="http://localhost:5176" target="_blank" class="btn">打开组件库</a>
+            </div>
+
+            <div class="page-card">
+                <div class="page-title">
+                    <span class="page-icon">🐍</span>
+                    <span>Django Web 管理平台</span>
+                    <span class="port-badge">:8888</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:8888" target="_blank">http://localhost:8888</a></div>
+                <div class="page-desc">传统 Web 管理平台，账户/评估/预约/追踪功能。</div>
+                <div class="features">
+                    <span class="feature-tag">账户管理</span>
+                    <span class="feature-tag">评估系统</span>
+                    <span class="feature-tag">预约管理</span>
+                    <span class="feature-tag">追踪功能</span>
+                </div>
+                <a href="http://localhost:8888" target="_blank" class="btn">打开 Django 管理</a>
+            </div>
+
+            <div class="page-card">
+                <div class="page-title">
+                    <span class="page-icon">📄</span>
+                    <span>静态HTML演示页</span>
+                    <span class="port-badge">:9000</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:9000" target="_blank">http://localhost:9000</a></div>
+                <div class="page-desc">血糖教练主控台、患者门户、H5行为App 静态演示。</div>
+                <div class="features">
+                    <span class="feature-tag">血糖教练主控台</span>
+                    <span class="feature-tag">患者门户</span>
+                    <span class="feature-tag">H5行为App</span>
+                </div>
+                <a href="http://localhost:9000" target="_blank" class="btn">打开静态演示</a>
+            </div>
+
+            <div class="page-card" style="border-left: 4px solid #e67e22;">
+                <div class="page-title">
+                    <span class="page-icon">🛡️</span>
+                    <span>专家审核工作台</span>
+                    <span class="port-badge" style="background:#e67e22;">:8501</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:8501" target="_blank">http://localhost:8501</a></div>
+                <div class="page-desc">Streamlit 专家审核工作台，三栏审核界面、敏感词检测、双重签名、章节可见性控制。</div>
+                <div class="features">
+                    <span class="feature-tag" style="background:#fef3c7;color:#d97706;">三栏审核</span>
+                    <span class="feature-tag" style="background:#fef3c7;color:#d97706;">敏感词检测</span>
+                    <span class="feature-tag" style="background:#fef3c7;color:#d97706;">双重签名</span>
+                    <span class="feature-tag" style="background:#fef3c7;color:#d97706;">Streamlit</span>
+                </div>
+                <a href="http://localhost:8501" target="_blank" class="btn" style="background:linear-gradient(135deg,#e67e22,#f39c12);">打开专家工作台</a>
+            </div>
+        </div>
+
+        <!-- ========== 后端 API ========== -->
+        <div class="section-title">
+            <span>后端 API</span>
+            <span class="section-badge">3 项</span>
+        </div>
+        <div class="page-grid">
+            <div class="page-card backend">
+                <div class="page-title">
+                    <span class="page-icon">🔌</span>
+                    <span>Agent Gateway API</span>
+                    <span class="port-badge backend">:8000</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:8000/docs" target="_blank">http://localhost:8000/docs</a></div>
+                <div class="page-desc">智能代理网关，多 Agent 路由，统一入口。</div>
+                <div class="features">
+                    <span class="feature-tag backend">多Agent路由</span>
+                    <span class="feature-tag backend">智能网关</span>
+                    <span class="feature-tag backend">Swagger文档</span>
+                </div>
+                <a href="http://localhost:8000/docs" target="_blank" class="btn backend">打开 API 文档</a>
+            </div>
+
+            <div class="page-card backend">
+                <div class="page-title">
+                    <span class="page-icon">📋</span>
+                    <span>BAPS 评估 API</span>
+                    <span class="port-badge backend">:8001</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:8001/docs" target="_blank">http://localhost:8001/docs</a></div>
+                <div class="page-desc">行为评估与个性化系统 API。</div>
+                <div class="features">
+                    <span class="feature-tag backend">行为评估</span>
+                    <span class="feature-tag backend">个性化系统</span>
+                    <span class="feature-tag backend">Swagger文档</span>
+                </div>
+                <a href="http://localhost:8001/docs" target="_blank" class="btn backend">打开 API 文档</a>
+            </div>
+
+            <div class="page-card backend">
+                <div class="page-title">
+                    <span class="page-icon">🧠</span>
+                    <span>决策引擎 + miniprogram API</span>
+                    <span class="port-badge backend">:8002</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:8002/docs" target="_blank">http://localhost:8002/docs</a></div>
+                <div class="page-desc">AI决策、教练对话、小程序接口。</div>
+                <div class="features">
+                    <span class="feature-tag backend">AI决策</span>
+                    <span class="feature-tag backend">教练对话</span>
+                    <span class="feature-tag backend">小程序接口</span>
+                </div>
+                <a href="http://localhost:8002/docs" target="_blank" class="btn backend">打开 API 文档</a>
+            </div>
+        </div>
+
+        <!-- ========== 基础设施 ========== -->
+        <div class="section-title">
+            <span>基础设施</span>
+            <span class="section-badge">2 项</span>
+        </div>
+        <div class="page-grid">
+            <div class="page-card infra">
+                <div class="page-title">
+                    <span class="page-icon">🤖</span>
+                    <span>Dify AI 编排平台</span>
+                    <span class="port-badge infra">:8080</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:8080" target="_blank">http://localhost:8080</a></div>
+                <div class="page-desc">LLM 工作流编排、知识库管理平台。</div>
+                <div class="features">
+                    <span class="feature-tag infra">LLM编排</span>
+                    <span class="feature-tag infra">知识库管理</span>
+                    <span class="feature-tag infra">工作流</span>
+                </div>
+                <a href="http://localhost:8080" target="_blank" class="btn infra">打开 Dify</a>
+            </div>
+
+            <div class="page-card infra">
+                <div class="page-title">
+                    <span class="page-icon">🦙</span>
+                    <span>Ollama 本地 LLM</span>
+                    <span class="port-badge infra">:11434</span>
+                </div>
+                <div class="page-url"><a href="http://localhost:11434" target="_blank">http://localhost:11434</a></div>
+                <div class="page-desc">本地大模型推理服务 (Qwen2.5)。</div>
+                <div class="features">
+                    <span class="feature-tag infra">本地推理</span>
+                    <span class="feature-tag infra">Qwen2.5</span>
+                    <span class="feature-tag infra">离线可用</span>
+                </div>
+                <a href="http://localhost:11434" target="_blank" class="btn infra">查看 Ollama</a>
+            </div>
+        </div>
+
+        <!-- ========== 静态演示页面 ========== -->
+        <div class="section-title">
+            <span>静态演示页面</span>
+            <span class="section-badge">3 项</span>
+        </div>
+        <div class="page-grid">
+            <div class="page-card">
+                <div class="page-title">
+                    <span class="page-icon">📊</span>
+                    <span>主动健康指挥舱</span>
+                </div>
+                <div class="page-url"><a href="file:///D:/behavioral-health-project/index.html" target="_blank">index.html</a></div>
+                <div class="page-desc">数字化身看板，血糖波动趋势图和AI决策建议。</div>
+                <a href="file:///D:/behavioral-health-project/index.html" target="_blank" class="btn">打开指挥舱</a>
+            </div>
+            <div class="page-card">
+                <div class="page-title">
+                    <span class="page-icon">🎛️</span>
+                    <span>患者实时看板</span>
+                </div>
+                <div class="page-url"><a href="file:///D:/behavioral-health-project/patient_portal.html" target="_blank">patient_portal.html</a></div>
+                <div class="page-desc">老张的健康数字空间，实时血糖趋势和AI教练对话。</div>
+                <a href="file:///D:/behavioral-health-project/patient_portal.html" target="_blank" class="btn">打开看板</a>
+            </div>
+            <div class="page-card">
+                <div class="page-title">
+                    <span class="page-icon">🧭</span>
+                    <span>服务导航中心</span>
+                </div>
+                <div class="page-url"><a href="file:///D:/behavioral-health-project/服务导航中心.html" target="_blank">服务导航中心.html</a></div>
+                <div class="page-desc">平台全部服务的导航入口页面。</div>
+                <a href="file:///D:/behavioral-health-project/服务导航中心.html" target="_blank" class="btn">打开导航中心</a>
+            </div>
+        </div>
+
+        <!-- ========== 核心页面快速入口 ========== -->
+        <div class="summary">
+            <h2>核心页面快速入口</h2>
+            <div class="core-entries">
+                <div class="core-entry">
+                    <a href="http://localhost:5174" target="_blank">四角色登录</a>
+                    <div class="core-desc">患者/教练/专家/管理员</div>
+                </div>
+                <div class="core-entry">
+                    <a href="http://localhost:5173" target="_blank">患者绿色主页</a>
+                    <div class="core-desc">H5 行为教练首页</div>
+                </div>
+                <div class="core-entry">
+                    <a href="http://localhost:5174/#/coach" target="_blank">教练工作台</a>
+                    <div class="core-desc">教练端管理界面</div>
+                </div>
+                <div class="core-entry">
+                    <a href="http://localhost:5174/#/expert" target="_blank">督导工作台</a>
+                    <div class="core-desc">专家/督导界面</div>
+                </div>
+                <div class="core-entry">
+                    <a href="http://localhost:5176" target="_blank">C端/B端组件库</a>
+                    <div class="core-desc">UI组件文档中心</div>
+                </div>
+                <div class="core-entry">
+                    <a href="http://localhost:8501" target="_blank">专家审核工作台</a>
+                    <div class="core-desc">Streamlit 三栏审核</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 测试账号 ========== -->
+        <div class="summary" style="margin-top: 20px;">
+            <h2>测试账号</h2>
+            <table class="account-table">
+                <thead>
+                    <tr>
+                        <th>角色</th>
+                        <th>用户名</th>
+                        <th>密码</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>患者</td><td>patient</td><td>123456</td><td>患者端功能体验</td></tr>
+                    <tr><td>教练</td><td>coach</td><td>123456</td><td>教练工作台</td></tr>
+                    <tr><td>专家</td><td>expert</td><td>123456</td><td>督导/专家工作台</td></tr>
+                    <tr><td>管理员</td><td>admin</td><td>admin123</td><td>系统管理后台</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ========== 统计概览 ========== -->
+        <div class="summary" style="margin-top: 20px;">
+            <h2>统计概览</h2>
+            <div class="summary-grid">
+                <div class="summary-item">
+                    <div class="summary-number">12</div>
+                    <div class="summary-label">服务端口</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number">7</div>
+                    <div class="summary-label">前端应用</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number">3</div>
+                    <div class="summary-label">后端 API</div>
+                </div>
+                <div class="summary-item">
+                    <div class="summary-number">2</div>
+                    <div class="summary-label">基础设施</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========== 部署纪事日志 ========== -->
+        <div class="deploy-log" style="margin-top: 20px;">
+            <h2>部署纪事日志</h2>
+            <div class="log-entry">
+                <div class="log-time">2026-02-03 00:00</div>
+                <div class="log-text"><strong>全平台首次完整部署</strong> - 12个服务端口全部启动确认，前后端联调完成。</div>
+            </div>
+            <div class="log-entry">
+                <div class="log-time">2026-02-03</div>
+                <div class="log-text"><strong>各端口启动确认</strong> - 前端 5173/5174/5175/5176/8888/9000，后端 8000/8001/8002，基础设施 8080/11434 全部就绪。</div>
+            </div>
+            <div class="log-entry">
+                <div class="log-time">2026-02-03</div>
+                <div class="log-text"><strong>专家工作台容器化</strong> - Streamlit 专家审核工作台 (8501) 完成 Docker 容器化，镜像 bhp-expert-workbench:latest 构建验证通过，健康检查 HTTP 200。全平台端口 11→12。</div>
+            </div>
+            <div class="log-entry">
+                <div class="log-time">2026-02-03</div>
+                <div class="log-text"><strong>链接固定化声明</strong> - 所有服务端口与地址已固定，后续不再调整。本页面作为全平台服务导航总览的最终版本。</div>
+            </div>
+            <div class="log-entry">
+                <div class="log-time">2026-02-03</div>
+                <div class="log-text"><strong>问题修复记录</strong> - CORS 跨域配置修复、Vue Router 路由修复、端口冲突排查与解决、UI组件库(5176)集成完成。</div>
+            </div>
+        </div>
+
+        <div style="text-align: center; color: white; margin-top: 30px; opacity: 0.9;">
+            <p>&copy; 2026 行为健康数字平台 &middot; 全平台服务导航总览 &middot; 链接已固定</p>
+        </div>
+    </div>
+</body>
+</html>

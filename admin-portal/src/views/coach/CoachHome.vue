@@ -648,6 +648,102 @@
             </a-tab-pane>
           </a-tabs>
 
+          <!-- AI 教练共驾台 -->
+          <div class="copilot-section" v-if="copilotVisible">
+            <div class="copilot-header">
+              <span class="copilot-title">AI 教练共驾台</span>
+              <a-tag color="blue" size="small">实时分发中</a-tag>
+              <a-button size="small" type="text" @click="copilotVisible = false" style="margin-left:auto">收起</a-button>
+            </div>
+
+            <!-- 用户阶段徽章 -->
+            <div class="copilot-stage">
+              <span class="stage-label">用户阶段:</span>
+              <span class="user-stage-badge" :class="'stage-' + copilotState.currentStage">
+                {{ copilotState.currentStage }}
+              </span>
+              <a-tag v-if="copilotState.stageChanged" color="green" size="small">刚迁移</a-tag>
+            </div>
+
+            <!-- 触发标签 -->
+            <div v-if="copilotState.hitTags.length" class="copilot-tags">
+              <a-tag v-for="tag in copilotState.hitTags" :key="tag"
+                     :color="tag.includes('RESISTANCE') || tag.includes('HOPELESS') ? 'red' : tag.includes('EMO') ? 'orange' : 'green'"
+                     size="small">
+                {{ tag }}
+              </a-tag>
+            </div>
+
+            <!-- 教练处方流 -->
+            <div class="copilot-prescriptions">
+              <div v-for="(item, idx) in copilotState.prescriptions" :key="idx"
+                   class="copilot-rx-card">
+                <div class="rx-header">
+                  <span class="rx-dot" :class="'risk-' + item.risk_level"></span>
+                  <span class="rx-risk">{{ item.risk_level }}</span>
+                </div>
+                <p class="rx-instruction">{{ item.instruction }}</p>
+                <div class="rx-tool-area">
+                  <p class="rx-tool-label">建议工具: {{ item.suggested_tool }}</p>
+                  <!-- 动态工具组件 -->
+                  <component
+                    :is="toolMapper[item.suggested_tool]"
+                    v-if="toolMapper[item.suggested_tool]"
+                    v-bind="item.tool_props || {}"
+                    class="dynamic-tool-wrapper"
+                    @action="handleCopilotToolAction"
+                  />
+                  <div v-else class="rx-tool-fallback">
+                    工具组件未定义: {{ item.suggested_tool }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 阶段迁移通知 -->
+            <div v-if="copilotState.transitionEvent" class="copilot-transition">
+              <a-alert
+                type="success"
+                show-icon
+                :message="'阶段迁移: ' + copilotState.transitionEvent.from + ' → ' + copilotState.transitionEvent.to"
+                :description="copilotState.transitionEvent.reason"
+              />
+            </div>
+
+            <!-- 模式切换 -->
+            <div class="copilot-mode-switch" style="margin-bottom: 10px;">
+              <span style="font-size: 12px; color: #888; margin-right: 8px;">模式:</span>
+              <a-radio-group v-model:value="copilotMode" size="small" button-style="solid">
+                <a-radio-button value="live">生产</a-radio-button>
+                <a-radio-button value="sandbox">沙盒</a-radio-button>
+              </a-radio-group>
+              <a-tag v-if="copilotMode === 'live'" color="green" size="small" style="margin-left: 8px;">8002</a-tag>
+              <a-tag v-else color="orange" size="small" style="margin-left: 8px;">8003</a-tag>
+            </div>
+
+            <!-- 测试触发按钮 -->
+            <div class="copilot-test">
+              <a-select v-model:value="testMessage" style="width: 100%; margin-bottom: 8px" placeholder="选择模拟对话">
+                <a-select-option value="我昨晚又没忍住吃了两大包薯片，现在好后悔。">情绪化进食</a-select-option>
+                <a-select-option value="别跟我提减肥，我活得够累了，吃点东西怎么了？">抵触/防御</a-select-option>
+                <a-select-option value="我打算下周一开始跑步，你觉得行吗？">行动意愿</a-select-option>
+                <a-select-option value="今天老板开会骂了我，我觉得我这辈子都没希望了。">绝望/压力</a-select-option>
+              </a-select>
+              <a-button type="primary" block size="small" @click="triggerCopilotTest"
+                        :loading="copilotLoading">
+                模拟触发
+              </a-button>
+            </div>
+
+            <!-- 空状态 -->
+            <div v-if="!copilotState.hitTags.length && !copilotLoading" class="copilot-empty">
+              等待用户对话... 命中触发规则后将实时显示教练处方
+            </div>
+          </div>
+          <div v-else class="copilot-toggle">
+            <a-button size="small" type="dashed" @click="copilotVisible = true">展开 AI 共驾台</a-button>
+          </div>
+
           <!-- 跟进对话区域 -->
           <div v-if="followupMode" class="followup-section">
             <a-divider>跟进对话</a-divider>
@@ -725,7 +821,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, defineAsyncComponent, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import {
@@ -913,6 +1009,80 @@ const aiDiagnosisSuggestions = ref([
     priority: 'medium'
   }
 ])
+
+// ── AI 教练共驾台 (CoachCopilot 双模式) ──
+import copilotApi from '../../api/copilot'
+
+const copilotMode = ref<'live' | 'sandbox'>('live')
+
+const toolMapper: Record<string, any> = {
+  "STRESS_ASSESSMENT_FORM": markRaw(defineAsyncComponent(() => import('./tools/StressForm.vue'))),
+  "EMPATHY_MODULE_01": markRaw(defineAsyncComponent(() => import('./tools/EmpathyGuide.vue'))),
+  "HABIT_DESIGNER": markRaw(defineAsyncComponent(() => import('./tools/HabitCard.vue'))),
+  "GENERAL_CHAT": null,
+}
+
+const copilotVisible = ref(true)
+const copilotLoading = ref(false)
+const testMessage = ref('')
+const copilotState = reactive({
+  currentStage: 'S1',
+  stageChanged: false,
+  hitTags: [] as string[],
+  prescriptions: [] as any[],
+  transitionEvent: null as any,
+  stateHistory: [] as any[],
+})
+
+const triggerCopilotAnalysis = async (msg: string, source: 'live' | 'sandbox') => {
+  copilotLoading.value = true
+  try {
+    let data: any
+    if (source === 'live') {
+      // 生产模式: 通过 copilotApi 调用 8002
+      const resp = await copilotApi.analyze({
+        uid: currentStudent.value?.name || 'DEMO_USER',
+        message: msg,
+        context: { stage: copilotState.currentStage, baps: {} }
+      })
+      data = resp.data
+    } else {
+      // 沙盒模式: 保留原 fetch 8003 逻辑
+      const resp = await fetch('http://localhost:8003/api/v1/test/simulate-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: currentStudent.value?.name || 'DEMO_USER',
+          message: msg,
+          context: { stage: copilotState.currentStage, baps: {} }
+        })
+      })
+      data = await resp.json()
+    }
+    copilotState.hitTags = data.triggered_tags || []
+    const coachData = data.outputs?.to_coach
+    copilotState.prescriptions = Array.isArray(coachData) ? coachData : (coachData?.alerts || [])
+    copilotState.transitionEvent = data.transition_event || null
+    if (data.new_stage) {
+      copilotState.stageChanged = data.new_stage !== copilotState.currentStage
+      copilotState.currentStage = data.new_stage
+    }
+    if (data.state_history) copilotState.stateHistory = data.state_history
+  } catch (e: any) {
+    message.error('共驾台请求失败: ' + e.message)
+  } finally {
+    copilotLoading.value = false
+  }
+}
+
+const triggerCopilotTest = async () => {
+  if (!testMessage.value) { message.warning('请选择模拟对话'); return }
+  await triggerCopilotAnalysis(testMessage.value, copilotMode.value)
+}
+
+const handleCopilotToolAction = (data: any) => {
+  message.success('工具动作: ' + JSON.stringify(data))
+}
 
 // AI 推荐（含审核状态）
 const aiRecommendations = ref([
@@ -2125,4 +2295,91 @@ onMounted(() => {
   display: flex;
   gap: 8px;
 }
+
+/* AI 教练共驾台 */
+.copilot-section {
+  margin-top: 16px;
+  border: 1px solid #d9d9d9;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fafbfc;
+}
+.copilot-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.copilot-title {
+  font-weight: 700;
+  font-size: 15px;
+}
+.copilot-stage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+.stage-label { color: #888; }
+.user-stage-badge {
+  font-weight: 700;
+  padding: 2px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+.stage-S1 { background: #fff1f0; color: #cf1322; }
+.stage-S2 { background: #fff7e6; color: #d46b08; }
+.stage-S3 { background: #f6ffed; color: #389e0d; }
+.copilot-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.copilot-prescriptions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.copilot-rx-card {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+.rx-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.rx-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.risk-L1 { background: #faad14; }
+.risk-L2 { background: #ff4d4f; }
+.risk-L3 { background: #cf1322; }
+.rx-risk { font-size: 12px; font-weight: 600; }
+.rx-instruction { font-size: 13px; color: #333; margin: 4px 0 8px; }
+.rx-tool-area { border-top: 1px dashed #e8e8e8; padding-top: 8px; }
+.rx-tool-label { font-size: 11px; color: #999; margin-bottom: 6px; }
+.rx-tool-fallback { font-size: 11px; color: #fa8c16; background: #fff7e6; padding: 6px; border-radius: 4px; }
+.copilot-transition { margin-bottom: 12px; }
+.copilot-test {
+  border-top: 1px solid #e8e8e8;
+  padding-top: 12px;
+  margin-top: 8px;
+}
+.copilot-empty {
+  text-align: center;
+  color: #bbb;
+  font-size: 13px;
+  padding: 20px 0;
+}
+.copilot-toggle { margin-top: 12px; text-align: center; }
 </style>

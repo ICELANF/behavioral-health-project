@@ -3,16 +3,16 @@ agents:
   mental_health:
     name: "心理咨询师"
     path: "xingjian-agent/prompts/mental_health.txt"
-    model: "qwen2.5:7b"
+    model: "qwen2.5:0.5b"
   nutrition:
     name: "营养师"
     path: "xingjian-agent/prompts/nutrition.txt"
-    model: "qwen2.5:7b"
+    model: "qwen2.5:0.5b"
   sports_rehab:
     name: "运动康复师"
     path: "xingjian-agent/prompts/sports_rehab.txt"
-    model: "qwen2.5:7b"
+    model: "qwen2.5:0.5b"
   tcm_wellness:
     name: "中医养生师"
     path: "xingjian-agent/prompts/tcm_wellness.txt"
-    model: "qwen2.5:7b"
+    model: "qwen2.5:0.5b"

@@ -12,7 +12,7 @@ from loguru import logger
 
 from core.database import get_db
 from core.models import User
-from core.auth import verify_token
+from core.auth import verify_token_with_blacklist
 
 # OAuth2密码模式
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
@@ -44,8 +44,8 @@ def get_current_user(
     )
 
     try:
-        # 验证Token
-        payload = verify_token(token)
+        # 验证Token（含黑名单检查）
+        payload = verify_token_with_blacklist(token, "access")
         if payload is None:
             raise credentials_exception
 
@@ -108,7 +108,7 @@ def require_coach_or_admin(current_user: User = Depends(get_current_user)) -> Us
     Raises:
         HTTPException: 非教练/管理员用户
     """
-    if current_user.role.value not in ["coach", "admin"]:
+    if current_user.role.value not in ["coach", "supervisor", "promoter", "master", "admin"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="需要教练或管理员权限"

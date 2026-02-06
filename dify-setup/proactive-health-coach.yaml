@@ -30,7 +30,7 @@ model_config:
       temperature: 0.7
       top_p: 0.9
     mode: chat
-    name: qwen2.5:14b
+    name: qwen2.5:0.5b
     provider: ollama
   more_like_this:
     enabled: false

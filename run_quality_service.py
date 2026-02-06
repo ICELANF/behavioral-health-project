@@ -12,8 +12,8 @@ Quality Audit Service (Standalone)
     # 指定端口
     python run_quality_service.py --port 8003
     
-    # 指定模型
-    python run_quality_service.py --model qwen2.5:14b --backend ollama
+    # 指定模型（后端支持 ollama/dify）
+    python run_quality_service.py --model qwen2.5:0.5b --backend ollama
     
     # 同时启动主服务
     python run_quality_service.py --with-main
@@ -39,7 +39,7 @@ if project_root not in sys.path:
 
 
 def create_app(
-    model_name: str = "qwen2.5:14b",
+    model_name: str = "qwen2.5:0.5b",
     backend: str = "ollama"
 ) -> FastAPI:
     """
@@ -48,7 +48,7 @@ def create_app(
     Args:
         model_name: 评判模型名称
         backend: 后端类型 (ollama/dify)
-    
+
     Returns:
         FastAPI应用实例
     """
@@ -106,9 +106,9 @@ def main():
     
     # 使用Dify作为评判后端
     python run_quality_service.py --backend dify
-    
+
     # 指定模型
-    python run_quality_service.py --model gpt-4o-mini
+    python run_quality_service.py --model qwen2.5:0.5b
         """
     )
     
@@ -127,13 +127,13 @@ def main():
     
     parser.add_argument(
         "--model", "-m",
-        default=os.getenv("QUALITY_JUDGE_MODEL", "qwen2.5:14b"),
-        help="评判模型 (默认: qwen2.5:14b)"
+        default=os.getenv("QUALITY_JUDGE_MODEL", "qwen2.5:0.5b"),
+        help="评判模型 (默认: qwen2.5:0.5b)"
     )
     
     parser.add_argument(
         "--backend", "-b",
-        choices=["ollama", "dify", "openai"],
+        choices=["ollama", "dify"],
         default=os.getenv("QUALITY_JUDGE_BACKEND", "ollama"),
         help="LLM后端 (默认: ollama)"
     )

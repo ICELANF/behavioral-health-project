@@ -42,9 +42,9 @@ if %errorlevel% neq 0 (
 echo       Ollama 正常
 
 :: 检查模型
-ollama list 2>nul | find "qwen2.5:14b" >nul
+ollama list 2>nul | find "qwen2.5:0.5b" >nul
 if %errorlevel% neq 0 (
-    echo [警告] qwen2.5:14b 模型未找到，请运行: ollama pull qwen2.5:14b
+    echo [警告] qwen2.5:0.5b 模型未找到，请运行: ollama pull qwen2.5:0.5b
 )
 
 :: 启动Admin Portal (触手3)

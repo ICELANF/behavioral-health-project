@@ -49,6 +49,8 @@ def get_cors_origins() -> List[str]:
         "http://127.0.0.1:5174",
         "http://127.0.0.1:5175",
         "http://127.0.0.1:8080",
+        "http://localhost:5180",
+        "http://127.0.0.1:5180",
     ]
 
 
@@ -59,7 +61,7 @@ def setup_cors(app: FastAPI):
         allow_origins=get_cors_origins(),
         allow_credentials=True,
         allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        allow_headers=["Authorization", "Content-Type", "X-Request-ID", "X-User-ID", "X-Source-UI", "X-Role"],
         max_age=600,
     )
 

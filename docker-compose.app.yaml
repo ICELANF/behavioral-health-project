@@ -91,6 +91,35 @@ services:
     networks:
       - dify-network
 
+  # ==================================
+  # Expert Review Workbench (Streamlit)
+  # ==================================
+  bhp-expert-workbench:
+    build:
+      context: .
+      dockerfile: workbench/Dockerfile
+    container_name: bhp-expert-workbench
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    depends_on:
+      bhp-api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 256m
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    networks:
+      - dify-network
+
 networks:
   dify-network:
     external: true

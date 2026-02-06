@@ -18,12 +18,47 @@
           <span>工作台</span>
         </a-menu-item>
 
+        <!-- 教练"我的"子菜单 - 教练及以上可见 -->
+        <a-sub-menu v-if="isCoach" key="coach-my">
+          <template #icon><UserOutlined /></template>
+          <template #title>我的</template>
+          <a-menu-item key="coach-my-students" @click="$router.push('/coach/my/students')">我的学员</a-menu-item>
+          <a-menu-item key="coach-my-performance" @click="$router.push('/coach/my/performance')">我的绩效</a-menu-item>
+          <a-menu-item key="coach-my-certification" @click="$router.push('/coach/my/certification')">我的认证</a-menu-item>
+          <a-menu-item key="coach-my-tools" @click="$router.push('/coach/my/tools')">我的工具箱</a-menu-item>
+        </a-sub-menu>
+
+        <!-- 教练内容分享 - 教练及以上可见 -->
+        <a-menu-item v-if="isCoach" key="coach-content-sharing" @click="$router.push('/coach/content-sharing')">
+          <template #icon><ShareAltOutlined /></template>
+          <span>内容分享</span>
+        </a-menu-item>
+
+        <!-- 专家"我的"子菜单 - 专家及以上可见 -->
+        <a-sub-menu v-if="isExpert" key="expert-my">
+          <template #icon><SafetyCertificateOutlined /></template>
+          <template #title>督导中心</template>
+          <a-menu-item key="expert-my-supervision" @click="$router.push('/expert/my/supervision')">我的督导</a-menu-item>
+          <a-menu-item key="expert-my-reviews" @click="$router.push('/expert/my/reviews')">我的审核</a-menu-item>
+          <a-menu-item key="expert-my-research" @click="$router.push('/expert/my/research')">研究数据</a-menu-item>
+        </a-sub-menu>
+
         <!-- 专家及以上可见 -->
         <a-sub-menu v-if="isExpert" key="course">
           <template #icon><VideoCameraOutlined /></template>
           <template #title>课程管理</template>
           <a-menu-item key="course-list" @click="$router.push('/course/list')">课程列表</a-menu-item>
           <a-menu-item v-if="isAdmin" key="course-create" @click="$router.push('/course/create')">创建课程</a-menu-item>
+        </a-sub-menu>
+
+        <!-- 内容管理 - 专家及以上可见 -->
+        <a-sub-menu v-if="isExpert" key="content">
+          <template #icon><FileSearchOutlined /></template>
+          <template #title>内容管理</template>
+          <a-menu-item key="content-review" @click="$router.push('/content/review')">内容审核</a-menu-item>
+          <a-menu-item key="content-articles" @click="$router.push('/content/articles')">文章管理</a-menu-item>
+          <a-menu-item key="content-cases" @click="$router.push('/content/cases')">案例分享</a-menu-item>
+          <a-menu-item key="content-cards" @click="$router.push('/content/cards')">练习卡片</a-menu-item>
         </a-sub-menu>
 
         <!-- 专家及以上可见 -->
@@ -76,6 +111,18 @@
         <a-menu-item v-if="isExpert" key="interventions" @click="$router.push('/interventions')">
           <template #icon><MedicineBoxOutlined /></template>
           <span>干预包管理</span>
+        </a-menu-item>
+
+        <!-- 管理员可见 - 用户管理 -->
+        <a-menu-item v-if="isAdmin" key="admin-user-management" @click="$router.push('/admin/user-management')">
+          <template #icon><UsergroupAddOutlined /></template>
+          <span>用户管理</span>
+        </a-menu-item>
+
+        <!-- 管理员可见 - 分配管理 -->
+        <a-menu-item v-if="isAdmin" key="admin-distribution" @click="$router.push('/admin/distribution')">
+          <template #icon><ApartmentOutlined /></template>
+          <span>分配管理</span>
         </a-menu-item>
 
         <!-- 管理员可见 -->
@@ -132,13 +179,18 @@ import {
   DashboardOutlined,
   VideoCameraOutlined,
   FileTextOutlined,
+  FileSearchOutlined,
   SolutionOutlined,
   PlayCircleOutlined,
   TeamOutlined,
   UserOutlined,
   SettingOutlined,
   EditOutlined,
-  MedicineBoxOutlined
+  MedicineBoxOutlined,
+  ShareAltOutlined,
+  SafetyCertificateOutlined,
+  UsergroupAddOutlined,
+  ApartmentOutlined
 } from '@ant-design/icons-vue'
 
 const route = useRoute()
@@ -152,10 +204,19 @@ const openKeys = ref<string[]>([])
 const username = ref(localStorage.getItem('admin_username') || '管理员')
 const userRole = ref(localStorage.getItem('admin_role') || 'ADMIN')
 
-// 权限判断
-const isAdmin = computed(() => userRole.value === 'ADMIN')
-const isExpert = computed(() => ['ADMIN', 'EXPERT'].includes(userRole.value))
-const isCoach = computed(() => ['ADMIN', 'EXPERT', 'COACH_SENIOR', 'COACH_INTERMEDIATE', 'COACH_JUNIOR'].includes(userRole.value))
+// 权限判断（v18统一角色名称: GROWER/COACH/SUPERVISOR/PROMOTER/MASTER/ADMIN）
+const roleLevel = computed(() => {
+  const levels: Record<string, number> = {
+    OBSERVER: 1, GROWER: 2, SHARER: 3, COACH: 4,
+    PROMOTER: 5, SUPERVISOR: 5, MASTER: 6, ADMIN: 99,
+    // 向后兼容旧角色名
+    PATIENT: 2, EXPERT: 5, COACH_SENIOR: 4, COACH_INTERMEDIATE: 4, COACH_JUNIOR: 4,
+  }
+  return levels[userRole.value] || 0
+})
+const isAdmin = computed(() => roleLevel.value >= 99)
+const isExpert = computed(() => roleLevel.value >= 5)
+const isCoach = computed(() => roleLevel.value >= 4)
 
 // 面包屑
 const breadcrumbs = computed(() => {
@@ -168,9 +229,36 @@ const breadcrumbs = computed(() => {
 
 // 监听路由变化，更新选中菜单
 watch(() => route.path, (path) => {
-  if (path.startsWith('/course')) {
+  if (path.startsWith('/coach/my/')) {
+    openKeys.value = ['coach-my']
+    if (path.includes('students')) selectedKeys.value = ['coach-my-students']
+    else if (path.includes('performance')) selectedKeys.value = ['coach-my-performance']
+    else if (path.includes('certification')) selectedKeys.value = ['coach-my-certification']
+    else if (path.includes('tools')) selectedKeys.value = ['coach-my-tools']
+  } else if (path.startsWith('/coach/content-sharing')) {
+    selectedKeys.value = ['coach-content-sharing']
+  } else if (path.startsWith('/coach/student-assessment')) {
+    openKeys.value = ['coach-my']
+    selectedKeys.value = ['coach-my-students']
+  } else if (path.startsWith('/expert/my/')) {
+    openKeys.value = ['expert-my']
+    if (path.includes('supervision')) selectedKeys.value = ['expert-my-supervision']
+    else if (path.includes('reviews')) selectedKeys.value = ['expert-my-reviews']
+    else if (path.includes('research')) selectedKeys.value = ['expert-my-research']
+  } else if (path === '/admin/user-management') {
+    selectedKeys.value = ['admin-user-management']
+  } else if (path === '/admin/distribution') {
+    selectedKeys.value = ['admin-distribution']
+  } else if (path.startsWith('/course')) {
     openKeys.value = ['course']
     selectedKeys.value = path.includes('create') ? ['course-create'] : ['course-list']
+  } else if (path.startsWith('/content')) {
+    openKeys.value = ['content']
+    if (path.includes('review')) selectedKeys.value = ['content-review']
+    else if (path.includes('articles')) selectedKeys.value = ['content-articles']
+    else if (path.includes('cases')) selectedKeys.value = ['content-cases']
+    else if (path.includes('cards')) selectedKeys.value = ['content-cards']
+    else selectedKeys.value = ['content-review']
   } else if (path.startsWith('/question')) {
     openKeys.value = ['question']
     selectedKeys.value = path.includes('create') ? ['question-create'] : ['question-bank']

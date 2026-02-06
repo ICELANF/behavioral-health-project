@@ -63,24 +63,24 @@
       <!-- 功能菜单 -->
       <div class="menu-card card">
         <van-cell-group :border="false">
-          <van-cell title="健康档案" icon="records-o" is-link />
-          <van-cell title="历史报告" icon="description-o" is-link />
-          <van-cell title="数据同步" icon="replay" is-link />
-          <van-cell title="消息通知" icon="bell" is-link />
+          <van-cell title="健康档案" icon="records-o" is-link @click="goTo('health-records')" />
+          <van-cell title="历史报告" icon="description-o" is-link @click="goTo('history-reports')" />
+          <van-cell title="数据同步" icon="replay" is-link @click="goTo('data-sync')" />
+          <van-cell title="消息通知" icon="bell" is-link @click="goTo('notifications')" />
         </van-cell-group>
       </div>
 
       <!-- 设置菜单 -->
       <div class="menu-card card">
         <van-cell-group :border="false">
-          <van-cell title="账号设置" icon="setting-o" is-link />
-          <van-cell title="隐私政策" icon="shield-o" is-link />
-          <van-cell title="关于我们" icon="info-o" is-link />
+          <van-cell title="账号设置" icon="setting-o" is-link @click="goTo('account-settings')" />
+          <van-cell title="隐私政策" icon="shield-o" is-link @click="goTo('privacy-policy')" />
+          <van-cell title="关于我们" icon="info-o" is-link @click="goTo('about-us')" />
         </van-cell-group>
       </div>
 
       <!-- 退出按钮 -->
-      <van-button plain type="danger" block round class="logout-btn">
+      <van-button plain type="danger" block round class="logout-btn" @click="handleLogout">
         退出登录
       </van-button>
 
@@ -95,10 +95,26 @@
 </template>
 
 <script setup lang="ts">
+import { showConfirmDialog } from 'vant'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import TabBar from '@/components/common/TabBar.vue'
 
+const router = useRouter()
 const userStore = useUserStore()
+
+function goTo(name: string) {
+  router.push({ name })
+}
+
+function handleLogout() {
+  showConfirmDialog({
+    title: '确认退出',
+    message: '退出后需要重新登录，确定退出吗？',
+  }).then(() => {
+    userStore.logout()
+  }).catch(() => {})
+}
 </script>
 
 <style lang="scss" scoped>

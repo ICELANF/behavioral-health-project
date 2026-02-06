@@ -61,6 +61,16 @@ export const useUserStore = defineStore('user', () => {
     if (info.efficacy_score !== undefined) efficacyScore.value = info.efficacy_score
   }
 
+  function logout() {
+    storage.clearAuth()
+    storage.clearAll()
+    userId.value = ''
+    name.value = '用户'
+    efficacyScore.value = 50
+    wearableData.value = {}
+    window.location.href = '/login'
+  }
+
   return {
     userId,
     name,
@@ -71,6 +81,7 @@ export const useUserStore = defineStore('user', () => {
     efficacyText,
     setEfficacyScore,
     updateWearableData,
-    setUserInfo
+    setUserInfo,
+    logout
   }
 })

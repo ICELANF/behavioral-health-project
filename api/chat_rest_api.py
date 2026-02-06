@@ -1,0 +1,306 @@
+"""
+聊天REST API端点
+Chat REST API Endpoints
+
+提供聊天会话和消息的REST接口:
+- 获取用户会话列表
+- 创建/删除会话
+- 获取会话消息
+- 发送消息(调用AI助手)
+"""
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional, List
+from datetime import datetime
+from loguru import logger
+
+from core.database import get_db
+from core.models import ChatSession, ChatMessage, User
+from api.dependencies import get_current_user
+
+router = APIRouter(prefix="/api/v1/chat", tags=["聊天"])
+
+
+# ============================================
+# Pydantic 模型
+# ============================================
+
+class CreateSessionRequest(BaseModel):
+    title: Optional[str] = None
+    model: str = "qwen2.5:0.5b"
+
+
+class SendMessageRequest(BaseModel):
+    content: str
+    model: Optional[str] = None
+
+
+class SessionResponse(BaseModel):
+    session_id: str
+    title: Optional[str]
+    model: str
+    message_count: int
+    is_active: bool
+    created_at: str
+    updated_at: str
+    last_message: Optional[str] = None
+
+
+class MessageResponse(BaseModel):
+    id: int
+    role: str
+    content: str
+    model: Optional[str]
+    created_at: str
+
+
+# ============================================
+# API端点
+# ============================================
+
+@router.get("/sessions")
+def list_sessions(
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取当前用户的聊天会话列表"""
+    sessions = db.query(ChatSession).filter(
+        ChatSession.user_id == current_user.id,
+        ChatSession.is_active == True
+    ).order_by(ChatSession.updated_at.desc()).limit(limit).all()
+
+    result = []
+    for s in sessions:
+        # 获取最后一条消息
+        last_msg = db.query(ChatMessage).filter(
+            ChatMessage.session_id == s.id
+        ).order_by(ChatMessage.created_at.desc()).first()
+
+        result.append({
+            "session_id": s.session_id,
+            "title": s.title or "新对话",
+            "model": s.model,
+            "message_count": s.message_count,
+            "is_active": s.is_active,
+            "created_at": s.created_at.isoformat(),
+            "updated_at": s.updated_at.isoformat(),
+            "last_message": last_msg.content[:100] if last_msg else None,
+        })
+
+    return {"sessions": result, "total": len(result)}
+
+
+@router.post("/sessions")
+def create_session(
+    request: CreateSessionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """创建新的聊天会话"""
+    import uuid
+
+    session_id = f"chat_{current_user.id}_{int(datetime.now().timestamp())}"
+
+    session = ChatSession(
+        session_id=session_id,
+        user_id=current_user.id,
+        title=request.title,
+        model=request.model,
+        is_active=True,
+        message_count=0,
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+
+    logger.info(f"✓ 创建聊天会话: {session_id}, 用户: {current_user.username}")
+
+    return {
+        "session_id": session.session_id,
+        "title": session.title,
+        "model": session.model,
+        "created_at": session.created_at.isoformat(),
+    }
+
+
+@router.get("/sessions/{session_id}/messages")
+def get_messages(
+    session_id: str,
+    limit: int = Query(50, ge=1, le=200),
+    before_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """获取会话消息历史"""
+    session = db.query(ChatSession).filter(
+        ChatSession.session_id == session_id,
+        ChatSession.user_id == current_user.id,
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="会话不存在")
+
+    query = db.query(ChatMessage).filter(ChatMessage.session_id == session.id)
+
+    if before_id:
+        query = query.filter(ChatMessage.id < before_id)
+
+    messages = query.order_by(ChatMessage.created_at.desc()).limit(limit).all()
+    messages = list(reversed(messages))
+
+    return {
+        "messages": [
+            {
+                "id": msg.id,
+                "role": msg.role,
+                "content": msg.content,
+                "model": msg.model,
+                "created_at": msg.created_at.isoformat(),
+            }
+            for msg in messages
+        ],
+        "total": len(messages),
+    }
+
+
+@router.post("/sessions/{session_id}/messages")
+async def send_message(
+    session_id: str,
+    request: SendMessageRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    发送消息并获取AI回复
+
+    1. 保存用户消息
+    2. 调用AI助手
+    3. 保存AI回复
+    4. 返回完整对话
+    """
+    session = db.query(ChatSession).filter(
+        ChatSession.session_id == session_id,
+        ChatSession.user_id == current_user.id,
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="会话不存在")
+
+    # 保存用户消息
+    user_msg = ChatMessage(
+        session_id=session.id,
+        role="user",
+        content=request.content,
+    )
+    db.add(user_msg)
+    session.message_count += 1
+    session.updated_at = datetime.utcnow()
+
+    # 如果是第一条消息，自动生成标题
+    if session.message_count == 1 and not session.title:
+        session.title = request.content[:30] + ("..." if len(request.content) > 30 else "")
+
+    db.commit()
+    db.refresh(user_msg)
+
+    # 获取历史消息用于上下文
+    history_msgs = db.query(ChatMessage).filter(
+        ChatMessage.session_id == session.id
+    ).order_by(ChatMessage.created_at.desc()).limit(10).all()
+    history = [{"role": m.role, "content": m.content} for m in reversed(history_msgs)]
+
+    # 调用AI助手
+    model = request.model or session.model
+    ai_reply = "抱歉，AI助手暂时不可用，请稍后再试。"
+
+    try:
+        import httpx
+        import os
+
+        ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        ollama_model = os.getenv("OLLAMA_MODEL", model)
+
+        system_prompt = """你是"行健行为教练"，一位专业、温和的健康行为改变指导师。
+你的职责：
+1. 评估用户健康状态和心理准备度
+2. 提供个性化的行为建议
+3. 推荐适合的健康任务
+4. 支持用户的行为改变过程
+请用温和、专业、鼓励的语气回复。"""
+
+        messages = [{"role": "system", "content": system_prompt}] + history
+
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            resp = await client.post(
+                f"{ollama_url}/api/chat",
+                json={"model": ollama_model, "messages": messages, "stream": False},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                ai_reply = data.get("message", {}).get("content", ai_reply)
+
+    except Exception as e:
+        logger.warning(f"AI调用失败: {e}")
+        ai_reply = (
+            "您好！感谢您的分享。作为您的行为健康教练，我建议您：\n\n"
+            "1. 保持规律的生活作息\n"
+            "2. 每天进行适量运动\n"
+            "3. 注意饮食均衡\n"
+            "4. 定期监测健康指标\n\n"
+            "如果有具体的健康问题，请随时告诉我，我会为您提供更针对性的建议。"
+        )
+
+    # 保存AI回复
+    ai_msg = ChatMessage(
+        session_id=session.id,
+        role="assistant",
+        content=ai_reply,
+        model=model,
+    )
+    db.add(ai_msg)
+    session.message_count += 1
+    session.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(ai_msg)
+
+    logger.info(f"✓ 聊天回复: session={session_id}, user={current_user.username}")
+
+    return {
+        "user_message": {
+            "id": user_msg.id,
+            "role": "user",
+            "content": user_msg.content,
+            "created_at": user_msg.created_at.isoformat(),
+        },
+        "assistant_message": {
+            "id": ai_msg.id,
+            "role": "assistant",
+            "content": ai_msg.content,
+            "model": ai_msg.model,
+            "created_at": ai_msg.created_at.isoformat(),
+        },
+    }
+
+
+@router.delete("/sessions/{session_id}")
+def delete_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """删除会话（软删除）"""
+    session = db.query(ChatSession).filter(
+        ChatSession.session_id == session_id,
+        ChatSession.user_id == current_user.id,
+    ).first()
+
+    if not session:
+        raise HTTPException(status_code=404, detail="会话不存在")
+
+    session.is_active = False
+    db.commit()
+
+    logger.info(f"✓ 删除聊天会话: {session_id}")
+    return {"message": "会话已删除"}

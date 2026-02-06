@@ -1,8 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import storage from '@/utils/storage'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/Login.vue'),
+      meta: { public: true }
+    },
     {
       path: '/',
       name: 'home',
@@ -27,8 +34,69 @@ const router = createRouter({
       path: '/profile',
       name: 'profile',
       component: () => import('@/views/Profile.vue')
+    },
+    {
+      path: '/health-records',
+      name: 'health-records',
+      component: () => import('@/views/HealthRecords.vue')
+    },
+    {
+      path: '/history-reports',
+      name: 'history-reports',
+      component: () => import('@/views/HistoryReports.vue')
+    },
+    {
+      path: '/data-sync',
+      name: 'data-sync',
+      component: () => import('@/views/DataSync.vue')
+    },
+    {
+      path: '/notifications',
+      name: 'notifications',
+      component: () => import('@/views/Notifications.vue')
+    },
+    {
+      path: '/account-settings',
+      name: 'account-settings',
+      component: () => import('@/views/AccountSettings.vue')
+    },
+    {
+      path: '/privacy-policy',
+      name: 'privacy-policy',
+      component: () => import('@/views/PrivacyPolicy.vue')
+    },
+    {
+      path: '/about-us',
+      name: 'about-us',
+      component: () => import('@/views/AboutUs.vue')
+    },
+    {
+      path: '/behavior-assessment',
+      name: 'behavior-assessment',
+      component: () => import('@/views/BehaviorAssessment.vue')
+    },
+    {
+      path: '/my-stage',
+      name: 'my-stage',
+      component: () => import('@/views/MyStage.vue')
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/'
     }
   ]
+})
+
+// 路由守卫 - 未登录跳转登录页
+router.beforeEach((to, _from, next) => {
+  const token = storage.getToken()
+  if (!to.meta?.public && !token) {
+    next({ name: 'login' })
+  } else if (to.name === 'login' && token) {
+    next({ name: 'home' })
+  } else {
+    next()
+  }
 })
 
 export default router

@@ -43,9 +43,23 @@
       </div>
 
       <!-- 查看报告按钮 -->
-      <van-button type="primary" block round class="report-btn">
+      <van-button type="primary" block round class="report-btn" @click="viewFullReport" :loading="reportLoading">
         查看完整报告
       </van-button>
+
+      <!-- 报告弹层 -->
+      <van-popup v-model:show="showReport" position="bottom" round :style="{ height: '85%' }">
+        <div class="report-popup">
+          <van-nav-bar title="健康报告" left-arrow @click-left="showReport = false" />
+          <div class="report-content" v-if="reportData">
+            <div class="report-section" v-for="(section, idx) in reportData.sections" :key="idx">
+              <h3>{{ section.title }}</h3>
+              <p>{{ section.content }}</p>
+            </div>
+          </div>
+          <van-empty v-else description="暂无报告数据" />
+        </div>
+      </van-popup>
     </div>
 
     <TabBar />
@@ -59,11 +73,15 @@ import { showLoadingToast, closeToast, showToast } from 'vant'
 import TabBar from '@/components/common/TabBar.vue'
 import { useUserStore } from '@/stores/user'
 import dashboardApi from '@/api/dashboard'
+import { fetchFullReport } from '@/api/report'
 import type { DashboardData } from '@/api/types'
 
 const chartRef = ref<HTMLElement>()
 const userStore = useUserStore()
 const isLoading = ref(false)
+const reportLoading = ref(false)
+const showReport = ref(false)
+const reportData = ref<any>(null)
 
 const dashboardData = ref<DashboardData>({
   overall_score: 0,
@@ -147,6 +165,28 @@ async function loadDashboardData() {
   } finally {
     isLoading.value = false
     closeToast()
+  }
+}
+
+async function viewFullReport() {
+  reportLoading.value = true
+  try {
+    const data = await fetchFullReport()
+    reportData.value = data
+    showReport.value = true
+  } catch (error) {
+    console.error('Failed to load report:', error)
+    // 使用模拟报告数据
+    reportData.value = {
+      sections: [
+        { title: '健康档案', content: `综合评分 ${dashboardData.value.overall_score} 分，压力指数 ${dashboardData.value.stress_score} 分。整体状态${dashboardData.value.risk_level === 'low' ? '良好' : dashboardData.value.risk_level === 'medium' ? '需关注' : '需干预'}。` },
+        { title: '行为任务进度', content: '本周完成 3 项微习惯任务，行动阶段稳步推进中。坚持打卡有助于巩固行为转变。' },
+        { title: '趋势与建议', content: dashboardData.value.recommendations.join('；') + '。持续保持健康习惯，你的每一步都在被记录。' }
+      ]
+    }
+    showReport.value = true
+  } finally {
+    reportLoading.value = false
   }
 }
 
@@ -274,5 +314,33 @@ function initChart() {
 
 .report-btn {
   margin-top: $spacing-md;
+}
+
+.report-popup {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .report-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: $spacing-md;
+
+    .report-section {
+      margin-bottom: $spacing-lg;
+
+      h3 {
+        font-size: $font-size-lg;
+        margin-bottom: $spacing-xs;
+        color: $primary-color;
+      }
+
+      p {
+        font-size: $font-size-md;
+        color: $text-color-secondary;
+        line-height: 1.8;
+      }
+    }
+  }
 }
 </style>

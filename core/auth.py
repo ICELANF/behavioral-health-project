@@ -260,6 +260,23 @@ def verify_token_with_blacklist(token: str, token_type: str = "access") -> Optio
 # 权限检查
 # ============================================
 
+# v18 统一角色层级（与前端 roles.ts 同步）
+ROLE_LEVELS = {
+    "observer": 1,      # 行为健康观察员
+    "grower": 2,        # 成长者
+    "sharer": 3,        # 分享者
+    "coach": 4,         # 健康教练
+    "promoter": 5,      # 行为健康促进师
+    "supervisor": 5,    # 督导专家（与促进师同级）
+    "master": 6,        # 行为健康促进大师
+    "admin": 99,        # 系统管理员
+    "system": 100,      # 系统账号
+    # 旧角色映射（向后兼容）
+    "patient": 2,       # 映射到 grower
+    "provider": 4,      # 映射到 coach
+}
+
+
 def check_permission(user_role: str, required_role: str) -> bool:
     """
     检查用户权限
@@ -269,20 +286,34 @@ def check_permission(user_role: str, required_role: str) -> bool:
         required_role: 需要的角色
 
     Returns:
-        是否有权限
+        是否有权限（用户等级 >= 所需等级）
     """
-    # 角色层级
-    role_hierarchy = {
-        "admin": 3,
-        "coach": 2,
-        "patient": 1,
-        "system": 0
-    }
-
-    user_level = role_hierarchy.get(user_role, 0)
-    required_level = role_hierarchy.get(required_role, 0)
+    user_level = ROLE_LEVELS.get(user_role.lower(), 0)
+    required_level = ROLE_LEVELS.get(required_role.lower(), 0)
 
     return user_level >= required_level
+
+
+def get_role_level(role: str) -> int:
+    """获取角色权限等级"""
+    return ROLE_LEVELS.get(role.lower(), 0)
+
+
+def normalize_role(role: str) -> str:
+    """
+    标准化角色名称
+    将旧角色名称转换为新标准名称
+    """
+    role_migration = {
+        "patient": "grower",
+        "患者": "grower",
+        "自我管理": "grower",
+        "self_manager": "grower",
+        "provider": "coach",
+        "医疗提供者": "coach",
+    }
+    lower_role = role.lower().strip()
+    return role_migration.get(lower_role, lower_role)
 
 
 # ============================================
@@ -300,6 +331,9 @@ __all__ = [
     "authenticate_user",
     "create_user_tokens",
     "check_permission",
+    "get_role_level",
+    "normalize_role",
+    "ROLE_LEVELS",
     "token_blacklist",
     "TokenBlacklist",
 ]

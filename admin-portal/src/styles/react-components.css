@@ -1,0 +1,214 @@
+/* ============================================================
+ * react-components.css - React组件全局样式
+ * 位置: src/styles/react-components.css
+ * 在 main.ts 中导入: import '@/styles/react-components.css'
+ * ============================================================ */
+
+/* Growth色系变量 (与Tailwind配置保持一致) */
+:root {
+  --growth-50: #f0fdf4;
+  --growth-100: #dcfce7;
+  --growth-200: #bbf7d0;
+  --growth-300: #86efac;
+  --growth-400: #4ade80;
+  --growth-500: #22c55e;
+  --growth-600: #16a34a;
+  --growth-700: #15803d;
+  --growth-800: #166534;
+  --growth-900: #14532d;
+}
+
+/* React组件容器基础样式 */
+.react-component-container {
+  width: 100%;
+  position: relative;
+}
+
+/* 双签审批面板样式 */
+.dual-sign-panel-container {
+  border-radius: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* 成长之旅页面样式 */
+.journey-page-container {
+  background: linear-gradient(to bottom right, var(--growth-50), white, var(--growth-50));
+}
+
+/* CGM图表样式 */
+.cgm-chart-container {
+  background: rgba(71, 85, 105, 0.4);
+  backdrop-filter: blur(4px);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+/* 决策逻辑桥接器样式 */
+.logic-flow-bridge-container {
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  padding: 1.5rem;
+}
+
+/* 追踪图表样式 */
+.trace-graph-container {
+  background: white;
+  border-radius: 0.75rem;
+  border: 1px solid #e2e8f0;
+}
+
+/* 决策追踪样式 */
+.decision-trace-container {
+  background: linear-gradient(to bottom, #f8fafc, white);
+  border-radius: 0.75rem;
+}
+
+/* 专家工作台样式 */
+.expert-workspace-container {
+  background: linear-gradient(to bottom right, #f1f5f9, #f8fafc, #f1f5f9);
+}
+
+/* 动画关键帧 */
+@keyframes pulse-growth {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+/* 呼吸灯效果 */
+.breathing-indicator {
+  animation: breathe 1.5s ease-in-out infinite;
+}
+
+/* 脉冲效果 */
+.pulse-indicator {
+  animation: pulse-growth 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 风险等级颜色 */
+.risk-level-r0 { color: #22c55e; }
+.risk-level-r1 { color: #84cc16; }
+.risk-level-r2 { color: #eab308; }
+.risk-level-r3 { color: #f97316; }
+.risk-level-r4 { color: #ef4444; }
+
+.risk-bg-r0 { background-color: #dcfce7; }
+.risk-bg-r1 { background-color: #ecfccb; }
+.risk-bg-r2 { background-color: #fef9c3; }
+.risk-bg-r3 { background-color: #ffedd5; }
+.risk-bg-r4 { background-color: #fee2e2; }
+
+/* 节点类型颜色 */
+.node-type-input { 
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-color: #3b82f6;
+}
+
+.node-type-rule {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-color: #f59e0b;
+}
+
+.node-type-agent {
+  background: linear-gradient(135deg, #f3e8ff, #e9d5ff);
+  border-color: #a855f7;
+}
+
+.node-type-decision {
+  background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+  border-color: #22c55e;
+}
+
+.node-type-output {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  border-color: #6366f1;
+}
+
+/* 代码高亮样式 (VSCode深色主题) */
+.code-highlight {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.code-highlight .keyword {
+  color: #569cd6;
+}
+
+.code-highlight .string {
+  color: #ce9178;
+}
+
+.code-highlight .number {
+  color: #b5cea8;
+}
+
+.code-highlight .operator {
+  color: #d4d4d4;
+}
+
+.code-highlight .function {
+  color: #dcdcaa;
+}
+
+.code-highlight .comment {
+  color: #6a9955;
+}
+
+/* 行高亮 */
+.code-line-highlight {
+  background: rgba(255, 255, 0, 0.1);
+  border-left: 3px solid #fbbf24;
+  margin-left: -1rem;
+  padding-left: calc(1rem - 3px);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .dual-sign-panel-container {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .expert-workspace-container {
+    padding: 1rem;
+  }
+  
+  .logic-flow-bridge-container {
+    padding: 1rem;
+  }
+}
+
+/* 打印样式 */
+@media print {
+  .react-component-container {
+    break-inside: avoid;
+  }
+  
+  .breathing-indicator,
+  .pulse-indicator {
+    animation: none;
+  }
+}

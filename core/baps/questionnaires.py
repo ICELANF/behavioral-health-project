@@ -22,6 +22,7 @@ class QuestionnaireType(Enum):
     """问卷类型枚举"""
     BIG_FIVE = "big_five"
     BPT6 = "bpt6"
+    TTM7 = "ttm7"
     CAPACITY = "capacity"
     SPI = "spi"
 
@@ -562,12 +563,117 @@ class SPIQuestionnaire(BaseQuestionnaire):
             self.items.append(QuestionItem(id_, dim, text))
 
 
+class TTM7Questionnaire(BaseQuestionnaire):
+    """TTM7改变阶段评估问卷 (21题)
+
+    基于跨理论模型(TTM)扩展的七阶段模型：
+    S0 无知无觉 → S1 强烈抗拒 → S2 被动应对 → S3 勉强接受
+    → S4 尝试阶段 → S5 主动实践 → S6 内化习惯
+
+    每阶段3题，三个子维度：觉察度(AW)、意愿度(WI)、行动度(AC)
+    """
+
+    def __init__(self, question_bank_path: str = None):
+        super().__init__()
+        self.id = "TTM7_21"
+        self.name = "TTM-7改变阶段评估"
+        self.description = "评估个体在行为改变过程中所处的阶段"
+        self.total_items = 21
+        self.estimated_minutes = 6
+
+        self.scale = ScaleConfig(
+            type="likert",
+            range=(1, 5),
+            labels={
+                "1": "完全不符合", "2": "不太符合", "3": "不确定",
+                "4": "比较符合", "5": "完全符合"
+            }
+        )
+
+        # 七个阶段维度
+        self.dimensions = {
+            "S0": DimensionConfig("无知无觉", "Unawareness", 3, (3, 15)),
+            "S1": DimensionConfig("强烈抗拒", "Resistance", 3, (3, 15)),
+            "S2": DimensionConfig("被动应对", "Passive", 3, (3, 15)),
+            "S3": DimensionConfig("勉强接受", "Reluctant", 3, (3, 15)),
+            "S4": DimensionConfig("尝试阶段", "Trying", 3, (3, 15)),
+            "S5": DimensionConfig("主动实践", "Practicing", 3, (3, 15)),
+            "S6": DimensionConfig("内化习惯", "Internalized", 3, (3, 15)),
+        }
+
+        # 阶段名称与TTM对照
+        self.stage_names = {
+            "S0": "无知无觉", "S1": "强烈抗拒", "S2": "被动应对",
+            "S3": "勉强接受", "S4": "尝试阶段", "S5": "主动实践", "S6": "内化习惯"
+        }
+        self.ttm_mapping = {
+            "S0": "前意向期", "S1": "前意向期", "S2": "意向期",
+            "S3": "准备期", "S4": "行动期(早期)", "S5": "行动期", "S6": "维持期"
+        }
+
+        # 子维度索引 (每阶段第1题=AW, 第2题=WI, 第3题=AC)
+        self.sub_dimensions = {"AW": "觉察度", "WI": "意愿度", "AC": "行动度"}
+
+        if question_bank_path:
+            self._load_items(question_bank_path)
+        else:
+            self._init_default_items()
+
+    def _load_items(self, path: str):
+        """从题库文件加载题目"""
+        with open(path, 'r', encoding='utf-8') as f:
+            bank = json.load(f)
+        ttm7_data = bank["questionnaires"]["ttm7"]
+        for item_data in ttm7_data["items"]:
+            self.items.append(QuestionItem(
+                id=item_data["id"],
+                dimension=item_data["dimension"],
+                text=item_data["text"]
+            ))
+
+    def _init_default_items(self):
+        """初始化21题默认题目"""
+        items_data = [
+            # S0 无知无觉
+            ("TTM01", "S0", "我从来没有觉得自己的生活方式有什么问题"),
+            ("TTM02", "S0", "别人说我需要改变，但我完全不理解为什么"),
+            ("TTM03", "S0", "我的生活方式一直这样，从没想过要改变什么"),
+            # S1 强烈抗拒
+            ("TTM04", "S1", "我知道别人认为我应该改变，但我觉得没必要"),
+            ("TTM05", "S1", "有人建议我改变时，我会感到反感或被冒犯"),
+            ("TTM06", "S1", "我认为坚持现在的方式没什么不好，不需要改变"),
+            # S2 被动应对
+            ("TTM07", "S2", "我承认可能有些问题，但还没有认真考虑改变"),
+            ("TTM08", "S2", "如果有人帮我安排好一切，我可能会尝试改变"),
+            ("TTM09", "S2", "我偶尔会想到应该改变，但很快就忘了"),
+            # S3 勉强接受
+            ("TTM10", "S3", "我清楚地知道自己需要做出改变"),
+            ("TTM11", "S3", "我已经决定要改变，正在考虑具体怎么做"),
+            ("TTM12", "S3", "我计划在近期（一个月内）开始采取行动"),
+            # S4 尝试阶段
+            ("TTM13", "S4", "我已经开始尝试新的行为，虽然还不太稳定"),
+            ("TTM14", "S4", "我在努力坚持，但有时候会中断或放弃"),
+            ("TTM15", "S4", "我的改变还需要刻意提醒自己才能做到"),
+            # S5 主动实践
+            ("TTM16", "S5", "我已经持续执行新行为超过一个月了"),
+            ("TTM17", "S5", "我对自己的改变感到满意，并有信心继续下去"),
+            ("TTM18", "S5", "我能够应对大多数阻碍，保持行为的一致性"),
+            # S6 内化习惯
+            ("TTM19", "S6", "这个行为已经成为我生活的自然组成部分"),
+            ("TTM20", "S6", "我已经把自己看作是健康、自律的人"),
+            ("TTM21", "S6", "即使遇到困难或诱惑，我也几乎不会回到旧习惯"),
+        ]
+        for id_, dim, text in items_data:
+            self.items.append(QuestionItem(id_, dim, text))
+
+
 # 便捷函数：获取所有问卷实例
 def get_all_questionnaires(question_bank_path: str = None) -> Dict[str, BaseQuestionnaire]:
     """获取所有问卷实例"""
     return {
         "big_five": BigFiveQuestionnaire(question_bank_path),
         "bpt6": BPT6Questionnaire(question_bank_path),
+        "ttm7": TTM7Questionnaire(question_bank_path),
         "capacity": CAPACITYQuestionnaire(question_bank_path),
         "spi": SPIQuestionnaire(question_bank_path)
     }

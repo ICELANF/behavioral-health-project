@@ -26,7 +26,8 @@ from core.baps.questionnaires import (
     BigFiveQuestionnaire,
     BPT6Questionnaire,
     CAPACITYQuestionnaire,
-    SPIQuestionnaire
+    SPIQuestionnaire,
+    TTM7Questionnaire
 )
 
 
@@ -67,13 +68,36 @@ class SPIAnswers(BaseModel):
     answers: Dict[str, int] = Field(..., description="答案字典 {题号: 得分(1-5)}")
 
 
+class TTM7Answers(BaseModel):
+    """TTM7改变阶段评估答案模型"""
+    user_id: str = Field(default="anonymous", description="用户ID")
+    answers: Dict[str, int] = Field(..., description="答案字典 {题号: 得分(1-5)}")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "user_id": "user_001",
+                "answers": {
+                    "TTM01": 4, "TTM02": 3, "TTM03": 2,
+                    "TTM04": 2, "TTM05": 2, "TTM06": 1,
+                    "TTM07": 3, "TTM08": 4, "TTM09": 3,
+                    "TTM10": 1, "TTM11": 2, "TTM12": 1,
+                    "TTM13": 3, "TTM14": 4, "TTM15": 3,
+                    "TTM16": 2, "TTM17": 3, "TTM18": 4,
+                    "TTM19": 4, "TTM20": 4, "TTM21": 5
+                }
+            }
+        }
+
+
 class ComprehensiveAnswers(BaseModel):
-    """综合评估答案模型"""
+    """综合评估答案模型（五套问卷）"""
     user_id: str = Field(default="anonymous", description="用户ID")
     big_five: Dict[str, int] = Field(..., description="大五人格答案")
     bpt6: Dict[str, int] = Field(..., description="BPT-6答案")
     capacity: Dict[str, int] = Field(..., description="CAPACITY答案")
     spi: Dict[str, int] = Field(..., description="SPI答案")
+    ttm7: Optional[Dict[str, int]] = Field(None, description="TTM7改变阶段答案（选填）")
 
 
 class QuickAssessmentRequest(BaseModel):
@@ -110,7 +134,8 @@ questionnaires = {
     "big_five": BigFiveQuestionnaire(),
     "bpt6": BPT6Questionnaire(),
     "capacity": CAPACITYQuestionnaire(),
-    "spi": SPIQuestionnaire()
+    "spi": SPIQuestionnaire(),
+    "ttm7": TTM7Questionnaire()
 }
 
 
@@ -266,6 +291,21 @@ async def assess_spi(request: SPIAnswers):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@app.post("/assess/ttm7", tags=["评估"])
+async def assess_ttm7(request: TTM7Answers):
+    """
+    TTM7改变阶段评估
+
+    提交21题答案，返回行为改变阶段(S0-S6)判定和子维度分析
+    结果包含去诊断化的友好展示名称
+    """
+    try:
+        result = scoring_engine.score_ttm7(request.answers, request.user_id)
+        return scoring_engine._result_to_dict(result)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.post("/assess/comprehensive", tags=["评估"])
 async def assess_comprehensive(request: ComprehensiveAnswers):
     """
@@ -281,6 +321,10 @@ async def assess_comprehensive(request: ComprehensiveAnswers):
             spi_answers=request.spi,
             user_id=request.user_id
         )
+        # 如果提供了 TTM7 答案，追加阶段评估
+        if request.ttm7:
+            ttm7_result = scoring_engine.score_ttm7(request.ttm7, request.user_id)
+            report["ttm7"] = scoring_engine._result_to_dict(ttm7_result)
         return report
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -318,7 +362,8 @@ async def quick_assess(request: QuickAssessmentRequest):
         "big_five": (scoring_engine.score_big_five, report_generator.generate_big_five_report),
         "bpt6": (scoring_engine.score_bpt6, report_generator.generate_bpt6_report),
         "capacity": (scoring_engine.score_capacity, report_generator.generate_capacity_report),
-        "spi": (scoring_engine.score_spi, report_generator.generate_spi_report)
+        "spi": (scoring_engine.score_spi, report_generator.generate_spi_report),
+        "ttm7": (scoring_engine.score_ttm7, lambda r: scoring_engine._result_to_dict(r))
     }
 
     if request.assessment_type not in type_map:
@@ -375,7 +420,7 @@ async def get_dify_tools_schema():
                                         },
                                         "assessment_type": {
                                             "type": "string",
-                                            "enum": ["big_five", "bpt6", "capacity", "spi"],
+                                            "enum": ["big_five", "bpt6", "capacity", "spi", "ttm7"],
                                             "description": "评估类型"
                                         },
                                         "answers": {
@@ -413,7 +458,7 @@ async def get_dify_tools_schema():
                             "required": True,
                             "schema": {
                                 "type": "string",
-                                "enum": ["big_five", "bpt6", "capacity", "spi"]
+                                "enum": ["big_five", "bpt6", "capacity", "spi", "ttm7"]
                             },
                             "description": "问卷类型"
                         }
@@ -486,6 +531,8 @@ async def test_full_assessment():
 
     spi_answers = {f"SPI{i}": random.randint(2, 5) for i in range(1, 51)}
 
+    ttm7_answers = {f"TTM{i:02d}": random.randint(1, 5) for i in range(1, 22)}
+
     # 执行评估
     report = report_generator.generate_comprehensive_report(
         big_five_answers=big_five_answers,
@@ -494,6 +541,10 @@ async def test_full_assessment():
         spi_answers=spi_answers,
         user_id="test_user"
     )
+
+    # 追加 TTM7
+    ttm7_result = scoring_engine.score_ttm7(ttm7_answers, "test_user")
+    report["ttm7"] = scoring_engine._result_to_dict(ttm7_result)
 
     return report
 
@@ -512,6 +563,7 @@ if __name__ == "__main__":
     print("  - bpt6: 行为模式分型 (18题)")
     print("  - capacity: 改变潜力诊断 (32题)")
     print("  - spi: 成功可能性评估 (50题)")
+    print("  - ttm7: 改变阶段评估 (21题)")
     print("\n")
 
     uvicorn.run(

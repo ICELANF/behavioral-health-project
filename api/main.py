@@ -136,6 +136,86 @@ try:
 except ImportError as e:
     print(f"[API] 设备数据路由注册失败: {e}")
 
+# 注册内容管理路由
+try:
+    from api.content_api import router as content_router
+    app.include_router(content_router)
+    print("[API] 内容管理路由已注册")
+except ImportError as e:
+    print(f"[API] 内容管理路由注册失败: {e}")
+
+# 注册学习激励路由
+try:
+    from api.learning_api import router as learning_router
+    app.include_router(learning_router)
+    print("[API] 学习激励路由已注册")
+except ImportError as e:
+    print(f"[API] 学习激励路由注册失败: {e}")
+
+# 注册 WebSocket 实时推送路由
+try:
+    from api.websocket_api import router as ws_router
+    app.include_router(ws_router)
+    print("[API] WebSocket 实时推送路由已注册")
+except ImportError as e:
+    print(f"[API] WebSocket 路由注册失败: {e}")
+
+# 注册六大路径路由
+try:
+    from api.paths_api import router as paths_router
+    app.include_router(paths_router)
+    print("[API] 六大路径路由已注册")
+except ImportError as e:
+    print(f"[API] 六大路径路由注册失败: {e}")
+
+# 注册用户分层路由
+try:
+    from api.segments_api import router as segments_router
+    app.include_router(segments_router)
+    print("[API] 用户分层路由已注册")
+except ImportError as e:
+    print(f"[API] 用户分层路由注册失败: {e}")
+
+# 注册用户管理路由（管理后台）
+try:
+    from api.user_api import router as user_admin_router
+    app.include_router(user_admin_router)
+    print("[API] 用户管理路由已注册")
+except ImportError as e:
+    print(f"[API] 用户管理路由注册失败: {e}")
+
+# 注册设备数据REST路由
+try:
+    from api.device_rest_api import router as device_rest_router
+    app.include_router(device_rest_router)
+    print("[API] 设备REST路由已注册")
+except ImportError as e:
+    print(f"[API] 设备REST路由注册失败: {e}")
+
+# 注册聊天REST路由
+try:
+    from api.chat_rest_api import router as chat_rest_router
+    app.include_router(chat_rest_router)
+    print("[API] 聊天REST路由已注册")
+except ImportError as e:
+    print(f"[API] 聊天REST路由注册失败: {e}")
+
+# 注册教练端路由
+try:
+    from api.coach_api import router as coach_router
+    app.include_router(coach_router)
+    print("[API] 教练端路由已注册")
+except ImportError as e:
+    print(f"[API] 教练端路由注册失败: {e}")
+
+# 注册评估管道路由
+try:
+    from api.assessment_pipeline_api import router as pipeline_router
+    app.include_router(pipeline_router)
+    print("[API] 评估管道路由已注册")
+except ImportError as e:
+    print(f"[API] 评估管道路由注册失败: {e}")
+
 class AgentGateway:
     """行健行为教练网关：连接编排层与模型层"""
     

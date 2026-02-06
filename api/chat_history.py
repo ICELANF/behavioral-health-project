@@ -18,7 +18,7 @@ class ChatHistoryService:
     """聊天历史服务"""
 
     @staticmethod
-    def create_session(user_id: int, session_id: str = None, model: str = "qwen2.5:14b") -> ChatSession:
+    def create_session(user_id: int, session_id: str = None, model: str = "qwen2.5:0.5b") -> ChatSession:
         """
         创建新的聊天会话
 
@@ -68,7 +68,7 @@ class ChatHistoryService:
             return session
 
     @staticmethod
-    def get_or_create_session(user_id: int, session_id: str = None, model: str = "qwen2.5:14b") -> ChatSession:
+    def get_or_create_session(user_id: int, session_id: str = None, model: str = "qwen2.5:0.5b") -> ChatSession:
         """获取或创建会话"""
         if session_id:
             with get_db_session() as db:

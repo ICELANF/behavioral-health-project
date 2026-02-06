@@ -5,7 +5,7 @@
 # === 模型配置 ===
 model:
   embed: "nomic-embed-text:latest"
-  llm: "qwen2.5:14b"
+  llm: "qwen2.5:0.5b"
   ollama_base_url: "http://localhost:11434"
   temperature: 0.3
   request_timeout: 600.0

@@ -4,7 +4,7 @@
   "description": "AI辅助行为诊断Prompt配置，用于生成四层诊断报告",
   "compatible_with": {
     "dify_workflow": "Proactive Health Coach",
-    "ollama_model": "qwen2.5:7b",
+    "ollama_model": "qwen2.5:0.5b",
     "state_sync_manager": "1.0.0",
     "behavior_rules": "1.0.0"
   },
@@ -16,7 +16,7 @@
       "description": "基于隐性数据生成问题-困难-目的诊断和六类原因初评",
       "model_config": {
         "primary": {"provider": "dify", "workflow": "behavior_diagnosis"},
-        "fallback": {"provider": "ollama", "model": "qwen2.5:7b"}
+        "fallback": {"provider": "ollama", "model": "qwen2.5:0.5b"}
       },
       "parameters": {
         "temperature": 0.3,
@@ -34,7 +34,7 @@
       "name": "心理层次精确判定",
       "description": "基于行为和对话数据判定心理准备层次",
       "model_config": {
-        "primary": {"provider": "ollama", "model": "qwen2.5:7b"},
+        "primary": {"provider": "ollama", "model": "qwen2.5:0.5b"},
         "fallback": null
       },
       "parameters": {
@@ -53,7 +53,7 @@
       "description": "解读SPI指数并生成干预建议",
       "model_config": {
         "primary": {"provider": "local", "type": "rule_based"},
-        "fallback": {"provider": "ollama", "model": "qwen2.5:7b"}
+        "fallback": {"provider": "ollama", "model": "qwen2.5:0.5b"}
       },
       
       "calculation_logic": {
@@ -107,7 +107,7 @@
       "description": "基于诊断结果生成个性化行为处方",
       "model_config": {
         "primary": {"provider": "dify", "workflow": "prescription_generator"},
-        "fallback": {"provider": "ollama", "model": "qwen2.5:7b"}
+        "fallback": {"provider": "ollama", "model": "qwen2.5:0.5b"}
       },
       "parameters": {
         "temperature": 0.4,
@@ -124,7 +124,7 @@
       "name": "跟进建议生成",
       "description": "为教练生成AI跟进建议",
       "model_config": {
-        "primary": {"provider": "ollama", "model": "qwen2.5:7b"},
+        "primary": {"provider": "ollama", "model": "qwen2.5:0.5b"},
         "fallback": null
       },
       "parameters": {

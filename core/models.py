@@ -27,11 +27,33 @@ Base = declarative_base()
 # ============================================
 
 class UserRole(str, enum.Enum):
-    """用户角色"""
-    PATIENT = "patient"      # 患者
-    COACH = "coach"          # 健康教练
-    ADMIN = "admin"          # 管理员
-    SYSTEM = "system"        # 系统账号
+    """
+    用户角色 - v18统一角色层级
+
+    行为健康晋级序列（从低到高）：
+    L0: 观察员 (observer)
+    L1: 成长者 (grower) - 原患者
+    L2: 分享者 (sharer)
+    L3: 健康教练 (coach)
+    L4: 促进师 (promoter) / 督导 (supervisor) - 平级平权
+    L5: 大师 (master)
+    L99: 管理员 (admin)
+    """
+    # 行为健康晋级序列
+    OBSERVER = "observer"        # L0 行为健康观察员
+    GROWER = "grower"            # L1 成长者（原患者）
+    SHARER = "sharer"            # L2 分享者
+    COACH = "coach"              # L3 健康教练
+    PROMOTER = "promoter"        # L4 行为健康促进师
+    SUPERVISOR = "supervisor"    # L4 督导专家（与促进师平级）
+    MASTER = "master"            # L5 行为健康促进大师
+
+    # 系统角色
+    ADMIN = "admin"              # L99 系统管理员
+    SYSTEM = "system"            # 系统账号
+
+    # 旧角色（向后兼容，映射到新角色）
+    PATIENT = "patient"          # 已废弃 → 映射到 grower
 
 
 class RiskLevel(str, enum.Enum):
@@ -130,6 +152,7 @@ class User(Base):
     # 关系
     assessments = relationship("Assessment", back_populates="user", cascade="all, delete-orphan")
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+    behavioral_profile = relationship("BehavioralProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     # 索引
     __table_args__ = (
@@ -769,6 +792,114 @@ class VitalSign(Base):
     )
 
 
+class BehavioralStage(str, enum.Enum):
+    """行为改变七阶段"""
+    S0 = "S0"  # 无知无觉
+    S1 = "S1"  # 强烈抗拒
+    S2 = "S2"  # 被动承受
+    S3 = "S3"  # 勉强接受
+    S4 = "S4"  # 主动尝试
+    S5 = "S5"  # 规律践行
+    S6 = "S6"  # 内化为常
+
+
+class StageStability(str, enum.Enum):
+    """阶段稳定性"""
+    STABLE = "stable"
+    SEMI_STABLE = "semi_stable"
+    UNSTABLE = "unstable"
+
+
+class InteractionMode(str, enum.Enum):
+    """交互模式"""
+    EMPATHY = "empathy"         # 共情模式 (S0-S1)
+    CHALLENGE = "challenge"     # 挑战模式 (S2-S3 行动型)
+    EXECUTION = "execution"     # 执行模式 (S4-S6)
+
+
+class PsychologicalLevel(str, enum.Enum):
+    """心理层级 (SPI-based)"""
+    L1 = "L1"  # 需大量支持
+    L2 = "L2"  # 需中度支持
+    L3 = "L3"  # 基本就绪
+    L4 = "L4"  # 高度就绪
+    L5 = "L5"  # 自驱型
+
+
+class BehavioralProfile(Base):
+    """
+    统一行为画像表
+
+    系统唯一真相源：存储用户的行为改变阶段、行为类型、心理层级、
+    领域需求等核心画像数据，由 BehavioralProfileService 写入，
+    StageRuntimeBuilder 负责阶段更新。
+
+    所有干预决策必须基于此画像。
+    """
+    __tablename__ = "behavioral_profiles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+
+    # ====== 阶段运行态 (只有 StageRuntimeBuilder 可写) ======
+    current_stage = Column(SQLEnum(BehavioralStage), nullable=False, default=BehavioralStage.S0)
+    stage_confidence = Column(Float, default=0.0)  # 0.0-1.0
+    stage_stability = Column(SQLEnum(StageStability), default=StageStability.UNSTABLE)
+    stage_updated_at = Column(DateTime, nullable=True)
+
+    # ====== BAPS 向量 ======
+    # 大五人格 {E: 15, N: -8, C: 22, A: 10, O: 18}
+    big5_scores = Column(JSON, nullable=True)
+    # BPT-6 行为类型: "action" / "knowledge" / "emotion" / "relation" / "environment" / "mixed"
+    bpt6_type = Column(String(30), nullable=True)
+    bpt6_scores = Column(JSON, nullable=True)  # 六维度原始分
+    # CAPACITY 改变潜力
+    capacity_total = Column(Integer, nullable=True)
+    capacity_weak = Column(JSON, nullable=True)  # ["A2_资源", "T_时间"]
+    capacity_strong = Column(JSON, nullable=True)  # ["M_动机", "C_信心"]
+    # SPI 成功可能性
+    spi_score = Column(Float, nullable=True)  # 0-100
+    spi_level = Column(String(10), nullable=True)  # very_high/high/medium/low/very_low
+    # TTM7 阶段评估原始数据
+    ttm7_stage_scores = Column(JSON, nullable=True)  # {S0: 12, S1: 6, ...}
+    ttm7_sub_scores = Column(JSON, nullable=True)  # {AW: 25, WI: 22, AC: 18}
+
+    # ====== 领域需求 ======
+    # 主要需干预领域: ["nutrition", "exercise", "sleep", "emotion", ...]
+    primary_domains = Column(JSON, nullable=True)
+    # 领域详情: {"nutrition": {"priority": 1, "stage_strategy": "preparation"}, ...}
+    domain_details = Column(JSON, nullable=True)
+
+    # ====== 干预配置 ======
+    interaction_mode = Column(SQLEnum(InteractionMode), nullable=True)
+    psychological_level = Column(SQLEnum(PsychologicalLevel), nullable=True)
+    # 风险标记: ["dropout_risk", "relapse_risk"]
+    risk_flags = Column(JSON, nullable=True)
+
+    # ====== 去诊断化展示 ======
+    friendly_stage_name = Column(String(50), nullable=True)  # "探索期"
+    friendly_stage_desc = Column(Text, nullable=True)  # 面向用户的阶段描述
+
+    # ====== 最近评估ID (用于溯源) ======
+    last_assessment_id = Column(String(50), nullable=True)
+
+    # ====== 时间戳 ======
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # 关系
+    user = relationship("User", back_populates="behavioral_profile")
+
+    __table_args__ = (
+        Index('idx_bp_user', 'user_id'),
+        Index('idx_bp_stage', 'current_stage'),
+        Index('idx_bp_updated', 'updated_at'),
+    )
+
+    def __repr__(self):
+        return f"<BehavioralProfile(user={self.user_id}, stage={self.current_stage}, type={self.bpt6_type})>"
+
+
 class BehaviorAuditLog(Base):
     """
     行为跃迁审计日志表
@@ -886,6 +1017,8 @@ def get_table_names():
         "activity_records",
         "workout_records",
         "vital_signs",
+        # 行为画像
+        "behavioral_profiles",
         # 行为审计 + 历史 + 长期记忆
         "behavior_audit_logs",
         "behavior_history",
@@ -913,6 +1046,7 @@ def get_model_by_name(name: str):
         "ActivityRecord": ActivityRecord,
         "WorkoutRecord": WorkoutRecord,
         "VitalSign": VitalSign,
+        "BehavioralProfile": BehavioralProfile,
         "BehaviorAuditLog": BehaviorAuditLog,
         "BehaviorHistory": BehaviorHistory,
         "BehaviorTrace": BehaviorTrace,

@@ -108,7 +108,6 @@ desktop.ini
 # ==================================
 CodeBuddy/
 MyOctopusProject/
-workbench/
 xingjian-agent/
 metabolic-core/
 h5-patient-app/
@@ -116,7 +115,6 @@ scripts/
 tests/
 knowledge/
 dify_workflows/
-disclosure/
 quality/
 big_five_questionnaire.html
 big_five_questionnaire.md

@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>行为健康平台 - 服务导航中心</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .section-title .icon {
+            font-size: 32px;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 16px;
+        }
+
+        .service-card {
+            background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+        }
+
+        .service-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
+            border-color: #667eea;
+        }
+
+        .service-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .service-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .service-icon {
+            font-size: 24px;
+        }
+
+        .port-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .service-desc {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .service-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .feature-tag {
+            background: #f3f4f6;
+            color: #4b5563;
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+
+        .service-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            text-align: center;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 1.5px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f0f5ff;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .info-box {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .info-box-title {
+            font-weight: 600;
+            color: #0369a1;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-box-content {
+            color: #075985;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .backend-card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            border: none;
+        }
+
+        .backend-card::before {
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .backend-card .service-name,
+        .backend-card .service-desc {
+            color: white;
+        }
+
+        .backend-card .service-desc {
+            opacity: 0.9;
+        }
+
+        .backend-card .feature-tag {
+            background: rgba(255,255,255,0.15);
+            color: white;
+        }
+
+        .static-card {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-color: #fbbf24;
+        }
+
+        .static-card::before {
+            background: linear-gradient(90deg, #f59e0b, #d97706);
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 12px;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .comparison-table th {
+            background: #f9fafb;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .comparison-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .quick-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .quick-link {
+            background: white;
+            border: 2px solid #e5e7eb;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #1f2937;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .quick-link:hover {
+            border-color: #667eea;
+            background: #f0f5ff;
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 行为健康平台 - 服务导航中心</h1>
+            <p>一站式访问所有前端页面和后端API服务</p>
+        </div>
+
+        <!-- 信息提示 -->
+        <div class="info-box">
+            <div class="info-box-title">
+                <span>ℹ️</span>
+                <span>使用说明</span>
+            </div>
+            <div class="info-box-content">
+                本页面整合了所有对外服务的访问入口。前端应用端口：5173-5177，后端API端口：8000-8002，基础设施端口：8080, 11434。
+                点击"打开页面"或"查看文档"按钮即可访问对应服务。
+            </div>
+        </div>
+
+        <!-- 前端应用 -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📱</span>
+                <span>前端应用 (Frontend Applications)</span>
+            </div>
+
+            <div class="services-grid">
+                <!-- H5 移动端 -->
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">📱</span>
+                            <span>H5 移动端</span>
+                        </div>
+                        <div class="port-badge">:5173</div>
+                    </div>
+                    <div class="service-desc">
+                        基于 Vue 3 + Vant 的移动端H5应用，提供患者端健康管理功能，适配手机浏览器访问。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">Vue 3</span>
+                        <span class="feature-tag">Vant UI</span>
+                        <span class="feature-tag">移动优先</span>
+                        <span class="feature-tag">Echarts图表</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:5173" target="_blank" class="btn btn-primary">打开页面</a>
+                        <button class="btn btn-secondary" onclick="copyUrl('http://localhost:5173')">复制链接</button>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>服务运行中</span>
+                    </div>
+                </div>
+
+                <!-- Admin Portal -->
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">🎛️</span>
+                            <span>管理门户 (Admin Portal)</span>
+                        </div>
+                        <div class="port-badge">:5174</div>
+                    </div>
+                    <div class="service-desc">
+                        统一管理后台，包含四角色登录入口（患者/教练/专家/管理员），提供完整的业务管理功能。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">Vue 3</span>
+                        <span class="feature-tag">Ant Design Vue</span>
+                        <span class="feature-tag">多角色</span>
+                        <span class="feature-tag">TypeScript</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:5174" target="_blank" class="btn btn-primary">打开首页</a>
+                        <a href="http://localhost:5174/#/login" target="_blank" class="btn btn-secondary">四角色登录</a>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>服务运行中</span>
+                    </div>
+                </div>
+
+                <!-- H5 患者应用 -->
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">👤</span>
+                            <span>H5 患者应用</span>
+                        </div>
+                        <div class="port-badge">:5175</div>
+                    </div>
+                    <div class="service-desc">
+                        专为患者设计的移动端应用，包含健康数据录入、评估结果查看、个人健康档案等功能。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">Vue 3</span>
+                        <span class="feature-tag">Vant UI</span>
+                        <span class="feature-tag">患者专用</span>
+                        <span class="feature-tag">Pinia状态管理</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:5175" target="_blank" class="btn btn-primary">打开页面</a>
+                        <a href="file:///D:/behavioral-health-project/h5-patient-app/快速预览演示.html" target="_blank" class="btn btn-secondary">演示预览</a>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>服务运行中</span>
+                    </div>
+                </div>
+
+                <!-- H5 患者应用 (备用实例) -->
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">👥</span>
+                            <span>H5 患者应用 (备用)</span>
+                        </div>
+                        <div class="port-badge">:5176</div>
+                    </div>
+                    <div class="service-desc">
+                        患者应用的备用实例，用于测试或多环境部署。功能与5175端口相同。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">备用实例</span>
+                        <span class="feature-tag">测试环境</span>
+                        <span class="feature-tag">Vue 3</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:5176" target="_blank" class="btn btn-primary">打开页面</a>
+                        <button class="btn btn-secondary" onclick="copyUrl('http://localhost:5176')">复制链接</button>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>服务运行中</span>
+                    </div>
+                </div>
+
+                <!-- Admin Portal (备用实例) -->
+                <div class="service-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">⚙️</span>
+                            <span>管理门户 (备用)</span>
+                        </div>
+                        <div class="port-badge">:5177</div>
+                    </div>
+                    <div class="service-desc">
+                        管理门户的备用实例，用于测试或多环境部署。功能与5174端口相同。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">备用实例</span>
+                        <span class="feature-tag">测试环境</span>
+                        <span class="feature-tag">Ant Design Vue</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:5177" target="_blank" class="btn btn-primary">打开首页</a>
+                        <a href="http://localhost:5177/#/login" target="_blank" class="btn btn-secondary">四角色登录</a>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>服务运行中</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 静态页面 -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📄</span>
+                <span>静态演示页面 (Static Pages)</span>
+            </div>
+
+            <div class="services-grid">
+                <!-- 主动健康指挥舱 -->
+                <div class="service-card static-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">🎛️</span>
+                            <span>主动健康指挥舱</span>
+                        </div>
+                        <div class="port-badge" style="background: #d97706;">静态</div>
+                    </div>
+                    <div class="service-desc">
+                        实时数据可视化仪表盘，展示血糖波动趋势、AI决策建议、健康教练聊天等功能。绿色主题设计。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">静态HTML</span>
+                        <span class="feature-tag">Chart.js</span>
+                        <span class="feature-tag">SSE流式聊天</span>
+                        <span class="feature-tag">Bootstrap 5</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="file:///D:/behavioral-health-project/index.html" target="_blank" class="btn btn-primary">打开页面</a>
+                        <button class="btn btn-secondary" onclick="copyUrl('file:///D:/behavioral-health-project/index.html')">复制路径</button>
+                    </div>
+                </div>
+
+                <!-- 老张的健康数字空间 -->
+                <div class="service-card static-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">👨‍⚕️</span>
+                            <span>患者实时看板</span>
+                        </div>
+                        <div class="port-badge" style="background: #d97706;">静态</div>
+                    </div>
+                    <div class="service-desc">
+                        老张的健康数字空间 - 实时血糖趋势、AI决策建议、用药提醒、健康教练聊天。绿色主题。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">静态HTML</span>
+                        <span class="feature-tag">实时同步</span>
+                        <span class="feature-tag">Chart.js</span>
+                        <span class="feature-tag">Bootstrap 5</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="file:///D:/behavioral-health-project/patient_portal.html" target="_blank" class="btn btn-primary">打开页面</a>
+                        <button class="btn btn-secondary" onclick="copyUrl('file:///D:/behavioral-health-project/patient_portal.html')">复制路径</button>
+                    </div>
+                </div>
+
+                <!-- H5应用演示 -->
+                <div class="service-card static-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">📱</span>
+                            <span>H5应用快速预览</span>
+                        </div>
+                        <div class="port-badge" style="background: #d97706;">静态</div>
+                    </div>
+                    <div class="service-desc">
+                        H5患者应用的静态预览页面，展示登录、首页、数据输入、结果展示等完整流程的手机界面原型。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">静态HTML</span>
+                        <span class="feature-tag">UI预览</span>
+                        <span class="feature-tag">手机模拟</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="file:///D:/behavioral-health-project/h5-patient-app/快速预览演示.html" target="_blank" class="btn btn-primary">打开页面</a>
+                        <button class="btn btn-secondary" onclick="copyUrl('file:///D:/behavioral-health-project/h5-patient-app/快速预览演示.html')">复制路径</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 后端API服务 -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🔌</span>
+                <span>后端 API 服务 (Backend APIs)</span>
+            </div>
+
+            <div class="services-grid">
+                <!-- Agent Gateway -->
+                <div class="service-card backend-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">🚪</span>
+                            <span>Agent Gateway</span>
+                        </div>
+                        <div class="port-badge" style="background: #10b981;">:8000</div>
+                    </div>
+                    <div class="service-desc">
+                        智能代理网关，负责路由请求到不同的健康管理Agent，提供统一的API入口。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">FastAPI</span>
+                        <span class="feature-tag">Agent路由</span>
+                        <span class="feature-tag">Python</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:8000/docs" target="_blank" class="btn btn-primary">查看文档</a>
+                        <a href="http://localhost:8000/health" target="_blank" class="btn btn-secondary">健康检查</a>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>API运行中</span>
+                    </div>
+                </div>
+
+                <!-- BAPS 评估 API -->
+                <div class="service-card backend-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">📊</span>
+                            <span>BAPS 评估 API</span>
+                        </div>
+                        <div class="port-badge" style="background: #10b981;">:8001</div>
+                    </div>
+                    <div class="service-desc">
+                        行为评估与个性化系统API，处理健康评估、风险分析、行为干预等核心业务逻辑。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">FastAPI</span>
+                        <span class="feature-tag">风险评估</span>
+                        <span class="feature-tag">数据分析</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:8001/docs" target="_blank" class="btn btn-primary">查看文档</a>
+                        <a href="http://localhost:8001/health" target="_blank" class="btn btn-secondary">健康检查</a>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>API运行中</span>
+                    </div>
+                </div>
+
+                <!-- 决策引擎 + 教练 -->
+                <div class="service-card backend-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">🤖</span>
+                            <span>决策引擎 + 教练</span>
+                        </div>
+                        <div class="port-badge" style="background: #10b981;">:8002</div>
+                    </div>
+                    <div class="service-desc">
+                        AI决策引擎与健康教练聊天服务，提供实时干预建议、流式对话、Dify集成等功能。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">FastAPI</span>
+                        <span class="feature-tag">AI对话</span>
+                        <span class="feature-tag">SSE流式</span>
+                        <span class="feature-tag">Dify集成</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:8002/docs" target="_blank" class="btn btn-primary">查看文档</a>
+                        <a href="http://localhost:8002/health" target="_blank" class="btn btn-secondary">健康检查</a>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>API运行中</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 基础设施服务 -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🏗️</span>
+                <span>基础设施服务 (Infrastructure)</span>
+            </div>
+
+            <div class="services-grid">
+                <!-- Dify 平台 -->
+                <div class="service-card backend-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">🔮</span>
+                            <span>Dify AI 平台</span>
+                        </div>
+                        <div class="port-badge" style="background: #8b5cf6;">:8080</div>
+                    </div>
+                    <div class="service-desc">
+                        LLM应用开发平台，提供AI工作流编排、知识库管理、对话应用等功能。支持多种LLM模型。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">Docker</span>
+                        <span class="feature-tag">LLM平台</span>
+                        <span class="feature-tag">工作流</span>
+                        <span class="feature-tag">知识库</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:8080" target="_blank" class="btn btn-primary">打开控制台</a>
+                        <button class="btn btn-secondary" onclick="alert('Dify账号请联系管理员获取')">获取账号</button>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>平台运行中 (9个容器)</span>
+                    </div>
+                </div>
+
+                <!-- Ollama -->
+                <div class="service-card backend-card">
+                    <div class="service-header">
+                        <div class="service-name">
+                            <span class="service-icon">🦙</span>
+                            <span>Ollama 本地LLM</span>
+                        </div>
+                        <div class="port-badge" style="background: #8b5cf6;">:11434</div>
+                    </div>
+                    <div class="service-desc">
+                        本地大语言模型推理服务，支持Qwen、Llama等多种开源模型，提供离线AI能力。
+                    </div>
+                    <div class="service-features">
+                        <span class="feature-tag">本地推理</span>
+                        <span class="feature-tag">Qwen2.5</span>
+                        <span class="feature-tag">离线运行</span>
+                    </div>
+                    <div class="service-actions">
+                        <a href="http://localhost:11434/api/tags" target="_blank" class="btn btn-primary">查看模型</a>
+                        <button class="btn btn-secondary" onclick="copyUrl('http://localhost:11434')">复制地址</button>
+                    </div>
+                    <div class="status-indicator">
+                        <span class="status-dot"></span>
+                        <span>服务运行中</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心页面快速访问 -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">⚡</span>
+                <span>核心页面快速访问</span>
+            </div>
+
+            <div class="quick-links">
+                <a href="http://localhost:5174/#/login" target="_blank" class="quick-link">
+                    🔑 四角色登录页面
+                </a>
+                <a href="http://localhost:5174/#/client" target="_blank" class="quick-link">
+                    👤 患者绿色主页
+                </a>
+                <a href="http://localhost:5174/#/coach-portal" target="_blank" class="quick-link">
+                    🧑‍⚕️ 教练工作台
+                </a>
+                <a href="http://localhost:5174/#/expert-portal" target="_blank" class="quick-link">
+                    👨‍🔬 督导工作台
+                </a>
+                <a href="http://localhost:5175" target="_blank" class="quick-link">
+                    📱 患者H5应用
+                </a>
+                <a href="http://localhost:8002/docs" target="_blank" class="quick-link">
+                    📚 API文档中心
+                </a>
+                <a href="http://localhost:8080" target="_blank" class="quick-link">
+                    🔮 Dify AI平台
+                </a>
+                <a href="file:///D:/behavioral-health-project/index.html" target="_blank" class="quick-link">
+                    🎛️ 实时指挥舱
+                </a>
+            </div>
+        </div>
+
+        <!-- 测试账号 -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">🔐</span>
+                <span>测试账号</span>
+            </div>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>角色</th>
+                        <th>用户名</th>
+                        <th>密码</th>
+                        <th>权限级别</th>
+                        <th>登录后跳转</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>👤 患者 (Patient)</td>
+                        <td><code>patient</code></td>
+                        <td><code>123456</code></td>
+                        <td>Level 0</td>
+                        <td>/client (绿色用户界面)</td>
+                    </tr>
+                    <tr>
+                        <td>🧑‍⚕️ 教练 (Coach)</td>
+                        <td><code>coach</code></td>
+                        <td><code>123456</code></td>
+                        <td>Level 2</td>
+                        <td>/coach-portal</td>
+                    </tr>
+                    <tr>
+                        <td>👨‍🔬 专家 (Expert)</td>
+                        <td><code>expert</code></td>
+                        <td><code>123456</code></td>
+                        <td>Level 3</td>
+                        <td>/expert-portal</td>
+                    </tr>
+                    <tr>
+                        <td>⚙️ 管理员 (Admin)</td>
+                        <td><code>admin</code></td>
+                        <td><code>admin123</code></td>
+                        <td>Level 4</td>
+                        <td>/dashboard</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 页面功能对比 -->
+        <div class="section">
+            <div class="section-title">
+                <span class="icon">📊</span>
+                <span>前端应用功能对比</span>
+            </div>
+
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>功能特性</th>
+                        <th>H5移动端<br>(5173)</th>
+                        <th>Admin Portal<br>(5174)</th>
+                        <th>H5患者应用<br>(5175)</th>
+                        <th>静态页面<br>(index.html)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>四角色登录</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                    </tr>
+                    <tr>
+                        <td>患者绿色主页</td>
+                        <td>⚠️ 部分</td>
+                        <td>✅ 完整</td>
+                        <td>✅</td>
+                        <td>⚠️ 简化版</td>
+                    </tr>
+                    <tr>
+                        <td>每日任务</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                        <td>⚠️</td>
+                        <td>❌</td>
+                    </tr>
+                    <tr>
+                        <td>用药提醒</td>
+                        <td>✅</td>
+                        <td>✅ 完整</td>
+                        <td>⚠️</td>
+                        <td>⚠️</td>
+                    </tr>
+                    <tr>
+                        <td>学习推荐</td>
+                        <td>⚠️</td>
+                        <td>✅ 视频+课程</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                    </tr>
+                    <tr>
+                        <td>教练工作台</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                    </tr>
+                    <tr>
+                        <td>专家工作台</td>
+                        <td>❌</td>
+                        <td>✅</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                    </tr>
+                    <tr>
+                        <td>实时图表</td>
+                        <td>✅ Echarts</td>
+                        <td>⚠️</td>
+                        <td>⚠️</td>
+                        <td>✅ Chart.js</td>
+                    </tr>
+                    <tr>
+                        <td>AI聊天</td>
+                        <td>⚠️</td>
+                        <td>✅</td>
+                        <td>⚠️</td>
+                        <td>✅ SSE流式</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="margin-top: 12px; color: #6b7280; font-size: 13px;">
+                ✅ = 完整支持 | ⚠️ = 部分支持 | ❌ = 不支持
+            </p>
+        </div>
+
+        <!-- 底部信息 -->
+        <div class="section" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: white;">
+            <div class="section-title" style="color: white;">
+                <span class="icon">💡</span>
+                <span>使用建议</span>
+            </div>
+
+            <div style="line-height: 1.8; opacity: 0.95;">
+                <p style="margin-bottom: 12px;"><strong>推荐访问顺序：</strong></p>
+                <ol style="margin-left: 20px;">
+                    <li><strong>先看四角色登录</strong>：http://localhost:5174/#/login - 了解系统架构</li>
+                    <li><strong>体验患者界面</strong>：用patient/123456登录，查看完整的绿色用户界面</li>
+                    <li><strong>查看API文档</strong>：http://localhost:8002/docs - 了解后端能力</li>
+                    <li><strong>测试静态页面</strong>：index.html 和 patient_portal.html - 查看实时交互效果</li>
+                    <li><strong>探索Dify平台</strong>：http://localhost:8080 - 了解AI工作流</li>
+                </ol>
+
+                <p style="margin-top: 16px; margin-bottom: 12px;"><strong>重要提示：</strong></p>
+                <ul style="margin-left: 20px;">
+                    <li>5174 和 5177 是同一应用的不同实例（admin-portal）</li>
+                    <li>5175 和 5176 是同一应用的不同实例（h5-patient-app）</li>
+                    <li>静态HTML页面需要后端API (8002端口) 支持才能完整运行</li>
+                    <li>建议优先使用 5174 (admin-portal) 访问完整功能</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="text-align: center; color: white; margin-top: 20px; opacity: 0.9;">
+            <p>© 2026 行为健康平台 · 最后更新: 2026-02-03</p>
+        </div>
+    </div>
+
+    <script>
+        function copyUrl(url) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert('链接已复制到剪贴板:\n' + url);
+            }).catch(() => {
+                prompt('请手动复制以下链接:', url);
+            });
+        }
+
+        // 页面加载时检查服务状态
+        window.onload = function() {
+            console.log('服务导航中心已加载');
+
+            // 可以添加服务健康检查逻辑
+            const services = [
+                { port: 8000, name: 'Agent Gateway' },
+                { port: 8001, name: 'BAPS API' },
+                { port: 8002, name: 'Decision Engine' }
+            ];
+
+            services.forEach(service => {
+                fetch(`http://localhost:${service.port}/health`)
+                    .then(res => res.ok ? console.log(`✅ ${service.name} 正常`) : console.warn(`⚠️ ${service.name} 异常`))
+                    .catch(() => console.error(`❌ ${service.name} 离线`));
+            });
+        };
+    </script>
+</body>
+</html>

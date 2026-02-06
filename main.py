@@ -27,7 +27,7 @@ from core.decision_models import DecisionContext, BloodGlucoseData
 # 环境配置
 # ============================================
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
 
 # ============================================
 # [v14-NEW] 加载v14功能配置
@@ -318,6 +318,16 @@ try:
     logger.info("[v16] Admin行为配置路由已加载")
 except ImportError as e:
     logger.warning(f"[v16] Admin行为配置路由加载失败: {e}")
+
+# ============================================
+# [copilot] CoachCopilot 分析路由
+# ============================================
+try:
+    from api.v14.copilot_routes import router as copilot_router
+    app.include_router(copilot_router, prefix="/api/v1")
+    logger.info("[copilot] CoachCopilot 路由已加载")
+except ImportError as e:
+    logger.warning(f"[copilot] CoachCopilot 路由加载失败: {e}")
 
 # 启动行为引擎配置监控（热重载）
 try:

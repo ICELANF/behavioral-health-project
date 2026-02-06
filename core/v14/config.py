@@ -71,7 +71,7 @@ class V14FeatureFlags:
     # ============================================
     ENABLE_QUALITY_AUDIT: bool = False            # 质量审计总开关
     QUALITY_AUDIT_ASYNC: bool = True              # 异步审计（默认）
-    QUALITY_JUDGE_MODEL: str = "qwen2.5:14b"      # 评判模型
+    QUALITY_JUDGE_MODEL: str = "qwen2.5:0.5b"      # 评判模型
     QUALITY_JUDGE_BACKEND: str = "ollama"         # 评判后端 (ollama/dify)
     
     # ============================================

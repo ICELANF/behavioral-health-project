@@ -304,22 +304,22 @@
         <HomeOutlined />
         <span>首页</span>
       </div>
-      <div class="nav-item" @click="startChat('A1')">
+      <div class="nav-item" @click="router.push('/client/device-dashboard')">
         <LineChartOutlined />
         <span>数据</span>
       </div>
-      <div class="nav-item center-btn" @click="startChat('A1')">
+      <div class="nav-item center-btn" @click="router.push('/client/chat')">
         <div class="center-icon">
           <MessageOutlined />
         </div>
       </div>
-      <div class="nav-item" @click="startChat('A1')">
+      <div class="nav-item" @click="router.push('/client/learning-progress')">
         <ReadOutlined />
         <span>学习</span>
       </div>
-      <div class="nav-item" @click="handleLogout">
-        <LogoutOutlined />
-        <span>退出</span>
+      <div class="nav-item" @click="router.push('/client/my/profile')">
+        <UserOutlined />
+        <span>我的</span>
       </div>
     </div>
 

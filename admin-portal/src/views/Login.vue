@@ -18,15 +18,15 @@
           <div class="role-grid">
             <div
               class="role-card"
-              :class="{ selected: selectedRole === 'patient' }"
-              @click="selectRole('patient')"
+              :class="{ selected: selectedRole === 'grower' }"
+              @click="selectRole('grower')"
             >
-              <div class="role-icon patient">👤</div>
+              <div class="role-icon grower">🌱</div>
               <div class="role-info">
-                <div class="role-name">自我管理</div>
+                <div class="role-name">成长者</div>
                 <div class="role-desc">管理个人健康，完成任务打卡</div>
               </div>
-              <div class="role-check" v-if="selectedRole === 'patient'">
+              <div class="role-check" v-if="selectedRole === 'grower'">
                 <CheckCircleFilled />
               </div>
             </div>
@@ -48,15 +48,15 @@
 
             <div
               class="role-card"
-              :class="{ selected: selectedRole === 'expert' }"
-              @click="selectRole('expert')"
+              :class="{ selected: selectedRole === 'supervisor' }"
+              @click="selectRole('supervisor')"
             >
-              <div class="role-icon expert">👨‍🔬</div>
+              <div class="role-icon supervisor">👨‍🔬</div>
               <div class="role-info">
                 <div class="role-name">督导专家</div>
                 <div class="role-desc">督导教练，审核晋级，培训直播</div>
               </div>
-              <div class="role-check" v-if="selectedRole === 'expert'">
+              <div class="role-check" v-if="selectedRole === 'supervisor'">
                 <CheckCircleFilled />
               </div>
             </div>
@@ -148,10 +148,14 @@
             <div class="demo-accounts">
               <p>测试账号：</p>
               <div class="account-tags">
-                <a-tag color="blue" @click="fillDemo('patient')">patient / 123456</a-tag>
-                <a-tag color="green" @click="fillDemo('coach')">coach / 123456</a-tag>
-                <a-tag color="purple" @click="fillDemo('expert')">expert / 123456</a-tag>
-                <a-tag color="orange" @click="fillDemo('admin')">admin / admin123</a-tag>
+                <a-tag color="default" @click="fillDemo('observer')">L1 观察员</a-tag>
+                <a-tag color="green" @click="fillDemo('grower')">L2 成长者</a-tag>
+                <a-tag color="cyan" @click="fillDemo('sharer')">L3 分享者</a-tag>
+                <a-tag color="blue" @click="fillDemo('coach')">L4 教练</a-tag>
+                <a-tag color="geekblue" @click="fillDemo('promoter')">L5 促进师</a-tag>
+                <a-tag color="purple" @click="fillDemo('supervisor')">L5 督导</a-tag>
+                <a-tag color="gold" @click="fillDemo('master')">L6 大师</a-tag>
+                <a-tag color="orange" @click="fillDemo('admin')">L99 管理</a-tag>
               </div>
             </div>
           </div>
@@ -189,30 +193,42 @@ const formState = reactive({
   password: ''
 })
 
-// 模拟用户数据
+// 模拟用户数据（v18.1统一角色 - 密码与React前端一致）
 const mockUsers: Record<string, { password: string; role: string; level: number; name: string }> = {
-  admin: { password: 'admin123', role: 'admin', level: 4, name: '管理员' },
-  expert: { password: '123456', role: 'expert', level: 3, name: '张专家' },
-  coach: { password: '123456', role: 'coach', level: 2, name: '李教练' },
-  patient: { password: '123456', role: 'patient', level: 0, name: '小明' }
+  observer: { password: 'Observer@2026', role: 'observer', level: 1, name: '赵观察员' },
+  grower: { password: 'Grower@2026', role: 'grower', level: 2, name: '小明' },
+  sharer: { password: 'Sharer@2026', role: 'sharer', level: 3, name: '陈分享者' },
+  coach: { password: 'Coach@2026', role: 'coach', level: 4, name: '李教练' },
+  promoter: { password: 'Promoter@2026', role: 'promoter', level: 5, name: '王促进师' },
+  supervisor: { password: 'Supervisor@2026', role: 'supervisor', level: 5, name: '张督导' },
+  master: { password: 'Master@2026', role: 'master', level: 6, name: '刘大师' },
+  admin: { password: 'Admin@2026', role: 'admin', level: 99, name: '管理员' },
 }
 
 const getRoleIcon = (role: string) => {
   const icons: Record<string, string> = {
-    patient: '👤',
+    observer: '👁️',
+    grower: '🌱',
+    sharer: '🤝',
     coach: '🧑‍⚕️',
-    expert: '👨‍🔬',
+    promoter: '🚀',
+    supervisor: '👨‍🔬',
+    master: '👑',
     admin: '⚙️'
   }
-  return icons[role] || '👤'
+  return icons[role] || '🌱'
 }
 
 const getRoleName = (role: string) => {
   const names: Record<string, string> = {
-    patient: '自我管理',
+    observer: '行为健康观察员',
+    grower: '成长者',
+    sharer: '分享者',
     coach: '健康教练',
-    expert: '督导专家',
-    admin: '系统管理'
+    promoter: '行为健康促进师',
+    supervisor: '督导专家',
+    master: '行为健康促进大师',
+    admin: '系统管理员'
   }
   return names[role] || '用户'
 }
@@ -228,7 +244,21 @@ const goToLogin = () => {
 const fillDemo = (role: string) => {
   selectedRole.value = role
   formState.username = role
-  formState.password = role === 'admin' ? 'admin123' : '123456'
+  // 统一密码格式: 首字母大写 + @2026
+  const pwd = role.charAt(0).toUpperCase() + role.slice(1) + '@2026'
+  formState.password = pwd
+}
+
+// v18统一角色名称映射（用于 localStorage 和后台权限判断）
+const ROLE_LEVELS: Record<string, number> = {
+  observer: 1,
+  grower: 2,
+  sharer: 3,
+  coach: 4,
+  promoter: 5,
+  supervisor: 5,
+  master: 6,
+  admin: 99,
 }
 
 const handleLogin = async () => {
@@ -270,29 +300,24 @@ const handleLogin = async () => {
 const saveLoginState = (token: string, username: string, role: string, level: number, name: string) => {
   localStorage.setItem('admin_token', token)
   localStorage.setItem('admin_username', username)
-  localStorage.setItem('admin_role', role)
-  localStorage.setItem('admin_level', String(level))
+  localStorage.setItem('admin_role', role.toUpperCase())
+  localStorage.setItem('admin_level', String(ROLE_LEVELS[role] || level))
   localStorage.setItem('admin_name', name)
 }
 
 const navigateToHome = (role: string) => {
-  message.success(`登录成功，欢迎回来！`)
+  message.success(`登录成功，欢迎 ${getRoleName(role)}！`)
+  const level = ROLE_LEVELS[role] || 0
 
-  // 根据角色跳转到不同的首页
-  switch (role) {
-    case 'patient':
-      router.push('/client')
-      break
-    case 'coach':
-      router.push('/coach-portal')
-      break
-    case 'expert':
-      router.push('/expert-portal')
-      break
-    case 'admin':
-    default:
-      router.push('/dashboard')
-      break
+  // 根据角色等级跳转到不同的首页
+  if (level >= 99) {
+    router.push('/dashboard')       // 管理员 → 工作台
+  } else if (level >= 5) {
+    router.push('/expert-portal')   // 促进师/督导/大师 → 专家门户
+  } else if (level >= 4) {
+    router.push('/coach-portal')    // 教练 → 教练门户
+  } else {
+    router.push('/client')          // 观察员/成长者/分享者 → 客户端
   }
 }
 </script>
@@ -441,17 +466,17 @@ const navigateToHome = (role: string) => {
   font-weight: 500;
 }
 
-.role-badge.patient {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.role-badge.coach {
+.role-badge.grower {
   background: #dcfce7;
   color: #16a34a;
 }
 
-.role-badge.expert {
+.role-badge.coach {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.role-badge.supervisor {
   background: #f3e8ff;
   color: #9333ea;
 }

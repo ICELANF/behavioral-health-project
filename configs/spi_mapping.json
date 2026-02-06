@@ -1,1 +1,52 @@
-{"dimensions": ["capability", "belief", "environment"], "thresholds": {"S2_to_S3": {"min_belief": 0.6, "min_capability": 0.5}}}
+{
+  "dimensions": ["capability", "belief", "environment"],
+  "thresholds": {
+    "S0_to_S1": {
+      "min_awareness": 0.3,
+      "description": "开始觉察到问题存在"
+    },
+    "S1_to_S2": {
+      "min_belief": 0.3,
+      "min_awareness": 0.5,
+      "description": "从抗拒转向被动接受"
+    },
+    "S2_to_S3": {
+      "min_belief": 0.6,
+      "min_capability": 0.5,
+      "description": "从被动转向勉强接受"
+    },
+    "S3_to_S4": {
+      "min_belief": 0.7,
+      "min_actions_7d": 3,
+      "description": "从接受转向主动尝试，需7天内至少3次行为记录"
+    },
+    "S4_to_S5": {
+      "min_belief": 0.8,
+      "min_streak_days": 14,
+      "description": "从尝试转向规律践行，需连续14天行为记录"
+    },
+    "S5_to_S6": {
+      "min_belief": 0.9,
+      "min_streak_days": 60,
+      "description": "从规律践行转向内化，需连续60天行为记录"
+    }
+  },
+  "spi_to_psychological_level": {
+    "L5": {"min_spi": 70, "label": "自驱型"},
+    "L4": {"min_spi": 50, "label": "高度就绪"},
+    "L3": {"min_spi": 30, "label": "基本就绪"},
+    "L2": {"min_spi": 15, "label": "需中度支持"},
+    "L1": {"min_spi": 0, "label": "需大量支持"}
+  },
+  "stage_interaction_mode": {
+    "S0": "empathy",
+    "S1": "empathy",
+    "S2_action": "challenge",
+    "S2_other": "empathy",
+    "S3_action": "challenge",
+    "S3_other": "empathy",
+    "S4": "execution",
+    "S5": "execution",
+    "S6": "execution"
+  }
+}

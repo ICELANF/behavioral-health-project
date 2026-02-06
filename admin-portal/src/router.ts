@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
+import { portalRoutes } from './router/portal_routes'
+import { reactRoutes } from './router/react_routes'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -8,6 +10,10 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./views/Login.vue'),
     meta: { requiresAuth: false }
   },
+  // ============ 公共门户路由 ============
+  ...portalRoutes,
+  // ============ React集成页面路由 ============
+  ...reactRoutes,
   // ============ C 端患者路由 ============
   {
     path: '/client',
@@ -16,10 +22,91 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '我的健康', requiresAuth: false }
   },
   {
+    path: '/client/home-v2',
+    name: 'ClientHomeOptimized',
+    component: () => import('./views/client/HomeViewOptimized.vue'),
+    meta: { title: '我的健康（优化版）', requiresAuth: false }
+  },
+  {
+    path: '/client/data-input',
+    name: 'ClientDataInput',
+    component: () => import('./views/client/DataInputOptimized.vue'),
+    meta: { title: '记录数据', requiresAuth: false }
+  },
+  {
     path: '/client/chat',
     name: 'ClientChat',
     component: () => import('./views/client/ChatView.vue'),
     meta: { title: 'AI 健康教练', requiresAuth: false }
+  },
+  {
+    path: '/client/chat-v2',
+    name: 'ClientChatOptimized',
+    component: () => import('./views/client/ChatViewOptimized.vue'),
+    meta: { title: 'AI 健康助手（优化版）', requiresAuth: false }
+  },
+  {
+    path: '/client/progress',
+    name: 'ClientProgress',
+    component: () => import('./views/client/ProgressDashboard.vue'),
+    meta: { title: '我的进展', requiresAuth: false }
+  },
+  // Patient "我的" 模块
+  {
+    path: '/client/my/profile',
+    name: 'ClientMyProfile',
+    component: () => import('./views/client/my/MyProfile.vue'),
+    meta: { title: '个人健康档案', requiresAuth: false }
+  },
+  {
+    path: '/client/my/devices',
+    name: 'ClientMyDevices',
+    component: () => import('./views/client/my/MyDevices.vue'),
+    meta: { title: '穿戴设备管理', requiresAuth: false }
+  },
+  {
+    path: '/client/my/assessments',
+    name: 'ClientMyAssessments',
+    component: () => import('./views/client/my/MyAssessments.vue'),
+    meta: { title: '测评记录', requiresAuth: false }
+  },
+  {
+    path: '/client/my/trajectory',
+    name: 'ClientMyTrajectory',
+    component: () => import('./views/client/my/MyTrajectory.vue'),
+    meta: { title: '行为轨迹', requiresAuth: false }
+  },
+  // Patient 设备仪表盘 & 测评
+  {
+    path: '/client/device-dashboard',
+    name: 'ClientDeviceDashboard',
+    component: () => import('./views/client/DeviceDashboard.vue'),
+    meta: { title: '设备数据仪表盘', requiresAuth: false }
+  },
+  {
+    path: '/client/assessment/list',
+    name: 'ClientAssessmentList',
+    component: () => import('./views/client/assessment/AssessmentList.vue'),
+    meta: { title: '测评中心', requiresAuth: false }
+  },
+  {
+    path: '/client/assessment/take/:id',
+    name: 'ClientAssessmentTake',
+    component: () => import('./views/client/assessment/TakeAssessment.vue'),
+    meta: { title: '进行测评', requiresAuth: false }
+  },
+  {
+    path: '/client/assessment/result/:id',
+    name: 'ClientAssessmentResult',
+    component: () => import('./views/client/assessment/AssessmentResult.vue'),
+    meta: { title: '测评结果', requiresAuth: false }
+  },
+  // Patient 学习进度
+  {
+    path: '/client/learning-progress',
+    name: 'ClientLearningProgress',
+    component: () => import('./views/client/LearningProgress.vue'),
+    meta: { title: '学习进度', requiresAuth: false }
   },
   // ============ 健康教练门户 ============
   {
@@ -41,6 +128,13 @@ const routes: RouteRecordRaw[] = [
     name: 'ExamSession',
     component: () => import('./views/exam/ExamSession.vue'),
     meta: { title: '考试进行中', requiresAuth: true }
+  },
+  // 组件库展示页面
+  {
+    path: '/component-showcase',
+    name: 'ComponentShowcase',
+    component: () => import('./views/ComponentShowcase.vue'),
+    meta: { title: '组件库展示', requiresAuth: false }
   },
   {
     path: '/',
@@ -83,6 +177,51 @@ const routes: RouteRecordRaw[] = [
             name: 'CourseChapters',
             component: () => import('./views/course/Chapters.vue'),
             meta: { title: '章节管理' }
+          }
+        ]
+      },
+      // 内容管理（多来源统一管理）
+      {
+        path: 'content',
+        name: 'Content',
+        redirect: '/content/review',
+        meta: { title: '内容管理', icon: 'file-search' },
+        children: [
+          {
+            path: 'review',
+            name: 'ContentReview',
+            component: () => import('./views/content/ReviewQueue.vue'),
+            meta: { title: '内容审核' }
+          },
+          {
+            path: 'articles',
+            name: 'ContentArticles',
+            component: () => import('./views/content/ArticleList.vue'),
+            meta: { title: '文章管理' }
+          },
+          {
+            path: 'cases',
+            name: 'ContentCases',
+            component: () => import('./views/content/CaseList.vue'),
+            meta: { title: '案例分享' }
+          },
+          {
+            path: 'cards',
+            name: 'ContentCards',
+            component: () => import('./views/content/CardList.vue'),
+            meta: { title: '练习卡片' }
+          },
+          {
+            path: 'video/:videoId/quiz',
+            name: 'VideoQuizCreate',
+            component: () => import('./views/content/VideoQuizEditor.vue'),
+            meta: { title: '创建视频测试' }
+          },
+          {
+            path: 'video/:videoId/quiz/:quizId',
+            name: 'VideoQuizEdit',
+            component: () => import('./views/content/VideoQuizEditor.vue'),
+            meta: { title: '编辑视频测试' }
           }
         ]
       },
@@ -246,6 +385,84 @@ const routes: RouteRecordRaw[] = [
         name: 'Interventions',
         component: () => import('./views/admin/interventions/Index.vue'),
         meta: { title: '干预包管理', icon: 'medicine-box' }
+      },
+      // ============ Coach "我的" 模块 ============
+      {
+        path: 'coach/my/students',
+        name: 'CoachMyStudents',
+        component: () => import('./views/coach/my/MyStudents.vue'),
+        meta: { title: '我的学员' }
+      },
+      {
+        path: 'coach/my/performance',
+        name: 'CoachMyPerformance',
+        component: () => import('./views/coach/my/MyPerformance.vue'),
+        meta: { title: '我的绩效' }
+      },
+      {
+        path: 'coach/my/certification',
+        name: 'CoachMyCertification',
+        component: () => import('./views/coach/my/MyCertification.vue'),
+        meta: { title: '我的认证' }
+      },
+      {
+        path: 'coach/my/tools',
+        name: 'CoachMyTools',
+        component: () => import('./views/coach/my/MyTools.vue'),
+        meta: { title: '我的工具箱' }
+      },
+      // Coach 内容分享
+      {
+        path: 'coach/content-sharing',
+        name: 'CoachContentSharing',
+        component: () => import('./views/coach/ContentSharing.vue'),
+        meta: { title: '内容分享' }
+      },
+      // Coach 学员测评交互
+      {
+        path: 'coach/student-assessment/:id',
+        name: 'CoachStudentAssessment',
+        component: () => import('./views/coach/StudentAssessment.vue'),
+        meta: { title: '学员测评交互' }
+      },
+      // Coach 学员行为画像
+      {
+        path: 'coach/student-profile/:id',
+        name: 'CoachStudentBehavioralProfile',
+        component: () => import('./views/coach/StudentBehavioralProfile.vue'),
+        meta: { title: '学员行为画像' }
+      },
+      // ============ Expert "我的" 模块 ============
+      {
+        path: 'expert/my/supervision',
+        name: 'ExpertMySupervision',
+        component: () => import('./views/expert/my/MySupervision.vue'),
+        meta: { title: '我的督导' }
+      },
+      {
+        path: 'expert/my/reviews',
+        name: 'ExpertMyReviews',
+        component: () => import('./views/expert/my/MyReviews.vue'),
+        meta: { title: '我的审核' }
+      },
+      {
+        path: 'expert/my/research',
+        name: 'ExpertMyResearch',
+        component: () => import('./views/expert/my/MyResearch.vue'),
+        meta: { title: '研究数据' }
+      },
+      // ============ Admin 模块 ============
+      {
+        path: 'admin/user-management',
+        name: 'AdminUserManagement',
+        component: () => import('./views/admin/my/UserManagement.vue'),
+        meta: { title: '用户管理' }
+      },
+      {
+        path: 'admin/distribution',
+        name: 'AdminDistribution',
+        component: () => import('./views/admin/Distribution.vue'),
+        meta: { title: '分配管理' }
       },
       // 系统设置
       {

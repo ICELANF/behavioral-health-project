@@ -13,7 +13,7 @@ from loguru import logger
 
 # Ollama 配置
 OLLAMA_API_URL = "http://localhost:11434"
-DEFAULT_MODEL = "qwen2.5:14b"
+DEFAULT_MODEL = "qwen2.5:0.5b"
 
 
 @dataclass

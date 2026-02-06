@@ -8,7 +8,7 @@ const OLLAMA_CONFIG = {
   baseUrl: import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434',
   model: import.meta.env.VITE_OLLAMA_MODEL || 'deepseek-r1:7b',
   // 备用模型
-  fallbackModel: 'qwen2.5:14b',
+  fallbackModel: 'qwen2.5:0.5b',
 }
 
 // ============ 类型定义 ============

@@ -561,7 +561,7 @@ async def agent_respond(
                 event=request.event,
                 risk_level=state.get("risk_level", "LOW")
             )
-            explain = f"LLM响应: model=qwen2.5:14b, stage={stage.value}, day={state['day_index']}"
+            explain = f"LLM响应: model=qwen2.5:0.5b, stage={stage.value}, day={state['day_index']}"
             logger.info(f"[Agent] LLM 响应成功: {message[:50]}...")
         except Exception as e:
             logger.error(f"[Agent] LLM 调用失败: {e}")
@@ -775,7 +775,7 @@ class ChatResponse(BaseModel):
     """聊天响应"""
     message: str
     session_id: str
-    model: str = "qwen2.5:14b"
+    model: str = "qwen2.5:0.5b"
     provider: str = "ollama"
     conversation_id: Optional[str] = None
 

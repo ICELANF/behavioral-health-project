@@ -15,7 +15,7 @@ DIFY_TIMEOUT = float(os.getenv("DIFY_TIMEOUT", "120.0"))
 
 # Ollama 配置
 OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
-OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
 OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "300.0"))
 
 # 健康检查缓存时间（秒）

@@ -56,7 +56,7 @@ class AgentFactory:
         model_config = self.config.get("model", {})
 
         Settings.llm = Ollama(
-            model=model_config.get("llm", "qwen2.5:14b"),
+            model=model_config.get("llm", "qwen2.5:0.5b"),
             base_url=model_config.get("ollama_base_url", "http://localhost:11434"),
             temperature=model_config.get("temperature", 0.3),
             request_timeout=model_config.get("request_timeout", 600.0)

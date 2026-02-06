@@ -27,7 +27,7 @@ aiosqlite>=0.22.1
 
 # LLM & AI Integration
 ollama>=0.6.1
-openai>=2.15.0
+# openai>=2.15.0  # 暂不使用，当前使用Ollama本地推理
 llama-index>=0.14.12
 llama-index-core>=0.14.12
 llama-index-embeddings-ollama>=0.8.6

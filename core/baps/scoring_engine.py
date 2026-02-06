@@ -83,6 +83,21 @@ class SPIResult:
     dimension_analysis: Dict[str, str]
 
 
+@dataclass
+class TTM7Result:
+    """TTM-7改变阶段评估结果"""
+    user_id: str
+    assessed_at: datetime
+    stage_scores: Dict[str, int]           # {S0: 12, S1: 6, ...}
+    current_stage: str                      # "S0"-"S6"
+    stage_name: str                         # "勉强接受"
+    ttm_mapping: str                        # "准备期"
+    sub_scores: Dict[str, int]             # {AW: 觉察, WI: 意愿, AC: 行动}
+    stage_confidence: float                 # 0.0-1.0 判定置信度
+    friendly_name: str                      # 去诊断化的友好名称
+    friendly_description: str               # 去诊断化的描述
+
+
 class BAPSScoringEngine:
     """BAPS综合评分引擎"""
 
@@ -539,6 +554,121 @@ class BAPSScoringEngine:
                 return level
         return {"level": "medium", "label": "中等", "success_rate": "30-50%", "strategy": "降低难度，加强支持"}
 
+    # ============ TTM-7 改变阶段评估 ============
+
+    # 阶段友好名称映射 (去诊断化)
+    STAGE_FRIENDLY_NAMES = {
+        "S0": "探索期",
+        "S1": "觉醒期",
+        "S2": "思考期",
+        "S3": "准备期",
+        "S4": "行动期",
+        "S5": "成长期",
+        "S6": "收获期",
+    }
+    STAGE_FRIENDLY_DESC = {
+        "S0": "你正处于对自身行为模式的探索阶段，这是一切改变的起点",
+        "S1": "你已经开始意识到一些问题，内心正在觉醒中",
+        "S2": "你正在思考改变的可能性，这说明你的内在力量在积蓄",
+        "S3": "你已经准备好迎接改变，正在寻找合适的方式",
+        "S4": "你已经迈出了行动的第一步，这是最了不起的跨越",
+        "S5": "你正在持续成长，新的行为模式正在生根发芽",
+        "S6": "健康行为已经成为你的一部分，这就是你",
+    }
+
+    def score_ttm7(self, answers: Dict[str, int], user_id: str = "anonymous") -> TTM7Result:
+        """
+        计算TTM-7改变阶段评估得分
+
+        参数:
+            answers: Dict[题号, 得分] - 得分范围 1-5
+                     题号格式: TTM01-TTM21
+            user_id: 用户ID
+
+        返回:
+            TTM7Result 对象
+
+        判定逻辑:
+            - 计算7个阶段各自得分(每阶段3题, 满分15)
+            - S0-S2为早期阶段(高分=处于该阶段)
+            - S3-S6为后期阶段(高分=处于该阶段)
+            - 综合判定当前所处阶段
+        """
+        stages = {
+            "S0": ["TTM01", "TTM02", "TTM03"],
+            "S1": ["TTM04", "TTM05", "TTM06"],
+            "S2": ["TTM07", "TTM08", "TTM09"],
+            "S3": ["TTM10", "TTM11", "TTM12"],
+            "S4": ["TTM13", "TTM14", "TTM15"],
+            "S5": ["TTM16", "TTM17", "TTM18"],
+            "S6": ["TTM19", "TTM20", "TTM21"],
+        }
+
+        stage_names = {
+            "S0": "无知无觉", "S1": "强烈抗拒", "S2": "被动应对",
+            "S3": "勉强接受", "S4": "尝试阶段", "S5": "主动实践", "S6": "内化习惯"
+        }
+        ttm_mapping = {
+            "S0": "前意向期", "S1": "前意向期", "S2": "意向期",
+            "S3": "准备期", "S4": "行动期(早期)", "S5": "行动期", "S6": "维持期"
+        }
+
+        # 计算各阶段得分
+        stage_scores = {}
+        for stage, items in stages.items():
+            stage_scores[stage] = sum(answers.get(item, 0) for item in items)
+
+        # 阶段判定逻辑
+        early_stages = ["S0", "S1", "S2"]
+        late_stages = ["S3", "S4", "S5", "S6"]
+
+        early_max_score, early_max_stage = max(
+            ((stage_scores[s], s) for s in early_stages), key=lambda x: x[0]
+        )
+        late_max_score, late_max_stage = max(
+            ((stage_scores[s], s) for s in late_stages), key=lambda x: x[0]
+        )
+
+        # 判定: 如果早期阶段得分高且后期低 → 处于早期
+        # 否则取后期阶段的最高分
+        if early_max_score >= 10 and late_max_score < 10:
+            current_stage = early_max_stage
+        elif late_max_score >= 12 and late_max_stage == "S6":
+            current_stage = "S6"  # S6需要更高门槛
+        else:
+            current_stage = late_max_stage
+
+        # 计算置信度 (最高分与第二高分的差距)
+        sorted_scores = sorted(stage_scores.values(), reverse=True)
+        if sorted_scores[0] > 0:
+            confidence = min(1.0, (sorted_scores[0] - sorted_scores[1]) / sorted_scores[0])
+        else:
+            confidence = 0.0
+
+        # 计算子维度 (觉察AW / 意愿WI / 行动AC)
+        aw_items = ["TTM01", "TTM04", "TTM07", "TTM10", "TTM13", "TTM16", "TTM19"]
+        wi_items = ["TTM02", "TTM05", "TTM08", "TTM11", "TTM14", "TTM17", "TTM20"]
+        ac_items = ["TTM03", "TTM06", "TTM09", "TTM12", "TTM15", "TTM18", "TTM21"]
+
+        sub_scores = {
+            "AW": sum(answers.get(item, 0) for item in aw_items),
+            "WI": sum(answers.get(item, 0) for item in wi_items),
+            "AC": sum(answers.get(item, 0) for item in ac_items),
+        }
+
+        return TTM7Result(
+            user_id=user_id,
+            assessed_at=datetime.now(),
+            stage_scores=stage_scores,
+            current_stage=current_stage,
+            stage_name=stage_names[current_stage],
+            ttm_mapping=ttm_mapping[current_stage],
+            sub_scores=sub_scores,
+            stage_confidence=round(confidence, 2),
+            friendly_name=self.STAGE_FRIENDLY_NAMES[current_stage],
+            friendly_description=self.STAGE_FRIENDLY_DESC[current_stage],
+        )
+
     # ============ 综合评估 ============
 
     def comprehensive_assessment(
@@ -547,22 +677,27 @@ class BAPSScoringEngine:
         bpt6_answers: Dict[str, int],
         capacity_answers: Dict[str, int],
         spi_answers: Dict[str, int],
+        ttm7_answers: Optional[Dict[str, int]] = None,
         user_id: str = "anonymous"
     ) -> Dict[str, Any]:
         """
         进行综合评估
 
-        返回包含所有四个问卷结果的综合报告
+        返回包含所有问卷结果的综合报告（TTM7选填）
         """
         big_five_result = self.score_big_five(big_five_answers, user_id)
         bpt6_result = self.score_bpt6(bpt6_answers, user_id)
         capacity_result = self.score_capacity(capacity_answers, user_id)
         spi_result = self.score_spi(spi_answers, user_id)
 
+        ttm7_result = None
+        if ttm7_answers:
+            ttm7_result = self.score_ttm7(ttm7_answers, user_id)
+
         # 交叉分析
         cross_analysis = self._cross_analyze(big_five_result, bpt6_result, capacity_result, spi_result)
 
-        return {
+        report = {
             "user_id": user_id,
             "assessed_at": datetime.now().isoformat(),
             "big_five": self._result_to_dict(big_five_result),
@@ -574,6 +709,14 @@ class BAPSScoringEngine:
                 big_five_result, bpt6_result, capacity_result, spi_result
             )
         }
+
+        if ttm7_result:
+            report["ttm7"] = self._result_to_dict(ttm7_result)
+            # 基于阶段的额外交叉建议
+            report["cross_analysis"]["current_stage"] = ttm7_result.current_stage
+            report["cross_analysis"]["stage_name"] = ttm7_result.friendly_name
+
+        return report
 
     def _cross_analyze(
         self,

@@ -67,7 +67,7 @@ workflow:
           desc: "识别用户请求的评估类型"
           model:
             provider: ollama
-            name: qwen2.5:7b
+            name: qwen2.5:0.5b
             mode: chat
             completion_params:
               temperature: 0.1
@@ -140,7 +140,7 @@ workflow:
           desc: "基于评估结果生成用户友好的报告"
           model:
             provider: ollama
-            name: qwen2.5:14b
+            name: qwen2.5:0.5b
             mode: chat
             completion_params:
               temperature: 0.3

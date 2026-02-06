@@ -129,7 +129,7 @@ architecture:
         - name: 本地模型 (Ollama)
           url: http://localhost:11434
           models:
-            - qwen2.5:14b      # 主模型
+            - qwen2.5:0.5b      # 主模型
             - deepseek-r1:7b   # 备选模型
             - nomic-embed-text # 向量嵌入
 
@@ -297,7 +297,7 @@ tech_stack:
     local_llm: Ollama
     agent_platform: Dify
     models:
-      - qwen2.5:14b
+      - qwen2.5:0.5b
       - deepseek-r1:7b
     embedding: nomic-embed-text
 
@@ -322,7 +322,7 @@ deployment:
 
     - name: Ollama
       port: 11434
-      models: qwen2.5:14b
+      models: qwen2.5:0.5b
 
     - name: Dify
       port: 80

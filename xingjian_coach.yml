@@ -19,7 +19,7 @@ workflow:
           title: "A1 TTM 评估官"
           model:
             provider: ollama
-            name: qwen2.5:14b
+            name: qwen2.5:0.5b
           prompt_template:
             prompt: "你是一个 TTM 评估专家... (此处粘贴你 PROMPT_A1 的全文)"
       - id: prescriber
@@ -28,7 +28,7 @@ workflow:
           title: "A2 麦肯基处方师"
           model:
             provider: ollama
-            name: qwen2.5:14b
+            name: qwen2.5:0.5b
           variables:
             - variable: stage
               value_selector: [assessor, text]

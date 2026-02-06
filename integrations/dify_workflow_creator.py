@@ -29,8 +29,8 @@ DIFY_API_KEY = os.environ.get('DIFY_API_KEY', 'your_dify_api_key_here')
 DIFY_BASE_URL = os.environ.get('DIFY_BASE_URL', 'http://localhost/console/api')
 
 # Model Configuration
-MODEL_PROVIDER = 'tongyi'  # or 'openai', 'ollama', etc.
-MODEL_NAME = 'qwen2.5:14b'
+MODEL_PROVIDER = 'tongyi'  # or 'ollama', etc.
+MODEL_NAME = 'qwen2.5:0.5b'
 
 
 class WorkflowNodeType(Enum):

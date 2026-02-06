@@ -7,7 +7,7 @@ LLM Judge Executor
 特点：
 - 异步处理
 - 正则清洗防止LLM输出垃圾字符
-- 支持多种LLM后端（Dify、Ollama、OpenAI兼容）
+- 支持多种LLM后端（Dify、Ollama）
 - 与v14功能开关集成
 """
 import json
@@ -35,13 +35,12 @@ class LLMJudge:
     支持多种后端：
     - Ollama (本地)
     - Dify (平台)
-    - OpenAI兼容接口
     """
     
     def __init__(
         self, 
         llm_client: Optional[Any] = None,
-        model_name: str = "qwen2.5:14b",
+        model_name: str = "qwen2.5:0.5b",
         backend: str = "ollama"
     ):
         """
@@ -50,7 +49,7 @@ class LLMJudge:
         Args:
             llm_client: LLM客户端实例（可选，会自动创建）
             model_name: 模型名称
-            backend: 后端类型 (ollama/dify/openai)
+            backend: 后端类型 (ollama/dify)
         """
         self.llm_client = llm_client
         self.model_name = model_name
@@ -384,7 +383,7 @@ def get_llm_judge(
     
     if _default_judge is None:
         _default_judge = LLMJudge(
-            model_name=model_name or os.getenv("QUALITY_JUDGE_MODEL", "qwen2.5:14b"),
+            model_name=model_name or os.getenv("QUALITY_JUDGE_MODEL", "qwen2.5:0.5b"),
             backend=backend or os.getenv("QUALITY_JUDGE_BACKEND", "ollama")
         )
     

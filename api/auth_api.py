@@ -9,7 +9,7 @@ Authentication API Endpoints
 - POST /auth/logout: 登出
 - GET /auth/me: 获取当前用户信息
 """
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials, OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
@@ -25,6 +25,37 @@ from loguru import logger
 
 router = APIRouter(prefix="/api/v1/auth", tags=["认证"])
 security = HTTPBearer()
+
+# 登录限流：每个IP每分钟最多10次登录尝试
+_login_attempts: dict = {}  # ip -> [timestamp, ...]
+
+def _check_login_rate(client_ip: str, max_attempts: int = 10, window: int = 60):
+    """检查登录频率限制"""
+    import time
+    now = time.time()
+    window_start = now - window
+    if client_ip in _login_attempts:
+        _login_attempts[client_ip] = [t for t in _login_attempts[client_ip] if t > window_start]
+    else:
+        _login_attempts[client_ip] = []
+    if len(_login_attempts[client_ip]) >= max_attempts:
+        raise HTTPException(
+            status_code=429,
+            detail="登录尝试过于频繁，请稍后再试"
+        )
+    _login_attempts[client_ip].append(now)
+
+# 角色名称规范化映射（旧角色 → 新角色）
+ROLE_MIGRATION_MAP = {
+    "patient": "grower",      # 患者 → 成长者
+    "provider": "coach",      # 医疗提供者 → 健康教练
+}
+
+
+def normalize_role(role: str) -> str:
+    """规范化角色名称，将旧角色映射到新角色"""
+    role_value = role.value if hasattr(role, 'value') else str(role)
+    return ROLE_MIGRATION_MAP.get(role_value.lower(), role_value.lower())
 
 
 # ============================================
@@ -136,14 +167,21 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
             detail="邮箱已被注册"
         )
 
-    # 创建新用户
+    # 密码强度验证
+    if len(request.password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="密码长度不能少于6位"
+        )
+
+    # 创建新用户（默认角色为观察员）
     new_user = User(
         username=request.username,
         email=request.email,
         password_hash=hash_password(request.password),
         full_name=request.full_name,
         phone=request.phone,
-        role=UserRole.PATIENT,  # 默认为患者角色
+        role=UserRole.OBSERVER,  # 默认为观察员角色（L0）
         is_active=True,
         is_verified=False
     )
@@ -161,25 +199,33 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
         role=new_user.role.value
     )
 
+    # 规范化角色名称
+    normalized_role = normalize_role(new_user.role)
     return TokenResponse(
         **tokens,
         user={
             "id": new_user.id,
             "username": new_user.username,
             "email": new_user.email,
-            "role": new_user.role.value
+            "role": normalized_role,
+            "full_name": new_user.full_name,
+            "intervention_stage": getattr(new_user, 'intervention_stage', None)
         }
     )
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     """
     用户登录
 
     使用用户名/邮箱和密码登录（OAuth2 Password Flow）
     """
     try:
+        # 登录频率限制
+        client_ip = request.client.host if request.client else "unknown"
+        _check_login_rate(client_ip)
+
         logger.info(f"[LOGIN] Received login request - username: {form_data.username}")
 
         # 查询用户（支持用户名或邮箱登录）
@@ -218,14 +264,17 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         )
 
         logger.info(f"[LOGIN] Tokens generated successfully")
+        # 规范化角色名称（兼容旧数据）
+        normalized_role = normalize_role(user.role)
         return TokenResponse(
             **tokens,
             user={
                 "id": user.id,
                 "username": user.username,
                 "email": user.email,
-                "role": user.role.value,
-                "full_name": user.full_name
+                "role": normalized_role,
+                "full_name": user.full_name,
+                "intervention_stage": getattr(user, 'intervention_stage', None)
             }
         )
 
@@ -241,33 +290,126 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         )
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get("/me")
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """
     获取当前用户信息
 
     需要认证
     """
-    return UserResponse(
-        id=current_user.id,
-        username=current_user.username,
-        email=current_user.email,
-        role=current_user.role.value,
-        full_name=current_user.full_name,
-        is_active=current_user.is_active,
-        created_at=current_user.created_at
+    # 规范化角色名称（兼容旧数据）
+    normalized_role = normalize_role(current_user.role)
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "role": normalized_role,
+        "full_name": current_user.full_name,
+        "is_active": current_user.is_active,
+        "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+        "intervention_stage": getattr(current_user, 'intervention_stage', None)
+    }
+
+
+@router.post("/refresh")
+def refresh_token(
+    refresh_token: str = None,
+    db: Session = Depends(get_db)
+):
+    """
+    刷新访问令牌
+
+    使用 refresh_token 获取新的 access_token
+    """
+    if not refresh_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="缺少 refresh_token"
+        )
+
+    payload = verify_token(refresh_token, "refresh")
+    if payload is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="无效或过期的刷新令牌"
+        )
+
+    user_id = payload.get("user_id")
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户不存在或已被禁用"
+        )
+
+    tokens = create_user_tokens(
+        user_id=user.id,
+        username=user.username,
+        role=user.role.value
+    )
+
+    normalized_role = normalize_role(user.role)
+    return TokenResponse(
+        **tokens,
+        user={
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": normalized_role,
+            "full_name": user.full_name,
+        }
     )
 
 
+@router.put("/password")
+async def change_password(
+    old_password: str = None,
+    new_password: str = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """
+    修改密码
+    """
+    if not old_password or not new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="请提供旧密码和新密码"
+        )
+
+    from core.auth import verify_password
+    if not verify_password(old_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="旧密码错误"
+        )
+
+    if len(new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="新密码长度不能少于6位"
+        )
+
+    current_user.password_hash = hash_password(new_password)
+    db.commit()
+
+    logger.info(f"用户修改密码: {current_user.username}")
+    return {"message": "密码修改成功"}
+
+
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user)):
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    current_user: User = Depends(get_current_user),
+):
     """
     用户登出
 
-    实际实现可以将token加入黑名单
+    将token加入黑名单
     """
+    from core.auth import token_blacklist
+    token_blacklist.revoke(credentials.credentials)
     logger.info(f"用户登出: {current_user.username} (ID: {current_user.id})")
-
     return {"message": "登出成功"}
 
 
