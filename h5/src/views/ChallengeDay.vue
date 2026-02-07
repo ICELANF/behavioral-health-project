@@ -140,7 +140,7 @@
                         :count="question.max || 5"
                         allow-half
                         color="#ffd21e"
-                        void-color="#eee"
+                        void-color="#c8c9cc"
                         size="24"
                       />
                       <van-stepper
@@ -164,6 +164,51 @@
                       show-word-limit
                       autosize
                       class="survey-textarea"
+                    />
+                    <!-- Enhanced input toolbar -->
+                    <div class="input-toolbar" v-if="!push.survey_submitted">
+                      <div
+                        v-if="speechSupported"
+                        class="toolbar-btn"
+                        :class="{ active: activeRecording === `${push.id}_${question.id}` }"
+                        @click="toggleVoiceInput(push.id, question.id)"
+                      >
+                        <van-icon name="volume-o" size="18" />
+                        <span>{{ activeRecording === `${push.id}_${question.id}` ? '停止' : '语音' }}</span>
+                      </div>
+                      <div class="toolbar-btn" @click="triggerImageUpload(push.id, question.id)">
+                        <van-icon name="photograph" size="18" />
+                        <span>图片</span>
+                      </div>
+                      <div class="toolbar-btn" @click="openDeviceDataPopup(push.id, question.id)">
+                        <van-icon name="bar-chart-o" size="18" />
+                        <span>健康数据</span>
+                      </div>
+                    </div>
+                    <!-- Image upload (hidden trigger + preview) -->
+                    <div
+                      v-if="getEnhanced(push.id, question.id).images.length > 0"
+                      class="image-preview-list"
+                    >
+                      <div
+                        v-for="(img, imgIdx) in getEnhanced(push.id, question.id).images"
+                        :key="imgIdx"
+                        class="image-preview-item"
+                      >
+                        <van-image :src="img" width="60" height="60" fit="cover" radius="4" />
+                        <van-icon
+                          name="cross"
+                          class="image-remove-btn"
+                          @click="removeImage(push.id, question.id, imgIdx)"
+                        />
+                      </div>
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      style="display: none"
+                      :ref="(el: any) => setFileInputRef(push.id, question.id, el)"
+                      @change="handleImageSelected($event, push.id, question.id)"
                     />
                   </template>
 
@@ -261,13 +306,49 @@
         </div>
       </template>
     </div>
+
+    <!-- Device data popup -->
+    <van-popup
+      v-model:show="deviceDataPopup.visible"
+      position="bottom"
+      round
+      :style="{ maxHeight: '60vh' }"
+    >
+      <div class="device-data-popup">
+        <div class="popup-header">
+          <span class="popup-title">选择今日健康数据</span>
+          <van-icon name="cross" size="18" @click="deviceDataPopup.visible = false" />
+        </div>
+        <van-loading v-if="deviceDataPopup.loading" class="popup-loading" />
+        <div v-else-if="deviceDataItems.length === 0" class="popup-empty">
+          暂无今日设备数据
+        </div>
+        <div v-else class="device-data-list">
+          <div
+            v-for="item in deviceDataItems"
+            :key="item.type"
+            class="device-data-item"
+            @click="insertDeviceData(item)"
+          >
+            <div class="data-icon">
+              <van-icon :name="item.icon" size="22" :color="item.color" />
+            </div>
+            <div class="data-info">
+              <div class="data-label">{{ item.label }}</div>
+              <div class="data-value">{{ item.displayText }}</div>
+            </div>
+            <van-icon name="arrow" size="14" color="#c8c9cc" />
+          </div>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { showToast, showSuccessToast } from 'vant'
+import { showToast, showSuccessToast, showLoadingToast } from 'vant'
 import api from '@/api/index'
 
 interface SurveyQuestion {
@@ -305,6 +386,23 @@ interface ProgressInfo {
   status: string
 }
 
+interface EnhancedData {
+  text: string
+  images: string[]
+  deviceData?: { type: string; value: number | string; unit: string; recordedAt: string }
+}
+
+interface DeviceDataItem {
+  type: string
+  label: string
+  icon: string
+  color: string
+  displayText: string
+  value: number | string
+  unit: string
+  recordedAt: string
+}
+
 const route = useRoute()
 const router = useRouter()
 const enrollmentId = route.params.id as string
@@ -327,6 +425,46 @@ const challengeCompleted = ref(false)
 
 // Survey responses keyed by pushId -> questionId -> value
 const surveyResponses = reactive<Record<number, Record<string, any>>>({})
+
+// Enhanced responses: images + device data per text question
+const enhancedResponses = reactive<Record<string, EnhancedData>>({})
+
+// Voice input
+const speechSupported = ref(false)
+const activeRecording = ref<string | null>(null)
+let recognitionInstance: any = null
+
+// Image upload file input refs
+const fileInputRefs: Record<string, HTMLInputElement | null> = {}
+
+// Device data popup
+const deviceDataPopup = reactive({
+  visible: false,
+  loading: false,
+  pushId: 0,
+  questionId: '',
+})
+const deviceDataItems = ref<DeviceDataItem[]>([])
+
+// ---- helpers ----
+
+function enhancedKey(pushId: number, questionId: string): string {
+  return `${pushId}_${questionId}`
+}
+
+function getEnhanced(pushId: number, questionId: string): EnhancedData {
+  const key = enhancedKey(pushId, questionId)
+  if (!enhancedResponses[key]) {
+    enhancedResponses[key] = { text: '', images: [] }
+  }
+  return enhancedResponses[key]
+}
+
+function setFileInputRef(pushId: number, questionId: string, el: HTMLInputElement | null) {
+  fileInputRefs[enhancedKey(pushId, questionId)] = el
+}
+
+// ---- computed ----
 
 const headerTitle = computed(() => {
   if (challengeCompleted.value) return '挑战完成'
@@ -361,6 +499,8 @@ const advanceButtonText = computed(() => {
   return '完成今天'
 })
 
+// ---- push tag helpers ----
+
 function pushTagColor(tag?: string): string {
   const map: Record<string, string> = {
     core: '#fa8c16',
@@ -381,6 +521,8 @@ function pushTagLabel(tag?: string): string {
   return map[tag || ''] || tag || '推送'
 }
 
+// ---- survey init ----
+
 function initSurveyResponses(pushList: Push[]) {
   for (const push of pushList) {
     if (push.survey && push.survey.questions && !surveyResponses[push.id]) {
@@ -395,41 +537,38 @@ function initSurveyResponses(pushList: Push[]) {
         }
       }
     }
-    // Initialize expand state if not present
     if (!push._expandedSections) {
       push._expandedSections = []
     }
   }
 }
 
+// ---- data loading ----
+
 async function loadToday() {
   loading.value = true
   try {
     const [todayRes, progressRes] = await Promise.all([
-      api.get(`/v1/challenges/enrollments/${enrollmentId}/today`),
-      api.get(`/v1/challenges/enrollments/${enrollmentId}/progress`),
+      api.get(`/api/v1/challenges/enrollments/${enrollmentId}/today`),
+      api.get(`/api/v1/challenges/enrollments/${enrollmentId}/progress`),
     ])
 
     const todayPayload = todayRes as any
     const progressPayload = progressRes as any
 
-    // Set progress info
     progress.current_day = progressPayload.current_day || 0
     progress.total_days = progressPayload.duration_days || progressPayload.total_days || 0
     progress.completed_days = progressPayload.completed_days || 0
     progress.max_streak = progressPayload.max_streak || 0
     progress.status = progressPayload.status || 'active'
 
-    // Check if challenge is completed
     if (progress.status === 'completed') {
       challengeCompleted.value = true
       return
     }
 
-    // Set today's data
     todayData.day_topic = todayPayload.day_topic || ''
 
-    // Process pushes
     const rawPushes: any[] = todayPayload.pushes || todayPayload.items || []
     pushes.value = rawPushes.map((p: any) => ({
       id: p.push_id || p.id,
@@ -453,10 +592,12 @@ async function loadToday() {
   }
 }
 
+// ---- mark read ----
+
 async function markRead(push: Push) {
   markingReadId.value = push.id
   try {
-    await api.post(`/v1/challenges/enrollments/${enrollmentId}/read/${push.id}`)
+    await api.post(`/api/v1/challenges/enrollments/${enrollmentId}/read/${push.id}`)
     push.is_read = true
     showToast({ message: '已标记已读', position: 'bottom' })
   } catch (err: any) {
@@ -467,6 +608,8 @@ async function markRead(push: Push) {
   }
 }
 
+// ---- submit survey (enhanced) ----
+
 async function submitSurvey(push: Push) {
   if (!push.survey || push.survey_submitted) return
 
@@ -476,7 +619,6 @@ async function submitSurvey(push: Push) {
     return
   }
 
-  // Validate that required questions have answers
   const hasEmptyRequired = push.survey.questions.some(q => {
     const val = responses[q.id]
     if (q.type === 'text') return !val || (val as string).trim() === ''
@@ -491,16 +633,37 @@ async function submitSurvey(push: Push) {
     return
   }
 
+  // Build final responses: merge enhanced data for text questions
+  const finalResponses: Record<string, any> = {}
+  for (const q of push.survey.questions) {
+    const val = responses[q.id]
+    if (q.type === 'text') {
+      const enhanced = getEnhanced(push.id, q.id)
+      const hasImages = enhanced.images.length > 0
+      const hasDeviceData = !!enhanced.deviceData
+      if (hasImages || hasDeviceData) {
+        finalResponses[q.id] = {
+          text: val,
+          ...(hasImages ? { images: enhanced.images } : {}),
+          ...(hasDeviceData ? { deviceData: enhanced.deviceData } : {}),
+        }
+      } else {
+        finalResponses[q.id] = val
+      }
+    } else {
+      finalResponses[q.id] = val
+    }
+  }
+
   submittingSurvey.value = push.id
   try {
     await api.post(
-      `/v1/challenges/enrollments/${enrollmentId}/survey/${push.id}`,
-      { responses }
+      `/api/v1/challenges/enrollments/${enrollmentId}/survey/${push.id}`,
+      { responses: finalResponses }
     )
     push.survey_submitted = true
     showSuccessToast('提交成功')
 
-    // Also mark as read automatically
     if (!push.is_read) {
       push.is_read = true
     }
@@ -512,6 +675,8 @@ async function submitSurvey(push: Push) {
   }
 }
 
+// ---- advance day ----
+
 async function advanceDay() {
   if (!canAdvance.value) {
     showToast('请先查看所有推送内容')
@@ -520,14 +685,13 @@ async function advanceDay() {
 
   advancing.value = true
   try {
-    const res: any = await api.post(`/v1/challenges/enrollments/${enrollmentId}/advance`)
+    const res: any = await api.post(`/api/v1/challenges/enrollments/${enrollmentId}/advance`)
 
     if (res.completed || res.status === 'completed') {
       challengeCompleted.value = true
       showSuccessToast('挑战完成!')
     } else {
       showSuccessToast('进入下一天!')
-      // Reload today's data for the new day
       await loadToday()
     }
   } catch (err: any) {
@@ -538,7 +702,223 @@ async function advanceDay() {
   }
 }
 
-// Watch route params in case navigating between enrollments
+// ---- voice input ----
+
+function initSpeechRecognition() {
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  if (SpeechRecognition) {
+    speechSupported.value = true
+  }
+}
+
+function toggleVoiceInput(pushId: number, questionId: string) {
+  const key = `${pushId}_${questionId}`
+
+  // If currently recording this field, stop
+  if (activeRecording.value === key) {
+    if (recognitionInstance) {
+      recognitionInstance.stop()
+    }
+    activeRecording.value = null
+    return
+  }
+
+  // Stop any existing recording
+  if (recognitionInstance) {
+    recognitionInstance.stop()
+  }
+
+  const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+  if (!SpeechRecognition) {
+    showToast('当前浏览器不支持语音输入')
+    return
+  }
+
+  const recognition = new SpeechRecognition()
+  recognition.lang = 'zh-CN'
+  recognition.continuous = false
+  recognition.interimResults = false
+
+  recognition.onresult = (event: any) => {
+    const transcript = event.results[0][0].transcript
+    if (transcript && surveyResponses[pushId]) {
+      const current = surveyResponses[pushId][questionId] || ''
+      surveyResponses[pushId][questionId] = current ? `${current} ${transcript}` : transcript
+    }
+  }
+
+  recognition.onend = () => {
+    activeRecording.value = null
+    recognitionInstance = null
+  }
+
+  recognition.onerror = (event: any) => {
+    if (event.error !== 'aborted') {
+      showToast('语音识别失败，请重试')
+    }
+    activeRecording.value = null
+    recognitionInstance = null
+  }
+
+  recognitionInstance = recognition
+  activeRecording.value = key
+  recognition.start()
+  showToast({ message: '请开始说话...', position: 'bottom', duration: 1500 })
+}
+
+// ---- image upload ----
+
+function triggerImageUpload(pushId: number, questionId: string) {
+  const enhanced = getEnhanced(pushId, questionId)
+  if (enhanced.images.length >= 3) {
+    showToast('最多上传3张图片')
+    return
+  }
+  const key = enhancedKey(pushId, questionId)
+  const input = fileInputRefs[key]
+  if (input) {
+    input.value = ''
+    input.click()
+  }
+}
+
+async function handleImageSelected(event: Event, pushId: number, questionId: string) {
+  const input = event.target as HTMLInputElement
+  const file = input?.files?.[0]
+  if (!file) return
+
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('图片大小不能超过5MB')
+    return
+  }
+
+  const enhanced = getEnhanced(pushId, questionId)
+  if (enhanced.images.length >= 3) {
+    showToast('最多上传3张图片')
+    return
+  }
+
+  const toast = showLoadingToast({ message: '上传中...', forbidClick: true, duration: 0 })
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res: any = await api.post('/api/v1/upload/survey-image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    enhanced.images.push(res.url)
+    showToast({ message: '上传成功', position: 'bottom' })
+  } catch (err: any) {
+    const msg = err?.response?.data?.detail || '上传失败'
+    showToast(msg)
+  } finally {
+    toast.close()
+  }
+}
+
+function removeImage(pushId: number, questionId: string, index: number) {
+  const enhanced = getEnhanced(pushId, questionId)
+  enhanced.images.splice(index, 1)
+}
+
+// ---- device data ----
+
+async function openDeviceDataPopup(pushId: number, questionId: string) {
+  deviceDataPopup.pushId = pushId
+  deviceDataPopup.questionId = questionId
+  deviceDataPopup.visible = true
+  deviceDataPopup.loading = true
+  deviceDataItems.value = []
+
+  try {
+    const res: any = await api.get('/api/v1/mp/device/dashboard/today')
+    const items: DeviceDataItem[] = []
+
+    if (res.glucose?.current != null) {
+      items.push({
+        type: 'glucose',
+        label: '血糖',
+        icon: 'fire-o',
+        color: '#fa8c16',
+        displayText: `${res.glucose.current} mmol/L`,
+        value: res.glucose.current,
+        unit: 'mmol/L',
+        recordedAt: res.glucose.recorded_at || new Date().toISOString(),
+      })
+    }
+
+    if (res.weight?.weight_kg != null) {
+      items.push({
+        type: 'weight',
+        label: '体重',
+        icon: 'balance-o',
+        color: '#1989fa',
+        displayText: `${res.weight.weight_kg} kg`,
+        value: res.weight.weight_kg,
+        unit: 'kg',
+        recordedAt: res.weight.recorded_at || new Date().toISOString(),
+      })
+    }
+
+    if (res.sleep?.duration_hours != null) {
+      const score = res.sleep.score != null ? ` (评分${res.sleep.score})` : ''
+      items.push({
+        type: 'sleep',
+        label: '睡眠',
+        icon: 'hotel-o',
+        color: '#722ed1',
+        displayText: `${res.sleep.duration_hours}小时${score}`,
+        value: res.sleep.duration_hours,
+        unit: '小时',
+        recordedAt: res.sleep.recorded_at || new Date().toISOString(),
+      })
+    }
+
+    if (res.activity?.steps != null) {
+      items.push({
+        type: 'activity',
+        label: '活动',
+        icon: 'smile-o',
+        color: '#52c41a',
+        displayText: `${res.activity.steps}步`,
+        value: res.activity.steps,
+        unit: '步',
+        recordedAt: res.activity.recorded_at || new Date().toISOString(),
+      })
+    }
+
+    deviceDataItems.value = items
+  } catch (err: any) {
+    showToast('获取设备数据失败')
+  } finally {
+    deviceDataPopup.loading = false
+  }
+}
+
+function insertDeviceData(item: DeviceDataItem) {
+  const { pushId, questionId } = deviceDataPopup
+
+  // Append formatted text to textarea
+  if (surveyResponses[pushId]) {
+    const current = surveyResponses[pushId][questionId] || ''
+    const insertText = `[${item.label}: ${item.displayText}]`
+    surveyResponses[pushId][questionId] = current ? `${current}\n${insertText}` : insertText
+  }
+
+  // Store structured device data
+  const enhanced = getEnhanced(pushId, questionId)
+  enhanced.deviceData = {
+    type: item.type,
+    value: item.value,
+    unit: item.unit,
+    recordedAt: item.recordedAt,
+  }
+
+  deviceDataPopup.visible = false
+  showToast({ message: `已插入${item.label}数据`, position: 'bottom' })
+}
+
+// ---- lifecycle ----
+
 watch(
   () => route.params.id,
   (newId) => {
@@ -551,6 +931,7 @@ watch(
 )
 
 onMounted(() => {
+  initSpeechRecognition()
   loadToday()
 })
 </script>
@@ -784,7 +1165,9 @@ onMounted(() => {
   }
 
   .rating-wrapper {
-    padding: $spacing-xs 0;
+    background: #f7f8fa;
+    border-radius: 8px;
+    padding: 8px 12px;
   }
 
   .survey-textarea {
@@ -814,6 +1197,147 @@ onMounted(() => {
 
   .survey-submit-btn {
     margin-top: $spacing-sm;
+  }
+}
+
+// Enhanced input toolbar
+.input-toolbar {
+  display: flex;
+  gap: 0;
+  margin-top: 6px;
+  background: #f7f8fa;
+  border-radius: 8px;
+  overflow: hidden;
+
+  .toolbar-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 0;
+    font-size: 12px;
+    color: #666;
+    cursor: pointer;
+    transition: background 0.2s;
+
+    &:not(:last-child) {
+      border-right: 1px solid #eee;
+    }
+
+    &:active {
+      background: #eee;
+    }
+
+    &.active {
+      color: #ee0a24;
+      background: #fff1f0;
+    }
+  }
+}
+
+// Image preview
+.image-preview-list {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+
+  .image-preview-item {
+    position: relative;
+
+    .image-remove-btn {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      width: 18px;
+      height: 18px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      cursor: pointer;
+      z-index: 1;
+    }
+  }
+}
+
+// Device data popup
+.device-data-popup {
+  padding: 16px;
+
+  .popup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+
+    .popup-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #333;
+    }
+  }
+
+  .popup-loading {
+    text-align: center;
+    padding: 30px 0;
+  }
+
+  .popup-empty {
+    text-align: center;
+    padding: 30px 0;
+    color: #999;
+    font-size: 14px;
+  }
+
+  .device-data-list {
+    .device-data-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      cursor: pointer;
+
+      &:not(:last-child) {
+        border-bottom: 1px solid #f5f5f5;
+      }
+
+      &:active {
+        opacity: 0.7;
+      }
+
+      .data-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: #f7f8fa;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .data-info {
+        flex: 1;
+        min-width: 0;
+
+        .data-label {
+          font-size: 14px;
+          color: #333;
+          font-weight: 500;
+        }
+
+        .data-value {
+          font-size: 13px;
+          color: #666;
+          margin-top: 2px;
+        }
+      }
+    }
   }
 }
 

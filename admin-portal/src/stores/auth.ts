@@ -73,18 +73,20 @@ export const useAuthStore = defineStore('auth', () => {
   const login = async (username: string, password: string): Promise<boolean> => {
     loading.value = true
     try {
-      const res = await request.post('/auth/login', {
-        username,
-        password
+      const params = new URLSearchParams()
+      params.append('username', username)
+      params.append('password', password)
+      const res = await request.post('v1/auth/login', params, {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       })
-      const data = res.data as LoginResponse
+      const data = res.data
 
-      if (data.success && data.token && data.user) {
-        token.value = data.token
+      if (data.access_token) {
+        token.value = data.access_token
         refreshToken.value = data.refresh_token || null
-        user.value = data.user
+        user.value = data.user || null
 
-        localStorage.setItem('admin_token', data.token)
+        localStorage.setItem('admin_token', data.access_token)
         if (data.refresh_token) {
           localStorage.setItem('admin_refresh_token', data.refresh_token)
         }
@@ -108,10 +110,17 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return false
 
     try {
-      const res = await request.get('/auth/profile')
-      const data = res.data as { success: boolean; data: UserIdentity }
-      if (data.success && data.data) {
-        user.value = data.data
+      const res = await request.get('v1/auth/me')
+      const data = res.data
+      if (data && data.id) {
+        user.value = {
+          user_id: String(data.id),
+          role: data.role || '',
+          level: 0,
+          certifications: [],
+          status: data.is_active ? 'active' : 'inactive',
+          permissions: [],
+        }
         return true
       }
       return false
@@ -128,7 +137,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (!refreshToken.value) return false
 
     try {
-      const res = await request.post('/auth/refresh', {
+      const res = await request.post('v1/auth/refresh', {
         refresh_token: refreshToken.value
       })
       const data = res.data as LoginResponse
@@ -158,7 +167,7 @@ export const useAuthStore = defineStore('auth', () => {
    */
   const logout = async (): Promise<void> => {
     try {
-      await request.post('/auth/logout')
+      await request.post('v1/auth/logout')
     } catch (error) {
       console.error('Logout request failed:', error)
     } finally {

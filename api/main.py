@@ -95,7 +95,28 @@ class CoordinateRequest(BaseModel):
     agent_results: List[AgentAnalysisInput]
 
 
-app = FastAPI(title="Xingjian Agent Gateway", version="16.0.0")
+from contextlib import asynccontextmanager
+
+_scheduler = None
+
+@asynccontextmanager
+async def lifespan(app):
+    """启动/关闭 APScheduler"""
+    global _scheduler
+    try:
+        from core.scheduler import setup_scheduler
+        _scheduler = setup_scheduler()
+        if _scheduler:
+            _scheduler.start()
+            print("[API] APScheduler 已启动")
+    except Exception as e:
+        print(f"[API] APScheduler 启动失败: {e}")
+    yield
+    if _scheduler:
+        _scheduler.shutdown(wait=False)
+        print("[API] APScheduler 已关闭")
+
+app = FastAPI(title="Xingjian Agent Gateway", version="16.0.0", lifespan=lifespan)
 
 # --- 配置中心 (从 api.config 集中读取) ---
 from api.config import DIFY_API_URL, DIFY_API_KEY, OLLAMA_API_URL, OLLAMA_MODEL
@@ -287,6 +308,40 @@ try:
     print("[API] 教练推送审批队列路由已注册")
 except ImportError as e:
     print(f"[API] 教练推送审批队列路由注册失败: {e}")
+
+# 注册全平台搜索路由
+try:
+    from api.search_api import router as search_router
+    app.include_router(search_router)
+    print("[API] 全平台搜索路由已注册")
+except ImportError as e:
+    print(f"[API] 全平台搜索路由注册失败: {e}")
+
+# 注册多Agent协作路由
+try:
+    from api.agent_api import router as agent_router
+    app.include_router(agent_router)
+    print("[API] 多Agent协作路由已注册")
+except ImportError as e:
+    print(f"[API] 多Agent协作路由注册失败: {e}")
+
+# 注册图片上传路由
+try:
+    from api.upload_api import router as upload_router
+    app.include_router(upload_router)
+    print("[API] 图片上传路由已注册")
+except ImportError as e:
+    print(f"[API] 图片上传路由注册失败: {e}")
+
+# 挂载静态文件服务
+try:
+    from fastapi.staticfiles import StaticFiles
+    _static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+    os.makedirs(_static_dir, exist_ok=True)
+    app.mount("/api/static", StaticFiles(directory=_static_dir), name="static")
+    print("[API] 静态文件服务已挂载 /api/static")
+except Exception as e:
+    print(f"[API] 静态文件服务挂载失败: {e}")
 
 class AgentGateway:
     """行健行为教练网关：连接编排层与模型层"""

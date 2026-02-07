@@ -113,6 +113,12 @@
           <span>干预包管理</span>
         </a-menu-item>
 
+        <!-- 挑战活动管理 -->
+        <a-menu-item v-if="isAdmin || isCoach" key="admin-challenges" @click="$router.push('/admin/challenges')">
+          <template #icon><TrophyOutlined /></template>
+          <span>挑战活动管理</span>
+        </a-menu-item>
+
         <!-- 管理员可见 - 用户管理 -->
         <a-menu-item v-if="isAdmin" key="admin-user-management" @click="$router.push('/admin/user-management')">
           <template #icon><UsergroupAddOutlined /></template>
@@ -143,6 +149,99 @@
               {{ item.title }}
             </a-breadcrumb-item>
           </a-breadcrumb>
+        </div>
+        <div class="header-center">
+          <a-popover
+            :open="searchPopoverOpen"
+            placement="bottom"
+            :overlayStyle="{ width: '480px' }"
+          >
+            <template #content>
+              <div v-if="searchLoading" style="text-align: center; padding: 24px 0">
+                <a-spin />
+              </div>
+              <div v-else-if="searchTotal === 0 && searchQuery" style="text-align: center; padding: 24px 0; color: #999">
+                未找到相关内容
+              </div>
+              <div v-else-if="searchTotal > 0">
+                <!-- 用户 -->
+                <div v-if="searchResults.users?.length" class="search-category">
+                  <div class="search-category-title"><UserOutlined /> 用户</div>
+                  <div
+                    v-for="item in searchResults.users"
+                    :key="'u-' + item.id"
+                    class="search-result-item"
+                    @mousedown.prevent="goToResult('user', item)"
+                  >
+                    <span class="search-item-main">{{ item.full_name || item.username }}</span>
+                    <span class="search-item-tag">{{ item.role }}</span>
+                  </div>
+                </div>
+                <!-- 挑战 -->
+                <div v-if="searchResults.challenges?.length" class="search-category">
+                  <div class="search-category-title"><TrophyOutlined /> 挑战</div>
+                  <div
+                    v-for="item in searchResults.challenges"
+                    :key="'c-' + item.id"
+                    class="search-result-item"
+                    @mousedown.prevent="goToResult('challenge', item)"
+                  >
+                    <span class="search-item-main">{{ item.title }}</span>
+                    <span class="search-item-tag">{{ item.category }}</span>
+                  </div>
+                </div>
+                <!-- 微行动 -->
+                <div v-if="searchResults.micro_actions?.length" class="search-category">
+                  <div class="search-category-title"><ThunderboltOutlined /> 微行动</div>
+                  <div
+                    v-for="item in searchResults.micro_actions"
+                    :key="'m-' + item.id"
+                    class="search-result-item"
+                    @mousedown.prevent="goToResult('micro_action', item)"
+                  >
+                    <span class="search-item-main">{{ item.title }}</span>
+                    <span class="search-item-tag">{{ item.domain }}</span>
+                  </div>
+                </div>
+                <!-- 预警 -->
+                <div v-if="searchResults.alerts?.length" class="search-category">
+                  <div class="search-category-title"><AlertOutlined /> 预警</div>
+                  <div
+                    v-for="item in searchResults.alerts"
+                    :key="'a-' + item.id"
+                    class="search-result-item"
+                    @mousedown.prevent="goToResult('alert', item)"
+                  >
+                    <span class="search-item-main">{{ item.message }}</span>
+                    <span class="search-item-tag">{{ item.severity }}</span>
+                  </div>
+                </div>
+                <!-- 消息 -->
+                <div v-if="searchResults.messages?.length" class="search-category">
+                  <div class="search-category-title"><MessageOutlined /> 消息</div>
+                  <div
+                    v-for="item in searchResults.messages"
+                    :key="'msg-' + item.id"
+                    class="search-result-item"
+                    @mousedown.prevent="goToResult('message', item)"
+                  >
+                    <span class="search-item-main">{{ item.content }}</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+            <a-input-search
+              v-model:value="searchQuery"
+              placeholder="搜索用户、挑战、内容..."
+              style="width: 320px"
+              allow-clear
+              @search="doSearch"
+              @blur="handleSearchBlur"
+              @focus="handleSearchFocus"
+            >
+              <template #prefix><SearchOutlined /></template>
+            </a-input-search>
+          </a-popover>
         </div>
         <div class="header-right">
           <a-dropdown>
@@ -190,8 +289,14 @@ import {
   ShareAltOutlined,
   SafetyCertificateOutlined,
   UsergroupAddOutlined,
-  ApartmentOutlined
+  ApartmentOutlined,
+  SearchOutlined,
+  TrophyOutlined,
+  ThunderboltOutlined,
+  AlertOutlined,
+  MessageOutlined
 } from '@ant-design/icons-vue'
+import request from '../api/request'
 
 const route = useRoute()
 const router = useRouter()
@@ -245,6 +350,8 @@ watch(() => route.path, (path) => {
     if (path.includes('supervision')) selectedKeys.value = ['expert-my-supervision']
     else if (path.includes('reviews')) selectedKeys.value = ['expert-my-reviews']
     else if (path.includes('research')) selectedKeys.value = ['expert-my-research']
+  } else if (path === '/admin/challenges') {
+    selectedKeys.value = ['admin-challenges']
   } else if (path === '/admin/user-management') {
     selectedKeys.value = ['admin-user-management']
   } else if (path === '/admin/distribution') {
@@ -284,6 +391,75 @@ watch(() => route.path, (path) => {
     selectedKeys.value = ['dashboard']
   }
 }, { immediate: true })
+
+// ====== 全平台搜索 ======
+const searchQuery = ref('')
+const searchResults = ref<Record<string, any[]>>({})
+const searchTotal = ref(0)
+const searchLoading = ref(false)
+const searchPopoverOpen = ref(false)
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+watch(searchQuery, (val) => {
+  if (searchTimer) clearTimeout(searchTimer)
+  if (!val || !val.trim()) {
+    searchResults.value = {}
+    searchTotal.value = 0
+    searchPopoverOpen.value = false
+    return
+  }
+  searchTimer = setTimeout(() => doSearch(), 300)
+})
+
+const doSearch = async () => {
+  const q = searchQuery.value?.trim()
+  if (!q) return
+  searchLoading.value = true
+  searchPopoverOpen.value = true
+  try {
+    const res = await request.get('v1/search', { params: { q, limit: 20 } })
+    const data = res.data
+    searchResults.value = data.results || {}
+    searchTotal.value = data.total || 0
+  } catch {
+    searchResults.value = {}
+    searchTotal.value = 0
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+const handleSearchBlur = () => {
+  setTimeout(() => { searchPopoverOpen.value = false }, 200)
+}
+
+const handleSearchFocus = () => {
+  if (searchTotal.value > 0 || (searchQuery.value && searchQuery.value.trim())) {
+    searchPopoverOpen.value = true
+  }
+}
+
+const goToResult = (type: string, item: any) => {
+  searchPopoverOpen.value = false
+  searchQuery.value = ''
+  switch (type) {
+    case 'user':
+      router.push('/admin/user-management')
+      break
+    case 'challenge':
+      router.push('/admin/challenges')
+      break
+    case 'micro_action':
+      router.push('/coach-portal')
+      break
+    case 'alert':
+      router.push('/coach-portal')
+      break
+    case 'message':
+      router.push('/coach/messages')
+      break
+  }
+}
 
 const handleLogout = () => {
   localStorage.removeItem('admin_token')
@@ -343,5 +519,53 @@ const handleLogout = () => {
   background: #fff;
   min-height: calc(100vh - 64px - 48px);
   border-radius: 4px;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 0 24px;
+}
+
+.search-category {
+  margin-bottom: 12px;
+}
+.search-category:last-child {
+  margin-bottom: 0;
+}
+.search-category-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #666;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 4px;
+}
+.search-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+.search-result-item:hover {
+  background: #f5f5f5;
+}
+.search-item-main {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: #333;
+}
+.search-item-tag {
+  margin-left: 8px;
+  font-size: 11px;
+  color: #999;
+  flex-shrink: 0;
 }
 </style>

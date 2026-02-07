@@ -265,14 +265,18 @@ const handleLogin = async () => {
   loading.value = true
   try {
     // 先尝试调用后端 API
-    const res = await request.post('/auth/login', {
-      username: formState.username,
-      password: formState.password,
-      role: selectedRole.value
+    const params = new URLSearchParams()
+    params.append('username', formState.username)
+    params.append('password', formState.password)
+    const res = await request.post('v1/auth/login', params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     })
     const data = res.data
-    if (data.success && data.token) {
-      saveLoginState(data.token, formState.username, data.user?.role || selectedRole.value, data.user?.level || 0, data.user?.name || formState.username)
+    if (data.access_token) {
+      saveLoginState(data.access_token, formState.username, data.user?.role || selectedRole.value, data.user?.level || 0, data.user?.full_name || data.user?.username || formState.username)
+      if (data.refresh_token) {
+        localStorage.setItem('admin_refresh_token', data.refresh_token)
+      }
       navigateToHome(data.user?.role || selectedRole.value)
     } else {
       message.error('登录失败')

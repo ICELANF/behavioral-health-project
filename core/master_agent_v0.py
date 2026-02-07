@@ -95,6 +95,9 @@ class CoreAgentType(Enum):
     EXERCISE = "exercise"
     TCM = "tcm"
     CRISIS = "crisis"
+    BEHAVIOR_RX = "behavior_rx"
+    WEIGHT = "weight"
+    CARDIAC_REHAB = "cardiac_rehab"
 
 
 class CoreTaskType(Enum):
@@ -3704,17 +3707,84 @@ class AgentRouter:
             "domain": "tcm",
             "keywords": ["中医", "体质", "养生", "调理", "穴位", "气血", "湿气"],
             "priority_base": 4
+        },
+        "BehaviorRxAgent": {
+            "name": "行为处方",
+            "domain": "behavior_rx",
+            "keywords": ["行为处方", "处方", "行为干预", "行为改变", "习惯", "戒烟", "戒酒", "依从性", "自律"],
+            "priority_base": 2
+        },
+        "WeightAgent": {
+            "name": "体重管理",
+            "domain": "weight",
+            "keywords": ["体重", "减重", "减肥", "BMI", "肥胖", "腰围", "身体成分", "脂肪", "增肌"],
+            "data_fields": ["weight"],
+            "priority_base": 3
+        },
+        "CardiacRehabAgent": {
+            "name": "心脏康复",
+            "domain": "cardiac_rehab",
+            "keywords": ["心脏", "心血管", "心梗", "冠心病", "康复", "心率", "血压", "房颤", "心衰", "支架"],
+            "data_fields": ["hrv", "heart_rate"],
+            "priority_base": 1
         }
     }
 
     # 领域关联 (A 领域问题可能需要 B 领域协同)
+    #
+    # 设计原则:
+    #   - 专科Agent (sleep/glucose/nutrition等) 关联最直接的 2-3 个交叉领域
+    #   - 整合型Agent (behavior_rx/weight/cardiac_rehab) 关联所有相关底座，
+    #     因为它们本质上是多领域综合干预方案，不是独立专科
+    #
     DOMAIN_CORRELATIONS = {
-        "sleep": ["glucose", "stress", "mental"],      # 睡眠 ↔ 血糖、压力、心理
-        "glucose": ["sleep", "nutrition", "exercise"], # 血糖 ↔ 睡眠、营养、运动
-        "stress": ["sleep", "mental", "exercise"],     # 压力 ↔ 睡眠、心理、运动
-        "nutrition": ["glucose", "exercise"],          # 营养 ↔ 血糖、运动
-        "exercise": ["glucose", "stress"],             # 运动 ↔ 血糖、压力
-        "mental": ["stress", "sleep"]                  # 心理 ↔ 压力、睡眠
+        # ── 专科 Agent: 关联最直接的交叉领域 ──
+        "sleep":     ["glucose", "stress", "mental", "exercise"],
+        #             睡眠差→血糖升、压力源、情绪低落、运动不足
+        "glucose":   ["sleep", "nutrition", "exercise", "weight", "stress"],
+        #             血糖异常→睡眠/饮食/运动/体重/压力都相关
+        "stress":    ["sleep", "mental", "exercise", "cardiac_rehab"],
+        #             长期压力→失眠、心理问题、缺运动、心血管风险
+        "nutrition": ["glucose", "exercise", "weight", "tcm"],
+        #             饮食→血糖/运动配合/体重/中医食疗
+        "exercise":  ["glucose", "stress", "sleep", "weight", "cardiac_rehab"],
+        #             运动→血糖调节/减压/助眠/减重/心脏康复核心
+        "mental":    ["stress", "sleep", "behavior_rx", "motivation"],
+        #             心理→压力/睡眠/行为改变/动机
+        "tcm":       ["nutrition", "sleep", "mental", "stress"],
+        #             中医→食疗/睡眠调理/情志/压力
+        "crisis":    ["mental", "stress", "behavior_rx"],
+        #             危机→心理/压力/行为干预
+        "motivation":["mental", "behavior_rx", "exercise"],
+        #             动机→心理/行为处方/运动
+
+        # ── 整合型 Agent: 本身就是多领域综合方案 ──
+        "behavior_rx": [
+            "mental", "motivation", "nutrition", "exercise", "sleep",
+            "glucose", "weight", "tcm", "stress"
+        ],
+        # 行为处方 = 跨全领域的综合干预输出:
+        #   心理基础(动机/情绪) + 行为目标(饮食/运动/睡眠)
+        #   + 生理指标(血糖/体重) + 辅助手段(中医) + 压力管理
+
+        "weight": [
+            "nutrition", "exercise", "glucose", "sleep", "mental",
+            "motivation", "behavior_rx", "tcm"
+        ],
+        # 体重管理 = 多系统联动:
+        #   饮食(热量) + 运动(消耗) + 代谢(血糖/胰岛素)
+        #   + 睡眠(瘦素/饥饿素) + 心理(情绪性进食)
+        #   + 动机(长期坚持) + 行为处方(习惯养成) + 中医(体质调理)
+
+        "cardiac_rehab": [
+            "exercise", "stress", "sleep", "nutrition", "mental",
+            "glucose", "weight", "motivation", "behavior_rx"
+        ],
+        # 心脏康复 = 全方位康复方案:
+        #   运动处方(核心) + 压力管理(心血管保护) + 睡眠(心脏修复)
+        #   + 营养(心脏友好饮食) + 心理(术后抑郁/焦虑)
+        #   + 血糖(糖尿病=心血管高危) + 体重(减轻心脏负荷)
+        #   + 动机(长期依从) + 行为处方(生活方式重建)
     }
 
     def route(self,
@@ -4829,7 +4899,10 @@ class MasterAgent:
         "tcm_wellness": {"name": "中医养生师", "priority": 4},
         "sleep": {"name": "睡眠专家", "priority": 1},
         "metabolism": {"name": "代谢专家", "priority": 2},
-        "emotion": {"name": "情绪管理师", "priority": 1}
+        "emotion": {"name": "情绪管理师", "priority": 1},
+        "behavior_rx": {"name": "行为处方师", "priority": 2},
+        "weight": {"name": "体重管理师", "priority": 3},
+        "cardiac_rehab": {"name": "心脏康复师", "priority": 2}
     }
 
     # 输入类型到主要专家的映射

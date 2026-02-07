@@ -88,7 +88,7 @@ export const useAgentStore = defineStore('agent', () => {
    */
   const loadAgents = async (): Promise<void> => {
     try {
-      const res = await request.get('/agent/list')
+      const res = await request.get('v1/agent/list')
       const data = res.data as { success: boolean; data: AgentInfo[] }
       if (data.success) {
         agents.value = data.data
@@ -113,7 +113,7 @@ export const useAgentStore = defineStore('agent', () => {
     error.value = null
 
     try {
-      const res = await request.post('/agent/run', params)
+      const res = await request.post('v1/agent/run', params)
       const data = res.data as { success: boolean; data: AgentOutput }
       if (data.success) {
         currentOutput.value = data.data
@@ -133,7 +133,7 @@ export const useAgentStore = defineStore('agent', () => {
    */
   const loadPendingReviews = async (): Promise<void> => {
     try {
-      const res = await request.get('/agent/pending-reviews')
+      const res = await request.get('v1/agent/pending-reviews')
       const data = res.data as { success: boolean; data: PendingReview[] }
       if (data.success) {
         pendingReviews.value = data.data
@@ -156,7 +156,7 @@ export const useAgentStore = defineStore('agent', () => {
     modifications?: { original: any; modified: any }
   }): Promise<boolean> => {
     try {
-      const res = await request.post('/agent/feedback', params)
+      const res = await request.post('v1/agent/feedback', params)
       const data = res.data as { success: boolean }
       if (data.success) {
         // 移除已审核的项
@@ -175,7 +175,7 @@ export const useAgentStore = defineStore('agent', () => {
    */
   const getAgentStats = async (agentId: string): Promise<any> => {
     try {
-      const res = await request.get(`/agent/stats/${agentId}`)
+      const res = await request.get(`v1/agent/stats/${agentId}`)
       const data = res.data as { success: boolean; data: any }
       if (data.success) {
         return data.data
@@ -203,7 +203,7 @@ export const useAgentStore = defineStore('agent', () => {
       if (params?.status) query.set('status', params.status)
       if (params?.limit) query.set('limit', String(params.limit))
 
-      const res = await request.get(`/agent/history?${query.toString()}`)
+      const res = await request.get(`v1/agent/history?${query.toString()}`)
       const data = res.data as { success: boolean; data: any[] }
       if (data.success) {
         return data.data

@@ -23,6 +23,9 @@ COPY tsconfig.json ./
 COPY tsconfig.app.json ./
 COPY tsconfig.node.json ./
 
+# Set API base URL for production (nginx proxies /api/ to backend)
+ENV VITE_API_BASE_URL=/api
+
 # Build the application (skip vue-tsc in Docker, type-checked locally)
 RUN npx vite build
 

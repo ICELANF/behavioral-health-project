@@ -40,6 +40,17 @@
       </div>
     </div>
 
+    <!-- 快速体验入口 -->
+    <div class="quick-login">
+      <p class="quick-title">快速体验</p>
+      <div class="quick-buttons">
+        <van-button size="small" round @click="quickLogin('grower')">成长者</van-button>
+        <van-button size="small" round @click="quickLogin('observer')">观察员</van-button>
+        <van-button size="small" round @click="quickLogin('sharer')">分享者</van-button>
+        <van-button size="small" round type="primary" plain @click="quickLogin('coach')">教练</van-button>
+      </div>
+    </div>
+
     <div class="login-footer">
       <p>登录即表示您同意 <a href="#">用户协议</a> 和 <a href="#">隐私政策</a></p>
     </div>
@@ -49,7 +60,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, showLoadingToast, closeToast } from 'vant'
 import api from '@/api/index'
 import storage from '@/utils/storage'
 import { useUserStore } from '@/stores/user'
@@ -63,6 +74,21 @@ const form = reactive({
   password: '',
 })
 
+const demoAccounts: Record<string, { password: string; label: string }> = {
+  observer: { password: 'Observer@2026', label: '观察员' },
+  grower:   { password: 'Grower@2026',   label: '成长者' },
+  sharer:   { password: 'Sharer@2026',   label: '分享者' },
+  coach:    { password: 'Coach@2026',    label: '教练' },
+}
+
+function quickLogin(role: string) {
+  const account = demoAccounts[role]
+  if (!account) return
+  form.username = role
+  form.password = account.password
+  handleLogin()
+}
+
 async function handleLogin() {
   if (!form.username || !form.password) {
     showToast('请输入用户名和密码')
@@ -70,8 +96,8 @@ async function handleLogin() {
   }
 
   loading.value = true
+  showLoadingToast({ message: '登录中...', forbidClick: true })
   try {
-    // 使用 URLSearchParams 发送表单数据（OAuth2 password flow）
     const params = new URLSearchParams()
     params.append('username', form.username)
     params.append('password', form.password)
@@ -80,7 +106,6 @@ async function handleLogin() {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     })
 
-    // 存储认证信息
     storage.setToken(res.access_token)
     if (res.user) {
       storage.setAuthUser(res.user)
@@ -90,9 +115,11 @@ async function handleLogin() {
       })
     }
 
+    closeToast()
     showToast({ message: '登录成功', type: 'success' })
     router.replace('/')
   } catch (e: any) {
+    closeToast()
     const msg = e.response?.data?.detail || '登录失败，请检查用户名和密码'
     showToast(msg)
   } finally {
@@ -145,9 +172,27 @@ async function handleLogin() {
   }
 }
 
+.quick-login {
+  margin-top: 32px;
+  text-align: center;
+
+  .quick-title {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 12px;
+  }
+
+  .quick-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+}
+
 .login-footer {
   text-align: center;
-  margin-top: 40px;
+  margin-top: 32px;
   font-size: 12px;
   color: #999;
 

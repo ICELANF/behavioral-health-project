@@ -1,8 +1,10 @@
-# 行为健康数字平台 — 架构总览
+# 行为健康数字平台 — 架构总览 (v11 归档)
 
+> **此文档已归档，最新版本请查看: [platform-architecture-overview.md](platform-architecture-overview.md) (v17)**
+>
 > 最后更新: 2026-02-01
 > 版本: v11
-> 状态: 演示准备阶段
+> 状态: 已归档
 
 ---
 

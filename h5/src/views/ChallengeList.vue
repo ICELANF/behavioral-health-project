@@ -209,7 +209,7 @@ function goToDay(enrollment: Enrollment) {
 async function loadEnrollments() {
   loading.value = true
   try {
-    const res: any = await api.get('/v1/challenges/my-enrollments')
+    const res: any = await api.get('/api/v1/challenges/my-enrollments')
     enrollments.value = res.items || res.enrollments || res || []
   } catch {
     enrollments.value = []
@@ -222,7 +222,7 @@ async function loadEnrollments() {
 async function handleStart(enrollment: Enrollment) {
   startingId.value = enrollment.id
   try {
-    await api.post(`/v1/challenges/enrollments/${enrollment.id}/start`)
+    await api.post(`/api/v1/challenges/enrollments/${enrollment.id}/start`)
     showSuccessToast('挑战开始!')
     await loadEnrollments()
     router.push(`/challenge-day/${enrollment.id}`)
