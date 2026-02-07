@@ -36,6 +36,10 @@
             </a-col>
           </a-row>
 
+          <div style="margin-bottom:16px">
+            <a-button type="primary" @click="goContentStudio">内容管理</a-button>
+          </div>
+
           <a-descriptions bordered :column="2" size="small" v-if="tenant">
             <a-descriptions-item label="合作等级">{{ tierLabel }}</a-descriptions-item>
             <a-descriptions-item label="客户上限">{{ tenant.max_clients }}</a-descriptions-item>
@@ -331,6 +335,10 @@ function formatDate(d: string) {
 
 function previewStudio() {
   window.open(`/studio/${tenantId}`, '_blank')
+}
+
+function goContentStudio() {
+  router.push({ name: 'ExpertContentStudio', params: { tenantId } })
 }
 
 onMounted(() => {

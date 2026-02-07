@@ -1645,9 +1645,11 @@ class KnowledgeDocument(Base):
     is_active = Column(Boolean, default=True)
     status = Column(String(20), default="draft")  # draft/processing/ready/error
     file_path = Column(String(500), nullable=True)
+    raw_content = Column(Text, nullable=True)  # 专家编写的原始 Markdown
     chunk_count = Column(Integer, default=0)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, nullable=True)  # 更新时间
 
     # 关系
     chunks = relationship("KnowledgeChunk", back_populates="document", cascade="all, delete-orphan")
