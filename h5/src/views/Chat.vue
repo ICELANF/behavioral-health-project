@@ -33,6 +33,11 @@
           :is-user="message.role === 'user'"
           :expert="message.expert"
           :timestamp="message.timestamp"
+          :citations="message.citations || []"
+          :has-knowledge="message.hasKnowledge || false"
+          :has-model-supplement="message.hasModelSupplement || false"
+          :model-supplement-sections="message.modelSupplementSections || []"
+          :source-stats="message.sourceStats || {}"
         />
 
         <!-- 任务卡片 -->

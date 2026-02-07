@@ -1,5 +1,46 @@
 // API 类型定义
 
+// ── RAG 引用数据 ──
+
+export interface Citation {
+  index: number
+  label: string
+  shortLabel: string
+  docTitle: string
+  heading: string
+  author: string
+  source: string
+  pageNumber: number | null
+  relevanceScore: number
+  contentPreview: string
+  chunkId: number
+  documentId: number
+  scope: 'tenant' | 'domain' | 'platform'
+  scopeLabel: string
+  sourceType: 'knowledge' | 'model'
+}
+
+export interface SourceStats {
+  knowledgeCount: number
+  modelSupplement: boolean
+  scopeBreakdown: Record<string, number>
+}
+
+export interface RAGData {
+  text: string
+  hasKnowledge: boolean
+  citationsUsed: number[]
+  citations: Citation[]
+  knowledgeCitations: Citation[]
+  hasModelSupplement: boolean
+  modelSupplementSections: string[]
+  allCitations: Citation[]
+  domainsSearched: string[]
+  sourceStats: SourceStats
+}
+
+// ── 聊天消息 ──
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
@@ -7,6 +48,12 @@ export interface ChatMessage {
   expert?: string
   timestamp: number
   tasks?: Task[]
+  // RAG 引用数据
+  citations?: Citation[]
+  hasKnowledge?: boolean
+  hasModelSupplement?: boolean
+  modelSupplementSections?: string[]
+  sourceStats?: SourceStats
 }
 
 export interface Task {
@@ -24,6 +71,8 @@ export interface ChatRequest {
   mode?: 'dify' | 'ollama'
   efficacy_score?: number
   wearable_data?: WearableData
+  agent_id?: string
+  tenant_id?: string
 }
 
 export interface ChatResponse {
@@ -32,6 +81,7 @@ export interface ChatResponse {
   answer: string
   conversation_id?: string
   tasks?: Task[]
+  rag?: RAGData
 }
 
 export interface WearableData {

@@ -7,6 +7,8 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    CitationBlock: typeof import('./src/components/chat/CitationBlock.vue')['default']
+    CitationMarker: typeof import('./src/components/chat/CitationMarker.vue')['default']
     EfficacySlider: typeof import('./src/components/chat/EfficacySlider.vue')['default']
     MessageBubble: typeof import('./src/components/chat/MessageBubble.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

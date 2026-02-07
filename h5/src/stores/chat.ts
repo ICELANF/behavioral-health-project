@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import type { ChatMessage, Task, Expert } from '@/api/types'
+import type { ChatMessage, Task, Expert, RAGData } from '@/api/types'
 import chatApi from '@/api/chat'
 import { useUserStore } from './user'
 import storage from '@/utils/storage'
@@ -64,14 +64,24 @@ export const useChatStore = defineStore('chat', () => {
         wearable_data: userStore.wearableData
       })
 
-      // 添加助手消息
+      // 解析 RAG 数据
+      const rag: RAGData | undefined = response.rag
+      const answerText = rag?.text || response.answer || '抱歉，我暂时无法回答这个问题。'
+
+      // 添加助手消息 (含引用数据)
       const assistantMessage: ChatMessage = {
         id: 'msg_' + Date.now(),
         role: 'assistant',
-        content: response.answer || '抱歉，我暂时无法回答这个问题。',
+        content: answerText,
         expert: currentExpertInfo.value?.name,
         timestamp: Date.now(),
-        tasks: response.tasks
+        tasks: response.tasks,
+        // RAG 引用字段
+        citations: rag?.citations || [],
+        hasKnowledge: rag?.hasKnowledge || false,
+        hasModelSupplement: rag?.hasModelSupplement || false,
+        modelSupplementSections: rag?.modelSupplementSections || [],
+        sourceStats: rag?.sourceStats || {},
       }
       messages.value.push(assistantMessage)
 

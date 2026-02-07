@@ -5,6 +5,7 @@ import httpx
 import json
 from datetime import datetime
 from typing import Optional, Dict, Any, List
+import logging
 from fastapi import BackgroundTasks, FastAPI, Body, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -377,10 +378,9 @@ class AgentGateway:
                 raise HTTPException(status_code=500, detail=f"Dify 连接失败: {str(e)}")
 
     @staticmethod
-    async def call_ollama_direct(prompt: str):
-        """直接调用 Ollama（用于快速指令或 A4 数据分析）"""
-        # 构建行健行为教练系统提示词
-        system_prompt = """你是"行健行为教练"，专注于行为健康干预。
+    def _get_system_prompt() -> str:
+        """行健行为教练系统提示词"""
+        return """你是"行健行为教练"，专注于行为健康干预。
 你的职责包括：
 1. 评估用户的健康状态和心理准备度
 2. 提供个性化的行为建议
@@ -388,6 +388,29 @@ class AgentGateway:
 
 请用温和、专业的语气回复用户。"""
 
+    @staticmethod
+    async def call_ollama_direct(prompt: str):
+        """直接调用 Ollama（用于快速指令或 A4 数据分析）"""
+        system_prompt = AgentGateway._get_system_prompt()
+        full_prompt = f"系统：{system_prompt}\n\n用户：{prompt}\n\n助手："
+
+        payload = {
+            "model": OLLAMA_MODEL,
+            "prompt": full_prompt,
+            "stream": False
+        }
+        try:
+            async with httpx.AsyncClient(timeout=180.0) as client:
+                response = await client.post(f"{OLLAMA_API_URL}/api/generate", json=payload)
+                return response.json()
+        except httpx.TimeoutException:
+            return {"response": "抱歉，服务响应超时，请稍后重试。"}
+        except Exception as e:
+            return {"response": f"服务暂时不可用：{str(e)}"}
+
+    @staticmethod
+    async def call_ollama_with_prompt(prompt: str, system_prompt: str):
+        """使用指定 system_prompt 调用 Ollama (RAG 增强版)"""
         full_prompt = f"系统：{system_prompt}\n\n用户：{prompt}\n\n助手："
 
         payload = {
@@ -410,10 +433,12 @@ class AgentGateway:
 async def dispatch_request(
     user_id: str = Body(..., embed=True),
     message: str = Body(..., embed=True),
-    mode: str = Body("dify", embed=True)  # 可选 dify 或 ollama
+    mode: str = Body("dify", embed=True),  # 可选 dify 或 ollama
+    agent_id: str = Body("", embed=True),
+    tenant_id: str = Body("", embed=True),
 ):
     """行健行为教练分发中心：根据模式选择路由"""
-    
+
     if mode == "dify":
         # 走 Dify 编排好的 A1+A2+A3 完整工作流
         result = await AgentGateway.call_dify_workflow(user_id, message)
@@ -424,13 +449,59 @@ async def dispatch_request(
             "conversation_id": result.get("conversation_id")
         }
     else:
-        # 直接调用本地模型执行原子任务
-        result = await AgentGateway.call_ollama_direct(message)
-        return {
+        # 直接调用本地模型 + RAG 知识库增强
+        from sqlalchemy.orm import Session as DBSession
+        from core.database import SessionLocal
+
+        db = SessionLocal()
+        rag_data = None
+        try:
+            from core.knowledge import rag_enhance, record_citations
+
+            enhanced = rag_enhance(
+                db=db,
+                query=message,
+                agent_id=agent_id,
+                tenant_id=tenant_id,
+                base_system_prompt=AgentGateway._get_system_prompt(),
+            )
+
+            # 用 RAG 增强后的 prompt 调用 Ollama
+            result = await AgentGateway.call_ollama_with_prompt(
+                prompt=message,
+                system_prompt=enhanced.system_prompt,
+            )
+            answer = result.get("response", "")
+
+            # 包装引用数据
+            rag_data = enhanced.wrap_response(answer)
+
+            # 记录引用 (审计)
+            record_citations(
+                db=db,
+                enhanced=enhanced,
+                llm_response=answer,
+                agent_id=agent_id,
+                tenant_id=tenant_id,
+                user_id=user_id,
+            )
+
+        except Exception as e:
+            logger_main = logging.getLogger("api.main")
+            logger_main.warning(f"RAG 增强失败, 回退直接调用: {e}")
+            result = await AgentGateway.call_ollama_direct(message)
+            answer = result.get("response", "")
+        finally:
+            db.close()
+
+        resp = {
             "status": "success",
             "source": "Ollama Local",
-            "answer": result.get("response")
+            "answer": rag_data["text"] if rag_data else answer,
         }
+        if rag_data:
+            resp["rag"] = rag_data
+        return resp
 
 @app.get("/health")
 async def health():

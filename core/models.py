@@ -1603,6 +1603,147 @@ class FoodAnalysis(Base):
 # 专家白标租户枚举
 # ============================================
 
+# ============================================
+# 知识库 RAG 枚举
+# ============================================
+
+class KnowledgeScope(str, enum.Enum):
+    """知识库范围"""
+    TENANT = "tenant"        # 专家私有
+    DOMAIN = "domain"        # 领域知识
+    PLATFORM = "platform"    # 平台公共
+
+class DocumentStatus(str, enum.Enum):
+    """文档状态"""
+    DRAFT = "draft"
+    PROCESSING = "processing"
+    READY = "ready"
+    ERROR = "error"
+
+
+# ============================================
+# 知识库 RAG 模型
+# ============================================
+
+class KnowledgeDocument(Base):
+    """
+    知识库文档表
+
+    存储已入库的文档元数据：标题、作者、来源、范围、状态。
+    一个文档对应多个 KnowledgeChunk。
+    """
+    __tablename__ = "knowledge_documents"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(300), nullable=False)
+    author = Column(String(100), nullable=True)
+    source = Column(String(200), nullable=True)
+    domain_id = Column(String(50), nullable=True, index=True)  # nutrition/sleep/tcm/...
+    scope = Column(String(20), nullable=False, default="platform")  # tenant/domain/platform
+    tenant_id = Column(String(64), nullable=True, index=True)
+    priority = Column(Integer, default=5)  # 1-10, 高=优先
+    is_active = Column(Boolean, default=True)
+    status = Column(String(20), default="draft")  # draft/processing/ready/error
+    file_path = Column(String(500), nullable=True)
+    chunk_count = Column(Integer, default=0)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # 关系
+    chunks = relationship("KnowledgeChunk", back_populates="document", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index('idx_kdoc_scope_domain', 'scope', 'domain_id'),
+        Index('idx_kdoc_scope_tenant', 'scope', 'tenant_id'),
+        Index('idx_kdoc_status', 'status'),
+    )
+
+    def __repr__(self):
+        return f"<KnowledgeDocument(id={self.id}, title='{self.title}', scope={self.scope})>"
+
+
+class KnowledgeChunk(Base):
+    """
+    知识库分块表
+
+    文档切分后的文本块，每块含嵌入向量（JSON 存储，Python 层余弦相似度）。
+    冗余 doc_title/doc_author/doc_source 加速检索时组装引用标签。
+    """
+    __tablename__ = "knowledge_chunks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    document_id = Column(Integer, ForeignKey("knowledge_documents.id"), nullable=False, index=True)
+
+    # 分块内容
+    content = Column(Text, nullable=False)
+    heading = Column(String(200), nullable=True)
+    page_number = Column(Integer, nullable=True)
+    chunk_index = Column(Integer, default=0)
+
+    # 冗余字段 (加速检索)
+    doc_title = Column(String(300), nullable=True)
+    doc_author = Column(String(100), nullable=True)
+    doc_source = Column(String(200), nullable=True)
+
+    # 范围
+    scope = Column(String(20), nullable=False, default="platform")
+    domain_id = Column(String(50), nullable=True)
+    tenant_id = Column(String(64), nullable=True)
+
+    # 嵌入向量 (JSON 文本: [0.01, -0.02, ...])
+    embedding = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # 关系
+    document = relationship("KnowledgeDocument", back_populates="chunks")
+
+    __table_args__ = (
+        Index('idx_kchunk_doc', 'document_id'),
+        Index('idx_kchunk_scope_domain', 'scope', 'domain_id'),
+        Index('idx_kchunk_scope_tenant', 'scope', 'tenant_id'),
+    )
+
+    def __repr__(self):
+        return f"<KnowledgeChunk(id={self.id}, doc={self.document_id}, idx={self.chunk_index})>"
+
+
+class KnowledgeCitation(Base):
+    """
+    知识库引用审计表
+
+    记录每次 LLM 回复中实际引用了哪些知识块，
+    用于审计追踪和统计文档使用频率。
+    """
+    __tablename__ = "knowledge_citations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(100), nullable=True)
+    message_id = Column(String(100), nullable=True)
+    agent_id = Column(String(50), nullable=True)
+    tenant_id = Column(String(64), nullable=True)
+    user_id = Column(String(50), nullable=True)
+
+    chunk_id = Column(Integer, nullable=False)
+    document_id = Column(Integer, nullable=False)
+    query_text = Column(String(500), nullable=True)
+    relevance_score = Column(Float, nullable=True)
+    rank_position = Column(Integer, nullable=True)
+    citation_text = Column(String(500), nullable=True)
+    citation_label = Column(String(300), nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_kcite_session', 'session_id'),
+        Index('idx_kcite_doc', 'document_id'),
+        Index('idx_kcite_chunk', 'chunk_id'),
+    )
+
+    def __repr__(self):
+        return f"<KnowledgeCitation(id={self.id}, chunk={self.chunk_id}, score={self.relevance_score})>"
+
+
 class TenantStatus(str, enum.Enum):
     """租户状态"""
     trial = "trial"
@@ -1816,6 +1957,10 @@ def get_table_names():
         "coach_push_queue",
         # 食物识别
         "food_analyses",
+        # 知识库 RAG
+        "knowledge_documents",
+        "knowledge_chunks",
+        "knowledge_citations",
         # 专家白标租户
         "expert_tenants",
         "tenant_clients",
@@ -1869,6 +2014,10 @@ def get_model_by_name(name: str):
         "CoachPushQueue": CoachPushQueue,
         # 食物识别
         "FoodAnalysis": FoodAnalysis,
+        # 知识库 RAG
+        "KnowledgeDocument": KnowledgeDocument,
+        "KnowledgeChunk": KnowledgeChunk,
+        "KnowledgeCitation": KnowledgeCitation,
         # 专家白标租户
         "ExpertTenant": ExpertTenant,
         "TenantClient": TenantClient,

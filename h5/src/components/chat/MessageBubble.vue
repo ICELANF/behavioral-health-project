@@ -5,21 +5,61 @@
       <span class="expert-name">{{ expert }}</span>
     </div>
     <div class="bubble-content">
-      <div class="bubble-text">{{ content }}</div>
+      <!-- 用户消息: 纯文本 -->
+      <div v-if="isUser" class="bubble-text">{{ content }}</div>
+
+      <!-- AI消息: 支持引用标记 -->
+      <template v-else>
+        <CitationMarker
+          v-if="hasKnowledge || hasModelSupplement"
+          :text="content"
+          :citations="citations"
+          :has-model-supplement="hasModelSupplement"
+          @cite-click="(idx) => $emit('cite-click', idx)"
+        />
+        <div v-else class="bubble-text">{{ content }}</div>
+
+        <!-- 引用折叠块 -->
+        <CitationBlock
+          v-if="citations.length > 0 || hasModelSupplement"
+          :citations="citations"
+          :has-model-supplement="hasModelSupplement"
+          :model-supplement-sections="modelSupplementSections"
+          :source-stats="sourceStats"
+        />
+      </template>
+
       <div class="bubble-time">{{ formatTime(timestamp) }}</div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import CitationMarker from './CitationMarker.vue'
+import CitationBlock from './CitationBlock.vue'
+
 interface Props {
   content: string
   isUser: boolean
   expert?: string
   timestamp: number
+  // RAG 引用数据
+  citations?: any[]
+  hasKnowledge?: boolean
+  hasModelSupplement?: boolean
+  modelSupplementSections?: string[]
+  sourceStats?: Record<string, any>
 }
 
-defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  citations: () => [],
+  hasKnowledge: false,
+  hasModelSupplement: false,
+  modelSupplementSections: () => [],
+  sourceStats: () => ({}),
+})
+
+defineEmits(['cite-click'])
 
 function formatTime(ts: number): string {
   const date = new Date(ts)

@@ -211,9 +211,10 @@ async def send_message(
     ).order_by(ChatMessage.created_at.desc()).limit(10).all()
     history = [{"role": m.role, "content": m.content} for m in reversed(history_msgs)]
 
-    # 调用AI助手
+    # 调用AI助手 + RAG 知识库增强
     model = request.model or session.model
     ai_reply = "抱歉，AI助手暂时不可用，请稍后再试。"
+    rag_data = None
 
     try:
         import httpx
@@ -222,7 +223,7 @@ async def send_message(
         ollama_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         ollama_model = os.getenv("OLLAMA_MODEL", model)
 
-        system_prompt = """你是"行健行为教练"，一位专业、温和的健康行为改变指导师。
+        base_system_prompt = """你是"行健行为教练"，一位专业、温和的健康行为改变指导师。
 你的职责：
 1. 评估用户健康状态和心理准备度
 2. 提供个性化的行为建议
@@ -230,16 +231,46 @@ async def send_message(
 4. 支持用户的行为改变过程
 请用温和、专业、鼓励的语气回复。"""
 
-        messages = [{"role": "system", "content": system_prompt}] + history
+        # RAG 增强
+        final_system_prompt = base_system_prompt
+        try:
+            from core.knowledge import rag_enhance, record_citations
+
+            enhanced = rag_enhance(
+                db=db,
+                query=request.content,
+                base_system_prompt=base_system_prompt,
+            )
+            final_system_prompt = enhanced.system_prompt
+        except Exception as e:
+            logger.warning(f"RAG 增强失败, 使用原始 prompt: {e}")
+            enhanced = None
+
+        messages_for_llm = [{"role": "system", "content": final_system_prompt}] + history
 
         async with httpx.AsyncClient(timeout=60.0) as client:
             resp = await client.post(
                 f"{ollama_url}/api/chat",
-                json={"model": ollama_model, "messages": messages, "stream": False},
+                json={"model": ollama_model, "messages": messages_for_llm, "stream": False},
             )
             if resp.status_code == 200:
                 data = resp.json()
                 ai_reply = data.get("message", {}).get("content", ai_reply)
+
+        # 包装 RAG 引用数据
+        if enhanced:
+            rag_data = enhanced.wrap_response(ai_reply)
+            try:
+                record_citations(
+                    db=db,
+                    enhanced=enhanced,
+                    llm_response=ai_reply,
+                    session_id=session_id,
+                    message_id=str(user_msg.id),
+                    user_id=str(current_user.id),
+                )
+            except Exception as e:
+                logger.warning(f"引用记录失败: {e}")
 
     except Exception as e:
         logger.warning(f"AI调用失败: {e}")
@@ -252,12 +283,23 @@ async def send_message(
             "如果有具体的健康问题，请随时告诉我，我会为您提供更针对性的建议。"
         )
 
-    # 保存AI回复
+    # 保存AI回复 (metadata 包含 RAG 引用)
+    import json as _json
     ai_msg = ChatMessage(
         session_id=session.id,
         role="assistant",
-        content=ai_reply,
+        content=rag_data["text"] if rag_data else ai_reply,
         model=model,
+        msg_metadata=_json.loads(_json.dumps({
+            "rag": {
+                "hasKnowledge": rag_data["hasKnowledge"],
+                "citationsUsed": rag_data["citationsUsed"],
+                "citations": rag_data["citations"],
+                "hasModelSupplement": rag_data["hasModelSupplement"],
+                "modelSupplementSections": rag_data["modelSupplementSections"],
+                "sourceStats": rag_data["sourceStats"],
+            }
+        })) if rag_data and rag_data.get("hasKnowledge") else None,
     )
     db.add(ai_msg)
     session.message_count += 1
@@ -265,9 +307,9 @@ async def send_message(
     db.commit()
     db.refresh(ai_msg)
 
-    logger.info(f"✓ 聊天回复: session={session_id}, user={current_user.username}")
+    logger.info(f"✓ 聊天回复: session={session_id}, user={current_user.username}, rag={bool(rag_data and rag_data.get('hasKnowledge'))}")
 
-    return {
+    result = {
         "user_message": {
             "id": user_msg.id,
             "role": "user",
@@ -282,6 +324,9 @@ async def send_message(
             "created_at": ai_msg.created_at.isoformat(),
         },
     }
+    if rag_data:
+        result["rag"] = rag_data
+    return result
 
 
 @router.delete("/sessions/{session_id}")
