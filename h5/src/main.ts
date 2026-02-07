@@ -7,6 +7,8 @@ import router from './router'
 import 'vant/lib/index.css'
 // 全局样式
 import './styles/global.scss'
+// 品牌主题
+import './styles/brand-themes.css'
 
 const app = createApp(App)
 

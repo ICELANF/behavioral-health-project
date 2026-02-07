@@ -465,6 +465,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./views/admin/ChallengeManagement.vue'),
         meta: { title: '挑战活动管理' }
       },
+      // ============ Expert 管理面板 ============
+      {
+        path: 'expert/dashboard/:tenantId',
+        name: 'ExpertDashboard',
+        component: () => import('./views/admin/ExpertDashboard.vue'),
+        meta: { title: '专家工作室管理' }
+      },
       // ============ Expert "我的" 模块 ============
       {
         path: 'expert/my/supervision',

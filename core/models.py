@@ -1599,6 +1599,176 @@ class FoodAnalysis(Base):
         return f"<FoodAnalysis(id={self.id}, user={self.user_id}, food={self.food_name})>"
 
 
+# ============================================
+# 专家白标租户枚举
+# ============================================
+
+class TenantStatus(str, enum.Enum):
+    """租户状态"""
+    trial = "trial"
+    active = "active"
+    suspended = "suspended"
+    archived = "archived"
+
+class TenantTier(str, enum.Enum):
+    """合作等级"""
+    basic = "basic_partner"
+    premium = "premium_partner"
+    strategic = "strategic_partner"
+
+class ClientStatus(str, enum.Enum):
+    """客户状态"""
+    active = "active"
+    graduated = "graduated"
+    paused = "paused"
+    exited = "exited"
+
+
+# ============================================
+# 专家白标租户模型
+# ============================================
+
+class ExpertTenant(Base):
+    """
+    每个入驻专家 = 一个租户
+    一个专家对应一套独立品牌、Agent配置、客户群
+    """
+    __tablename__ = "expert_tenants"
+
+    id = Column(String(64), primary_key=True, comment="租户ID, 如 dr-chen-endo")
+    expert_user_id = Column(
+        Integer, ForeignKey("users.id"),
+        nullable=False, index=True,
+        comment="专家在平台的用户ID"
+    )
+
+    # 品牌配置
+    brand_name = Column(String(128), nullable=False, comment="工作室名称")
+    brand_tagline = Column(String(256), default="", comment="品牌标语")
+    brand_avatar = Column(String(16), default="🏥", comment="Emoji头像")
+    brand_logo_url = Column(String(512), default="", comment="Logo图片URL")
+    brand_colors = Column(JSON, nullable=False, default=dict, comment='{"primary":"#hex","accent":"#hex","bg":"#hex"}')
+    brand_theme_id = Column(String(32), default="default", comment="主题模板ID")
+    custom_domain = Column(String(256), default="", comment="自定义域名")
+
+    # 专家人设
+    expert_title = Column(String(64), default="", comment="专家头衔")
+    expert_self_intro = Column(Text, default="", comment="专家自我介绍")
+    expert_specialties = Column(JSON, default=list, comment='["内分泌","代谢管理"]')
+    expert_credentials = Column(JSON, default=list, comment='["主任医师","博士生导师"]')
+
+    # Agent 配置
+    enabled_agents = Column(JSON, nullable=False, default=list, comment="启用的Agent ID列表")
+    agent_persona_overrides = Column(JSON, default=dict, comment="Agent话术覆盖")
+
+    # 业务配置
+    enabled_paths = Column(JSON, default=list, comment="启用的学习路径ID")
+    service_packages = Column(JSON, default=list, comment="服务包配置")
+    questionnaire_overrides = Column(JSON, default=dict, comment="问卷增删题配置")
+    welcome_message = Column(Text, default="", comment="客户首次进入的欢迎语")
+
+    # 控制
+    status = Column(SQLEnum(TenantStatus), default=TenantStatus.trial, nullable=False, index=True)
+    tier = Column(SQLEnum(TenantTier), default=TenantTier.basic, nullable=False)
+    max_clients = Column(Integer, default=50, comment="客户数上限")
+    revenue_share_expert = Column(Float, default=0.80, comment="专家分成比例")
+    trial_expires_at = Column(DateTime, nullable=True, comment="试用到期时间")
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # 关系
+    clients = relationship("TenantClient", back_populates="tenant", lazy="dynamic")
+    agent_mappings = relationship("TenantAgentMapping", back_populates="tenant", lazy="selectin")
+
+    __table_args__ = (
+        Index("idx_tenant_status", "status"),
+        Index("idx_tenant_expert_user", "expert_user_id"),
+    )
+
+    def __repr__(self):
+        return f"<ExpertTenant {self.id}: {self.brand_name}>"
+
+    @property
+    def is_active(self) -> bool:
+        return self.status == TenantStatus.active
+
+
+class TenantClient(Base):
+    """专家的客户 — 关联平台用户 + 租户归属"""
+    __tablename__ = "tenant_clients"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), ForeignKey("expert_tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True, comment="平台统一用户ID")
+
+    source = Column(String(32), default="expert_referred", comment="来源")
+    service_package = Column(String(64), default="trial", comment="购买的服务包ID")
+
+    status = Column(SQLEnum(ClientStatus), default=ClientStatus.active, nullable=False, index=True)
+    enrolled_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    graduated_at = Column(DateTime, nullable=True)
+
+    total_sessions = Column(Integer, default=0, comment="累计会话次数")
+    last_active_at = Column(DateTime, nullable=True)
+    notes = Column(Text, default="", comment="专家备注")
+
+    tenant = relationship("ExpertTenant", back_populates="clients")
+
+    __table_args__ = (
+        Index("idx_tc_tenant_status", "tenant_id", "status"),
+    )
+
+    def __repr__(self):
+        return f"<TenantClient tenant={self.tenant_id} user={self.user_id}>"
+
+
+class TenantAgentMapping(Base):
+    """租户 x Agent 的详细配置"""
+    __tablename__ = "tenant_agent_mappings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), ForeignKey("expert_tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    agent_id = Column(String(32), nullable=False, comment="Agent标识: sleep/glucose/stress/...")
+
+    display_name = Column(String(64), default="", comment="自定义显示名")
+    display_avatar = Column(String(16), default="", comment="自定义Emoji头像")
+    greeting = Column(Text, default="", comment="自定义开场白")
+    tone = Column(String(128), default="", comment="语气风格描述")
+    bio = Column(String(256), default="", comment="Agent简介")
+
+    is_enabled = Column(Boolean, default=True, nullable=False)
+    is_primary = Column(Boolean, default=False, comment="是否为主力Agent")
+    sort_order = Column(Integer, default=0, comment="排序权重")
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    tenant = relationship("ExpertTenant", back_populates="agent_mappings")
+
+    __table_args__ = (
+        Index("idx_tam_tenant_enabled", "tenant_id", "is_enabled"),
+    )
+
+    def __repr__(self):
+        return f"<TenantAgentMapping {self.tenant_id}:{self.agent_id}>"
+
+
+class TenantAuditLog(Base):
+    """租户操作审计日志"""
+    __tablename__ = "tenant_audit_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(64), ForeignKey("expert_tenants.id"), nullable=False, index=True)
+    actor_id = Column(Integer, nullable=False, comment="操作者用户ID")
+    action = Column(String(64), nullable=False, comment="操作类型")
+    detail = Column(JSON, default=dict, comment="操作详情")
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index("idx_audit_tenant_time", "tenant_id", "created_at"),
+    )
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -1646,6 +1816,11 @@ def get_table_names():
         "coach_push_queue",
         # 食物识别
         "food_analyses",
+        # 专家白标租户
+        "expert_tenants",
+        "tenant_clients",
+        "tenant_agent_mappings",
+        "tenant_audit_logs",
     ]
 
 
@@ -1694,5 +1869,10 @@ def get_model_by_name(name: str):
         "CoachPushQueue": CoachPushQueue,
         # 食物识别
         "FoodAnalysis": FoodAnalysis,
+        # 专家白标租户
+        "ExpertTenant": ExpertTenant,
+        "TenantClient": TenantClient,
+        "TenantAgentMapping": TenantAgentMapping,
+        "TenantAuditLog": TenantAuditLog,
     }
     return models.get(name)

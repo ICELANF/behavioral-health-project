@@ -1004,6 +1004,16 @@ try:
 except ImportError as e:
     print(f"[API] v16 Admin行为配置路由注册失败: {e}")
 
+# ============================================================================
+# [v16-NEW] 注册专家白标租户路由
+# ============================================================================
+try:
+    from api.tenant_api import router as tenant_router
+    app.include_router(tenant_router)
+    print("[API] 专家租户路由已注册")
+except ImportError as e:
+    print(f"[API] 专家租户路由注册失败: {e}")
+
 
 if __name__ == "__main__":
     import uvicorn

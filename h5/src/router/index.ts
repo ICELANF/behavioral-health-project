@@ -102,6 +102,18 @@ const router = createRouter({
       component: () => import('@/views/ChallengeDay.vue')
     },
     {
+      path: '/expert-hub',
+      name: 'expert-hub',
+      component: () => import('@/views/ExpertHub.vue'),
+      meta: { title: '专家工作室', public: true }
+    },
+    {
+      path: '/studio/:tenantId',
+      name: 'expert-studio',
+      component: () => import('@/views/ExpertStudio.vue'),
+      meta: { title: '工作室', public: true }
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/'
     }

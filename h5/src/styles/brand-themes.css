@@ -1,0 +1,150 @@
+/**
+ * 品牌主题系统
+ * CSS 变量 --brand-* 由 Pinia store 的 applyBrandTheme() 动态设置
+ * 预设主题类 .theme-xxx 提供完整配色方案
+ * 白标模式下 body 添加 .whitelabel-mode 隐藏平台导航
+ */
+
+/* ============================================================
+   基础 CSS 变量 (默认值 / 平台直营)
+   ============================================================ */
+
+:root {
+  --brand-primary: #2563EB;
+  --brand-accent: #F59E0B;
+  --brand-bg: #F8FAFC;
+  --brand-text: #1E293B;
+
+  --brand-primary-light: color-mix(in srgb, var(--brand-primary) 15%, white);
+  --brand-primary-dark: color-mix(in srgb, var(--brand-primary) 80%, black);
+  --brand-accent-light: color-mix(in srgb, var(--brand-accent) 15%, white);
+}
+
+
+/* ============================================================
+   预设主题
+   ============================================================ */
+
+.theme-medicalBlue {
+  --brand-primary: #1E40AF;
+  --brand-accent: #3B82F6;
+  --brand-bg: #EFF6FF;
+  --brand-text: #1E3A5F;
+}
+
+.theme-tcmGreen {
+  --brand-primary: #2D5A3D;
+  --brand-accent: #6B8E5A;
+  --brand-bg: #F0F7F0;
+  --brand-text: #2D3B2D;
+}
+
+.theme-healingPurple {
+  --brand-primary: #6D28D9;
+  --brand-accent: #A78BFA;
+  --brand-bg: #F5F3FF;
+  --brand-text: #3B1F6E;
+}
+
+.theme-cardiacRed {
+  --brand-primary: #DC2626;
+  --brand-accent: #F87171;
+  --brand-bg: #FEF2F2;
+  --brand-text: #7F1D1D;
+}
+
+.theme-warmSand {
+  --brand-primary: #D97706;
+  --brand-accent: #F59E0B;
+  --brand-bg: #FFFBEB;
+  --brand-text: #78350F;
+}
+
+
+/* ============================================================
+   白标模式 (隐藏平台导航)
+   ============================================================ */
+
+body.whitelabel-mode .platform-header,
+body.whitelabel-mode .platform-nav,
+body.whitelabel-mode .platform-footer,
+body.whitelabel-mode .platform-sidebar {
+  display: none !important;
+}
+
+body.whitelabel-mode .main-layout {
+  margin-left: 0 !important;
+  padding-top: 0 !important;
+}
+
+
+/* ============================================================
+   品牌化组件
+   ============================================================ */
+
+.btn-brand {
+  background: var(--brand-primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-brand:hover {
+  opacity: 0.9;
+}
+
+.btn-brand-outline {
+  background: transparent;
+  color: var(--brand-primary);
+  border: 1px solid var(--brand-primary);
+  border-radius: 8px;
+  padding: 8px 20px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tag-brand {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 500;
+  background: var(--brand-primary-light, rgba(37, 99, 235, 0.1));
+  color: var(--brand-primary);
+}
+
+.card-brand {
+  background: #fff;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--brand-primary) 15%, transparent);
+  padding: 20px;
+}
+
+.link-brand {
+  color: var(--brand-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link-brand:hover {
+  text-decoration: underline;
+}
+
+.progress-brand {
+  height: 6px;
+  background: var(--brand-primary-light, #e2e8f0);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.progress-brand .bar {
+  height: 100%;
+  background: var(--brand-primary);
+  border-radius: 100px;
+  transition: width 0.3s ease;
+}
