@@ -333,6 +333,14 @@ try:
 except ImportError as e:
     print(f"[API] 图片上传路由注册失败: {e}")
 
+# 注册食物识别路由
+try:
+    from api.food_recognition_api import router as food_router
+    app.include_router(food_router)
+    print("[API] 食物识别路由已注册")
+except ImportError as e:
+    print(f"[API] 食物识别路由注册失败: {e}")
+
 # 挂载静态文件服务
 try:
     from fastapi.staticfiles import StaticFiles

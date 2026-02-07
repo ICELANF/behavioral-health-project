@@ -23,6 +23,9 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
+      - OLLAMA_API_URL=http://host.docker.internal:11434
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "8000:8000"
       - "8001:8001"
@@ -30,6 +33,7 @@ services:
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
+      - ./static:/app/static
     deploy:
       resources:
         limits:

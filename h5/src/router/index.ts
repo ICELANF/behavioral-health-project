@@ -86,6 +86,12 @@ const router = createRouter({
       component: () => import('@/views/MyPlan.vue')
     },
     {
+      path: '/food-recognition',
+      name: 'food-recognition',
+      component: () => import('@/views/FoodRecognition.vue'),
+      meta: { title: '食物识别' }
+    },
+    {
       path: '/challenges',
       name: 'challenges',
       component: () => import('@/views/ChallengeList.vue')

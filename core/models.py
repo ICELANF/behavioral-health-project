@@ -1577,6 +1577,28 @@ class CoachPushQueue(Base):
         return f"<CoachPushQueue(id={self.id}, coach={self.coach_id}, student={self.student_id}, source={self.source_type}, status={self.status})>"
 
 
+class FoodAnalysis(Base):
+    """食物识别分析记录"""
+    __tablename__ = "food_analyses"
+
+    id            = Column(Integer, primary_key=True, index=True)
+    user_id       = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    image_url     = Column(String(500), nullable=False)
+    food_name     = Column(String(200), nullable=True)
+    calories      = Column(Float, nullable=True)
+    protein       = Column(Float, nullable=True)
+    fat           = Column(Float, nullable=True)
+    carbs         = Column(Float, nullable=True)
+    fiber         = Column(Float, nullable=True)
+    advice        = Column(Text, nullable=True)
+    raw_response  = Column(Text, nullable=True)
+    meal_type     = Column(String(20), nullable=True)
+    created_at    = Column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f"<FoodAnalysis(id={self.id}, user={self.user_id}, food={self.food_name})>"
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -1622,6 +1644,8 @@ def get_table_names():
         "challenge_push_logs",
         # 教练推送审批队列
         "coach_push_queue",
+        # 食物识别
+        "food_analyses",
     ]
 
 
@@ -1668,5 +1692,7 @@ def get_model_by_name(name: str):
         "ChallengePushLog": ChallengePushLog,
         # 教练推送审批队列
         "CoachPushQueue": CoachPushQueue,
+        # 食物识别
+        "FoodAnalysis": FoodAnalysis,
     }
     return models.get(name)

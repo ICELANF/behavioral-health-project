@@ -43,6 +43,9 @@
           <van-grid-item icon="chart-trending-o" text="健康看板" to="/dashboard" />
           <van-grid-item icon="records-o" text="健康档案" to="/health-records" />
         </van-grid>
+        <van-grid :column-num="4" :border="false">
+          <van-grid-item icon="photograph" text="食物识别" to="/food-recognition" />
+        </van-grid>
       </div>
 
       <!-- 行为评估入口 -->
