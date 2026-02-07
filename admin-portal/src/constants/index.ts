@@ -10,13 +10,14 @@ export const RISK_LEVELS = {
   normal: { label: '正常', color: '#1890ff', bgColor: '#e6f7ff' }
 } as const
 
-// 教练等级配置
+// 六级体系等级配置（对应《行为健康教练体系完整建设规划（六级四同道者版）》）
 export const COACH_LEVELS = {
-  L0: { label: '见习教练', color: '#8c8c8c', description: '新入职，学习阶段' },
-  L1: { label: '初级教练', color: '#52c41a', description: '独立处理低风险案例' },
-  L2: { label: '中级教练', color: '#1890ff', description: '独立处理中风险案例' },
-  L3: { label: '高级教练', color: '#722ed1', description: '处理高风险案例，可带教' },
-  L4: { label: '专家教练', color: '#eb2f96', description: '督导级别，培训讲师' }
+  L0: { label: '观察员', color: '#8c8c8c', description: '行为入口·认知-行为信号的原始数据源' },
+  L1: { label: '成长者', color: '#1890ff', description: '行为养成践行者·效果的唯一承载体' },
+  L2: { label: '分享者', color: '#52c41a', description: '同伴支持者·经验传递与陪伴者' },
+  L3: { label: '教练', color: '#faad14', description: '系统翻译者·行为改变实施者' },
+  L4: { label: '促进师', color: '#722ed1', description: '系统放大器·组织/区域推动者' },
+  L5: { label: '大师', color: '#eb2f96', description: '学科文明层·理论范式与传承者' }
 } as const
 
 // TTM 行为阶段

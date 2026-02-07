@@ -159,7 +159,7 @@
             <a-divider orientation="left" plain>禁忌行为</a-divider>
             <a-tag v-for="d in di.dont_list" :key="d" color="red" style="margin-bottom: 4px">{{ d }}</a-tag>
 
-            <a-divider orientation="left" plain>话术模板</a-divider>
+            <a-divider orientation="left" plain>建议模板</a-divider>
             <div v-for="(script, key) in di.scripts" :key="key" style="margin-bottom: 8px">
               <strong>{{ key }}:</strong> {{ script }}
             </div>

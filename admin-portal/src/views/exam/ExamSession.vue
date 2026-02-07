@@ -564,7 +564,7 @@ const loadExamData = async () => {
   // 模拟 API 调用
   examData.value = {
     exam_id: examId,
-    exam_name: 'L1 初级教练理论考试',
+    exam_name: 'L1 成长者基础测评',
     level: 'L1',
     exam_type: 'theory',
     passing_score: 70,

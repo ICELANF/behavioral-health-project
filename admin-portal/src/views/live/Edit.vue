@@ -49,14 +49,24 @@
                     </a-select>
                   </a-form-item>
                 </a-col>
-                <a-col :span="12">
+                <a-col :span="6">
+                  <a-form-item label="学习受众" name="audience">
+                    <a-select v-model:value="formState.audience" placeholder="谁来观看">
+                      <a-select-option value="client"><span style="color:#1890ff">●</span> 服务对象</a-select-option>
+                      <a-select-option value="coach"><span style="color:#52c41a">●</span> 教练</a-select-option>
+                      <a-select-option value="both"><span style="color:#722ed1">●</span> 双受众</a-select-option>
+                    </a-select>
+                  </a-form-item>
+                </a-col>
+                <a-col :span="6">
                   <a-form-item label="认证等级" name="level">
                     <a-select v-model:value="formState.level" placeholder="选择适用等级">
-                      <a-select-option value="L0">L0 公众学习</a-select-option>
-                      <a-select-option value="L1">L1 初级教练</a-select-option>
-                      <a-select-option value="L2">L2 中级教练</a-select-option>
-                      <a-select-option value="L3">L3 高级教练</a-select-option>
-                      <a-select-option value="L4">L4 督导专家</a-select-option>
+                      <a-select-option value="L0">L0 观察员</a-select-option>
+                      <a-select-option value="L1">L1 成长者</a-select-option>
+                      <a-select-option value="L2">L2 分享者</a-select-option>
+                      <a-select-option value="L3">L3 教练</a-select-option>
+                      <a-select-option value="L4">L4 促进师</a-select-option>
+                      <a-select-option value="L5">L5 大师</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>
@@ -214,7 +224,8 @@ const levelColors: Record<string, string> = {
   L1: 'green',
   L2: 'orange',
   L3: 'red',
-  L4: 'purple'
+  L4: 'purple',
+  L5: 'gold'
 }
 
 // 表单数据
@@ -222,6 +233,7 @@ const formState = reactive({
   title: '',
   description: '',
   instructor_id: undefined as string | undefined,
+  audience: 'both' as string,
   level: 'L0',
   date: null as Dayjs | null,
   time: null as Dayjs | null,

@@ -18,6 +18,10 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from loguru import logger
 
+from core.content_access_service import get_user_level, can_access_content, get_access_status
+from api.dependencies import get_current_user
+from core.models import User
+
 router = APIRouter(prefix="/api/v1/content", tags=["内容管理"])
 
 
@@ -190,11 +194,16 @@ async def get_content_list(
     type: Optional[str] = None,
     source: Optional[str] = None,
     domain: Optional[str] = None,
+    level: Optional[str] = None,
+    audience: Optional[str] = None,
     keyword: Optional[str] = None,
     sort_by: str = "created_at",
-    sort_order: str = "desc"
+    sort_order: str = "desc",
+    current_user: User = Depends(get_current_user),
 ):
-    """获取内容列表"""
+    """获取内容列表（含等级门控）"""
+    user_level = get_user_level(current_user)
+
     # TODO: 从数据库查询，这里返回模拟数据
     mock_items = [
         {
@@ -203,6 +212,8 @@ async def get_content_list(
             "source": "platform",
             "title": "行为健康入门",
             "domain": "growth",
+            "level": "L0",
+            "audience": "client",
             "author": {"name": "平台官方", "verified": True},
             "view_count": 15680,
             "like_count": 1256,
@@ -215,10 +226,54 @@ async def get_content_list(
             "source": "expert",
             "title": "正念冥想：从入门到精通",
             "domain": "mindfulness",
+            "level": "L0",
+            "audience": "both",
             "author": {"name": "李明远", "title": "正念导师", "verified": True},
             "view_count": 12340,
             "like_count": 978,
             "duration": 14400,
+            "is_free": False,
+        },
+        {
+            "id": "c3",
+            "type": "course",
+            "source": "platform",
+            "title": "代谢与慢病风险入门",
+            "domain": "glucose",
+            "level": "L1",
+            "audience": "coach",
+            "author": {"name": "平台官方", "verified": True},
+            "view_count": 8920,
+            "like_count": 567,
+            "duration": 7200,
+            "is_free": True,
+        },
+        {
+            "id": "c4",
+            "type": "course",
+            "source": "platform",
+            "title": "高级动机访谈技术",
+            "domain": "growth",
+            "level": "L2",
+            "audience": "coach",
+            "author": {"name": "平台官方", "verified": True},
+            "view_count": 3450,
+            "like_count": 234,
+            "duration": 18000,
+            "is_free": False,
+        },
+        {
+            "id": "c5",
+            "type": "course",
+            "source": "expert",
+            "title": "行为画像深度解读",
+            "domain": "growth",
+            "level": "L3",
+            "audience": "coach",
+            "author": {"name": "赵专家", "title": "行为科学博士", "verified": True},
+            "view_count": 1200,
+            "like_count": 98,
+            "duration": 21600,
             "is_free": False,
         },
     ]
@@ -231,6 +286,14 @@ async def get_content_list(
         filtered = [i for i in filtered if i.get("source") == source]
     if domain:
         filtered = [i for i in filtered if i.get("domain") == domain]
+    if level:
+        filtered = [i for i in filtered if i.get("level") == level]
+    if audience:
+        filtered = [i for i in filtered if i.get("audience") == audience or i.get("audience") == "both"]
+
+    # 为每条内容附加 access_status
+    for item in filtered:
+        item["access_status"] = get_access_status(user_level, item.get("level", "L0"))
 
     total = len(filtered)
     total_pages = (total + page_size - 1) // page_size
@@ -267,26 +330,59 @@ async def get_recommended_content(limit: int = Query(10, ge=1, le=50)):
 # ============================================================================
 
 @router.get("/course/{course_id}")
-async def get_course_detail(course_id: str):
-    """获取课程详情"""
-    # TODO: 从数据库查询
-    return {
+async def get_course_detail(
+    course_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """获取课程详情（含等级门控）"""
+    user_level = get_user_level(current_user)
+
+    # TODO: 从数据库查询，这里返回模拟数据
+    course = {
         "id": course_id,
         "title": "行为健康入门",
         "description": "系统学习行为健康基础知识",
         "author": {"id": "platform", "name": "平台官方", "verified": True},
         "domain": "growth",
-        "level": "beginner",
+        "level": "L0",
         "duration_minutes": 90,
         "chapter_count": 6,
         "lesson_count": 18,
-        "chapters": [],
+        "chapters": [
+            {"id": "ch1", "title": "什么是行为健康", "lessons": []},
+            {"id": "ch2", "title": "行为改变的阶段", "lessons": []},
+        ],
         "is_free": True,
         "enroll_count": 856,
         "rating": 4.8,
         "coach_points": 50,
-        "grower_minutes": 90
+        "grower_minutes": 90,
+        "video_url": "/videos/course-intro.mp4",
     }
+
+    content_level = course.get("level", "L0")
+    access = get_access_status(user_level, content_level)
+    course["access_status"] = access
+
+    if not access["accessible"]:
+        # 锁定状态: 返回基本信息但移除详细内容/视频URL
+        return {
+            "id": course["id"],
+            "title": course["title"],
+            "description": course["description"],
+            "author": course["author"],
+            "domain": course["domain"],
+            "level": course["level"],
+            "duration_minutes": course["duration_minutes"],
+            "chapter_count": course["chapter_count"],
+            "lesson_count": course.get("lesson_count"),
+            "is_free": course["is_free"],
+            "enroll_count": course["enroll_count"],
+            "rating": course["rating"],
+            "access_status": access,
+        }
+
+    return course
 
 
 @router.post("/course/{course_id}/enroll")

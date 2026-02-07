@@ -15,6 +15,118 @@
           <div style="font-size:12px;color:#666;margin-top:4px">来自: {{ assignmentInfo.coach_name }}</div>
           <div v-if="assignmentInfo.note" style="font-size:12px;color:#666;margin-top:2px">备注: {{ assignmentInfo.note }}</div>
         </div>
+        <!-- 自由组合模式 -->
+        <template v-if="isCustomMode && customQuestions.length > 0">
+          <div class="progress-section">
+            <van-progress
+              :percentage="Math.round((currentIndex + 1) / customQuestions.length * 100)"
+              :show-pivot="false"
+              color="#722ed1"
+              track-color="#e8e8e8"
+              stroke-width="6"
+            />
+            <div class="progress-text">{{ currentIndex + 1 }} / {{ customQuestions.length }}</div>
+          </div>
+
+          <div class="question-card card">
+            <div class="question-group" style="color:#722ed1">教练自定义题目</div>
+            <div class="question-text">{{ currentCustomQuestion?.text }}</div>
+
+            <div class="options">
+              <div
+                v-for="opt in options"
+                :key="opt.value"
+                class="option-item"
+                :class="{ selected: customAnswers[currentCustomQuestion?.id] === opt.value }"
+                @click="selectCustomAnswer(opt.value)"
+              >
+                <div class="option-circle">{{ opt.value }}</div>
+                <div class="option-label">{{ opt.label }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="nav-buttons">
+            <van-button
+              v-if="currentIndex > 0"
+              plain
+              type="default"
+              @click="currentIndex--"
+            >上一题</van-button>
+            <div v-else />
+            <van-button
+              v-if="currentIndex < customQuestions.length - 1"
+              type="primary"
+              :disabled="!customAnswers[currentCustomQuestion?.id]"
+              @click="currentIndex++"
+            >下一题</van-button>
+            <van-button
+              v-else
+              type="primary"
+              :loading="submitting"
+              :disabled="!allCustomAnswered"
+              @click="submitAssessment"
+            >提交评估</van-button>
+          </div>
+        </template>
+
+        <!-- 个别题目模式 -->
+        <template v-else-if="isIndividualMode && individualQuestions.length > 0">
+          <div class="progress-section">
+            <van-progress
+              :percentage="Math.round((currentIndex + 1) / individualQuestions.length * 100)"
+              :show-pivot="false"
+              color="#1989fa"
+              track-color="#e8e8e8"
+              stroke-width="6"
+            />
+            <div class="progress-text">{{ currentIndex + 1 }} / {{ individualQuestions.length }}</div>
+          </div>
+
+          <div class="question-card card">
+            <div class="question-group">{{ currentIndividualQuestion?.questionnaire?.toUpperCase() }} · {{ currentIndividualQuestion?.dimension }}</div>
+            <div class="question-text">{{ currentIndividualQuestion?.text }}</div>
+
+            <div class="options">
+              <div
+                v-for="opt in individualOptions"
+                :key="opt.value"
+                class="option-item"
+                :class="{ selected: individualAnswers[currentIndividualQuestion?.id] === opt.value }"
+                @click="selectIndividualAnswer(opt.value)"
+              >
+                <div class="option-circle">{{ opt.value }}</div>
+                <div class="option-label">{{ opt.label }}</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="nav-buttons">
+            <van-button
+              v-if="currentIndex > 0"
+              plain
+              type="default"
+              @click="currentIndex--"
+            >上一题</van-button>
+            <div v-else />
+            <van-button
+              v-if="currentIndex < individualQuestions.length - 1"
+              type="primary"
+              :disabled="!individualAnswers[currentIndividualQuestion?.id]"
+              @click="currentIndex++"
+            >下一题</van-button>
+            <van-button
+              v-else
+              type="primary"
+              :loading="submitting"
+              :disabled="!allIndividualAnswered"
+              @click="submitAssessment"
+            >提交评估</van-button>
+          </div>
+        </template>
+
+        <!-- 标准TTM7模式 -->
+        <template v-else>
         <!-- 进度 -->
         <div class="progress-section">
           <van-progress
@@ -69,6 +181,7 @@
             @click="submitAssessment"
           >提交评估</van-button>
         </div>
+        </template>
       </template>
 
       <!-- 结果展示 (去诊断化) -->
@@ -133,6 +246,16 @@ const assignmentId = ref<number | null>(null)
 const assignmentInfo = ref<any>(null)
 const loadingAssignment = ref(false)
 
+// 个别题目模式（高频题目）
+const isIndividualMode = ref(false)
+const individualQuestions = ref<any[]>([])
+const individualAnswers = ref<Record<string, number>>({})
+
+// 自由组合模式（教练自定义题目）
+const isCustomMode = ref(false)
+const customQuestions = ref<any[]>([])
+const customAnswers = ref<Record<string, number>>({})
+
 // TTM7 21 题
 const questions = [
   // S0 无知无觉
@@ -176,6 +299,23 @@ const options = [
 const currentQuestion = computed(() => questions[currentIndex.value])
 const allAnswered = computed(() => questions.every(q => answers.value[q.id]))
 
+const currentIndividualQuestion = computed(() => individualQuestions.value[currentIndex.value])
+const allIndividualAnswered = computed(() => individualQuestions.value.every(q => individualAnswers.value[q.id]))
+const individualOptions = computed(() => {
+  if (!currentIndividualQuestion.value) return options
+  const q = currentIndividualQuestion.value
+  if (q.scale_labels && Object.keys(q.scale_labels).length > 0) {
+    return Object.entries(q.scale_labels).map(([k, v]) => ({
+      value: Number(k),
+      label: v as string,
+    })).sort((a, b) => a.value - b.value)
+  }
+  return options
+})
+
+const currentCustomQuestion = computed(() => customQuestions.value[currentIndex.value])
+const allCustomAnswered = computed(() => customQuestions.value.every(q => customAnswers.value[q.id]))
+
 const stageClass = computed(() => {
   const stage = result.value?.profile?.stage?.current
   if (!stage) return 'stage-default'
@@ -189,6 +329,20 @@ function selectAnswer(value: number) {
   answers.value[currentQuestion.value.id] = value
   // 自动前进到下一题
   if (currentIndex.value < questions.length - 1) {
+    setTimeout(() => currentIndex.value++, 200)
+  }
+}
+
+function selectIndividualAnswer(value: number) {
+  individualAnswers.value[currentIndividualQuestion.value.id] = value
+  if (currentIndex.value < individualQuestions.value.length - 1) {
+    setTimeout(() => currentIndex.value++, 200)
+  }
+}
+
+function selectCustomAnswer(value: number) {
+  customAnswers.value[currentCustomQuestion.value.id] = value
+  if (currentIndex.value < customQuestions.value.length - 1) {
     setTimeout(() => currentIndex.value++, 200)
   }
 }
@@ -218,21 +372,31 @@ function domainIcon(domain: string) {
 }
 
 async function submitAssessment() {
-  if (!allAnswered.value) {
-    showToast('请完成所有题目')
-    return
-  }
   submitting.value = true
   try {
     if (assignmentId.value) {
-      // 教练推送的评估 → 提交到 assignment 端点
-      const res = await api.post(`/api/v1/assessment-assignments/${assignmentId.value}/submit`, {
-        ttm7: answers.value,
-      })
+      const body: any = {}
+      if (isCustomMode.value) {
+        body.custom_answers = customAnswers.value
+      } else if (isIndividualMode.value) {
+        body.individual_answers = individualAnswers.value
+      } else {
+        if (!allAnswered.value) {
+          showToast('请完成所有题目')
+          submitting.value = false
+          return
+        }
+        body.ttm7 = answers.value
+      }
+      const res = await api.post(`/api/v1/assessment-assignments/${assignmentId.value}/submit`, body)
       result.value = res.pipeline_result || res
       showToast('评估已提交，等待教练审核')
     } else {
-      // 自主评估 → 原有逻辑
+      if (!allAnswered.value) {
+        showToast('请完成所有题目')
+        submitting.value = false
+        return
+      }
       const res = await api.post('/api/v1/assessment/evaluate', {
         ttm7: answers.value,
       })
@@ -257,6 +421,32 @@ onMounted(async () => {
       const found = (res.assignments || []).find((a: any) => a.id === assignmentId.value)
       if (found) {
         assignmentInfo.value = found
+        // 检查推送模式
+        const scales = found.scales
+        if (typeof scales === 'object' && !Array.isArray(scales)) {
+          const cqs = scales.custom_questions || []
+          if (cqs.length > 0) {
+            // 自由组合模式
+            isCustomMode.value = true
+            customQuestions.value = cqs
+          } else {
+            const preset = scales.question_preset
+            const qids = scales.question_ids || []
+            if (preset || qids.length > 0) {
+              isIndividualMode.value = true
+              try {
+                if (preset) {
+                  const qRes: any = await api.get(`/api/v1/high-freq-questions/${preset}`)
+                  individualQuestions.value = qRes.items || qRes || []
+                } else if (qids.length > 0) {
+                  const params = qids.map((id: string) => `ids=${encodeURIComponent(id)}`).join('&')
+                  const qRes: any = await api.get(`/api/v1/high-freq-questions/by-ids?${params}`)
+                  individualQuestions.value = qRes.questions || qRes || []
+                }
+              } catch { /* ignore */ }
+            }
+          }
+        }
       }
     } catch { /* ignore */ }
     finally { loadingAssignment.value = false }

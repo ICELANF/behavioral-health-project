@@ -1,0 +1,22 @@
+{
+  "glucose": {
+    "danger_high": {"value": 13.9, "unit": "mmol/L", "message": "血糖危险偏高"},
+    "warning_high": {"value": 10.0, "unit": "mmol/L", "message": "血糖偏高"},
+    "danger_low": {"value": 3.9, "unit": "mmol/L", "message": "血糖危险偏低，请立即进食"},
+    "warning_low": {"value": 3.0, "unit": "mmol/L", "message": "血糖极低，需要紧急处理"}
+  },
+  "heart_rate": {
+    "danger_high": {"value": 150, "unit": "bpm", "rest_only": true, "message": "静息心率危险偏高"},
+    "warning_high": {"value": 120, "unit": "bpm", "rest_only": true, "message": "静息心率偏高"},
+    "danger_low": {"value": 40, "unit": "bpm", "message": "心率危险偏低"},
+    "warning_low": {"value": 50, "unit": "bpm", "message": "心率异常偏低"}
+  },
+  "exercise": {
+    "warning_excessive": {"value": 180, "unit": "min/day", "message": "运动量过大，注意休息"},
+    "warning_sedentary": {"value": 600, "unit": "sedentary_min/day", "message": "久坐时间过长"}
+  },
+  "sleep": {
+    "warning_low_score": {"value": 50, "unit": "score", "message": "睡眠质量很差"},
+    "warning_short": {"value": 300, "unit": "min", "message": "睡眠时间不足"}
+  }
+}

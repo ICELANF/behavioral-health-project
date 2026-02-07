@@ -8,8 +8,26 @@ export * from './content'
 // 风险等级类型
 export type RiskLevel = 'high' | 'mid' | 'low' | 'normal'
 
-// 教练等级类型
-export type CoachLevel = 'L0' | 'L1' | 'L2' | 'L3' | 'L4'
+// 系统等级类型（六级体系·四同道者裂变版）
+// L0观察员 → L1成长者 → L2分享者 → L3教练 → L4促进师 → L5大师
+export type CoachLevel = 'L0' | 'L1' | 'L2' | 'L3' | 'L4' | 'L5'
+
+// 六级体系配置（对应《行为健康教练体系完整建设规划》）
+export const LEVEL_CONFIG: Record<CoachLevel, {
+  name: string           // 短名称
+  title: string          // 正式称号
+  subtitle: string       // 核心定位
+  color: string
+  peers_required: number // 同道者要求数量
+  promotion_months: string // 晋级周期
+}> = {
+  L0: { name: '观察员', title: '观察员', subtitle: '行为入口·认知-行为信号的原始数据源', color: '#8c8c8c', peers_required: 0, promotion_months: '1-3个月' },
+  L1: { name: '成长者', title: '成长者', subtitle: '行为养成践行者·效果的唯一承载体', color: '#1890ff', peers_required: 4, promotion_months: '3-6个月' },
+  L2: { name: '分享者', title: '分享者', subtitle: '同伴支持者·经验传递与陪伴者', color: '#52c41a', peers_required: 4, promotion_months: '6-12个月' },
+  L3: { name: '教练', title: '行为健康教练', subtitle: '系统翻译者·行为改变实施者', color: '#faad14', peers_required: 4, promotion_months: '10-12个月' },
+  L4: { name: '促进师', title: '行为健康促进师', subtitle: '系统放大器·组织/区域推动者', color: '#722ed1', peers_required: 4, promotion_months: '12-18个月' },
+  L5: { name: '大师', title: '行为健康促进大师', subtitle: '学科文明层·理论范式与传承者', color: '#eb2f96', peers_required: 4, promotion_months: '24个月+' },
+}
 
 // TTM 阶段类型
 export type TTMStage = 'precontemplation' | 'contemplation' | 'preparation' | 'action' | 'maintenance' | 'termination'

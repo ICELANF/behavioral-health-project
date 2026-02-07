@@ -4,7 +4,7 @@
     <div class="portal-header">
       <div class="header-left">
         <span class="greeting">{{ getGreeting() }}，{{ expertInfo.name }}</span>
-        <a-tag color="purple">督导专家</a-tag>
+        <a-tag color="purple">促进师</a-tag>
       </div>
       <div class="header-right">
         <a-badge :count="notifications" :offset="[-2, 2]">

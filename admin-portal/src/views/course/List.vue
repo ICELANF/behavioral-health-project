@@ -2,31 +2,43 @@
   <div class="course-list">
     <div class="page-header">
       <h2>课程列表</h2>
-      <a-button type="primary" @click="$router.push('/course/create')">
-        <template #icon><PlusOutlined /></template>
-        创建课程
-      </a-button>
+      <a-space>
+        <a-switch v-model:checked="onlyAccessible" checked-children="只看可学习" un-checked-children="全部" @change="fetchCourses" />
+        <a-button type="primary" @click="$router.push('/course/create')">
+          <template #icon><PlusOutlined /></template>
+          创建课程
+        </a-button>
+      </a-space>
     </div>
 
     <!-- 筛选 -->
     <a-card style="margin-bottom: 16px">
-      <a-row :gutter="16">
-        <a-col :span="4">
+      <a-row :gutter="[12, 12]">
+        <a-col :span="3">
+          <a-select v-model:value="filters.audience" placeholder="学习受众" allowClear style="width: 100%">
+            <a-select-option value="client"><span style="color:#1890ff">●</span> 服务对象</a-select-option>
+            <a-select-option value="coach"><span style="color:#52c41a">●</span> 教练</a-select-option>
+            <a-select-option value="both"><span style="color:#722ed1">●</span> 双受众</a-select-option>
+          </a-select>
+        </a-col>
+        <a-col :span="3">
           <a-select v-model:value="filters.source" placeholder="内容来源" allowClear style="width: 100%">
             <a-select-option v-for="(config, key) in CONTENT_SOURCE_CONFIG" :key="key" :value="key">
               <span :style="{ color: config.color }">●</span> {{ config.label }}
             </a-select-option>
           </a-select>
         </a-col>
-        <a-col :span="4">
+        <a-col :span="3">
           <a-select v-model:value="filters.level" placeholder="认证等级" allowClear style="width: 100%">
-            <a-select-option value="L0">L0 公众学习</a-select-option>
-            <a-select-option value="L1">L1 初级教练</a-select-option>
-            <a-select-option value="L2">L2 中级教练</a-select-option>
-            <a-select-option value="L3">L3 高级教练</a-select-option>
+            <a-select-option value="L0">L0 观察员</a-select-option>
+            <a-select-option value="L1">L1 成长者</a-select-option>
+            <a-select-option value="L2">L2 分享者</a-select-option>
+            <a-select-option value="L3">L3 教练</a-select-option>
+            <a-select-option value="L4">L4 促进师</a-select-option>
+            <a-select-option value="L5">L5 大师</a-select-option>
           </a-select>
         </a-col>
-        <a-col :span="4">
+        <a-col :span="3">
           <a-select v-model:value="filters.domain" placeholder="内容领域" allowClear style="width: 100%">
             <a-select-option v-for="(domain, key) in TRIGGER_DOMAINS" :key="key" :value="key">
               {{ domain.label }}
@@ -35,15 +47,15 @@
         </a-col>
         <a-col :span="4">
           <a-select v-model:value="filters.category" placeholder="课程类别" allowClear style="width: 100%">
+            <a-select-option value="case">案例学习</a-select-option>
+            <a-select-option value="skill">核心技能</a-select-option>
+            <a-select-option value="practice">实践练习</a-select-option>
             <a-select-option value="knowledge">知识体系</a-select-option>
             <a-select-option value="method">方法体系</a-select-option>
-            <a-select-option value="skill">核心技能</a-select-option>
             <a-select-option value="value">观念心智</a-select-option>
-            <a-select-option value="practice">实践练习</a-select-option>
-            <a-select-option value="case">案例学习</a-select-option>
           </a-select>
         </a-col>
-        <a-col :span="4">
+        <a-col :span="3">
           <a-select v-model:value="filters.status" placeholder="状态" allowClear style="width: 100%">
             <a-select-option value="draft">草稿</a-select-option>
             <a-select-option value="pending">待审核</a-select-option>
@@ -51,7 +63,7 @@
             <a-select-option value="offline">已下架</a-select-option>
           </a-select>
         </a-col>
-        <a-col :span="4">
+        <a-col :span="5">
           <a-input-search v-model:value="filters.keyword" placeholder="搜索课程名称" @search="fetchCourses" />
         </a-col>
       </a-row>
@@ -83,25 +95,40 @@
 
     <!-- 课程表格 -->
     <a-table
-      :dataSource="courses"
+      :dataSource="filteredCourses"
       :columns="columns"
       :loading="loading"
       :pagination="pagination"
       @change="handleTableChange"
       rowKey="course_id"
+      :rowClassName="(record: any) => record.access_status && !record.access_status.accessible ? 'locked-row' : ''"
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'cover'">
-          <a-image :src="record.cover_url || defaultCover" :width="80" />
+          <div class="cover-wrapper">
+            <a-image :src="record.cover_url || defaultCover" :width="80" :preview="false" />
+            <div v-if="record.access_status && !record.access_status.accessible" class="lock-overlay" @click="showLockTip(record)">
+              <LockOutlined class="lock-icon" />
+            </div>
+          </div>
         </template>
         <template v-if="column.key === 'title'">
           <div>
-            <div class="course-title">{{ record.title }}</div>
+            <div class="course-title">
+              {{ record.title }}
+              <LockOutlined v-if="record.access_status && !record.access_status.accessible" style="color: #faad14; margin-left: 4px; font-size: 12px" />
+            </div>
             <div class="course-tags">
+              <a-tag :color="audienceColors[record.audience]" size="small">
+                {{ audienceLabels[record.audience] || '未设置' }}
+              </a-tag>
               <a-tag :color="getSourceColor(record.source)" size="small">
                 {{ getSourceLabel(record.source) }}
               </a-tag>
               <a-tag :color="levelColors[record.level]" size="small">{{ record.level }}</a-tag>
+              <a-tag v-if="record.access_status && !record.access_status.accessible" color="warning" size="small">
+                {{ record.access_status.unlock_level }} {{ record.access_status.unlock_level_label }} 解锁
+              </a-tag>
               <a-tag size="small">{{ categoryLabels[record.category] }}</a-tag>
               <a-tag v-if="record.domain" size="small" color="cyan">{{ getDomainLabel(record.domain) }}</a-tag>
             </div>
@@ -170,7 +197,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import {
@@ -180,17 +207,23 @@ import {
   ClockCircleOutlined,
   EyeOutlined,
   UserOutlined,
-  StarFilled
+  StarFilled,
+  LockOutlined
 } from '@ant-design/icons-vue'
 import { CONTENT_SOURCE_CONFIG } from '@/types/content'
 import type { ContentSource } from '@/types/content'
 import { TRIGGER_DOMAINS } from '@/constants'
+import { useAuthStore } from '@/stores/auth'
+import { fetchContentList } from '@/api/course'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const loading = ref(false)
+const onlyAccessible = ref(false)
 const defaultCover = 'https://via.placeholder.com/160x90?text=Course'
 
 const filters = reactive({
+  audience: undefined as string | undefined,
   source: undefined as ContentSource | undefined,
   level: undefined as string | undefined,
   domain: undefined as string | undefined,
@@ -214,12 +247,25 @@ const pagination = reactive({
   showTotal: (total: number) => `共 ${total} 个课程`
 })
 
+const audienceLabels: Record<string, string> = { client: '服务对象', coach: '教练', both: '双受众' }
+const audienceColors: Record<string, string> = { client: '#1890ff', coach: '#52c41a', both: '#722ed1' }
+
 const levelColors: Record<string, string> = {
   L0: 'blue',
   L1: 'green',
   L2: 'orange',
   L3: 'red',
-  L4: 'purple'
+  L4: 'purple',
+  L5: 'gold'
+}
+
+const levelLabels: Record<string, string> = {
+  L0: '观察员',
+  L1: '成长者',
+  L2: '分享者',
+  L3: '教练',
+  L4: '促进师',
+  L5: '大师'
 }
 
 const categoryLabels: Record<string, string> = {
@@ -258,12 +304,31 @@ const formatNumber = (num: number) => {
   return num.toString()
 }
 
-// 模拟数据（扩展多来源）
-const courses = ref([
+// 前端等级门控：用 userLevel 计算 access_status
+const getUserLevel = () => authStore.userLevel || 0
+
+const computeAccessStatus = (level: string) => {
+  const levelMap: Record<string, number> = { L0: 0, L1: 1, L2: 2, L3: 3, L4: 4, L5: 5 }
+  const required = levelMap[level] ?? 0
+  const userLv = getUserLevel()
+  if (userLv >= required) {
+    return { accessible: true, reason: null, unlock_level: null, unlock_level_label: null }
+  }
+  return {
+    accessible: false,
+    reason: `需完成${level} ${levelLabels[level] || level}才能解锁`,
+    unlock_level: level,
+    unlock_level_label: levelLabels[level] || level,
+  }
+}
+
+// 模拟数据（扩展多来源，含 access_status）
+const courses = ref<any[]>([
   {
     course_id: '1',
     title: '行为健康入门',
     source: 'platform' as ContentSource,
+    audience: 'client',
     level: 'L0',
     category: 'knowledge',
     domain: 'stress',
@@ -284,6 +349,7 @@ const courses = ref([
     course_id: '2',
     title: '正念冥想：从入门到精通',
     source: 'expert' as ContentSource,
+    audience: 'both',
     level: 'L0',
     category: 'practice',
     domain: 'stress',
@@ -305,6 +371,7 @@ const courses = ref([
     course_id: '3',
     title: '代谢与慢病风险入门',
     source: 'platform' as ContentSource,
+    audience: 'coach',
     level: 'L1',
     category: 'knowledge',
     domain: 'glucose',
@@ -324,6 +391,7 @@ const courses = ref([
     course_id: '4',
     title: '睡眠改善实战指南',
     source: 'expert' as ContentSource,
+    audience: 'client',
     level: 'L0',
     category: 'method',
     domain: 'sleep',
@@ -345,6 +413,7 @@ const courses = ref([
     course_id: '5',
     title: '高级动机访谈技术',
     source: 'platform' as ContentSource,
+    audience: 'coach',
     level: 'L2',
     category: 'skill',
     cover_url: '',
@@ -363,6 +432,7 @@ const courses = ref([
     course_id: '6',
     title: '情绪管理教练实战',
     source: 'coach' as ContentSource,
+    audience: 'coach',
     level: 'L1',
     category: 'case',
     domain: 'stress',
@@ -373,22 +443,104 @@ const courses = ref([
     enroll_count: 0,
     author_id: 'coach1',
     author_name: '张教练',
-    author_title: 'L3高级教练',
+    author_title: 'L3教练',
     author_avatar: '',
     author_verified: true,
     status: 'pending',
     review_status: 'pending',
     updated_at: '2026-02-03'
+  },
+  {
+    course_id: '7',
+    title: '行为画像深度解读',
+    source: 'expert' as ContentSource,
+    audience: 'coach',
+    level: 'L3',
+    category: 'knowledge',
+    domain: 'growth',
+    cover_url: '',
+    chapter_count: 8,
+    duration_minutes: 180,
+    view_count: 1200,
+    enroll_count: 45,
+    avg_rating: 4.9,
+    author_id: 'expert3',
+    author_name: '赵专家',
+    author_title: '行为科学博士',
+    author_avatar: '',
+    author_verified: true,
+    status: 'published',
+    updated_at: '2026-02-01'
   }
 ])
 
-const fetchCourses = () => {
+// 计算后的课程列表（带 access_status）
+const filteredCourses = computed(() => {
+  let list = courses.value.map(c => ({
+    ...c,
+    access_status: c.access_status || computeAccessStatus(c.level || 'L0')
+  }))
+  if (onlyAccessible.value) {
+    list = list.filter(c => c.access_status.accessible)
+  }
+  return list
+})
+
+const fetchCourses = async () => {
   loading.value = true
-  // TODO: 调用API获取课程列表，支持筛选
-  setTimeout(() => {
-    loading.value = false
-    pagination.total = courses.value.length
-  }, 500)
+
+  // 尝试调用API
+  const apiData = await fetchContentList({
+    page: pagination.current,
+    page_size: pagination.pageSize,
+    type: 'course',
+    source: filters.source || undefined,
+    domain: filters.domain || undefined,
+    level: filters.level || undefined,
+    audience: filters.audience || undefined,
+    keyword: filters.keyword || undefined,
+  })
+
+  if (apiData && apiData.items) {
+    // API 返回数据已包含 access_status
+    courses.value = apiData.items.map((item: any, idx: number) => ({
+      course_id: item.id || String(idx),
+      title: item.title,
+      source: item.source,
+      audience: item.audience || 'client',
+      level: item.level || 'L0',
+      domain: item.domain,
+      author_name: item.author?.name || '未知',
+      author_verified: item.author?.verified || false,
+      view_count: item.view_count || 0,
+      like_count: item.like_count || 0,
+      duration: item.duration,
+      is_free: item.is_free,
+      access_status: item.access_status,
+      status: 'published',
+      cover_url: '',
+      chapter_count: 0,
+      duration_minutes: item.duration ? Math.round(item.duration / 60) : 0,
+      enroll_count: 0,
+      updated_at: '',
+    }))
+    pagination.total = apiData.total
+  } else {
+    // Mock 降级
+    pagination.total = filteredCourses.value.length
+  }
+
+  loading.value = false
+}
+
+const showLockTip = (record: any) => {
+  const status = record.access_status
+  if (status && !status.accessible) {
+    Modal.info({
+      title: '内容未解锁',
+      content: status.reason || `完成当前等级后解锁此内容`,
+    })
+  }
 }
 
 const handleTableChange = (pag: any) => {
@@ -423,7 +575,7 @@ const handleReview = (record: any) => {
   router.push(`/content/review?id=${record.course_id}&type=course`)
 }
 
-const handlePreview = (record: any) => {
+const handlePreview = (_record: any) => {
   message.info('预览功能开发中')
 }
 
@@ -503,5 +655,34 @@ onMounted(() => {
 
 .course-stats span {
   margin-right: 10px;
+}
+
+/* 锁定相关样式 */
+.cover-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.lock-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.lock-icon {
+  color: #fff;
+  font-size: 24px;
+}
+
+:deep(.locked-row) {
+  opacity: 0.7;
 }
 </style>

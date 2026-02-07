@@ -133,6 +133,38 @@
           </template>
           <van-empty v-else-if="!loadingReminders" description="暂无健康提醒" />
         </van-tab>
+
+        <van-tab :title="alertTabTitle">
+          <van-loading v-if="loadingDeviceAlerts" class="loading" />
+          <template v-if="deviceAlertList.length">
+            <div
+              class="alert-item"
+              v-for="a in deviceAlertList"
+              :key="a.id"
+              :style="{ borderLeft: '3px solid ' + (a.severity === 'danger' ? '#ee0a24' : '#ff976a') }"
+            >
+              <van-icon name="warning-o" :color="a.severity === 'danger' ? '#ee0a24' : '#ff976a'" size="24" />
+              <div class="alert-content">
+                <div class="alert-title" :style="{ color: a.severity === 'danger' ? '#ee0a24' : '#ff976a' }">
+                  {{ a.message }}
+                </div>
+                <div class="alert-body">
+                  {{ a.data_type }} · 当前值: {{ a.data_value }} · 阈值: {{ a.threshold_value }}
+                </div>
+                <div class="alert-time">{{ formatTime(a.created_at) }}</div>
+                <van-button
+                  v-if="!a.user_read"
+                  type="primary"
+                  size="mini"
+                  round
+                  style="margin-top:6px"
+                  @click="markAlertRead(a)"
+                >标记已读</van-button>
+              </div>
+            </div>
+          </template>
+          <van-empty v-else-if="!loadingDeviceAlerts" description="暂无健康预警" />
+        </van-tab>
       </van-tabs>
     </div>
   </div>
@@ -159,6 +191,11 @@ const unreadCount = ref(0)
 const loadingReminders = ref(false)
 const reminders = ref<any[]>([])
 
+// 设备预警
+const loadingDeviceAlerts = ref(false)
+const deviceAlertList = ref<any[]>([])
+const unreadAlertCount = ref(0)
+
 // 待完成评估
 const loadingPendingAssess = ref(false)
 const pendingAssessments = ref<any[]>([])
@@ -168,6 +205,10 @@ const pendingAssessTabTitle = computed(() => {
 
 const coachTabTitle = computed(() => {
   return unreadCount.value > 0 ? `教练消息(${unreadCount.value})` : '教练消息'
+})
+
+const alertTabTitle = computed(() => {
+  return unreadAlertCount.value > 0 ? `健康预警(${unreadAlertCount.value})` : '健康预警'
 })
 
 function formatTime(str: string) {
@@ -229,6 +270,14 @@ async function markCoachRead(msg: any) {
   } catch { /* ignore */ }
 }
 
+async function markAlertRead(alert: any) {
+  try {
+    await api.post(`/api/v1/alerts/${alert.id}/read`)
+    alert.user_read = true
+    unreadAlertCount.value = Math.max(0, unreadAlertCount.value - 1)
+  } catch { /* ignore */ }
+}
+
 onMounted(async () => {
   // 加载对话会话
   loadingSessions.value = true
@@ -285,6 +334,18 @@ onMounted(async () => {
       healthAlerts.value = res.alerts
     }
   } catch {}
+
+  // 加载设备预警
+  loadingDeviceAlerts.value = true
+  try {
+    const res: any = await api.get('/api/v1/alerts/my?limit=20')
+    deviceAlertList.value = res.alerts || []
+    unreadAlertCount.value = (res.alerts || []).filter((a: any) => !a.user_read).length
+  } catch {
+    deviceAlertList.value = []
+  } finally {
+    loadingDeviceAlerts.value = false
+  }
 })
 </script>
 

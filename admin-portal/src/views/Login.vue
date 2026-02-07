@@ -53,7 +53,7 @@
             >
               <div class="role-icon supervisor">👨‍🔬</div>
               <div class="role-info">
-                <div class="role-name">督导专家</div>
+                <div class="role-name">促进师</div>
                 <div class="role-desc">督导教练，审核晋级，培训直播</div>
               </div>
               <div class="role-check" v-if="selectedRole === 'supervisor'">
@@ -226,7 +226,7 @@ const getRoleName = (role: string) => {
     sharer: '分享者',
     coach: '健康教练',
     promoter: '行为健康促进师',
-    supervisor: '督导专家',
+    supervisor: '促进师',
     master: '行为健康促进大师',
     admin: '系统管理员'
   }

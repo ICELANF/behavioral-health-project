@@ -87,7 +87,7 @@
           <a-radio-group v-model:value="autoRules.strategy">
             <a-radio value="load_balance">负载均衡（优先分配给低负载教练）</a-radio>
             <a-radio value="domain_match">领域匹配（优先匹配专长领域）</a-radio>
-            <a-radio value="risk_match">风险匹配（高风险分配给高级教练）</a-radio>
+            <a-radio value="risk_match">风险匹配（高风险分配给教练）</a-radio>
           </a-radio-group>
         </a-form-item>
         <a-form-item label="教练最大负载">

@@ -86,6 +86,33 @@ def expired_task_cleanup():
         logger.error(f"[Scheduler] 过期任务清理失败: {e}")
 
 
+def process_approved_pushes():
+    """每5分钟投递已审批且到时的推送"""
+    from core.database import get_db_session
+    from core import coach_push_queue_service as queue_svc
+
+    try:
+        with get_db_session() as db:
+            count = queue_svc.process_due_approved(db)
+            if count:
+                logger.info(f"[Scheduler] 定时投递推送: {count} 条")
+    except Exception as e:
+        logger.error(f"[Scheduler] 定时投递推送失败: {e}")
+
+
+def expire_stale_queue_items():
+    """每天06:30清理72h超时未审批的推送条目"""
+    from core.database import get_db_session
+    from core import coach_push_queue_service as queue_svc
+
+    try:
+        with get_db_session() as db:
+            count = queue_svc.expire_stale_items(db, hours=72)
+            logger.info(f"[Scheduler] 过期推送清理: {count} 条")
+    except Exception as e:
+        logger.error(f"[Scheduler] 过期推送清理失败: {e}")
+
+
 def setup_scheduler() -> "AsyncIOScheduler | None":
     """
     配置并返回调度器
@@ -125,6 +152,24 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
         CronTrigger(hour=23, minute=59),
         id="expired_task_cleanup",
         name="过期任务清理",
+        replace_existing=True,
+    )
+
+    # 每 5 分钟投递已审批且到时的推送
+    scheduler.add_job(
+        process_approved_pushes,
+        IntervalTrigger(minutes=5),
+        id="process_approved_pushes",
+        name="投递已审批推送",
+        replace_existing=True,
+    )
+
+    # 每天 06:30 清理 72h 超时未审批条目
+    scheduler.add_job(
+        expire_stale_queue_items,
+        CronTrigger(hour=6, minute=30),
+        id="expire_stale_queue_items",
+        name="过期推送清理",
         replace_existing=True,
     )
 

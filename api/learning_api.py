@@ -21,13 +21,41 @@ router = APIRouter(prefix="/api/v1/learning", tags=["学习激励"])
 # 配置常量
 # ============================================================================
 
-# 教练等级积分要求
+# 六级三积分体系
+# growth: 成长积分 (学习时长/完成度)
+# contribution: 贡献积分 (分享/辅导/案例)
+# influence: 影响力积分 (带教/督导/研究)
 COACH_LEVEL_REQUIREMENTS = {
-    "L0": {"min_total": 0, "min_categories": {}, "exam_required": False, "label": "学习者"},
-    "L1": {"min_total": 100, "min_categories": {"knowledge": 30, "method": 20}, "exam_required": True, "label": "初级教练"},
-    "L2": {"min_total": 300, "min_categories": {"knowledge": 80, "method": 60, "skill": 40}, "exam_required": True, "label": "中级教练"},
-    "L3": {"min_total": 600, "min_categories": {"knowledge": 150, "method": 120, "skill": 100, "value": 50}, "exam_required": True, "label": "高级教练"},
-    "L4": {"min_total": 1000, "min_categories": {"knowledge": 250, "method": 200, "skill": 180, "value": 100}, "exam_required": True, "label": "专家教练"},
+    "L0": {
+        "label": "观察员",
+        "min_growth": 0, "min_contribution": 0, "min_influence": 0,
+        "exam_required": False,
+    },
+    "L1": {
+        "label": "成长者",
+        "min_growth": 100, "min_contribution": 0, "min_influence": 0,
+        "exam_required": False,
+    },
+    "L2": {
+        "label": "分享者",
+        "min_growth": 300, "min_contribution": 50, "min_influence": 0,
+        "exam_required": True,
+    },
+    "L3": {
+        "label": "教练",
+        "min_growth": 800, "min_contribution": 100, "min_influence": 0,
+        "exam_required": True,
+    },
+    "L4": {
+        "label": "促进师",
+        "min_growth": 1500, "min_contribution": 500, "min_influence": 200,
+        "exam_required": True,
+    },
+    "L5": {
+        "label": "大师",
+        "min_growth": 3000, "min_contribution": 1500, "min_influence": 800,
+        "exam_required": True,
+    },
 }
 
 # 成长者时长里程碑奖励
@@ -131,39 +159,50 @@ class RewardClaim(BaseModel):
 
 @router.get("/coach/points/{user_id}")
 async def get_coach_points(user_id: str):
-    """获取教练积分详情"""
+    """获取教练积分详情（三积分体系）"""
     # TODO: 从数据库查询
-    total_points = 245
+    growth_points = 245
+    contribution_points = 35
+    influence_points = 0
     current_level = "L1"
 
-    # 计算下一级要求
-    next_level = "L2"
-    next_level_req = COACH_LEVEL_REQUIREMENTS[next_level]
+    # 查找下一级
+    level_keys = list(COACH_LEVEL_REQUIREMENTS.keys())
+    current_idx = level_keys.index(current_level) if current_level in level_keys else 0
+    next_level = level_keys[current_idx + 1] if current_idx + 1 < len(level_keys) else None
+    next_level_req = COACH_LEVEL_REQUIREMENTS[next_level] if next_level else None
+
+    # 计算进度
+    level_progress = 100
+    if next_level_req:
+        g_prog = min(growth_points / max(next_level_req["min_growth"], 1), 1.0)
+        c_prog = min(contribution_points / max(next_level_req["min_contribution"], 1), 1.0) if next_level_req["min_contribution"] > 0 else 1.0
+        i_prog = min(influence_points / max(next_level_req["min_influence"], 1), 1.0) if next_level_req["min_influence"] > 0 else 1.0
+        level_progress = int((g_prog + c_prog + i_prog) / 3 * 100)
 
     return {
         "user_id": user_id,
-        "total_points": total_points,
         "current_level": current_level,
         "current_level_label": COACH_LEVEL_REQUIREMENTS[current_level]["label"],
         "next_level": next_level,
-        "next_level_label": next_level_req["label"],
-        "next_level_points": next_level_req["min_total"],
-        "level_progress": int((total_points / next_level_req["min_total"]) * 100),
-        "category_points": {
-            "knowledge": 80,
-            "method": 60,
-            "skill": 45,
-            "value": 30,
-            "practice": 20,
-            "case_study": 10
+        "next_level_label": next_level_req["label"] if next_level_req else "已达最高等级",
+        "level_progress": level_progress,
+        "scores": {
+            "growth": growth_points,
+            "contribution": contribution_points,
+            "influence": influence_points,
         },
-        "category_requirements": next_level_req["min_categories"],
+        "next_level_requirements": {
+            "min_growth": next_level_req["min_growth"],
+            "min_contribution": next_level_req["min_contribution"],
+            "min_influence": next_level_req["min_influence"],
+        } if next_level_req else None,
         "certification_status": {
-            "points_met": total_points >= next_level_req["min_total"],
-            "categories_met": False,  # TODO: 检查各分类是否达标
+            "growth_met": growth_points >= (next_level_req["min_growth"] if next_level_req else 0),
+            "contribution_met": contribution_points >= (next_level_req["min_contribution"] if next_level_req else 0),
+            "influence_met": influence_points >= (next_level_req["min_influence"] if next_level_req else 0),
             "exam_passed": False,
-            "practice_hours": 12,
-            "mentor_approved": False
+            "mentor_approved": False,
         }
     }
 

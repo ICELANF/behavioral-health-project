@@ -123,7 +123,37 @@ class MicroActionTaskService:
                 db.refresh(t)
             logger.info(f"生成每日任务: user={user_id}, count={len(tasks)}")
 
+            # 若用户有教练，创建一条汇总推送队列条目
+            self._create_queue_summary(db, user_id, tasks)
+
         return tasks
+
+    def _create_queue_summary(self, db: Session, user_id: int, tasks: List[MicroActionTask]):
+        """若用户有教练，为今日微行动创建一条汇总 CoachPushQueue 条目"""
+        try:
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user or not user.profile or not isinstance(user.profile, dict):
+                return
+            coach_id = user.profile.get("coach_id")
+            if not coach_id:
+                return
+
+            from core import coach_push_queue_service as queue_svc
+            task_titles = [t.title for t in tasks]
+            queue_svc.create_queue_item(
+                db,
+                coach_id=coach_id,
+                student_id=user_id,
+                source_type="micro_action",
+                source_id=None,
+                title=f"今日微行动: {len(tasks)}项",
+                content="、".join(task_titles),
+                content_extra={"task_ids": [t.id for t in tasks], "domains": list(set(t.domain for t in tasks))},
+                priority="low",
+            )
+            db.commit()
+        except Exception as e:
+            logger.warning(f"创建微行动推送队列失败: user={user_id} err={e}")
 
     def _generate_default_tasks(
         self,

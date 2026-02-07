@@ -20,27 +20,46 @@
             </a-form-item>
 
             <a-row :gutter="16">
-              <a-col :span="8">
-                <a-form-item label="认证等级" name="level" :rules="[{ required: true, message: '请选择认证等级' }]">
-                  <a-select v-model:value="formState.level" placeholder="选择等级">
-                    <a-select-option value="L0">L0 公众学习</a-select-option>
-                    <a-select-option value="L1">L1 初级教练</a-select-option>
-                    <a-select-option value="L2">L2 中级教练</a-select-option>
-                    <a-select-option value="L3">L3 高级教练</a-select-option>
+              <a-col :span="6">
+                <a-form-item label="学习受众" name="audience" :rules="[{ required: true, message: '请选择受众' }]">
+                  <a-select v-model:value="formState.audience" placeholder="谁来学习">
+                    <a-select-option value="client">
+                      <span style="color:#1890ff">●</span> 服务对象
+                    </a-select-option>
+                    <a-select-option value="coach">
+                      <span style="color:#52c41a">●</span> 教练
+                    </a-select-option>
+                    <a-select-option value="both">
+                      <span style="color:#722ed1">●</span> 双受众
+                    </a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
-              <a-col :span="8">
+              <a-col :span="6">
+                <a-form-item label="认证等级" name="level" :rules="[{ required: true, message: '请选择认证等级' }]">
+                  <a-select v-model:value="formState.level" placeholder="选择等级">
+                    <a-select-option value="L0">L0 观察员</a-select-option>
+                    <a-select-option value="L1">L1 成长者</a-select-option>
+                    <a-select-option value="L2">L2 分享者</a-select-option>
+                    <a-select-option value="L3">L3 教练</a-select-option>
+                    <a-select-option value="L4">L4 促进师</a-select-option>
+                    <a-select-option value="L5">L5 大师</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+              <a-col :span="6">
                 <a-form-item label="课程类别" name="category" :rules="[{ required: true, message: '请选择课程类别' }]">
                   <a-select v-model:value="formState.category" placeholder="选择类别">
+                    <a-select-option value="case">案例学习 (Case)</a-select-option>
+                    <a-select-option value="skill">核心技能 (Skill)</a-select-option>
+                    <a-select-option value="practice">实践练习 (Practice)</a-select-option>
                     <a-select-option value="knowledge">知识体系 (Knowledge)</a-select-option>
                     <a-select-option value="method">方法体系 (Method)</a-select-option>
-                    <a-select-option value="skill">核心技能 (Skill)</a-select-option>
                     <a-select-option value="value">观念心智 (Value)</a-select-option>
                   </a-select>
                 </a-form-item>
               </a-col>
-              <a-col :span="8">
+              <a-col :span="6">
                 <a-form-item label="课程价格" name="price">
                   <a-input-number v-model:value="formState.price" :min="0" :precision="2" style="width: 100%">
                     <template #addonBefore>¥</template>
@@ -178,6 +197,7 @@ const coverFileList = ref<any[]>([])
 const formState = reactive({
   title: '',
   description: '',
+  audience: undefined as string | undefined,
   level: undefined as string | undefined,
   category: undefined as string | undefined,
   price: 0,

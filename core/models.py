@@ -1195,6 +1195,48 @@ class CoachReviewItem(Base):
         return f"<CoachReviewItem(id={self.id}, assignment={self.assignment_id}, category={self.category}, status={self.status})>"
 
 
+class DeviceAlert(Base):
+    """
+    设备预警表
+
+    当穿戴设备数据达到预警阈值时创建，
+    同时向教练和服务对象发送通知。
+    """
+    __tablename__ = "device_alerts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    coach_id = Column(Integer, nullable=True, index=True)
+
+    # 预警信息
+    alert_type = Column(String(50), nullable=False)  # glucose_danger_high, hr_warning_low, etc.
+    severity = Column(String(20), nullable=False)  # warning / danger
+    message = Column(String(500), nullable=False)
+    data_value = Column(Float, nullable=False)  # 实际读数
+    threshold_value = Column(Float, nullable=False)  # 阈值
+    data_type = Column(String(30), nullable=False)  # glucose / heart_rate / exercise / sleep
+
+    # 状态
+    user_read = Column(Boolean, default=False)
+    coach_read = Column(Boolean, default=False)
+    resolved = Column(Boolean, default=False)
+
+    # 去重
+    dedup_key = Column(String(100), nullable=False, index=True)  # user_id:type:YYYY-MM-DD-HH
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_device_alert_user', 'user_id', 'created_at'),
+        Index('idx_device_alert_coach', 'coach_id', 'coach_read'),
+        Index('idx_device_alert_dedup', 'dedup_key'),
+    )
+
+    def __repr__(self):
+        return f"<DeviceAlert(id={self.id}, user={self.user_id}, type={self.alert_type}, severity={self.severity})>"
+
+
 class CoachMessage(Base):
     """
     教练消息表
@@ -1226,6 +1268,315 @@ class CoachMessage(Base):
         return f"<CoachMessage(id={self.id}, coach={self.coach_id}, student={self.student_id}, read={self.is_read})>"
 
 
+# ============================================
+# 挑战/打卡活动模型
+# ============================================
+
+class PushSourceType(str, enum.Enum):
+    """推送来源类型"""
+    CHALLENGE = "challenge"
+    DEVICE_ALERT = "device_alert"
+    MICRO_ACTION = "micro_action"
+    AI_RECOMMENDATION = "ai_recommendation"
+    SYSTEM = "system"
+
+
+class PushPriority(str, enum.Enum):
+    """推送优先级"""
+    HIGH = "high"
+    NORMAL = "normal"
+    LOW = "low"
+
+
+class PushQueueStatus(str, enum.Enum):
+    """推送队列状态"""
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    SENT = "sent"
+    EXPIRED = "expired"
+
+
+class ChallengeStatus(str, enum.Enum):
+    """挑战模板状态"""
+    DRAFT = "draft"                    # 草稿
+    PENDING_REVIEW = "pending_review"  # 待双专家审核
+    REVIEW_PARTIAL = "review_partial"  # 一位专家已审核
+    PUBLISHED = "published"            # 已发布
+    ARCHIVED = "archived"              # 已归档
+
+
+class ChallengeTemplate(Base):
+    """
+    挑战模板表
+
+    定义一个挑战活动（如14天血糖打卡、21天正念训练），
+    包含基本信息、持续天数、审核状态等。
+
+    创建权限: 教练(L3)及以上
+    发布权限: 需双专家审核通过
+    """
+    __tablename__ = "challenge_templates"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    # 基本信息
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    category = Column(String(50), nullable=False)  # glucose_management / mindfulness / exercise / nutrition
+    cover_image = Column(String(500), nullable=True)
+    duration_days = Column(Integer, nullable=False)
+
+    # 配置
+    config_key = Column(String(100), nullable=True, unique=True)  # glucose_14day → 关联configs/challenges/*.json
+    daily_push_times = Column(JSON, nullable=True)  # ["9:00", "11:30", "17:30"]
+    day_topics = Column(JSON, nullable=True)  # {0: "欢迎", 1: "主题1", ...}
+
+    # 创建者
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    # 审核流程（双专家审核）
+    status = Column(SQLEnum(ChallengeStatus), default=ChallengeStatus.DRAFT, nullable=False)
+    reviewer1_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewer1_status = Column(String(20), nullable=True)  # approved / rejected
+    reviewer1_note = Column(Text, nullable=True)
+    reviewer1_at = Column(DateTime, nullable=True)
+    reviewer2_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    reviewer2_status = Column(String(20), nullable=True)
+    reviewer2_note = Column(Text, nullable=True)
+    reviewer2_at = Column(DateTime, nullable=True)
+    published_at = Column(DateTime, nullable=True)
+
+    # 统计
+    enrollment_count = Column(Integer, default=0)
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    # 关系
+    day_pushes = relationship("ChallengeDayPush", back_populates="challenge", cascade="all, delete-orphan",
+                              order_by="ChallengeDayPush.day_number, ChallengeDayPush.sort_order")
+    enrollments = relationship("ChallengeEnrollment", back_populates="challenge", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index('idx_challenge_status', 'status'),
+        Index('idx_challenge_category', 'category'),
+        Index('idx_challenge_created_by', 'created_by'),
+    )
+
+    def __repr__(self):
+        return f"<ChallengeTemplate(id={self.id}, title='{self.title}', status={self.status})>"
+
+
+class ChallengeDayPush(Base):
+    """
+    挑战每日推送内容表
+
+    每天可有多条推送（如 9:00/11:30/17:30），
+    每条包含管理内容、行为健康指导、互动评估（问卷JSON）。
+    """
+    __tablename__ = "challenge_day_pushes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    challenge_id = Column(Integer, ForeignKey("challenge_templates.id"), nullable=False, index=True)
+
+    # 推送时间
+    day_number = Column(Integer, nullable=False)  # 0-based day
+    push_time = Column(String(20), nullable=False)  # "9:00" / "11:30" / "17:30" / "立即发送"
+    sort_order = Column(Integer, default=0)
+
+    # 属性
+    is_core = Column(Boolean, default=True)
+    tag = Column(String(20), default="core")  # core / optional / assessment / info
+
+    # 内容
+    management_content = Column(Text, nullable=True)  # 管理内容
+    behavior_guidance = Column(Text, nullable=True)  # 行为健康指导
+
+    # 互动评估（结构化JSON）
+    # {"title": "...", "questions": [{"type": "rating/text/single_choice/multi_choice", "label": "...", ...}]}
+    survey = Column(JSON, nullable=True)
+
+    # 时间戳
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 关系
+    challenge = relationship("ChallengeTemplate", back_populates="day_pushes")
+
+    __table_args__ = (
+        Index('idx_cdp_challenge_day', 'challenge_id', 'day_number'),
+        Index('idx_cdp_day_time', 'day_number', 'push_time'),
+    )
+
+    def __repr__(self):
+        return f"<ChallengeDayPush(id={self.id}, day={self.day_number}, time={self.push_time}, core={self.is_core})>"
+
+
+class EnrollmentStatus(str, enum.Enum):
+    """报名状态"""
+    ENROLLED = "enrolled"      # 已报名，未开始
+    ACTIVE = "active"          # 进行中
+    COMPLETED = "completed"    # 已完成
+    DROPPED = "dropped"        # 中途退出
+
+
+class ChallengeEnrollment(Base):
+    """
+    挑战报名表
+
+    记录用户参加的挑战，跟踪进度。
+    """
+    __tablename__ = "challenge_enrollments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    challenge_id = Column(Integer, ForeignKey("challenge_templates.id"), nullable=False, index=True)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 推荐的教练
+
+    # 进度
+    status = Column(SQLEnum(EnrollmentStatus), default=EnrollmentStatus.ENROLLED, nullable=False)
+    current_day = Column(Integer, default=0)  # 当前进行到第几天
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+
+    # 统计
+    completed_pushes = Column(Integer, default=0)  # 已完成推送数
+    completed_surveys = Column(Integer, default=0)  # 已完成问卷数
+    streak_days = Column(Integer, default=0)  # 连续打卡天数
+
+    # 时间戳
+    enrolled_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 关系
+    challenge = relationship("ChallengeTemplate", back_populates="enrollments")
+    survey_responses = relationship("ChallengeSurveyResponse", back_populates="enrollment", cascade="all, delete-orphan")
+    push_logs = relationship("ChallengePushLog", back_populates="enrollment", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index('idx_ce_user_challenge', 'user_id', 'challenge_id'),
+        Index('idx_ce_status', 'status'),
+        Index('idx_ce_coach', 'coach_id'),
+    )
+
+    def __repr__(self):
+        return f"<ChallengeEnrollment(id={self.id}, user={self.user_id}, challenge={self.challenge_id}, day={self.current_day})>"
+
+
+class ChallengeSurveyResponse(Base):
+    """
+    挑战问卷回答表
+
+    记录用户对每条推送中互动评估的回答。
+    """
+    __tablename__ = "challenge_survey_responses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    enrollment_id = Column(Integer, ForeignKey("challenge_enrollments.id"), nullable=False, index=True)
+    push_id = Column(Integer, ForeignKey("challenge_day_pushes.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # 回答内容 (JSON)
+    # {"q1": "answer", "q2": 8, "q3": ["option1", "option2"]}
+    responses = Column(JSON, nullable=False)
+
+    # 时间戳
+    submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    # 关系
+    enrollment = relationship("ChallengeEnrollment", back_populates="survey_responses")
+
+    __table_args__ = (
+        Index('idx_csr_enrollment', 'enrollment_id'),
+        Index('idx_csr_push', 'push_id'),
+        Index('idx_csr_user', 'user_id', 'submitted_at'),
+    )
+
+    def __repr__(self):
+        return f"<ChallengeSurveyResponse(id={self.id}, enrollment={self.enrollment_id}, push={self.push_id})>"
+
+
+class ChallengePushLog(Base):
+    """
+    挑战推送日志表
+
+    记录每条推送的发送和阅读状态。
+    """
+    __tablename__ = "challenge_push_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    enrollment_id = Column(Integer, ForeignKey("challenge_enrollments.id"), nullable=False, index=True)
+    push_id = Column(Integer, ForeignKey("challenge_day_pushes.id"), nullable=False, index=True)
+
+    # 状态
+    status = Column(String(20), default="pending")  # pending / sent / read
+    sent_at = Column(DateTime, nullable=True)
+    read_at = Column(DateTime, nullable=True)
+
+    # 关系
+    enrollment = relationship("ChallengeEnrollment", back_populates="push_logs")
+
+    __table_args__ = (
+        Index('idx_cpl_enrollment', 'enrollment_id'),
+        Index('idx_cpl_push', 'push_id'),
+        Index('idx_cpl_status', 'status'),
+    )
+
+    def __repr__(self):
+        return f"<ChallengePushLog(id={self.id}, enrollment={self.enrollment_id}, push={self.push_id}, status={self.status})>"
+
+
+class CoachPushQueue(Base):
+    """
+    教练推送审批队列
+
+    所有 AI 触发的推送（挑战打卡、设备预警、微行动等）统一进入此队列，
+    教练审批后才投递给学员。教练可调整推送的时间、频率、内容。
+
+    流转: pending → approved → sent  或  pending → rejected  或  pending → expired
+    """
+    __tablename__ = "coach_push_queue"
+
+    id = Column(Integer, primary_key=True, index=True)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    student_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+
+    # 来源
+    source_type = Column(String(30), nullable=False)  # challenge | device_alert | micro_action | ai_recommendation | system
+    source_id = Column(String(50), nullable=True)  # 来源记录 ID
+
+    # 内容
+    title = Column(String(200), nullable=False)
+    content = Column(Text, nullable=True)
+    content_extra = Column(JSON, nullable=True)  # 附加结构化数据
+
+    # 时间
+    suggested_time = Column(DateTime, nullable=True)  # AI 建议发送时间
+    scheduled_time = Column(DateTime, nullable=True)  # 教练设定时间（null=立即投递）
+
+    # 优先级与状态
+    priority = Column(String(10), default="normal")  # high | normal | low
+    status = Column(String(10), default="pending", nullable=False)  # pending | approved | rejected | sent | expired
+    coach_note = Column(String(500), nullable=True)
+
+    # 时间戳
+    reviewed_at = Column(DateTime, nullable=True)
+    sent_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_cpq_coach_status', 'coach_id', 'status'),
+        Index('idx_cpq_student', 'student_id'),
+        Index('idx_cpq_source', 'source_type'),
+        Index('idx_cpq_scheduled', 'status', 'scheduled_time'),
+    )
+
+    def __repr__(self):
+        return f"<CoachPushQueue(id={self.id}, coach={self.coach_id}, student={self.student_id}, source={self.source_type}, status={self.status})>"
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -1255,12 +1606,22 @@ def get_table_names():
         # 微行动跟踪
         "micro_action_tasks",
         "micro_action_logs",
+        # 设备预警
+        "device_alerts",
         # 提醒与教练消息
         "reminders",
         "coach_messages",
         # 评估任务与审核
         "assessment_assignments",
         "coach_review_items",
+        # 挑战/打卡活动
+        "challenge_templates",
+        "challenge_day_pushes",
+        "challenge_enrollments",
+        "challenge_survey_responses",
+        "challenge_push_logs",
+        # 教练推送审批队列
+        "coach_push_queue",
     ]
 
 
@@ -1291,11 +1652,21 @@ def get_model_by_name(name: str):
         # 微行动跟踪
         "MicroActionTask": MicroActionTask,
         "MicroActionLog": MicroActionLog,
+        # 设备预警
+        "DeviceAlert": DeviceAlert,
         # 提醒与教练消息
         "Reminder": Reminder,
         "CoachMessage": CoachMessage,
         # 评估任务与审核
         "AssessmentAssignment": AssessmentAssignment,
         "CoachReviewItem": CoachReviewItem,
+        # 挑战/打卡活动
+        "ChallengeTemplate": ChallengeTemplate,
+        "ChallengeDayPush": ChallengeDayPush,
+        "ChallengeEnrollment": ChallengeEnrollment,
+        "ChallengeSurveyResponse": ChallengeSurveyResponse,
+        "ChallengePushLog": ChallengePushLog,
+        # 教练推送审批队列
+        "CoachPushQueue": CoachPushQueue,
     }
     return models.get(name)

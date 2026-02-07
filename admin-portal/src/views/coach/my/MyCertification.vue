@@ -97,11 +97,12 @@ const requirements = ref<any[]>([])
 const stats = ref({ total_students: 0, total_messages: 0, total_assessments: 0, improved_students: 0 })
 
 const levelRoadmap = [
-  { code: 'L0', name: '见习教练', desc: '入门阶段，学习基础知识' },
-  { code: 'L1', name: '初级教练', desc: '可在督导下开展干预' },
-  { code: 'L2', name: '中级教练', desc: '独立开展干预，指导初级教练' },
-  { code: 'L3', name: '高级教练', desc: '处理复杂案例，带教' },
-  { code: 'L4', name: '专家教练', desc: '行为健康领域专家' },
+  { code: 'L0', name: '观察员', desc: '入门阶段，学习基础知识' },
+  { code: 'L1', name: '成长者', desc: '行为养成践行者·效果的唯一承载体' },
+  { code: 'L2', name: '分享者', desc: '同伴支持者·经验传递与陪伴者' },
+  { code: 'L3', name: '教练', desc: '系统翻译者·行为改变实施者' },
+  { code: 'L4', name: '促进师', desc: '行为健康促进专家·督导与培训者' },
+  { code: 'L5', name: '大师', desc: '行为健康领域权威·体系构建者' },
 ]
 
 const levelIndex = ref(0)

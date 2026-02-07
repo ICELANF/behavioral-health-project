@@ -38,7 +38,7 @@
           <div v-if="expandedStep === step.key" class="oars-body">
             <p class="oars-desc">{{ step.description }}</p>
             <div class="template-section">
-              <p class="template-label">话术模板：</p>
+              <p class="template-label">建议模板：</p>
               <div v-for="(t, j) in getTemplates(step.key)" :key="j" class="template-item">
                 <span class="template-bullet">•</span>
                 <span class="template-text">"{{ t }}"</span>

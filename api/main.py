@@ -248,6 +248,46 @@ try:
 except ImportError as e:
     print(f"[API] 评估推送与审核路由注册失败: {e}")
 
+# 注册高频题目路由
+try:
+    from api.high_freq_api import router as high_freq_router
+    app.include_router(high_freq_router)
+    print("[API] 高频题目路由已注册")
+except ImportError as e:
+    print(f"[API] 高频题目路由注册失败: {e}")
+
+# 注册设备预警路由
+try:
+    from api.device_alert_api import router as device_alert_router
+    app.include_router(device_alert_router)
+    print("[API] 设备预警路由已注册")
+except ImportError as e:
+    print(f"[API] 设备预警路由注册失败: {e}")
+
+# 注册AI推送建议路由
+try:
+    from api.push_recommendation_api import router as push_recommendation_router
+    app.include_router(push_recommendation_router)
+    print("[API] AI推送建议路由已注册")
+except ImportError as e:
+    print(f"[API] AI推送建议路由注册失败: {e}")
+
+# 注册挑战/打卡活动路由
+try:
+    from api.challenge_api import router as challenge_router
+    app.include_router(challenge_router)
+    print("[API] 挑战/打卡活动路由已注册")
+except ImportError as e:
+    print(f"[API] 挑战/打卡活动路由注册失败: {e}")
+
+# 注册教练推送审批队列路由
+try:
+    from api.coach_push_queue_api import router as push_queue_router
+    app.include_router(push_queue_router)
+    print("[API] 教练推送审批队列路由已注册")
+except ImportError as e:
+    print(f"[API] 教练推送审批队列路由注册失败: {e}")
+
 class AgentGateway:
     """行健行为教练网关：连接编排层与模型层"""
     

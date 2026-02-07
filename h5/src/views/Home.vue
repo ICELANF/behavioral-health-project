@@ -3,6 +3,19 @@
     <van-nav-bar title="行健行为教练" />
 
     <div class="page-content">
+      <!-- 设备预警横幅 -->
+      <div v-if="dangerAlerts.length" class="danger-banner" style="margin-bottom:8px">
+        <div
+          v-for="alert in dangerAlerts"
+          :key="alert.id"
+          style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fff2f0;border:1px solid #ffccc7;border-radius:8px;margin-bottom:6px"
+        >
+          <van-icon name="warning-o" color="#ee0a24" size="20" />
+          <div style="flex:1;font-size:13px;color:#cf1322">{{ alert.message }} (值: {{ alert.data_value }})</div>
+          <van-button size="mini" type="danger" plain round @click="router.push('/notifications')">查看</van-button>
+        </div>
+      </div>
+
       <!-- 欢迎卡片 -->
       <div class="welcome-card card">
         <div class="welcome-header" @click="router.push('/profile')">
@@ -41,6 +54,20 @@
           <div class="entry-text">
             <h3>了解你的行为状态</h3>
             <p>完成评估，获取专属行为改变方案</p>
+          </div>
+          <van-icon name="arrow" color="#c8c9cc" />
+        </div>
+      </div>
+
+      <!-- 挑战活动入口 -->
+      <div class="challenge-entry card" @click="router.push('/challenges')">
+        <div class="entry-content">
+          <div class="entry-icon">
+            <van-icon name="fire-o" size="32" color="#ff976a" />
+          </div>
+          <div class="entry-text">
+            <h3>我的挑战</h3>
+            <p>查看教练为你分配的挑战计划</p>
           </div>
           <van-icon name="arrow" color="#c8c9cc" />
         </div>
@@ -243,6 +270,7 @@ function goToChat(expertId: string) {
 const loadingMicro = ref(false)
 const microTasks = ref<any[]>([])
 const microStreak = ref(0)
+const dangerAlerts = ref<any[]>([])
 
 const microCompleted = computed(() => microTasks.value.filter(t => t.status === 'completed').length)
 const microProgressRate = computed(() => {
@@ -310,6 +338,13 @@ async function refreshHealth() {
   } catch { /* 后端不可用时使用默认值 */ }
 }
 
+async function loadDangerAlerts() {
+  try {
+    const res: any = await api.get('/api/v1/alerts/my?limit=5')
+    dangerAlerts.value = ((res.alerts || []) as any[]).filter((a: any) => a.severity === 'danger' && !a.user_read)
+  } catch { dangerAlerts.value = [] }
+}
+
 function goToDetail(_type: string) {
   router.push('/health-records')
 }
@@ -339,6 +374,7 @@ let refreshTimer: ReturnType<typeof setInterval> | null = null
 onMounted(() => {
   refreshHealth()
   loadMicroActions()
+  loadDangerAlerts()
   refreshTimer = setInterval(refreshHealth, 10000)
 })
 onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
@@ -412,6 +448,43 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
     height: 48px;
     border-radius: 12px;
     background: rgba(25, 137, 250, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .entry-text {
+    flex: 1;
+
+    h3 {
+      margin: 0;
+      font-size: $font-size-md;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 2px 0 0;
+      font-size: $font-size-xs;
+      color: $text-color-secondary;
+    }
+  }
+}
+
+.challenge-entry {
+  cursor: pointer;
+
+  .entry-content {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .entry-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(255, 151, 106, 0.1);
     display: flex;
     align-items: center;
     justify-content: center;

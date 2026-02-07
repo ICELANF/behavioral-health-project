@@ -34,11 +34,12 @@
                 <a-col :span="8">
                   <a-form-item label="认证等级" name="level">
                     <a-select v-model:value="formState.level" placeholder="选择认证等级">
-                      <a-select-option value="L0">L0 公众学习</a-select-option>
-                      <a-select-option value="L1">L1 初级教练</a-select-option>
-                      <a-select-option value="L2">L2 中级教练</a-select-option>
-                      <a-select-option value="L3">L3 高级教练</a-select-option>
-                      <a-select-option value="L4">L4 督导专家</a-select-option>
+                      <a-select-option value="L0">L0 观察员</a-select-option>
+                      <a-select-option value="L1">L1 成长者</a-select-option>
+                      <a-select-option value="L2">L2 分享者</a-select-option>
+                      <a-select-option value="L3">L3 教练</a-select-option>
+                      <a-select-option value="L4">L4 促进师</a-select-option>
+                      <a-select-option value="L5">L5 大师</a-select-option>
                     </a-select>
                   </a-form-item>
                 </a-col>

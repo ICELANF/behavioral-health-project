@@ -353,6 +353,14 @@ async def record_glucose_manual(
 
             logger.info(f"[Glucose] Manual record: user={user_id}, value={reading.value}")
 
+            # 设备预警检查
+            try:
+                from core.device_alert_service import DeviceAlertService
+                alert_svc = DeviceAlertService()
+                alert_svc.check_glucose(db, user_id, reading.value)
+            except Exception as e:
+                logger.warning(f"DeviceAlertService glucose检查失败: {e}")
+
             return {
                 "success": True,
                 "reading_id": glucose.id,
@@ -1174,6 +1182,34 @@ async def sync_device_data_batch(
                             bridge.process_sleep(bridge_db, user_id, score)
         except Exception as e:
             logger.warning(f"DeviceBehaviorBridge batch处理失败: {e}")
+
+        # 设备预警检查（批量同步后）
+        try:
+            from core.device_alert_service import DeviceAlertService
+            alert_svc = DeviceAlertService()
+            with db_transaction() as alert_db:
+                # 血糖预警
+                if "glucose" in data and data["glucose"].get("readings"):
+                    for reading in data["glucose"]["readings"]:
+                        alert_svc.check_glucose(alert_db, user_id, reading["value"])
+                # 心率预警
+                if "heart_rate" in data and data["heart_rate"].get("readings"):
+                    for reading in data["heart_rate"]["readings"]:
+                        alert_svc.check_heart_rate(
+                            alert_db, user_id,
+                            reading["hr"],
+                            reading.get("activity_type"),
+                        )
+                # 睡眠预警
+                if "sleep" in data and data["sleep"].get("records"):
+                    for rec in data["sleep"]["records"]:
+                        alert_svc.check_sleep(alert_db, user_id, rec)
+                # 活动预警
+                if "activity" in data and data["activity"].get("records"):
+                    for rec in data["activity"]["records"]:
+                        alert_svc.check_activity(alert_db, user_id, rec)
+        except Exception as e:
+            logger.warning(f"DeviceAlertService batch检查失败: {e}")
 
         return {
             "success": True,

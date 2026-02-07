@@ -86,6 +86,16 @@ const router = createRouter({
       component: () => import('@/views/MyPlan.vue')
     },
     {
+      path: '/challenges',
+      name: 'challenges',
+      component: () => import('@/views/ChallengeList.vue')
+    },
+    {
+      path: '/challenge-day/:id',
+      name: 'challenge-day',
+      component: () => import('@/views/ChallengeDay.vue')
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/'
     }

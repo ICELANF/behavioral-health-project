@@ -35,6 +35,7 @@ from core.brain.stage_runtime import StageRuntimeBuilder, StageInput
 from core.brain.policy_gate import RuntimePolicyGate
 from core.intervention_matcher import InterventionMatcher
 from core.behavior_facts_service import BehaviorFactsService
+from core.high_freq_question_service import HighFreqQuestionService
 from api.dependencies import get_current_user, require_coach_or_admin
 
 router = APIRouter(prefix="/api/v1/assessment-assignments", tags=["评估推送与审核"])
@@ -46,8 +47,10 @@ stage_runtime = StageRuntimeBuilder()
 policy_gate = RuntimePolicyGate()
 intervention_matcher = InterventionMatcher()
 behavior_facts_service = BehaviorFactsService()
+high_freq_service = HighFreqQuestionService()
 
 VALID_SCALES = {"ttm7", "big5", "bpt6", "capacity", "spi"}
+MAX_PUSH_ITEMS = 3  # 每次推送最多不超过3项
 DOMAIN_NAME_MAP = {
     "nutrition": "营养管理",
     "exercise": "运动管理",
@@ -62,18 +65,28 @@ DOMAIN_NAME_MAP = {
 
 # ============ Pydantic 模型 ============
 
+class CustomQuestion(BaseModel):
+    text: str = Field(..., description="题目文本")
+    scale_type: str = Field(default="likert5", description="评分类型: likert5")
+
+
 class AssignRequest(BaseModel):
     student_id: int
-    scales: List[str] = Field(..., description="量表列表，ttm7 必须包含")
+    scales: List[str] = Field(default=[], description="整套量表列表")
+    question_preset: Optional[str] = Field(None, description="高频预设: hf20 / hf50")
+    question_ids: Optional[List[str]] = Field(None, description="自选题目ID列表")
+    custom_questions: Optional[List[CustomQuestion]] = Field(None, description="自由组合题目（教练自定义，最多3道）")
     note: Optional[str] = None
 
 
 class SubmitRequest(BaseModel):
-    ttm7: Dict[str, int] = Field(..., description="TTM7答案")
+    ttm7: Optional[Dict[str, int]] = None
     big_five: Optional[Dict[str, int]] = None
     bpt6: Optional[Dict[str, int]] = None
     capacity: Optional[Dict[str, int]] = None
     spi: Optional[Dict[str, int]] = None
+    individual_answers: Optional[Dict[str, int]] = Field(None, description="题目ID→分值（高频题目）")
+    custom_answers: Optional[Dict[str, int]] = Field(None, description="自由组合题目ID→分值")
 
 
 class ReviewItemUpdate(BaseModel):
@@ -90,13 +103,51 @@ async def assign_assessment(
     db: Session = Depends(get_db),
     current_user=Depends(require_coach_or_admin),
 ):
-    """教练推送评估给学员"""
-    # 验证量表列表
-    if "ttm7" not in request.scales:
-        raise HTTPException(status_code=400, detail="TTM7 量表为必选项")
-    invalid = set(request.scales) - VALID_SCALES
-    if invalid:
-        raise HTTPException(status_code=400, detail=f"无效量表: {invalid}")
+    """教练推送评估给学员（支持量表 + 高频题目 + 上限3验证）"""
+    has_scales = bool(request.scales)
+    has_preset = bool(request.question_preset)
+    has_question_ids = bool(request.question_ids)
+    has_custom = bool(request.custom_questions)
+
+    # 至少选一项
+    if not has_scales and not has_preset and not has_question_ids and not has_custom:
+        raise HTTPException(status_code=400, detail="至少选择一项：量表/高频预设/自选题目/自由组合")
+
+    # 验证量表
+    if has_scales:
+        invalid = set(request.scales) - VALID_SCALES
+        if invalid:
+            raise HTTPException(status_code=400, detail=f"无效量表: {invalid}")
+
+    # 验证高频预设
+    if has_preset and request.question_preset not in ("hf20", "hf50"):
+        raise HTTPException(status_code=400, detail="无效预设，可选: hf20 / hf50")
+
+    # 验证自由组合题目
+    if has_custom:
+        if len(request.custom_questions) > MAX_PUSH_ITEMS:
+            raise HTTPException(
+                status_code=400,
+                detail=f"自由组合题目最多{MAX_PUSH_ITEMS}道"
+            )
+        for cq in request.custom_questions:
+            if not cq.text.strip():
+                raise HTTPException(status_code=400, detail="题目文本不能为空")
+
+    # 计算总推送项数（量表每个算1项，预设算1项，自选题目整体算1项，自由组合算1项）
+    total_items = len(request.scales)
+    if has_preset:
+        total_items += 1
+    if has_question_ids:
+        total_items += 1
+    if has_custom:
+        total_items += 1
+
+    if total_items > MAX_PUSH_ITEMS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"每次推送最多{MAX_PUSH_ITEMS}项，当前{total_items}项。建议精简推送内容。"
+        )
 
     # 验证学员存在
     student = db.query(User).filter(User.id == request.student_id).first()
@@ -112,10 +163,21 @@ async def assign_assessment(
     if existing:
         raise HTTPException(status_code=400, detail="该学员已有待完成的评估任务")
 
+    # scales 字段存储复合JSON
+    scales_data = {
+        "scales": request.scales,
+        "question_preset": request.question_preset,
+        "question_ids": request.question_ids,
+        "custom_questions": [
+            {"id": f"CQ{i+1}", "text": cq.text.strip(), "scale_type": cq.scale_type}
+            for i, cq in enumerate(request.custom_questions)
+        ] if has_custom else None,
+    }
+
     assignment = AssessmentAssignment(
         coach_id=current_user.id,
         student_id=request.student_id,
-        scales=request.scales,
+        scales=scales_data,
         note=request.note,
         status="pending",
     )
@@ -144,10 +206,14 @@ async def get_my_pending_assignments(
     result = []
     for a in assignments:
         coach = db.query(User).filter(User.id == a.coach_id).first()
+        # scales 可能是旧格式(list)或新格式(dict)
+        scales_data = a.scales
+        if isinstance(scales_data, list):
+            scales_data = {"scales": scales_data, "question_preset": None, "question_ids": None}
         result.append({
             "id": a.id,
             "coach_name": coach.full_name or coach.username if coach else "未知教练",
-            "scales": a.scales,
+            "scales": scales_data,
             "note": a.note,
             "created_at": a.created_at.isoformat() if a.created_at else None,
         })
@@ -175,13 +241,76 @@ async def submit_assessment(
     user_id = current_user.id
 
     try:
-        # === 复用评估管道 ===
+        # === 自由组合题目结果 ===
+        custom_result = None
+        if request.custom_answers:
+            scales_info = assignment.scales if isinstance(assignment.scales, dict) else {}
+            custom_qs = scales_info.get("custom_questions", [])
+            custom_result = {
+                "type": "custom_assessment",
+                "answers": request.custom_answers,
+                "questions": custom_qs,
+                "summary": {
+                    "total": len(request.custom_answers),
+                    "avg_score": round(sum(request.custom_answers.values()) / max(len(request.custom_answers), 1), 2),
+                },
+            }
+
+        # === 高频题目部分评分 ===
+        partial_result = None
+        if request.individual_answers:
+            question_ids = list(request.individual_answers.keys())
+            partial_result = high_freq_service.score_partial_answers(
+                request.individual_answers, question_ids
+            )
+
+        # === 复用评估管道（如果有整套量表答案）===
+        has_full_scales = request.ttm7 is not None
+
         # Step 1: BAPS 评分
-        ttm7_result = scoring_engine.score_ttm7(request.ttm7, str(user_id))
+        ttm7_result = scoring_engine.score_ttm7(request.ttm7, str(user_id)) if request.ttm7 else None
         big5_result = scoring_engine.score_big_five(request.big_five, str(user_id)) if request.big_five else None
         bpt6_result = scoring_engine.score_bpt6(request.bpt6, str(user_id)) if request.bpt6 else None
         capacity_result = scoring_engine.score_capacity(request.capacity, str(user_id)) if request.capacity else None
         spi_result = scoring_engine.score_spi(request.spi, str(user_id)) if request.spi else None
+
+        # 如果只有自由组合题目答案，使用简化管道
+        if not has_full_scales and not partial_result and custom_result:
+            pipeline_result = {
+                "type": "custom_assessment",
+                "custom_scores": custom_result,
+                "message": "自由组合题目已完成，等待教练查看",
+            }
+            assignment.pipeline_result = pipeline_result
+            assignment.status = "completed"
+            assignment.completed_at = datetime.utcnow()
+            db.commit()
+            return {
+                "success": True,
+                "assignment_id": assignment.id,
+                "pipeline_result": pipeline_result,
+                "message": "评估完成，等待教练审核",
+            }
+
+        # 如果只有部分题目答案（无整套量表），使用简化管道
+        if not has_full_scales and partial_result:
+            pipeline_result = {
+                "type": "partial_assessment",
+                "partial_scores": partial_result,
+                "message": "部分题目评分完成，维度信号已生成",
+            }
+            if custom_result:
+                pipeline_result["custom_scores"] = custom_result
+            assignment.pipeline_result = pipeline_result
+            assignment.status = "completed"
+            assignment.completed_at = datetime.utcnow()
+            db.commit()
+            return {
+                "success": True,
+                "assignment_id": assignment.id,
+                "pipeline_result": pipeline_result,
+                "message": "部分评估完成，等待教练审核",
+            }
 
         # Step 2: 生成/更新行为画像
         profile = profile_service.generate_profile(
@@ -242,6 +371,7 @@ async def submit_assessment(
         plan_dict = intervention_matcher.plan_to_dict(intervention_plan)
 
         pipeline_result = {
+            "type": "full_assessment",
             "profile": profile_summary,
             "stage_decision": {
                 "from_stage": runtime_state.previous_stage,
@@ -251,6 +381,11 @@ async def submit_assessment(
             },
             "intervention_plan": plan_dict,
         }
+        # 合并部分题目评分结果
+        if partial_result:
+            pipeline_result["partial_scores"] = partial_result
+        if custom_result:
+            pipeline_result["custom_scores"] = custom_result
 
         # === 保存到 assignment ===
         assignment.pipeline_result = pipeline_result

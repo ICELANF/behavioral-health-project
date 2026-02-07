@@ -115,6 +115,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./views/coach/CoachHome.vue'),
     meta: { title: '教练工作台', requiresAuth: true }
   },
+  {
+    path: '/coach-portal/students',
+    name: 'CoachPortalStudents',
+    component: () => import('./views/coach/CoachStudentList.vue'),
+    meta: { title: '待跟进学员', requiresAuth: true }
+  },
+  {
+    path: '/coach-portal/ai-review',
+    name: 'CoachPortalAiReview',
+    component: () => import('./views/coach/CoachAiReview.vue'),
+    meta: { title: 'AI建议审核', requiresAuth: true }
+  },
   // ============ 督导专家门户 ============
   {
     path: '/expert-portal',
@@ -438,6 +450,20 @@ const routes: RouteRecordRaw[] = [
         name: 'CoachStudentMessages',
         component: () => import('./views/coach/StudentMessages.vue'),
         meta: { title: '学员消息' }
+      },
+      // Coach 学员健康数据
+      {
+        path: 'coach/student-health/:id',
+        name: 'CoachStudentHealthData',
+        component: () => import('./views/coach/StudentHealthData.vue'),
+        meta: { title: '学员健康数据' }
+      },
+      // 挑战/打卡活动管理
+      {
+        path: 'admin/challenges',
+        name: 'ChallengeManagement',
+        component: () => import('./views/admin/ChallengeManagement.vue'),
+        meta: { title: '挑战活动管理' }
       },
       // ============ Expert "我的" 模块 ============
       {

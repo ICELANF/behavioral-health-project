@@ -2,8 +2,8 @@
  * 考试系统类型定义
  */
 
-// 认证等级
-export type CertificationLevel = 'L0' | 'L1' | 'L2' | 'L3' | 'L4';
+// 认证等级（六级体系）
+export type CertificationLevel = 'L0' | 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
 
 // 考试类型
 export type ExamType = 'theory' | 'case_simulation' | 'dialogue_assessment' | 'specialty';
@@ -146,19 +146,21 @@ export interface ResultListParams {
 
 // UI 显示常量
 export const levelLabels: Record<CertificationLevel, string> = {
-  L0: 'L0 公众学习',
-  L1: 'L1 初级教练',
-  L2: 'L2 中级教练',
-  L3: 'L3 高级教练',
-  L4: 'L4 督导专家',
+  L0: 'L0 观察员',
+  L1: 'L1 成长者',
+  L2: 'L2 分享者',
+  L3: 'L3 教练',
+  L4: 'L4 促进师',
+  L5: 'L5 大师',
 };
 
 export const levelColors: Record<CertificationLevel, string> = {
-  L0: 'blue',
-  L1: 'green',
-  L2: 'orange',
-  L3: 'red',
+  L0: 'default',
+  L1: 'blue',
+  L2: 'green',
+  L3: 'orange',
   L4: 'purple',
+  L5: 'magenta',
 };
 
 export const examTypeLabels: Record<ExamType, string> = {

@@ -21,9 +21,12 @@ from core.models import (
     User, UserRole, Assessment, BehavioralProfile,
     CoachMessage, MicroActionTask, MicroActionLog,
     Reminder, BehaviorHistory,
+    GlucoseReading, SleepRecord, ActivityRecord, VitalSign,
 )
 from core.behavioral_profile_service import BehavioralProfileService
 from core.intervention_matcher import InterventionMatcher
+from core.content_access_service import get_user_level
+from core.data_visibility_service import filter_nested_profile, get_hidden_fields
 from api.dependencies import get_current_user, require_coach_or_admin
 
 _profile_service = BehavioralProfileService()
@@ -32,16 +35,16 @@ _intervention_matcher = InterventionMatcher()
 router = APIRouter(prefix="/api/v1/coach", tags=["教练端"])
 
 
-# ── 角色等级映射 ──
+# ── 角色等级映射（与 content_access_service 一致的六级体系） ──
 _ROLE_LEVEL_MAP = {
-    UserRole.OBSERVER: ("L0", "见习教练"),
-    UserRole.GROWER: ("L0", "见习教练"),
-    UserRole.SHARER: ("L1", "初级教练"),
-    UserRole.COACH: ("L2", "中级教练"),
-    UserRole.PROMOTER: ("L3", "高级教练"),
-    UserRole.SUPERVISOR: ("L3", "高级教练"),
-    UserRole.MASTER: ("L4", "专家教练"),
-    UserRole.ADMIN: ("L4", "管理员"),
+    UserRole.OBSERVER: ("L0", "观察员"),
+    UserRole.GROWER: ("L1", "成长者"),
+    UserRole.SHARER: ("L2", "分享者"),
+    UserRole.COACH: ("L3", "教练"),
+    UserRole.PROMOTER: ("L4", "促进师"),
+    UserRole.SUPERVISOR: ("L4", "促进师"),
+    UserRole.MASTER: ("L5", "大师"),
+    UserRole.ADMIN: ("L99", "管理员"),
 }
 
 _STAGE_LABEL = {
@@ -184,6 +187,9 @@ def get_coach_dashboard(
     # 按优先级排序: high > medium > low, 其次按 days_since_contact 降序
     priority_order = {"high": 0, "medium": 1, "low": 2}
     students.sort(key=lambda s: (priority_order.get(s["priority"], 9), -s["days_since_contact"]))
+
+    # 每页最多30个
+    students = students[:30]
 
     # ── 4. 未读消息数 ──
     unread_count = 0
@@ -409,15 +415,21 @@ def get_student_behavioral_profile(
     # 教练推荐动作
     coach_actions = _generate_coach_actions(profile)
 
+    # 按查看者等级过滤字段
+    viewer_level = get_user_level(current_user)
+    filtered_profile = filter_nested_profile(profile_data, viewer_level)
+    hidden_fields = get_hidden_fields(viewer_level)
+
     return {
         "student": {
             "id": student.id,
             "username": student.username,
             "full_name": student.full_name,
         },
-        "behavioral_profile": profile_data,
+        "behavioral_profile": filtered_profile,
         "intervention_plan": intervention_plan,
         "coach_actions": coach_actions,
+        "hidden_fields": hidden_fields,
     }
 
 
@@ -685,31 +697,41 @@ def _generate_coach_actions(profile) -> list:
     return actions
 
 
-# ── 教练等级详情 ──
+# ── 教练等级详情（六级体系） ──
 _LEVEL_DETAIL = {
     "L0": {
-        "name": "见习教练", "color": "#8c8c8c",
-        "desc": "入门阶段，正在学习行为健康教练基础知识",
-        "next": "L1", "next_name": "初级教练 (L1)",
+        "name": "观察员", "color": "#8c8c8c",
+        "desc": "入门阶段，正在观察和了解行为健康体系",
+        "next": "L1", "next_name": "成长者 (L1)",
     },
     "L1": {
-        "name": "初级教练", "color": "#52c41a",
-        "desc": "已掌握基本教练能力，可在督导下开展干预",
-        "next": "L2", "next_name": "中级教练 (L2)",
+        "name": "成长者", "color": "#52c41a",
+        "desc": "积极参与学习和自我提升，开始行为健康实践",
+        "next": "L2", "next_name": "分享者 (L2)",
     },
     "L2": {
-        "name": "中级教练", "color": "#1890ff",
-        "desc": "具备独立开展行为健康干预的能力，可指导初级教练",
-        "next": "L3", "next_name": "高级教练 (L3)",
+        "name": "分享者", "color": "#1890ff",
+        "desc": "能够分享经验和知识，帮助他人启动行为改变",
+        "next": "L3", "next_name": "教练 (L3)",
     },
     "L3": {
-        "name": "高级教练", "color": "#722ed1",
-        "desc": "资深教练，能处理复杂案例并带教",
-        "next": "L4", "next_name": "专家教练 (L4)",
+        "name": "教练", "color": "#722ed1",
+        "desc": "具备独立开展行为健康干预的专业教练能力",
+        "next": "L4", "next_name": "促进师 (L4)",
     },
     "L4": {
-        "name": "专家教练", "color": "#eb2f96",
-        "desc": "行为健康领域专家，系统级认证",
+        "name": "促进师", "color": "#eb2f96",
+        "desc": "资深教练，能处理复杂案例并带教督导",
+        "next": "L5", "next_name": "大师 (L5)",
+    },
+    "L5": {
+        "name": "大师", "color": "#faad14",
+        "desc": "行为健康领域专家，具备系统级影响力",
+        "next": None, "next_name": "已达最高等级",
+    },
+    "L99": {
+        "name": "管理员", "color": "#f5222d",
+        "desc": "系统管理员，拥有全部权限",
         "next": None, "next_name": "已达最高等级",
     },
 }
@@ -736,7 +758,13 @@ _UPGRADE_REQ = {
         {"key": "improved_students", "label": "风险改善学员数", "target": 25},
         {"key": "messages", "label": "发送消息数", "target": 500},
     ],
-    "L4": [],
+    "L4": [
+        {"key": "students", "label": "服务学员数", "target": 100},
+        {"key": "improved_students", "label": "风险改善学员数", "target": 50},
+        {"key": "messages", "label": "发送消息数", "target": 1000},
+    ],
+    "L5": [],
+    "L99": [],
 }
 
 
@@ -982,4 +1010,194 @@ def get_my_tools_stats(
         "total_month_usage": total_month,
         "most_used_tool": most_used,
         "recent_activity": recent_activity,
+    }
+
+
+# ============================================================================
+# 教练查看学员设备数据
+# ============================================================================
+
+def _verify_coach_student(db: Session, current_user: User, student_id: int) -> User:
+    """验证教练对学员的访问权限，返回学员 User 对象"""
+    student = db.query(User).filter(User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="学员不存在")
+
+    # admin 跳过归属检查
+    if current_user.role.value == "admin":
+        return student
+
+    # 验证 student 是否分配给当前教练
+    profile = student.profile or {}
+    if profile.get("coach_id") != current_user.id:
+        raise HTTPException(status_code=403, detail="该学员未分配给您")
+
+    return student
+
+
+@router.get("/students/{student_id}/glucose")
+def get_student_glucose(
+    student_id: int,
+    days: int = Query(7, ge=1, le=90),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """教练查看学员血糖数据"""
+    student = _verify_coach_student(db, current_user, student_id)
+    since = datetime.utcnow() - timedelta(days=days)
+
+    readings = (
+        db.query(GlucoseReading)
+        .filter(
+            GlucoseReading.user_id == student.id,
+            GlucoseReading.recorded_at >= since,
+        )
+        .order_by(GlucoseReading.recorded_at.desc())
+        .all()
+    )
+
+    return {
+        "student_id": student.id,
+        "student_name": student.full_name or student.username,
+        "days": days,
+        "count": len(readings),
+        "readings": [
+            {
+                "id": r.id,
+                "value": r.value,
+                "unit": r.unit,
+                "source": r.source,
+                "meal_tag": r.meal_tag,
+                "recorded_at": r.recorded_at.isoformat() if r.recorded_at else None,
+            }
+            for r in readings
+        ],
+    }
+
+
+@router.get("/students/{student_id}/sleep")
+def get_student_sleep(
+    student_id: int,
+    days: int = Query(7, ge=1, le=90),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """教练查看学员睡眠数据"""
+    student = _verify_coach_student(db, current_user, student_id)
+    since_date = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+
+    records = (
+        db.query(SleepRecord)
+        .filter(
+            SleepRecord.user_id == student.id,
+            SleepRecord.sleep_date >= since_date,
+        )
+        .order_by(SleepRecord.sleep_date.desc())
+        .all()
+    )
+
+    return {
+        "student_id": student.id,
+        "student_name": student.full_name or student.username,
+        "days": days,
+        "count": len(records),
+        "records": [
+            {
+                "id": r.id,
+                "sleep_date": r.sleep_date,
+                "total_minutes": r.total_minutes,
+                "deep_minutes": r.deep_minutes,
+                "light_minutes": r.light_minutes,
+                "rem_minutes": r.rem_minutes,
+                "awake_minutes": r.awake_minutes,
+                "sleep_score": r.sleep_score,
+                "bedtime": r.bedtime,
+                "wake_time": r.wake_time,
+            }
+            for r in records
+        ],
+    }
+
+
+@router.get("/students/{student_id}/activity")
+def get_student_activity(
+    student_id: int,
+    days: int = Query(7, ge=1, le=90),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """教练查看学员运动数据"""
+    student = _verify_coach_student(db, current_user, student_id)
+    since_date = (datetime.utcnow() - timedelta(days=days)).strftime("%Y-%m-%d")
+
+    records = (
+        db.query(ActivityRecord)
+        .filter(
+            ActivityRecord.user_id == student.id,
+            ActivityRecord.activity_date >= since_date,
+        )
+        .order_by(ActivityRecord.activity_date.desc())
+        .all()
+    )
+
+    return {
+        "student_id": student.id,
+        "student_name": student.full_name or student.username,
+        "days": days,
+        "count": len(records),
+        "records": [
+            {
+                "id": r.id,
+                "activity_date": r.activity_date,
+                "steps": r.steps,
+                "distance_meters": r.distance_meters,
+                "calories_burned": r.calories_burned,
+                "active_minutes": r.active_minutes,
+                "exercise_minutes": getattr(r, "exercise_minutes", None),
+            }
+            for r in records
+        ],
+    }
+
+
+@router.get("/students/{student_id}/vitals")
+def get_student_vitals(
+    student_id: int,
+    data_type: Optional[str] = Query(None, description="weight / blood_pressure / temperature / spo2"),
+    days: int = Query(30, ge=1, le=365),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """教练查看学员体征数据（体重、血压等）"""
+    student = _verify_coach_student(db, current_user, student_id)
+    since = datetime.utcnow() - timedelta(days=days)
+
+    query = (
+        db.query(VitalSign)
+        .filter(
+            VitalSign.user_id == student.id,
+            VitalSign.recorded_at >= since,
+        )
+    )
+    if data_type:
+        query = query.filter(VitalSign.data_type == data_type)
+
+    records = query.order_by(VitalSign.recorded_at.desc()).limit(100).all()
+
+    return {
+        "student_id": student.id,
+        "student_name": student.full_name or student.username,
+        "data_type": data_type,
+        "days": days,
+        "count": len(records),
+        "records": [
+            {
+                "id": r.id,
+                "data_type": r.data_type,
+                "value": r.value,
+                "unit": r.unit,
+                "recorded_at": r.recorded_at.isoformat() if r.recorded_at else None,
+            }
+            for r in records
+        ],
     }

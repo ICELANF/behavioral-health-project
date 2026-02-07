@@ -519,6 +519,15 @@ def create_glucose_reading(
         except Exception as e:
             logger.warning(f"DeviceBehaviorBridge glucose处理失败: {e}")
 
+    # 设备预警检查
+    try:
+        from core.device_alert_service import DeviceAlertService
+        alert_service = DeviceAlertService()
+        alert_service.check_glucose(db, current_user.id, req.value)
+        db.commit()
+    except Exception as e:
+        logger.warning(f"DeviceAlertService glucose检查失败: {e}")
+
     logger.info("create_glucose | success | id={}", reading.id)
     return reading
 

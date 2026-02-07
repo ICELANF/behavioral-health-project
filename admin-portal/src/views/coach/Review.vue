@@ -359,15 +359,17 @@ const levelColors: Record<string, string> = {
   L1: 'green',
   L2: 'orange',
   L3: 'red',
-  L4: 'purple'
+  L4: 'purple',
+  L5: 'gold'
 }
 
 const levelLabels: Record<string, string> = {
-  L0: 'L0 入门学员',
-  L1: 'L1 初级教练',
-  L2: 'L2 中级教练',
-  L3: 'L3 高级教练',
-  L4: 'L4 督导专家'
+  L0: 'L0 观察员',
+  L1: 'L1 成长者',
+  L2: 'L2 分享者',
+  L3: 'L3 教练',
+  L4: 'L4 促进师',
+  L5: 'L5 大师'
 }
 
 const statusLabels: Record<string, string> = {

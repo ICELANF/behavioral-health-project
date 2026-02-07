@@ -37,7 +37,7 @@
         <CalendarOutlined /> 今日工作概览
       </div>
       <div class="overview-cards">
-        <div class="overview-card">
+        <div class="overview-card" :class="{ clickable: todayStats.pendingFollowups > 0 }" @click="todayStats.pendingFollowups > 0 && router.push('/coach-portal/students')">
           <div class="card-icon todo"><ClockCircleOutlined /></div>
           <div class="card-content">
             <div class="card-value">{{ todayStats.pendingFollowups }}</div>
@@ -51,19 +51,40 @@
             <div class="card-label">已完成</div>
           </div>
         </div>
-        <div class="overview-card">
+        <div class="overview-card" :class="{ clickable: todayStats.alertStudents > 0 }" @click="todayStats.alertStudents > 0 && router.push('/coach-portal/students?priority=high')">
           <div class="card-icon alert"><AlertOutlined /></div>
           <div class="card-content">
             <div class="card-value">{{ todayStats.alertStudents }}</div>
             <div class="card-label">需关注</div>
           </div>
         </div>
-        <div class="overview-card">
+        <div class="overview-card" :class="{ clickable: todayStats.unreadMessages > 0 }" @click="todayStats.unreadMessages > 0 && router.push('/coach/messages')">
           <div class="card-icon message"><MessageOutlined /></div>
           <div class="card-content">
             <div class="card-value">{{ todayStats.unreadMessages }}</div>
             <div class="card-label">未读消息</div>
           </div>
+        </div>
+        <div class="overview-card clickable" @click="openPushQueueDrawer">
+          <div class="card-icon" style="background:#f9f0ff;color:#722ed1"><a-badge :count="pushQueueStats.pending" :offset="[6,-4]"><AuditOutlined /></a-badge></div>
+          <div class="card-content">
+            <div class="card-value">{{ pushQueueStats.pending }}</div>
+            <div class="card-label">待审批推送</div>
+          </div>
+        </div>
+      </div>
+      <!-- 设备预警卡片 -->
+      <div v-if="deviceAlerts.length" class="device-alerts-section" style="margin-top:12px">
+        <div v-for="alert in deviceAlerts.slice(0, 3)" :key="alert.id"
+             style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:8px;margin-bottom:6px"
+             :style="{ background: alert.severity === 'danger' ? '#fff2f0' : '#fffbe6', border: '1px solid ' + (alert.severity === 'danger' ? '#ffccc7' : '#ffe58f') }"
+        >
+          <AlertOutlined :style="{ color: alert.severity === 'danger' ? '#ff4d4f' : '#faad14', fontSize:'18px' }" />
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">{{ alert.message }}</div>
+            <div style="font-size:11px;color:#999">{{ alert.student_name || '' }} · {{ alert.data_type }} · 值: {{ alert.data_value }}</div>
+          </div>
+          <a-button size="small" type="link" @click="resolveAlert(alert)">处理</a-button>
         </div>
       </div>
     </div>
@@ -74,12 +95,12 @@
         <div class="section-title">
           <TeamOutlined /> 待跟进学员
         </div>
-        <a class="view-all" @click="goToStudentList">查看全部 <RightOutlined /></a>
+        <a class="view-all" @click="router.push('/coach-portal/students')">查看全部 <RightOutlined /></a>
       </div>
 
       <div class="student-list">
         <div
-          v-for="student in pendingStudents"
+          v-for="student in pendingStudents.slice(0, 2)"
           :key="student.id"
           class="student-card"
           @click="openStudentDetail(student)"
@@ -118,12 +139,14 @@
         <div class="section-title">
           <RobotOutlined /> AI 干预建议审核
         </div>
-        <span class="view-all">{{ aiRecommendations.filter(r => r.status === 'pending').length }} 条待审核</span>
+        <a class="view-all" @click="router.push('/coach-portal/ai-review')">
+          {{ aiRecommendations.filter(r => r.status === 'pending').length }} 条待审核 <RightOutlined />
+        </a>
       </div>
 
       <div class="ai-recommendations">
         <div
-          v-for="rec in aiRecommendations"
+          v-for="rec in aiRecommendations.slice(0, 2)"
           :key="rec.id"
           class="recommendation-card"
           :class="{ 'rec-approved': rec.status === 'approved', 'rec-rejected': rec.status === 'rejected', 'rec-modified': rec.status === 'modified' }"
@@ -180,7 +203,7 @@
       </div>
     </div>
 
-    <!-- 干预包快捷入口 -->
+    <!-- 干预工具箱 -->
     <div v-if="!loading" class="intervention-section">
       <div class="section-header">
         <div class="section-title">
@@ -201,13 +224,13 @@
       </div>
     </div>
 
-    <!-- 学习进度 -->
+    <!-- 我的学习 -->
     <div v-if="!loading" class="learning-section">
       <div class="section-header">
         <div class="section-title">
           <BookOutlined /> 我的学习
         </div>
-        <a class="view-all">查看课程 <RightOutlined /></a>
+        <a class="view-all" @click="goToLearning">查看课程 <RightOutlined /></a>
       </div>
 
       <div class="learning-progress">
@@ -245,7 +268,7 @@
         <HomeOutlined />
         <span>工作台</span>
       </div>
-      <div class="nav-item" @click="goToStudentList">
+      <div class="nav-item" @click="router.push('/coach-portal/students')">
         <TeamOutlined />
         <span>学员</span>
       </div>
@@ -276,6 +299,22 @@
         <!-- 推送表单 -->
         <div class="assign-form card" style="padding:16px;margin-bottom:16px;border:1px solid #f0f0f0;border-radius:8px">
           <h4 style="margin-bottom:12px">推送评估给学员</h4>
+
+          <!-- AI推送建议面板 -->
+          <div v-if="pushRecommendations.length" style="margin-bottom:16px;padding:12px;background:#f0f9ff;border-radius:8px;border:1px solid #bae7ff">
+            <div style="font-size:13px;font-weight:600;color:#1890ff;margin-bottom:8px">AI 推送建议</div>
+            <div v-for="rec in pushRecommendations" :key="rec.student_id" style="padding:8px;background:#fff;border-radius:6px;margin-bottom:6px;border-left:3px solid" :style="{ borderLeftColor: rec.priority === 'high' ? '#ff4d4f' : rec.priority === 'medium' ? '#faad14' : '#52c41a' }">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-weight:500">{{ rec.student_name }}</span>
+                <a-tag :color="rec.priority === 'high' ? 'red' : rec.priority === 'medium' ? 'orange' : 'green'" size="small">
+                  {{ rec.priority === 'high' ? '高优' : rec.priority === 'medium' ? '中优' : '低优' }}
+                </a-tag>
+              </div>
+              <div style="font-size:12px;color:#666;margin-top:4px">{{ rec.reasoning }}</div>
+              <a-button type="link" size="small" style="padding:0;margin-top:4px" @click="applyRecommendation(rec)">采用建议</a-button>
+            </div>
+          </div>
+
           <div style="margin-bottom:12px">
             <div style="margin-bottom:4px;font-weight:500">选择学员</div>
             <a-select
@@ -293,16 +332,114 @@
               >{{ s.name }} ({{ getStageLabel(s.stage) }})</a-select-option>
             </a-select>
           </div>
+
           <div style="margin-bottom:12px">
-            <div style="margin-bottom:4px;font-weight:500">选择量表</div>
-            <a-checkbox-group v-model:value="assignForm.scales" :options="scaleOptions" />
+            <div style="margin-bottom:4px;font-weight:500">推送类型</div>
+            <a-radio-group v-model:value="assignForm.pushType">
+              <a-radio-button value="questions">高频题目</a-radio-button>
+              <a-radio-button value="behavior">行为评估</a-radio-button>
+              <a-radio-button value="custom">自由命题</a-radio-button>
+              <a-radio-button value="scales">整套量表</a-radio-button>
+            </a-radio-group>
+            <a-tag v-if="assignTotalItems > 0" :color="assignTotalItems > 3 ? 'red' : 'blue'" style="margin-left:8px">
+              {{ assignTotalItems }}/3 项
+            </a-tag>
           </div>
+
+          <!-- 高频题目模式 -->
+          <template v-if="assignForm.pushType === 'questions'">
+            <div style="margin-bottom:12px">
+              <div style="margin-bottom:4px;font-weight:500">题目预设</div>
+              <a-radio-group v-model:value="assignForm.questionPreset">
+                <a-radio value="hf20">HF-20（20题快速筛查，约5分钟）</a-radio>
+                <a-radio value="hf50">HF-50（50题深度评估，约12分钟）</a-radio>
+              </a-radio-group>
+            </div>
+          </template>
+
+          <!-- 行为评估模式 -->
+          <template v-if="assignForm.pushType === 'behavior'">
+            <div style="margin-bottom:12px">
+              <div style="margin-bottom:4px;font-weight:500">从题库选择题目（最多3道，约1-3分钟）</div>
+              <div style="font-size:12px;color:#999;margin-bottom:8px">从内置5套量表171道题中自由选取，降低用户认知负担</div>
+              <a-input-search
+                v-model:value="behaviorSearchText"
+                placeholder="搜索题目关键词..."
+                style="margin-bottom:8px"
+                allow-clear
+              />
+              <div v-if="assignForm.selectedQuestionIds.length > 0" style="margin-bottom:8px">
+                <a-tag v-for="qid in assignForm.selectedQuestionIds" :key="qid" closable @close="removeBehaviorQuestion(qid)" color="blue">
+                  {{ getBehaviorQuestionLabel(qid) }}
+                </a-tag>
+              </div>
+              <div style="max-height:280px;overflow-y:auto;border:1px solid #f0f0f0;border-radius:6px">
+                <div v-if="loadingAllQuestions" style="text-align:center;padding:20px"><a-spin size="small" /></div>
+                <template v-else>
+                  <div v-for="group in filteredBehaviorGroups" :key="group.key" style="margin-bottom:4px">
+                    <div style="padding:6px 12px;background:#fafafa;font-size:12px;font-weight:600;color:#666;position:sticky;top:0;z-index:1">
+                      {{ group.label }} ({{ group.questions.length }})
+                    </div>
+                    <div
+                      v-for="q in group.questions"
+                      :key="q.id"
+                      style="padding:8px 12px;cursor:pointer;border-bottom:1px solid #fafafa;display:flex;align-items:center;gap:8px;font-size:13px"
+                      :style="{ background: assignForm.selectedQuestionIds.includes(q.id) ? '#e6f7ff' : 'transparent' }"
+                      @click="toggleBehaviorQuestion(q.id)"
+                    >
+                      <a-checkbox :checked="assignForm.selectedQuestionIds.includes(q.id)" :disabled="!assignForm.selectedQuestionIds.includes(q.id) && assignForm.selectedQuestionIds.length >= 3" />
+                      <span style="color:#999;font-size:11px;flex-shrink:0">[{{ q.id }}]</span>
+                      <span style="flex:1">{{ q.text }}</span>
+                      <a-tag size="small" :color="{ ttm7:'blue', bpt6:'purple', spi:'green', capacity:'orange', big_five:'cyan' }[q.questionnaire] || 'default'">
+                        {{ q.dimension }}
+                      </a-tag>
+                    </div>
+                  </div>
+                </template>
+              </div>
+              <div style="font-size:12px;color:#999;margin-top:4px;text-align:right">
+                已选 {{ assignForm.selectedQuestionIds.length }}/3
+              </div>
+            </div>
+          </template>
+
+          <!-- 自由命题模式 -->
+          <template v-if="assignForm.pushType === 'custom'">
+            <div style="margin-bottom:12px">
+              <div style="margin-bottom:4px;font-weight:500">自由命题（最多3道，约3分钟）</div>
+              <div style="font-size:12px;color:#999;margin-bottom:8px">直接编写题目，学员将用1-5分量表作答</div>
+              <div v-for="(_, idx) in assignForm.customQuestions" :key="idx" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                <span style="flex-shrink:0;color:#999;font-size:12px">{{ idx + 1 }}.</span>
+                <a-input
+                  v-model:value="assignForm.customQuestions[idx]"
+                  :placeholder="`请输入第${idx + 1}道题目...`"
+                  allow-clear
+                />
+                <a-button v-if="assignForm.customQuestions.length > 1" type="text" danger size="small" @click="assignForm.customQuestions.splice(idx, 1)">
+                  <DeleteOutlined />
+                </a-button>
+              </div>
+              <a-button v-if="assignForm.customQuestions.length < 3" type="dashed" block size="small" @click="assignForm.customQuestions.push('')">
+                + 添加题目
+              </a-button>
+            </div>
+          </template>
+
+          <!-- 量表模式 -->
+          <template v-if="assignForm.pushType === 'scales'">
+            <div style="margin-bottom:12px">
+              <div style="margin-bottom:4px;font-weight:500">选择量表</div>
+              <a-alert v-if="assignForm.scales.length > 3" message="建议每次推送不超过3项" type="warning" show-icon style="margin-bottom:8px" />
+              <a-checkbox-group v-model:value="assignForm.scales" :options="scaleOptions" />
+            </div>
+          </template>
+
           <div style="margin-bottom:12px">
             <div style="margin-bottom:4px;font-weight:500">教练备注（可选）</div>
             <a-input v-model:value="assignForm.note" placeholder="给学员的备注说明..." />
           </div>
-          <a-button type="primary" block :loading="assignSubmitting" @click="submitAssign">
-            推送评估
+          <a-button type="primary" block :loading="assignSubmitting" :disabled="assignTotalItems > 3 || assignTotalItems === 0" @click="submitAssign">
+            推送评估 {{ assignTotalItems > 0 ? `(${assignTotalItems}项)` : '' }}
           </a-button>
         </div>
 
@@ -320,7 +457,7 @@
                 >{{ { pending:'待完成', completed:'待审核', reviewed:'已审核', pushed:'已推送' }[a.status] || a.status }}</a-tag>
               </div>
               <div style="font-size:12px;color:#999">
-                量表: {{ (a.scales || []).join(', ') }}
+                {{ typeof a.scales === 'object' && !Array.isArray(a.scales) ? (a.scales.custom_questions ? '自由命题: ' + a.scales.custom_questions.length + '道题' : a.scales.question_ids?.length ? '行为评估: ' + a.scales.question_ids.length + '道题' : a.scales.question_preset ? '高频题: ' + a.scales.question_preset : '量表: ' + (a.scales.scales || []).join(', ')) : '量表: ' + (a.scales || []).join(', ') }}
                 <span style="margin-left:12px">{{ a.completed_at ? '完成于 ' + a.completed_at.replace('T',' ').slice(0,16) : '创建于 ' + (a.created_at||'').replace('T',' ').slice(0,16) }}</span>
               </div>
               <a-button
@@ -518,6 +655,208 @@
         </div>
         <a-divider />
         <a-button danger block @click="handleLogout">退出登录</a-button>
+      </div>
+    </a-drawer>
+
+    <!-- 分配挑战抽屉 -->
+    <a-drawer
+      v-model:open="challengeAssignDrawerVisible"
+      :title="'分配挑战 - ' + (challengeAssignStudent?.name || '')"
+      placement="right"
+      :width="640"
+      :closable="true"
+      destroyOnClose
+    >
+      <div class="challenge-assign-panel">
+        <!-- 学员现有挑战进度 -->
+        <div style="margin-bottom:16px">
+          <h4 style="margin-bottom:8px">当前参与的挑战</h4>
+          <a-spin :spinning="loadingStudentChallenges">
+            <div v-if="studentChallenges.length === 0" style="text-align:center;padding:16px;color:#999;font-size:13px">暂无参与中的挑战</div>
+            <div v-for="ch in studentChallenges" :key="ch.id" style="padding:10px 12px;border:1px solid #f0f0f0;border-radius:8px;margin-bottom:8px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-weight:500">{{ ch.challenge_title }}</span>
+                <a-tag :color="{ enrolled:'blue', active:'green', completed:'default', dropped:'red' }[ch.status] || 'default'" size="small">
+                  {{ { enrolled:'待开始', active:'进行中', completed:'已完成', dropped:'已退出' }[ch.status] || ch.status }}
+                </a-tag>
+              </div>
+              <div style="font-size:12px;color:#999;margin-top:4px">
+                第 {{ ch.current_day }} / {{ ch.duration_days }} 天 · 连续打卡 {{ ch.streak_days }} 天
+              </div>
+              <a-progress :percent="ch.day_progress_pct || 0" :show-info="false" size="small" style="margin-top:4px" />
+            </div>
+          </a-spin>
+        </div>
+
+        <a-divider />
+
+        <!-- 已发布挑战列表 -->
+        <div>
+          <h4 style="margin-bottom:8px">选择挑战分配</h4>
+          <a-spin :spinning="loadingPublishedChallenges">
+            <div v-if="publishedChallenges.length === 0" style="text-align:center;padding:16px;color:#999;font-size:13px">暂无已发布的挑战</div>
+            <div
+              v-for="ch in publishedChallenges"
+              :key="ch.id"
+              style="padding:12px;border:1px solid #f0f0f0;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"
+            >
+              <div style="flex:1">
+                <div style="font-weight:500">{{ ch.title }}</div>
+                <div style="font-size:12px;color:#999;margin-top:2px">
+                  {{ ch.category }} · {{ ch.duration_days }}天 · {{ ch.enrollment_count || 0 }}人参与
+                </div>
+                <div v-if="ch.description" style="font-size:12px;color:#666;margin-top:4px">{{ ch.description?.slice(0, 60) }}{{ ch.description?.length > 60 ? '...' : '' }}</div>
+              </div>
+              <a-button
+                type="primary"
+                size="small"
+                :loading="assigningChallengeId === ch.id"
+                :disabled="studentChallenges.some((sc: any) => sc.challenge_id === ch.id && ['enrolled','active'].includes(sc.status))"
+                @click="assignChallenge(ch.id)"
+              >
+                {{ studentChallenges.some((sc: any) => sc.challenge_id === ch.id && ['enrolled','active'].includes(sc.status)) ? '已分配' : '分配' }}
+              </a-button>
+            </div>
+          </a-spin>
+        </div>
+      </div>
+    </a-drawer>
+
+    <!-- 推送审批抽屉 -->
+    <a-drawer
+      v-model:open="pushQueueDrawerVisible"
+      title="推送审批队列"
+      placement="right"
+      :width="720"
+      :closable="true"
+      destroyOnClose
+    >
+      <div class="push-queue-panel">
+        <!-- 统计栏 -->
+        <div style="display:flex;gap:16px;margin-bottom:16px">
+          <div style="flex:1;text-align:center;padding:12px;background:#f6ffed;border-radius:8px">
+            <div style="font-size:20px;font-weight:700;color:#52c41a">{{ pushQueueStats.sent }}</div>
+            <div style="font-size:12px;color:#999">已投递</div>
+          </div>
+          <div style="flex:1;text-align:center;padding:12px;background:#fff7e6;border-radius:8px">
+            <div style="font-size:20px;font-weight:700;color:#faad14">{{ pushQueueStats.pending }}</div>
+            <div style="font-size:12px;color:#999">待审批</div>
+          </div>
+          <div style="flex:1;text-align:center;padding:12px;background:#e6f7ff;border-radius:8px">
+            <div style="font-size:20px;font-weight:700;color:#1890ff">{{ pushQueueStats.approved }}</div>
+            <div style="font-size:12px;color:#999">已通过</div>
+          </div>
+          <div style="flex:1;text-align:center;padding:12px;background:#fff1f0;border-radius:8px">
+            <div style="font-size:20px;font-weight:700;color:#ff4d4f">{{ pushQueueStats.rejected }}</div>
+            <div style="font-size:12px;color:#999">已拒绝</div>
+          </div>
+        </div>
+
+        <!-- 筛选器 -->
+        <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+          <a-select v-model:value="pushQueueFilter.source_type" placeholder="来源" style="width:130px" allow-clear>
+            <a-select-option value="challenge">挑战打卡</a-select-option>
+            <a-select-option value="device_alert">设备预警</a-select-option>
+            <a-select-option value="micro_action">微行动</a-select-option>
+            <a-select-option value="ai_recommendation">AI建议</a-select-option>
+            <a-select-option value="system">系统</a-select-option>
+          </a-select>
+          <a-select v-model:value="pushQueueFilter.priority" placeholder="优先级" style="width:100px" allow-clear>
+            <a-select-option value="high">高</a-select-option>
+            <a-select-option value="normal">中</a-select-option>
+            <a-select-option value="low">低</a-select-option>
+          </a-select>
+          <a-select v-model:value="pushQueueFilter.status" placeholder="状态" style="width:100px">
+            <a-select-option value="pending">待审批</a-select-option>
+            <a-select-option value="approved">已通过</a-select-option>
+            <a-select-option value="sent">已投递</a-select-option>
+            <a-select-option value="rejected">已拒绝</a-select-option>
+          </a-select>
+          <a-button type="primary" size="small" @click="loadPushQueueItems">刷新</a-button>
+          <div style="flex:1"></div>
+          <a-button
+            v-if="pushQueueFilter.status === 'pending' && selectedQueueIds.length > 0"
+            type="primary"
+            size="small"
+            :loading="batchApproving"
+            @click="batchApproveQueue"
+          >
+            批量审批 ({{ selectedQueueIds.length }})
+          </a-button>
+        </div>
+
+        <!-- 列表 -->
+        <a-spin :spinning="loadingPushQueue">
+          <div v-if="pushQueueItems.length === 0" style="text-align:center;padding:40px;color:#999">暂无推送条目</div>
+          <div
+            v-for="item in pushQueueItems"
+            :key="item.id"
+            style="padding:12px;border-radius:8px;margin-bottom:8px;border:1px solid #f0f0f0;display:flex;gap:10px"
+            :style="{ borderLeftWidth:'4px', borderLeftColor: item.priority === 'high' ? '#ff4d4f' : item.priority === 'normal' ? '#faad14' : '#d9d9d9' }"
+          >
+            <!-- checkbox 仅对 pending -->
+            <div v-if="item.status === 'pending'" style="display:flex;align-items:flex-start;padding-top:2px">
+              <a-checkbox :checked="selectedQueueIds.includes(item.id)" @change="toggleQueueSelect(item.id)" />
+            </div>
+            <div style="flex:1">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <div style="display:flex;align-items:center;gap:6px">
+                  <a-tag :color="sourceTagColor(item.source_type)" size="small">{{ sourceTagLabel(item.source_type) }}</a-tag>
+                  <span style="font-weight:500;font-size:14px">{{ item.title }}</span>
+                </div>
+                <a-tag :color="{ pending:'orange', approved:'blue', sent:'green', rejected:'red', expired:'default' }[item.status]" size="small">
+                  {{ { pending:'待审批', approved:'已通过', sent:'已投递', rejected:'已拒绝', expired:'已过期' }[item.status] }}
+                </a-tag>
+              </div>
+              <div v-if="item.student_name" style="font-size:12px;color:#666;margin-bottom:2px">学员: {{ item.student_name }}</div>
+              <div v-if="item.content" style="font-size:13px;color:#333;margin-bottom:6px;white-space:pre-line;max-height:60px;overflow:hidden">{{ item.content }}</div>
+              <div style="font-size:11px;color:#999">
+                {{ item.created_at?.replace('T',' ').slice(0,16) }}
+                <span v-if="item.coach_note" style="margin-left:8px;color:#666">批注: {{ item.coach_note }}</span>
+              </div>
+
+              <!-- 审批操作 (仅 pending) -->
+              <div v-if="item.status === 'pending'" style="margin-top:8px;display:flex;gap:8px;align-items:center">
+                <a-button size="small" style="background:#52c41a;border-color:#52c41a;color:#fff" @click="approveQueueItem(item)">
+                  通过
+                </a-button>
+                <a-button size="small" @click="item._editing = true">
+                  修改后通过
+                </a-button>
+                <a-button size="small" danger @click="rejectQueueItem(item)">
+                  拒绝
+                </a-button>
+              </div>
+
+              <!-- 修改内容区 -->
+              <div v-if="item._editing" style="margin-top:8px;padding:8px;background:#fafafa;border-radius:6px">
+                <a-textarea v-model:value="item._editContent" :rows="2" placeholder="修改推送内容..." style="margin-bottom:6px" />
+                <a-date-picker
+                  v-model:value="item._editTime"
+                  show-time
+                  placeholder="定时发送（可选）"
+                  style="width:100%;margin-bottom:6px"
+                  format="YYYY-MM-DD HH:mm"
+                />
+                <div style="display:flex;gap:8px">
+                  <a-button size="small" type="primary" @click="approveQueueItemWithEdit(item)">确认通过</a-button>
+                  <a-button size="small" @click="item._editing = false">取消</a-button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </a-spin>
+
+        <!-- 分页 -->
+        <div v-if="pushQueueTotal > 20" style="text-align:center;margin-top:12px">
+          <a-pagination
+            v-model:current="pushQueuePage"
+            :total="pushQueueTotal"
+            :page-size="20"
+            size="small"
+            @change="loadPushQueueItems"
+          />
+        </div>
       </div>
     </a-drawer>
 
@@ -930,6 +1269,9 @@
             <a-button v-else block @click="followupMode = false; followupHistory = []">
               结束跟进
             </a-button>
+            <a-button style="margin-top:8px" block @click="openChallengeAssignDrawer(currentStudent!)">
+              分配挑战
+            </a-button>
           </div>
         </div>
       </template>
@@ -938,7 +1280,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, defineAsyncComponent, markRaw } from 'vue'
+import { ref, reactive, onMounted, computed, watch, defineAsyncComponent, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import {
@@ -955,7 +1297,9 @@ import {
   BookOutlined,
   HomeOutlined,
   UserOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  DeleteOutlined,
+  AuditOutlined
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
@@ -987,6 +1331,7 @@ const todayStats = reactive({
 })
 
 // 待跟进学员 (从 API 加载)
+const PAGE_SIZE = 30
 const pendingStudents = ref<any[]>([])
 
 // 四层诊断数据
@@ -1141,48 +1486,18 @@ const handleCopilotToolAction = (data: any) => {
   message.success('工具动作: ' + JSON.stringify(data))
 }
 
-// AI 推荐（含审核状态）
-const aiRecommendations = ref([
-  {
-    id: 'ai001',
-    type: 'alert',
-    typeLabel: '风险提醒',
-    studentName: '张明华',
-    suggestion: '该学员近3天血糖波动较大，建议进行电话跟进，了解饮食和用药情况',
-    status: 'pending' as 'pending' | 'approved' | 'modified' | 'rejected',
-    showModify: false,
-    modifiedText: ''
-  },
-  {
-    id: 'ai002',
-    type: 'intervention',
-    typeLabel: '干预建议',
-    studentName: '王小红',
-    suggestion: '学员处于准备期，建议推送"运动入门指南"课程，强化行为改变动机',
-    status: 'pending' as 'pending' | 'approved' | 'modified' | 'rejected',
-    showModify: false,
-    modifiedText: ''
-  },
-  {
-    id: 'ai003',
-    type: 'followup',
-    typeLabel: '跟进提醒',
-    studentName: '李建国',
-    suggestion: '该学员已3天未打卡，建议发送关怀消息，了解近况',
-    status: 'pending' as 'pending' | 'approved' | 'modified' | 'rejected',
-    showModify: false,
-    modifiedText: ''
-  }
-])
+// AI 推荐（含审核状态，从学员列表同步生成）
+const aiRecommendations = ref<any[]>([])
 
 // 干预工具
 const interventionTools = ref([
   { id: 't1', icon: '📋', name: '评估量表' },
   { id: 't2', icon: '📚', name: '健康课程' },
   { id: 't3', icon: '🎯', name: '审核推送' },
-  { id: 't4', icon: '💬', name: '话术模板' },
+  { id: 't4', icon: '💬', name: '建议模板' },
   { id: 't5', icon: '📊', name: '数据分析' },
-  { id: 't6', icon: '🤖', name: 'AI 助手' }
+  { id: 't6', icon: '🤖', name: 'AI 助手' },
+  { id: 't7', icon: '✅', name: '推送审批' }
 ])
 
 // 学习进度
@@ -1203,22 +1518,83 @@ const goalDrawerVisible = ref(false)
 const profileDrawerVisible = ref(false)
 const settingsDrawerVisible = ref(false)
 
+// 分配挑战
+const challengeAssignDrawerVisible = ref(false)
+const challengeAssignStudent = ref<any>(null)
+const loadingStudentChallenges = ref(false)
+const studentChallenges = ref<any[]>([])
+const loadingPublishedChallenges = ref(false)
+const publishedChallenges = ref<any[]>([])
+const assigningChallengeId = ref<number | null>(null)
+
+// 推送审批队列
+const pushQueueDrawerVisible = ref(false)
+const pushQueueStats = reactive({ pending: 0, approved: 0, rejected: 0, sent: 0, expired: 0 })
+const pushQueueFilter = reactive({ source_type: null as string | null, priority: null as string | null, status: 'pending' })
+const loadingPushQueue = ref(false)
+const pushQueueItems = ref<any[]>([])
+const pushQueueTotal = ref(0)
+const pushQueuePage = ref(1)
+const selectedQueueIds = ref<number[]>([])
+const batchApproving = ref(false)
+
 // 推送评估表单
 const assignForm = reactive({
   studentId: null as number | null,
-  scales: ['ttm7'] as string[],
+  pushType: 'questions' as 'questions' | 'scales' | 'custom' | 'behavior',
+  questionPreset: 'hf20' as string,
+  questionIds: [] as string[],
+  selectedQuestionIds: [] as string[],
+  customQuestions: [''] as string[],
+  scales: [] as string[],
   note: '',
 })
+// 行为评估题库
+const allBuiltinQuestions = ref<any[]>([])
+const loadingAllQuestions = ref(false)
+const behaviorSearchText = ref('')
 const scaleOptions = [
-  { label: 'TTM7（必选）', value: 'ttm7', disabled: true },
+  { label: 'TTM7 行为阶段', value: 'ttm7' },
   { label: 'BIG5 大五人格', value: 'big5' },
   { label: 'BPT-6 行为类型', value: 'bpt6' },
   { label: 'CAPACITY 改变潜力', value: 'capacity' },
   { label: 'SPI 成功可能性', value: 'spi' },
 ]
+const assignTotalItems = computed(() => {
+  if (assignForm.pushType === 'questions') {
+    return assignForm.questionPreset ? 1 : assignForm.questionIds.length
+  }
+  if (assignForm.pushType === 'behavior') {
+    return assignForm.selectedQuestionIds.length > 0 ? 1 : 0
+  }
+  if (assignForm.pushType === 'custom') {
+    return assignForm.customQuestions.filter(q => q.trim()).length > 0 ? 1 : 0
+  }
+  return assignForm.scales.length
+})
+const filteredBehaviorGroups = computed(() => {
+  const groupMap: Record<string, { key: string; label: string; questions: any[] }> = {
+    ttm7: { key: 'ttm7', label: 'TTM7 行为阶段', questions: [] },
+    bpt6: { key: 'bpt6', label: 'BPT-6 行为类型', questions: [] },
+    spi: { key: 'spi', label: 'SPI 成功可能性', questions: [] },
+    capacity: { key: 'capacity', label: 'CAPACITY 改变潜力', questions: [] },
+    big_five: { key: 'big_five', label: 'BIG5 大五人格', questions: [] },
+  }
+  const keyword = behaviorSearchText.value.trim().toLowerCase()
+  for (const q of allBuiltinQuestions.value) {
+    if (keyword && !q.text.toLowerCase().includes(keyword) && !q.id.toLowerCase().includes(keyword) && !q.dimension.toLowerCase().includes(keyword)) continue
+    const g = groupMap[q.questionnaire]
+    if (g) g.questions.push(q)
+  }
+  return Object.values(groupMap).filter(g => g.questions.length > 0)
+})
 const assignSubmitting = ref(false)
 const loadingAssignments = ref(false)
 const assignmentList = ref<any[]>([])
+// 设备预警
+const deviceAlerts = ref<any[]>([])
+// AI推送建议
+const pushRecommendations = ref<any[]>([])
 
 // 审核与推送
 const loadingReviewList = ref(false)
@@ -1422,7 +1798,7 @@ const openTool = (tool: typeof interventionTools.value[0]) => {
       reviewingAssignment.value = null
       loadReviewList()
       break
-    case 't4': // 话术模板
+    case 't4': // 建议模板
       router.push('/prompts/list')
       break
     case 't5': // 数据分析
@@ -1430,6 +1806,9 @@ const openTool = (tool: typeof interventionTools.value[0]) => {
       break
     case 't6': // AI 助手
       router.push('/client/chat')
+      break
+    case 't7': // 推送审批
+      openPushQueueDrawer()
       break
   }
 }
@@ -1475,23 +1854,41 @@ const getNextStageGoal = (stage: string) => {
 
 async function submitAssign() {
   if (!assignForm.studentId) { message.warning('请选择学员'); return }
-  if (!assignForm.scales.includes('ttm7')) { assignForm.scales.unshift('ttm7') }
+  if (assignTotalItems.value === 0) { message.warning('请选择推送内容'); return }
+  if (assignTotalItems.value > 3) { message.warning('推送项不能超过3项'); return }
   assignSubmitting.value = true
   try {
+    const body: any = {
+      student_id: assignForm.studentId,
+      note: assignForm.note || undefined,
+    }
+    if (assignForm.pushType === 'questions') {
+      body.question_preset = assignForm.questionPreset
+    } else if (assignForm.pushType === 'behavior') {
+      if (assignForm.selectedQuestionIds.length === 0) { message.warning('请至少选择一道题目'); assignSubmitting.value = false; return }
+      body.question_ids = assignForm.selectedQuestionIds
+    } else if (assignForm.pushType === 'custom') {
+      const validQs = assignForm.customQuestions.filter(q => q.trim())
+      if (validQs.length === 0) { message.warning('请至少输入一道题目'); assignSubmitting.value = false; return }
+      body.custom_questions = validQs.map(q => ({ text: q.trim(), scale_type: 'likert5' }))
+    } else {
+      body.scales = assignForm.scales
+    }
     const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/assign`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        student_id: assignForm.studentId,
-        scales: assignForm.scales,
-        note: assignForm.note || undefined,
-      }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     if (!res.ok) throw new Error(data.detail || '推送失败')
     message.success(data.message || '评估已推送')
     assignForm.studentId = null
-    assignForm.scales = ['ttm7']
+    assignForm.pushType = 'questions'
+    assignForm.questionPreset = 'hf20'
+    assignForm.questionIds = []
+    assignForm.selectedQuestionIds = []
+    assignForm.customQuestions = ['']
+    assignForm.scales = []
     assignForm.note = ''
     loadAssignmentList()
   } catch (e: any) {
@@ -1622,10 +2019,7 @@ async function pushAssignment() {
   }
 }
 
-// 导航
-const goToStudentList = () => {
-  router.push('/student')
-}
+
 
 const goToMessages = () => {
   router.push('/coach/messages')
@@ -1663,6 +2057,84 @@ const handleLogout = () => {
   router.push('/login')
 }
 
+// ── 示例数据生成器 ──
+function generateSampleStudents() {
+  const names = [
+    '张明华', '王小红', '李建国', '赵芳芳', '刘大伟', '陈晓丽', '杨志强', '黄丽萍',
+    '周文博', '吴雅琴', '孙海涛', '马晓东', '朱秀英', '胡建华', '林美玲', '郭志远',
+    '何晓燕', '高建平', '罗雪梅', '梁伟明', '谢丽娟', '宋志刚', '唐小芳', '韩大勇',
+    '冯雅静', '曹明辉', '彭晓霞', '潘建文', '蒋美华', '邓志豪',
+  ]
+  const stages = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6']
+  const conditions = [
+    '2型糖尿病·饮食管理', '高血压·运动干预', '肥胖·综合管理', '失眠·睡眠行为调整',
+    '焦虑·情绪管理', '慢性疼痛·行为康复', '代谢综合征·生活方式干预', '行为健康管理',
+  ]
+  const contactDays = ['今天', '1天前', '2天前', '3天前', '5天前', '7天前', '10天前']
+
+  return names.map((name, i) => {
+    const stage = stages[i % stages.length]
+    const dayIdx = Math.min(i % 7, contactDays.length - 1)
+    const daysNum = [0, 1, 2, 3, 5, 7, 10][dayIdx]
+    let priority = 'low'
+    if (daysNum >= 5 || stage === 'S0') priority = 'high'
+    else if (daysNum >= 3 || stage === 'S1') priority = 'medium'
+
+    return {
+      id: 1000 + i,
+      name,
+      avatar: '',
+      condition: conditions[i % conditions.length],
+      stage,
+      stageLabel: getStageLabel(stage),
+      lastContact: contactDays[dayIdx],
+      priority,
+      healthData: {
+        fastingGlucose: +(5.0 + Math.random() * 8).toFixed(1),
+        postprandialGlucose: +(7.0 + Math.random() * 9).toFixed(1),
+        weight: +(55 + Math.random() * 40).toFixed(1),
+        exerciseMinutes: Math.floor(Math.random() * 90),
+      },
+      microAction7d: { completed: Math.floor(Math.random() * 7), total: 7 },
+      riskFlags: daysNum >= 5 ? ['dropout_risk'] : [],
+      records: [],
+      interventionPlan: null,
+      assessScore: 0,
+      assessNote: '',
+    }
+  })
+}
+
+function generateAiRecommendations(students: any[]) {
+  const templates = [
+    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}近3天血糖波动较大，建议进行电话跟进，了解饮食和用药情况` },
+    { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}处于准备期，建议推送"运动入门指南"课程，强化行为改变动机` },
+    { type: 'followup', typeLabel: '跟进提醒', tpl: (n: string) => `${n}已3天未打卡，建议发送关怀消息，了解近况` },
+    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}睡眠质量持续下降，建议关注情绪状态并调整睡眠干预方案` },
+    { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}行为执行率较低，建议降低任务难度，采用渐进式目标设定` },
+    { type: 'followup', typeLabel: '跟进提醒', tpl: (n: string) => `${n}上次评估已超过30天，建议推送高频快速评估` },
+    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}餐后血糖多次超过13.9mmol/L，建议立即电话了解饮食情况` },
+    { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}已进入行动期但动力不足，建议引入同伴激励机制` },
+  ]
+  // 从高优先级学员中生成审核条目
+  const candidates = students
+    .filter(s => s.priority === 'high' || s.priority === 'medium')
+    .slice(0, PAGE_SIZE)
+  return candidates.map((s, i) => {
+    const t = templates[i % templates.length]
+    return {
+      id: `ai${String(i + 1).padStart(3, '0')}`,
+      type: t.type,
+      typeLabel: t.typeLabel,
+      studentName: s.name,
+      suggestion: t.tpl(s.name),
+      status: 'pending' as 'pending' | 'approved' | 'modified' | 'rejected',
+      showModify: false,
+      modifiedText: '',
+    }
+  })
+}
+
 async function loadDashboard() {
   loading.value = true
   try {
@@ -1686,8 +2158,8 @@ async function loadDashboard() {
     todayStats.unreadMessages = s.unread_messages || 0
     notifications.value = s.unread_messages || 0
 
-    // 学员列表 → 适配前端字段名
-    pendingStudents.value = (data.students || []).map((st: any) => ({
+    // 学员列表 → 适配前端字段名（限制 PAGE_SIZE）
+    const rawStudents = (data.students || []).map((st: any) => ({
       id: st.id,
       name: st.name,
       avatar: st.avatar || '',
@@ -1709,15 +2181,324 @@ async function loadDashboard() {
       assessScore: 0,
       assessNote: '',
     }))
+
+    // API 有数据则使用，无数据则用示例
+    if (rawStudents.length > 0) {
+      pendingStudents.value = rawStudents.slice(0, PAGE_SIZE)
+    } else {
+      pendingStudents.value = generateSampleStudents().slice(0, PAGE_SIZE)
+    }
   } catch (e) {
-    console.warn('[CoachHome] Dashboard API 不可用，使用空数据:', e)
+    console.warn('[CoachHome] Dashboard API 不可用，使用示例数据:', e)
+    pendingStudents.value = generateSampleStudents().slice(0, PAGE_SIZE)
+    todayStats.pendingFollowups = pendingStudents.value.filter(s => s.priority !== 'low').length
+    todayStats.alertStudents = pendingStudents.value.filter(s => s.priority === 'high').length
+    todayStats.unreadMessages = 5
   } finally {
+    // 同步生成 AI 审核列表
+    if (aiRecommendations.value.length === 0) {
+      aiRecommendations.value = generateAiRecommendations(pendingStudents.value)
+    }
     loading.value = false
   }
 }
 
+// 行为评估题库
+async function loadAllBuiltinQuestions() {
+  if (allBuiltinQuestions.value.length > 0) return
+  loadingAllQuestions.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/high-freq-questions/all`, { headers: authHeaders })
+    if (res.ok) {
+      const data = await res.json()
+      allBuiltinQuestions.value = data.questions || []
+    }
+  } catch { /* ignore */ }
+  finally { loadingAllQuestions.value = false }
+}
+
+function toggleBehaviorQuestion(qid: string) {
+  const idx = assignForm.selectedQuestionIds.indexOf(qid)
+  if (idx >= 0) {
+    assignForm.selectedQuestionIds.splice(idx, 1)
+  } else if (assignForm.selectedQuestionIds.length < 3) {
+    assignForm.selectedQuestionIds.push(qid)
+  } else {
+    message.warning('最多选择3道题目')
+  }
+}
+
+function removeBehaviorQuestion(qid: string) {
+  assignForm.selectedQuestionIds = assignForm.selectedQuestionIds.filter(id => id !== qid)
+}
+
+function getBehaviorQuestionLabel(qid: string) {
+  const q = allBuiltinQuestions.value.find(q => q.id === qid)
+  return q ? `[${qid}] ${q.text.slice(0, 15)}...` : qid
+}
+
+// AI推送建议
+async function loadPushRecommendations() {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/push-recommendations`, { headers: authHeaders })
+    if (res.ok) {
+      const data = await res.json()
+      pushRecommendations.value = data.recommendations || []
+    }
+  } catch { /* ignore */ }
+}
+
+function applyRecommendation(rec: any) {
+  assignForm.studentId = rec.student_id
+  if (rec.items?.length === 1 && rec.items[0].startsWith('hf')) {
+    assignForm.pushType = 'questions'
+    assignForm.questionPreset = rec.items[0]
+  } else {
+    assignForm.pushType = 'questions'
+    assignForm.questionPreset = 'hf20'
+  }
+  message.info(`已预填 ${rec.student_name} 的推送建议`)
+}
+
+// 设备预警
+async function loadDeviceAlerts() {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/alerts/coach?unread_only=true&limit=5`, { headers: authHeaders })
+    if (res.ok) {
+      const data = await res.json()
+      deviceAlerts.value = data.alerts || []
+    }
+  } catch { /* ignore */ }
+}
+
+async function resolveAlert(alert: any) {
+  try {
+    await fetch(`${API_BASE}/api/v1/alerts/${alert.id}/resolve`, {
+      method: 'POST',
+      headers: authHeaders,
+    })
+    deviceAlerts.value = deviceAlerts.value.filter((a: any) => a.id !== alert.id)
+    message.success('已处理预警')
+  } catch { /* ignore */ }
+}
+
+// ============ 分配挑战 ============
+
+function openChallengeAssignDrawer(student: any) {
+  challengeAssignStudent.value = student
+  challengeAssignDrawerVisible.value = true
+  loadStudentChallenges(student.id)
+  loadPublishedChallenges()
+}
+
+async function loadStudentChallenges(studentId: number) {
+  loadingStudentChallenges.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/coach/challenges/students/${studentId}`, { headers: authHeaders })
+    if (res.ok) {
+      const data = await res.json()
+      studentChallenges.value = data.enrollments || []
+    } else {
+      studentChallenges.value = []
+    }
+  } catch {
+    studentChallenges.value = []
+  } finally {
+    loadingStudentChallenges.value = false
+  }
+}
+
+async function loadPublishedChallenges() {
+  if (publishedChallenges.value.length > 0) return
+  loadingPublishedChallenges.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/challenges?status=published`, { headers: authHeaders })
+    if (res.ok) {
+      const data = await res.json()
+      publishedChallenges.value = data.challenges || data || []
+    }
+  } catch { /* ignore */ }
+  finally { loadingPublishedChallenges.value = false }
+}
+
+async function assignChallenge(challengeId: number) {
+  if (!challengeAssignStudent.value) return
+  assigningChallengeId.value = challengeId
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/coach/challenges/assign`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        student_id: challengeAssignStudent.value.id,
+        challenge_id: challengeId,
+      }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || '分配失败')
+    message.success(data.message || '已分配挑战')
+    loadStudentChallenges(challengeAssignStudent.value.id)
+  } catch (e: any) {
+    message.error(e.message || '分配失败')
+  } finally {
+    assigningChallengeId.value = null
+  }
+}
+
+// ============ 推送审批队列 ============
+
+function openPushQueueDrawer() {
+  pushQueueDrawerVisible.value = true
+  loadPushQueueStats()
+  loadPushQueueItems()
+}
+
+async function loadPushQueueStats() {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/stats`, { headers: authHeaders })
+    if (res.ok) {
+      const data = await res.json()
+      Object.assign(pushQueueStats, data)
+    }
+  } catch { /* ignore */ }
+}
+
+async function loadPushQueueItems() {
+  loadingPushQueue.value = true
+  selectedQueueIds.value = []
+  try {
+    const params = new URLSearchParams()
+    params.set('status', pushQueueFilter.status || 'pending')
+    params.set('page', String(pushQueuePage.value))
+    params.set('page_size', '20')
+    if (pushQueueFilter.source_type) params.set('source_type', pushQueueFilter.source_type)
+    if (pushQueueFilter.priority) params.set('priority', pushQueueFilter.priority)
+
+    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue?${params}`, { headers: authHeaders })
+    if (res.ok) {
+      const data = await res.json()
+      pushQueueItems.value = (data.items || []).map((i: any) => ({
+        ...i,
+        _editing: false,
+        _editContent: i.content || '',
+        _editTime: null,
+        student_name: getStudentName(i.student_id),
+      }))
+      pushQueueTotal.value = data.total || 0
+    }
+  } catch { /* ignore */ }
+  finally { loadingPushQueue.value = false }
+}
+
+function getStudentName(studentId: number): string {
+  const s = pendingStudents.value.find(st => st.id === studentId)
+  return s ? s.name : `#${studentId}`
+}
+
+function sourceTagColor(t: string) {
+  const m: Record<string, string> = { challenge: 'blue', device_alert: 'red', micro_action: 'green', ai_recommendation: 'purple', system: 'default' }
+  return m[t] || 'default'
+}
+
+function sourceTagLabel(t: string) {
+  const m: Record<string, string> = { challenge: '挑战', device_alert: '预警', micro_action: '微行动', ai_recommendation: 'AI', system: '系统' }
+  return m[t] || t
+}
+
+function toggleQueueSelect(id: number) {
+  const idx = selectedQueueIds.value.indexOf(id)
+  if (idx >= 0) selectedQueueIds.value.splice(idx, 1)
+  else selectedQueueIds.value.push(id)
+}
+
+async function approveQueueItem(item: any) {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/${item.id}/approve`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || '操作失败')
+    message.success('已审批通过')
+    loadPushQueueStats()
+    loadPushQueueItems()
+  } catch (e: any) {
+    message.error(e.message || '操作失败')
+  }
+}
+
+async function approveQueueItemWithEdit(item: any) {
+  try {
+    const body: any = {}
+    if (item._editContent && item._editContent !== item.content) {
+      body.content_override = item._editContent
+    }
+    if (item._editTime) {
+      body.scheduled_time = typeof item._editTime === 'string' ? item._editTime : item._editTime.toISOString()
+    }
+    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/${item.id}/approve`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || '操作失败')
+    message.success('已修改并审批通过')
+    loadPushQueueStats()
+    loadPushQueueItems()
+  } catch (e: any) {
+    message.error(e.message || '操作失败')
+  }
+}
+
+async function rejectQueueItem(item: any) {
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/${item.id}/reject`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || '操作失败')
+    message.success('已拒绝')
+    loadPushQueueStats()
+    loadPushQueueItems()
+  } catch (e: any) {
+    message.error(e.message || '操作失败')
+  }
+}
+
+async function batchApproveQueue() {
+  if (selectedQueueIds.value.length === 0) return
+  batchApproving.value = true
+  try {
+    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/batch-approve`, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_ids: selectedQueueIds.value }),
+    })
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.detail || '操作失败')
+    message.success(data.message || `已批量审批 ${data.approved_count} 条`)
+    selectedQueueIds.value = []
+    loadPushQueueStats()
+    loadPushQueueItems()
+  } catch (e: any) {
+    message.error(e.message || '操作失败')
+  } finally {
+    batchApproving.value = false
+  }
+}
+
+watch(() => assignForm.pushType, (val) => {
+  if (val === 'behavior') loadAllBuiltinQuestions()
+})
+
 onMounted(() => {
   loadDashboard()
+  loadPushRecommendations()
+  loadDeviceAlerts()
+  loadPushQueueStats()
 })
 </script>
 
@@ -1781,7 +2562,7 @@ onMounted(() => {
 
 .overview-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
 }
 
@@ -1793,6 +2574,16 @@ onMounted(() => {
   align-items: center;
   gap: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.overview-card.clickable {
+  cursor: pointer;
+}
+
+.overview-card.clickable:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
 }
 
 .card-icon {

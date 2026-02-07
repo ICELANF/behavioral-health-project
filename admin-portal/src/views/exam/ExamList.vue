@@ -20,11 +20,12 @@
             style="width: 100%"
             @change="handleSearch"
           >
-            <a-select-option value="L0">L0 公众学习</a-select-option>
-            <a-select-option value="L1">L1 初级教练</a-select-option>
-            <a-select-option value="L2">L2 中级教练</a-select-option>
-            <a-select-option value="L3">L3 高级教练</a-select-option>
-            <a-select-option value="L4">L4 督导专家</a-select-option>
+            <a-select-option value="L0">L0 观察员</a-select-option>
+            <a-select-option value="L1">L1 成长者</a-select-option>
+            <a-select-option value="L2">L2 分享者</a-select-option>
+            <a-select-option value="L3">L3 教练</a-select-option>
+            <a-select-option value="L4">L4 促进师</a-select-option>
+            <a-select-option value="L5">L5 大师</a-select-option>
           </a-select>
         </a-col>
         <a-col :span="5">
@@ -224,7 +225,7 @@ const mockExams: ExamDefinition[] = [
   },
   {
     exam_id: 'exam_l1_theory',
-    exam_name: 'L1 初级教练理论考核',
+    exam_name: 'L1 成长者基础测评',
     level: 'L1',
     exam_type: 'theory',
     passing_score: 70,

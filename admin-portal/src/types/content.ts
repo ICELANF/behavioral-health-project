@@ -14,8 +14,8 @@ import type { CoachLevel, TTMStage, TriggerDomain } from './index'
 /** 内容来源 */
 export type ContentSource =
   | 'platform'      // 平台官方
-  | 'expert'        // 专家/大师 (L4)
-  | 'coach'         // 教练 (L2-L3)
+  | 'expert'        // 专家/大师 (L5)
+  | 'coach'         // 教练 (L3-L4)
   | 'sharer'        // 分享者 (用户UGC)
   | 'ai_generated'  // AI辅助生成
   | 'external'      // 外部合作方
@@ -39,6 +39,12 @@ export type ContentStatus =
   | 'published'     // 已发布
   | 'offline'       // 已下架
   | 'archived'      // 已归档
+
+/** 受众类型 */
+export type ContentAudience =
+  | 'client'        // 服务对象（患者/用户）
+  | 'coach'         // 教练
+  | 'both'          // 双受众
 
 /** 可见范围 */
 export type ContentVisibility =
@@ -77,7 +83,8 @@ export interface CourseExtended {
   tags: string[]                   // 标签
   target_stages?: TTMStage[]       // 目标行为阶段
 
-  // 可见性
+  // 受众与可见性
+  audience: ContentAudience          // 学习受众：服务对象 / 教练 / 双受众
   visibility: ContentVisibility
   required_level?: CoachLevel      // 最低等级要求
   price?: number                   // 价格（0为免费）
@@ -140,7 +147,8 @@ export interface ArticleContent {
   author_title?: string
   author_verified: boolean
 
-  // 可见性
+  // 受众与可见性
+  audience: ContentAudience
   visibility: ContentVisibility
   required_level?: CoachLevel
 
@@ -191,7 +199,8 @@ export interface PracticeCard {
   author_id: string
   author_name: string
 
-  // 可见性
+  // 受众与可见性
+  audience: ContentAudience
   visibility: ContentVisibility
   target_stages?: TTMStage[]
 
@@ -289,6 +298,9 @@ export interface AudioContent {
   author_name: string
   author_title?: string
 
+  // 受众
+  audience: ContentAudience
+
   // 统计
   play_count: number
   complete_count: number
@@ -372,6 +384,7 @@ export interface ContentListQuery {
   source?: ContentSource
   status?: ContentStatus
   domain?: TriggerDomain
+  audience?: ContentAudience
   level?: CoachLevel
   keyword?: string
   author_id?: string
@@ -391,6 +404,7 @@ export interface ContentSummary {
   author_name: string
   author_verified: boolean
   domain?: TriggerDomain
+  audience?: ContentAudience
   view_count: number
   like_count: number
   created_at: string
@@ -422,6 +436,17 @@ export interface UserContentProgress {
 }
 
 // ==================== 配置常量 ====================
+
+/** 受众配置 */
+export const CONTENT_AUDIENCE_CONFIG: Record<ContentAudience, {
+  label: string
+  color: string
+  description: string
+}> = {
+  client: { label: '服务对象', color: '#1890ff', description: '面向患者/用户的健康教育内容' },
+  coach: { label: '教练', color: '#52c41a', description: '面向教练的专业培训内容' },
+  both: { label: '双受众', color: '#722ed1', description: '教练和服务对象均可学习' },
+}
 
 /** 内容来源配置 */
 export const CONTENT_SOURCE_CONFIG: Record<ContentSource, {
@@ -490,8 +515,9 @@ export interface VideoContent {
   chapter_id?: string
   lesson_order?: number
 
-  // 领域
+  // 领域与受众
   domain?: TriggerDomain
+  audience: ContentAudience
 
   // 配套测试
   has_quiz: boolean
@@ -567,13 +593,32 @@ export interface QuizResult {
 
 // ==================== 学习激励系统 ====================
 
-/** 教练学习积分（认证晋级） */
+/** 三类积分体系（六级四同道者版） */
+export type PointsType = 'growth' | 'contribution' | 'influence'
+
+/** 积分类型配置 */
+export const POINTS_TYPE_CONFIG: Record<PointsType, {
+  label: string
+  description: string
+  color: string
+  icon: string
+}> = {
+  growth: { label: '成长积分', description: '自我提升的见证', color: '#1890ff', icon: 'rise' },
+  contribution: { label: '贡献积分', description: '价值创造的度量', color: '#52c41a', icon: 'heart' },
+  influence: { label: '影响力积分', description: '传播扩散的证明', color: '#722ed1', icon: 'global' },
+}
+
+/** 学习积分记录（认证晋级，三类积分） */
 export interface CoachLearningRecord {
   user_id: string
-  total_points: number
   current_level: CoachLevel
 
-  // 分类积分
+  // 三类积分
+  growth_points: number        // 成长积分：学习、考核、自我践行、案例完成
+  contribution_points: number  // 贡献积分：带教、模板贡献、案例入库、课程开发
+  influence_points: number     // 影响力积分：内容传播、社群运营、同道者培养
+
+  // 分类成长积分（细分）
   category_points: {
     knowledge: number
     method: number
@@ -583,9 +628,16 @@ export interface CoachLearningRecord {
     case_study: number
   }
 
-  // 认证进度
-  certification_progress: {
-    points_met: boolean
+  // 同道者培养
+  peers_cultivated: number     // 已培养同道者数量
+  peers_qualified: number      // 已通过考核的同道者数量
+
+  // 晋级进度
+  promotion_progress: {
+    growth_met: boolean
+    contribution_met: boolean
+    influence_met: boolean
+    peers_met: boolean          // 同道者要求是否达标
     exam_passed: boolean
     practice_hours: number
     mentor_approved: boolean
@@ -617,38 +669,45 @@ export interface GrowerLearningRecord {
   updated_at: string
 }
 
-/** 积分/时长记录 */
+/** 积分/时长获取记录 */
 export interface LearningPointsRecord {
   record_id: string
   user_id: string
   user_type: 'coach' | 'grower'
 
   // 来源
-  source_type: 'video' | 'quiz' | 'course_complete' | 'exam' | 'practice'
+  source_type: 'video' | 'quiz' | 'course_complete' | 'exam' | 'practice' | 'peer_cultivate' | 'template' | 'case_submit'
   source_id: string
   source_title: string
 
-  // 获得
-  points: number        // 教练积分
-  minutes: number       // 成长者时长
-  category?: string     // 积分分类
+  // 获得（三类积分）
+  growth_points: number       // 成长积分
+  contribution_points: number // 贡献积分
+  influence_points: number    // 影响力积分
+  minutes: number             // 成长者时长（L0/L1用）
+  category?: string           // 积分分类
 
   earned_at: string
 }
 
 // ==================== 学习激励配置 ====================
 
-/** 教练等级积分要求 */
+/** 六级晋级条件（对应《行为健康教练体系完整建设规划》） */
 export const COACH_LEVEL_REQUIREMENTS: Record<CoachLevel, {
-  min_total: number
-  min_categories: Record<string, number>
+  min_growth: number          // 成长积分要求
+  min_contribution: number    // 贡献积分要求
+  min_influence: number       // 影响力积分要求
+  peers_required: number      // 同道者培养要求
+  peers_level: CoachLevel | null // 同道者需达到的等级
   exam_required: boolean
+  extra_requirements: string  // 其他晋级条件说明
 }> = {
-  L0: { min_total: 0, min_categories: {}, exam_required: false },
-  L1: { min_total: 100, min_categories: { knowledge: 30, method: 20 }, exam_required: true },
-  L2: { min_total: 300, min_categories: { knowledge: 80, method: 60, skill: 40 }, exam_required: true },
-  L3: { min_total: 600, min_categories: { knowledge: 150, method: 120, skill: 100, value: 50 }, exam_required: true },
-  L4: { min_total: 1000, min_categories: { knowledge: 250, method: 200, skill: 180, value: 100 }, exam_required: true },
+  L0: { min_growth: 0, min_contribution: 0, min_influence: 0, peers_required: 0, peers_level: null, exam_required: false, extra_requirements: '' },
+  L1: { min_growth: 100, min_contribution: 0, min_influence: 0, peers_required: 4, peers_level: 'L0', exam_required: true, extra_requirements: '完成S0-S4阶段，至少1项核心行为稳定90天，生物学指标≥2项好转' },
+  L2: { min_growth: 300, min_contribution: 50, min_influence: 0, peers_required: 4, peers_level: 'L1', exam_required: true, extra_requirements: '累计陪伴≥50小时，分享者培训40学时，伦理边界测试100%' },
+  L3: { min_growth: 800, min_contribution: 100, min_influence: 0, peers_required: 4, peers_level: 'L2', exam_required: true, extra_requirements: '400分制考核≥240分，独立完成≥10案例，≥3人实现S0-S4阶段跃迁' },
+  L4: { min_growth: 1500, min_contribution: 500, min_influence: 200, peers_required: 4, peers_level: 'L3', exam_required: true, extra_requirements: '独立设计并执行≥2个组织级项目，带教≥5名L3教练' },
+  L5: { min_growth: 3000, min_contribution: 1500, min_influence: 800, peers_required: 4, peers_level: 'L4', exam_required: true, extra_requirements: '带教≥15名L3教练+≥4名L4促进师，原创方法论/框架，专家委员会全票通过' },
 }
 
 /** 成长者时长奖励阈值 */

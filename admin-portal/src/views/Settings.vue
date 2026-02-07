@@ -375,7 +375,7 @@ const basicSettings = reactive({
 const levelConfigs = ref([
   {
     level: 'L1',
-    name: 'L1 初级教练',
+    name: 'L1 成长者',
     required_courses: 3,
     required_exams: 1,
     required_cases: 5,
@@ -384,7 +384,7 @@ const levelConfigs = ref([
   },
   {
     level: 'L2',
-    name: 'L2 中级教练',
+    name: 'L2 分享者',
     required_courses: 5,
     required_exams: 2,
     required_cases: 20,
@@ -393,7 +393,7 @@ const levelConfigs = ref([
   },
   {
     level: 'L3',
-    name: 'L3 高级教练',
+    name: 'L3 教练',
     required_courses: 8,
     required_exams: 3,
     required_cases: 50,
@@ -402,12 +402,21 @@ const levelConfigs = ref([
   },
   {
     level: 'L4',
-    name: 'L4 督导专家',
+    name: 'L4 促进师',
     required_courses: 10,
     required_exams: 4,
     required_cases: 100,
     required_mentoring_hours: 40,
     additional_requirements: '需完成督导培训，有带教经验'
+  },
+  {
+    level: 'L5',
+    name: 'L5 大师',
+    required_courses: 15,
+    required_exams: 5,
+    required_cases: 200,
+    required_mentoring_hours: 80,
+    additional_requirements: '需有显著行业贡献，具备培训师资格'
   }
 ])
 

@@ -90,7 +90,7 @@ const typeLabels: Record<string, string> = { promotion: '晋级审核', content:
 const typeColors: Record<string, string> = { promotion: 'purple', content: 'blue', case: 'orange' }
 
 const pendingQueue = ref([
-  { id: '1', type: 'promotion', title: '王教练申请L3晋级', description: '已完成所有必修课程，干预成功率74%，申请高级教练认证', submitter: '王教练', submitDate: '2025-01-14', urgency: 'normal' },
+  { id: '1', type: 'promotion', title: '王教练申请L3晋级', description: '已完成所有必修课程，干预成功率74%，申请教练认证', submitter: '王教练', submitDate: '2025-01-14', urgency: 'normal' },
   { id: '2', type: 'content', title: '《慢病自我管理》课程审核', description: '新增4个章节，涵盖饮食、运动、用药、心理四个维度', submitter: '张专家', submitDate: '2025-01-13', urgency: 'normal' },
   { id: '3', type: 'case', title: '高风险案例复核', description: '患者周明连续5天未活跃，PSS-10评分28分（高压力）', submitter: '李教练', submitDate: '2025-01-12', urgency: 'high' },
 ])

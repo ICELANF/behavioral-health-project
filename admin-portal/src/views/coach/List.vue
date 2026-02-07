@@ -65,11 +65,12 @@
             style="width: 100%"
             @change="handleSearch"
           >
-            <a-select-option value="L0">L0 入门学员</a-select-option>
-            <a-select-option value="L1">L1 初级教练</a-select-option>
-            <a-select-option value="L2">L2 中级教练</a-select-option>
-            <a-select-option value="L3">L3 高级教练</a-select-option>
-            <a-select-option value="L4">L4 督导专家</a-select-option>
+            <a-select-option value="L0">L0 观察员</a-select-option>
+            <a-select-option value="L1">L1 成长者</a-select-option>
+            <a-select-option value="L2">L2 分享者</a-select-option>
+            <a-select-option value="L3">L3 教练</a-select-option>
+            <a-select-option value="L4">L4 促进师</a-select-option>
+            <a-select-option value="L5">L5 大师</a-select-option>
           </a-select>
         </a-col>
         <a-col :span="5">
@@ -257,11 +258,12 @@
           <a-col :span="8">
             <a-form-item label="教练等级" name="level">
               <a-select v-model:value="formState.level" placeholder="选择等级">
-                <a-select-option value="L0">L0 入门学员</a-select-option>
-                <a-select-option value="L1">L1 初级教练</a-select-option>
-                <a-select-option value="L2">L2 中级教练</a-select-option>
-                <a-select-option value="L3">L3 高级教练</a-select-option>
-                <a-select-option value="L4">L4 督导专家</a-select-option>
+                <a-select-option value="L0">L0 观察员</a-select-option>
+                <a-select-option value="L1">L1 成长者</a-select-option>
+                <a-select-option value="L2">L2 分享者</a-select-option>
+                <a-select-option value="L3">L3 教练</a-select-option>
+                <a-select-option value="L4">L4 促进师</a-select-option>
+                <a-select-option value="L5">L5 大师</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
@@ -327,7 +329,7 @@ interface Coach {
   avatar?: string
   phone: string
   email?: string
-  level: 'L0' | 'L1' | 'L2' | 'L3' | 'L4'
+  level: 'L0' | 'L1' | 'L2' | 'L3' | 'L4' | 'L5'
   specialty?: string[]
   student_count: number
   case_count: number
@@ -380,15 +382,17 @@ const levelColors: Record<string, string> = {
   L1: 'green',
   L2: 'orange',
   L3: 'red',
-  L4: 'purple'
+  L4: 'purple',
+  L5: 'gold'
 }
 
 const levelLabels: Record<string, string> = {
-  L0: 'L0 入门',
-  L1: 'L1 初级',
-  L2: 'L2 中级',
-  L3: 'L3 高级',
-  L4: 'L4 督导'
+  L0: 'L0 观察员',
+  L1: 'L1 成长者',
+  L2: 'L2 分享者',
+  L3: 'L3 教练',
+  L4: 'L4 促进师',
+  L5: 'L5 大师'
 }
 
 const specialtyLabels: Record<string, string> = {
@@ -511,7 +515,7 @@ const newCoachesThisMonth = computed(() => {
 })
 
 const levelDistribution = computed(() => {
-  const dist: Record<string, number> = { L0: 0, L1: 0, L2: 0, L3: 0, L4: 0 }
+  const dist: Record<string, number> = { L0: 0, L1: 0, L2: 0, L3: 0, L4: 0, L5: 0 }
   coaches.value.forEach(c => {
     dist[c.level] = (dist[c.level] || 0) + 1
   })

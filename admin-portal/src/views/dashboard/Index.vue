@@ -174,9 +174,9 @@ import {
 const roleLabels: Record<string, string> = {
   ADMIN: '系统管理员',
   EXPERT: '专家',
-  COACH_SENIOR: '高级教练',
-  COACH_INTERMEDIATE: '中级教练',
-  COACH_JUNIOR: '初级教练',
+  COACH_SENIOR: '教练',
+  COACH_INTERMEDIATE: '分享者',
+  COACH_JUNIOR: '成长者',
   USER: '学员'
 }
 
