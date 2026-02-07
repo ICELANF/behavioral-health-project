@@ -26,6 +26,9 @@
           <a-menu-item key="coach-my-performance" @click="$router.push('/coach/my/performance')">我的绩效</a-menu-item>
           <a-menu-item key="coach-my-certification" @click="$router.push('/coach/my/certification')">我的认证</a-menu-item>
           <a-menu-item key="coach-my-tools" @click="$router.push('/coach/my/tools')">我的工具箱</a-menu-item>
+          <a-menu-item key="coach-my-analytics" @click="$router.push('/coach/my/analytics')">
+            <BarChartOutlined /> 数据分析
+          </a-menu-item>
         </a-sub-menu>
 
         <!-- 教练内容分享 - 教练及以上可见 -->
@@ -129,6 +132,12 @@
         <a-menu-item v-if="isAdmin" key="admin-distribution" @click="$router.push('/admin/distribution')">
           <template #icon><ApartmentOutlined /></template>
           <span>分配管理</span>
+        </a-menu-item>
+
+        <!-- 管理员可见 - 数据分析 -->
+        <a-menu-item v-if="isAdmin" key="admin-analytics" @click="$router.push('/admin/analytics')">
+          <template #icon><BarChartOutlined /></template>
+          <span>数据分析</span>
         </a-menu-item>
 
         <!-- 管理员可见 -->
@@ -294,7 +303,8 @@ import {
   TrophyOutlined,
   ThunderboltOutlined,
   AlertOutlined,
-  MessageOutlined
+  MessageOutlined,
+  BarChartOutlined
 } from '@ant-design/icons-vue'
 import request from '../api/request'
 
@@ -340,6 +350,7 @@ watch(() => route.path, (path) => {
     else if (path.includes('performance')) selectedKeys.value = ['coach-my-performance']
     else if (path.includes('certification')) selectedKeys.value = ['coach-my-certification']
     else if (path.includes('tools')) selectedKeys.value = ['coach-my-tools']
+    else if (path.includes('analytics')) selectedKeys.value = ['coach-my-analytics']
   } else if (path.startsWith('/coach/content-sharing')) {
     selectedKeys.value = ['coach-content-sharing']
   } else if (path.startsWith('/coach/student-assessment')) {
@@ -356,6 +367,8 @@ watch(() => route.path, (path) => {
     selectedKeys.value = ['admin-user-management']
   } else if (path === '/admin/distribution') {
     selectedKeys.value = ['admin-distribution']
+  } else if (path === '/admin/analytics') {
+    selectedKeys.value = ['admin-analytics']
   } else if (path.startsWith('/course')) {
     openKeys.value = ['course']
     selectedKeys.value = path.includes('create') ? ['course-create'] : ['course-list']

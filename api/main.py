@@ -1085,6 +1085,30 @@ try:
 except ImportError as e:
     print(f"[API] 专家租户路由注册失败: {e}")
 
+# 注册专家内容工作室路由
+try:
+    from api.expert_content_api import router as expert_content_router
+    app.include_router(expert_content_router)
+    print("[API] 专家内容工作室路由已注册")
+except ImportError as e:
+    print(f"[API] 专家内容工作室路由注册失败: {e}")
+
+# 注册Coach分析路由
+try:
+    from api.analytics_api import router as coach_analytics_router
+    app.include_router(coach_analytics_router)
+    print("[API] Coach分析路由已注册")
+except ImportError as e:
+    print(f"[API] Coach分析路由注册失败: {e}")
+
+# 注册Admin分析路由
+try:
+    from api.admin_analytics_api import router as admin_analytics_router
+    app.include_router(admin_analytics_router)
+    print("[API] Admin分析路由已注册")
+except ImportError as e:
+    print(f"[API] Admin分析路由注册失败: {e}")
+
 
 if __name__ == "__main__":
     import uvicorn

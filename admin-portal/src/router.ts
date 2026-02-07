@@ -423,6 +423,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./views/coach/my/MyTools.vue'),
         meta: { title: '我的工具箱' }
       },
+      {
+        path: 'coach/my/analytics',
+        name: 'CoachMyAnalytics',
+        component: () => import('./views/coach/my/CoachAnalytics.vue'),
+        meta: { title: '数据分析' }
+      },
       // Coach 内容分享
       {
         path: 'coach/content-sharing',
@@ -472,6 +478,12 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./views/admin/ExpertDashboard.vue'),
         meta: { title: '专家工作室管理' }
       },
+      {
+        path: 'expert/content-studio/:tenantId',
+        name: 'ExpertContentStudio',
+        component: () => import('./views/admin/ExpertContentStudio.vue'),
+        meta: { title: '内容工作室' }
+      },
       // ============ Expert "我的" 模块 ============
       {
         path: 'expert/my/supervision',
@@ -503,6 +515,12 @@ const routes: RouteRecordRaw[] = [
         name: 'AdminDistribution',
         component: () => import('./views/admin/Distribution.vue'),
         meta: { title: '分配管理' }
+      },
+      {
+        path: 'admin/analytics',
+        name: 'AdminAnalytics',
+        component: () => import('./views/admin/AdminAnalytics.vue'),
+        meta: { title: '数据分析' }
       },
       // 系统设置
       {
