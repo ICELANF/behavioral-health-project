@@ -123,4 +123,4 @@ services:
 networks:
   dify-network:
     external: true
-    name: behavioral-health-project_dify-network
+    name: dify_dify-network

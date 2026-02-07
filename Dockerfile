@@ -29,7 +29,7 @@ FROM base AS dependencies
 
 # Copy requirements first for better layer caching
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple --trusted-host pypi.tuna.tsinghua.edu.cn -r requirements.txt
 
 # --------------- Production Stage ---------------
 FROM base AS production
@@ -47,8 +47,12 @@ COPY models/ ./models/
 COPY agents/ ./agents/
 COPY protocols/ ./protocols/
 COPY integrations/ ./integrations/
+COPY disclosure/ ./disclosure/
+COPY quality/ ./quality/
+COPY alembic/ ./alembic/
 COPY data/ ./data/
 COPY config.yaml ./
+COPY alembic.ini ./
 COPY main.py ./
 COPY cli.py ./
 

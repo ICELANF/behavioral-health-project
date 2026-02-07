@@ -23,8 +23,8 @@ COPY tsconfig.json ./
 COPY tsconfig.node.json ./
 COPY components.d.ts ./
 
-# Build the application
-RUN npm run build
+# Build the application (skip vue-tsc in Docker, type-checked locally)
+RUN npx vite build
 
 # --------------- Production Stage ---------------
 FROM nginx:alpine AS production
@@ -51,6 +51,6 @@ EXPOSE 80
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget -qO- http://localhost:80/ || exit 1
+    CMD wget -qO- http://127.0.0.1:80/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

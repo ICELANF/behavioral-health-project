@@ -115,7 +115,6 @@ scripts/
 tests/
 knowledge/
 dify_workflows/
-quality/
 big_five_questionnaire.html
 big_five_questionnaire.md
 patient_portal.html

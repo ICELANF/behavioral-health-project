@@ -14,6 +14,7 @@ email-validator>=2.1.0
 # Authentication & Security
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+bcrypt>=4.0.0,<4.2.0
 python-multipart>=0.0.6
 
 # HTTP Clients
@@ -70,6 +71,12 @@ pytest-cov>=6.0.0
 # Document Processing
 pypdf>=6.6.0
 pillow>=12.1.0
+
+# Logging
+loguru>=0.7.0
+
+# Task Scheduling
+apscheduler>=3.10.0
 
 # Other
 joblib>=1.5.3
