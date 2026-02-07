@@ -202,6 +202,32 @@ async def list_challenges(
     }
 
 
+@router.get("/challenges/my-enrollments")
+async def my_enrollments(
+    status: Optional[str] = Query(None),
+    db=Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """我的挑战列表"""
+    query = db.query(ChallengeEnrollment).filter_by(user_id=current_user.id)
+    if status:
+        query = query.filter(ChallengeEnrollment.status == status)
+    enrollments = query.order_by(ChallengeEnrollment.enrolled_at.desc()).all()
+
+    result = []
+    for e in enrollments:
+        data = _serialize_enrollment(e)
+        template = db.query(ChallengeTemplate).get(e.challenge_id)
+        if template:
+            data["challenge_title"] = template.title
+            data["challenge_category"] = template.category
+            data["duration_days"] = template.duration_days
+            data["cover_image"] = template.cover_image
+        result.append(data)
+
+    return result
+
+
 @router.get("/challenges/{challenge_id}")
 async def get_challenge(
     challenge_id: int,
@@ -410,32 +436,6 @@ async def enroll_challenge(
         return _serialize_enrollment(enrollment)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.get("/challenges/my-enrollments")
-async def my_enrollments(
-    status: Optional[str] = Query(None),
-    db=Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """我的挑战列表"""
-    query = db.query(ChallengeEnrollment).filter_by(user_id=current_user.id)
-    if status:
-        query = query.filter(ChallengeEnrollment.status == status)
-    enrollments = query.order_by(ChallengeEnrollment.enrolled_at.desc()).all()
-
-    result = []
-    for e in enrollments:
-        data = _serialize_enrollment(e)
-        template = db.query(ChallengeTemplate).get(e.challenge_id)
-        if template:
-            data["challenge_title"] = template.title
-            data["challenge_category"] = template.category
-            data["duration_days"] = template.duration_days
-            data["cover_image"] = template.cover_image
-        result.append(data)
-
-    return {"items": result}
 
 
 @router.post("/challenges/enrollments/{enrollment_id}/start")
