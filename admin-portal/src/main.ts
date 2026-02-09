@@ -6,6 +6,8 @@ import App from './App.vue'
 import 'ant-design-vue/dist/reset.css'
 import './style.css'
 import '@/styles/react-components.css'
+import './styles/bhp-design-tokens.css'
+import './styles/antd-overrides.css'
 
 const app = createApp(App)
 

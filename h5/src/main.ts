@@ -9,6 +9,8 @@ import 'vant/lib/index.css'
 import './styles/global.scss'
 // 品牌主题
 import './styles/brand-themes.css'
+import './styles/bhp-design-tokens.css'
+import './styles/vant-overrides.css'
 
 const app = createApp(App)
 

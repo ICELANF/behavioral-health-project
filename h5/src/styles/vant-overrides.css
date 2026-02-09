@@ -1,0 +1,104 @@
+/* ═══════════════════════════════════════════════
+   BHP H5 端 — Vant UI 主题覆盖
+   用法: 在 main.ts 中 import './styles/vant-overrides.css'
+   注意: 必须在 Vant 的 CSS 之后引入
+   ═══════════════════════════════════════════════ */
+
+:root {
+  /* ── Vant 品牌色映射 ── */
+  --van-primary-color: var(--bhp-brand-primary);
+  --van-primary-color-dark: var(--bhp-brand-primary-dark);
+  --van-primary-color-light: var(--bhp-brand-primary-light);
+  --van-success-color: var(--bhp-success);
+  --van-warning-color: var(--bhp-warning);
+  --van-danger-color: var(--bhp-danger);
+
+  /* ── 基础样式 ── */
+  --van-text-color: var(--bhp-gray-800);
+  --van-text-color-2: var(--bhp-gray-500);
+  --van-text-color-3: var(--bhp-gray-400);
+  --van-border-color: var(--bhp-gray-200);
+  --van-background: var(--bhp-gray-50);
+  --van-background-2: #fff;
+
+  /* ── 字体 ── */
+  --van-base-font: var(--font-sans);
+  --van-font-size-xs: var(--text-xs);
+  --van-font-size-sm: var(--text-sm);
+  --van-font-size-md: var(--text-base);
+  --van-font-size-lg: var(--text-lg);
+
+  /* ── 圆角 ── */
+  --van-radius-sm: var(--radius-sm);
+  --van-radius-md: var(--radius-md);
+  --van-radius-lg: var(--radius-lg);
+  --van-radius-max: var(--radius-full);
+
+  /* ── 按钮 ── */
+  --van-button-border-radius: var(--radius-md);
+  --van-button-round-border-radius: var(--radius-full);
+  --van-button-default-height: 40px;
+  --van-button-default-font-size: var(--text-base);
+
+  /* ── 单元格 ── */
+  --van-cell-font-size: var(--text-base);
+  --van-cell-line-height: 1.6;
+
+  /* ── 导航栏 ── */
+  --van-nav-bar-height: 48px;
+  --van-nav-bar-text-color: var(--bhp-gray-800);
+
+  /* ── 标签栏 ── */
+  --van-tabbar-height: 56px;
+
+  /* ── 弹出层 ── */
+  --van-popup-round-radius: var(--radius-xl);
+
+  /* ── 对话框 ── */
+  --van-dialog-border-radius: var(--radius-xl);
+
+  /* ── Toast ── */
+  --van-toast-border-radius: var(--radius-lg);
+}
+
+/* ── 按钮增强 ── */
+.van-button--primary {
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+.van-button--primary:active {
+  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.15);
+  transform: scale(0.98);
+}
+
+/* ── 卡片增强 ── */
+.van-cell-group--inset {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+/* ── 标签页增强 ── */
+.van-tabs__line {
+  background: var(--bhp-brand-primary);
+  border-radius: var(--radius-full);
+  height: 3px;
+}
+
+/* ── 进度条增强 ── */
+.van-progress__pivot {
+  border-radius: var(--radius-full);
+  font-size: var(--text-xs);
+}
+
+/* ── 骨架屏增强 ── */
+.van-skeleton__row,
+.van-skeleton__title {
+  border-radius: var(--radius-sm);
+}
+
+/* ── 空状态增强 ── */
+.van-empty__description {
+  color: var(--bhp-gray-400);
+  font-size: var(--text-sm);
+}
