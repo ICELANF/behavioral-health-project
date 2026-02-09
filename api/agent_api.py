@@ -345,6 +345,85 @@ async def get_history(
     return {"success": True, "data": results}
 
 
+# ---------------------------------------------------------------------------
+# Westworld Sim 注入端点 (测试用)
+# ---------------------------------------------------------------------------
+
+# 内存存储：治理日志、行为事件
+_governance_log: List[Dict[str, Any]] = []
+_behavior_events: List[Dict[str, Any]] = []
+
+
+@router.post("/api/v1/agent/pending-reviews/inject")
+async def inject_pending_review(
+    data: Dict[str, Any] = Body(...),
+    current_user=Depends(get_current_user),
+):
+    """注入待审案例（仿真测试数据）"""
+    record = {
+        "execution_id": data.get("trace_id", str(uuid.uuid4())[:8]),
+        "task_id": data.get("trace_id", str(uuid.uuid4())[:8]),
+        "agent_id": "sim-inject",
+        "agent_type": "sim",
+        "user_id": data.get("patient_id", ""),
+        "status": "pending",
+        "input_snapshot": {},
+        "output_snapshot": {
+            "task_id": data.get("trace_id"),
+            "confidence": 0.8,
+            "original_l5_output": data.get("original_l5_output", ""),
+            "narrative_l6_preview": data.get("narrative_l6_preview", ""),
+            "raw_metrics": data.get("raw_metrics", {}),
+            "baps_profile": data.get("baps_profile", {}),
+            "governance_score": data.get("governance_score", {}),
+        },
+        "started_at": datetime.now().isoformat(),
+        "completed_at": datetime.now().isoformat(),
+    }
+    _pending_reviews.append(record)
+    _execution_history.append(record)
+    return {"success": True, "message": "pending review injected"}
+
+
+@router.post("/api/v1/agent/events/inject")
+async def inject_behavior_event(
+    data: Dict[str, Any] = Body(...),
+    current_user=Depends(get_current_user),
+):
+    """注入行为事件（仿真测试数据）"""
+    event = {
+        "event_id": str(uuid.uuid4())[:8],
+        "user_id": data.get("user_id", ""),
+        "day": data.get("day", 0),
+        "type": data.get("type", ""),
+        "detail": data.get("detail", ""),
+        "created_at": datetime.now().isoformat(),
+    }
+    _behavior_events.append(event)
+    return {"success": True, "message": "event injected"}
+
+
+@router.post("/api/v1/content-governance/audit-log/inject")
+async def inject_governance_log(
+    data: Dict[str, Any] = Body(...),
+    current_user=Depends(get_current_user),
+):
+    """注入治理评分日志（仿真测试数据）"""
+    entry = {
+        "log_id": str(uuid.uuid4())[:8],
+        "user_id": data.get("userId", ""),
+        "day": data.get("day", 0),
+        "safety": data.get("safety", 0),
+        "accuracy": data.get("accuracy", 0),
+        "empathy": data.get("empathy", 0),
+        "actionable": data.get("actionable", 0),
+        "passed": data.get("passed", False),
+        "created_at": datetime.now().isoformat(),
+    }
+    _governance_log.append(entry)
+    return {"success": True, "message": "governance log injected"}
+
+
 @router.get("/api/v1/agent/status")
 async def agent_system_status(current_user=Depends(get_current_user)):
     """获取多Agent系统整体状态"""
