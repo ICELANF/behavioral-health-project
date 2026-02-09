@@ -10,6 +10,13 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./views/Login.vue'),
     meta: { requiresAuth: false }
   },
+  // ============ Landing 官网页面 ============
+  {
+    path: '/landing',
+    name: 'Landing',
+    component: () => import('./views/LandingPage.vue'),
+    meta: { requiresAuth: false, layout: 'blank' }
+  },
   // ============ 公共门户路由 ============
   ...portalRoutes,
   // ============ React集成页面路由 ============
@@ -133,6 +140,13 @@ const routes: RouteRecordRaw[] = [
     name: 'ExpertPortal',
     component: () => import('./views/expert/ExpertHome.vue'),
     meta: { title: '督导工作台', requiresAuth: true }
+  },
+  // ============ 专家审核工作台 (全屏) ============
+  {
+    path: '/expert-workbench',
+    name: 'ExpertWorkbench',
+    component: () => import('./views/expert/ExpertWorkbench.vue'),
+    meta: { title: '专家审核工作台', requiresAuth: true }
   },
   // 考试会话页面 (独立全屏，不使用 AdminLayout)
   {
@@ -521,6 +535,60 @@ const routes: RouteRecordRaw[] = [
         name: 'AdminAnalytics',
         component: () => import('./views/admin/AdminAnalytics.vue'),
         meta: { title: '数据分析' }
+      },
+      // 批量知识灌注
+      {
+        path: 'admin/batch-ingestion',
+        name: 'AdminBatchIngestion',
+        component: () => import('./views/admin/BatchIngestion.vue'),
+        meta: { title: '批量知识灌注' }
+      },
+      // 内容管理
+      {
+        path: 'admin/content-manage',
+        name: 'AdminContentManage',
+        component: () => import('./views/admin/ContentManage.vue'),
+        meta: { title: '内容管理' }
+      },
+      // 用户活动报告
+      {
+        path: 'admin/activity-report',
+        name: 'AdminActivityReport',
+        component: () => import('./views/admin/UserActivityReport.vue'),
+        meta: { title: '用户活动报告' }
+      },
+      // ============ 学分晋级体系 ============
+      {
+        path: 'admin/credit-system',
+        name: 'CreditSystem',
+        redirect: '/admin/credit-system/dashboard',
+        meta: { title: '学分晋级', icon: 'trophy' },
+        children: [
+          {
+            path: 'dashboard',
+            name: 'CreditDashboard',
+            component: () => import('./views/admin/CreditDashboard.vue'),
+            meta: { title: '学分概览' }
+          },
+          {
+            path: 'modules',
+            name: 'CourseModuleManage',
+            component: () => import('./views/admin/CourseModuleManage.vue'),
+            meta: { title: '课程模块管理' }
+          },
+          {
+            path: 'companions',
+            name: 'CompanionManage',
+            component: () => import('./views/admin/CompanionManage.vue'),
+            meta: { title: '同道者关系' }
+          },
+          {
+            path: 'promotion-review',
+            name: 'PromotionReview',
+            component: () => import('./views/admin/PromotionReview.vue'),
+            meta: { title: '晋级审核' }
+          }
+        ]
       },
       // 系统设置
       {

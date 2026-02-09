@@ -1,0 +1,302 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "BHP里程碑激励配置 - 直接加载到事件引擎",
+    "updated": "2026-02-09",
+    "integrates_with": ["point_events.json", "promotion_rules.json"]
+  },
+
+  "milestones": [
+    {
+      "key": "FIRST_LOGIN",
+      "trigger": {
+        "type": "event",
+        "event": "user_registered",
+        "condition": null
+      },
+      "display": {
+        "day_label": "首次",
+        "name": "初见 · 种子仪式",
+        "emoji": "🌱",
+        "metaphor": "seed",
+        "color": "#10B981"
+      },
+      "rewards": {
+        "credits": 15,
+        "points": [
+          {"type": "growth", "amount": 15, "action": "milestone_first_login"}
+        ],
+        "badges": ["badge_first_step"],
+        "unlocks": ["micro_assessment_entry", "observer_7step_entry"],
+        "items": [
+          {"type": "avatar_frame", "asset": "frame_seed", "rarity": "common"},
+          {"type": "behavior_card", "asset": "random_micro_behavior", "count": 1}
+        ]
+      },
+      "ritual": {
+        "animation": "seed_sprout",
+        "duration_ms": 3000,
+        "sound": "gentle_sprout",
+        "fullscreen": true
+      },
+      "nudge": {
+        "type": "immediate",
+        "message": "你种下了一颗种子。30秒认识一下自己？",
+        "action": "open_micro_assessment",
+        "delay_ms": 3000
+      }
+    },
+    {
+      "key": "DAY_3",
+      "trigger": {
+        "type": "streak",
+        "event": "daily_checkin",
+        "streak_days": 3
+      },
+      "display": {
+        "day_label": "第3天",
+        "name": "萌芽 · 变量惊喜",
+        "emoji": "🌿",
+        "metaphor": "sprout",
+        "color": "#059669"
+      },
+      "rewards": {
+        "credits": 25,
+        "points": [
+          {"type": "growth", "amount": 25, "action": "milestone_day3"},
+          {"type": "growth", "amount": 5, "action": "streak_bonus_3d"}
+        ],
+        "badges": ["badge_3day_flame"],
+        "unlocks": ["behavior_chain_card", "community_browse"],
+        "items": [
+          {"type": "flip_card_reward", "pool": "day3_rewards", "pick": 1, "show": 3}
+        ]
+      },
+      "ritual": {
+        "animation": "seed_to_sprout",
+        "duration_ms": 2500,
+        "sound": "nature_grow",
+        "fullscreen": false
+      },
+      "nudge": {
+        "type": "morning_push",
+        "time": "08:00",
+        "title": "🌿 你的种子已萌芽",
+        "message": "连续3天，你已超过{percentile}%的新用户",
+        "variables": {"percentile": {"source": "redis_rank", "metric": "streak_3d"}},
+        "action": "open_app"
+      },
+      "social_proof": {
+        "enabled": true,
+        "template": "本周已有{count}颗种子萌芽",
+        "metric": "weekly_day3_count"
+      }
+    },
+    {
+      "key": "DAY_7",
+      "trigger": {
+        "type": "streak",
+        "event": "daily_checkin",
+        "streak_days": 7
+      },
+      "display": {
+        "day_label": "第7天",
+        "name": "扎根 · 周回顾",
+        "emoji": "🌳",
+        "metaphor": "rooting",
+        "color": "#047857"
+      },
+      "rewards": {
+        "credits": 40,
+        "points": [
+          {"type": "growth", "amount": 30, "action": "milestone_day7"},
+          {"type": "growth", "amount": 10, "action": "streak_bonus_7d"}
+        ],
+        "badges": ["badge_week_star"],
+        "unlocks": ["micro_behavior_challenge", "companion_invite"],
+        "items": [
+          {"type": "data_poster", "template": "week1_review", "shareable": true},
+          {"type": "elective_unlock", "count": 1, "category": "any"}
+        ]
+      },
+      "ritual": {
+        "animation": "roots_spread",
+        "duration_ms": 3000,
+        "sound": "earth_deep",
+        "fullscreen": false,
+        "generates": "week1_data_poster"
+      },
+      "nudge": {
+        "type": "scheduled_push",
+        "time": "20:00",
+        "title": "🌳 你的第一周回顾已生成",
+        "message": "完成第一周的人，78%会坚持到30天",
+        "action": "open_week_review"
+      },
+      "data_poster": {
+        "template": "week1_infographic",
+        "fields": ["behavior_attempts", "growth_points_curve", "streak_rank"],
+        "share_channels": ["wechat_moments", "save_image"]
+      }
+    },
+    {
+      "key": "DAY_14",
+      "trigger": {
+        "type": "streak",
+        "event": "daily_checkin",
+        "streak_days": 14
+      },
+      "display": {
+        "day_label": "第14天",
+        "name": "开花 · 路径选择",
+        "emoji": "🌸",
+        "metaphor": "blooming",
+        "color": "#DB2777"
+      },
+      "rewards": {
+        "credits": 50,
+        "points": [
+          {"type": "growth", "amount": 35, "action": "milestone_day14"},
+          {"type": "contribution", "amount": 15, "action": "milestone_day14_contrib"}
+        ],
+        "badges": ["badge_half_month"],
+        "unlocks": ["behavior_chain_awareness", "cgm_baseline", "growth_archive"],
+        "items": [
+          {"type": "avatar_evolution", "from": "sprout", "to": "flower", "choices": 3},
+          {"type": "companion_invite_token", "count": 1}
+        ]
+      },
+      "ritual": {
+        "animation": "tree_bloom",
+        "duration_ms": 4000,
+        "sound": "bloom_gentle",
+        "fullscreen": true,
+        "interactive": true,
+        "interaction": {
+          "type": "choose_flower",
+          "description": "根据行为数据推荐3种花型(代表3种成长路径)",
+          "options_source": "behavior_analysis",
+          "option_count": 3
+        }
+      },
+      "nudge": {
+        "type": "in_app",
+        "title": "🌸 你的改变，数据看得见",
+        "message": "展示已发生的微变化数据",
+        "data_fields": ["sleep_change", "exercise_change", "diet_change"],
+        "show_if_any_improved": true
+      }
+    },
+    {
+      "key": "DAY_21",
+      "trigger": {
+        "type": "streak",
+        "event": "daily_checkin",
+        "streak_days": 21
+      },
+      "display": {
+        "day_label": "第21天",
+        "name": "结果 · 收获日",
+        "emoji": "🍎",
+        "metaphor": "fruiting",
+        "color": "#EA580C"
+      },
+      "rewards": {
+        "credits": 60,
+        "points": [
+          {"type": "growth", "amount": 40, "action": "milestone_day21"},
+          {"type": "contribution", "amount": 20, "action": "milestone_day21_contrib"}
+        ],
+        "badges": ["badge_21day_gold"],
+        "unlocks": ["community_post", "content_share", "advanced_electives"],
+        "items": [
+          {"type": "story_template", "template": "my_21day_story", "publishable": true},
+          {"type": "companion_invite_token", "count": 3}
+        ]
+      },
+      "ritual": {
+        "animation": "fruit_grow",
+        "duration_ms": 4000,
+        "sound": "harvest_warm",
+        "fullscreen": true,
+        "generates": "growth_timeline"
+      },
+      "nudge": {
+        "type": "in_app",
+        "title": "🍎 你种的树结了第一颗果",
+        "message": "分享你的21天故事？",
+        "action": "open_story_editor",
+        "identity_shift": true,
+        "shift_message": "从记录者→表达者"
+      }
+    },
+    {
+      "key": "DAY_30",
+      "trigger": {
+        "type": "streak",
+        "event": "daily_checkin",
+        "streak_days": 30
+      },
+      "display": {
+        "day_label": "第30天",
+        "name": "新生 · 蝶变仪式",
+        "emoji": "🦋",
+        "metaphor": "butterfly",
+        "color": "#7C3AED"
+      },
+      "rewards": {
+        "credits": 80,
+        "points": [
+          {"type": "growth", "amount": 50, "action": "milestone_day30"},
+          {"type": "growth", "amount": 50, "action": "behavior_stable_30d"},
+          {"type": "contribution", "amount": 30, "action": "milestone_day30_contrib"},
+          {"type": "influence", "amount": 10, "action": "milestone_day30_influence"}
+        ],
+        "badges": ["badge_30day_diamond", "badge_butterfly"],
+        "unlocks": ["promotion_L0_to_L1_channel"],
+        "items": [
+          {"type": "data_art", "template": "butterfly_wings", "data_source": "30day_behavior_data", "unique": true},
+          {"type": "ai_documentary", "template": "growth_film", "data_source": "milestone_history"},
+          {"type": "memorial_date", "field": "butterfly_day", "permanent": true}
+        ]
+      },
+      "ritual": {
+        "animation": "butterfly_emerge",
+        "duration_ms": 8000,
+        "sound": "metamorphosis",
+        "fullscreen": true,
+        "replay_journey": true,
+        "journey_stages": ["seed", "sprout", "rooting", "blooming", "fruiting", "butterfly"]
+      },
+      "nudge": {
+        "type": "in_app",
+        "title": "🦋 蝶变完成",
+        "message": "你已准备好帮助下一颗种子",
+        "action": "open_promotion_check",
+        "companion_prompt": true,
+        "prompt_message": "邀请你的第一位同道者"
+      }
+    }
+  ],
+
+  "flip_card_pools": {
+    "day3_rewards": {
+      "description": "第3天翻牌奖励池(展示3张,选1张)",
+      "items": [
+        {"id": "fc_extra_credits", "label": "+10额外学分", "type": "credits", "amount": 10, "weight": 40},
+        {"id": "fc_wallpaper", "label": "萌芽专属壁纸", "type": "asset", "asset": "wallpaper_sprout", "weight": 35},
+        {"id": "fc_behavior_card", "label": "稀有微行为卡", "type": "behavior_card", "rarity": "rare", "weight": 25}
+      ]
+    }
+  },
+
+  "streak_recovery": {
+    "_description": "断签恢复机制——不让一次中断毁掉全部",
+    "grace_period_hours": 36,
+    "recovery_options": [
+      {"type": "free_recovery", "available_per_month": 1, "label": "免费补签(每月1次)"},
+      {"type": "credit_recovery", "cost_credits": 10, "label": "消耗10学分补签"},
+      {"type": "friend_rescue", "requires": "companion_relation", "label": "同道者助力补签"}
+    ]
+  }
+}

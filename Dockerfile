@@ -16,6 +16,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl \
         build-essential \
+        libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -50,6 +51,7 @@ COPY integrations/ ./integrations/
 COPY disclosure/ ./disclosure/
 COPY quality/ ./quality/
 COPY alembic/ ./alembic/
+COPY backend/ ./backend/
 COPY data/ ./data/
 COPY config.yaml ./
 COPY alembic.ini ./

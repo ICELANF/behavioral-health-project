@@ -1,13 +1,14 @@
 <template>
   <div class="coach-analytics">
-    <div class="page-header">
-      <h2>数据分析</h2>
-      <a-radio-group v-model:value="days" button-style="solid" @change="fetchAll">
+    <a-page-header title="数据分析" @back="$router.back()" style="padding: 0 0 16px">
+      <template #extra>
+        <a-radio-group v-model:value="days" button-style="solid" @change="fetchAll">
         <a-radio-button :value="7">近7天</a-radio-button>
         <a-radio-button :value="14">近14天</a-radio-button>
         <a-radio-button :value="30">近30天</a-radio-button>
       </a-radio-group>
-    </div>
+      </template>
+    </a-page-header>
 
     <a-row :gutter="[16, 16]">
       <!-- 学员风险等级趋势 -->

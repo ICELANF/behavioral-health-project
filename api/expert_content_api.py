@@ -40,12 +40,20 @@ class DocumentCreate(BaseModel):
     author: Optional[str] = ""
     domain_id: Optional[str] = ""
     priority: int = Field(5, ge=1, le=10)
+    evidence_tier: Optional[str] = None
+    content_type: Optional[str] = None
+    published_date: Optional[str] = None  # ISO datetime string
+    expires_at: Optional[str] = None  # ISO datetime string
 
 class DocumentUpdate(BaseModel):
     title: Optional[str] = Field(None, max_length=300)
     raw_content: Optional[str] = None
     domain_id: Optional[str] = None
     priority: Optional[int] = Field(None, ge=1, le=10)
+    evidence_tier: Optional[str] = None
+    content_type: Optional[str] = None
+    published_date: Optional[str] = None
+    expires_at: Optional[str] = None
 
 
 # ============================================
@@ -65,7 +73,7 @@ def _check_tenant_access(db: Session, tenant_id: str, user: User) -> ExpertTenan
 
 
 def _doc_to_dict(doc, include_content: bool = False) -> dict:
-    """文档序列化"""
+    """文档序列化（含治理字段）"""
     d = {
         "id": doc.id,
         "title": doc.title,
@@ -77,6 +85,14 @@ def _doc_to_dict(doc, include_content: bool = False) -> dict:
         "is_active": doc.is_active,
         "status": doc.status,
         "chunk_count": doc.chunk_count,
+        "evidence_tier": doc.evidence_tier,
+        "content_type": doc.content_type,
+        "published_date": doc.published_date.isoformat() if doc.published_date else None,
+        "review_status": doc.review_status,
+        "reviewer_id": doc.reviewer_id,
+        "reviewed_at": doc.reviewed_at.isoformat() if doc.reviewed_at else None,
+        "contributor_id": doc.contributor_id,
+        "expires_at": doc.expires_at.isoformat() if doc.expires_at else None,
         "created_at": doc.created_at.isoformat() if doc.created_at else None,
         "updated_at": doc.updated_at.isoformat() if doc.updated_at else None,
     }
@@ -117,6 +133,19 @@ def api_create_document(
 ):
     """创建草稿文档"""
     _check_tenant_access(db, tenant_id, current_user)
+    # 解析日期字段
+    pub_date = None
+    if data.published_date:
+        try:
+            pub_date = datetime.fromisoformat(data.published_date)
+        except ValueError:
+            pass
+    exp_date = None
+    if data.expires_at:
+        try:
+            exp_date = datetime.fromisoformat(data.expires_at)
+        except ValueError:
+            pass
     doc = create_document(
         db,
         tenant_id=tenant_id,
@@ -126,6 +155,10 @@ def api_create_document(
         author=data.author or "",
         domain_id=data.domain_id or "",
         priority=data.priority,
+        evidence_tier=data.evidence_tier,
+        content_type=data.content_type,
+        published_date=pub_date,
+        expires_at=exp_date,
     )
     return {"success": True, "data": _doc_to_dict(doc, include_content=True)}
 
@@ -155,6 +188,19 @@ def api_update_document(
 ):
     """更新草稿文档"""
     _check_tenant_access(db, tenant_id, current_user)
+    # 解析日期字段
+    pub_date = None
+    if data.published_date:
+        try:
+            pub_date = datetime.fromisoformat(data.published_date)
+        except ValueError:
+            pass
+    exp_date = None
+    if data.expires_at:
+        try:
+            exp_date = datetime.fromisoformat(data.expires_at)
+        except ValueError:
+            pass
     try:
         doc = update_document(
             db, doc_id, tenant_id,
@@ -162,6 +208,10 @@ def api_update_document(
             raw_content=data.raw_content,
             domain_id=data.domain_id,
             priority=data.priority,
+            evidence_tier=data.evidence_tier,
+            content_type=data.content_type,
+            published_date=pub_date,
+            expires_at=exp_date,
         )
         return {"success": True, "data": _doc_to_dict(doc, include_content=True)}
     except ValueError as e:

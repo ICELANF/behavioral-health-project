@@ -11,45 +11,36 @@
 from core.models import User, UserRole
 
 
-# 角色→等级数字映射（复用 UserRole 枚举）
-ROLE_LEVEL_MAP = {
-    "observer": 0,
-    "grower": 1,
-    "sharer": 2,
-    "coach": 3,
-    "promoter": 4,
-    "supervisor": 4,
-    "master": 5,
-    "admin": 99,
-}
+# 引用 models.py 权威定义（1-indexed: observer=1 ... master=6）
+from core.models import ROLE_LEVEL as _ROLE_LEVEL, ROLE_LEVEL_STR as ROLE_LEVEL_MAP
 
-# 等级代码→数字映射
+# 等级代码→数字映射（与 1-indexed 对齐）
 LEVEL_CODE_MAP = {
-    "L0": 0,
-    "L1": 1,
-    "L2": 2,
-    "L3": 3,
-    "L4": 4,
-    "L5": 5,
+    "L0": 1,
+    "L1": 2,
+    "L2": 3,
+    "L3": 4,
+    "L4": 5,
+    "L5": 6,
 }
 
-# 等级标签
+# 等级标签（1-indexed key）
 LEVEL_LABELS = {
-    0: "观察员",
-    1: "成长者",
-    2: "分享者",
-    3: "教练",
-    4: "促进师",
-    5: "大师",
+    1: "观察员",
+    2: "成长者",
+    3: "分享者",
+    4: "教练",
+    5: "促进师",
+    6: "大师",
 }
 
 
 def get_user_level(user: User) -> int:
-    """从 User 对象获取等级数字"""
+    """从 User 对象获取等级数字（1-indexed）"""
     if user and user.role:
         role_str = user.role.value if isinstance(user.role, UserRole) else str(user.role)
-        return ROLE_LEVEL_MAP.get(role_str, 0)
-    return 0
+        return ROLE_LEVEL_MAP.get(role_str, 1)
+    return 1
 
 
 def level_code_to_int(level_code: str) -> int:

@@ -208,6 +208,7 @@ import {
   CheckCircleFilled
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import request from '@/api/request'
 import type { ArticleContent, ContentSource, ContentStatus } from '@/types/content'
 import { CONTENT_SOURCE_CONFIG } from '@/types/content'
 import { TRIGGER_DOMAINS } from '@/constants'
@@ -384,16 +385,47 @@ const handleView = (record: ArticleContent) => {
   message.info('查看文章: ' + record.title)
 }
 
-const handleSave = () => {
-  message.success('保存成功')
-  editModalVisible.value = false
-  fetchArticles()
+const handleSave = async () => {
+  try {
+    if (editingArticle.value) {
+      await request.put(`/v1/content-manage/${editingArticle.value.article_id}`, {
+        title: editForm.title,
+        body: editForm.content_html,
+        domain: editForm.domain,
+        level: editForm.level,
+      })
+    } else {
+      await request.post('/v1/content-manage/create', {
+        content_type: 'article',
+        title: editForm.title,
+        body: editForm.content_html,
+        domain: editForm.domain,
+        level: editForm.level,
+      })
+    }
+    message.success('保存成功')
+    editModalVisible.value = false
+    fetchArticles()
+  } catch (e) {
+    console.error('Save failed:', e)
+  }
 }
 
-const handleSaveAsDraft = () => {
-  message.success('已存为草稿')
-  editModalVisible.value = false
-  fetchArticles()
+const handleSaveAsDraft = async () => {
+  try {
+    await request.post('/v1/content-manage/create', {
+      content_type: 'article',
+      title: editForm.title,
+      body: editForm.content_html,
+      domain: editForm.domain,
+      level: editForm.level,
+    })
+    message.success('已存为草稿')
+    editModalVisible.value = false
+    fetchArticles()
+  } catch (e) {
+    console.error('Save draft failed:', e)
+  }
 }
 
 const handleSubmitReview = (record: ArticleContent) => {
@@ -401,151 +433,94 @@ const handleSubmitReview = (record: ArticleContent) => {
   fetchArticles()
 }
 
-const handleOffline = (record: ArticleContent) => {
-  message.success('已下架')
-  fetchArticles()
+const handleOffline = async (record: ArticleContent) => {
+  try {
+    await request.delete(`/v1/content-manage/${record.article_id}`)
+    message.success('已下架')
+    fetchArticles()
+  } catch (e) {
+    console.error('Offline failed:', e)
+  }
 }
 
-const handlePublish = (record: ArticleContent) => {
-  message.success('已重新发布')
-  fetchArticles()
+const handlePublish = async (record: ArticleContent) => {
+  try {
+    await request.post(`/v1/content-manage/${record.article_id}/publish`)
+    message.success('已重新发布')
+    fetchArticles()
+  } catch (e) {
+    console.error('Publish failed:', e)
+  }
 }
 
-const handleDelete = (record: ArticleContent) => {
-  message.success('已删除')
-  fetchArticles()
+const handleDelete = async (record: ArticleContent) => {
+  try {
+    await request.delete(`/v1/content-manage/${record.article_id}`)
+    message.success('已删除')
+    fetchArticles()
+  } catch (e) {
+    console.error('Delete failed:', e)
+  }
 }
 
 const handleBatchReview = () => {
   message.info('批量审核 ' + selectedRows.value.length + ' 篇文章')
 }
 
-// 获取文章列表
+// 获取文章列表 (调用真实 API)
 const fetchArticles = async () => {
   loading.value = true
   try {
-    // TODO: 调用真实 API
-    // 模拟数据
-    articles.value = [
-      {
-        article_id: 'a1',
-        type: 'article',
-        source: 'platform',
-        status: 'published',
-        title: '情绪管理入门：认识你的情绪',
-        summary: '本文帮助你了解常见的情绪类型，以及如何识别和接纳自己的情绪。',
-        cover_url: '',
-        content_html: '<p>内容...</p>',
-        word_count: 2500,
-        read_time: 8,
-        domain: 'emotion',
-        tags: ['情绪管理', '入门'],
-        level: 'beginner',
-        target_stages: ['contemplation', 'preparation'],
-        author_id: 'platform',
-        author_name: '平台运营',
-        author_avatar: '',
-        author_title: '官方账号',
-        author_verified: true,
-        visibility: 'public',
-        view_count: 12580,
-        like_count: 856,
-        collect_count: 423,
-        comment_count: 67,
-        share_count: 128,
-        review_status: 'approved',
-        created_at: '2025-01-15T10:00:00Z',
-        updated_at: '2025-01-15T10:00:00Z',
-        published_at: '2025-01-15T12:00:00Z'
-      },
-      {
-        article_id: 'a2',
-        type: 'article',
-        source: 'expert',
-        status: 'published',
-        title: '正念冥想：7天入门指南',
-        summary: '由资深正念导师撰写的入门指南，手把手教你开始正念练习。',
-        cover_url: '',
-        content_html: '<p>内容...</p>',
-        word_count: 3200,
-        read_time: 12,
-        domain: 'mindfulness',
-        tags: ['正念', '冥想', '入门'],
-        level: 'beginner',
-        author_id: 'expert1',
-        author_name: '李明远',
-        author_avatar: '',
-        author_title: '正念导师',
-        author_verified: true,
-        visibility: 'public',
-        view_count: 8920,
-        like_count: 672,
-        collect_count: 534,
-        comment_count: 45,
-        share_count: 89,
-        review_status: 'approved',
-        created_at: '2025-01-20T10:00:00Z',
-        updated_at: '2025-01-20T10:00:00Z',
-        published_at: '2025-01-20T14:00:00Z'
-      },
-      {
-        article_id: 'a3',
-        type: 'article',
-        source: 'coach',
-        status: 'pending',
-        title: '睡眠改善实战：我的教练心得',
-        summary: '作为健康教练，分享我帮助学员改善睡眠的实战经验。',
-        cover_url: '',
-        content_html: '<p>内容...</p>',
-        word_count: 1800,
-        read_time: 6,
-        domain: 'sleep',
-        tags: ['睡眠', '教练心得'],
-        level: 'intermediate',
-        author_id: 'coach1',
-        author_name: '张教练',
-        author_avatar: '',
-        author_title: 'L3教练',
-        author_verified: true,
-        visibility: 'registered',
-        view_count: 0,
-        like_count: 0,
-        collect_count: 0,
-        comment_count: 0,
-        share_count: 0,
-        review_status: 'pending',
-        created_at: '2026-02-04T10:00:00Z',
-        updated_at: '2026-02-04T10:00:00Z'
-      },
-      {
-        article_id: 'a4',
-        type: 'article',
-        source: 'sharer',
-        status: 'draft',
-        title: '我的戒烟100天',
-        summary: '从一天两包到完全戒烟，分享我的心路历程。',
-        cover_url: '',
-        content_html: '<p>内容...</p>',
-        word_count: 1500,
-        read_time: 5,
-        domain: 'chronic',
-        tags: ['戒烟', '用户分享'],
-        level: 'beginner',
-        author_id: 'user123',
-        author_name: '阳光少年',
-        author_avatar: '',
-        author_verified: false,
-        visibility: 'public',
-        view_count: 0,
-        like_count: 0,
-        collect_count: 0,
-        comment_count: 0,
-        share_count: 0,
-        created_at: '2026-02-03T10:00:00Z',
-        updated_at: '2026-02-03T10:00:00Z'
-      }
-    ] as ArticleContent[]
-    pagination.total = articles.value.length
+    const params: Record<string, any> = {
+      content_type: 'article',
+      skip: (pagination.current - 1) * pagination.pageSize,
+      limit: pagination.pageSize,
+    }
+    if (filters.status) params.status = filters.status
+    if (filters.domain) params.domain = filters.domain
+
+    const { data } = await request.get('/v1/content-manage/list', { params })
+
+    articles.value = (data.items || []).map((item: any) => ({
+      article_id: String(item.id),
+      type: 'article',
+      source: item.tenant_id ? 'expert' : 'platform',
+      status: item.status || 'draft',
+      title: item.title,
+      summary: item.body?.substring(0, 100) || '',
+      cover_url: item.cover_url || '',
+      content_html: item.body || '',
+      word_count: item.body ? item.body.length : 0,
+      read_time: item.body ? Math.max(1, Math.ceil(item.body.length / 300)) : 1,
+      domain: item.domain || '',
+      tags: [],
+      level: item.level || 'beginner',
+      author_id: String(item.author_id || ''),
+      author_name: '平台管理员',
+      author_avatar: '',
+      author_title: '',
+      author_verified: true,
+      visibility: 'public',
+      view_count: item.view_count || 0,
+      like_count: item.like_count || 0,
+      collect_count: item.collect_count || 0,
+      comment_count: item.comment_count || 0,
+      share_count: 0,
+      review_status: item.status === 'published' ? 'approved' : 'pending',
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+      published_at: item.status === 'published' ? item.updated_at : null,
+    })) as ArticleContent[]
+    pagination.total = data.total || 0
+
+    // 客户端关键词过滤
+    if (filters.keyword) {
+      const kw = filters.keyword.toLowerCase()
+      articles.value = articles.value.filter(a => a.title.toLowerCase().includes(kw))
+    }
+  } catch (e) {
+    console.error('Failed to fetch articles:', e)
+    message.error('获取文章列表失败')
   } finally {
     loading.value = false
   }

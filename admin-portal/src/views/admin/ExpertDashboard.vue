@@ -4,6 +4,7 @@
 -->
 <template>
   <div class="expert-dashboard">
+    <a-page-header title="专家工作室管理" @back="$router.back()" style="padding: 0 0 16px" />
     <!-- 顶部信息 -->
     <div class="dash-header" v-if="tenant">
       <span class="dash-avatar">{{ tenant.brand_avatar }}</span>
@@ -163,7 +164,7 @@ const clientsLoading = ref(false)
 const activeTab = ref('overview')
 const clientFilter = ref('')
 
-const API_BASE = '/api/v1/tenants'
+const API_BASE = '/v1/tenants'
 
 // --- 加载数据 ---
 async function loadTenant() {

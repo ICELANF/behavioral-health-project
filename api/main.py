@@ -182,13 +182,13 @@ try:
 except ImportError as e:
     print(f"[API] WebSocket 路由注册失败: {e}")
 
-# 注册六大路径路由
+# 注册教练等级体系路由
 try:
     from api.paths_api import router as paths_router
     app.include_router(paths_router)
-    print("[API] 六大路径路由已注册")
+    print("[API] 教练等级体系路由已注册")
 except ImportError as e:
-    print(f"[API] 六大路径路由注册失败: {e}")
+    print(f"[API] 教练等级体系路由注册失败: {e}")
 
 # 注册用户分层路由
 try:
@@ -1108,6 +1108,131 @@ try:
     print("[API] Admin分析路由已注册")
 except ImportError as e:
     print(f"[API] Admin分析路由注册失败: {e}")
+
+# 注册用户知识投稿路由
+try:
+    from api.content_contribution_api import router as contribution_router
+    app.include_router(contribution_router)
+    print("[API] 用户知识投稿路由已注册")
+except ImportError as e:
+    print(f"[API] 用户知识投稿路由注册失败: {e}")
+
+# 注册批量知识灌注路由
+try:
+    from api.batch_ingestion_api import router as batch_ingestion_router
+    app.include_router(batch_ingestion_router)
+    print("[API] 批量知识灌注路由已注册")
+except ImportError as e:
+    print(f"[API] 批量知识灌注路由注册失败: {e}")
+
+# 注册内容管理路由
+try:
+    from api.content_manage_api import router as content_manage_router
+    app.include_router(content_manage_router)
+    print("[API] 内容管理路由已注册")
+except ImportError as e:
+    print(f"[API] 内容管理路由注册失败: {e}")
+
+# 注册考试管理路由
+try:
+    from api.exam_api import router as exam_admin_router
+    app.include_router(exam_admin_router)
+    print("[API] 考试管理路由已注册")
+except ImportError as e:
+    print(f"[API] 考试管理路由注册失败: {e}")
+
+# 注册题库管理路由
+try:
+    from api.question_api import router as question_router
+    app.include_router(question_router)
+    print("[API] 题库管理路由已注册")
+except ImportError as e:
+    print(f"[API] 题库管理路由注册失败: {e}")
+
+# 注册考试会话路由
+try:
+    from api.exam_session_api import router as exam_session_router
+    app.include_router(exam_session_router)
+    print("[API] 考试会话路由已注册")
+except ImportError as e:
+    print(f"[API] 考试会话路由注册失败: {e}")
+
+# 注册用户统计路由
+try:
+    from api.user_stats_api import router as user_stats_router
+    app.include_router(user_stats_router)
+    print("[API] 用户统计路由已注册")
+except ImportError as e:
+    print(f"[API] 用户统计路由注册失败: {e}")
+
+# 注册问卷引擎路由 (3个子模块: 管理/填写/统计)
+try:
+    from api.survey_api import router as survey_mgmt_router
+    app.include_router(survey_mgmt_router)
+    print("[API] 问卷管理路由已注册")
+except ImportError as e:
+    print(f"[API] 问卷管理路由注册失败: {e}")
+
+try:
+    from api.survey_response_api import router as survey_respond_router
+    app.include_router(survey_respond_router)
+    print("[API] 问卷填写路由已注册")
+except ImportError as e:
+    print(f"[API] 问卷填写路由注册失败: {e}")
+
+try:
+    from api.survey_stats_api import router as survey_stats_router
+    app.include_router(survey_stats_router)
+    print("[API] 问卷统计路由已注册")
+except ImportError as e:
+    print(f"[API] 问卷统计路由注册失败: {e}")
+
+
+# ========== 学分制+晋级体系 (V002) ==========
+try:
+    from api.credits_api import router as credits_router
+    app.include_router(credits_router)
+    print("[API] 学分管理路由已注册")
+except ImportError as e:
+    print(f"[API] 学分管理路由注册失败: {e}")
+
+try:
+    from api.companion_api import router as companion_router
+    app.include_router(companion_router)
+    print("[API] 同道者关系路由已注册")
+except ImportError as e:
+    print(f"[API] 同道者关系路由注册失败: {e}")
+
+try:
+    from api.promotion_api import router as promotion_router
+    app.include_router(promotion_router)
+    print("[API] 晋级系统路由已注册")
+except ImportError as e:
+    print(f"[API] 晋级系统路由注册失败: {e}")
+
+# ========== V004 智能监测方案引擎路由 ==========
+try:
+    from api.program_api import router as program_router
+    app.include_router(program_router)
+    print("[API] V004 智能监测方案路由已注册")
+except ImportError as e:
+    print(f"[API] V004 智能监测方案路由注册失败: {e}")
+
+# ========== V003 激励体系路由 ==========
+try:
+    from core.milestone_service import incentive_router
+    app.include_router(incentive_router)
+    print("[API] V003 激励体系路由已注册")
+except Exception as e:
+    print(f"[API] V003 激励体系路由注册失败: {e}")
+
+# 注册遗漏的 routes.py 路由（审计修复 #7）
+try:
+    from api.routes import router as legacy_v1_router
+    app.include_router(legacy_v1_router)
+    print("[API] v1 通用路由已注册")
+except ImportError as e:
+    print(f"[API] v1 通用路由注册失败: {e}")
 
 
 if __name__ == "__main__":

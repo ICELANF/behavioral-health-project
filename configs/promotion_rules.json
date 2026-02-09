@@ -1,0 +1,199 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "BHP晋级规则配置 - 直接加载到规则引擎",
+    "updated": "2026-02-09",
+    "compatible_with": "user_role枚举, point_type枚举, intervention_stage枚举"
+  },
+  "role_levels": {
+    "_note": "权威映射(1-indexed)，所有后端代码统一引用此表，不得自行定义",
+    "observer": 1,
+    "grower": 2,
+    "sharer": 3,
+    "coach": 4,
+    "promoter": 5,
+    "master": 6
+  },
+  "deployment_prerequisites": [
+    "models.py default role 必须是 observer (非 patient) — 审计#4",
+    "companion_relations 表必须存在 — V002迁移",
+    "referred_by 数据已迁移到 companion_relations — 审计#3",
+    "所有路由已在 main.py 中 include_router — 审计#7",
+    "trigger_engine_v0.py 已删除 — 审计#9",
+    "ROLE_LEVEL 全局统一为1-indexed — 审计#2"
+  ],
+  "rules": [
+    {
+      "from_role": "observer",
+      "to_role": "grower",
+      "display": "L0→L1",
+      "credits": {
+        "total_min": 100,
+        "mandatory_min": 60,
+        "m1_min": 20,
+        "m2_min": 20,
+        "m3_min": 10,
+        "m4_min": 10,
+        "elective_min": 40
+      },
+      "points": {
+        "growth_min": 100,
+        "contribution_min": 0,
+        "influence_min": 0
+      },
+      "companions": {
+        "graduated_min": 4,
+        "mentee_role": "observer",
+        "mode": "invite",
+        "quality_min": null,
+        "_note": "L0特殊:温和邀请4人体验,不是严格带教"
+      },
+      "practice": {
+        "behavior_attempts_min": 15,
+        "understanding_score_min": 4,
+        "ethics_pass": true
+      },
+      "theory_practice_ratio": "8:2",
+      "estimated_duration_months": 3
+    },
+    {
+      "from_role": "grower",
+      "to_role": "sharer",
+      "display": "L1→L2",
+      "credits": {
+        "total_min": 200,
+        "mandatory_min": 120,
+        "m1_min": 40,
+        "m2_min": 40,
+        "m3_min": 20,
+        "m4_min": 20,
+        "elective_min": 80
+      },
+      "points": {
+        "growth_min": 300,
+        "contribution_min": 30,
+        "influence_min": 10
+      },
+      "companions": {
+        "graduated_min": 4,
+        "mentee_role": "observer",
+        "mode": "mentor",
+        "quality_min": null,
+        "_note": "L1带教4名L0观察员,陪伴其完成测评和微行为"
+      },
+      "practice": {
+        "behavior_stable_days_min": 90,
+        "metrics_improved_min": 2,
+        "data_contributed_min": 3,
+        "stages_completed": ["S0_OBSERVING", "S1_ONBOARDING", "S2_INTERVENING", "S3_MAINTAINING", "S4_DIFFUSING"]
+      },
+      "theory_practice_ratio": "7:3",
+      "estimated_duration_months": 3
+    },
+    {
+      "from_role": "sharer",
+      "to_role": "coach",
+      "display": "L2→L3",
+      "credits": {
+        "total_min": 800,
+        "mandatory_min": 380,
+        "m1_min": 120,
+        "m2_min": 100,
+        "m3_min": 70,
+        "m4_min": 90,
+        "elective_min": 420
+      },
+      "points": {
+        "growth_min": 800,
+        "contribution_min": 100,
+        "influence_min": 50
+      },
+      "companions": {
+        "graduated_min": 4,
+        "mentee_role": "grower",
+        "mode": "mentor",
+        "quality_min": 3.5,
+        "_note": "L2带教4名L1成长者,陪伴其度过S0-S4"
+      },
+      "practice": {
+        "score_400_min": 240,
+        "cases_min": 10,
+        "explainability_min": 0.8,
+        "companion_hours_min": 50,
+        "ethics_100": true,
+        "training_hours_min": 40
+      },
+      "theory_practice_ratio": "5:5",
+      "estimated_duration_months": 10
+    },
+    {
+      "from_role": "coach",
+      "to_role": "promoter",
+      "display": "L3→L4",
+      "credits": {
+        "total_min": 1500,
+        "mandatory_min": 690,
+        "m1_min": 180,
+        "m2_min": 150,
+        "m3_min": 120,
+        "m4_min": 240,
+        "elective_min": 810
+      },
+      "points": {
+        "growth_min": 1500,
+        "contribution_min": 500,
+        "influence_min": 200
+      },
+      "companions": {
+        "graduated_min": 4,
+        "mentee_role": "sharer",
+        "mode": "mentor",
+        "quality_min": 4.0,
+        "total_mentored_l3_min": 5,
+        "_note": "L3带教4名L2分享者,总带教L3≥5人"
+      },
+      "practice": {
+        "projects_min": 2,
+        "courses_developed_min": 1,
+        "templates_adopted_min": 2
+      },
+      "theory_practice_ratio": "4:6",
+      "estimated_duration_months": 15
+    },
+    {
+      "from_role": "promoter",
+      "to_role": "master",
+      "display": "L4→L5",
+      "credits": {
+        "total_min": 3000,
+        "mandatory_min": 1200,
+        "m1_min": 300,
+        "m2_min": 250,
+        "m3_min": 250,
+        "m4_min": 400,
+        "elective_min": 1800
+      },
+      "points": {
+        "growth_min": 3000,
+        "contribution_min": 1500,
+        "influence_min": 800
+      },
+      "companions": {
+        "graduated_min": 4,
+        "mentee_role": "coach",
+        "mode": "mentor",
+        "quality_min": 4.5,
+        "total_mentored_l3_min": 15,
+        "total_mentored_l4_min": 4,
+        "_note": "L4带教4名L3教练,总带教L3≥15人,L4≥4人"
+      },
+      "practice": {
+        "original_methodology": true,
+        "standard_participation": true,
+        "expert_unanimous": true
+      },
+      "theory_practice_ratio": "3:7",
+      "estimated_duration_months": 24
+    }
+  ]
+}

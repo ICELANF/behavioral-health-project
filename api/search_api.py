@@ -111,12 +111,3 @@ def global_search(
     return _do_search(q, limit, db)
 
 
-@router.get("/v1/search")
-def global_search_compat(
-    q: str = Query(..., min_length=1, max_length=100),
-    limit: int = Query(20, ge=1, le=50),
-    current_user=Depends(require_coach_or_admin),
-    db: Session = Depends(get_db),
-):
-    """全平台搜索（兼容路径）"""
-    return _do_search(q, limit, db)

@@ -16,6 +16,9 @@
         </div>
       </div>
 
+      <!-- 生命状态卡片 -->
+      <StageHeader />
+
       <!-- 欢迎卡片 -->
       <div class="welcome-card card">
         <div class="welcome-header" @click="router.push('/profile')">
@@ -45,6 +48,9 @@
         </van-grid>
         <van-grid :column-num="4" :border="false">
           <van-grid-item icon="photograph" text="食物识别" to="/food-recognition" />
+          <van-grid-item icon="bookmark-o" text="我的学习" to="/my-learning" />
+          <van-grid-item icon="friends-o" text="教练目录" to="/coach-directory" />
+          <van-grid-item icon="edit" text="知识投稿" to="/contribute" />
         </van-grid>
       </div>
 
@@ -73,6 +79,55 @@
             <p>查看教练为你分配的挑战计划</p>
           </div>
           <van-icon name="arrow" color="#c8c9cc" />
+        </div>
+      </div>
+
+      <!-- 智能监测方案入口 -->
+      <div class="program-entry card" @click="router.push('/programs')">
+        <div class="entry-content">
+          <div class="entry-icon" style="background:rgba(7,193,96,0.1)">
+            <van-icon name="bar-chart-o" size="32" color="#07c160" />
+          </div>
+          <div class="entry-text">
+            <h3>智能监测方案</h3>
+            <p>个性化行为监测与改善计划</p>
+          </div>
+          <van-icon name="arrow" color="#c8c9cc" />
+        </div>
+      </div>
+
+      <!-- 推荐学习 -->
+      <div class="recommend-learn card">
+        <div class="section-header">
+          <h3>推荐学习</h3>
+          <router-link to="/learn" class="view-all">更多 ›</router-link>
+        </div>
+        <van-loading v-if="loadingRecommend" size="20" />
+        <div v-else-if="recommendList.length" class="recommend-scroll">
+          <div
+            v-for="item in recommendList"
+            :key="item.id"
+            class="recommend-item"
+            @click="router.push(`/content/${item.type || 'article'}/${item.id}`)"
+          >
+            <div v-if="item.cover_url" class="recommend-cover">
+              <img :src="item.cover_url" :alt="item.title" />
+            </div>
+            <div v-else class="recommend-cover recommend-cover-placeholder">
+              <van-icon name="bookmark-o" size="24" color="#c8c9cc" />
+            </div>
+            <div class="recommend-title">{{ item.title }}</div>
+            <div class="recommend-meta">
+              <van-tag size="small" plain round :type="item.type === 'video' ? 'success' : 'primary'">
+                {{ { article: '文章', video: '视频', course: '课程', case_study: '案例', card: '卡片' }[item.type] || '文章' }}
+              </van-tag>
+              <span>{{ item.view_count || 0 }}阅读</span>
+            </div>
+          </div>
+        </div>
+        <div v-else class="recommend-empty" @click="router.push('/learn')">
+          <van-icon name="bookmark-o" size="28" color="#c8c9cc" />
+          <span>探索学习内容</span>
         </div>
       </div>
 
@@ -258,6 +313,7 @@ import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import TabBar from '@/components/common/TabBar.vue'
 import TaskCard from '@/components/chat/TaskCard.vue'
+import StageHeader from '@/components/stage/StageHeader.vue'
 import api from '@/api/index'
 
 const router = useRouter()
@@ -267,6 +323,19 @@ const chatStore = useChatStore()
 function goToChat(expertId: string) {
   chatStore.setCurrentExpert(expertId)
   router.push('/chat')
+}
+
+// ---- 推荐学习 ----
+const loadingRecommend = ref(false)
+const recommendList = ref<any[]>([])
+
+async function loadRecommendContent() {
+  loadingRecommend.value = true
+  try {
+    const res: any = await api.get('/api/v1/content/recommended', { params: { limit: 5 } })
+    recommendList.value = (res?.items || []).slice(0, 5)
+  } catch { recommendList.value = [] }
+  finally { loadingRecommend.value = false }
 }
 
 // ---- 微行动 ----
@@ -378,6 +447,7 @@ onMounted(() => {
   refreshHealth()
   loadMicroActions()
   loadDangerAlerts()
+  loadRecommendContent()
   refreshTimer = setInterval(refreshHealth, 10000)
 })
 onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
@@ -474,6 +544,42 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
   }
 }
 
+.program-entry {
+  cursor: pointer;
+
+  .entry-content {
+    display: flex;
+    align-items: center;
+    gap: $spacing-sm;
+  }
+
+  .entry-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .entry-text {
+    flex: 1;
+
+    h3 {
+      margin: 0;
+      font-size: $font-size-md;
+      font-weight: 600;
+    }
+
+    p {
+      margin: 2px 0 0;
+      font-size: $font-size-xs;
+      color: $text-color-secondary;
+    }
+  }
+}
+
 .challenge-entry {
   cursor: pointer;
 
@@ -509,6 +615,74 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
       color: $text-color-secondary;
     }
   }
+}
+
+/* 推荐学习 */
+.recommend-learn {
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: $spacing-sm;
+    h3 { font-size: $font-size-lg; margin: 0; }
+    .view-all { font-size: $font-size-sm; color: $primary-color; text-decoration: none; }
+  }
+}
+.recommend-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar { display: none; }
+}
+.recommend-item {
+  flex-shrink: 0;
+  width: 140px;
+  cursor: pointer;
+  &:active { opacity: 0.7; }
+}
+.recommend-cover {
+  width: 140px;
+  height: 90px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  img { width: 100%; height: 100%; object-fit: cover; }
+}
+.recommend-cover-placeholder {
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.recommend-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: $text-color;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.recommend-meta {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  color: $text-color-placeholder;
+}
+.recommend-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: $spacing-md;
+  color: $text-color-placeholder;
+  font-size: $font-size-sm;
+  cursor: pointer;
 }
 
 .experts-card {

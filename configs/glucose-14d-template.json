@@ -1,0 +1,1811 @@
+{
+  "slug": "glucose-14d",
+  "title": "14天血糖监测体验之旅",
+  "description": "通过动态血糖仪+行为健康指导，帮助您建立血糖管理的核心行为习惯。每天3次推送：认知学习+行为实践+复盘总结。",
+  "category": "glucose",
+  "total_days": 15,
+  "pushes_per_day": 3,
+  "tags": [
+    "CGM",
+    "血糖",
+    "入门",
+    "14天",
+    "行为健康"
+  ],
+  "schedule": {
+    "days": [
+      {
+        "day": 0,
+        "pushes": [
+          {
+            "slot": "immediate",
+            "is_core": true,
+            "content": {
+              "knowledge": "您好，我是您的行为健康班主任！欢迎加入14天血糖监测体验之旅。\n\n【重要心理定位】\n这不是考核，也不是打分，而是一场帮助你了解自己身体反应的探索。我们不追求完美，只要求真实记录和用心尝试。\n\n请点击下方链接确认服务",
+              "behavior_guide": "【行为觉察启动】\n✦ 三维觉察系统：身体-行为-血糖\n✦ 准备觉察日记：①情绪 ②饥饿感 ③餐后反应\n✦ 基线建立：今天如实记录常规饮食\n✦ 放下完美主义：每个数据都是了解自己的线索"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "scale",
+                  "text": "1. 目前你对血糖管理的信心：0-10分？___",
+                  "min": 0,
+                  "max": 10
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "2. 为什么是这个分数"
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "3. 最希望通过14天改变什么"
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:00",
+            "content": {
+              "knowledge": "⚠️ 佩戴动态血糖仪注意事项\n🔸 24小时内避免游泳、桑拿\n🔸 出现不适立即移除并联系管理师\n🔸 传感器怕磁，远离强磁场\n🔸 每日检查敷贴是否松动",
+              "behavior_guide": "【设备适应期】\n✦ 注意力转移：用\"好奇观察\"替代\"焦虑监控\"\n✦ 环境提示：设置提醒避开强磁场\n✦ 身体对话：检查时感谢身体配合"
+            }
+          }
+        ]
+      },
+      {
+        "day": 1,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！欢迎开启第一天🎉\n\n【今日认知点】血糖是什么？\n身体的\"能量货币\"，保持平稳就是让能量\"收支\"达到平衡。\n📊 健康参考：空腹血糖3.9-6.1mmol/L\n\n【今日核心行为】✅ 必做1件\n午餐时调整进餐顺序：先蔬菜，再蛋白质，最后主食",
+              "behavior_guide": "【行为链建立】\n✦ 今日唯一目标：\"先菜后饭\"\n✦ 觉察训练：先观察自己的自动化模式\n✦ 触发器：\"看到餐盘\"→提醒\"绿色优先\"\n✦ 简化指令：只需\"蔬菜开场\"就是进步"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "午餐前：我的习惯是"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "午餐后：我做到了吗？",
+                  "options": [
+                    "是",
+                    "部分",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "原因"
+                },
+                {
+                  "id": "q4",
+                  "type": "scale",
+                  "text": "执行难度1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "午餐时间到啦！\n\n还记得核心行为【先菜后饭】吗？✨\n\n📸 打卡建议：\n· 拍下完整餐盘\n· 展示蔬菜比例\n记得13:30前打卡",
+              "behavior_guide": "【行为执行】\n✦ 即时提醒：现在就是实践时刻\n✦ 减少决策疲劳：不纠结比例\n✦ 即时反馈：用1-10分打分控制感和愉悦感\n✦ 视觉锚点：拍照帮助大脑记忆"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "scale",
+                  "text": "餐后感受1-10分：",
+                  "min": 1,
+                  "max": 10
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "饱腹感"
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "控制感"
+                },
+                {
+                  "id": "q4",
+                  "type": "open_text",
+                  "text": "愉悦度"
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "傍晚好！晚餐是\"身体修复信号\"。\n\n【今日核心】继续\"先菜后饭\"\n【加分行为】🌱 饭后20分钟，活动5-10分钟\n\n📸 打卡建议：\n记录进餐顺序\n19:00前完成用餐",
+              "behavior_guide": "【行为巩固】\n✦ 反思：①感受 ②困难 ③改进\n✦ 行为链延伸：餐后微运动（可选）\n✦ 情绪觉察：观察此刻情绪\n✦ 成长型思维：\"我在学习\"vs\"我要完美\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "\"先菜后饭\"执行几次？",
+                  "options": [
+                    "0",
+                    "1",
+                    "2",
+                    "3"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "最大收获/困难"
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "明天想改进"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 2,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！解开\"血糖波动\"的谜题。\n\n【今日认知点】主食选对了吗？\n精白米面=\"速效糖包\"，全谷物=\"缓释能量块\"\n\n【今日核心行为】✅ 必做\n将一餐中1/3白米饭换成糙米、燕麦或红豆",
+              "behavior_guide": "【行为替代】\n✦ 决策点：购物/做饭/点餐的\"主食选择\"\n✦ 最小改变：1/3替换降低阻力\n✦ 感官重建：关注\"饱腹更久、不困\"\n✦ 环境设计：全谷物放显眼处\n\n✅核心：主食1/3替换\n✅继续：先菜后饭"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "尝试的全谷物"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "在哪一餐",
+                  "options": [
+                    "早",
+                    "午",
+                    "晚"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "信心1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "中午好！检验\"主食换装术\"！\n\n今天为\"缓释能量块\"留位置了吗？\n\n📸 打卡焦点：\n· 特写健康主食\n· 描述口感差异",
+              "behavior_guide": "【体感反馈】\n✦ 慢速咀嚼：每口15-20下\n✦ 对比实验：咀嚼次数对比\n✦ 情绪记录：换主食时的情绪\n✦ 社交应对：如何与家人沟通"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "新主食口感"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "咀嚼次数",
+                  "options": [
+                    "多很多",
+                    "略多",
+                    "差不多"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "2小时后饱腹感1-10分",
+                  "min": 1,
+                  "max": 10
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！对\"平稳血糖\"有新认识了。\n\n【今日核心】主食1/3替换+先菜后饭\n【加分行为】🌱 饭后散步5-10分钟\n\n📸 打卡：均衡晚餐+今天体会",
+              "behavior_guide": "【行为整合】\n✦ 行为链：晚餐→计时20分钟→活动\n✦ 习惯堆叠：与遛狗/听播客结合\n✦ 血糖预测：预测2小时后数值"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "主食替换做到了？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "进餐顺序？",
+                  "options": [
+                    "很好",
+                    "还行",
+                    "没做到"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "最想分享"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 3,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！当回\"侦探\"，找\"血糖刺客\"。\n\n【今日认知点】警惕\"隐形糖\"！\n风味酸奶、沙拉酱、红烧汁都可能添加大量糖\n\n【今日核心行为】✅ 必做\n购买前花10秒看\"营养成分表\"和\"配料表\"前三位",
+              "behavior_guide": "【认知重构】\n✦ 侦探模式：主动搜寻隐藏线索\n✦ 决策技能：看标签=自我保护\n✦ 警觉培养：\"甜味≠糖\"\"咸菜也有糖\"\n✦ 购物路线：绕开含糖饮料区\n\n✅核心：识别隐形糖\n✅继续：前2天行为"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "今天重点留意"
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "预计遇到陷阱"
+                },
+                {
+                  "id": "q3",
+                  "type": "single_choice",
+                  "text": "",
+                  "options": [
+                    "超市",
+                    "食堂",
+                    "外卖",
+                    "家里"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "午间时间到！\n\n包装食品看标签；食堂外卖思考：这菜甜吗？汤汁浓稠吗？\n\n📸 打卡任务：\n· 午餐照片\n· 分享\"隐形糖\"线索",
+              "behavior_guide": "【线索识别】\n✦ 味觉觉察：品尝第一口识别异常甜味\n✦ 环境扫描：高危菜品（红烧、糖醋）\n✦ 沟通技能：礼貌要求\"少糖少酱\"\n✦ 临场调整：去汤汁、增加蔬菜"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "发现的\"隐形糖\""
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "我的应对"
+                },
+                {
+                  "id": "q3",
+                  "type": "single_choice",
+                  "text": "发现难度",
+                  "options": [
+                    "容易",
+                    "一般",
+                    "困难"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！主动选择\"清白\"饮品。\n\n白开水或淡茶最好。无糖饮品注意代糖。\n\n【今日核心】识别避开隐形糖\n【加分行为】🌱 无糖饮品\n\n📸 打卡：晚餐+健康饮品",
+              "behavior_guide": "【饮品改造】\n✦ 习惯替代：温水+柠檬\n✦ 渴望管理：观察\"渴望\"持续时长\n✦ 奖赏重设：选择无糖=对未来自己的礼物\n✦ 社交应对：优雅拒绝含糖饮料"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "最大\"隐糖\"发现"
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "前3天最易坚持"
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "最难坚持"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 4,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！认识血糖的\"忠诚卫士\"。\n\n【今日认知点】蛋白质——血糖的\"稳定锚\"\n延缓胃排空，让糖分释放变慢\n\n【今日核心行为】✅ 必做\n每餐包含一个手掌心大小的优质蛋白（鱼虾肉蛋豆腐）",
+              "behavior_guide": "【行为锚点】\n✦ 视觉量化：手掌法记忆\n✦ 餐盘规划：蛋白质占1/4\n✦ 采购优先：清单先写蛋白质\n✦ 烹饪简化：蒸煮快炒降低门槛\n\n✅核心：蛋白质到位\n✅继续：前3天所有行为"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "今天三餐的蛋白质"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "",
+                  "options": [
+                    "早餐：___"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "single_choice",
+                  "text": "",
+                  "options": [
+                    "午餐：___"
+                  ]
+                },
+                {
+                  "id": "q4",
+                  "type": "single_choice",
+                  "text": "",
+                  "options": [
+                    "晚餐：___"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "中午好！请出\"稳定锚\"！\n\n餐盘里的蛋白质到位了吗？\n\n📸 打卡焦点：\n优质蛋白质特写",
+              "behavior_guide": "【行为聚焦】\n✦ 唯一任务：确保蛋白质到位\n✦ 视觉强化：给蛋白质拍特写\n✦ 饱腹感记录：每30分钟记录一次饥饿感\n✦ 情绪关联：\"吃到蛋白质\"的心理感受"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "午餐蛋白质"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "份量感觉",
+                  "options": [
+                    "不够",
+                    "刚好",
+                    "太多"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "30分钟后饥饿感1-10分",
+                  "min": 1,
+                  "max": 10
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！蛋白质的多样组合。\n\n【今日核心】蛋白质到位\n【加分行为】🌱 尝试\"双蛋白组合\"（植物+动物）\n\n📸 打卡：双蛋白搭配+创意",
+              "behavior_guide": "【行为升级】\n✦ 技能进阶：双蛋白搭配提升乐趣\n✦ 创意激发：新组合降低重复疲劳\n✦ 家庭整合：为家人做饭时如何融入\n✦ 自我鼓励：每天小进步都值得庆祝"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "三餐蛋白质都到位了？",
+                  "options": [
+                    "是",
+                    "2餐",
+                    "1餐",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "最喜欢的蛋白质"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "坚持难度1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 5,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！为持续行动力鼓掌👏\n\n【今日认知点】\"好脂肪\"是守护天使\n坚果、牛油果、深海鱼能延缓糖分吸收\n\n【今日核心行为】✅ 必做\n下午加餐用10颗坚果代替饼干蛋糕",
+              "behavior_guide": "【认知升级】\n✦ 观念转变：好脂肪=盟友\n✦ 加餐重塑：坚果替代是\"升级\"非\"妥协\"\n✦ 冲动延迟：下午3-4点高危时段提前准备\n✦ 量的觉察：10颗坚果的\"一把\"感\n\n✅核心：好脂肪摄入\n✅继续：前4天行为"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "准备的坚果类型"
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "通常下午几点想吃零食"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "用坚果替代的信心1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "午安！美味与健康兼具。\n\n今天请为\"好脂肪\"留位置！\n\n📸 打卡焦点：\n午餐中的好脂肪来源",
+              "behavior_guide": "【行为整合】\n✦ 餐盘配色：为好脂肪分配视觉位置\n✦ 烹饪行为：用橄榄油代替其他油\n✦ 撒坚果动作：变成沙拉收尾仪式\n✦ 味觉训练：感受脂肪的\"柔和饱腹感\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "午餐的好脂肪"
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "口感体验"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "饱腹持久度1-10分",
+                  "min": 1,
+                  "max": 10
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！有尝试坚果加餐吗？\n\n【今日核心】好脂肪摄入\n【加分行为】🌱 餐前喝300ml温水\n\n📸 打卡：餐前水+晚餐",
+              "behavior_guide": "【行为预防】\n✦ 习惯前置：喝水作为\"开场白\"\n✦ 水杯提示：放在餐盘旁（环境提示）\n✦ 慢饮觉察：300ml分3次，用\"慢\"对抗\"急\"\n✦ 身体对话：停1分钟感受\"胃部微饱\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "今天吃到好脂肪了？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "下午坚果加餐？",
+                  "options": [
+                    "是",
+                    "忘了",
+                    "没准备"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "整体执行感1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 6,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！认识\"双料清洁工\"。\n\n【今日认知点】膳食纤维——\"血糖缓冲网\"\n魔芋、菌菇、豆类、绿叶菜都是纤维大户\n\n【今日核心行为】✅ 必做\n每餐蔬菜达到3种以上不同颜色，打造\"彩虹餐盘\"",
+              "behavior_guide": "【行为目标】\n✦ 游戏化设计：\"吃蔬菜\"变\"集色游戏\"\n✦ 采购行为：每种颜色至少选一样\n✦ 备菜简化：提前洗好切好多色蔬菜\n✦ 视觉享受：彩虹餐盘=美学体验\n\n✅核心：彩虹蔬菜\n✅继续：前5天行为"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "今天准备的蔬菜颜色"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "",
+                  "options": [
+                    "红",
+                    "橙",
+                    "黄",
+                    "绿",
+                    "紫",
+                    "白",
+                    "黑"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "目标几种颜色"
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "中午好！玩\"色彩游戏\"！\n\n午餐能凑齐几种颜色的蔬菜？\n\n📸 打卡任务：\n彩虹蔬菜全景\n数一数有几种颜色",
+              "behavior_guide": "【行为记录】\n✦ 计数游戏：红橙黄绿青蓝紫\n✦ 成就感强化：3种=合格，5种=优秀，7种=满分\n✦ 分享行为：拍全景照（完整性满足感）\n✦ 家人互动：一起玩\"色彩挑战\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "午餐蔬菜颜色数：种"
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "分别是"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "准备难度1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！\"彩虹挑战\"意犹未尽？\n\n【今日核心】彩虹蔬菜\n【加分行为】🌱 主食高纤维化（燕麦饭、糙米、玉米、红薯）\n\n📸 打卡：高纤维晚餐",
+              "behavior_guide": "【行为深化】\n✦ 主食升级：整块粗粮（玉米、红薯）\n✦ 饱腹感对比：高纤晚餐vs精细主食\n✦ 消化觉察：高纤维的胃肠蠕动感\n✦ 行为强化：6天小改变变成\"新常态\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "今天蔬菜颜色达标？",
+                  "options": [
+                    "是",
+                    "差一点",
+                    "没达到"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "连续6天最稳定的行为"
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "最想强化的行为"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 7,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "恭喜！成功完成第一周🎊\n\n【本周核心回顾】进餐顺序革命\n\"汤→蔬菜→蛋白质→主食\"能显著平缓血糖曲线\n\n【今日核心行为】✅ 必做\n三餐完整执行一次\"黄金进食顺序\"",
+              "behavior_guide": "【行为整合】\n✦ 仪式感建立：进餐顺序是\"健康仪式\"非\"规则\"\n✦ 流程记忆：汤→蔬菜→蛋白→主食\n✦ 时间觉察：完整执行需要多久\n✦ 阶段复盘：回顾第1-6天改变轨迹\n\n✅核心：黄金顺序\n✅巩固：前6天行为"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q2",
+                  "type": "scale",
+                  "text": "对自己的期待1-5分",
+                  "min": 1,
+                  "max": 5
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "最想巩固的行为"
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "中午好！实践完整黄金顺序！\n\n从第一口清汤开始，按部就班。\n\n📸 终极打卡：\n按顺序排列的食物（分开摆放）\n或描述执行过程和感受",
+              "behavior_guide": "【行为展示】\n✦ 餐具分离：不同餐具盛放不同食物\n✦ 节奏控制：每步骤停顿10秒\n✦ 正念饮食：专注当下这一口，不刷手机\n✦ 流程描述：用语言强化记忆"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "午餐顺序完整吗？",
+                  "options": [
+                    "完全按照",
+                    "大部分",
+                    "没做好"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "与平时相比用餐时长",
+                  "options": [
+                    "长",
+                    "差不多",
+                    "短"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "餐后舒适度1-10分",
+                  "min": 1,
+                  "max": 10
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！用完美顺序晚餐为这周画上句号。\n\n回顾7天，从认识血糖到掌握进餐顺序，每个小行动都让你离健康更近。\n\n📸 打卡：\n按顺序享用的晚餐\n分享第一周最大收获",
+              "behavior_guide": "【第一周总结】\n✦ 成就清单：列出所有\"做到了\"的行为\n✦ 困难识别：哪个最难坚持？为什么？\n✦ 环境优化：下周如何调整支持\n✦ 身份转变：\"尝试\"→\"关注健康的人\""
+            },
+            "survey": {
+              "type": "full_assessment",
+              "questions": [
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "1. 过去7天，对血糖影响最大的行为是？"
+                },
+                {
+                  "id": "q4",
+                  "type": "open_text",
+                  "text": "2. 做到的行为（多选）"
+                },
+                {
+                  "id": "q5",
+                  "type": "single_choice",
+                  "text": "",
+                  "options": [
+                    "进餐顺序",
+                    "主食替换",
+                    "识别隐糖",
+                    "蛋白质"
+                  ]
+                },
+                {
+                  "id": "q6",
+                  "type": "single_choice",
+                  "text": "",
+                  "options": [
+                    "好脂肪",
+                    "彩虹蔬菜",
+                    "餐后运动"
+                  ]
+                },
+                {
+                  "id": "q7",
+                  "type": "scale",
+                  "text": "3. 现在对血糖管理的信心：0-10分？",
+                  "min": 0,
+                  "max": 10
+                },
+                {
+                  "id": "q8",
+                  "type": "open_text",
+                  "text": "我的评分：（vs第0天：）"
+                },
+                {
+                  "id": "q9",
+                  "type": "open_text",
+                  "text": "4. 下周最想改进的行为"
+                }
+              ]
+            }
+          }
+        ],
+        "is_milestone": true,
+        "milestone_survey": true
+      },
+      {
+        "day": 8,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！欢迎进入技巧升级周。\n\n【今日认知点】烹饪的技巧\n高温油炸会增加血糖生成指数，蒸煮快炒凉拌更健康\n\n【今日核心行为】✅ 必做\n午餐尝试一道\"少油快炒\"或\"清蒸\"的菜。凉拌时加醋",
+              "behavior_guide": "【行为技能】\n✦ 技能升级：控制环境变量\n✦ 烹饪改造：\"怎么健康怎么做\"\n✦ 决策简化：记住\"蒸煮拌\"\n✦ 醋的运用：变成烹饪习惯\n\n✅核心：健康烹饪法\n✅继续：前7天行为"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "今天尝试的烹饪法",
+                  "options": [
+                    "蒸",
+                    "煮",
+                    "快炒",
+                    "凉拌"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "准备加醋吗？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "信心1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "中午好！厨房智慧发光。\n\n关注烹饪方式：清蒸鱼、白灼菜心、橄榄油快炒\n\n📸 打卡：\n展示健康烹饪法的菜肴",
+              "behavior_guide": "【行为执行】\n✦ 单项聚焦：只关注\"烹饪方式\"\n✦ 外食应对：如何选择健康烹饪菜品\n✦ 视觉识别：通过颜色/质地判断\n✦ 味觉重置：体会\"食材本味\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "用的烹饪法"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "味道vs平时",
+                  "options": [
+                    "更清淡",
+                    "差不多",
+                    "偏淡"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "接受度1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！条件允许尝试\"醋料理\"。\n\n【今日核心】健康烹饪法\n【加分行为】🌱 餐后2小时关注血糖数据\n\n📸 打卡：晚餐+烹饪方式",
+              "behavior_guide": "【行为实验】\n✦ 味觉实验：不同菜品加醋尝试\n✦ 酸味适应：让味蕾逐步接受\n✦ 数据关联：对比\"加醋餐\"vs\"常规餐\"\n✦ 烹饪乐趣：探索醋的多种用法"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "今天烹饪法达标？",
+                  "options": [
+                    "是",
+                    "部分",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "尝试加醋了吗？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "整体执行1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 9,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！认识\"健康合伙人\"。\n\n【今日认知点】肠道菌群——血糖调控师\n有益菌群喜欢膳食纤维（益生元）\n\n【今日核心行为】✅ 必做\n多吃益生元食物：洋葱、大蒜、芦笋、豆类、燕麦",
+              "behavior_guide": "【认知扩展】\n✦ 系统思维：\"单一食物\"→\"内部生态系统\"\n✦ 长期视角：今天每口都在\"投资未来\"\n✦ 菌群拟人化：想象肠道\"小伙伴\"欢呼\n✦ 行动清单：列出常备益生元食材"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "今天准备吃的益生元"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "",
+                  "options": [
+                    "洋葱",
+                    "大蒜",
+                    "芦笋",
+                    "豆类",
+                    "燕麦"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "在哪餐吃"
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "中午好！为肠道\"小可爱\"投喂益生元大餐。\n\n加入洋葱、蒜苗、木耳炒山药、燕麦饭\n\n📸 打卡：益生元食材特写",
+              "behavior_guide": "【行为选择】\n✦ 餐盘规划：为益生元留位置\n✦ 食材搭配：洋葱、大蒜、豆类组合\n✦ 烹饪创意：让洋葱大蒜不再只是\"配料\"\n✦ 心理暗示：\"我在喂养健康盟友\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "午餐的益生元"
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "搭配创意"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "接受度1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！直接补充\"益生菌\"。\n\n【今日核心】益生元食物\n【加分行为】🌱 天然发酵食品（无糖酸奶、泡菜、纳豆）\n\n📸 打卡：晚餐+发酵食品",
+              "behavior_guide": "【行为拓展】\n✦ 新品类尝试：无糖酸奶、泡菜、纳豆探索\n✦ 采购行为：超市冷藏区新发现\n✦ 口味适应：特殊风味需要时间接受\n✦ 肠道关怀：用语言表达对肠道的关爱"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "益生元吃到了？",
+                  "options": [
+                    "是",
+                    "部分",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "尝试发酵食品？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "执行1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 10,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！不知不觉控糖第10天！\n\n【今日认知点】肌肉——血糖的\"储能仓库\"\n肌肉量越多，储存利用血糖能力越强\n\n【今日核心行为】✅ 必做\n午餐后\"靠墙静蹲2分钟+散步5分钟\"",
+              "behavior_guide": "【行为投资】\n✦ 长期视角：肌肉是\"血糖的活期账户\"\n✦ 运动去魅化：不需健身房，靠墙即可\n✦ 微运动嵌入：镶嵌进餐后时间\n✦ 身体信号：大腿发热=肌肉激活"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "scale",
+                  "text": "有信心完成静蹲吗？1-5分",
+                  "min": 1,
+                  "max": 5
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "计划餐后多久运动？分钟"
+                },
+                {
+                  "id": "q3",
+                  "type": "single_choice",
+                  "text": "找好靠的墙了吗？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "中午好！别马上坐下，\"微运动任务\"等你。\n\n吃完后：2分钟静蹲+5分钟散步\n\n📸 打卡：\n健康午餐\n描述完成\"餐后微运动\"",
+              "behavior_guide": "【行为执行】\n✦ 计时管理：餐后20-30分钟最佳运动窗口\n✦ 行为分解：静蹲2分钟+散步5分钟\n✦ 环境利用：办公室/家里找一面墙\n✦ 社交应对：外就餐如何自然\"动起来\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "完成静蹲了吗？",
+                  "options": [
+                    "是",
+                    "部分",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "散步了吗？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "执行难度1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！尝试餐后微运动，下午精力更好了？\n\n【今日核心】餐后运动\n【加分行为】🌱 晚餐后站立15-20分钟或温和拉伸\n\n📸 打卡：晚餐+放松方式",
+              "behavior_guide": "【行为反馈】\n✦ 精力对比：记录\"运动后下午精力\"vs\"不运动时\"\n✦ 血糖预测：猜测\"餐后运动\"对血糖影响\n✦ 习惯强化：晚餐后继续轻度活动\n✦ 身体感激：感谢身体的配合"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "餐后运动都做到了？",
+                  "options": [
+                    "是",
+                    "1-2次",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "下午精力感觉",
+                  "options": [
+                    "更好",
+                    "差不多",
+                    "没感觉"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "坚持信心1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 11,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！关注血糖\"隐形推手\"。\n\n【今日认知点】压力是血糖的\"隐形推手\"\n压力→皮质醇↑→血糖↑\n\n【今日核心行为】✅ 必做\n学习\"4-7-8呼吸法\"（吸4秒，屏7秒，呼8秒）",
+              "behavior_guide": "【情绪-血糖觉察】\n✦ 心理-生理连接：情绪是\"隐形血糖开关\"\n✦ 压力识别：觉察自己的压力信号\n✦ 呼吸工具：4-7-8是\"随身降压阀\"\n✦ 预防性调节：餐前深呼吸给消化准备时间"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "你的压力信号是",
+                  "options": [
+                    "心跳快",
+                    "呼吸急",
+                    "肩膀紧",
+                    "其他___"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "学会4-7-8呼吸法了吗？",
+                  "options": [
+                    "是",
+                    "还在练"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "信心1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "午餐前，给自己1分钟宁静。\n\n放下手机，闭眼，3-5次\"4-7-8深呼吸\"，带着平和心情开始用餐。\n\n📸 打卡：午餐照片",
+              "behavior_guide": "【行为干预】\n✦ 仪式化准备：餐前1分钟深呼吸是\"进餐仪式\"\n✦ 副交感激活：放松状态进食，消化更高效\n✦ 注意力回收：从\"心不在焉\"到\"全神贯注\"\n✦ 情绪觉察：记录餐前情绪与餐后感受"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "餐前深呼吸了吗？",
+                  "options": [
+                    "是",
+                    "忘了"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "进餐时心情",
+                  "options": [
+                    "平静",
+                    "一般",
+                    "焦虑"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "用餐体验1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！忙碌后晚餐是修复时机。\n\n【今日核心】压力管理+呼吸法\n【加分行为】🌱 创造舒缓晚餐环境（香薰、音乐、整理餐桌）\n\n📸 打卡：晚餐环境",
+              "behavior_guide": "【环境营造】\n✦ 感官体验：视觉+听觉+嗅觉\n✦ 电子设备管理：手机静音/翻面\n✦ 慢食训练：用环境\"强迫\"慢下来\n✦ 心理安全感：舒适环境=降低皮质醇"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "今天用呼吸法了？",
+                  "options": [
+                    "多次",
+                    "1-2次",
+                    "没用"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "最大感受"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "压力管理1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 12,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！探讨健康基石——睡眠。\n\n【今日认知点】熬夜是对胰岛素的\"偷袭\"\n一晚睡眠不足，胰岛素反应↓25%\n\n【今日核心行为】✅ 必做\n今晚入睡时间提前30分钟，睡前1小时远离蓝光",
+              "behavior_guide": "【睡眠-血糖管理】\n✦ 生物钟觉察：睡眠不足→胰岛素抵抗↑\n✦ 行为承诺：提前30分钟上床（具体可执行）\n✦ 睡前行为链：关电子设备→泡脚→阅读→入睡\n✦ 蓝光管理：晚8点后开启\"夜览模式\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "平时几点睡"
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "今晚目标几点睡"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "信心1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "中午好！午餐选择也能影响睡眠。\n\n色氨酸是合成褪黑素的原料：小米、牛奶、坚果、香蕉、豆类\n\n📸 打卡：\n午餐中的\"助眠食材\"",
+              "behavior_guide": "【营养-睡眠关联】\n✦ 助眠食材：色氨酸食物是\"天然安眠药\"\n✦ 午餐规划：小米、牛奶、坚果、香蕉、豆类\n✦ 血糖-睡眠循环：白天平稳→夜间质量↑\n✦ 长期视角：今天午餐为今晚睡眠埋伏笔"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "午餐包含助眠食材吗？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "具体是"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "搭配难度1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！为今晚优质睡眠做准备。\n\n【今日核心】睡眠优化\n【加分行为】🌱 提前30分钟关闭电子设备\n\n📸 打卡：清淡晚餐（晚餐过饱影响睡眠）",
+              "behavior_guide": "【睡前准备】\n✦ 晚餐时机：18:00-19:00完成（给胃3小时）\n✦ 晚餐量：七分饱是助眠关键\n✦ 睡前routine：设定\"设备关闭时间\"\n✦ 大脑清空：写下明天待办（减少焦虑）"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "今天关注助眠了？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "晚上会提前30分钟关手机吗？",
+                  "options": [
+                    "会",
+                    "试试",
+                    "困难"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "睡眠信心1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 13,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！把所学带入真实场景——外食。\n\n【今日认知点】外食不是\"放纵日\"，而是\"实践场\"\n核心口诀：\"清蒸红烧优于油炸，勾芡汤汁浅尝辄止\"\n\n【今日核心行为】✅ 必做\n点外卖或下馆子，优先清蒸、白灼、烤制，主动要求\"少油盐糖\"",
+              "behavior_guide": "【情境应对】\n✦ 场景切换：从\"可控\"到\"不可控\"环境\n✦ 决策自主性：外食是\"主动选择\"非\"被动接受\"\n✦ 沟通脚本：准备\"少油盐糖\"表达方式\n✦ 心理建设：为健康选择是\"自我关爱\""
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "今天会外食吗？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "如果外食，在哪一餐"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "对主动要求的信心1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "中午好！外食挑战开始！\n\n运用\"健康点餐法\"。特别提醒：要一碗清水，涮掉多余油酱汁\n\n📸 外食打卡：\n拍下你的外食选择\n描述你的健康策略",
+              "behavior_guide": "【行为技巧】\n✦ 菜单扫描：快速识别\"清蒸、白灼、烤制\"\n✦ 改造术：要清水涮菜（实用技巧）\n✦ 主食控制：外食主食减半（通常超标）\n✦ 社交应对：与朋友聚餐如何坚持"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "选的菜品烹饪法"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "有要求\"少油盐糖\"吗？",
+                  "options": [
+                    "是",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "执行难度1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！聚餐吃火锅也能健康。\n\n【今日核心】外食策略\n【加分行为】🌱 火锅健康涮序：豆制品/蔬菜→肉类→主食\n\n📸 打卡：外食/火锅餐",
+              "behavior_guide": "【情境策略】\n✦ 涮序管理：豆制品/蔬菜→肉→主食\n✦ 加工品识别：避开丸子、蟹棒、油炸豆皮\n✦ 蘸料选择：醋汁>麻酱（口味训练）\n✦ 社交融入：用\"健康涮法\"影响同桌人"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "single_choice",
+                  "text": "今天外食策略用上了？",
+                  "options": [
+                    "是",
+                    "部分",
+                    "否"
+                  ]
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "最大挑战"
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "应对效果1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "day": 14,
+        "pushes": [
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "9:00",
+            "content": {
+              "knowledge": "早上好！祝贺完成14天之旅🎊\n\n【终极认知】你是自己健康的第一责任人\n\n获得的是\"动态自我观察系统\"：观察食物如何影响身体，感受运动变化，聆听睡眠和情绪信号",
+              "behavior_guide": "【身份认同】\n✦ 认知飞跃：\"被动监测\"→\"主动管理\"\n✦ 系统能力：\"观察-分析-调整\"闭环\n✦ 自我效能：14天成功=长期信心基础\n✦ 可持续性：技能成为生活方式一部分"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "scale",
+                  "text": "对这14天的整体评价1-10分",
+                  "min": 1,
+                  "max": 10
+                },
+                {
+                  "id": "q2",
+                  "type": "open_text",
+                  "text": "最大的改变是"
+                },
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "最想继续的习惯"
+                }
+              ]
+            }
+          },
+          {
+            "slot": "morning",
+            "is_core": true,
+            "time": "11:30",
+            "content": {
+              "knowledge": "请精心准备一份午餐，集14天学习之大成：\n均衡比例、优质食材、健康烹饪、美好心情\n\n📸 打卡：\n健康午餐\n用一段话总结14天在\"吃\"上最大的改变",
+              "behavior_guide": "【行为总结】\n✦ 能力展示：这是\"毕业作品\"\n✦ 自我评估：用行为清单检查\n✦ 成就叙事：\"我在饮食上最大改变是...\"\n✦ 未来愿景：想象3个月后的自己"
+            },
+            "survey": {
+              "type": "inline_micro",
+              "questions": [
+                {
+                  "id": "q1",
+                  "type": "open_text",
+                  "text": "今天午餐包含的行为要素"
+                },
+                {
+                  "id": "q2",
+                  "type": "single_choice",
+                  "text": "",
+                  "options": [
+                    "顺序",
+                    "主食",
+                    "蛋白",
+                    "脂肪",
+                    "纤维",
+                    "烹饪法"
+                  ]
+                },
+                {
+                  "id": "q3",
+                  "type": "scale",
+                  "text": "完成度1-5分",
+                  "min": 1,
+                  "max": 5
+                }
+              ]
+            }
+          },
+          {
+            "slot": "evening",
+            "is_core": false,
+            "time": "17:30",
+            "content": {
+              "knowledge": "晚上好！最后一条打卡提醒。\n\n用心享用\"感恩晚餐\"，感谢身体配合，感谢彼此同行。\n\n📸 最终打卡：\n充满意义的晚餐\n分享14天最大改变\n说说想继续坚持的习惯",
+              "behavior_guide": "【行为巩固与迁移】\n✦ 感恩清单：感谢坚持、身体、家人\n✦ 行为固化：哪些已\"自动化\"？哪些需维持？\n✦ 持续计划：制定\"未来30天保持计划\"\n✦ 开放结局：这是新生活方式的开始"
+            },
+            "survey": {
+              "type": "full_assessment",
+              "questions": [
+                {
+                  "id": "q3",
+                  "type": "open_text",
+                  "text": "1. 只能保留3个习惯，选哪3个？"
+                },
+                {
+                  "id": "q4",
+                  "type": "open_text",
+                  "text": "①"
+                },
+                {
+                  "id": "q5",
+                  "type": "open_text",
+                  "text": "②"
+                },
+                {
+                  "id": "q6",
+                  "type": "open_text",
+                  "text": "③"
+                },
+                {
+                  "id": "q7",
+                  "type": "open_text",
+                  "text": "2. 这些习惯打算如何坚持？"
+                },
+                {
+                  "id": "q10",
+                  "type": "open_text",
+                  "text": "3. 回看14天血糖曲线，哪一餐最平稳？"
+                },
+                {
+                  "id": "q12",
+                  "type": "open_text",
+                  "text": "4. 那天做了什么不同选择？"
+                },
+                {
+                  "id": "q15",
+                  "type": "open_text",
+                  "text": "5. 未来30天，继续坚持的1个血糖友好行为"
+                },
+                {
+                  "id": "q17",
+                  "type": "open_text",
+                  "text": "6. 准备在什么时间、场景做它？"
+                },
+                {
+                  "id": "q18",
+                  "type": "open_text",
+                  "text": "时间"
+                },
+                {
+                  "id": "q19",
+                  "type": "open_text",
+                  "text": "场景"
+                },
+                {
+                  "id": "q21",
+                  "type": "scale",
+                  "text": "7. 现在对长期血糖管理的信心：0-10分？",
+                  "min": 0,
+                  "max": 10
+                },
+                {
+                  "id": "q22",
+                  "type": "open_text",
+                  "text": "第0天：→第7天：→第14天"
+                }
+              ]
+            }
+          }
+        ],
+        "is_milestone": true,
+        "milestone_survey": true
+      }
+    ]
+  },
+  "recommendation_rules": {
+    "rules": [
+      {
+        "condition": {
+          "metric": "exec_rate_7d",
+          "op": "<",
+          "value": 0.6
+        },
+        "action": "recommend",
+        "content_tags": [
+          "motivation",
+          "habit_formation"
+        ],
+        "priority": "high",
+        "message": "近7天行为执行率偏低，推送动机强化内容"
+      },
+      {
+        "condition": {
+          "metric": "pain_point",
+          "op": "contains",
+          "value": "主食"
+        },
+        "action": "recommend",
+        "content_tags": [
+          "whole_grain_recipes",
+          "staple_food_alternatives"
+        ],
+        "priority": "medium"
+      },
+      {
+        "condition": {
+          "metric": "pain_point",
+          "op": "contains",
+          "value": "运动"
+        },
+        "action": "recommend",
+        "content_tags": [
+          "exercise_tips",
+          "post_meal_activity"
+        ],
+        "priority": "medium"
+      },
+      {
+        "condition": {
+          "metric": "glucose_cv_trend",
+          "op": ">",
+          "value": 0.1
+        },
+        "action": "alert_coach",
+        "message": "血糖波动加大，建议关注"
+      },
+      {
+        "condition": {
+          "metric": "glucose_cv_trend",
+          "op": "<",
+          "value": -0.05
+        },
+        "action": "positive_feedback",
+        "message": "血糖波动减小，正向反馈"
+      },
+      {
+        "condition": {
+          "metric": "mood_score_avg",
+          "op": "<",
+          "value": 3
+        },
+        "action": "recommend",
+        "content_tags": [
+          "stress_management",
+          "emotional_eating"
+        ],
+        "priority": "high"
+      },
+      {
+        "condition": {
+          "metric": "content_preference",
+          "op": "==",
+          "value": "video"
+        },
+        "action": "prefer_format",
+        "format": "video"
+      }
+    ]
+  }
+}

@@ -112,9 +112,10 @@ def get_coach_dashboard(
         stage_label = _STAGE_LABEL.get(stage, stage) if stage else "未评估"
 
         # 最近微行动统计
+        seven_days_ago = (now - timedelta(days=7)).strftime("%Y-%m-%d")
         recent_tasks = db.query(MicroActionTask).filter(
             MicroActionTask.user_id == g.id,
-            MicroActionTask.scheduled_date >= (now - timedelta(days=7)).date(),
+            MicroActionTask.scheduled_date >= seven_days_ago,
         ).all()
         completed_7d = sum(1 for t in recent_tasks if t.status == "completed")
         total_7d = len(recent_tasks)
@@ -1201,3 +1202,49 @@ def get_student_vitals(
             for r in records
         ],
     }
+
+
+# ============================================================================
+# 公开教练目录
+# ============================================================================
+
+@router.get("/directory")
+def coach_directory(
+    keyword: Optional[str] = None,
+    skip: int = 0,
+    limit: int = 20,
+    db: Session = Depends(get_db),
+):
+    """
+    公开教练/专家目录 (无需登录)
+
+    返回角色为 coach 及以上的公开信息列表
+    """
+    coach_roles = [UserRole.COACH, UserRole.PROMOTER, UserRole.SUPERVISOR, UserRole.MASTER]
+    query = db.query(User).filter(
+        User.role.in_(coach_roles),
+        User.is_active == True,
+    )
+    if keyword:
+        query = query.filter(
+            (User.username.contains(keyword)) |
+            (User.full_name.contains(keyword))
+        )
+    query = query.order_by(User.created_at.desc())
+    total = query.count()
+    coaches = query.offset(skip).limit(limit).all()
+
+    items = []
+    for c in coaches:
+        profile = c.profile or {}
+        items.append({
+            "id": c.id,
+            "username": c.username,
+            "full_name": c.full_name,
+            "role": c.role.value if hasattr(c.role, 'value') else c.role,
+            "specialties": profile.get("specialties", []),
+            "bio": profile.get("bio", ""),
+            "avatar_url": profile.get("avatar_url"),
+        })
+
+    return {"total": total, "items": items}

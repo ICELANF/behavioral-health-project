@@ -1,9 +1,8 @@
 <template>
   <div class="student-assessment">
-    <div class="page-header">
-      <h2>学员测评交互</h2>
-      <a-tag color="blue">学员ID: {{ studentId }}</a-tag>
-    </div>
+    <a-page-header title="学员测评交互" @back="$router.back()" style="padding: 0 0 16px">
+      <template #tags><a-tag color="blue">学员ID: {{ studentId }}</a-tag></template>
+    </a-page-header>
 
     <!-- Loading -->
     <div v-if="loading" style="text-align: center; padding: 60px 0">
@@ -324,7 +323,7 @@ const formatDate = (dateStr: string | null) => {
 const loadData = async () => {
   loading.value = true
   try {
-    const resp = await fetch(`${API_BASE}/api/v1/coach/students/${studentId}/assessment-detail`, {
+    const resp = await fetch(`${API_BASE}/v1/coach/students/${studentId}/assessment-detail`, {
       headers: authHeaders,
     })
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
@@ -352,7 +351,7 @@ const startAnnotation = (record: any) => {
 const saveAnnotation = async (record: any) => {
   if (!annotationText.value.trim()) return
   try {
-    const resp = await fetch(`${API_BASE}/api/v1/coach/messages`, {
+    const resp = await fetch(`${API_BASE}/v1/coach/messages`, {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify({
@@ -379,7 +378,7 @@ const sendFollowup = async () => {
   }
   sendingFollowup.value = true
   try {
-    const resp = await fetch(`${API_BASE}/api/v1/coach/messages`, {
+    const resp = await fetch(`${API_BASE}/v1/coach/messages`, {
       method: 'POST',
       headers: authHeaders,
       body: JSON.stringify({

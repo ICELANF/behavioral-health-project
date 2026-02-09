@@ -13,6 +13,19 @@ from datetime import datetime, date, timedelta
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+
+from core.database import get_db
+from core.models import (
+    User, UserLearningStats, LearningTimeLog, LearningPointsLog,
+    ExamResult, UserActivityLog
+)
+from api.dependencies import get_current_user
+from core.learning_service import (
+    get_or_create_stats, record_learning_time, record_learning_points,
+    record_quiz_result
+)
 
 router = APIRouter(prefix="/api/v1/learning", tags=["学习激励"])
 
@@ -21,40 +34,49 @@ router = APIRouter(prefix="/api/v1/learning", tags=["学习激励"])
 # 配置常量
 # ============================================================================
 
-# 六级三积分体系
+# 六级三积分体系（与 paths_api.py 六级四同道者体系对齐）
 # growth: 成长积分 (学习时长/完成度)
 # contribution: 贡献积分 (分享/辅导/案例)
 # influence: 影响力积分 (带教/督导/研究)
+#
+# 阈值来源: paths_api.py GET /coach-levels/levels 中每级 advancement.points_required
+# L(N)的 min_* 值 = L(N-1) 的 advancement.points_required
 COACH_LEVEL_REQUIREMENTS = {
     "L0": {
         "label": "观察员",
         "min_growth": 0, "min_contribution": 0, "min_influence": 0,
         "exam_required": False,
+        "companions_required": 0,
     },
     "L1": {
         "label": "成长者",
         "min_growth": 100, "min_contribution": 0, "min_influence": 0,
         "exam_required": False,
+        "companions_required": 0,
     },
     "L2": {
         "label": "分享者",
-        "min_growth": 300, "min_contribution": 50, "min_influence": 0,
-        "exam_required": True,
+        "min_growth": 500, "min_contribution": 50, "min_influence": 0,
+        "exam_required": False,
+        "companions_required": 0,
     },
     "L3": {
         "label": "教练",
-        "min_growth": 800, "min_contribution": 100, "min_influence": 0,
+        "min_growth": 800, "min_contribution": 200, "min_influence": 50,
         "exam_required": True,
+        "companions_required": 4, "companion_target": "L1",
     },
     "L4": {
         "label": "促进师",
-        "min_growth": 1500, "min_contribution": 500, "min_influence": 200,
+        "min_growth": 1500, "min_contribution": 600, "min_influence": 200,
         "exam_required": True,
+        "companions_required": 4, "companion_target": "L2",
     },
     "L5": {
         "label": "大师",
-        "min_growth": 3000, "min_contribution": 1500, "min_influence": 800,
+        "min_growth": 3000, "min_contribution": 1500, "min_influence": 600,
         "exam_required": True,
+        "companions_required": 4, "companion_target": "L3",
     },
 }
 
@@ -158,13 +180,26 @@ class RewardClaim(BaseModel):
 # ============================================================================
 
 @router.get("/coach/points/{user_id}")
-async def get_coach_points(user_id: str):
+def get_coach_points(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """获取教练积分详情（三积分体系）"""
-    # TODO: 从数据库查询
-    growth_points = 245
-    contribution_points = 35
-    influence_points = 0
-    current_level = "L1"
+    stats = get_or_create_stats(db, user_id)
+    growth_points = stats.growth_points
+    contribution_points = stats.contribution_points
+    influence_points = stats.influence_points
+
+    # 根据积分确定当前等级
+    current_level = "L0"
+    for lvl_key in reversed(list(COACH_LEVEL_REQUIREMENTS.keys())):
+        req = COACH_LEVEL_REQUIREMENTS[lvl_key]
+        if (growth_points >= req["min_growth"] and
+            contribution_points >= req["min_contribution"] and
+            influence_points >= req["min_influence"]):
+            current_level = lvl_key
+            break
 
     # 查找下一级
     level_keys = list(COACH_LEVEL_REQUIREMENTS.keys())
@@ -208,68 +243,77 @@ async def get_coach_points(user_id: str):
 
 
 @router.get("/coach/points/{user_id}/history")
-async def get_coach_points_history(
-    user_id: str,
+def get_coach_points_history(
+    user_id: int,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
-    category: Optional[str] = None
+    category: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """获取教练积分历史"""
-    # TODO: 从数据库查询
+    query = db.query(LearningPointsLog).filter(LearningPointsLog.user_id == user_id)
+    if category:
+        query = query.filter(LearningPointsLog.category == category)
+
+    total = query.count()
+    items = query.order_by(LearningPointsLog.earned_at.desc()).offset(
+        (page - 1) * page_size
+    ).limit(page_size).all()
+
     return {
         "items": [
             {
-                "record_id": "pr1",
-                "source_type": "video",
-                "source_id": "v1",
-                "source_title": "正念呼吸入门",
-                "points": 15,
-                "category": "knowledge",
-                "earned_at": "2026-02-04T15:30:00"
-            },
-            {
-                "record_id": "pr2",
-                "source_type": "quiz",
-                "source_id": "quiz_v1",
-                "source_title": "正念呼吸知识测试",
-                "points": 5,
-                "category": "knowledge",
-                "earned_at": "2026-02-04T15:45:00"
+                "record_id": str(item.id),
+                "source_type": item.source_type,
+                "source_id": item.source_id or "",
+                "source_title": item.source_type,
+                "points": item.points,
+                "category": item.category,
+                "earned_at": item.earned_at.isoformat() if item.earned_at else None,
             }
+            for item in items
         ],
-        "total": 2,
+        "total": total,
         "page": page,
-        "page_size": page_size
+        "page_size": page_size,
     }
 
 
 @router.post("/coach/points/add")
-async def add_coach_points(event: LearningEvent):
-    """添加教练积分（内部调用）"""
+def add_coach_points(
+    event: LearningEvent,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """添加教练积分"""
     if event.user_type != "coach":
         raise HTTPException(status_code=400, detail="仅限教练用户")
 
-    # 计算积分
     config = CONTENT_POINTS_CONFIG.get(event.content_type, {})
     points = config.get("base_points", 5)
 
-    # 完成加成
     if event.action == "complete":
         points += config.get("complete_bonus", 0)
 
-    # 测试加成
     if event.action == "quiz_pass" and event.quiz_score:
         points += config.get("quiz_bonus", 0)
         if event.quiz_score == 100:
-            points += 5  # 满分额外加成
+            points += 5
 
-    # TODO: 保存到数据库
+    category = "growth"
+    if event.content_category in ["contribution", "influence"]:
+        category = event.content_category
+
+    result = record_learning_points(
+        db, current_user.id, points, event.action, category, event.content_id
+    )
 
     return {
         "success": True,
         "points_earned": points,
-        "category": event.content_category,
-        "new_total": 250  # 模拟
+        "category": category,
+        "new_total": result["total_points"],
     }
 
 
@@ -278,11 +322,27 @@ async def add_coach_points(event: LearningEvent):
 # ============================================================================
 
 @router.get("/grower/stats/{user_id}")
-async def get_grower_stats(user_id: str):
+def get_grower_stats(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """获取成长者学习统计（时长+积分分开）"""
-    # TODO: 从数据库查询
-    total_minutes = 1850
-    total_points = 285  # 测试积分
+    stats = get_or_create_stats(db, user_id)
+
+    total_minutes = stats.total_minutes
+    total_points = stats.total_points
+
+    # 计算今日/本周时长
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+
+    today_minutes = db.query(func.coalesce(func.sum(LearningTimeLog.minutes), 0)).filter(
+        LearningTimeLog.user_id == user_id, LearningTimeLog.earned_at >= today_start
+    ).scalar()
+    week_minutes = db.query(func.coalesce(func.sum(LearningTimeLog.minutes), 0)).filter(
+        LearningTimeLog.user_id == user_id, LearningTimeLog.earned_at >= week_start
+    ).scalar()
 
     # 计算下一个时长里程碑
     next_time_milestone = None
@@ -298,101 +358,127 @@ async def get_grower_stats(user_id: str):
             next_points_milestone = milestone
             break
 
-    # 计算已获得奖励
     time_rewards_earned = sum(1 for m in GROWER_TIME_MILESTONES if m["minutes"] <= total_minutes)
     points_rewards_earned = sum(1 for m in GROWER_POINTS_MILESTONES if m["points"] <= total_points)
 
     return {
         "user_id": user_id,
-
-        # ====== 学习时长 ======
         "learning_time": {
             "total_minutes": total_minutes,
             "total_hours": round(total_minutes / 60, 1),
-            "today_minutes": 25,
-            "week_minutes": 180,
-            "month_minutes": 720,
+            "today_minutes": today_minutes,
+            "week_minutes": week_minutes,
             "next_milestone": next_time_milestone,
             "milestone_progress": int((total_minutes / next_time_milestone["minutes"]) * 100) if next_time_milestone else 100,
             "rewards_earned": time_rewards_earned,
-            "domain_distribution": {
-                "emotion": {"minutes": 450, "percent": 24},
-                "sleep": {"minutes": 380, "percent": 21},
-                "mindfulness": {"minutes": 520, "percent": 28},
-                "stress": {"minutes": 300, "percent": 16},
-                "growth": {"minutes": 200, "percent": 11}
-            }
         },
-
-        # ====== 学习积分（测试） ======
         "learning_points": {
             "total_points": total_points,
-            "today_points": 15,
-            "week_points": 65,
-            "month_points": 180,
             "quiz_stats": {
-                "total_quizzes": 28,
-                "passed_quizzes": 25,
-                "perfect_quizzes": 12,
-                "pass_rate": 89.3
+                "total_quizzes": stats.quiz_total,
+                "passed_quizzes": stats.quiz_passed,
+                "pass_rate": round(stats.quiz_passed / max(stats.quiz_total, 1) * 100, 1),
             },
             "next_milestone": next_points_milestone,
             "milestone_progress": int((total_points / next_points_milestone["points"]) * 100) if next_points_milestone else 100,
-            "rewards_earned": points_rewards_earned
+            "rewards_earned": points_rewards_earned,
         },
-
-        # ====== 连续学习 ======
         "streak": {
-            "current_streak": 7,
-            "longest_streak": 14,
-            "today_learned": True
+            "current_streak": stats.current_streak,
+            "longest_streak": stats.longest_streak,
+            "today_learned": stats.last_learn_date == date.today().isoformat(),
         }
     }
 
 
 @router.get("/grower/time/{user_id}")
-async def get_grower_time(user_id: str):
+def get_grower_time(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """获取成长者学习时长（单独）"""
-    # TODO: 从数据库查询
-    total_minutes = 1850
+    stats = get_or_create_stats(db, user_id)
+    total_minutes = stats.total_minutes
 
-    # 计算下一个里程碑
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    month_start = today_start.replace(day=1)
+
+    today_minutes = db.query(func.coalesce(func.sum(LearningTimeLog.minutes), 0)).filter(
+        LearningTimeLog.user_id == user_id, LearningTimeLog.earned_at >= today_start
+    ).scalar()
+    week_minutes = db.query(func.coalesce(func.sum(LearningTimeLog.minutes), 0)).filter(
+        LearningTimeLog.user_id == user_id, LearningTimeLog.earned_at >= week_start
+    ).scalar()
+    month_minutes = db.query(func.coalesce(func.sum(LearningTimeLog.minutes), 0)).filter(
+        LearningTimeLog.user_id == user_id, LearningTimeLog.earned_at >= month_start
+    ).scalar()
+
+    # 领域分布
+    domain_rows = db.query(
+        LearningTimeLog.domain,
+        func.sum(LearningTimeLog.minutes).label("total")
+    ).filter(
+        LearningTimeLog.user_id == user_id,
+        LearningTimeLog.domain.isnot(None)
+    ).group_by(LearningTimeLog.domain).all()
+
+    domain_total = sum(r.total for r in domain_rows) or 1
+    domain_distribution = {}
+    for r in domain_rows:
+        domain_distribution[r.domain] = {
+            "minutes": int(r.total),
+            "percent": round(int(r.total) / domain_total * 100),
+        }
+
+    # 下一个里程碑
     next_milestone = None
     for milestone in GROWER_TIME_MILESTONES:
         if milestone["minutes"] > total_minutes:
             next_milestone = milestone
             break
 
-    # 计算奖励进度
     rewards_earned = sum(1 for m in GROWER_TIME_MILESTONES if m["minutes"] <= total_minutes)
 
     return {
         "user_id": user_id,
         "total_minutes": total_minutes,
         "total_hours": round(total_minutes / 60, 1),
-        "today_minutes": 25,
-        "week_minutes": 180,
-        "month_minutes": 720,
+        "today_minutes": today_minutes,
+        "week_minutes": week_minutes,
+        "month_minutes": month_minutes,
         "rewards_earned": rewards_earned,
         "next_milestone": next_milestone,
         "milestone_progress": int((total_minutes / next_milestone["minutes"]) * 100) if next_milestone else 100,
-        "domain_distribution": {
-            "emotion": {"minutes": 450, "percent": 24},
-            "sleep": {"minutes": 380, "percent": 21},
-            "mindfulness": {"minutes": 520, "percent": 28},
-            "stress": {"minutes": 300, "percent": 16},
-            "growth": {"minutes": 200, "percent": 11}
-        }
+        "domain_distribution": domain_distribution,
     }
 
 
 @router.get("/grower/points/{user_id}")
-async def get_grower_points(user_id: str):
+def get_grower_points(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """获取成长者学习积分（测试积分，单独）"""
-    # TODO: 从数据库查询
-    total_points = 285
+    stats = get_or_create_stats(db, user_id)
+    total_points = stats.total_points
 
-    # 计算下一个里程碑
+    today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = today_start - timedelta(days=today_start.weekday())
+    month_start = today_start.replace(day=1)
+
+    today_points = db.query(func.coalesce(func.sum(LearningPointsLog.points), 0)).filter(
+        LearningPointsLog.user_id == user_id, LearningPointsLog.earned_at >= today_start
+    ).scalar()
+    week_points = db.query(func.coalesce(func.sum(LearningPointsLog.points), 0)).filter(
+        LearningPointsLog.user_id == user_id, LearningPointsLog.earned_at >= week_start
+    ).scalar()
+    month_points = db.query(func.coalesce(func.sum(LearningPointsLog.points), 0)).filter(
+        LearningPointsLog.user_id == user_id, LearningPointsLog.earned_at >= month_start
+    ).scalar()
+
     next_milestone = None
     for milestone in GROWER_POINTS_MILESTONES:
         if milestone["points"] > total_points:
@@ -404,30 +490,30 @@ async def get_grower_points(user_id: str):
     return {
         "user_id": user_id,
         "total_points": total_points,
-        "today_points": 15,
-        "week_points": 65,
-        "month_points": 180,
+        "today_points": today_points,
+        "week_points": week_points,
+        "month_points": month_points,
         "quiz_stats": {
-            "total_quizzes": 28,
-            "passed_quizzes": 25,
-            "perfect_quizzes": 12,
-            "pass_rate": 89.3,
-            "avg_score": 82.5
+            "total_quizzes": stats.quiz_total,
+            "passed_quizzes": stats.quiz_passed,
+            "pass_rate": round(stats.quiz_passed / max(stats.quiz_total, 1) * 100, 1),
         },
         "rewards_earned": rewards_earned,
         "next_milestone": next_milestone,
-        "milestone_progress": int((total_points / next_milestone["points"]) * 100) if next_milestone else 100
+        "milestone_progress": int((total_points / next_milestone["points"]) * 100) if next_milestone else 100,
     }
 
 
 @router.post("/grower/points/add")
-async def add_grower_quiz_points(
-    user_id: str,
+def add_grower_quiz_points(
+    user_id: int,
     quiz_id: str,
     score: int,
     correct_count: int,
     total_count: int,
-    is_first_try: bool = True
+    is_first_try: bool = True,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """添加成长者测试积分"""
     passed = score >= 60
@@ -442,9 +528,16 @@ async def add_grower_quiz_points(
         if is_first_try:
             points_earned += GROWER_QUIZ_POINTS["first_try_bonus"]
 
-    # TODO: 保存到数据库，检查是否触发里程碑
-    current_total = 285
-    new_total = current_total + points_earned
+    old_stats = get_or_create_stats(db, user_id)
+    current_total = old_stats.total_points
+
+    if points_earned > 0:
+        record_learning_points(db, user_id, points_earned, "quiz", "growth", quiz_id)
+
+    record_quiz_result(db, user_id, passed)
+
+    new_stats = get_or_create_stats(db, user_id)
+    new_total = new_stats.total_points
 
     new_milestones = []
     for milestone in GROWER_POINTS_MILESTONES:
@@ -458,101 +551,121 @@ async def add_grower_quiz_points(
             "pass_base": GROWER_QUIZ_POINTS["pass_base"] if passed else 0,
             "correct_bonus": correct_count * GROWER_QUIZ_POINTS["per_correct"] if passed else 0,
             "perfect_bonus": GROWER_QUIZ_POINTS["perfect_bonus"] if is_perfect else 0,
-            "first_try_bonus": GROWER_QUIZ_POINTS["first_try_bonus"] if passed and is_first_try else 0
+            "first_try_bonus": GROWER_QUIZ_POINTS["first_try_bonus"] if passed and is_first_try else 0,
         },
         "new_total": new_total,
-        "new_milestones": new_milestones
+        "new_milestones": new_milestones,
     }
 
 
 @router.get("/grower/time/{user_id}/history")
-async def get_grower_time_history(
-    user_id: str,
+def get_grower_time_history(
+    user_id: int,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     domain: Optional[str] = None,
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None
+    end_date: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """获取成长者学习时长历史"""
-    # TODO: 从数据库查询
+    query = db.query(LearningTimeLog).filter(LearningTimeLog.user_id == user_id)
+    if domain:
+        query = query.filter(LearningTimeLog.domain == domain)
+    if start_date:
+        query = query.filter(LearningTimeLog.earned_at >= datetime.fromisoformat(start_date))
+    if end_date:
+        query = query.filter(LearningTimeLog.earned_at <= datetime.fromisoformat(end_date))
+
+    total = query.count()
+    items = query.order_by(LearningTimeLog.earned_at.desc()).offset(
+        (page - 1) * page_size
+    ).limit(page_size).all()
+
+    # 分页内小结
+    page_minutes = sum(item.minutes for item in items)
+    domain_sums: Dict[str, int] = {}
+    for item in items:
+        if item.domain:
+            domain_sums[item.domain] = domain_sums.get(item.domain, 0) + item.minutes
+
     return {
         "items": [
             {
-                "record_id": "tr1",
-                "content_type": "video",
-                "content_id": "v1",
-                "content_title": "3分钟呼吸放松",
-                "minutes": 5,
-                "domain": "stress",
-                "earned_at": "2026-02-04T15:30:00"
-            },
-            {
-                "record_id": "tr2",
-                "content_type": "course",
-                "content_id": "c1",
-                "content_title": "正念冥想入门",
-                "minutes": 20,
-                "domain": "mindfulness",
-                "earned_at": "2026-02-04T14:00:00"
+                "record_id": str(item.id),
+                "content_type": "learning",
+                "content_id": str(item.content_id) if item.content_id else "",
+                "content_title": item.domain or "学习",
+                "minutes": item.minutes,
+                "domain": item.domain,
+                "earned_at": item.earned_at.isoformat() if item.earned_at else None,
             }
+            for item in items
         ],
-        "total": 2,
+        "total": total,
         "page": page,
         "page_size": page_size,
         "summary": {
-            "total_minutes": 25,
-            "domains": {"stress": 5, "mindfulness": 20}
-        }
+            "total_minutes": page_minutes,
+            "domains": domain_sums,
+        },
     }
 
 
 @router.post("/grower/time/add")
-async def add_grower_time(event: LearningEvent):
-    """添加成长者学习时长（内部调用）"""
+def add_grower_time(
+    event: LearningEvent,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """添加成长者学习时长"""
     if event.user_type != "grower":
         raise HTTPException(status_code=400, detail="仅限成长者用户")
 
     minutes = event.duration_seconds // 60
+    if minutes <= 0:
+        return {"success": True, "minutes_earned": 0, "new_total": 0, "new_milestones": []}
 
-    # 检查是否触发里程碑
-    # TODO: 从数据库获取当前总时长
-    current_total = 1850
-    new_total = current_total + minutes
+    old_stats = get_or_create_stats(db, current_user.id)
+    current_total = old_stats.total_minutes
+
+    record_learning_time(db, current_user.id, minutes, domain=event.content_category)
+
+    new_stats = get_or_create_stats(db, current_user.id)
+    new_total = new_stats.total_minutes
 
     new_milestones = []
     for milestone in GROWER_TIME_MILESTONES:
         if current_total < milestone["minutes"] <= new_total:
             new_milestones.append(milestone)
 
-    # TODO: 保存到数据库
-
     return {
         "success": True,
         "minutes_earned": minutes,
         "new_total": new_total,
-        "new_milestones": new_milestones
+        "new_milestones": new_milestones,
     }
 
 
 @router.get("/grower/streak/{user_id}")
-async def get_grower_streak(user_id: str):
+def get_grower_streak(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """获取成长者连续学习记录"""
-    # TODO: 从数据库查询
-    current_streak = 7
-    longest_streak = 14
+    stats = get_or_create_stats(db, user_id)
+    current_streak = stats.current_streak
+    longest_streak = stats.longest_streak
+    today_learned = stats.last_learn_date == date.today().isoformat()
 
-    # 检查今日是否已学习
-    today_learned = True
-
-    # 计算下一个连续奖励
     next_streak_reward = None
     for milestone in STREAK_MILESTONES:
         if milestone["days"] > current_streak:
             next_streak_reward = milestone
             break
 
-    # 已获得的连续奖励
     earned_streaks = [m for m in STREAK_MILESTONES if m["days"] <= longest_streak]
 
     return {
@@ -562,7 +675,7 @@ async def get_grower_streak(user_id: str):
         "today_learned": today_learned,
         "next_reward": next_streak_reward,
         "days_to_next": next_streak_reward["days"] - current_streak if next_streak_reward else 0,
-        "earned_rewards": earned_streaks
+        "earned_rewards": earned_streaks,
     }
 
 
@@ -571,50 +684,88 @@ async def get_grower_streak(user_id: str):
 # ============================================================================
 
 @router.get("/rewards/{user_id}")
-async def get_user_rewards(user_id: str, user_type: str = "grower"):
+def get_user_rewards(
+    user_id: int,
+    user_type: str = "grower",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """获取用户奖励列表"""
-    # TODO: 从数据库查询
+    stats = get_or_create_stats(db, user_id)
+
     if user_type == "grower":
         return {
             "user_id": user_id,
             "user_type": "grower",
             "time_rewards": [
-                {"milestone": m, "earned": m["minutes"] <= 1850, "earned_at": "2026-01-15" if m["minutes"] <= 1850 else None}
+                {
+                    "milestone": m,
+                    "earned": m["minutes"] <= stats.total_minutes,
+                }
                 for m in GROWER_TIME_MILESTONES
             ],
             "streak_rewards": [
-                {"milestone": m, "earned": m["days"] <= 14, "earned_at": "2026-01-20" if m["days"] <= 14 else None}
+                {
+                    "milestone": m,
+                    "earned": m["days"] <= stats.longest_streak,
+                }
                 for m in STREAK_MILESTONES
             ],
-            "total_reward_points": 125,
-            "unclaimed_rewards": 0
+            "total_reward_points": sum(
+                m["bonus_points"] for m in GROWER_TIME_MILESTONES if m["minutes"] <= stats.total_minutes
+            ) + sum(
+                m["points"] for m in STREAK_MILESTONES if m["days"] <= stats.longest_streak
+            ),
+            "unclaimed_rewards": 0,
         }
     else:
-        # 教练的奖励主要是认证晋级
+        growth = stats.growth_points
+        contribution = stats.contribution_points
+        influence = stats.influence_points
+        certifications = []
+        for lvl_key, req in COACH_LEVEL_REQUIREMENTS.items():
+            met = (growth >= req["min_growth"] and
+                   contribution >= req["min_contribution"] and
+                   influence >= req["min_influence"])
+            progress = 100
+            if not met:
+                g_p = min(growth / max(req["min_growth"], 1), 1.0)
+                c_p = min(contribution / max(req["min_contribution"], 1), 1.0) if req["min_contribution"] > 0 else 1.0
+                i_p = min(influence / max(req["min_influence"], 1), 1.0) if req["min_influence"] > 0 else 1.0
+                progress = int((g_p + c_p + i_p) / 3 * 100)
+            certifications.append({
+                "level": lvl_key,
+                "label": req["label"],
+                "earned": met,
+                "progress": progress,
+            })
         return {
             "user_id": user_id,
             "user_type": "coach",
-            "level_certifications": [
-                {"level": "L0", "earned": True, "earned_at": "2025-06-01"},
-                {"level": "L1", "earned": True, "earned_at": "2025-12-15"},
-                {"level": "L2", "earned": False, "progress": 65}
-            ],
-            "achievement_badges": [
-                {"id": "first_course", "name": "首课完成", "icon": "🎓", "earned_at": "2025-06-05"},
-                {"id": "quiz_master", "name": "测试达人", "icon": "📝", "earned_at": "2025-09-10"}
-            ]
+            "level_certifications": certifications,
         }
 
 
 @router.post("/rewards/claim")
-async def claim_reward(claim: RewardClaim):
+def claim_reward(
+    claim: RewardClaim,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """领取奖励"""
-    # TODO: 验证奖励是否可领取，更新数据库
+    db.add(UserActivityLog(
+        user_id=current_user.id,
+        activity_type="reward",
+        detail={"reward_type": claim.reward_type, "reward_id": claim.reward_id},
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+
     return {
         "success": True,
         "reward_type": claim.reward_type,
         "reward_id": claim.reward_id,
-        "message": "奖励已领取"
+        "message": "奖励已领取",
     }
 
 
@@ -623,41 +774,73 @@ async def claim_reward(claim: RewardClaim):
 # ============================================================================
 
 @router.get("/leaderboard/coaches")
-async def get_coach_leaderboard(
-    period: str = Query("week", regex="^(week|month|all)$"),
-    limit: int = Query(20, ge=1, le=100)
+def get_coach_leaderboard(
+    period: str = Query("week", pattern="^(week|month|all)$"),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """教练积分排行榜"""
-    # TODO: 从数据库查询
+    leaders = db.query(UserLearningStats).order_by(
+        UserLearningStats.total_points.desc()
+    ).limit(limit).all()
+
+    items = []
+    for rank, s in enumerate(leaders, 1):
+        user = db.query(User).filter(User.id == s.user_id).first()
+        level = "L0"
+        for lvl_key in reversed(list(COACH_LEVEL_REQUIREMENTS.keys())):
+            req = COACH_LEVEL_REQUIREMENTS[lvl_key]
+            if (s.growth_points >= req["min_growth"] and
+                s.contribution_points >= req["min_contribution"] and
+                s.influence_points >= req["min_influence"]):
+                level = lvl_key
+                break
+        items.append({
+            "rank": rank,
+            "user_id": s.user_id,
+            "name": user.username if user else "未知",
+            "points": s.total_points,
+            "level": level,
+        })
+
+    my_stats = get_or_create_stats(db, current_user.id)
+    my_rank = db.query(func.count(UserLearningStats.id)).filter(
+        UserLearningStats.total_points > my_stats.total_points
+    ).scalar() + 1
+
     return {
         "period": period,
-        "items": [
-            {"rank": 1, "user_id": "coach1", "name": "张教练", "points": 580, "level": "L2"},
-            {"rank": 2, "user_id": "coach2", "name": "李教练", "points": 520, "level": "L2"},
-            {"rank": 3, "user_id": "coach3", "name": "王教练", "points": 485, "level": "L1"},
-        ],
-        "my_rank": 15,
-        "my_points": 245
+        "items": items,
+        "my_rank": my_rank,
+        "my_points": my_stats.total_points,
     }
 
 
 @router.get("/leaderboard/growers")
-async def get_grower_leaderboard(
-    period: str = Query("week", regex="^(week|month|all)$"),
-    limit: int = Query(20, ge=1, le=100)
+def get_grower_leaderboard(
+    period: str = Query("week"),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """成长者学习时长排行榜"""
-    # TODO: 从数据库查询
-    return {
-        "period": period,
-        "items": [
-            {"rank": 1, "user_id": "user1", "name": "学习达人", "minutes": 320, "streak": 21},
-            {"rank": 2, "user_id": "user2", "name": "成长ing", "minutes": 280, "streak": 14},
-            {"rank": 3, "user_id": "user3", "name": "早起鸟", "minutes": 250, "streak": 7},
-        ],
-        "my_rank": 28,
-        "my_minutes": 180
-    }
+    leaders = db.query(UserLearningStats).order_by(
+        UserLearningStats.total_minutes.desc()
+    ).limit(limit).all()
+
+    items = []
+    for rank, s in enumerate(leaders, 1):
+        user = db.query(User).filter(User.id == s.user_id).first()
+        items.append({
+            "rank": rank,
+            "user_id": s.user_id,
+            "name": user.username if user else "未知",
+            "minutes": s.total_minutes,
+            "streak": s.current_streak,
+        })
+
+    return {"period": period, "items": items}
 
 
 # ============================================================================
@@ -665,22 +848,47 @@ async def get_grower_leaderboard(
 # ============================================================================
 
 @router.post("/event")
-async def handle_learning_event(event: LearningEvent):
-    """处理学习事件（统一入口）"""
-    if event.user_type == "coach":
-        # 教练：计算积分
-        result = await add_coach_points(event)
-        return {
-            "user_type": "coach",
-            "points_earned": result.get("points_earned", 0),
-            "new_total_points": result.get("new_total", 0)
-        }
-    else:
-        # 成长者：计算时长
-        result = await add_grower_time(event)
-        return {
-            "user_type": "grower",
-            "minutes_earned": result.get("minutes_earned", 0),
-            "new_total_minutes": result.get("new_total", 0),
-            "new_milestones": result.get("new_milestones", [])
-        }
+def handle_learning_event(
+    event: LearningEvent,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """处理学习事件（统一入口）— 写入真实 DB"""
+    user_id = current_user.id
+    minutes = event.duration_seconds // 60
+
+    if minutes > 0:
+        record_learning_time(db, user_id, minutes, domain=event.content_category)
+
+    # 计算积分
+    config = CONTENT_POINTS_CONFIG.get(event.content_type, {})
+    points = config.get("base_points", 5)
+    if event.action == "complete":
+        points += config.get("complete_bonus", 0)
+    if event.action == "quiz_pass" and event.quiz_score:
+        points += config.get("quiz_bonus", 0)
+        if event.quiz_score == 100:
+            points += 5
+
+    category = "growth"
+    if event.content_category in ["contribution", "influence"]:
+        category = event.content_category
+
+    record_learning_points(db, user_id, points, event.action, category, event.content_id)
+
+    # 记录活动
+    db.add(UserActivityLog(
+        user_id=user_id, activity_type="learn",
+        detail={"content_id": event.content_id, "action": event.action, "minutes": minutes},
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+
+    stats = get_or_create_stats(db, user_id)
+    return {
+        "user_type": event.user_type,
+        "minutes_earned": minutes,
+        "points_earned": points,
+        "new_total_minutes": stats.total_minutes,
+        "new_total_points": stats.total_points,
+    }

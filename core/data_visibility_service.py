@@ -13,20 +13,20 @@
 from core.content_access_service import get_user_level
 from core.models import User
 
-# 字段可见性规则: min_level 表示需要 >= 该等级才可查看
+# 字段可见性规则: min_level 表示需要 >= 该等级才可查看 (1-indexed: coach=4, master=6)
 FIELD_VISIBILITY = {
-    "big5_scores": {"min_level": 5, "label": "Big5人格原始分"},
-    "big5_raw": {"min_level": 5, "label": "Big5人格原始分"},
-    "psychological_level": {"min_level": 5, "label": "心理健康层级"},
-    "psychological_level_label": {"min_level": 5, "label": "心理健康层级标签"},
-    "risk_flags": {"min_level": 3, "label": "风险标记"},
-    "spi_score": {"min_level": 3, "label": "SPI分数"},
-    "bpt6_type": {"min_level": 3, "label": "行为类型"},
-    "bpt6_scores": {"min_level": 3, "label": "行为类型分数"},
-    "capacity_weak": {"min_level": 3, "label": "改变能力薄弱项"},
-    "capacity_strong": {"min_level": 3, "label": "改变能力优势项"},
-    "capacity_dimensions": {"min_level": 3, "label": "改变能力维度"},
-    "capacity_total": {"min_level": 3, "label": "改变能力总分"},
+    "big5_scores": {"min_level": 6, "label": "Big5人格原始分"},          # L5 大师
+    "big5_raw": {"min_level": 6, "label": "Big5人格原始分"},              # L5 大师
+    "psychological_level": {"min_level": 6, "label": "心理健康层级"},      # L5 大师
+    "psychological_level_label": {"min_level": 6, "label": "心理健康层级标签"},  # L5 大师
+    "risk_flags": {"min_level": 4, "label": "风险标记"},                  # L3 教练
+    "spi_score": {"min_level": 4, "label": "SPI分数"},                    # L3 教练
+    "bpt6_type": {"min_level": 4, "label": "行为类型"},                   # L3 教练
+    "bpt6_scores": {"min_level": 4, "label": "行为类型分数"},              # L3 教练
+    "capacity_weak": {"min_level": 4, "label": "改变能力薄弱项"},          # L3 教练
+    "capacity_strong": {"min_level": 4, "label": "改变能力优势项"},        # L3 教练
+    "capacity_dimensions": {"min_level": 4, "label": "改变能力维度"},      # L3 教练
+    "capacity_total": {"min_level": 4, "label": "改变能力总分"},           # L3 教练
 }
 
 

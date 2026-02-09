@@ -170,7 +170,7 @@ function formatTime(str: string) {
 async function loadStudents() {
   loadingStudents.value = true
   try {
-    const res = await axios.get(`${API_BASE}/api/v1/coach/students-with-messages`, { headers })
+    const res = await axios.get(`${API_BASE}/v1/coach/students-with-messages`, { headers })
     students.value = res.data.students || []
   } catch {
     students.value = []
@@ -182,7 +182,7 @@ async function loadStudents() {
 async function selectStudent(s: any) {
   selectedStudent.value = s
   try {
-    const res = await axios.get(`${API_BASE}/api/v1/coach/messages/${s.student_id}`, { headers })
+    const res = await axios.get(`${API_BASE}/v1/coach/messages/${s.student_id}`, { headers })
     messages.value = res.data.messages || []
     await nextTick()
     scrollToBottom()
@@ -195,7 +195,7 @@ async function sendMessage() {
   if (!inputMessage.value.trim() || !selectedStudent.value) return
   sending.value = true
   try {
-    await axios.post(`${API_BASE}/api/v1/coach/messages`, {
+    await axios.post(`${API_BASE}/v1/coach/messages`, {
       student_id: selectedStudent.value.student_id,
       content: inputMessage.value,
       message_type: messageType.value,
@@ -230,7 +230,7 @@ async function createReminder() {
   if (!reminderForm.title || !selectedStudent.value) return
   creatingReminder.value = true
   try {
-    await axios.post(`${API_BASE}/api/v1/coach/reminders`, {
+    await axios.post(`${API_BASE}/v1/coach/reminders`, {
       student_id: selectedStudent.value.student_id,
       type: reminderForm.type,
       title: reminderForm.title,

@@ -57,6 +57,9 @@
           size="small"
         >
           <template #bodyCell="{ column, record }">
+            <template v-if="column.key === 'evidence_tier'">
+              <a-tag :color="tierColor(record.evidence_tier)">{{ record.evidence_tier || 'T3' }}</a-tag>
+            </template>
             <template v-if="column.key === 'status'">
               <a-tag :color="statusColor(record.status)">{{ statusLabel(record.status) }}</a-tag>
             </template>
@@ -153,6 +156,39 @@
             </a-form-item>
           </a-col>
         </a-row>
+        <!-- 内容治理字段 -->
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="证据分层">
+              <a-select v-model:value="editForm.evidence_tier" placeholder="选择证据等级" allowClear>
+                <a-select-option v-for="t in tierOptions" :key="t.value" :value="t.value">
+                  <a-tag :color="t.color" style="margin-right:4px">{{ t.value }}</a-tag>{{ t.label }}
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="内容类型">
+              <a-select v-model:value="editForm.content_type" placeholder="选择内容类型" allowClear>
+                <a-select-option v-for="ct in contentTypeOptions" :key="ct.value" :value="ct.value">
+                  {{ ct.label }}
+                </a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="16">
+          <a-col :span="12">
+            <a-form-item label="原始发布日期">
+              <a-date-picker v-model:value="editForm.published_date" style="width:100%" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item label="过期时间">
+              <a-date-picker v-model:value="editForm.expires_at" style="width:100%" />
+            </a-form-item>
+          </a-col>
+        </a-row>
         <a-form-item label="文档内容 (Markdown)">
           <MdEditor
             v-model="editForm.raw_content"
@@ -172,6 +208,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { MdEditor } from 'md-editor-v3'
 import 'md-editor-v3/lib/style.css'
+import dayjs from 'dayjs'
+import type { Dayjs } from 'dayjs'
 import { expertContentAPI } from '../../api/expert-content'
 
 const route = useRoute()
@@ -180,6 +218,29 @@ const tenantId = route.params.tenantId as string
 
 const activeTab = ref('documents')
 
+// ========== 证据分层 & 内容类型常量 ==========
+const tierOptions = [
+  { value: 'T1', label: '临床指南', color: 'red' },
+  { value: 'T2', label: 'RCT/系统综述', color: 'orange' },
+  { value: 'T3', label: '专家共识', color: 'blue' },
+  { value: 'T4', label: '个人经验', color: 'default' },
+]
+
+const contentTypeOptions = [
+  { value: 'guideline', label: '临床指南' },
+  { value: 'consensus', label: '专家共识' },
+  { value: 'rct', label: '随机对照试验' },
+  { value: 'review', label: '综述/荟萃分析' },
+  { value: 'expert_opinion', label: '专家意见' },
+  { value: 'case_report', label: '病例报告' },
+  { value: 'experience_sharing', label: '个人经验分享' },
+]
+
+function tierColor(tier: string) {
+  const map: Record<string, string> = { T1: 'red', T2: 'orange', T3: 'blue', T4: 'default' }
+  return map[tier] || 'default'
+}
+
 // ========== 知识文档 ==========
 const documents = ref<any[]>([])
 const docLoading = ref(false)
@@ -187,7 +248,8 @@ const docFilters = reactive({ keyword: '', status: undefined as string | undefin
 
 const docColumns = [
   { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
-  { title: '领域', key: 'domain_id', width: 100 },
+  { title: '证据', key: 'evidence_tier', width: 70 },
+  { title: '领域', key: 'domain_id', width: 80 },
   { title: '状态', key: 'status', width: 80 },
   { title: '块数', dataIndex: 'chunk_count', key: 'chunk_count', width: 60 },
   { title: '创建时间', key: 'created_at', width: 120 },
@@ -255,6 +317,10 @@ const editForm = reactive({
   domain_id: '' as string,
   priority: 5,
   raw_content: '',
+  evidence_tier: undefined as string | undefined,
+  content_type: undefined as string | undefined,
+  published_date: null as Dayjs | null,
+  expires_at: null as Dayjs | null,
 })
 
 function openCreateModal() {
@@ -265,6 +331,10 @@ function openCreateModal() {
   editForm.domain_id = ''
   editForm.priority = 5
   editForm.raw_content = ''
+  editForm.evidence_tier = undefined
+  editForm.content_type = undefined
+  editForm.published_date = null
+  editForm.expires_at = null
   editModalVisible.value = true
 }
 
@@ -280,6 +350,10 @@ async function openEditModal(record: any) {
       editForm.domain_id = d.domain_id || ''
       editForm.priority = d.priority || 5
       editForm.raw_content = d.raw_content || ''
+      editForm.evidence_tier = d.evidence_tier || undefined
+      editForm.content_type = d.content_type || undefined
+      editForm.published_date = d.published_date ? dayjs(d.published_date) : null
+      editForm.expires_at = d.expires_at ? dayjs(d.expires_at) : null
     }
   } catch (e) {
     message.error('加载文档失败')
@@ -295,26 +369,27 @@ async function onSaveDocument() {
   }
   saving.value = true
   try {
+    const payload: any = {
+      title: editForm.title,
+      raw_content: editForm.raw_content,
+      author: editForm.author,
+      domain_id: editForm.domain_id,
+      priority: editForm.priority,
+    }
+    if (editForm.evidence_tier) payload.evidence_tier = editForm.evidence_tier
+    if (editForm.content_type) payload.content_type = editForm.content_type
+    if (editForm.published_date) payload.published_date = editForm.published_date.toISOString()
+    if (editForm.expires_at) payload.expires_at = editForm.expires_at.toISOString()
+
     if (isCreate.value) {
-      const res = await expertContentAPI.createDocument(tenantId, {
-        title: editForm.title,
-        raw_content: editForm.raw_content,
-        author: editForm.author,
-        domain_id: editForm.domain_id,
-        priority: editForm.priority,
-      })
+      const res = await expertContentAPI.createDocument(tenantId, payload)
       if (res.data?.success) {
         message.success('文档已创建')
         editModalVisible.value = false
         loadDocuments()
       }
     } else {
-      const res = await expertContentAPI.updateDocument(tenantId, editingDocId.value!, {
-        title: editForm.title,
-        raw_content: editForm.raw_content,
-        domain_id: editForm.domain_id,
-        priority: editForm.priority,
-      })
+      const res = await expertContentAPI.updateDocument(tenantId, editingDocId.value!, payload)
       if (res.data?.success) {
         message.success('文档已更新')
         editModalVisible.value = false

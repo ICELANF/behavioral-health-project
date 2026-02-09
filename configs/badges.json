@@ -1,0 +1,133 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "BHP徽章与成就配置 - 含学时徽章、模块成就、晋级纪念物",
+    "updated": "2026-02-09"
+  },
+
+  "badge_categories": {
+    "milestone": {
+      "label": "里程碑",
+      "display_order": 1,
+      "badges": [
+        {"id": "badge_first_step",   "name": "第一步",       "icon": "🌱", "rarity": "common",    "condition": {"milestone": "FIRST_LOGIN"}},
+        {"id": "badge_3day_flame",   "name": "三日之火",     "icon": "🔥", "rarity": "common",    "condition": {"milestone": "DAY_3"}},
+        {"id": "badge_week_star",    "name": "一周达人",     "icon": "⭐", "rarity": "uncommon",  "condition": {"milestone": "DAY_7"}},
+        {"id": "badge_half_month",   "name": "半月之约",     "icon": "🌸", "rarity": "uncommon",  "condition": {"milestone": "DAY_14"}},
+        {"id": "badge_21day_gold",   "name": "21天践行者",   "icon": "🍎", "rarity": "rare",      "condition": {"milestone": "DAY_21"}},
+        {"id": "badge_30day_diamond","name": "30天蝶变",     "icon": "🦋", "rarity": "epic",      "condition": {"milestone": "DAY_30"}},
+        {"id": "badge_butterfly",    "name": "破茧者",       "icon": "✨", "rarity": "epic",      "condition": {"milestone": "DAY_30"}}
+      ]
+    },
+    "learning_hours": {
+      "label": "学时",
+      "display_order": 2,
+      "badges": [
+        {"id": "badge_1h",    "name": "铜质书签",    "icon": "📖", "rarity": "common",     "condition": {"training_hours_gte": 1},     "visual": {"material": "bronze",  "color": "#B87333"}},
+        {"id": "badge_10h",   "name": "银质学者",    "icon": "📚", "rarity": "uncommon",   "condition": {"training_hours_gte": 10},    "visual": {"material": "silver",  "color": "#9CA3AF"}},
+        {"id": "badge_20h",   "name": "知行合一",    "icon": "⚖️", "rarity": "rare",       "condition": {"training_hours_gte": 20},    "visual": {"material": "gold",    "color": "#F59E0B"}},
+        {"id": "badge_40h",   "name": "金质导师",    "icon": "🏅", "rarity": "rare",       "condition": {"training_hours_gte": 40},    "visual": {"material": "gold",    "color": "#EAB308"}},
+        {"id": "badge_80h",   "name": "学贯中西",    "icon": "🎓", "rarity": "epic",       "condition": {"training_hours_gte": 80},    "visual": {"material": "crystal", "color": "#8B5CF6"}},
+        {"id": "badge_120h",  "name": "博学大成",    "icon": "💎", "rarity": "epic",       "condition": {"training_hours_gte": 120},   "visual": {"material": "diamond", "color": "#EC4899"}}
+      ]
+    },
+    "module_mastery": {
+      "label": "模块精通",
+      "display_order": 3,
+      "tiers": ["觉察者", "实践者", "设计师", "大师"],
+      "badges": [
+        {"id": "badge_m1_t1", "name": "行为觉察者",   "module": "M1_BEHAVIOR",  "tier": 1, "icon": "🔗", "condition": {"module_credits_gte": 20,  "module": "M1_BEHAVIOR"}},
+        {"id": "badge_m1_t2", "name": "行为解构师",   "module": "M1_BEHAVIOR",  "tier": 2, "icon": "🔗", "condition": {"module_credits_gte": 60,  "module": "M1_BEHAVIOR"}},
+        {"id": "badge_m1_t3", "name": "行为设计师",   "module": "M1_BEHAVIOR",  "tier": 3, "icon": "🔗", "condition": {"module_credits_gte": 120, "module": "M1_BEHAVIOR"}},
+        {"id": "badge_m1_t4", "name": "链环之主",     "module": "M1_BEHAVIOR",  "tier": 4, "icon": "🔗", "condition": {"module_credits_gte": 300, "module": "M1_BEHAVIOR"}, "rarity": "legendary"},
+
+        {"id": "badge_m2_t1", "name": "节律体验者",   "module": "M2_LIFESTYLE", "tier": 1, "icon": "🌊", "condition": {"module_credits_gte": 20,  "module": "M2_LIFESTYLE"}},
+        {"id": "badge_m2_t2", "name": "节律实践者",   "module": "M2_LIFESTYLE", "tier": 2, "icon": "🌊", "condition": {"module_credits_gte": 60,  "module": "M2_LIFESTYLE"}},
+        {"id": "badge_m2_t3", "name": "节律设计师",   "module": "M2_LIFESTYLE", "tier": 3, "icon": "🌊", "condition": {"module_credits_gte": 100, "module": "M2_LIFESTYLE"}},
+        {"id": "badge_m2_t4", "name": "五维大师",     "module": "M2_LIFESTYLE", "tier": 4, "icon": "🌊", "condition": {"module_credits_gte": 250, "module": "M2_LIFESTYLE"}, "rarity": "legendary"},
+
+        {"id": "badge_m3_t1", "name": "思维觉察者",   "module": "M3_MINDSET",   "tier": 1, "icon": "🧠", "condition": {"module_credits_gte": 10,  "module": "M3_MINDSET"}},
+        {"id": "badge_m3_t2", "name": "思维重构师",   "module": "M3_MINDSET",   "tier": 2, "icon": "🧠", "condition": {"module_credits_gte": 40,  "module": "M3_MINDSET"}},
+        {"id": "badge_m3_t3", "name": "思维建筑师",   "module": "M3_MINDSET",   "tier": 3, "icon": "🧠", "condition": {"module_credits_gte": 80,  "module": "M3_MINDSET"}},
+        {"id": "badge_m3_t4", "name": "心智之光",     "module": "M3_MINDSET",   "tier": 4, "icon": "🧠", "condition": {"module_credits_gte": 250, "module": "M3_MINDSET"}, "rarity": "legendary"},
+
+        {"id": "badge_m4_t1", "name": "陪伴体验者",   "module": "M4_COACHING",  "tier": 1, "icon": "🤝", "condition": {"module_credits_gte": 10,  "module": "M4_COACHING"}},
+        {"id": "badge_m4_t2", "name": "陪伴技术者",   "module": "M4_COACHING",  "tier": 2, "icon": "🤝", "condition": {"module_credits_gte": 60,  "module": "M4_COACHING"}},
+        {"id": "badge_m4_t3", "name": "陪伴引领者",   "module": "M4_COACHING",  "tier": 3, "icon": "🤝", "condition": {"module_credits_gte": 150, "module": "M4_COACHING"}},
+        {"id": "badge_m4_t4", "name": "同行之灯",     "module": "M4_COACHING",  "tier": 4, "icon": "🤝", "condition": {"module_credits_gte": 400, "module": "M4_COACHING"}, "rarity": "legendary"}
+      ],
+      "combo_badges": [
+        {"id": "badge_4d_awaken", "name": "四维觉醒", "icon": "🌀", "rarity": "epic",
+         "condition": {"all_modules_tier_gte": 1}, "description": "M1-M4全部达到觉察者"},
+        {"id": "badge_4d_master", "name": "四维宗师", "icon": "☀️", "rarity": "legendary",
+         "condition": {"all_modules_tier_gte": 4}, "description": "M1-M4全部达到大师"}
+      ]
+    },
+    "promotion_ceremony": {
+      "label": "晋级纪念",
+      "display_order": 4,
+      "badges": [
+        {"id": "badge_promo_l1", "name": "破壳者",     "icon": "🐣", "rarity": "rare",      "ceremony": "破壳礼", "condition": {"role": "grower"}},
+        {"id": "badge_promo_l2", "name": "传灯者",     "icon": "🕯️", "rarity": "rare",      "ceremony": "传灯礼", "condition": {"role": "sharer"}},
+        {"id": "badge_promo_l3", "name": "持杖者",     "icon": "🪄", "rarity": "epic",      "ceremony": "授杖礼", "condition": {"role": "coach"}},
+        {"id": "badge_promo_l4", "name": "立柱者",     "icon": "🏛️", "rarity": "epic",      "ceremony": "立柱礼", "condition": {"role": "promoter"}},
+        {"id": "badge_promo_l5", "name": "归源者",     "icon": "🌊", "rarity": "legendary", "ceremony": "归源礼", "condition": {"role": "master"}}
+      ],
+      "ceremony_configs": [
+        {
+          "from_role": "observer", "to_role": "grower",
+          "ceremony_name": "破壳礼",
+          "animation": "shell_crack",
+          "theme_color": "#10B981",
+          "steps": ["growth_tree_animation", "personal_oath_input", "mentor_match", "badge_mint"],
+          "memorial": {"type": "growth_tree_art", "data_source": "30day_behavior", "unique": true},
+          "unlocks_display": ["同道者邀请", "社区互动", "进阶课程", "行为数据高级分析"]
+        },
+        {
+          "from_role": "grower", "to_role": "sharer",
+          "ceremony_name": "传灯礼",
+          "animation": "candle_chain",
+          "theme_color": "#3B82F6",
+          "steps": ["candle_light_chain", "companion_testimonial_wall", "torch_declaration", "community_cert"],
+          "memorial": {"type": "digital_lantern", "co_signed_by": "companions", "unique": true},
+          "unlocks_display": ["内容发布", "经验分享", "专属模板", "陪伴技术培训"]
+        },
+        {
+          "from_role": "sharer", "to_role": "coach",
+          "ceremony_name": "授杖礼",
+          "animation": "staff_handover",
+          "theme_color": "#8B5CF6",
+          "steps": ["staff_receive_animation", "case_review_scroll", "first_client_match", "coach_certificate"],
+          "memorial": {"type": "coach_portrait", "includes": "case_summary_collection", "unique": true},
+          "unlocks_display": ["1v1教练服务", "处方设计", "案例库写入", "AI Co-Pilot"]
+        },
+        {
+          "from_role": "coach", "to_role": "promoter",
+          "ceremony_name": "立柱礼",
+          "animation": "pillar_rise",
+          "theme_color": "#F59E0B",
+          "steps": ["pillar_ceremony", "mentee_tree_panorama", "curriculum_access", "promoter_guild_join"],
+          "memorial": {"type": "mentee_genealogy", "visualizes": "influence_radiation", "unique": true},
+          "unlocks_display": ["课程开发", "师资培训", "督导权限", "标准化工具开发"]
+        },
+        {
+          "from_role": "promoter", "to_role": "master",
+          "ceremony_name": "归源礼",
+          "animation": "drop_to_ocean",
+          "theme_color": "#EC4899",
+          "steps": ["journey_replay_film", "contribution_heatmap", "methodology_signature", "council_invitation"],
+          "memorial": {"type": "contribution_heatmap_art", "includes": "methodology_page", "unique": true},
+          "unlocks_display": ["理论创新", "标准制定", "学术发表", "平台治理"]
+        }
+      ]
+    }
+  },
+
+  "rarity_config": {
+    "common":    {"label": "普通",   "border_color": "#9CA3AF", "bg_gradient": ["#F3F4F6", "#E5E7EB"]},
+    "uncommon":  {"label": "优秀",   "border_color": "#10B981", "bg_gradient": ["#ECFDF5", "#D1FAE5"]},
+    "rare":      {"label": "稀有",   "border_color": "#3B82F6", "bg_gradient": ["#EFF6FF", "#DBEAFE"]},
+    "epic":      {"label": "史诗",   "border_color": "#8B5CF6", "bg_gradient": ["#F5F3FF", "#EDE9FE"]},
+    "legendary": {"label": "传说",   "border_color": "#F59E0B", "bg_gradient": ["#FFFBEB", "#FEF3C7"], "shimmer": true}
+  }
+}

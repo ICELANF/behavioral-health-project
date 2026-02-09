@@ -29,26 +29,17 @@ from core.models import (
 # ============================================
 
 # 可创建挑战的最低角色等级
-MIN_CREATE_LEVEL = 3  # coach (L3)
+MIN_CREATE_LEVEL = 4  # coach (L3, 1-indexed=4)
 
 # 可审核挑战的最低角色等级
-MIN_REVIEW_LEVEL = 4  # promoter/supervisor (L4)
+MIN_REVIEW_LEVEL = 5  # promoter/supervisor (L4, 1-indexed=5)
 
-ROLE_LEVEL = {
-    UserRole.OBSERVER: 0,
-    UserRole.GROWER: 1,
-    UserRole.PATIENT: 1,
-    UserRole.SHARER: 2,
-    UserRole.COACH: 3,
-    UserRole.PROMOTER: 4,
-    UserRole.SUPERVISOR: 4,
-    UserRole.MASTER: 5,
-    UserRole.ADMIN: 99,
-}
+# 引用 models.py 权威定义
+from core.models import ROLE_LEVEL
 
 
 def _user_level(user: User) -> int:
-    return ROLE_LEVEL.get(user.role, 0)
+    return ROLE_LEVEL.get(user.role, 1)
 
 
 # ============================================

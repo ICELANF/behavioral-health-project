@@ -1721,7 +1721,7 @@ const sendFollowup = async (student: typeof pendingStudents.value[0]) => {
 
   // 调用真实 API 发送教练消息
   try {
-    await fetch(`${API_BASE}/api/v1/coach/messages`, {
+    await fetch(`${API_BASE}/v1/coach/messages`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1874,7 +1874,7 @@ async function submitAssign() {
     } else {
       body.scales = assignForm.scales
     }
-    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/assign`, {
+    const res = await fetch(`${API_BASE}/v1/assessment-assignments/assign`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -1902,7 +1902,7 @@ async function loadAssignmentList() {
   loadingAssignments.value = true
   try {
     // 加载教练的所有 assignment（复用 review-list 端点，显示所有状态）
-    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/review-list`, {
+    const res = await fetch(`${API_BASE}/v1/assessment-assignments/review-list`, {
       headers: authHeaders,
     })
     if (res.ok) {
@@ -1930,7 +1930,7 @@ function openReviewDrawer(assignment: any) {
 async function loadReviewList() {
   loadingReviewList.value = true
   try {
-    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/review-list`, {
+    const res = await fetch(`${API_BASE}/v1/assessment-assignments/review-list`, {
       headers: authHeaders,
     })
     if (res.ok) {
@@ -1955,7 +1955,7 @@ function selectReviewAssignment(assignment: any) {
 
 async function reviewItem(item: any, newStatus: string) {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/review-items/${item.id}`, {
+    const res = await fetch(`${API_BASE}/v1/assessment-assignments/review-items/${item.id}`, {
       method: 'PUT',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus }),
@@ -1975,7 +1975,7 @@ async function confirmReviewModify(item: any) {
   if (!item._editText.trim()) { message.warning('请输入修改内容'); return }
   try {
     const coachContent = { ...item.original_content, modified_text: item._editText }
-    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/review-items/${item.id}`, {
+    const res = await fetch(`${API_BASE}/v1/assessment-assignments/review-items/${item.id}`, {
       method: 'PUT',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2002,7 +2002,7 @@ async function pushAssignment() {
   if (!reviewingAssignment.value) return
   pushSubmitting.value = true
   try {
-    const res = await fetch(`${API_BASE}/api/v1/assessment-assignments/${reviewingAssignment.value.id}/push`, {
+    const res = await fetch(`${API_BASE}/v1/assessment-assignments/${reviewingAssignment.value.id}/push`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
     })
@@ -2138,7 +2138,7 @@ function generateAiRecommendations(students: any[]) {
 async function loadDashboard() {
   loading.value = true
   try {
-    const res = await fetch(`${API_BASE}/api/v1/coach/dashboard`, { headers: authHeaders })
+    const res = await fetch(`${API_BASE}/v1/coach/dashboard`, { headers: authHeaders })
     if (!res.ok) throw new Error('Dashboard API failed')
     const data = await res.json()
 
@@ -2208,7 +2208,7 @@ async function loadAllBuiltinQuestions() {
   if (allBuiltinQuestions.value.length > 0) return
   loadingAllQuestions.value = true
   try {
-    const res = await fetch(`${API_BASE}/api/v1/high-freq-questions/all`, { headers: authHeaders })
+    const res = await fetch(`${API_BASE}/v1/high-freq-questions/all`, { headers: authHeaders })
     if (res.ok) {
       const data = await res.json()
       allBuiltinQuestions.value = data.questions || []
@@ -2240,7 +2240,7 @@ function getBehaviorQuestionLabel(qid: string) {
 // AI推送建议
 async function loadPushRecommendations() {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/push-recommendations`, { headers: authHeaders })
+    const res = await fetch(`${API_BASE}/v1/push-recommendations`, { headers: authHeaders })
     if (res.ok) {
       const data = await res.json()
       pushRecommendations.value = data.recommendations || []
@@ -2263,7 +2263,7 @@ function applyRecommendation(rec: any) {
 // 设备预警
 async function loadDeviceAlerts() {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/alerts/coach?unread_only=true&limit=5`, { headers: authHeaders })
+    const res = await fetch(`${API_BASE}/v1/alerts/coach?unread_only=true&limit=5`, { headers: authHeaders })
     if (res.ok) {
       const data = await res.json()
       deviceAlerts.value = data.alerts || []
@@ -2273,7 +2273,7 @@ async function loadDeviceAlerts() {
 
 async function resolveAlert(alert: any) {
   try {
-    await fetch(`${API_BASE}/api/v1/alerts/${alert.id}/resolve`, {
+    await fetch(`${API_BASE}/v1/alerts/${alert.id}/resolve`, {
       method: 'POST',
       headers: authHeaders,
     })
@@ -2294,7 +2294,7 @@ function openChallengeAssignDrawer(student: any) {
 async function loadStudentChallenges(studentId: number) {
   loadingStudentChallenges.value = true
   try {
-    const res = await fetch(`${API_BASE}/api/v1/coach/challenges/students/${studentId}`, { headers: authHeaders })
+    const res = await fetch(`${API_BASE}/v1/coach/challenges/students/${studentId}`, { headers: authHeaders })
     if (res.ok) {
       const data = await res.json()
       studentChallenges.value = data.enrollments || []
@@ -2312,7 +2312,7 @@ async function loadPublishedChallenges() {
   if (publishedChallenges.value.length > 0) return
   loadingPublishedChallenges.value = true
   try {
-    const res = await fetch(`${API_BASE}/api/v1/challenges?status=published`, { headers: authHeaders })
+    const res = await fetch(`${API_BASE}/v1/challenges?status=published`, { headers: authHeaders })
     if (res.ok) {
       const data = await res.json()
       publishedChallenges.value = data.challenges || data || []
@@ -2325,7 +2325,7 @@ async function assignChallenge(challengeId: number) {
   if (!challengeAssignStudent.value) return
   assigningChallengeId.value = challengeId
   try {
-    const res = await fetch(`${API_BASE}/api/v1/coach/challenges/assign`, {
+    const res = await fetch(`${API_BASE}/v1/coach/challenges/assign`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2354,7 +2354,7 @@ function openPushQueueDrawer() {
 
 async function loadPushQueueStats() {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/stats`, { headers: authHeaders })
+    const res = await fetch(`${API_BASE}/v1/coach/push-queue/stats`, { headers: authHeaders })
     if (res.ok) {
       const data = await res.json()
       Object.assign(pushQueueStats, data)
@@ -2373,7 +2373,7 @@ async function loadPushQueueItems() {
     if (pushQueueFilter.source_type) params.set('source_type', pushQueueFilter.source_type)
     if (pushQueueFilter.priority) params.set('priority', pushQueueFilter.priority)
 
-    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue?${params}`, { headers: authHeaders })
+    const res = await fetch(`${API_BASE}/v1/coach/push-queue?${params}`, { headers: authHeaders })
     if (res.ok) {
       const data = await res.json()
       pushQueueItems.value = (data.items || []).map((i: any) => ({
@@ -2412,7 +2412,7 @@ function toggleQueueSelect(id: number) {
 
 async function approveQueueItem(item: any) {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/${item.id}/approve`, {
+    const res = await fetch(`${API_BASE}/v1/coach/push-queue/${item.id}/approve`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
@@ -2436,7 +2436,7 @@ async function approveQueueItemWithEdit(item: any) {
     if (item._editTime) {
       body.scheduled_time = typeof item._editTime === 'string' ? item._editTime : item._editTime.toISOString()
     }
-    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/${item.id}/approve`, {
+    const res = await fetch(`${API_BASE}/v1/coach/push-queue/${item.id}/approve`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -2453,7 +2453,7 @@ async function approveQueueItemWithEdit(item: any) {
 
 async function rejectQueueItem(item: any) {
   try {
-    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/${item.id}/reject`, {
+    const res = await fetch(`${API_BASE}/v1/coach/push-queue/${item.id}/reject`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({}),
@@ -2472,7 +2472,7 @@ async function batchApproveQueue() {
   if (selectedQueueIds.value.length === 0) return
   batchApproving.value = true
   try {
-    const res = await fetch(`${API_BASE}/api/v1/coach/push-queue/batch-approve`, {
+    const res = await fetch(`${API_BASE}/v1/coach/push-queue/batch-approve`, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body: JSON.stringify({ item_ids: selectedQueueIds.value }),

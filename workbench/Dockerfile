@@ -28,7 +28,10 @@ COPY disclosure/ /app/disclosure/
 # Copy workbench source
 COPY workbench/expert_review.py /app/workbench/expert_review.py
 
-RUN chown -R appuser:appuser /app
+# Copy Streamlit theme config
+COPY workbench/.streamlit/ /home/appuser/.streamlit/
+
+RUN chown -R appuser:appuser /app /home/appuser/.streamlit
 
 EXPOSE 8501
 

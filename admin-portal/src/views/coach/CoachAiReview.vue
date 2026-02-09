@@ -141,7 +141,7 @@ onMounted(async () => {
   loading.value = true
   try {
     // 尝试从 API 加载（未来可扩展）
-    const res = await fetch(`${API_BASE}/api/v1/coach/dashboard`, { headers: authHeaders })
+    const res = await fetch(`${API_BASE}/v1/coach/dashboard`, { headers: authHeaders })
     if (!res.ok) throw new Error('API failed')
     const data = await res.json()
     const studentNames = (data.students || [])

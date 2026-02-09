@@ -1,0 +1,156 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "BHP课程模块种子数据 - 对接course_modules表",
+    "updated": "2026-02-09",
+    "consistency_check": {
+      "L0_mandatory": "M1(20)+M2(20)+M3(10)+M4(10)=60, 总要求100, 选修≥40 ✓",
+      "L1_mandatory": "M1(40)+M2(40)+M3(20)+M4(20)=120, 总要求200, 选修≥80 ✓",
+      "L2_mandatory": "M1(60)+M2(60)+M3(40)+M4(60)=220, 累计380, 总要求800, 选修≥420 ✓",
+      "L3_mandatory": "M1(120)+M2(100)+M3(80)+M4(150)=450, 累计690, 总要求1500, 选修≥810 ✓",
+      "L4_mandatory": "M1(180)+M2(150)+M3(120)+M4(250)=700, 总要求1500, 选修≥800 ✓",
+      "L5_mandatory": "M1(300)+M2(250)+M3(250)+M4(400)=1200, 总要求3000, 选修≥1800 ✓"
+    }
+  },
+  "mandatory_modules": {
+    "observer": [
+      {"code": "M1_L0_01", "title": "行为链概念入门", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 5, "theory_ratio": 0.20, "sort_order": 1},
+      {"code": "M1_L0_02", "title": "7天行为挑战体验", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 10, "theory_ratio": 0.10, "sort_order": 2},
+      {"code": "M1_L0_03", "title": "行为链记录卡实操", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 5, "theory_ratio": 0.20, "sort_order": 3},
+      {"code": "M2_L0_01", "title": "五维度微行为体验(各1个)", "module_type": "M2_LIFESTYLE", "tier": "T1_PRESCRIPTION", "credit_value": 10, "theory_ratio": 0.20, "sort_order": 4},
+      {"code": "M2_L0_02", "title": "CGM/体成分/睡眠基线建立", "module_type": "M2_LIFESTYLE", "tier": "T1_PRESCRIPTION", "credit_value": 10, "theory_ratio": 0.30, "sort_order": 5},
+      {"code": "M3_L0_01", "title": "成长型思维入门", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 5, "theory_ratio": 0.30, "sort_order": 6},
+      {"code": "M3_L0_02", "title": "Q3归因采集与认知重框架", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 5, "theory_ratio": 0.20, "sort_order": 7},
+      {"code": "M4_L0_01", "title": "被陪伴体验(≥3次)", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 5, "theory_ratio": 0.10, "sort_order": 8},
+      {"code": "M4_L0_02", "title": "系统理解度评分(Q6)", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 5, "theory_ratio": 0.20, "sort_order": 9}
+    ],
+    "grower": [
+      {"code": "M1_L1_01", "title": "21天行为链觉察训练", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 15, "theory_ratio": 0.30, "sort_order": 1},
+      {"code": "M1_L1_02", "title": "行为四要素深度理解", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 10, "theory_ratio": 0.40, "sort_order": 2},
+      {"code": "M1_L1_03", "title": "中断模式识别训练", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 10, "theory_ratio": 0.30, "sort_order": 3},
+      {"code": "M1_L1_04", "title": "BFR行为事实回溯入门", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 5, "theory_ratio": 0.40, "sort_order": 4},
+      {"code": "M2_L1_01", "title": "稳糖节奏化训练(营养)", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 10, "theory_ratio": 0.30, "sort_order": 5},
+      {"code": "M2_L1_02", "title": "运动节律与睡眠重建", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 15, "theory_ratio": 0.30, "sort_order": 6},
+      {"code": "M2_L1_03", "title": "压力管理与认知训练", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 15, "theory_ratio": 0.30, "sort_order": 7},
+      {"code": "M3_L1_01", "title": "身份松动与生命地图", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 10, "theory_ratio": 0.30, "sort_order": 8},
+      {"code": "M3_L1_02", "title": "被动→主动身份转化初体验", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 10, "theory_ratio": 0.20, "sort_order": 9},
+      {"code": "M4_L1_01", "title": "自我教练基础技术", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 10, "theory_ratio": 0.30, "sort_order": 10},
+      {"code": "M4_L1_02", "title": "温和邀请与边界感知", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 10, "theory_ratio": 0.20, "sort_order": 11}
+    ],
+    "sharer": [
+      {"code": "M1_L2_01", "title": "行为类型识别(控制/内驱/情境)", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 20, "theory_ratio": 0.40, "sort_order": 1},
+      {"code": "M1_L2_02", "title": "行为语言与经验结构化表达", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 20, "theory_ratio": 0.30, "sort_order": 2},
+      {"code": "M1_L2_03", "title": "转介判断的行为信号识别", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 20, "theory_ratio": 0.40, "sort_order": 3},
+      {"code": "M2_L2_01", "title": "五维度经验分享方法论", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 20, "theory_ratio": 0.30, "sort_order": 4},
+      {"code": "M2_L2_02", "title": "生活节奏个体差异理解", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 20, "theory_ratio": 0.40, "sort_order": 5},
+      {"code": "M2_L2_03", "title": "社会支持系统构建", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 20, "theory_ratio": 0.30, "sort_order": 6},
+      {"code": "M3_L2_01", "title": "成长故事结构化与共情表达", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 20, "theory_ratio": 0.30, "sort_order": 7},
+      {"code": "M3_L2_02", "title": "共情vs投射区分训练", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 20, "theory_ratio": 0.30, "sort_order": 8},
+      {"code": "M4_L2_01", "title": "同伴支持技术(40学时)", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 30, "theory_ratio": 0.30, "sort_order": 9},
+      {"code": "M4_L2_02", "title": "伦理边界与安全转介", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 15, "theory_ratio": 0.40, "sort_order": 10},
+      {"code": "M4_L2_03", "title": "ICF核心能力入门", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 15, "theory_ratio": 0.50, "sort_order": 11}
+    ],
+    "coach": [
+      {"code": "M1_L3_01", "title": "行为处方设计方法论", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 30, "theory_ratio": 0.50, "sort_order": 1},
+      {"code": "M1_L3_02", "title": "10大高风险场景实操", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 40, "theory_ratio": 0.40, "sort_order": 2},
+      {"code": "M1_L3_03", "title": "M-Action设计与慢病行为解构", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 30, "theory_ratio": 0.50, "sort_order": 3},
+      {"code": "M1_L3_04", "title": "SOP六步法精通", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 20, "theory_ratio": 0.40, "sort_order": 4},
+      {"code": "M2_L3_01", "title": "五维度方案系统设计", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 30, "theory_ratio": 0.50, "sort_order": 5},
+      {"code": "M2_L3_02", "title": "CGM/HRV数据深度解读", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 30, "theory_ratio": 0.50, "sort_order": 6},
+      {"code": "M2_L3_03", "title": "环境-行为关系分析与干预", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 20, "theory_ratio": 0.50, "sort_order": 7},
+      {"code": "M2_L3_04", "title": "节律重建个性化方案", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 20, "theory_ratio": 0.40, "sort_order": 8},
+      {"code": "M3_L3_01", "title": "身份链与价值锚定引导", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 30, "theory_ratio": 0.40, "sort_order": 9},
+      {"code": "M3_L3_02", "title": "生命脚本识别与重写", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 30, "theory_ratio": 0.50, "sort_order": 10},
+      {"code": "M3_L3_03", "title": "三环模型(个体/关系/系统)", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 20, "theory_ratio": 0.50, "sort_order": 11},
+      {"code": "M4_L3_01", "title": "动机访谈精通(MI)", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 40, "theory_ratio": 0.40, "sort_order": 12},
+      {"code": "M4_L3_02", "title": "TTM跨理论模型应用", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 30, "theory_ratio": 0.50, "sort_order": 13},
+      {"code": "M4_L3_03", "title": "COM-B行为改变框架", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 30, "theory_ratio": 0.50, "sort_order": 14},
+      {"code": "M4_L3_04", "title": "教练伦理与边界精深", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 20, "theory_ratio": 0.60, "sort_order": 15},
+      {"code": "M4_L3_05", "title": "AI Co-Pilot协同工作", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 30, "theory_ratio": 0.40, "sort_order": 16}
+    ],
+    "promoter": [
+      {"code": "M1_L4_01", "title": "行为干预项目设计", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 50, "theory_ratio": 0.60, "sort_order": 1},
+      {"code": "M1_L4_02", "title": "行为处方设计评审标准", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 40, "theory_ratio": 0.60, "sort_order": 2},
+      {"code": "M1_L4_03", "title": "循证行为干预方法论", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 50, "theory_ratio": 0.70, "sort_order": 3},
+      {"code": "M1_L4_04", "title": "行为干预效果评估体系", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 40, "theory_ratio": 0.60, "sort_order": 4},
+      {"code": "M2_L4_01", "title": "生活方式医学系统论", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 50, "theory_ratio": 0.60, "sort_order": 5},
+      {"code": "M2_L4_02", "title": "多维度整合干预方案设计", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 50, "theory_ratio": 0.60, "sort_order": 6},
+      {"code": "M2_L4_03", "title": "人群健康管理项目设计", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 50, "theory_ratio": 0.60, "sort_order": 7},
+      {"code": "M3_L4_01", "title": "生命成长理论框架", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 40, "theory_ratio": 0.60, "sort_order": 8},
+      {"code": "M3_L4_02", "title": "群体意识转化方法论", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 40, "theory_ratio": 0.60, "sort_order": 9},
+      {"code": "M3_L4_03", "title": "LifeOS系统设计与教学", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 40, "theory_ratio": 0.50, "sort_order": 10},
+      {"code": "M4_L4_01", "title": "师资培训课程设计", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 60, "theory_ratio": 0.50, "sort_order": 11},
+      {"code": "M4_L4_02", "title": "教练督导方法论", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 50, "theory_ratio": 0.60, "sort_order": 12},
+      {"code": "M4_L4_03", "title": "400分考核体系执行与评审", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 40, "theory_ratio": 0.50, "sort_order": 13},
+      {"code": "M4_L4_04", "title": "标准化路径工具开发", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 50, "theory_ratio": 0.60, "sort_order": 14},
+      {"code": "M4_L4_05", "title": "跨学科整合指导", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 50, "theory_ratio": 0.60, "sort_order": 15}
+    ],
+    "master": [
+      {"code": "M1_L5_01", "title": "行为科学前沿理论", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 80, "theory_ratio": 0.80, "sort_order": 1},
+      {"code": "M1_L5_02", "title": "行为干预范式创新", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 80, "theory_ratio": 0.80, "sort_order": 2},
+      {"code": "M1_L5_03", "title": "行为健康标准制定方法", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 70, "theory_ratio": 0.70, "sort_order": 3},
+      {"code": "M1_L5_04", "title": "循证研究设计与论文发表", "module_type": "M1_BEHAVIOR", "tier": "T1_PRESCRIPTION", "credit_value": 70, "theory_ratio": 0.80, "sort_order": 4},
+      {"code": "M2_L5_01", "title": "整合医学与行为健康融合", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 80, "theory_ratio": 0.70, "sort_order": 5},
+      {"code": "M2_L5_02", "title": "公共卫生政策与行为健康", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 90, "theory_ratio": 0.80, "sort_order": 6},
+      {"code": "M2_L5_03", "title": "人群健康管理理论创新", "module_type": "M2_LIFESTYLE", "tier": "T2_HEALTH", "credit_value": 80, "theory_ratio": 0.80, "sort_order": 7},
+      {"code": "M3_L5_01", "title": "生命哲学与存在主义健康观", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 80, "theory_ratio": 0.80, "sort_order": 8},
+      {"code": "M3_L5_02", "title": "文化适配的意义建构理论", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 90, "theory_ratio": 0.70, "sort_order": 9},
+      {"code": "M3_L5_03", "title": "生命成长体系原创方法论", "module_type": "M3_MINDSET", "tier": "T3_GROWTH", "credit_value": 80, "theory_ratio": 0.70, "sort_order": 10},
+      {"code": "M4_L5_01", "title": "教练体系架构设计", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 100, "theory_ratio": 0.70, "sort_order": 11},
+      {"code": "M4_L5_02", "title": "认证标准体系建设", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 100, "theory_ratio": 0.70, "sort_order": 12},
+      {"code": "M4_L5_03", "title": "行业伦理规范制定", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 100, "theory_ratio": 0.80, "sort_order": 13},
+      {"code": "M4_L5_04", "title": "国际教练体系对标研究", "module_type": "M4_COACHING", "tier": "T2_HEALTH", "credit_value": 100, "theory_ratio": 0.80, "sort_order": 14}
+    ]
+  },
+  "elective_categories": [
+    {
+      "category": "clinical",
+      "title": "临床专科",
+      "tier": "T1_PRESCRIPTION",
+      "credit_range": {"min": 5, "max": 30},
+      "examples": ["糖尿病行为干预", "高血压行为管理", "血脂异常生活方式", "高尿酸饮食行为", "COPD呼吸康复", "中医体质辨识"]
+    },
+    {
+      "category": "nutrition",
+      "title": "营养深度",
+      "tier": "T2_HEALTH",
+      "credit_range": {"min": 5, "max": 20},
+      "examples": ["临床营养基础", "功能营养学", "进食行为心理学", "稳糖膳食设计", "肠道微生物与行为"]
+    },
+    {
+      "category": "exercise",
+      "title": "运动科学",
+      "tier": "T2_HEALTH",
+      "credit_range": {"min": 5, "max": 20},
+      "examples": ["运动生理学", "运动处方设计", "运动心理学", "特殊人群运动指导", "运动损伤预防"]
+    },
+    {
+      "category": "psychology",
+      "title": "心理学",
+      "tier": "T3_GROWTH",
+      "credit_range": {"min": 5, "max": 25},
+      "examples": ["健康心理学", "行为心理学", "动机心理学", "认知心理学", "人格心理学", "社会心理学", "积极心理学"]
+    },
+    {
+      "category": "coaching_tech",
+      "title": "教练技术",
+      "tier": "T2_HEALTH",
+      "credit_range": {"min": 5, "max": 25},
+      "examples": ["NLP技术", "欣赏式探询", "非暴力沟通", "焦点解决短期治疗", "ICF高级框架", "团体动力学"]
+    },
+    {
+      "category": "humanities",
+      "title": "人文社会",
+      "tier": "T3_GROWTH",
+      "credit_range": {"min": 5, "max": 15},
+      "examples": ["公共卫生导论", "医学伦理", "成人学习理论", "健康传播学", "流行病学基础", "卫生经济学"]
+    },
+    {
+      "category": "scenario",
+      "title": "场景专题(10大高风险场景)",
+      "tier": "T1_PRESCRIPTION",
+      "credit_range": {"min": 10, "max": 20},
+      "examples": ["情绪性进食", "家庭冲突", "职场嵌入", "社交场景", "运动恐惧", "工具依赖", "自我否定", "表现焦虑", "权威依赖", "觉知冲突"]
+    }
+  ]
+}

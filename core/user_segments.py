@@ -2,7 +2,7 @@
 用户分层与权限管理系统
 User Segmentation and Permission Management System
 
-v18 版本 - 多来源用户分层管理
+v19 版本 - 多来源用户分层管理
 
 用户来源类型：
 1. organic - 自然流量（观察者转化）：C端公众用户
@@ -14,7 +14,7 @@ v18 版本 - 多来源用户分层管理
 1. free - 免费体验：基础功能
 2. basic - 基础会员：标准服务
 3. premium - 高级会员：完整服务 + 专家支持
-4. vip - VIP会员：180天系统课程 + 专属服务
+4. vip - VIP会员：系统课程 + 专属服务
 """
 
 from enum import Enum
@@ -79,31 +79,11 @@ class FeatureModule(str, Enum):
     DATA_ANALYTICS = "data_analytics"
 
 
-class GrowthPath(str, Enum):
-    """成长路径"""
-    INTERVENTION = "intervention"   # 3见6段5层180天生命重塑路径
-    EXPERT = "expert"               # 术业有专攻-专业高效路径
-    KNOWLEDGE = "knowledge"         # 行为养成的科学认知路径
-    PRACTICE = "practice"           # 做中学·做中觉-良性循环的健康之路
-    COMMUNITY = "community"         # 同成长·共健康路径
-    COACH = "coach"                 # 自我成长和赋能生命的行为教练之路
-
-
 # ========================================
-# 角色层级（与前端 roles.ts 同步）
+# 角色层级 — 引用 models.py 权威定义 (1-indexed)
 # ========================================
 
-ROLE_LEVELS: Dict[str, int] = {
-    "observer": 1,
-    "grower": 2,
-    "sharer": 3,
-    "coach": 4,
-    "promoter": 5,
-    "supervisor": 5,  # 与促进师同级
-    "master": 6,
-    "admin": 99,
-    "system": 100,
-}
+from core.models import ROLE_LEVEL_STR as ROLE_LEVELS  # noqa: E402
 
 ROLE_DISPLAY_NAMES: Dict[str, str] = {
     "observer": "行为健康观察员",
@@ -177,7 +157,6 @@ FEATURE_MODULE_DISPLAY: Dict[str, str] = {
 class PermissionConfig:
     """权限配置"""
     features: List[FeatureModule]
-    paths: List[GrowthPath]
     description: str
 
 
@@ -189,7 +168,6 @@ BASE_PERMISSIONS: Dict[ServiceTier, PermissionConfig] = {
             FeatureModule.CONTENT_FEED,
             FeatureModule.COMMUNITY_READ,
         ],
-        paths=[],
         description="体验基础功能，了解平台价值",
     ),
     ServiceTier.BASIC: PermissionConfig(
@@ -202,7 +180,6 @@ BASE_PERMISSIONS: Dict[ServiceTier, PermissionConfig] = {
             FeatureModule.TOOL_LIBRARY,
             FeatureModule.PROGRESS_TRACKING,
         ],
-        paths=[GrowthPath.KNOWLEDGE, GrowthPath.PRACTICE],
         description="自主学习，获得基础成长支持",
     ),
     ServiceTier.PREMIUM: PermissionConfig(
@@ -219,12 +196,6 @@ BASE_PERMISSIONS: Dict[ServiceTier, PermissionConfig] = {
             FeatureModule.GROUP_SESSION,
             FeatureModule.COMMUNITY_INTERACT,
             FeatureModule.AI_COMPANION,
-        ],
-        paths=[
-            GrowthPath.KNOWLEDGE,
-            GrowthPath.PRACTICE,
-            GrowthPath.EXPERT,
-            GrowthPath.COMMUNITY,
         ],
         description="专家支持，深度成长",
     ),
@@ -247,14 +218,7 @@ BASE_PERMISSIONS: Dict[ServiceTier, PermissionConfig] = {
             FeatureModule.CRISIS_SUPPORT,
             FeatureModule.FAMILY_SUPPORT,
         ],
-        paths=[
-            GrowthPath.INTERVENTION,
-            GrowthPath.EXPERT,
-            GrowthPath.KNOWLEDGE,
-            GrowthPath.PRACTICE,
-            GrowthPath.COMMUNITY,
-        ],
-        description="180天系统课程，全方位专属服务",
+        description="系统课程，全方位专属服务",
     ),
 }
 
@@ -264,7 +228,6 @@ class SourceAdjustment:
     """来源调整配置"""
     additional_features: List[FeatureModule]
     restricted_features: List[FeatureModule]
-    additional_paths: List[GrowthPath]
     description: str
 
 
@@ -273,25 +236,21 @@ SOURCE_ADJUSTMENTS: Dict[UserSource, SourceAdjustment] = {
     UserSource.ORGANIC: SourceAdjustment(
         additional_features=[],
         restricted_features=[],
-        additional_paths=[],
         description="标准权限，按服务等级享受相应功能",
     ),
     UserSource.COACH_REFERRED: SourceAdjustment(
         additional_features=[FeatureModule.AI_COMPANION],
         restricted_features=[],
-        additional_paths=[],
         description="教练专属跟进，额外获得AI陪伴支持",
     ),
     UserSource.INSTITUTION: SourceAdjustment(
         additional_features=[FeatureModule.CRISIS_SUPPORT],
         restricted_features=[FeatureModule.PRIVATE_COACH],
-        additional_paths=[],
         description="机构统一服务，危机支持优先",
     ),
     UserSource.ENTERPRISE: SourceAdjustment(
         additional_features=[FeatureModule.GROUP_SESSION],
         restricted_features=[],
-        additional_paths=[GrowthPath.COMMUNITY],
         description="企业健康计划，团体活动为主",
     ),
 }
@@ -373,41 +332,11 @@ def get_user_features(context: UserPermissionContext) -> List[FeatureModule]:
     return list(features)
 
 
-def get_user_paths(context: UserPermissionContext) -> List[GrowthPath]:
-    """
-    获取用户可用的成长路径
-
-    Args:
-        context: 用户权限上下文
-
-    Returns:
-        可用路径列表
-    """
-    base_permissions = BASE_PERMISSIONS[context.service_tier]
-    paths = set(base_permissions.paths)
-
-    # 应用来源调整
-    source_adjust = SOURCE_ADJUSTMENTS[context.source]
-    for p in source_adjust.additional_paths:
-        paths.add(p)
-
-    # 行为健康教练之路（专家角色）
-    if context.role in ["coach", "promoter", "supervisor", "master"]:
-        paths.add(GrowthPath.COACH)
-
-    return list(paths)
-
 
 def has_feature_access(context: UserPermissionContext, feature: FeatureModule) -> bool:
     """检查用户是否有某功能的权限"""
     user_features = get_user_features(context)
     return feature in user_features
-
-
-def has_path_access(context: UserPermissionContext, path: GrowthPath) -> bool:
-    """检查用户是否可以访问某成长路径"""
-    user_paths = get_user_paths(context)
-    return path in user_paths
 
 
 def get_feature_min_tier(feature: FeatureModule) -> ServiceTier:
@@ -455,7 +384,6 @@ class UserSegment:
     source: UserSource
     default_tier: ServiceTier
     features: List[FeatureModule]
-    paths: List[GrowthPath]
 
 
 USER_SEGMENTS: List[UserSegment] = [
@@ -470,7 +398,6 @@ USER_SEGMENTS: List[UserSegment] = [
             FeatureModule.CONTENT_FEED,
             FeatureModule.COMMUNITY_READ,
         ],
-        paths=[],
     ),
     UserSegment(
         id="self_grower",
@@ -487,7 +414,6 @@ USER_SEGMENTS: List[UserSegment] = [
             FeatureModule.TOOL_LIBRARY,
             FeatureModule.PROGRESS_TRACKING,
         ],
-        paths=[GrowthPath.KNOWLEDGE, GrowthPath.PRACTICE],
     ),
     UserSegment(
         id="coach_client",
@@ -506,7 +432,6 @@ USER_SEGMENTS: List[UserSegment] = [
             FeatureModule.EXPERT_CONSULT,
             FeatureModule.AI_COMPANION,
         ],
-        paths=[GrowthPath.KNOWLEDGE, GrowthPath.PRACTICE, GrowthPath.EXPERT],
     ),
     UserSegment(
         id="institution_patient",
@@ -525,7 +450,6 @@ USER_SEGMENTS: List[UserSegment] = [
             FeatureModule.GROUP_SESSION,
             FeatureModule.CRISIS_SUPPORT,
         ],
-        paths=[GrowthPath.KNOWLEDGE, GrowthPath.PRACTICE, GrowthPath.EXPERT],
     ),
     UserSegment(
         id="enterprise_employee",
@@ -543,12 +467,11 @@ USER_SEGMENTS: List[UserSegment] = [
             FeatureModule.PROGRESS_TRACKING,
             FeatureModule.GROUP_SESSION,
         ],
-        paths=[GrowthPath.KNOWLEDGE, GrowthPath.PRACTICE, GrowthPath.COMMUNITY],
     ),
     UserSegment(
         id="vip_member",
         name="VIP会员",
-        description="180天系统课程学员，全方位专属服务",
+        description="系统课程学员，全方位专属服务",
         source=UserSource.ORGANIC,
         default_tier=ServiceTier.VIP,
         features=[
@@ -567,13 +490,6 @@ USER_SEGMENTS: List[UserSegment] = [
             FeatureModule.PRIVATE_COACH,
             FeatureModule.CRISIS_SUPPORT,
             FeatureModule.FAMILY_SUPPORT,
-        ],
-        paths=[
-            GrowthPath.INTERVENTION,
-            GrowthPath.EXPERT,
-            GrowthPath.KNOWLEDGE,
-            GrowthPath.PRACTICE,
-            GrowthPath.COMMUNITY,
         ],
     ),
 ]
@@ -601,7 +517,6 @@ __all__ = [
     "UserSource",
     "ServiceTier",
     "FeatureModule",
-    "GrowthPath",
 
     # 显示名称
     "USER_SOURCE_DISPLAY",
@@ -621,9 +536,7 @@ __all__ = [
     "UserPermissionContext",
     "check_role_permission",
     "get_user_features",
-    "get_user_paths",
     "has_feature_access",
-    "has_path_access",
     "get_feature_min_tier",
     "get_upgrade_suggestion",
 

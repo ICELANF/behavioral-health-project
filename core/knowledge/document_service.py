@@ -2,6 +2,7 @@
 专家知识文档服务
 
 提供知识文档 CRUD、发布（分块 + 嵌入）、撤回、删除等操作。
+包含内容治理：证据分层、审核流程、过期降权。
 """
 
 import json
@@ -11,7 +12,7 @@ from typing import List, Optional
 
 from sqlalchemy.orm import Session
 
-from core.models import KnowledgeDocument, KnowledgeChunk, User
+from core.models import KnowledgeDocument, KnowledgeChunk, User, TIER_PRIORITY_MAP
 from core.knowledge.embedding_service import EmbeddingService
 from core.knowledge.chunker import chunk_markdown
 
@@ -27,8 +28,22 @@ def create_document(
     author: str = "",
     domain_id: str = "",
     priority: int = 5,
+    evidence_tier: Optional[str] = None,
+    content_type: Optional[str] = None,
+    published_date: Optional[datetime] = None,
+    contributor_id: Optional[int] = None,
+    expires_at: Optional[datetime] = None,
 ) -> KnowledgeDocument:
-    """创建草稿文档"""
+    """创建草稿文档（含治理字段）"""
+    # tier → priority 自动映射
+    tier = evidence_tier or "T3"
+    mapped_priority = TIER_PRIORITY_MAP.get(tier, priority)
+
+    # T4 个人经验自动设为待审核
+    review_status = None
+    if tier == "T4":
+        review_status = "pending"
+
     doc = KnowledgeDocument(
         title=title,
         author=author or user.username,
@@ -36,10 +51,16 @@ def create_document(
         domain_id=domain_id or None,
         scope="tenant",
         tenant_id=tenant_id,
-        priority=priority,
+        priority=mapped_priority,
         is_active=False,
         status="draft",
         chunk_count=0,
+        evidence_tier=tier,
+        content_type=content_type,
+        published_date=published_date,
+        review_status=review_status,
+        contributor_id=contributor_id,
+        expires_at=expires_at,
         created_at=datetime.utcnow(),
     )
     db.add(doc)
@@ -56,6 +77,10 @@ def update_document(
     raw_content: Optional[str] = None,
     domain_id: Optional[str] = None,
     priority: Optional[int] = None,
+    evidence_tier: Optional[str] = None,
+    content_type: Optional[str] = None,
+    published_date: Optional[datetime] = None,
+    expires_at: Optional[datetime] = None,
 ) -> KnowledgeDocument:
     """更新草稿文档（仅 draft/error 状态可编辑）"""
     doc = db.query(KnowledgeDocument).filter(
@@ -73,8 +98,18 @@ def update_document(
         doc.raw_content = raw_content
     if domain_id is not None:
         doc.domain_id = domain_id
-    if priority is not None:
+    if evidence_tier is not None:
+        doc.evidence_tier = evidence_tier
+        # tier 变更时自动重映射 priority
+        doc.priority = TIER_PRIORITY_MAP.get(evidence_tier, doc.priority)
+    elif priority is not None:
         doc.priority = priority
+    if content_type is not None:
+        doc.content_type = content_type
+    if published_date is not None:
+        doc.published_date = published_date
+    if expires_at is not None:
+        doc.expires_at = expires_at
     doc.updated_at = datetime.utcnow()
 
     db.commit()
@@ -85,12 +120,7 @@ def update_document(
 def publish_document(db: Session, doc_id: int, tenant_id: str) -> KnowledgeDocument:
     """
     发布文档：分块 + 嵌入 + 写入 KnowledgeChunk
-    1. status → processing
-    2. 删除旧 chunks
-    3. chunk_markdown(raw_content)
-    4. EmbeddingService.embed_batch(texts)
-    5. 批量创建 KnowledgeChunk
-    6. status → ready, chunk_count = N
+    T4 审核守卫：必须 review_status=approved 才可发布
     """
     doc = db.query(KnowledgeDocument).filter(
         KnowledgeDocument.id == doc_id,
@@ -100,6 +130,10 @@ def publish_document(db: Session, doc_id: int, tenant_id: str) -> KnowledgeDocum
         raise ValueError("文档不存在")
     if not doc.raw_content or not doc.raw_content.strip():
         raise ValueError("文档内容为空，无法发布")
+
+    # T4 审核守卫
+    if doc.evidence_tier == "T4" and doc.review_status != "approved":
+        raise ValueError("T4 个人经验内容须审核通过后方可发布")
 
     # 1. 标记处理中
     doc.status = "processing"
@@ -226,3 +260,109 @@ def get_document(db: Session, doc_id: int, tenant_id: str) -> Optional[Knowledge
         KnowledgeDocument.id == doc_id,
         KnowledgeDocument.tenant_id == tenant_id,
     ).first()
+
+
+# ============================================
+# 内容治理 — 审核、过期、投稿查询
+# ============================================
+
+def approve_document(
+    db: Session,
+    doc_id: int,
+    reviewer_id: int,
+    tenant_id: Optional[str] = None,
+) -> KnowledgeDocument:
+    """审核通过文档"""
+    q = db.query(KnowledgeDocument).filter(KnowledgeDocument.id == doc_id)
+    if tenant_id:
+        q = q.filter(KnowledgeDocument.tenant_id == tenant_id)
+    doc = q.first()
+    if not doc:
+        raise ValueError("文档不存在")
+    if doc.review_status != "pending":
+        raise ValueError("仅待审核文档可执行审核操作")
+
+    doc.review_status = "approved"
+    doc.reviewer_id = reviewer_id
+    doc.reviewed_at = datetime.utcnow()
+    doc.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+def reject_document(
+    db: Session,
+    doc_id: int,
+    reviewer_id: int,
+    tenant_id: Optional[str] = None,
+) -> KnowledgeDocument:
+    """审核拒绝文档"""
+    q = db.query(KnowledgeDocument).filter(KnowledgeDocument.id == doc_id)
+    if tenant_id:
+        q = q.filter(KnowledgeDocument.tenant_id == tenant_id)
+    doc = q.first()
+    if not doc:
+        raise ValueError("文档不存在")
+    if doc.review_status != "pending":
+        raise ValueError("仅待审核文档可执行审核操作")
+
+    doc.review_status = "rejected"
+    doc.reviewer_id = reviewer_id
+    doc.reviewed_at = datetime.utcnow()
+    doc.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(doc)
+    return doc
+
+
+def handle_expired_documents(db: Session) -> int:
+    """
+    过期文档降权：priority -= 2, 最低 1
+    返回处理数量
+    """
+    now = datetime.utcnow()
+    expired_docs = db.query(KnowledgeDocument).filter(
+        KnowledgeDocument.expires_at.isnot(None),
+        KnowledgeDocument.expires_at < now,
+        KnowledgeDocument.is_active == True,
+        KnowledgeDocument.priority > 1,
+    ).all()
+
+    count = 0
+    for doc in expired_docs:
+        doc.priority = max(doc.priority - 2, 1)
+        doc.updated_at = now
+        count += 1
+
+    if count:
+        db.commit()
+        logger.info(f"[Governance] 过期文档降权: {count} 篇")
+    return count
+
+
+def list_pending_reviews(
+    db: Session,
+    domain: Optional[str] = None,
+) -> List[KnowledgeDocument]:
+    """列出待审核文档"""
+    query = db.query(KnowledgeDocument).filter(
+        KnowledgeDocument.review_status == "pending",
+    )
+    if domain:
+        query = query.filter(KnowledgeDocument.domain_id == domain)
+    return query.order_by(KnowledgeDocument.created_at.asc()).all()
+
+
+def list_user_contributions(
+    db: Session,
+    contributor_id: int,
+    status: Optional[str] = None,
+) -> List[KnowledgeDocument]:
+    """列出用户投稿"""
+    query = db.query(KnowledgeDocument).filter(
+        KnowledgeDocument.contributor_id == contributor_id,
+    )
+    if status:
+        query = query.filter(KnowledgeDocument.review_status == status)
+    return query.order_by(KnowledgeDocument.created_at.desc()).all()

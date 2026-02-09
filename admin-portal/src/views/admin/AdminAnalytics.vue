@@ -1,12 +1,13 @@
 <template>
   <div class="admin-analytics">
-    <div class="page-header">
-      <h2>平台数据分析</h2>
-      <a-button type="primary" @click="fetchAll" :loading="refreshing">
-        <template #icon><ReloadOutlined /></template>
-        刷新数据
-      </a-button>
-    </div>
+    <a-page-header title="平台数据分析" @back="$router.back()" style="padding: 0 0 16px">
+      <template #extra>
+        <a-button type="primary" @click="fetchAll" :loading="refreshing">
+          <template #icon><ReloadOutlined /></template>
+          刷新数据
+        </a-button>
+      </template>
+    </a-page-header>
 
     <!-- KPI 卡片行 -->
     <a-row :gutter="16" class="kpi-row">

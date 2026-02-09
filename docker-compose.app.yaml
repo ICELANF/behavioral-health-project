@@ -24,6 +24,7 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - OLLAMA_API_URL=http://host.docker.internal:11434
+      - DATABASE_URL=postgresql://postgres:difyai123456@db:5432/health_platform
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

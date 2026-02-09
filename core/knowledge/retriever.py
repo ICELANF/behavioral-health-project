@@ -14,6 +14,7 @@ import re
 import json
 import logging
 import numpy as np
+from datetime import datetime
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
@@ -80,6 +81,7 @@ class Citation:
     document_id: int
     scope: str = "platform"          # tenant/domain/platform
     source_type: str = SourceType.KNOWLEDGE
+    evidence_tier: str = ""           # T1/T2/T3/T4
 
     @property
     def scope_label(self) -> str:
@@ -106,7 +108,7 @@ class Citation:
         return f"[{self.index}] {self.doc_title}" + (f" · {self.heading}" if self.heading else "")
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "index": self.index,
             "label": self.label,
             "shortLabel": self.short_label,
@@ -123,6 +125,9 @@ class Citation:
             "scopeLabel": self.scope_label,
             "sourceType": self.source_type,
         }
+        if self.evidence_tier:
+            d["evidenceTier"] = self.evidence_tier
+        return d
 
 
 @dataclass
@@ -298,7 +303,14 @@ class KnowledgeRetriever:
             ).first()
             priority_adj = ((doc.priority or 5) - 5) * 0.01 if doc else 0.0
 
-            boosted = raw_score + boost + priority_adj
+            # freshness_penalty: 过期文档轻微降权
+            freshness_penalty = 0.0
+            now = datetime.utcnow()
+            if doc and doc.expires_at and doc.expires_at < now:
+                days_expired = (now - doc.expires_at).days
+                freshness_penalty = min(days_expired * 0.005, 0.10)
+
+            boosted = raw_score + boost + priority_adj - freshness_penalty
             scored.append((chunk, raw_score, boosted, doc))
 
         # 4. 排序取 top_k
@@ -322,6 +334,7 @@ class KnowledgeRetriever:
                 document_id=chunk.document_id,
                 scope=chunk.scope or "platform",
                 source_type=SourceType.KNOWLEDGE,
+                evidence_tier=getattr(doc, 'evidence_tier', '') or "",
             ))
 
         # 6. 构建 prompt 注入

@@ -198,6 +198,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
+import request from '@/api/request'
 import { TRIGGER_DOMAINS } from '../../constants'
 import { CONTENT_TYPE_CONFIG, CONTENT_SOURCE_CONFIG } from '../../types/content'
 import type { ReviewQueueItem, ReviewChecklist } from '../../types/content'
@@ -254,73 +255,45 @@ const columns = [
   { title: '操作', key: 'action', width: 150, fixed: 'right' }
 ]
 
-// 模拟数据
-const queue = ref<(ReviewQueueItem & { summary?: string })[]>([
-  {
-    content_id: '1',
-    content_type: 'case_share',
-    type: 'case_share',
-    content_title: '我是如何通过正念练习改善焦虑的',
-    title: '我是如何通过正念练习改善焦虑的',
-    source: 'sharer',
-    author_name: '匿名用户A',
-    submitted_at: '2026-02-05 10:30:00',
-    priority: 'high',
-    domain: 'stress',
-    summary: '分享我三个月来坚持正念练习的心得，从每天焦虑发作到现在基本平静...'
-  },
-  {
-    content_id: '2',
-    content_type: 'article',
-    type: 'article',
-    content_title: '糖尿病患者的运动指南',
-    title: '糖尿病患者的运动指南',
-    source: 'coach',
-    author_name: '李教练',
-    submitted_at: '2026-02-05 09:15:00',
-    priority: 'normal',
-    domain: 'exercise',
-    summary: '针对糖尿病患者制定的安全运动方案，包括运动前准备、运动强度控制...'
-  },
-  {
-    content_id: '3',
-    content_type: 'article',
-    type: 'article',
-    content_title: '睡眠质量提升的5个小技巧',
-    title: '睡眠质量提升的5个小技巧',
-    source: 'ai_generated',
-    author_name: 'AI助手',
-    submitted_at: '2026-02-05 08:00:00',
-    priority: 'low',
-    domain: 'sleep',
-    summary: '基于睡眠科学研究总结的5个实用睡眠改善技巧...'
-  },
-  {
-    content_id: '4',
-    content_type: 'case_share',
-    type: 'case_share',
-    content_title: '戒烟100天，我的真实经历',
-    title: '戒烟100天，我的真实经历',
-    source: 'sharer',
-    author_name: '老烟枪小张',
-    submitted_at: '2026-02-04 22:00:00',
-    priority: 'high',
-    domain: 'stress',
-    summary: '从每天两包烟到完全戒断，中间的挣扎和最终的成功...'
-  },
-])
+const queue = ref<(ReviewQueueItem & { summary?: string })[]>([])
 
 const allChecked = computed(() => {
   return Object.values(checklist).every(v => v === true)
 })
 
-const fetchQueue = () => {
+const fetchQueue = async () => {
   loading.value = true
-  // TODO: 调用API获取审核队列
-  setTimeout(() => {
+  try {
+    const params: Record<string, any> = {
+      status: 'draft',
+      skip: (pagination.current - 1) * pagination.pageSize,
+      limit: pagination.pageSize,
+    }
+    if (filters.type) params.content_type = filters.type
+    if (filters.domain) params.domain = filters.domain
+
+    const { data } = await request.get('/v1/content-manage/list', { params })
+
+    queue.value = (data.items || []).map((item: any) => ({
+      content_id: String(item.id),
+      content_type: item.content_type || 'article',
+      type: item.content_type || 'article',
+      content_title: item.title,
+      title: item.title,
+      source: item.tenant_id ? 'expert' : 'platform',
+      author_name: '平台用户',
+      submitted_at: item.created_at,
+      priority: 'normal',
+      domain: item.domain || '',
+      summary: item.body?.substring(0, 100) || '',
+    }))
+    pagination.total = data.total || 0
+    stats.pending = data.total || 0
+  } catch (e) {
+    console.error('Failed to fetch review queue:', e)
+  } finally {
     loading.value = false
-    stats.pending = queue.value.length
-  }, 500)
+  }
 }
 
 const handleTableChange = (pag: any) => {

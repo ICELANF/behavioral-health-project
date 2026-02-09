@@ -100,7 +100,7 @@ const toolIcon = (key: string) => {
 const loadData = async () => {
   loading.value = true
   try {
-    const resp = await fetch(`${API_BASE}/api/v1/coach/my-tools-stats`, {
+    const resp = await fetch(`${API_BASE}/v1/coach/my-tools-stats`, {
       headers: authHeaders,
     })
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)

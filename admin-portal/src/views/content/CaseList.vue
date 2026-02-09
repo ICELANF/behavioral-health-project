@@ -238,6 +238,7 @@ import {
   StarOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import request from '@/api/request'
 import type { CaseShare, ContentSource, ReviewStatus } from '@/types/content'
 import { CONTENT_SOURCE_CONFIG } from '@/types/content'
 import { TRIGGER_DOMAINS } from '@/constants'
@@ -414,109 +415,54 @@ const handleDelete = (record: CaseShare) => {
   fetchCases()
 }
 
-// 获取数据
+// 获取数据 (调用真实 API)
 const fetchCases = async () => {
   loading.value = true
   try {
-    // 模拟数据
-    cases.value = [
-      {
-        case_id: 'c1',
-        type: 'case_share',
-        source: 'sharer',
-        status: 'published',
-        title: '从焦虑到平静：我的21天正念之旅',
-        domain: 'emotion',
-        challenge: '工作压力大，经常焦虑失眠，情绪波动明显，影响了生活质量和人际关系。',
-        approach: '参加了平台的21天正念打卡活动，每天坚持10分钟冥想，记录情绪变化。',
-        outcome: '焦虑感明显减轻，睡眠质量提升，学会了在情绪来临时先暂停观察，而不是立即反应。',
-        reflection: '正念不是要消除负面情绪，而是学会与它们和平共处。',
-        is_anonymous: false,
-        display_name: '成长ing',
-        author_id: 'user1',
-        author_role: '平台用户',
-        behavior_stage: 'action',
-        allow_comments: true,
-        comment_count: 23,
-        like_count: 156,
-        helpful_count: 89,
-        review_status: 'approved',
-        reviewed_by: 'admin1',
-        reviewed_at: '2025-01-10T14:00:00Z',
-        created_at: '2025-01-08T10:00:00Z',
-        published_at: '2025-01-10T15:00:00Z'
-      },
-      {
-        case_id: 'c2',
-        type: 'case_share',
-        source: 'coach',
-        status: 'published',
-        title: '帮助学员建立运动习惯的教练心得',
-        domain: 'exercise',
-        challenge: '学员总是坚持不了运动计划，三分钟热度后就放弃了。',
-        approach: '采用渐进式目标设定，从每天5分钟开始，配合打卡激励和定期沟通反馈。',
-        outcome: '学员从完全不运动到能稳定保持每周3次运动，持续了3个月。',
-        reflection: '小步前进比大步跨越更容易成功，教练的陪伴和鼓励至关重要。',
-        is_anonymous: false,
-        display_name: '张教练',
-        author_id: 'coach1',
-        author_role: 'L3健康教练',
-        allow_comments: true,
-        comment_count: 12,
-        like_count: 87,
-        helpful_count: 56,
-        review_status: 'approved',
-        reviewed_by: 'admin1',
-        reviewed_at: '2025-01-15T10:00:00Z',
-        created_at: '2025-01-14T16:00:00Z',
-        published_at: '2025-01-15T11:00:00Z'
-      },
-      {
-        case_id: 'c3',
-        type: 'case_share',
-        source: 'sharer',
-        status: 'pending',
-        title: '戒烟100天的心路历程',
-        domain: 'chronic',
-        challenge: '烟龄15年，每天一包，多次戒烟失败。',
-        approach: '使用平台的28天戒烟打卡，结合尼古丁替代疗法，每次想抽烟就做深呼吸。',
-        outcome: '已经100天没抽烟了，体力明显恢复，家人也很开心。',
-        is_anonymous: true,
-        display_name: '匿名用户',
-        author_id: 'user2',
-        author_role: '平台用户',
-        behavior_stage: 'maintenance',
-        allow_comments: true,
-        comment_count: 0,
-        like_count: 0,
-        helpful_count: 0,
-        review_status: 'pending',
-        created_at: '2026-02-04T09:00:00Z'
-      },
-      {
-        case_id: 'c4',
-        type: 'case_share',
-        source: 'sharer',
-        status: 'revision',
-        title: '我的减肥经历',
-        domain: 'diet',
-        challenge: '体重超标，尝试过很多减肥方法都失败了。',
-        approach: '配合某某减肥药...',
-        outcome: '一个月瘦了20斤。',
-        is_anonymous: false,
-        display_name: '小胖墩',
-        author_id: 'user3',
-        author_role: '平台用户',
-        allow_comments: true,
-        comment_count: 0,
-        like_count: 0,
-        helpful_count: 0,
-        review_status: 'revision',
-        review_comment: '内容涉及减肥药物推荐，需要删除相关内容；减重速度不科学，建议修改表述。',
-        created_at: '2026-02-03T14:00:00Z'
-      }
-    ] as CaseShare[]
-    pagination.total = cases.value.length
+    const params: Record<string, any> = {
+      content_type: 'case_study',
+      skip: (pagination.current - 1) * pagination.pageSize,
+      limit: pagination.pageSize,
+    }
+    if (filters.domain) params.domain = filters.domain
+
+    const { data } = await request.get('/v1/content-manage/list', { params })
+
+    cases.value = (data.items || []).map((item: any) => ({
+      case_id: String(item.id),
+      type: 'case_share',
+      source: item.tenant_id ? 'expert' : 'sharer',
+      status: item.status || 'draft',
+      title: item.title,
+      domain: item.domain || '',
+      challenge: item.body?.substring(0, 200) || '',
+      approach: '',
+      outcome: '',
+      is_anonymous: false,
+      display_name: '平台用户',
+      author_id: String(item.author_id || ''),
+      author_role: '平台用户',
+      allow_comments: true,
+      comment_count: item.comment_count || 0,
+      like_count: item.like_count || 0,
+      helpful_count: 0,
+      review_status: item.status === 'published' ? 'approved' : 'pending',
+      created_at: item.created_at,
+    })) as CaseShare[]
+    pagination.total = data.total || 0
+
+    // 更新统计
+    stats.pending = cases.value.filter(c => c.review_status === 'pending').length
+    stats.published = data.total || 0
+
+    // 客户端关键词过滤
+    if (filters.keyword) {
+      const kw = filters.keyword.toLowerCase()
+      cases.value = cases.value.filter(c => c.title.toLowerCase().includes(kw))
+    }
+  } catch (e) {
+    console.error('Failed to fetch cases:', e)
+    message.error('获取案例列表失败')
   } finally {
     loading.value = false
   }

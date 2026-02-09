@@ -13,11 +13,13 @@ from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import (
     Column, Integer, String, Text, DateTime, Float, Boolean,
-    JSON, ForeignKey, Index, Enum as SQLEnum
+    JSON, ForeignKey, Index, Enum as SQLEnum, text as sa_text
 )
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
+import uuid
 
 Base = declarative_base()
 
@@ -54,6 +56,32 @@ class UserRole(str, enum.Enum):
 
     # 旧角色（向后兼容，映射到新角色）
     PATIENT = "patient"          # 已废弃 → 映射到 grower
+
+
+# ============================================
+# 权威角色等级映射（1-indexed，全局唯一定义）
+# 所有后端代码统一引用此表，不得自行定义
+# 显示标签: L0-L5 = ROLE_LEVEL值 - 1
+# ============================================
+ROLE_LEVEL = {
+    UserRole.OBSERVER: 1,
+    UserRole.GROWER: 2,
+    UserRole.SHARER: 3,
+    UserRole.COACH: 4,
+    UserRole.PROMOTER: 5,
+    UserRole.SUPERVISOR: 5,
+    UserRole.MASTER: 6,
+    UserRole.ADMIN: 99,
+    UserRole.SYSTEM: 100,
+    # 向后兼容
+    UserRole.PATIENT: 2,       # 等同 grower
+}
+
+# 字符串版本（供 auth.py 等使用字符串 key 的模块引用）
+ROLE_LEVEL_STR = {r.value: lv for r, lv in ROLE_LEVEL.items()}
+
+# 显示标签: L0 观察员 ... L5 大师
+ROLE_DISPLAY = {r: f"L{lv - 1}" for r, lv in ROLE_LEVEL.items() if lv < 90}
 
 
 class RiskLevel(str, enum.Enum):
@@ -122,7 +150,7 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
 
     # 角色与权限
-    role = Column(SQLEnum(UserRole), default=UserRole.PATIENT, nullable=False)
+    role = Column(SQLEnum(UserRole), default=UserRole.OBSERVER, nullable=False)
 
     # 个人信息
     full_name = Column(String(100), nullable=True)
@@ -1607,6 +1635,33 @@ class FoodAnalysis(Base):
 # 知识库 RAG 枚举
 # ============================================
 
+class EvidenceTier(str, enum.Enum):
+    """证据分层"""
+    T1 = "T1"  # 临床指南
+    T2 = "T2"  # RCT/系统综述
+    T3 = "T3"  # 专家共识/意见
+    T4 = "T4"  # 个人经验分享
+
+class ContentType(str, enum.Enum):
+    """内容类型"""
+    GUIDELINE = "guideline"                  # 临床指南
+    CONSENSUS = "consensus"                  # 专家共识
+    RCT = "rct"                              # 随机对照试验
+    REVIEW = "review"                        # 综述/荟萃分析
+    EXPERT_OPINION = "expert_opinion"        # 专家意见
+    CASE_REPORT = "case_report"              # 病例报告
+    EXPERIENCE_SHARING = "experience_sharing" # 个人经验分享
+
+class ReviewStatus(str, enum.Enum):
+    """审核状态"""
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    NOT_REQUIRED = "not_required"
+
+# 证据分层 → priority 映射
+TIER_PRIORITY_MAP = {"T1": 9, "T2": 7, "T3": 5, "T4": 3}
+
 class KnowledgeScope(str, enum.Enum):
     """知识库范围"""
     TENANT = "tenant"        # 专家私有
@@ -1645,8 +1700,20 @@ class KnowledgeDocument(Base):
     is_active = Column(Boolean, default=True)
     status = Column(String(20), default="draft")  # draft/processing/ready/error
     file_path = Column(String(500), nullable=True)
+    file_type = Column(String(10), nullable=True)     # md/txt/pdf/docx
+    file_hash = Column(String(128), nullable=True)    # SHA256 去重
     raw_content = Column(Text, nullable=True)  # 专家编写的原始 Markdown
     chunk_count = Column(Integer, default=0)
+
+    # 内容治理字段
+    evidence_tier = Column(String(2), default="T3", server_default="T3", nullable=False)  # T1/T2/T3/T4
+    content_type = Column(String(30), nullable=True)  # guideline/consensus/rct/review/expert_opinion/case_report/experience_sharing
+    published_date = Column(DateTime, nullable=True)  # 原始材料发布日期
+    review_status = Column(String(20), nullable=True)  # pending/approved/rejected/not_required
+    reviewer_id = Column(Integer, nullable=True)  # 审核人 User.id
+    reviewed_at = Column(DateTime, nullable=True)  # 审核时间
+    contributor_id = Column(Integer, nullable=True)  # 贡献者 User.id
+    expires_at = Column(DateTime, nullable=True)  # 内容过期时间
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, nullable=True)  # 更新时间
@@ -1658,10 +1725,25 @@ class KnowledgeDocument(Base):
         Index('idx_kdoc_scope_domain', 'scope', 'domain_id'),
         Index('idx_kdoc_scope_tenant', 'scope', 'tenant_id'),
         Index('idx_kdoc_status', 'status'),
+        Index('idx_kdoc_review_status', 'review_status'),
+        Index('idx_kdoc_evidence_tier', 'evidence_tier'),
+        Index('idx_kdoc_contributor', 'contributor_id'),
     )
 
     def __repr__(self):
         return f"<KnowledgeDocument(id={self.id}, title='{self.title}', scope={self.scope})>"
+
+
+class KnowledgeDomain(Base):
+    """知识领域元数据"""
+    __tablename__ = "knowledge_domains"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    domain_id = Column(String(50), unique=True, nullable=False, index=True)
+    label = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class KnowledgeChunk(Base):
@@ -1744,6 +1826,397 @@ class KnowledgeCitation(Base):
 
     def __repr__(self):
         return f"<KnowledgeCitation(id={self.id}, chunk={self.chunk_id}, score={self.relevance_score})>"
+
+
+# ============================================
+# 内容交互枚举
+# ============================================
+
+class ContentItemStatus(str, enum.Enum):
+    """内容条目状态"""
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+class CommentStatus(str, enum.Enum):
+    """评论状态"""
+    ACTIVE = "active"
+    HIDDEN = "hidden"
+    DELETED = "deleted"
+
+# ============================================
+# 学习系统枚举
+# ============================================
+
+class LearningStatus(str, enum.Enum):
+    """学习进度状态"""
+    NOT_STARTED = "not_started"
+    IN_PROGRESS = "in_progress"
+    COMPLETED = "completed"
+
+class PointsCategory(str, enum.Enum):
+    """积分类别"""
+    GROWTH = "growth"
+    CONTRIBUTION = "contribution"
+    INFLUENCE = "influence"
+
+# ============================================
+# 考试系统枚举
+# ============================================
+
+class ExamStatus(str, enum.Enum):
+    """考试状态"""
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+class ExamResultStatus(str, enum.Enum):
+    """考试结果状态"""
+    PASSED = "passed"
+    FAILED = "failed"
+
+class ExamQuestionType(str, enum.Enum):
+    """考试题目类型（区别于问卷 QuestionType）"""
+    SINGLE = "single"
+    MULTIPLE = "multiple"
+    TRUEFALSE = "truefalse"
+    SHORT_ANSWER = "short_answer"
+
+# ============================================
+# 批量灌注枚举
+# ============================================
+
+class IngestionStatus(str, enum.Enum):
+    """灌注任务状态"""
+    PENDING = "pending"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+# ============================================
+# 内容交互模型
+# ============================================
+
+class ContentItem(Base):
+    """统一内容条目表"""
+    __tablename__ = "content_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    content_type = Column(String(30), nullable=False, index=True)  # article/video/course/card/case
+    title = Column(String(300), nullable=False)
+    body = Column(Text, nullable=True)
+    cover_url = Column(String(500), nullable=True)
+    media_url = Column(String(500), nullable=True)
+    domain = Column(String(50), nullable=True, index=True)  # nutrition/exercise/sleep/emotion/...
+    level = Column(String(10), nullable=True)  # L0-L5
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    tenant_id = Column(String(64), nullable=True, index=True)
+    status = Column(String(20), default="draft", nullable=False, index=True)  # draft/published/archived
+
+    # 统计计数 (反范式，高效读取)
+    view_count = Column(Integer, default=0)
+    like_count = Column(Integer, default=0)
+    comment_count = Column(Integer, default=0)
+    collect_count = Column(Integer, default=0)
+
+    # 是否含测试
+    has_quiz = Column(Boolean, default=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_ci_type_status', 'content_type', 'status'),
+        Index('idx_ci_domain_level', 'domain', 'level'),
+        Index('idx_ci_author', 'author_id'),
+    )
+
+    def __repr__(self):
+        return f"<ContentItem(id={self.id}, type={self.content_type}, title='{self.title}')>"
+
+
+class ContentLike(Base):
+    """内容点赞表"""
+    __tablename__ = "content_likes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    content_id = Column(Integer, ForeignKey("content_items.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_cl_user_content', 'user_id', 'content_id', unique=True),
+    )
+
+
+class ContentBookmark(Base):
+    """内容收藏表"""
+    __tablename__ = "content_bookmarks"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    content_id = Column(Integer, ForeignKey("content_items.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_cb_user_content', 'user_id', 'content_id', unique=True),
+    )
+
+
+class ContentComment(Base):
+    """内容评论表"""
+    __tablename__ = "content_comments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content_id = Column(Integer, ForeignKey("content_items.id"), nullable=False, index=True)
+    parent_id = Column(Integer, ForeignKey("content_comments.id"), nullable=True)  # 自引用回复
+    content = Column(Text, nullable=False)
+    rating = Column(Integer, nullable=True)  # 1-5 评分
+    like_count = Column(Integer, default=0)
+    status = Column(String(20), default="active", nullable=False)  # active/hidden/deleted
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_cc_content_status', 'content_id', 'status'),
+    )
+
+    def __repr__(self):
+        return f"<ContentComment(id={self.id}, user={self.user_id}, content={self.content_id})>"
+
+
+# ============================================
+# 学习持久化模型
+# ============================================
+
+class LearningProgress(Base):
+    """学习进度表"""
+    __tablename__ = "learning_progress"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content_id = Column(Integer, ForeignKey("content_items.id"), nullable=False, index=True)
+    progress_percent = Column(Float, default=0.0)  # 0-100
+    last_position = Column(String(50), nullable=True)  # 视频时间点或章节位置
+    time_spent_seconds = Column(Integer, default=0)
+    status = Column(String(20), default="not_started")  # not_started/in_progress/completed
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_lp_user_content', 'user_id', 'content_id', unique=True),
+        Index('idx_lp_status', 'status'),
+    )
+
+
+class LearningTimeLog(Base):
+    """学习时长日志"""
+    __tablename__ = "learning_time_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    content_id = Column(Integer, nullable=True)
+    domain = Column(String(50), nullable=True)
+    minutes = Column(Integer, nullable=False)
+    earned_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_ltl_user_date', 'user_id', 'earned_at'),
+    )
+
+
+class LearningPointsLog(Base):
+    """学习积分日志"""
+    __tablename__ = "learning_points_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    source_type = Column(String(50), nullable=False)  # quiz/complete/share/comment/daily_login/streak
+    source_id = Column(String(50), nullable=True)  # 关联的内容/考试ID
+    points = Column(Integer, nullable=False)
+    category = Column(String(20), nullable=False)  # growth/contribution/influence
+    earned_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_lpl_user_cat', 'user_id', 'category'),
+        Index('idx_lpl_user_date', 'user_id', 'earned_at'),
+    )
+
+
+class UserLearningStats(Base):
+    """用户学习统计汇总(反范式)"""
+    __tablename__ = "user_learning_stats"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+
+    # 时长
+    total_minutes = Column(Integer, default=0)
+
+    # 积分
+    total_points = Column(Integer, default=0)
+    growth_points = Column(Integer, default=0)
+    contribution_points = Column(Integer, default=0)
+    influence_points = Column(Integer, default=0)
+
+    # 打卡连续
+    current_streak = Column(Integer, default=0)
+    longest_streak = Column(Integer, default=0)
+    last_learn_date = Column(String(10), nullable=True)  # YYYY-MM-DD
+
+    # 考试
+    quiz_total = Column(Integer, default=0)
+    quiz_passed = Column(Integer, default=0)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_uls_points', 'total_points'),
+    )
+
+    def __repr__(self):
+        return f"<UserLearningStats(user={self.user_id}, pts={self.total_points}, min={self.total_minutes})>"
+
+
+# ============================================
+# 考试系统模型
+# ============================================
+
+class ExamDefinition(Base):
+    """考试定义表"""
+    __tablename__ = "exam_definitions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    exam_id = Column(String(50), unique=True, nullable=False, index=True)  # 业务ID
+    exam_name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    level = Column(String(10), nullable=True)  # L0-L5
+    exam_type = Column(String(30), default="standard")  # standard/certification/practice
+    passing_score = Column(Integer, default=60)
+    duration_minutes = Column(Integer, default=60)
+    max_attempts = Column(Integer, default=3)
+    question_ids = Column(JSON, nullable=True)  # [q_id, q_id, ...]
+    status = Column(String(20), default="draft", nullable=False)  # draft/published/archived
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_exam_status', 'status'),
+        Index('idx_exam_level', 'level'),
+    )
+
+    def __repr__(self):
+        return f"<ExamDefinition(exam_id={self.exam_id}, name='{self.exam_name}')>"
+
+
+class QuestionBank(Base):
+    """题库表"""
+    __tablename__ = "question_bank"
+
+    id = Column(Integer, primary_key=True, index=True)
+    question_id = Column(String(50), unique=True, nullable=False, index=True)
+    content = Column(Text, nullable=False)  # 题目内容
+    question_type = Column(String(20), nullable=False)  # single/multiple/truefalse/short_answer
+    options = Column(JSON, nullable=True)  # [{"key": "A", "text": "..."}, ...]
+    answer = Column(JSON, nullable=False)  # ["A"] or ["A","C"] or "true" or "简答内容"
+    explanation = Column(Text, nullable=True)  # 解析
+    domain = Column(String(50), nullable=True)
+    difficulty = Column(String(20), default="medium")  # easy/medium/hard
+    tags = Column(JSON, nullable=True)  # ["nutrition", "L2"]
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_qb_type', 'question_type'),
+        Index('idx_qb_domain', 'domain'),
+    )
+
+    def __repr__(self):
+        return f"<QuestionBank(q_id={self.question_id}, type={self.question_type})>"
+
+
+class ExamResult(Base):
+    """考试结果表"""
+    __tablename__ = "exam_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    exam_id = Column(String(50), nullable=False, index=True)
+    attempt_number = Column(Integer, default=1)
+    score = Column(Integer, nullable=False)
+    status = Column(String(10), nullable=False)  # passed/failed
+    answers = Column(JSON, nullable=True)  # {"q1": "A", "q2": ["B","C"], ...}
+    duration_seconds = Column(Integer, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_er_user_exam', 'user_id', 'exam_id'),
+        Index('idx_er_status', 'status'),
+    )
+
+    def __repr__(self):
+        return f"<ExamResult(user={self.user_id}, exam={self.exam_id}, score={self.score})>"
+
+
+# ============================================
+# 用户活动追踪模型
+# ============================================
+
+class UserActivityLog(Base):
+    """用户活动日志表"""
+    __tablename__ = "user_activity_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    activity_type = Column(String(30), nullable=False, index=True)  # login/share/learn/comment/like/exam/assess
+    detail = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    __table_args__ = (
+        Index('idx_ual_user_type', 'user_id', 'activity_type'),
+        Index('idx_ual_user_date', 'user_id', 'created_at'),
+    )
+
+    def __repr__(self):
+        return f"<UserActivityLog(user={self.user_id}, type={self.activity_type})>"
+
+
+# ============================================
+# 批量知识灌注模型
+# ============================================
+
+class BatchIngestionJob(Base):
+    """批量灌注任务表"""
+    __tablename__ = "batch_ingestion_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    filename = Column(String(300), nullable=False)
+    file_type = Column(String(20), nullable=False)  # zip/pdf/docx/md/txt/7z/rar
+    status = Column(String(20), default="pending", nullable=False)  # pending/processing/completed/failed
+    total_files = Column(Integer, default=0)
+    processed_files = Column(Integer, default=0)
+    total_chunks = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    result_doc_ids = Column(JSON, nullable=True)  # 创建的 KnowledgeDocument IDs
+
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_bij_status', 'status'),
+        Index('idx_bij_user', 'user_id'),
+    )
+
+    def __repr__(self):
+        return f"<BatchIngestionJob(id={self.id}, file={self.filename}, status={self.status})>"
 
 
 class TenantStatus(str, enum.Enum):
@@ -1912,6 +2385,367 @@ class TenantAuditLog(Base):
     )
 
 
+# ============================================
+# 通用问卷引擎模型 (v22)
+# ============================================
+
+class SurveyStatus(str, enum.Enum):
+    """问卷状态"""
+    draft = "draft"
+    published = "published"
+    closed = "closed"
+    archived = "archived"
+
+class SurveyType(str, enum.Enum):
+    """问卷类型"""
+    general = "general"
+    health = "health"
+    satisfaction = "satisfaction"
+    screening = "screening"
+    feedback = "feedback"
+    registration = "registration"
+
+class QuestionType(str, enum.Enum):
+    """题目类型"""
+    single_choice = "single_choice"
+    multiple_choice = "multiple_choice"
+    text_short = "text_short"
+    text_long = "text_long"
+    rating = "rating"
+    nps = "nps"
+    slider = "slider"
+    matrix_single = "matrix_single"
+    matrix_multiple = "matrix_multiple"
+    date = "date"
+    file_upload = "file_upload"
+    section_break = "section_break"
+    description = "description"
+
+class DistributionChannel(str, enum.Enum):
+    """分发渠道"""
+    link = "link"
+    qrcode = "qrcode"
+    wechat = "wechat"
+    sms = "sms"
+    email = "email"
+    embed = "embed"
+    coach = "coach"
+
+
+class Survey(Base):
+    """问卷主表"""
+    __tablename__ = "surveys"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(200), nullable=False, comment="问卷标题")
+    description = Column(Text, default="", comment="问卷说明")
+    survey_type = Column(SQLEnum(SurveyType), default=SurveyType.general)
+    status = Column(SQLEnum(SurveyStatus), default=SurveyStatus.draft)
+
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+    tenant_id = Column(String(64), ForeignKey("expert_tenants.id"), nullable=True)
+
+    settings = Column(JSON, default=dict, comment="问卷设置 JSON")
+    baps_mapping = Column(JSON, nullable=True, comment="BAPS回流映射")
+
+    response_count = Column(Integer, default=0)
+    avg_duration = Column(Integer, default=0, comment="平均填写秒数")
+
+    short_code = Column(String(8), unique=True, index=True, comment="短链码")
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    published_at = Column(DateTime, nullable=True)
+    closed_at = Column(DateTime, nullable=True)
+
+    # relationships
+    questions = relationship("SurveyQuestion", back_populates="survey", cascade="all, delete-orphan", order_by="SurveyQuestion.sort_order")
+    responses = relationship("SurveyResponse", back_populates="survey", cascade="all, delete-orphan")
+    distributions = relationship("SurveyDistribution", back_populates="survey", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_surveys_status", "status"),
+        Index("idx_surveys_created_by", "created_by"),
+        Index("idx_surveys_tenant", "tenant_id"),
+    )
+
+
+class SurveyQuestion(Base):
+    """问卷题目表"""
+    __tablename__ = "survey_questions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    survey_id = Column(Integer, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
+    question_type = Column(SQLEnum(QuestionType), nullable=False)
+    sort_order = Column(Integer, default=0)
+
+    title = Column(Text, nullable=False, comment="题干")
+    description = Column(Text, default="", comment="题目说明")
+    is_required = Column(Boolean, default=False)
+
+    config = Column(JSON, default=dict, comment="题目配置 JSON")
+    skip_logic = Column(JSON, nullable=True, comment="跳题逻辑 JSON")
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    survey = relationship("Survey", back_populates="questions")
+    answers = relationship("SurveyResponseAnswer", back_populates="question", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_sq_survey", "survey_id", "sort_order"),
+    )
+
+
+class SurveyResponse(Base):
+    """问卷回收表"""
+    __tablename__ = "survey_responses"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    survey_id = Column(Integer, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="匿名时为null")
+
+    respondent_ip = Column(String(45), nullable=True)
+    respondent_ua = Column(String(500), nullable=True)
+    device_type = Column(String(20), default="unknown")
+
+    started_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    duration_sec = Column(Integer, nullable=True, comment="填写耗时秒")
+
+    is_complete = Column(Boolean, default=False)
+    current_page = Column(Integer, default=0, comment="断点续填页码")
+
+    baps_synced = Column(Boolean, default=False)
+    baps_synced_at = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    survey = relationship("Survey", back_populates="responses")
+    answers = relationship("SurveyResponseAnswer", back_populates="response", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_sr_survey", "survey_id"),
+        Index("idx_sr_user", "user_id"),
+        Index("idx_sr_complete", "survey_id", "is_complete"),
+    )
+
+
+class SurveyResponseAnswer(Base):
+    """问卷逐题答案"""
+    __tablename__ = "survey_response_answers"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    response_id = Column(Integer, ForeignKey("survey_responses.id", ondelete="CASCADE"), nullable=False)
+    question_id = Column(Integer, ForeignKey("survey_questions.id", ondelete="CASCADE"), nullable=False)
+
+    answer_value = Column(JSON, nullable=False, comment="答案 JSON")
+    score = Column(Float, nullable=True, comment="自动评分")
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    response = relationship("SurveyResponse", back_populates="answers")
+    question = relationship("SurveyQuestion", back_populates="answers")
+
+    __table_args__ = (
+        Index("idx_sra_response", "response_id"),
+        Index("idx_sra_question", "question_id"),
+        Index("idx_sra_unique", "response_id", "question_id", unique=True),
+    )
+
+
+class SurveyDistribution(Base):
+    """问卷分发渠道"""
+    __tablename__ = "survey_distributions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    survey_id = Column(Integer, ForeignKey("surveys.id", ondelete="CASCADE"), nullable=False)
+    channel = Column(SQLEnum(DistributionChannel), nullable=False)
+
+    channel_config = Column(JSON, default=dict, comment="渠道配置 JSON")
+    tracking_code = Column(String(20), unique=True, comment="渠道追踪码")
+
+    click_count = Column(Integer, default=0)
+    submit_count = Column(Integer, default=0)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    survey = relationship("Survey", back_populates="distributions")
+
+
+# ============================================
+# V002 学分晋级体系模型
+# ============================================
+
+class CourseModuleType(str, enum.Enum):
+    """课程模块类型"""
+    M1_KNOWLEDGE = "M1"       # 知识学习
+    M2_SKILL = "M2"           # 技能训练
+    M3_PRACTICE = "M3"        # 实践应用
+    M4_ASSESSMENT = "M4"      # 考核评估
+    ELECTIVE = "ELECTIVE"     # 选修
+
+class ElectiveCategory(str, enum.Enum):
+    """选修课分类"""
+    BEHAVIOR = "behavior"             # 行为科学
+    NUTRITION = "nutrition"           # 营养学
+    EXERCISE = "exercise"             # 运动科学
+    PSYCHOLOGY = "psychology"         # 心理学
+    TCM = "tcm"                       # 中医养生
+    COMMUNICATION = "communication"   # 沟通技巧
+    DATA_LITERACY = "data_literacy"   # 数据素养
+    ETHICS = "ethics"                 # 伦理规范
+
+class InterventionTier(str, enum.Enum):
+    """干预层级"""
+    T1 = "T1"  # 基础科普
+    T2 = "T2"  # 循证指导
+    T3 = "T3"  # 专业干预
+    T4 = "T4"  # 专家督导
+
+class AssessmentEvidenceType(str, enum.Enum):
+    """评估证据类型"""
+    QUIZ = "quiz"               # 在线测验
+    CASE_REPORT = "case_report" # 案例报告
+    PEER_REVIEW = "peer_review" # 同伴评审
+    SUPERVISOR = "supervisor"   # 督导评估
+    EXAM = "exam"               # 正式考试
+
+class CompanionStatus(str, enum.Enum):
+    """同道者关系状态"""
+    ACTIVE = "active"
+    GRADUATED = "graduated"
+    DROPPED = "dropped"
+
+class PromotionStatus(str, enum.Enum):
+    """晋级申请状态"""
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class CourseModule(Base):
+    """课程模块 — V002学分体系核心表"""
+    __tablename__ = "course_modules"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+                server_default=sa_text("gen_random_uuid()"))
+    code = Column(String(30), unique=True, nullable=False, comment="模块编码 OBS-M1-01")
+    title = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+
+    module_type = Column(String(20), nullable=False, comment="M1/M2/M3/M4/ELECTIVE")
+    elective_cat = Column(String(30), nullable=True, comment="选修课分类")
+    tier = Column(String(5), nullable=True, comment="T1-T4证据层级")
+    target_role = Column(SQLEnum(UserRole, create_type=False), nullable=False,
+                         comment="目标角色等级")
+
+    credit_value = Column(Float, nullable=False, default=1.0, comment="学分值")
+    theory_ratio = Column(String(10), nullable=True, comment="理论实践比例")
+    prereq_modules = Column(JSON, nullable=True, default=list, comment="前置模块code列表")
+    content_ref = Column(String(500), nullable=True, comment="内容引用")
+
+    is_active = Column(Boolean, default=True)
+    sort_order = Column(Integer, default=0)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # 关系
+    credits = relationship("UserCredit", back_populates="module", cascade="all, delete-orphan")
+
+    __table_args__ = (
+        Index("idx_cm_role_type", "target_role", "module_type"),
+        Index("idx_cm_code", "code", unique=True),
+    )
+
+
+class UserCredit(Base):
+    """用户学分记录"""
+    __tablename__ = "user_credits"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+                server_default=sa_text("gen_random_uuid()"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    module_id = Column(PG_UUID(as_uuid=True), ForeignKey("course_modules.id", ondelete="CASCADE"),
+                       nullable=False)
+
+    credit_earned = Column(Float, nullable=False, comment="获得学分")
+    score = Column(Float, nullable=True, comment="成绩 0-100")
+    completed_at = Column(DateTime, default=datetime.utcnow)
+    evidence_type = Column(String(30), nullable=True, comment="评估证据类型")
+    evidence_ref = Column(String(500), nullable=True, comment="证据材料URL")
+    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="审核人")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # 关系
+    module = relationship("CourseModule", back_populates="credits")
+
+    __table_args__ = (
+        Index("idx_uc_user", "user_id"),
+        Index("idx_uc_module", "module_id"),
+        Index("idx_uc_user_module", "user_id", "module_id"),
+    )
+
+
+class CompanionRelation(Base):
+    """同道者带教关系"""
+    __tablename__ = "companion_relations"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+                server_default=sa_text("gen_random_uuid()"))
+    mentor_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    mentee_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    mentor_role = Column(String(20), nullable=False, comment="带教时导师角色")
+    mentee_role = Column(String(20), nullable=False, comment="带教时学员角色")
+    status = Column(String(20), default="active", comment="active/graduated/dropped")
+
+    quality_score = Column(Float, nullable=True, comment="带教质量评分 1-5")
+    started_at = Column(DateTime, default=datetime.utcnow)
+    graduated_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("idx_cr_mentor", "mentor_id"),
+        Index("idx_cr_mentee", "mentee_id"),
+        Index("idx_cr_status", "status"),
+        Index("idx_cr_mentor_mentee", "mentor_id", "mentee_id", unique=True),
+    )
+
+
+class PromotionApplication(Base):
+    """晋级申请"""
+    __tablename__ = "promotion_applications"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+                server_default=sa_text("gen_random_uuid()"))
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+
+    from_role = Column(String(20), nullable=False)
+    to_role = Column(String(20), nullable=False)
+    status = Column(String(20), default="pending", comment="pending/approved/rejected")
+
+    # 四维快照
+    credit_snapshot = Column(JSON, nullable=True)
+    point_snapshot = Column(JSON, nullable=True)
+    companion_snapshot = Column(JSON, nullable=True)
+    practice_snapshot = Column(JSON, nullable=True)
+    check_result = Column(JSON, nullable=True, comment="晋级校验详细结果")
+
+    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    review_comment = Column(Text, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("idx_pa_user", "user_id"),
+        Index("idx_pa_status", "status"),
+        Index("idx_pa_user_status", "user_id", "status"),
+    )
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -1968,6 +2802,46 @@ def get_table_names():
         "tenant_clients",
         "tenant_agent_mappings",
         "tenant_audit_logs",
+        # 内容交互
+        "content_items",
+        "content_likes",
+        "content_bookmarks",
+        "content_comments",
+        # 学习持久化
+        "learning_progress",
+        "learning_time_logs",
+        "learning_points_logs",
+        "user_learning_stats",
+        # 考试系统
+        "exam_definitions",
+        "question_bank",
+        "exam_results",
+        # 用户活动追踪
+        "user_activity_logs",
+        # 批量灌注
+        "batch_ingestion_jobs",
+        # 问卷引擎
+        "surveys",
+        "survey_questions",
+        "survey_responses",
+        "survey_response_answers",
+        "survey_distributions",
+        # V002 学分晋级体系
+        "course_modules",
+        "user_credits",
+        "companion_relations",
+        "promotion_applications",
+        # V003 激励体系
+        "badges",
+        "user_badges",
+        "user_milestones",
+        "user_streaks",
+        "flip_card_records",
+        "nudge_records",
+        "user_memorials",
+        # 积分系统
+        "point_transactions",
+        "user_points",
     ]
 
 
@@ -2025,5 +2899,34 @@ def get_model_by_name(name: str):
         "TenantClient": TenantClient,
         "TenantAgentMapping": TenantAgentMapping,
         "TenantAuditLog": TenantAuditLog,
+        # 内容交互
+        "ContentItem": ContentItem,
+        "ContentLike": ContentLike,
+        "ContentBookmark": ContentBookmark,
+        "ContentComment": ContentComment,
+        # 学习持久化
+        "LearningProgress": LearningProgress,
+        "LearningTimeLog": LearningTimeLog,
+        "LearningPointsLog": LearningPointsLog,
+        "UserLearningStats": UserLearningStats,
+        # 考试系统
+        "ExamDefinition": ExamDefinition,
+        "QuestionBank": QuestionBank,
+        "ExamResult": ExamResult,
+        # 用户活动
+        "UserActivityLog": UserActivityLog,
+        # 批量灌注
+        "BatchIngestionJob": BatchIngestionJob,
+        # 问卷引擎
+        "Survey": Survey,
+        "SurveyQuestion": SurveyQuestion,
+        "SurveyResponse": SurveyResponse,
+        "SurveyResponseAnswer": SurveyResponseAnswer,
+        "SurveyDistribution": SurveyDistribution,
+        # V002 学分晋级
+        "CourseModule": CourseModule,
+        "UserCredit": UserCredit,
+        "CompanionRelation": CompanionRelation,
+        "PromotionApplication": PromotionApplication,
     }
     return models.get(name)

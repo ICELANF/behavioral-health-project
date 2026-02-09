@@ -233,10 +233,10 @@ const filters = reactive({
 })
 
 const stats = reactive({
-  total: 28,
-  platform: 12,
-  expert: 8,
-  pending: 3
+  total: 0,
+  platform: 0,
+  expert: 0,
+  pending: 0
 })
 
 const pagination = reactive({
@@ -519,12 +519,19 @@ const fetchCourses = async () => {
       access_status: item.access_status,
       status: 'published',
       cover_url: '',
-      chapter_count: 0,
+      chapter_count: item.chapter_count || item.sections?.length || 0,
       duration_minutes: item.duration ? Math.round(item.duration / 60) : 0,
-      enroll_count: 0,
-      updated_at: '',
+      enroll_count: item.enroll_count || item.collect_count || 0,
+      updated_at: item.updated_at || '',
     }))
     pagination.total = apiData.total
+
+    // 动态更新统计
+    const items = apiData.items || []
+    stats.total = apiData.total || items.length
+    stats.platform = items.filter((i: any) => i.source === 'platform').length
+    stats.expert = items.filter((i: any) => i.source === 'expert').length
+    stats.pending = items.filter((i: any) => i.review_status === 'pending').length
   } else {
     // Mock 降级
     pagination.total = filteredCourses.value.length

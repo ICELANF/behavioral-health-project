@@ -9,6 +9,7 @@ Scheduler - 定时任务调度
 """
 from datetime import datetime
 from loguru import logger
+from core.redis_lock import with_redis_lock
 
 try:
     from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -20,6 +21,7 @@ except ImportError:
     logger.warning("APScheduler not installed, scheduled tasks disabled")
 
 
+@with_redis_lock("scheduler:daily_task_generation", ttl=600)
 def daily_task_generation():
     """每天06:00为所有活跃用户生成今日微行动任务"""
     from core.database import get_db_session
@@ -49,6 +51,7 @@ def daily_task_generation():
         logger.error(f"[Scheduler] 每日任务生成失败: {e}")
 
 
+@with_redis_lock("scheduler:reminder_check", ttl=60)
 def reminder_check():
     """每分钟查询到期提醒并触发"""
     from core.database import get_db_session
@@ -71,6 +74,7 @@ def reminder_check():
         logger.error(f"[Scheduler] 提醒检查失败: {e}")
 
 
+@with_redis_lock("scheduler:expired_task_cleanup", ttl=300)
 def expired_task_cleanup():
     """每天23:59将过期未完成任务标记为 expired"""
     from core.database import get_db_session
@@ -86,6 +90,7 @@ def expired_task_cleanup():
         logger.error(f"[Scheduler] 过期任务清理失败: {e}")
 
 
+@with_redis_lock("scheduler:process_approved_pushes", ttl=300)
 def process_approved_pushes():
     """每5分钟投递已审批且到时的推送"""
     from core.database import get_db_session
@@ -100,6 +105,7 @@ def process_approved_pushes():
         logger.error(f"[Scheduler] 定时投递推送失败: {e}")
 
 
+@with_redis_lock("scheduler:expire_stale_queue_items", ttl=300)
 def expire_stale_queue_items():
     """每天06:30清理72h超时未审批的推送条目"""
     from core.database import get_db_session
@@ -111,6 +117,96 @@ def expire_stale_queue_items():
             logger.info(f"[Scheduler] 过期推送清理: {count} 条")
     except Exception as e:
         logger.error(f"[Scheduler] 过期推送清理失败: {e}")
+
+
+@with_redis_lock("scheduler:knowledge_freshness_check", ttl=300)
+def knowledge_freshness_check():
+    """每天07:00检查过期知识文档并降权"""
+    from core.database import get_db_session
+    from core.knowledge.document_service import handle_expired_documents
+
+    try:
+        with get_db_session() as db:
+            count = handle_expired_documents(db)
+            if count:
+                logger.info(f"[Scheduler] 知识库过期降权: {count} 篇")
+    except Exception as e:
+        logger.error(f"[Scheduler] 知识库过期检查失败: {e}")
+
+
+# ── V004 方案引擎定时任务 ──────────────────────────
+
+@with_redis_lock("scheduler:program_advance_day", ttl=600)
+def program_advance_day():
+    """每天00:05推进所有active enrollment天数"""
+    from core.database import get_db_session
+    from core.program_service import ProgramService
+
+    try:
+        with get_db_session() as db:
+            service = ProgramService(db)
+            result = service.scheduled_advance_day()
+            logger.info(f"[Scheduler] 方案天数推进: {result}")
+    except Exception as e:
+        logger.error(f"[Scheduler] 方案天数推进失败: {e}")
+
+
+def _program_push(slot: str):
+    """方案推送通用函数"""
+    from core.database import get_db_session
+    from core.program_service import ProgramService
+
+    try:
+        with get_db_session() as db:
+            service = ProgramService(db)
+            result = service.scheduled_send_pushes(slot)
+            logger.info(f"[Scheduler] 方案推送[{slot}]: {result}")
+    except Exception as e:
+        logger.error(f"[Scheduler] 方案推送[{slot}]失败: {e}")
+
+
+@with_redis_lock("scheduler:program_push_morning", ttl=300)
+def program_push_morning():
+    """每天09:00发送方案早间推送"""
+    _program_push("morning")
+
+
+@with_redis_lock("scheduler:program_push_noon", ttl=300)
+def program_push_noon():
+    """每天11:30发送方案午间推送"""
+    _program_push("noon")
+
+
+@with_redis_lock("scheduler:program_push_evening", ttl=300)
+def program_push_evening():
+    """每天17:30发送方案晚间推送"""
+    _program_push("evening")
+
+
+@with_redis_lock("scheduler:program_batch_analysis", ttl=600)
+def program_batch_analysis():
+    """每天23:00批量更新行为特征"""
+    from core.database import get_db_session
+    from core.program_service import ProgramService
+    from sqlalchemy import text
+
+    try:
+        with get_db_session() as db:
+            service = ProgramService(db)
+            enrollments = db.execute(text(
+                "SELECT id, user_id FROM program_enrollments WHERE status = 'active'"
+            )).fetchall()
+            updated = 0
+            for e in enrollments:
+                try:
+                    service._update_behavior_profile(str(e.id), e.user_id, None, None)
+                    updated += 1
+                except Exception as ex:
+                    logger.warning(f"方案行为分析失败 {e.id}: {ex}")
+            db.commit()
+            logger.info(f"[Scheduler] 方案行为分析: {updated}/{len(enrollments)}")
+    except Exception as e:
+        logger.error(f"[Scheduler] 方案批量分析失败: {e}")
 
 
 def setup_scheduler() -> "AsyncIOScheduler | None":
@@ -173,5 +269,61 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
         replace_existing=True,
     )
 
-    logger.info("[Scheduler] 定时任务调度器已配置")
+    # 每天 07:00 检查知识文档过期并降权
+    scheduler.add_job(
+        knowledge_freshness_check,
+        CronTrigger(hour=7, minute=0),
+        id="knowledge_freshness_check",
+        name="知识库过期降权检查",
+        replace_existing=True,
+    )
+
+    # ── V004 方案引擎: 5个定时任务 ──
+
+    # 每天 00:05 推进方案天数
+    scheduler.add_job(
+        program_advance_day,
+        CronTrigger(hour=0, minute=5),
+        id="program_advance_day",
+        name="方案天数推进",
+        replace_existing=True,
+    )
+
+    # 每天 09:00 方案早间推送
+    scheduler.add_job(
+        program_push_morning,
+        CronTrigger(hour=9, minute=0),
+        id="program_push_morning",
+        name="方案早间推送",
+        replace_existing=True,
+    )
+
+    # 每天 11:30 方案午间推送
+    scheduler.add_job(
+        program_push_noon,
+        CronTrigger(hour=11, minute=30),
+        id="program_push_noon",
+        name="方案午间推送",
+        replace_existing=True,
+    )
+
+    # 每天 17:30 方案晚间推送
+    scheduler.add_job(
+        program_push_evening,
+        CronTrigger(hour=17, minute=30),
+        id="program_push_evening",
+        name="方案晚间推送",
+        replace_existing=True,
+    )
+
+    # 每天 23:00 批量行为分析
+    scheduler.add_job(
+        program_batch_analysis,
+        CronTrigger(hour=23, minute=0),
+        id="program_batch_analysis",
+        name="方案行为批量分析",
+        replace_existing=True,
+    )
+
+    logger.info("[Scheduler] 定时任务调度器已配置 (含V004方案引擎)")
     return scheduler

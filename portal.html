@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行为健康管理平台 - 统一门户</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+
+  .header { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); border-bottom: 1px solid #334155; padding: 24px 40px; }
+  .header h1 { font-size: 28px; font-weight: 700; background: linear-gradient(90deg, #38bdf8, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .header p { color: #94a3b8; margin-top: 6px; font-size: 14px; }
+
+  .status-bar { display: flex; gap: 12px; padding: 16px 40px; background: #1e293b; border-bottom: 1px solid #334155; flex-wrap: wrap; }
+  .status-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; background: #334155; }
+  .status-chip .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-green { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+  .dot-blue { background: #3b82f6; box-shadow: 0 0 6px #3b82f6; }
+  .dot-yellow { background: #eab308; box-shadow: 0 0 6px #eab308; }
+  .dot-purple { background: #a855f7; box-shadow: 0 0 6px #a855f7; }
+
+  .main { padding: 32px 40px; max-width: 1600px; margin: 0 auto; }
+
+  .section { margin-bottom: 36px; }
+  .section-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+  .section-title .badge { font-size: 11px; background: #334155; padding: 2px 10px; border-radius: 10px; color: #94a3b8; font-weight: 400; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 18px 20px; transition: all 0.2s; cursor: pointer; text-decoration: none; color: inherit; display: block; position: relative; overflow: hidden; }
+  .card:hover { border-color: #60a5fa; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(96,165,250,0.12); }
+  .card-tag { position: absolute; top: 12px; right: 12px; font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 500; }
+  .tag-h5 { background: #164e63; color: #22d3ee; }
+  .tag-admin { background: #3b1764; color: #c084fc; }
+  .tag-api { background: #1a3a1a; color: #4ade80; }
+  .tag-streamlit { background: #4a2c17; color: #fb923c; }
+  .tag-dify { background: #1e3a5f; color: #60a5fa; }
+  .tag-public { background: #1c3d2e; color: #34d399; }
+  .card h3 { font-size: 15px; font-weight: 600; margin-bottom: 6px; padding-right: 60px; }
+  .card p { font-size: 12px; color: #94a3b8; line-height: 1.5; }
+  .card .url { font-size: 11px; color: #64748b; margin-top: 8px; font-family: 'Cascadia Code', 'Fira Code', monospace; word-break: break-all; }
+
+  .port-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+  .port-table th { text-align: left; padding: 10px 16px; background: #1e293b; border-bottom: 2px solid #334155; font-size: 13px; color: #94a3b8; font-weight: 500; }
+  .port-table td { padding: 10px 16px; border-bottom: 1px solid #1e293b; font-size: 13px; }
+  .port-table tr:hover td { background: #1e293b; }
+  .port-num { font-family: 'Cascadia Code', monospace; color: #38bdf8; font-weight: 600; }
+
+  .divider { border: none; border-top: 1px solid #334155; margin: 8px 0; }
+  .subsec { font-size: 13px; color: #94a3b8; margin: 12px 0 8px 0; font-weight: 500; }
+
+  @media (max-width: 768px) {
+    .header, .status-bar, .main { padding-left: 16px; padding-right: 16px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Behavioral Health Platform</h1>
+  <p>行为健康管理平台 - 统一服务门户 &nbsp;|&nbsp; 13 Containers &nbsp;|&nbsp; 430+ API Endpoints &nbsp;|&nbsp; 120+ Pages</p>
+</div>
+
+<div class="status-bar">
+  <span class="status-chip"><span class="dot dot-green"></span>bhp-api :8000</span>
+  <span class="status-chip"><span class="dot dot-green"></span>bhp-h5 :5173</span>
+  <span class="status-chip"><span class="dot dot-green"></span>bhp-admin :5174</span>
+  <span class="status-chip"><span class="dot dot-green"></span>bhp-workbench :8501</span>
+  <span class="status-chip"><span class="dot dot-blue"></span>dify-nginx :8080</span>
+  <span class="status-chip"><span class="dot dot-blue"></span>dify-db :5432</span>
+  <span class="status-chip"><span class="dot dot-blue"></span>dify-redis (internal)</span>
+  <span class="status-chip"><span class="dot dot-blue"></span>dify-api (internal)</span>
+  <span class="status-chip"><span class="dot dot-blue"></span>dify-web (internal)</span>
+  <span class="status-chip"><span class="dot dot-blue"></span>dify-worker (internal)</span>
+  <span class="status-chip"><span class="dot dot-blue"></span>dify-weaviate (internal)</span>
+  <span class="status-chip"><span class="dot dot-blue"></span>dify-sandbox (internal)</span>
+  <span class="status-chip"><span class="dot dot-blue"></span>dify-ssrf_proxy (internal)</span>
+</div>
+
+<div class="main">
+
+<!-- ====== 端口总览 ====== -->
+<div class="section">
+  <div class="section-title">服务端口总览 <span class="badge">13 containers / 8 exposed ports</span></div>
+  <table class="port-table">
+    <thead><tr><th>端口</th><th>容器</th><th>技术栈</th><th>功能</th></tr></thead>
+    <tbody>
+      <tr><td class="port-num">:5173</td><td>bhp-h5</td><td>Vue 3 + Vant 4</td><td>H5 移动端 (患者/成长者/教练 C端) - 33 路由</td></tr>
+      <tr><td class="port-num">:5174</td><td>bhp-admin-portal</td><td>Vue 3 + Ant Design Vue 4</td><td>管理后台 (Admin/Coach/Expert B端) - 86+ 页面</td></tr>
+      <tr><td class="port-num">:8000</td><td>bhp-api</td><td>Python FastAPI</td><td>主 API 服务 (49 routers, 430+ endpoints, 12 AI Agents)</td></tr>
+      <tr><td class="port-num">:8001</td><td>bhp-api</td><td>Python FastAPI</td><td>WebSocket 服务 (实时消息/设备推送)</td></tr>
+      <tr><td class="port-num">:8002</td><td>bhp-api</td><td>Python FastAPI</td><td>决策引擎 (MasterAgent 入口)</td></tr>
+      <tr><td class="port-num">:8501</td><td>bhp-expert-workbench</td><td>Streamlit</td><td>专家审核工作台 (旧版 Streamlit, 已被 Admin 集成替代)</td></tr>
+      <tr><td class="port-num">:8080</td><td>dify-nginx</td><td>Nginx</td><td>Dify AI 平台入口 (LLM 编排/知识库/工作流)</td></tr>
+      <tr><td class="port-num">:5432</td><td>dify-db</td><td>PostgreSQL 15 + pgvector</td><td>数据库 (70 models, 768-dim 向量搜索)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ====== 平台公共入口 ====== -->
+<div class="section">
+  <div class="section-title">平台公共入口 <span class="badge">无需登录</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5174/landing" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>平台官网首页</h3>
+      <p>Landing Page - 行为健康管理平台官方展示页</p>
+      <div class="url">http://localhost:5174/landing</div>
+    </a>
+    <a class="card" href="http://localhost:5174/portal/public" target="_blank">
+      <span class="card-tag tag-public">Public</span>
+      <h3>行为健康科普入口</h3>
+      <p>公众科普门户 - 行为健康知识普及入口</p>
+      <div class="url">http://localhost:5174/portal/public</div>
+    </a>
+    <a class="card" href="http://localhost:5173/coach-directory" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>教练目录</h3>
+      <p>公开教练展示 - 浏览平台认证健康教练</p>
+      <div class="url">http://localhost:5173/coach-directory</div>
+    </a>
+    <a class="card" href="http://localhost:5173/expert-hub" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>专家工作室入口</h3>
+      <p>专家白标展示 - 5位专家独立品牌工作室</p>
+      <div class="url">http://localhost:5173/expert-hub</div>
+    </a>
+    <a class="card" href="http://localhost:5174/component-showcase" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>组件库展示</h3>
+      <p>UI 组件库 - 平台前端组件一览</p>
+      <div class="url">http://localhost:5174/component-showcase</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== H5 患者/成长者端 ====== -->
+<div class="section">
+  <div class="section-title">H5 移动端 - 患者/成长者 <span class="badge">:5173 / 33 routes</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5173/" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>H5 首页 (Dashboard)</h3>
+      <p>个人健康仪表盘 + 行为阶段卡 + 推荐学习 + 快捷入口</p>
+      <div class="url">http://localhost:5173/</div>
+    </a>
+    <a class="card" href="http://localhost:5173/login" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>H5 登录</h3>
+      <p>用户登录页 (demo: grower / Grower@2026)</p>
+      <div class="url">http://localhost:5173/login</div>
+    </a>
+    <a class="card" href="http://localhost:5173/chat" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>AI 对话</h3>
+      <p>12 专科 AI Agent 智能健康对话</p>
+      <div class="url">http://localhost:5173/chat</div>
+    </a>
+    <a class="card" href="http://localhost:5173/learn" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>学习中心</h3>
+      <p>6 标签分类 + 领域筛选 + 无限滚动内容浏览</p>
+      <div class="url">http://localhost:5173/learn</div>
+    </a>
+    <a class="card" href="http://localhost:5173/tasks" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>每日任务</h3>
+      <p>微行动 (今日/完成/跳过/历史/统计)</p>
+      <div class="url">http://localhost:5173/tasks</div>
+    </a>
+    <a class="card" href="http://localhost:5173/challenges" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>挑战活动</h3>
+      <p>打卡挑战活动列表 + 报名 + 每日打卡</p>
+      <div class="url">http://localhost:5173/challenges</div>
+    </a>
+    <a class="card" href="http://localhost:5173/programs" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>智能监测方案</h3>
+      <p>V004 方案列表 (14天血糖监测等) + 报名 + 每日推送</p>
+      <div class="url">http://localhost:5173/programs</div>
+    </a>
+    <a class="card" href="http://localhost:5173/journey" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>健康成长伙伴</h3>
+      <p>成长旅程叙事 - 教练审核后的行为改变故事</p>
+      <div class="url">http://localhost:5173/journey</div>
+    </a>
+    <a class="card" href="http://localhost:5173/behavior-assessment" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>行为评估</h3>
+      <p>BAPS 行为评估 + 阶段判定 + 干预方案</p>
+      <div class="url">http://localhost:5173/behavior-assessment</div>
+    </a>
+    <a class="card" href="http://localhost:5173/food-recognition" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>食物识别</h3>
+      <p>拍照识别食物 (qwen2.5vl:7b) + 营养分析</p>
+      <div class="url">http://localhost:5173/food-recognition</div>
+    </a>
+    <a class="card" href="http://localhost:5173/my-learning" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>我的学习</h3>
+      <p>学习统计 + 周报图表 + 学习记录</p>
+      <div class="url">http://localhost:5173/my-learning</div>
+    </a>
+    <a class="card" href="http://localhost:5173/my-credits" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>我的学分</h3>
+      <p>学分概览 + 模块列表 + 学分记录</p>
+      <div class="url">http://localhost:5173/my-credits</div>
+    </a>
+    <a class="card" href="http://localhost:5173/my-companions" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>我的同道者</h3>
+      <p>导生/导师双标签 + 统计 + 邀请</p>
+      <div class="url">http://localhost:5173/my-companions</div>
+    </a>
+    <a class="card" href="http://localhost:5173/promotion-progress" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>晋级进度</h3>
+      <p>ECharts 5轴雷达图 + 进度条 + 申请晋级</p>
+      <div class="url">http://localhost:5173/promotion-progress</div>
+    </a>
+    <a class="card" href="http://localhost:5173/contribute" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>知识投稿</h3>
+      <p>用户内容投稿 (提交/我的/审核)</p>
+      <div class="url">http://localhost:5173/contribute</div>
+    </a>
+    <a class="card" href="http://localhost:5173/profile" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>个人中心</h3>
+      <p>个人资料 + 设置 + 健康档案入口</p>
+      <div class="url">http://localhost:5173/profile</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== Admin - C端患者界面 ====== -->
+<div class="section">
+  <div class="section-title">Admin Portal - C端患者界面 <span class="badge">:5174 / requiresAuth: false</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5174/client" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>患者首页 (我的健康)</h3>
+      <p>C端患者健康仪表盘 - 综合健康数据展示</p>
+      <div class="url">http://localhost:5174/client</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/home-v2" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>患者首页 (优化版)</h3>
+      <p>优化版健康仪表盘</p>
+      <div class="url">http://localhost:5174/client/home-v2</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/chat" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>AI 健康教练</h3>
+      <p>患者端 AI 对话界面</p>
+      <div class="url">http://localhost:5174/client/chat</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/chat-v2" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>AI 健康助手 (优化版)</h3>
+      <p>优化版 AI 对话界面</p>
+      <div class="url">http://localhost:5174/client/chat-v2</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/data-input" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>记录数据</h3>
+      <p>患者手动数据录入界面</p>
+      <div class="url">http://localhost:5174/client/data-input</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/progress" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>我的进展</h3>
+      <p>患者进展仪表盘</p>
+      <div class="url">http://localhost:5174/client/progress</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/device-dashboard" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>设备数据仪表盘</h3>
+      <p>穿戴设备数据可视化 (血糖/血压/心率/睡眠)</p>
+      <div class="url">http://localhost:5174/client/device-dashboard</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/assessment/list" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>测评中心</h3>
+      <p>患者可用测评列表 + 历史记录</p>
+      <div class="url">http://localhost:5174/client/assessment/list</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/learning-progress" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>学习进度</h3>
+      <p>患者学习进度追踪</p>
+      <div class="url">http://localhost:5174/client/learning-progress</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/my/profile" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>个人健康档案</h3>
+      <p>患者健康档案管理</p>
+      <div class="url">http://localhost:5174/client/my/profile</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/my/devices" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>穿戴设备管理</h3>
+      <p>设备绑定/解绑/数据同步</p>
+      <div class="url">http://localhost:5174/client/my/devices</div>
+    </a>
+    <a class="card" href="http://localhost:5174/client/my/trajectory" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>行为轨迹</h3>
+      <p>患者行为改变轨迹回溯</p>
+      <div class="url">http://localhost:5174/client/my/trajectory</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== 教练工作台 ====== -->
+<div class="section">
+  <div class="section-title">健康教练工作台 <span class="badge">Coach 角色</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5174/coach-portal" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>教练首页 (工作台)</h3>
+      <p>教练主工作台 - 待跟进/推送审核/统计概览</p>
+      <div class="url">http://localhost:5174/coach-portal</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach-portal/students" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>待跟进学员</h3>
+      <p>教练端学员跟进列表</p>
+      <div class="url">http://localhost:5174/coach-portal/students</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach-portal/ai-review" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>AI 建议审核</h3>
+      <p>审核 AI Agent 生成的推送建议</p>
+      <div class="url">http://localhost:5174/coach-portal/ai-review</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach/my/students" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>我的学员</h3>
+      <p>教练名下学员管理</p>
+      <div class="url">http://localhost:5174/coach/my/students</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach/my/performance" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>我的绩效</h3>
+      <p>教练绩效数据面板</p>
+      <div class="url">http://localhost:5174/coach/my/performance</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach/my/analytics" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>数据分析</h3>
+      <p>教练端数据分析 (ECharts)</p>
+      <div class="url">http://localhost:5174/coach/my/analytics</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach/my/certification" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>我的认证</h3>
+      <p>教练六级晋级认证状态</p>
+      <div class="url">http://localhost:5174/coach/my/certification</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach/my/tools" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>我的工具箱</h3>
+      <p>教练工作工具集</p>
+      <div class="url">http://localhost:5174/coach/my/tools</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach/messages" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>学员消息</h3>
+      <p>教练与学员消息通讯</p>
+      <div class="url">http://localhost:5174/coach/messages</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach/content-sharing" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>内容分享</h3>
+      <p>教练内容推送与分享管理</p>
+      <div class="url">http://localhost:5174/coach/content-sharing</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== 督导专家 ====== -->
+<div class="section">
+  <div class="section-title">督导/专家工作台 <span class="badge">Expert / Supervisor 角色</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5174/expert-portal" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>督导首页 (工作台)</h3>
+      <p>督导专家主工作台 - 审核队列/教练监督</p>
+      <div class="url">http://localhost:5174/expert-portal</div>
+    </a>
+    <a class="card" href="http://localhost:5174/expert-workbench" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>专家审核工作台 (全屏)</h3>
+      <p>双签审核面板: 原始数据 + 成长叙事 + CGM 图表 + 决策追溯</p>
+      <div class="url">http://localhost:5174/expert-workbench</div>
+    </a>
+    <a class="card" href="http://localhost:5174/expert/workspace" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>专家工作区 (React Bridge)</h3>
+      <p>React 集成版专家工作区</p>
+      <div class="url">http://localhost:5174/expert/workspace</div>
+    </a>
+    <a class="card" href="http://localhost:5174/expert/my/supervision" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>我的督导</h3>
+      <p>督导会话与教练辅导记录</p>
+      <div class="url">http://localhost:5174/expert/my/supervision</div>
+    </a>
+    <a class="card" href="http://localhost:5174/expert/my/reviews" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>我的审核</h3>
+      <p>待审核内容/推送队列</p>
+      <div class="url">http://localhost:5174/expert/my/reviews</div>
+    </a>
+    <a class="card" href="http://localhost:5174/expert/my/research" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>研究数据</h3>
+      <p>科研数据分析面板</p>
+      <div class="url">http://localhost:5174/expert/my/research</div>
+    </a>
+    <a class="card" href="http://localhost:8501/" target="_blank">
+      <span class="card-tag tag-streamlit">Streamlit</span>
+      <h3>旧版专家工作台</h3>
+      <p>Streamlit 版审核工作台 (已被 Admin 集成替代)</p>
+      <div class="url">http://localhost:8501/</div>
+    </a>
+    <a class="card" href="http://localhost:5174/trace" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>决策追踪</h3>
+      <p>AI 决策过程/逻辑链路/规则执行追溯</p>
+      <div class="url">http://localhost:5174/trace</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== 专家白标工作室 ====== -->
+<div class="section">
+  <div class="section-title">专家白标工作室 <span class="badge">Expert Tenant</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5173/expert-hub" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>专家工作室入口</h3>
+      <p>所有专家工作室汇总 - 公开展示页</p>
+      <div class="url">http://localhost:5173/expert-hub</div>
+    </a>
+    <a class="card" href="http://localhost:5173/studio/1" target="_blank">
+      <span class="card-tag tag-h5">H5</span>
+      <h3>专家工作室 #1</h3>
+      <p>独立品牌工作室 (白标主题)</p>
+      <div class="url">http://localhost:5173/studio/1</div>
+    </a>
+    <a class="card" href="http://localhost:5174/expert/dashboard/1" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>工作室管理后台</h3>
+      <p>专家工作室后台管理 (客户/Agent/统计)</p>
+      <div class="url">http://localhost:5174/expert/dashboard/1</div>
+    </a>
+    <a class="card" href="http://localhost:5174/expert/content-studio/1" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>内容工作室</h3>
+      <p>专家内容创作/发布/管理</p>
+      <div class="url">http://localhost:5174/expert/content-studio/1</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== 管理后台 ====== -->
+<div class="section">
+  <div class="section-title">系统管理后台 <span class="badge">Admin 角色</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5174/" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>管理后台首页 (工作台)</h3>
+      <p>管理员 Dashboard - 全平台数据概览</p>
+      <div class="url">http://localhost:5174/dashboard</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/user-management" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>用户管理</h3>
+      <p>用户 CRUD + 角色分配 + 激活/禁用</p>
+      <div class="url">http://localhost:5174/admin/user-management</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/distribution" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>分配管理</h3>
+      <p>学员-教练分配/调整</p>
+      <div class="url">http://localhost:5174/admin/distribution</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/analytics" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>数据分析</h3>
+      <p>全平台数据分析 (7 endpoints, ECharts)</p>
+      <div class="url">http://localhost:5174/admin/analytics</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/challenges" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>挑战活动管理</h3>
+      <p>打卡挑战模板 CRUD + 推送 + 审核</p>
+      <div class="url">http://localhost:5174/admin/challenges</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/batch-ingestion" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>批量知识灌注</h3>
+      <p>PDF/DOCX/ZIP 批量上传 → RAG 知识库</p>
+      <div class="url">http://localhost:5174/admin/batch-ingestion</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/content-manage" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>内容管理</h3>
+      <p>ContentItem CRUD + 批量创建/发布</p>
+      <div class="url">http://localhost:5174/admin/content-manage</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/activity-report" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>用户活动报告</h3>
+      <p>用户行为活动统计报告</p>
+      <div class="url">http://localhost:5174/admin/activity-report</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/evolution" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>系统演进</h3>
+      <p>平台架构演进与技术栈变化</p>
+      <div class="url">http://localhost:5174/admin/evolution</div>
+    </a>
+    <a class="card" href="http://localhost:5174/settings" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>系统设置</h3>
+      <p>平台全局配置</p>
+      <div class="url">http://localhost:5174/settings</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== 学分晋级体系 ====== -->
+<div class="section">
+  <div class="section-title">学分晋级管理 <span class="badge">Admin / V002+V003</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5174/admin/credit-system/dashboard" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>学分概览</h3>
+      <p>全平台学分数据总览 Dashboard</p>
+      <div class="url">http://localhost:5174/admin/credit-system/dashboard</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/credit-system/modules" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>课程模块管理</h3>
+      <p>课程模块 CRUD + 学分规则配置</p>
+      <div class="url">http://localhost:5174/admin/credit-system/modules</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/credit-system/companions" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>同道者关系</h3>
+      <p>导生/导师关系管理 + 毕业</p>
+      <div class="url">http://localhost:5174/admin/credit-system/companions</div>
+    </a>
+    <a class="card" href="http://localhost:5174/admin/credit-system/promotion-review" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>晋级审核</h3>
+      <p>晋级申请审核 (4维审核: 学分+积分+同道者+实践)</p>
+      <div class="url">http://localhost:5174/admin/credit-system/promotion-review</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== 课程/内容/考试管理 ====== -->
+<div class="section">
+  <div class="section-title">课程/内容/考试管理 <span class="badge">Admin</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5174/course/list" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>课程管理</h3>
+      <p>课程列表 + 创建/编辑 + 章节管理</p>
+      <div class="url">http://localhost:5174/course/list</div>
+    </a>
+    <a class="card" href="http://localhost:5174/content/review" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>内容审核</h3>
+      <p>T1-T4 证据分级审核队列</p>
+      <div class="url">http://localhost:5174/content/review</div>
+    </a>
+    <a class="card" href="http://localhost:5174/content/articles" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>文章管理</h3>
+      <p>文章 CRUD</p>
+      <div class="url">http://localhost:5174/content/articles</div>
+    </a>
+    <a class="card" href="http://localhost:5174/question/bank" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>题库管理</h3>
+      <p>考试题库 CRUD</p>
+      <div class="url">http://localhost:5174/question/bank</div>
+    </a>
+    <a class="card" href="http://localhost:5174/exam/list" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>考试管理</h3>
+      <p>考试 CRUD + 发布 + 成绩 + 监考审核</p>
+      <div class="url">http://localhost:5174/exam/list</div>
+    </a>
+    <a class="card" href="http://localhost:5174/live/list" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>直播管理</h3>
+      <p>直播活动 CRUD</p>
+      <div class="url">http://localhost:5174/live/list</div>
+    </a>
+    <a class="card" href="http://localhost:5174/coach/list" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>教练管理</h3>
+      <p>教练列表 + 详情 + 晋级审核</p>
+      <div class="url">http://localhost:5174/coach/list</div>
+    </a>
+    <a class="card" href="http://localhost:5174/student" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>学员管理</h3>
+      <p>全平台学员列表</p>
+      <div class="url">http://localhost:5174/student</div>
+    </a>
+    <a class="card" href="http://localhost:5174/prompts/list" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>Prompt 管理</h3>
+      <p>AI Agent Prompt 模板 CRUD</p>
+      <div class="url">http://localhost:5174/prompts/list</div>
+    </a>
+    <a class="card" href="http://localhost:5174/interventions" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>干预包管理</h3>
+      <p>行为干预方案包管理</p>
+      <div class="url">http://localhost:5174/interventions</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== 问卷系统 ====== -->
+<div class="section">
+  <div class="section-title">问卷系统 <span class="badge">Survey Engine / 16 endpoints</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:5174/portal/medical" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>基层医护处方助手</h3>
+      <p>医护端处方辅助 + 问卷评估入口</p>
+      <div class="url">http://localhost:5174/portal/medical</div>
+    </a>
+    <a class="card" href="http://localhost:8000/docs#/survey" target="_blank">
+      <span class="card-tag tag-api">API</span>
+      <h3>问卷 API (Swagger)</h3>
+      <p>10 管理 + 3 填写 + 3 统计 endpoints</p>
+      <div class="url">http://localhost:8000/docs#/survey</div>
+    </a>
+  </div>
+  <p style="color:#64748b; font-size:12px; margin-top:8px;">问卷短链访问: http://localhost:8000/api/v1/survey/s/{short_code} (匿名填写, 13种题型)</p>
+</div>
+
+<!-- ====== API & AI 平台 ====== -->
+<div class="section">
+  <div class="section-title">API & AI 平台 <span class="badge">后端服务</span></div>
+  <div class="grid">
+    <a class="card" href="http://localhost:8000/docs" target="_blank">
+      <span class="card-tag tag-api">API</span>
+      <h3>API 文档 (Swagger UI)</h3>
+      <p>430+ endpoints, 49 routers, 全部交互式文档</p>
+      <div class="url">http://localhost:8000/docs</div>
+    </a>
+    <a class="card" href="http://localhost:8000/redoc" target="_blank">
+      <span class="card-tag tag-api">API</span>
+      <h3>API 文档 (ReDoc)</h3>
+      <p>三栏式 API 文档阅读视图</p>
+      <div class="url">http://localhost:8000/redoc</div>
+    </a>
+    <a class="card" href="http://localhost:8080/" target="_blank">
+      <span class="card-tag tag-dify">Dify</span>
+      <h3>Dify AI 平台</h3>
+      <p>LLM 编排 / 知识库 / 工作流 / Agent 管理</p>
+      <div class="url">http://localhost:8080/</div>
+    </a>
+    <a class="card" href="http://localhost:5174/react" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>React 页面导航</h3>
+      <p>React 集成页面导航中心</p>
+      <div class="url">http://localhost:5174/react</div>
+    </a>
+    <a class="card" href="http://localhost:5174/react/demo" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>React 演示页</h3>
+      <p>React 组件集成效果展示</p>
+      <div class="url">http://localhost:5174/react/demo</div>
+    </a>
+    <a class="card" href="http://localhost:5174/journey" target="_blank">
+      <span class="card-tag tag-admin">Admin</span>
+      <h3>成长之旅</h3>
+      <p>行为改变成长历程可视化</p>
+      <div class="url">http://localhost:5174/journey</div>
+    </a>
+  </div>
+</div>
+
+<!-- ====== 登录账号 ====== -->
+<div class="section">
+  <div class="section-title">测试账号 <span class="badge">8 角色 / 密码: Role@2026</span></div>
+  <table class="port-table">
+    <thead><tr><th>用户名</th><th>角色</th><th>级别</th><th>适用入口</th></tr></thead>
+    <tbody>
+      <tr><td><b>admin</b></td><td>管理员 (Admin)</td><td>99</td><td>Admin Portal 全部功能</td></tr>
+      <tr><td><b>master</b></td><td>大师 (Master)</td><td>6</td><td>专家工作台 + Admin 后台</td></tr>
+      <tr><td><b>supervisor</b></td><td>督导 (Supervisor)</td><td>5</td><td>督导工作台 + 审核面板</td></tr>
+      <tr><td><b>promoter</b></td><td>推广者 (Promoter)</td><td>5</td><td>教练工作台 + 内容分享</td></tr>
+      <tr><td><b>coach</b></td><td>教练 (Coach)</td><td>4</td><td>教练工作台 + 学员管理</td></tr>
+      <tr><td><b>sharer</b></td><td>分享者 (Sharer)</td><td>3</td><td>H5 全部 + 知识投稿</td></tr>
+      <tr><td><b>grower</b></td><td>成长者 (Grower)</td><td>2</td><td>H5 全部功能</td></tr>
+      <tr><td><b>observer</b></td><td>观察者 (Observer)</td><td>1</td><td>H5 基础浏览</td></tr>
+    </tbody>
+  </table>
+  <p style="color:#64748b; font-size:12px; margin-top:8px;">所有密码统一: <b>Role@2026</b> (首字母大写, 如 Admin@2026, Grower@2026)</p>
+</div>
+
+<div style="text-align:center; padding: 32px; color: #475569; font-size: 12px;">
+  Behavioral Health Platform v25 | 13 Containers | 8 Ports | 430+ Endpoints | 120+ Pages<br>
+  Generated: 2026-02-09
+</div>
+
+</div>
+</body>
+</html>

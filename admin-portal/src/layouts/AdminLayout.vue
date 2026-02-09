@@ -140,6 +140,34 @@
           <span>数据分析</span>
         </a-menu-item>
 
+        <!-- 管理员可见 - 批量灌注 -->
+        <a-menu-item v-if="isAdmin || isCoach" key="admin-batch-ingestion" @click="$router.push('/admin/batch-ingestion')">
+          <template #icon><CloudUploadOutlined /></template>
+          <span>知识灌注</span>
+        </a-menu-item>
+
+        <!-- 管理员可见 - 内容管理(新) -->
+        <a-menu-item v-if="isAdmin || isCoach" key="admin-content-manage" @click="$router.push('/admin/content-manage')">
+          <template #icon><FileAddOutlined /></template>
+          <span>内容发布</span>
+        </a-menu-item>
+
+        <!-- 管理员可见 - 用户活动报告 -->
+        <a-menu-item v-if="isAdmin" key="admin-activity-report" @click="$router.push('/admin/activity-report')">
+          <template #icon><LineChartOutlined /></template>
+          <span>活动报告</span>
+        </a-menu-item>
+
+        <!-- 管理员可见 - 学分晋级管理 -->
+        <a-sub-menu v-if="isAdmin" key="admin-credit-system">
+          <template #icon><TrophyOutlined /></template>
+          <template #title>学分晋级管理</template>
+          <a-menu-item key="admin-credit-dashboard" @click="$router.push('/admin/credit-system/dashboard')">学分概览</a-menu-item>
+          <a-menu-item key="admin-credit-modules" @click="$router.push('/admin/credit-system/modules')">课程模块</a-menu-item>
+          <a-menu-item key="admin-credit-companions" @click="$router.push('/admin/credit-system/companions')">同道者管理</a-menu-item>
+          <a-menu-item key="admin-credit-promotion" @click="$router.push('/admin/credit-system/promotion-review')">晋级审核</a-menu-item>
+        </a-sub-menu>
+
         <!-- 管理员可见 -->
         <a-menu-item v-if="isAdmin" key="settings" @click="$router.push('/settings')">
           <template #icon><SettingOutlined /></template>
@@ -304,7 +332,10 @@ import {
   ThunderboltOutlined,
   AlertOutlined,
   MessageOutlined,
-  BarChartOutlined
+  BarChartOutlined,
+  CloudUploadOutlined,
+  FileAddOutlined,
+  LineChartOutlined
 } from '@ant-design/icons-vue'
 import request from '../api/request'
 
@@ -400,6 +431,12 @@ watch(() => route.path, (path) => {
     selectedKeys.value = ['interventions']
   } else if (path === '/settings') {
     selectedKeys.value = ['settings']
+  } else if (path.startsWith('/admin/credit-system')) {
+    openKeys.value = ['admin-credit-system']
+    if (path.includes('dashboard')) selectedKeys.value = ['admin-credit-dashboard']
+    else if (path.includes('modules')) selectedKeys.value = ['admin-credit-modules']
+    else if (path.includes('companions')) selectedKeys.value = ['admin-credit-companions']
+    else if (path.includes('promotion-review')) selectedKeys.value = ['admin-credit-promotion']
   } else {
     selectedKeys.value = ['dashboard']
   }

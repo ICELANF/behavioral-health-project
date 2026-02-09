@@ -110,7 +110,7 @@ const levelIndex = ref(0)
 const loadData = async () => {
   loading.value = true
   try {
-    const resp = await fetch(`${API_BASE}/api/v1/coach/my-certification`, {
+    const resp = await fetch(`${API_BASE}/v1/coach/my-certification`, {
       headers: authHeaders,
     })
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`)

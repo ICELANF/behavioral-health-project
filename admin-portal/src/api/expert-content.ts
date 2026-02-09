@@ -1,6 +1,6 @@
 import request from './request'
 
-const BASE = '/api/v1/tenants'
+const BASE = '/v1/tenants'
 
 export interface DocumentCreateData {
   title: string
@@ -8,6 +8,10 @@ export interface DocumentCreateData {
   author?: string
   domain_id?: string
   priority?: number
+  evidence_tier?: string
+  content_type?: string
+  published_date?: string
+  expires_at?: string
 }
 
 export interface DocumentUpdateData {
@@ -15,6 +19,10 @@ export interface DocumentUpdateData {
   raw_content?: string
   domain_id?: string
   priority?: number
+  evidence_tier?: string
+  content_type?: string
+  published_date?: string
+  expires_at?: string
 }
 
 export interface DocumentFilters {

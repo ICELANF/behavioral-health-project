@@ -14,7 +14,6 @@ from core.user_segments import (
     UserSource,
     ServiceTier,
     FeatureModule,
-    GrowthPath,
     UserPermissionContext,
     USER_SOURCE_DISPLAY,
     SERVICE_TIER_DISPLAY,
@@ -24,9 +23,7 @@ from core.user_segments import (
     ROLE_DISPLAY_NAMES,
     USER_SEGMENTS,
     get_user_features,
-    get_user_paths,
     has_feature_access,
-    has_path_access,
     get_feature_min_tier,
     get_upgrade_suggestion,
     get_segment_by_id,
@@ -51,13 +48,6 @@ class FeatureInfo(BaseModel):
     min_tier_name: str
 
 
-class PathInfo(BaseModel):
-    """路径信息"""
-    id: str
-    name: str
-    accessible: bool
-
-
 class UserPermissionsResponse(BaseModel):
     """用户权限响应"""
     role: str
@@ -69,7 +59,6 @@ class UserPermissionsResponse(BaseModel):
     service_tier_name: str
     service_tier_level: int
     features: List[FeatureInfo]
-    paths: List[PathInfo]
 
 
 class SegmentInfo(BaseModel):
@@ -82,7 +71,6 @@ class SegmentInfo(BaseModel):
     default_tier: str
     default_tier_name: str
     feature_count: int
-    path_count: int
 
 
 class SegmentDetailResponse(BaseModel):
@@ -96,8 +84,6 @@ class SegmentDetailResponse(BaseModel):
     default_tier_name: str
     features: List[str]
     feature_names: List[str]
-    paths: List[str]
-    path_names: List[str]
 
 
 class UpgradeSuggestionResponse(BaseModel):
@@ -147,10 +133,9 @@ async def get_user_permissions(
     """
     获取用户权限
 
-    根据角色、来源和服务等级计算用户的可用功能和路径
+    根据角色、来源和服务等级计算用户的可用功能
     """
     try:
-        # 验证参数
         try:
             user_source = UserSource(source)
         except ValueError:
@@ -164,14 +149,12 @@ async def get_user_permissions(
         if role not in ROLE_LEVELS:
             raise HTTPException(status_code=400, detail=f"无效的用户角色: {role}")
 
-        # 创建权限上下文
         context = UserPermissionContext(
             role=role,
             source=user_source,
             service_tier=tier,
         )
 
-        # 获取可用功能
         user_features = get_user_features(context)
         features_info = []
         for feature in FeatureModule:
@@ -184,16 +167,6 @@ async def get_user_permissions(
                 min_tier_name=SERVICE_TIER_DISPLAY.get(min_tier, min_tier.value),
             ))
 
-        # 获取可用路径
-        user_paths = get_user_paths(context)
-        paths_info = []
-        for path in GrowthPath:
-            paths_info.append(PathInfo(
-                id=path.value,
-                name=path.value,  # 使用英文名作为ID
-                accessible=path in user_paths,
-            ))
-
         return UserPermissionsResponse(
             role=role,
             role_name=ROLE_DISPLAY_NAMES.get(role, role),
@@ -204,7 +177,6 @@ async def get_user_permissions(
             service_tier_name=SERVICE_TIER_DISPLAY.get(tier, service_tier),
             service_tier_level=SERVICE_TIER_LEVELS.get(tier, 0),
             features=features_info,
-            paths=paths_info,
         )
 
     except HTTPException:
@@ -221,11 +193,8 @@ async def check_feature_access(
     source: str = Query("organic", description="用户来源"),
     service_tier: str = Query("free", description="服务等级"),
 ):
-    """
-    检查用户是否有某功能的权限
-    """
+    """检查用户是否有某功能的权限"""
     try:
-        # 验证参数
         try:
             feature_module = FeatureModule(feature)
         except ValueError:
@@ -262,53 +231,6 @@ async def check_feature_access(
         raise HTTPException(status_code=500, detail="检查功能权限失败")
 
 
-@router.get("/check-path")
-async def check_path_access(
-    path: str = Query(..., description="成长路径ID"),
-    role: str = Query("observer", description="用户角色"),
-    source: str = Query("organic", description="用户来源"),
-    service_tier: str = Query("free", description="服务等级"),
-):
-    """
-    检查用户是否可以访问某成长路径
-    """
-    try:
-        # 验证参数
-        try:
-            growth_path = GrowthPath(path)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"无效的成长路径: {path}")
-
-        try:
-            user_source = UserSource(source)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"无效的用户来源: {source}")
-
-        try:
-            tier = ServiceTier(service_tier)
-        except ValueError:
-            raise HTTPException(status_code=400, detail=f"无效的服务等级: {service_tier}")
-
-        context = UserPermissionContext(
-            role=role,
-            source=user_source,
-            service_tier=tier,
-        )
-
-        accessible = has_path_access(context, growth_path)
-
-        return {
-            "path": path,
-            "accessible": accessible,
-        }
-
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"检查路径权限失败: {e}")
-        raise HTTPException(status_code=500, detail="检查路径权限失败")
-
-
 @router.get("/upgrade-suggestion", response_model=UpgradeSuggestionResponse)
 async def get_upgrade_suggestion_api(
     feature: str = Query(..., description="功能模块ID"),
@@ -316,13 +238,8 @@ async def get_upgrade_suggestion_api(
     source: str = Query("organic", description="用户来源"),
     role: str = Query("observer", description="用户角色"),
 ):
-    """
-    获取升级建议
-
-    根据用户想要使用的功能，给出升级建议
-    """
+    """获取升级建议"""
     try:
-        # 验证参数
         try:
             feature_module = FeatureModule(feature)
         except ValueError:
@@ -374,9 +291,7 @@ async def get_upgrade_suggestion_api(
 async def list_segments(
     source: Optional[str] = Query(None, description="按来源过滤"),
 ):
-    """
-    获取用户分群列表
-    """
+    """获取用户分群列表"""
     try:
         if source:
             try:
@@ -397,7 +312,6 @@ async def list_segments(
                 default_tier=s.default_tier.value,
                 default_tier_name=SERVICE_TIER_DISPLAY.get(s.default_tier, s.default_tier.value),
                 feature_count=len(s.features),
-                path_count=len(s.paths),
             )
             for s in segments
         ]
@@ -411,9 +325,7 @@ async def list_segments(
 
 @router.get("/detail/{segment_id}", response_model=SegmentDetailResponse)
 async def get_segment_detail(segment_id: str):
-    """
-    获取用户分群详情
-    """
+    """获取用户分群详情"""
     try:
         segment = get_segment_by_id(segment_id)
 
@@ -434,8 +346,6 @@ async def get_segment_detail(segment_id: str):
             feature_names=[
                 FEATURE_MODULE_DISPLAY.get(f, f.value) for f in segment.features
             ],
-            paths=[p.value for p in segment.paths],
-            path_names=[p.value for p in segment.paths],
         )
 
     except HTTPException:
@@ -447,12 +357,10 @@ async def get_segment_detail(segment_id: str):
 
 @router.get("/roles", response_model=List[RoleInfo])
 async def list_roles():
-    """
-    获取所有角色列表
-    """
+    """获取所有角色列表"""
     roles = []
     for role, level in sorted(ROLE_LEVELS.items(), key=lambda x: x[1]):
-        if role not in ["system"]:  # 排除系统角色
+        if role not in ["system"]:
             roles.append(RoleInfo(
                 id=role,
                 name=ROLE_DISPLAY_NAMES.get(role, role),
@@ -463,14 +371,12 @@ async def list_roles():
 
 @router.get("/tiers", response_model=List[TierInfo])
 async def list_service_tiers():
-    """
-    获取所有服务等级列表
-    """
+    """获取所有服务等级列表"""
     tier_descriptions = {
         ServiceTier.FREE: "体验基础功能，了解平台价值",
         ServiceTier.BASIC: "自主学习，获得基础成长支持",
         ServiceTier.PREMIUM: "专家支持，深度成长",
-        ServiceTier.VIP: "180天系统课程，全方位专属服务",
+        ServiceTier.VIP: "系统课程，全方位专属服务",
     }
 
     return [
@@ -486,9 +392,7 @@ async def list_service_tiers():
 
 @router.get("/sources", response_model=List[SourceInfo])
 async def list_user_sources():
-    """
-    获取所有用户来源列表
-    """
+    """获取所有用户来源列表"""
     source_descriptions = {
         UserSource.ORGANIC: "通过官网、社交媒体等渠道自主注册的用户",
         UserSource.COACH_REFERRED: "由健康教练引荐并跟进服务的客户",
@@ -508,9 +412,7 @@ async def list_user_sources():
 
 @router.get("/features", response_model=List[dict])
 async def list_features():
-    """
-    获取所有功能模块列表
-    """
+    """获取所有功能模块列表"""
     return [
         {
             "id": feature.value,
@@ -525,40 +427,12 @@ async def list_features():
     ]
 
 
-@router.get("/paths", response_model=List[dict])
-async def list_growth_paths():
-    """
-    获取所有成长路径列表
-    """
-    path_descriptions = {
-        GrowthPath.INTERVENTION: "180天系统干预课程，全面提升行为健康",
-        GrowthPath.EXPERT: "专家一对一支持，解决具体问题",
-        GrowthPath.KNOWLEDGE: "自主学习知识，理解行为健康原理",
-        GrowthPath.PRACTICE: "实践成长，将知识转化为行动",
-        GrowthPath.COMMUNITY: "社区互动，获得同伴支持",
-        GrowthPath.COACH: "教练培养，成为专业健康教练",
-    }
-
-    return [
-        {
-            "id": path.value,
-            "name": path.value,
-            "description": path_descriptions.get(path, ""),
-        }
-        for path in GrowthPath
-    ]
-
-
 @router.post("/check-role-permission")
 async def check_role_permission_api(
     user_role: str = Query(..., description="用户角色"),
     required_role: str = Query(..., description="需要的角色"),
 ):
-    """
-    检查角色权限
-
-    判断用户角色是否满足所需角色要求
-    """
+    """检查角色权限"""
     if user_role not in ROLE_LEVELS:
         raise HTTPException(status_code=400, detail=f"无效的用户角色: {user_role}")
 

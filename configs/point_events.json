@@ -1,0 +1,332 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "BHP积分事件映射表 - 对接point_transactions表",
+    "updated": "2026-02-09",
+    "field_map": {
+      "action": "point_transactions.action",
+      "point_type": "point_transactions.point_type (枚举: growth/contribution/influence)",
+      "amount": "point_transactions.amount",
+      "max_per_day": "0表示无限制, >0表示每日上限(Redis计数器校验)"
+    }
+  },
+  "events": [
+    {
+      "_section": "成长积分 (growth) — 自我提升的见证",
+      "items": [
+        {
+          "action": "daily_checkin",
+          "point_type": "growth",
+          "amount": 5,
+          "max_per_day": 1,
+          "eligible_roles": ["observer", "grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "每日打卡签到"
+        },
+        {
+          "action": "complete_lesson",
+          "point_type": "growth",
+          "amount": 20,
+          "max_per_day": 5,
+          "eligible_roles": ["observer", "grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": true,
+          "credit_note": "同事务写入user_credits，学分值取course_modules.credit_value",
+          "description": "完成1门课程学习"
+        },
+        {
+          "action": "complete_assessment",
+          "point_type": "growth",
+          "amount": 50,
+          "max_per_day": 2,
+          "eligible_roles": ["observer", "grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": true,
+          "credit_note": "同事务写入user_credits，score记入user_credits.score",
+          "description": "通过1次评估考核"
+        },
+        {
+          "action": "behavior_attempt",
+          "point_type": "growth",
+          "amount": 10,
+          "max_per_day": 3,
+          "eligible_roles": ["observer", "grower"],
+          "triggers_credit": false,
+          "description": "行为尝试(完成微行为打卡)"
+        },
+        {
+          "action": "stage_transition",
+          "point_type": "growth",
+          "amount": 30,
+          "max_per_day": 0,
+          "eligible_roles": ["grower"],
+          "triggers_credit": false,
+          "description": "S轨阶段跃迁(S0→S1→S2→S3→S4)"
+        },
+        {
+          "action": "behavior_stable_30d",
+          "point_type": "growth",
+          "amount": 50,
+          "max_per_day": 0,
+          "eligible_roles": ["grower"],
+          "triggers_credit": false,
+          "milestone": true,
+          "description": "行为稳定30天里程碑"
+        },
+        {
+          "action": "behavior_stable_90d",
+          "point_type": "growth",
+          "amount": 100,
+          "max_per_day": 0,
+          "eligible_roles": ["grower"],
+          "triggers_credit": false,
+          "milestone": true,
+          "description": "行为稳定90天里程碑"
+        },
+        {
+          "action": "metric_improved",
+          "point_type": "growth",
+          "amount": 20,
+          "max_per_day": 0,
+          "eligible_roles": ["grower"],
+          "triggers_credit": false,
+          "description": "健康指标好转1项(CGM/HRV/体重/血压等)"
+        },
+        {
+          "action": "complete_case",
+          "point_type": "growth",
+          "amount": 50,
+          "max_per_day": 0,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "完成1个教练案例(全流程闭环)"
+        },
+        {
+          "action": "complete_180day",
+          "point_type": "growth",
+          "amount": 500,
+          "max_per_day": 0,
+          "eligible_roles": ["grower"],
+          "triggers_credit": false,
+          "milestone": true,
+          "description": "完成180天课程(三见×六段×五层)"
+        },
+        {
+          "action": "use_tool",
+          "point_type": "growth",
+          "amount": 10,
+          "max_per_day": 3,
+          "eligible_roles": ["observer", "grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "使用工具库工具"
+        },
+        {
+          "action": "training_hour",
+          "point_type": "growth",
+          "amount": 5,
+          "max_per_day": 8,
+          "eligible_roles": ["sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "培训学时(每小时)"
+        }
+      ]
+    },
+    {
+      "_section": "贡献积分 (contribution) — 价值创造的度量",
+      "items": [
+        {
+          "action": "path_contribute",
+          "point_type": "contribution",
+          "amount": 10,
+          "max_per_day": 3,
+          "eligible_roles": ["grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "贡献行为路径数据"
+        },
+        {
+          "action": "data_archive",
+          "point_type": "contribution",
+          "amount": 5,
+          "max_per_day": 5,
+          "eligible_roles": ["grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "数据入库(中断模式/行为路径)"
+        },
+        {
+          "action": "publish_content",
+          "point_type": "contribution",
+          "amount": 30,
+          "max_per_day": 3,
+          "eligible_roles": ["sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "发布合格内容/经验分享"
+        },
+        {
+          "action": "case_share",
+          "point_type": "contribution",
+          "amount": 30,
+          "max_per_day": 2,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "案例入库分享"
+        },
+        {
+          "action": "template_contribute",
+          "point_type": "contribution",
+          "amount": 50,
+          "max_per_day": 0,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "模板被系统采纳"
+        },
+        {
+          "action": "course_develop",
+          "point_type": "contribution",
+          "amount": 100,
+          "max_per_day": 0,
+          "eligible_roles": ["promoter", "master"],
+          "triggers_credit": false,
+          "description": "开发完整课程"
+        },
+        {
+          "action": "rule_contribute",
+          "point_type": "contribution",
+          "amount": 30,
+          "max_per_day": 0,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "规则/标准贡献"
+        },
+        {
+          "action": "mentee_graduated",
+          "point_type": "contribution",
+          "amount": 30,
+          "max_per_day": 0,
+          "eligible_roles": ["grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "培养的同道者毕业"
+        },
+        {
+          "action": "community_reply",
+          "point_type": "contribution",
+          "amount": 10,
+          "max_per_day": 10,
+          "eligible_roles": ["sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "社区有效回复"
+        }
+      ]
+    },
+    {
+      "_section": "影响力积分 (influence) — 传播扩散的证明",
+      "items": [
+        {
+          "action": "invite_observer",
+          "point_type": "influence",
+          "amount": 10,
+          "max_per_day": 0,
+          "eligible_roles": ["grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "邀请新观察员注册并完成测评"
+        },
+        {
+          "action": "companion_train_l0",
+          "point_type": "influence",
+          "amount": 10,
+          "max_per_day": 0,
+          "eligible_roles": ["grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "培养L0同道者毕业"
+        },
+        {
+          "action": "companion_train_l1",
+          "point_type": "influence",
+          "amount": 30,
+          "max_per_day": 0,
+          "eligible_roles": ["sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "培养L1同道者毕业"
+        },
+        {
+          "action": "companion_train_l2",
+          "point_type": "influence",
+          "amount": 50,
+          "max_per_day": 0,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "培养L2同道者毕业"
+        },
+        {
+          "action": "companion_train_l3",
+          "point_type": "influence",
+          "amount": 80,
+          "max_per_day": 0,
+          "eligible_roles": ["promoter", "master"],
+          "triggers_credit": false,
+          "description": "培养L3同道者毕业"
+        },
+        {
+          "action": "companion_train_l4",
+          "point_type": "influence",
+          "amount": 150,
+          "max_per_day": 0,
+          "eligible_roles": ["master"],
+          "triggers_credit": false,
+          "description": "培养L4同道者毕业"
+        },
+        {
+          "action": "content_spread",
+          "point_type": "influence",
+          "amount": 5,
+          "max_per_day": 5,
+          "eligible_roles": ["sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "内容被转发/引用"
+        },
+        {
+          "action": "host_workshop",
+          "point_type": "influence",
+          "amount": 150,
+          "max_per_day": 0,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "主持团体工坊"
+        },
+        {
+          "action": "industry_event",
+          "point_type": "influence",
+          "amount": 50,
+          "max_per_day": 0,
+          "eligible_roles": ["promoter", "master"],
+          "triggers_credit": false,
+          "description": "行业活动参与/演讲"
+        },
+        {
+          "action": "standard_participate",
+          "point_type": "influence",
+          "amount": 100,
+          "max_per_day": 0,
+          "eligible_roles": ["master"],
+          "triggers_credit": false,
+          "description": "行业标准制定参与"
+        }
+      ]
+    }
+  ],
+  "linkage_rules": {
+    "_description": "积分-学分联动规则：以下事件同时写入两张表，必须在同一数据库事务内完成",
+    "dual_write_events": [
+      {
+        "action": "complete_lesson",
+        "writes_to": ["point_transactions", "user_credits"],
+        "transaction_required": true,
+        "note": "积分固定+20成长，学分取course_modules.credit_value"
+      },
+      {
+        "action": "complete_assessment",
+        "writes_to": ["point_transactions", "user_credits"],
+        "transaction_required": true,
+        "note": "积分固定+50成长，学分取对应评估模块credit_value，score记入user_credits.score"
+      }
+    ],
+    "single_write_events_note": "其余所有事件仅写入point_transactions，不涉及user_credits"
+  }
+}

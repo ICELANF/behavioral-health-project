@@ -17,7 +17,7 @@ from typing import Optional
 from datetime import datetime
 
 from core.database import get_db
-from core.models import User, UserRole, UserSession
+from core.models import User, UserRole, UserSession, UserActivityLog
 from core.auth import (
     hash_password, authenticate_user, create_user_tokens, verify_token
 )
@@ -251,6 +251,19 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
 
         # 更新最后登录时间
         user.last_login_at = datetime.utcnow()
+
+        # 记录登录活动
+        try:
+            activity = UserActivityLog(
+                user_id=user.id,
+                activity_type="login",
+                detail={"ip": client_ip, "username": user.username},
+                created_at=datetime.utcnow(),
+            )
+            db.add(activity)
+        except Exception:
+            pass  # 活动日志不影响登录流程
+
         db.commit()
 
         logger.info(f"[LOGIN] User logged in successfully: {user.username} (ID: {user.id})")

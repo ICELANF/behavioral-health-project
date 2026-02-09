@@ -264,6 +264,7 @@ import {
   DeleteOutlined
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import request from '@/api/request'
 import type { PracticeCard, PracticeStep, ContentStatus } from '@/types/content'
 import { TRIGGER_DOMAINS } from '@/constants'
 
@@ -432,140 +433,53 @@ const handleDelete = (card: PracticeCard) => {
   fetchCards()
 }
 
-// 获取数据
+// 获取数据 (调用真实 API)
 const fetchCards = async () => {
   loading.value = true
   try {
-    // 模拟数据
-    cards.value = [
-      {
-        card_id: 'card1',
-        type: 'card',
-        source: 'platform',
-        status: 'published',
-        title: '3分钟呼吸放松',
-        description: '通过简单的深呼吸练习，快速缓解紧张和焦虑，恢复内心平静。',
-        icon: '🧘',
-        cover_color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        domain: 'stress',
-        practice_type: 'situational',
-        estimated_minutes: 3,
-        difficulty: 1,
-        steps: [
-          { order: 1, instruction: '找一个舒适的坐姿，闭上眼睛', duration_seconds: 10, interaction: 'read' },
-          { order: 2, instruction: '深吸气4秒，感受腹部缓缓隆起', duration_seconds: 4, interaction: 'breathe' },
-          { order: 3, instruction: '屏住呼吸4秒', duration_seconds: 4, interaction: 'timer' },
-          { order: 4, instruction: '缓慢呼气6秒，感受身体放松', duration_seconds: 6, interaction: 'breathe' },
-          { order: 5, instruction: '重复以上呼吸5次', duration_seconds: 70, interaction: 'timer' },
-          { order: 6, instruction: '慢慢睁开眼睛，感受此刻的平静', duration_seconds: 10, interaction: 'read' }
-        ],
-        tips: ['可以在工作间隙随时练习', '配合轻柔的音乐效果更好'],
-        author_id: 'platform',
-        author_name: '平台',
-        visibility: 'public',
-        use_count: 15680,
-        complete_count: 12340,
-        like_count: 2890,
-        created_at: '2025-01-01T10:00:00Z',
-        updated_at: '2025-01-01T10:00:00Z'
-      },
-      {
-        card_id: 'card2',
-        type: 'card',
-        source: 'platform',
-        status: 'published',
-        title: '睡前身体扫描',
-        description: '通过逐步放松身体各部位，帮助你进入深度睡眠状态。',
-        icon: '😴',
-        cover_color: 'linear-gradient(135deg, #2c3e50 0%, #3498db 100%)',
-        domain: 'sleep',
-        practice_type: 'daily',
-        estimated_minutes: 10,
-        difficulty: 2,
-        steps: [
-          { order: 1, instruction: '躺下，闭上眼睛，做3次深呼吸', duration_seconds: 30, interaction: 'breathe' },
-          { order: 2, instruction: '将注意力集中在脚趾，感受它们的状态，然后放松', duration_seconds: 60, interaction: 'timer' },
-          { order: 3, instruction: '注意力移到小腿和膝盖，感受并放松', duration_seconds: 60, interaction: 'timer' },
-          { order: 4, instruction: '继续向上，放松大腿和臀部', duration_seconds: 60, interaction: 'timer' },
-          { order: 5, instruction: '放松腹部和胸部，感受呼吸的起伏', duration_seconds: 60, interaction: 'timer' },
-          { order: 6, instruction: '放松双臂、双手和手指', duration_seconds: 60, interaction: 'timer' },
-          { order: 7, instruction: '最后放松颈部、面部和头部', duration_seconds: 60, interaction: 'timer' },
-          { order: 8, instruction: '感受整个身体的放松状态，自然入睡', duration_seconds: 30, interaction: 'read' }
-        ],
-        tips: ['建议在关灯后进行', '可以配合助眠音频'],
-        author_id: 'platform',
-        author_name: '平台',
-        visibility: 'public',
-        use_count: 8920,
-        complete_count: 7650,
-        like_count: 1890,
-        created_at: '2025-01-05T10:00:00Z',
-        updated_at: '2025-01-05T10:00:00Z'
-      },
-      {
-        card_id: 'card3',
-        type: 'card',
-        source: 'expert',
-        status: 'published',
-        title: '感恩日记',
-        description: '每天记录3件感恩的事，培养积极心态，提升幸福感。',
-        icon: '🙏',
-        cover_color: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-        domain: 'emotion',
-        practice_type: 'daily',
-        estimated_minutes: 5,
-        difficulty: 1,
-        steps: [
-          { order: 1, instruction: '找一个安静的时刻，准备好笔和本子（或使用下方输入）', duration_seconds: 10, interaction: 'read' },
-          { order: 2, instruction: '回想今天发生的事情', duration_seconds: 30, interaction: 'timer' },
-          { order: 3, instruction: '写下第一件让你感恩的事', interaction: 'input' },
-          { order: 4, instruction: '写下第二件让你感恩的事', interaction: 'input' },
-          { order: 5, instruction: '写下第三件让你感恩的事', interaction: 'input' },
-          { order: 6, instruction: '感受内心的温暖和满足', duration_seconds: 20, interaction: 'read' }
-        ],
-        tips: ['可以是很小的事情，比如一杯好喝的咖啡', '坚持21天会形成习惯'],
-        author_id: 'expert1',
-        author_name: '李明远老师',
-        visibility: 'public',
-        use_count: 6780,
-        complete_count: 5890,
-        like_count: 1560,
-        created_at: '2025-01-10T10:00:00Z',
-        updated_at: '2025-01-10T10:00:00Z'
-      },
-      {
-        card_id: 'card4',
-        type: 'card',
-        source: 'coach',
-        status: 'draft',
-        title: '情绪急救包',
-        description: '当负面情绪来袭时，用这5分钟快速恢复平静。',
-        icon: '🆘',
-        cover_color: 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
-        domain: 'emotion',
-        practice_type: 'situational',
-        estimated_minutes: 5,
-        difficulty: 1,
-        steps: [
-          { order: 1, instruction: '停下手中的事，给自己一个暂停', duration_seconds: 10, interaction: 'read' },
-          { order: 2, instruction: '给当前的情绪命名：我现在感到______', interaction: 'input' },
-          { order: 3, instruction: '深呼吸3次，吸4秒呼6秒', duration_seconds: 30, interaction: 'breathe' },
-          { order: 4, instruction: '感受双脚踩在地面的感觉，让自己接地', duration_seconds: 30, interaction: 'timer' },
-          { order: 5, instruction: '问自己：这个情绪在告诉我什么？', interaction: 'input' }
-        ],
-        tips: ['情绪没有对错，只是信号', '练习越多，恢复越快'],
-        author_id: 'coach1',
-        author_name: '张教练',
-        visibility: 'registered',
-        use_count: 0,
-        complete_count: 0,
-        like_count: 0,
-        review_status: 'pending',
-        created_at: '2026-02-03T10:00:00Z',
-        updated_at: '2026-02-03T10:00:00Z'
-      }
-    ] as PracticeCard[]
-    pagination.total = cards.value.length
+    const params: Record<string, any> = {
+      content_type: 'card',
+      skip: (pagination.current - 1) * pagination.pageSize,
+      limit: pagination.pageSize,
+    }
+    if (filters.status) params.status = filters.status
+    if (filters.domain) params.domain = filters.domain
+
+    const { data } = await request.get('/v1/content-manage/list', { params })
+
+    cards.value = (data.items || []).map((item: any) => ({
+      card_id: String(item.id),
+      type: 'card',
+      source: 'platform',
+      status: item.status || 'draft',
+      title: item.title,
+      description: item.body?.substring(0, 100) || '',
+      icon: '📋',
+      cover_color: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      domain: item.domain || '',
+      practice_type: 'daily',
+      estimated_minutes: 5,
+      difficulty: 1,
+      steps: [],
+      tips: [],
+      author_id: String(item.author_id || ''),
+      author_name: '平台',
+      visibility: 'public',
+      use_count: item.view_count || 0,
+      complete_count: 0,
+      like_count: item.like_count || 0,
+      created_at: item.created_at,
+      updated_at: item.updated_at,
+    })) as PracticeCard[]
+    pagination.total = data.total || 0
+
+    if (filters.keyword) {
+      const kw = filters.keyword.toLowerCase()
+      cards.value = cards.value.filter(c => c.title.toLowerCase().includes(kw))
+    }
+  } catch (e) {
+    console.error('Failed to fetch cards:', e)
+    message.error('获取练习卡片列表失败')
   } finally {
     loading.value = false
   }
