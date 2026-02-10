@@ -209,7 +209,7 @@ class BAPSReportGenerator:
 
         # 综合分析
         comprehensive = self.engine.comprehensive_assessment(
-            big_five_answers, bpt6_answers, capacity_answers, spi_answers, user_id
+            big_five_answers, bpt6_answers, capacity_answers, spi_answers, user_id=user_id
         )
 
         return {

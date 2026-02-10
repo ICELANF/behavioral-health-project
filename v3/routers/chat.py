@@ -4,7 +4,7 @@
 
 鉴权: message/prescription 需登录, knowledge 公开 (可选登录)
 """
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from v3.schemas import (
     APIResponse, ChatRequest, ChatResponse,
@@ -12,6 +12,7 @@ from v3.schemas import (
     PrescriptionRequest,
 )
 from v3.auth import User, get_current_user, get_optional_user
+from core.llm.client import LLMAPIError
 from v3.dependencies import get_coach_agent, get_rag_pipeline
 from core.llm.coach_agent import CoachAgent, UserContext
 from core.rag.pipeline import RAGPipeline
@@ -71,10 +72,13 @@ def knowledge_query(
 
     doc_type 过滤: spec / strategy / tcm / clinical / course / faq
     """
-    result = pipeline.query(
-        question=req.question,
-        doc_type=req.doc_type,
-    )
+    try:
+        result = pipeline.query(
+            question=req.question,
+            doc_type=req.doc_type,
+        )
+    except LLMAPIError as e:
+        raise HTTPException(status_code=503, detail=f"LLM service unavailable: {e.detail}")
     return APIResponse(data=result.to_dict())
 
 
@@ -84,11 +88,14 @@ def knowledge_search(
     pipeline: RAGPipeline = Depends(get_rag_pipeline),
 ):
     """纯向量检索, 返回相似文档片段, 不调 LLM"""
-    results = pipeline.search_only(
-        question=req.question,
-        doc_type=req.doc_type,
-        top_k=req.top_k,
-    )
+    try:
+        results = pipeline.search_only(
+            question=req.question,
+            doc_type=req.doc_type,
+            top_k=req.top_k,
+        )
+    except LLMAPIError as e:
+        raise HTTPException(status_code=503, detail=f"LLM service unavailable: {e.detail}")
     return APIResponse(data=results)
 
 

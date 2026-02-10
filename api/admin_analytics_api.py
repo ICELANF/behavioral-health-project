@@ -97,12 +97,12 @@ def get_user_growth(
     since = datetime.utcnow() - timedelta(days=months * 30)
     rows = (
         db.query(
-            func.strftime("%Y-%m", User.created_at).label("month"),
+            func.to_char(User.created_at, 'YYYY-MM').label("month"),
             func.count().label("new_users"),
         )
         .filter(User.created_at >= since)
-        .group_by(func.strftime("%Y-%m", User.created_at))
-        .order_by(func.strftime("%Y-%m", User.created_at))
+        .group_by(func.to_char(User.created_at, 'YYYY-MM'))
+        .order_by(func.to_char(User.created_at, 'YYYY-MM'))
         .all()
     )
 

@@ -152,7 +152,10 @@ class LLMClient:
         if env_var not in self._api_keys:
             key = os.environ.get(env_var, "")
             if not key:
-                logger.warning(f"API key not found: {env_var}")
+                raise LLMAPIError(
+                    model="N/A", status_code=0,
+                    detail=f"API key environment variable '{env_var}' is not set",
+                )
             self._api_keys[env_var] = key
         return self._api_keys[env_var]
 
