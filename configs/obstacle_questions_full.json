@@ -1,0 +1,116 @@
+{
+  "version": "3.0",
+  "name": "障碍评估问卷(完整版)",
+  "source": "§26.4 + §23",
+  "total_questions": 40,
+  "scoring": "每题1-5分, 10类×4题, 类别得分4-20, 总分40-200",
+  "severity_thresholds": {
+    "severe": 120,
+    "moderate": 80,
+    "mild": 0
+  },
+  "categories": {
+    "time": {
+      "name": "时间障碍",
+      "questions": [
+        {"id": "OBF01", "text": "我的工作/生活太忙，没有时间来做出改变"},
+        {"id": "OBF02", "text": "我的日程总是被其他事情占满"},
+        {"id": "OBF03", "text": "我找不到固定的时间来执行新习惯"},
+        {"id": "OBF04", "text": "突发事件经常打乱我的计划"}
+      ]
+    },
+    "energy": {
+      "name": "精力障碍",
+      "questions": [
+        {"id": "OBF05", "text": "我每天结束时已经精疲力竭"},
+        {"id": "OBF06", "text": "我的身体状况让我感觉没有精力去改变"},
+        {"id": "OBF07", "text": "早上起来就感觉很疲惫"},
+        {"id": "OBF08", "text": "工作之余我只想休息，不想做其他事"}
+      ]
+    },
+    "knowledge": {
+      "name": "知识障碍",
+      "questions": [
+        {"id": "OBF09", "text": "我不确定什么样的饮食/运动对我最有效"},
+        {"id": "OBF10", "text": "关于健康的信息太多太杂，无法判断"},
+        {"id": "OBF11", "text": "我不知道如何制定适合自己的健康计划"},
+        {"id": "OBF12", "text": "我缺乏关于身体状况的基本知识"}
+      ]
+    },
+    "skill": {
+      "name": "技能障碍",
+      "questions": [
+        {"id": "OBF13", "text": "我不会烹饪健康的饮食"},
+        {"id": "OBF14", "text": "我不会正确地做运动（担心受伤或姿势不对）"},
+        {"id": "OBF15", "text": "我不会使用健康监测工具"},
+        {"id": "OBF16", "text": "我不懂如何在不同场景下灵活调整健康行为"}
+      ]
+    },
+    "environment": {
+      "name": "环境障碍",
+      "questions": [
+        {"id": "OBF17", "text": "我家附近没有适合运动的场所"},
+        {"id": "OBF18", "text": "我的环境中充满不健康的食物诱惑"},
+        {"id": "OBF19", "text": "我的居住/工作条件不支持健康行为"},
+        {"id": "OBF20", "text": "我所在的文化环境不鼓励健康行为"}
+      ]
+    },
+    "social": {
+      "name": "社会障碍",
+      "questions": [
+        {"id": "OBF21", "text": "周围的人觉得我'太讲究'或'小题大做'"},
+        {"id": "OBF22", "text": "家人/朋友的聚餐习惯让我很难坚持"},
+        {"id": "OBF23", "text": "我身边没有人在进行类似改变可以互相支持"},
+        {"id": "OBF24", "text": "他人对我的健康选择表示不理解或嘲笑"}
+      ]
+    },
+    "emotion": {
+      "name": "情绪障碍",
+      "questions": [
+        {"id": "OBF25", "text": "压力大的时候我会用吃东西/刷手机来缓解"},
+        {"id": "OBF26", "text": "我害怕失败，所以干脆不开始"},
+        {"id": "OBF27", "text": "过去失败的经历让我对改变失去了信心"},
+        {"id": "OBF28", "text": "焦虑/抑郁让我无法集中精力去改变"}
+      ]
+    },
+    "financial": {
+      "name": "经济障碍",
+      "questions": [
+        {"id": "OBF29", "text": "健康食材/有机食品对我来说太贵了"},
+        {"id": "OBF30", "text": "健身房/运动课程的费用超出预算"},
+        {"id": "OBF31", "text": "购买健康监测设备经济上有困难"},
+        {"id": "OBF32", "text": "当前经济状况让我无法优先考虑健康投入"}
+      ]
+    },
+    "habit": {
+      "name": "习惯障碍",
+      "questions": [
+        {"id": "OBF33", "text": "我的旧习惯根深蒂固很难改"},
+        {"id": "OBF34", "text": "每次下决心改变，过不了几天就回到老样子"},
+        {"id": "OBF35", "text": "我的生活节奏已经固定，很难插入新行为"},
+        {"id": "OBF36", "text": "某些不健康行为已经成瘾"}
+      ]
+    },
+    "belief": {
+      "name": "信念障碍",
+      "questions": [
+        {"id": "OBF37", "text": "我觉得'基因决定一切'，改变也没用"},
+        {"id": "OBF38", "text": "我认为自己不是那种能坚持的人"},
+        {"id": "OBF39", "text": "我觉得年纪大了改变也来不及了"},
+        {"id": "OBF40", "text": "我不相信生活方式改变能真正逆转健康问题"}
+      ]
+    }
+  },
+  "rx_adjustment_map": {
+    "time":        {"strategy": "碎片化任务设计",   "max_task_duration_min": 5},
+    "energy":      {"strategy": "低能耗优先",       "priority_rx": ["sleep", "stress"]},
+    "knowledge":   {"strategy": "知识补课",         "add_task": "daily_1_tip"},
+    "skill":       {"strategy": "技能降级",         "substitute_complex": true},
+    "environment": {"strategy": "环境微调",         "tasks": ["remove_trigger", "add_cue"]},
+    "social":      {"strategy": "社群缓冲",         "reduce_social_goals": true},
+    "emotion":     {"strategy": "情绪优先",         "add_rx": ["emotion_regulation"]},
+    "financial":   {"strategy": "零成本方案",       "filter": "free_only"},
+    "habit":       {"strategy": "习惯替换",         "method": "gradual_replacement"},
+    "belief":      {"strategy": "认知重构",         "tasks": ["success_case", "micro_goal"]}
+  }
+}

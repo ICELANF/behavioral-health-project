@@ -1,0 +1,87 @@
+{
+  "version": "3.0",
+  "name": "六级健康能力评估问卷",
+  "source": "§25 成长六阶.docx",
+  "total_questions": 30,
+  "scoring_method": "Lv0反向; 从Lv5向下找第一个勾选≥3题的等级",
+  "levels": {
+    "Lv0": {
+      "name": "完全无知者",
+      "description": "不知道风险、不理解原理",
+      "scoring": "reverse",
+      "content_stage": "need",
+      "questions": [
+        {"id": "HC01", "text": "我不知道自己的体重、腰围、血压、血糖的真实状态"},
+        {"id": "HC02", "text": "我不了解肥胖、高血糖、慢性病的风险"},
+        {"id": "HC03", "text": "我不知道吃什么、怎么吃会导致血糖或体重问题"},
+        {"id": "HC04", "text": "我不知道运动对健康的影响"},
+        {"id": "HC05", "text": "我从未主动记录或监测过健康数据"}
+      ]
+    },
+    "Lv1": {
+      "name": "问题觉察者",
+      "description": "意识到问题但不会做",
+      "scoring": "normal",
+      "content_stage": "awareness",
+      "questions": [
+        {"id": "HC06", "text": "我知道自己'需要改变'，但不知道具体怎么做"},
+        {"id": "HC07", "text": "我了解一些风险，但无法判断哪些与我最相关"},
+        {"id": "HC08", "text": "我知道吃得不健康，但无法控制或不知道替代方案"},
+        {"id": "HC09", "text": "我知道需要运动，但无法坚持或不知道如何开始"},
+        {"id": "HC10", "text": "我偶尔记录数据，但无法解释它们"}
+      ]
+    },
+    "Lv2": {
+      "name": "方法学习者",
+      "description": "会按步骤做但不稳定",
+      "scoring": "normal",
+      "content_stage": "action",
+      "questions": [
+        {"id": "HC11", "text": "我掌握基本控糖/减重方法（如吃饭顺序、控碳）"},
+        {"id": "HC12", "text": "我能按照指导完成配餐、记录饮食或监测血糖"},
+        {"id": "HC13", "text": "我能完成步行或简单运动，但不够稳定"},
+        {"id": "HC14", "text": "我理解部分健康行为原理，但不能灵活应用"},
+        {"id": "HC15", "text": "需要别人监督或提醒才能行动"}
+      ]
+    },
+    "Lv3": {
+      "name": "情境适配者",
+      "description": "能在不同情境中调整",
+      "scoring": "normal",
+      "content_stage": "regulation",
+      "questions": [
+        {"id": "HC16", "text": "我在外食、应酬、加班、旅行等情况下能做出较好选择"},
+        {"id": "HC17", "text": "我能识别情绪、压力对饮食和血糖的影响并调整"},
+        {"id": "HC18", "text": "我的饮食、运动、睡眠较稳定，偶尔波动可自我纠正"},
+        {"id": "HC19", "text": "我能用不同方法解决健康执行中的困难"},
+        {"id": "HC20", "text": "我能解释自己的血糖或体重变化的原因"}
+      ]
+    },
+    "Lv4": {
+      "name": "自我驱动者",
+      "description": "健康行为已成习惯",
+      "scoring": "normal",
+      "content_stage": "iteration",
+      "questions": [
+        {"id": "HC21", "text": "我有稳定的生活结构（饮食、运动、睡眠节律）"},
+        {"id": "HC22", "text": "我能长期保持健康行为而无需监督"},
+        {"id": "HC23", "text": "我的血糖/体重/腰围较为稳定，无大的波动"},
+        {"id": "HC24", "text": "我知道自己的健康方向和价值，并愿意持续投入"},
+        {"id": "HC25", "text": "健康行为已经融入日常生活方式"}
+      ]
+    },
+    "Lv5": {
+      "name": "使命实践者",
+      "description": "能影响他人",
+      "scoring": "normal",
+      "content_stage": "transformation",
+      "questions": [
+        {"id": "HC26", "text": "健康行为对我来说是一种生命价值选择"},
+        {"id": "HC27", "text": "我会主动向家人、朋友或同事传递健康方法"},
+        {"id": "HC28", "text": "我能带动他人改善饮食、运动或睡眠"},
+        {"id": "HC29", "text": "我能分析问题、制定方案，指导他人实践"},
+        {"id": "HC30", "text": "我愿意把健康行为视为长期使命并持续践行"}
+      ]
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "version": "3.0",
+  "name": "自我效能评估问卷",
+  "source": "§26.3",
+  "total_questions": 5,
+  "scoring": "每题1-10分, 平均分≥7=强, 4-6=中, <4=低",
+  "questions": [
+    {"id": "SE1", "type": "task",        "text": "您相信自己能做到目标行为吗？"},
+    {"id": "SE2", "type": "maintenance",  "text": "您相信自己能坚持3个月以上吗？"},
+    {"id": "SE3", "type": "recovery",     "text": "如果中断了，您相信自己能重新开始吗？"},
+    {"id": "SE4", "type": "situational",  "text": "即使很忙/很累，您相信自己能坚持吗？"},
+    {"id": "SE5", "type": "social",       "text": "在聚会/应酬时，您能坚持健康选择吗？"}
+  ]
+}

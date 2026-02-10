@@ -13,7 +13,8 @@ from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import (
     Column, Integer, String, Text, DateTime, Float, Boolean,
-    JSON, ForeignKey, Index, Enum as SQLEnum, text as sa_text
+    JSON, ForeignKey, Index, Enum as SQLEnum, text as sa_text,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
@@ -852,6 +853,102 @@ class PsychologicalLevel(str, enum.Enum):
     L3 = "L3"  # 基本就绪
     L4 = "L4"  # 高度就绪
     L5 = "L5"  # 自驱型
+
+
+# ── v3.1 新增枚举 ──────────────────────────────
+
+class ChangeCauseCategory(str, enum.Enum):
+    """改变动因类别 (24动因 × 6类)"""
+    INTRINSIC = "intrinsic"
+    EXTERNAL_EVENT = "external_event"
+    EMOTIONAL = "emotional"
+    COGNITIVE = "cognitive"
+    CAPABILITY = "capability"
+    SOCIAL = "social"
+
+
+class HealthCompetencyLevel(str, enum.Enum):
+    """健康能力等级 (Lv0-Lv5)"""
+    LV0 = "Lv0"  # 完全无知者
+    LV1 = "Lv1"  # 问题觉察者
+    LV2 = "Lv2"  # 方法学习者
+    LV3 = "Lv3"  # 情境适配者
+    LV4 = "Lv4"  # 自我驱动者
+    LV5 = "Lv5"  # 使命实践者
+
+
+class GrowthLevel(str, enum.Enum):
+    """成长等级 (G0-G5, 与 HealthCompetencyLevel 对应)"""
+    G0 = "G0"
+    G1 = "G1"
+    G2 = "G2"
+    G3 = "G3"
+    G4 = "G4"
+    G5 = "G5"
+
+
+class SPILevel(str, enum.Enum):
+    """SPI 成功可能性等级"""
+    VERY_HIGH = "very_high"
+    HIGH = "high"
+    MEDIUM = "medium"
+    LOW = "low"
+    VERY_LOW = "very_low"
+
+
+class ObstacleCategory(str, enum.Enum):
+    """障碍类别 (10类)"""
+    TIME = "time"
+    ENERGY = "energy"
+    KNOWLEDGE = "knowledge"
+    SKILL = "skill"
+    ENVIRONMENT = "environment"
+    SOCIAL = "social"
+    EMOTION = "emotion"
+    FINANCIAL = "financial"
+    HABIT = "habit"
+    BELIEF = "belief"
+
+
+class HBMDimension(str, enum.Enum):
+    """HBM 健康信念模型维度"""
+    SUSCEPTIBILITY = "susceptibility"
+    SEVERITY = "severity"
+    BENEFITS = "benefits"
+    BARRIERS = "barriers"
+    CUES = "cues"
+    SELF_EFFICACY = "self_efficacy"
+
+
+class AttributionType(str, enum.Enum):
+    """归因类型"""
+    BEHAVIORAL = "behavioral"
+    GENETIC = "genetic"
+    ENVIRONMENTAL = "environmental"
+    FATALISTIC = "fatalistic"
+
+
+class TimeOrientation(str, enum.Enum):
+    """时间视角"""
+    PAST = "past"
+    PRESENT = "present"
+    FUTURE = "future"
+
+
+class SupportLayer(str, enum.Enum):
+    """支持系统层级"""
+    CORE = "core"
+    INTIMATE = "intimate"
+    DAILY = "daily"
+    PROFESSIONAL = "professional"
+    COMMUNITY = "community"
+
+
+class MonitoringLevel(str, enum.Enum):
+    """养成监控频率"""
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
 
 
 class BehavioralProfile(Base):
@@ -2746,6 +2843,128 @@ class PromotionApplication(Base):
     )
 
 
+# ── v3.1 诊断评估持久化模型 ──────────────────────────
+
+class ChangeCause(Base):
+    """24动因 × 6类 — 改变动因字典"""
+    __tablename__ = "change_causes"
+
+    id = Column(String(4), primary_key=True)
+    category = Column(String(20), nullable=False)
+    name_zh = Column(String(50), nullable=False)
+    name_en = Column(String(50), nullable=False)
+    description = Column(Text)
+    assessment_question = Column(Text, nullable=False)
+    weight = Column(Float, default=1.0)
+
+
+class UserChangeCauseScore(Base):
+    """用户改变动因评分"""
+    __tablename__ = "user_change_cause_scores"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    assessment_id = Column(Integer, nullable=False)
+    cause_id = Column(String(4), ForeignKey("change_causes.id"), nullable=False)
+    score = Column(Integer, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow,
+                        server_default=sa_text("now()"))
+
+    __table_args__ = (
+        Index("ix_user_cause_ua", "user_id", "assessment_id"),
+    )
+
+
+class InterventionStrategy(Base):
+    """阶段 × 动因 → 干预策略 ORM"""
+    __tablename__ = "intervention_strategies"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    stage_code = Column(String(4), nullable=False, index=True)
+    readiness_level = Column(String(4), index=True)
+    stage_name = Column(String(20), nullable=False)
+    cause_code = Column(String(4), nullable=False, index=True)
+    cause_category = Column(String(30), nullable=False)
+    cause_name = Column(String(30), nullable=False)
+    strategy_type = Column(String(30), nullable=False)
+    coach_script = Column(Text, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("stage_code", "cause_code", name="uq_stage_cause"),
+        Index("ix_strat_rc", "readiness_level", "cause_code"),
+    )
+
+
+class HealthCompetencyAssessment(Base):
+    """健康能力评估记录"""
+    __tablename__ = "health_competency_assessments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    answers = Column(JSON, nullable=False)
+    level_scores = Column(JSON, nullable=False)
+    current_level = Column(String(4), nullable=False)
+    recommended_content_stage = Column(String(20))
+    created_at = Column(DateTime, default=datetime.utcnow,
+                        server_default=sa_text("now()"))
+
+
+class COMBAssessment(Base):
+    """COM-B 行为能力评估"""
+    __tablename__ = "comb_assessments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    answers = Column(JSON, nullable=False)
+    dimension_scores = Column(JSON, nullable=False)
+    bottleneck = Column(String(20))
+    total_score = Column(Float, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow,
+                        server_default=sa_text("now()"))
+
+
+class SelfEfficacyAssessment(Base):
+    """自我效能评估"""
+    __tablename__ = "self_efficacy_assessments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    answers = Column(JSON, nullable=False)
+    avg_score = Column(Float, nullable=False)
+    level = Column(String(10), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow,
+                        server_default=sa_text("now()"))
+
+
+class ObstacleAssessment(Base):
+    """障碍评估"""
+    __tablename__ = "obstacle_assessments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    answers = Column(JSON, nullable=False)
+    category_scores = Column(JSON, nullable=False)
+    top_obstacles = Column(JSON, nullable=False)
+    rx_adjustments = Column(JSON)
+    created_at = Column(DateTime, default=datetime.utcnow,
+                        server_default=sa_text("now()"))
+
+
+class SupportAssessment(Base):
+    """支持系统评估"""
+    __tablename__ = "support_assessments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    answers = Column(JSON, nullable=False)
+    layer_scores = Column(JSON, nullable=False)
+    total_score = Column(Float, nullable=False)
+    support_level = Column(String(10), nullable=False)
+    weakest_layer = Column(String(20))
+    created_at = Column(DateTime, default=datetime.utcnow,
+                        server_default=sa_text("now()"))
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -2842,6 +3061,15 @@ def get_table_names():
         # 积分系统
         "point_transactions",
         "user_points",
+        # V3.1 诊断评估
+        "change_causes",
+        "user_change_cause_scores",
+        "intervention_strategies",
+        "health_competency_assessments",
+        "comb_assessments",
+        "self_efficacy_assessments",
+        "obstacle_assessments",
+        "support_assessments",
     ]
 
 
@@ -2928,5 +3156,14 @@ def get_model_by_name(name: str):
         "UserCredit": UserCredit,
         "CompanionRelation": CompanionRelation,
         "PromotionApplication": PromotionApplication,
+        # V3.1 诊断评估
+        "ChangeCause": ChangeCause,
+        "UserChangeCauseScore": UserChangeCauseScore,
+        "InterventionStrategy": InterventionStrategy,
+        "HealthCompetencyAssessment": HealthCompetencyAssessment,
+        "COMBAssessment": COMBAssessment,
+        "SelfEfficacyAssessment": SelfEfficacyAssessment,
+        "ObstacleAssessment": ObstacleAssessment,
+        "SupportAssessment": SupportAssessment,
     }
     return models.get(name)
