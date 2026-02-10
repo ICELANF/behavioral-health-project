@@ -52,6 +52,9 @@ COPY disclosure/ ./disclosure/
 COPY quality/ ./quality/
 COPY alembic/ ./alembic/
 COPY backend/ ./backend/
+COPY baps/ ./baps/
+COPY v3/ ./v3/
+COPY migrations/ ./migrations/
 COPY data/ ./data/
 COPY config.yaml ./
 COPY alembic.ini ./

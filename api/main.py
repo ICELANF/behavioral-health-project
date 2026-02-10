@@ -342,6 +342,32 @@ try:
 except ImportError as e:
     print(f"[API] 食物识别路由注册失败: {e}")
 
+# ============================================
+# 注册 v3 路由 (诊断管道/Coach对话/渐进评估/效果追踪/激励积分/知识库)
+# ============================================
+try:
+    from v3.routers import (
+        auth as v3_auth,
+        diagnostic as v3_diagnostic,
+        chat as v3_chat,
+        assessment as v3_assessment,
+        tracking as v3_tracking,
+        incentive as v3_incentive,
+        knowledge as v3_knowledge,
+        health as v3_health,
+    )
+    app.include_router(v3_health.router)
+    app.include_router(v3_auth.router)
+    app.include_router(v3_diagnostic.router)
+    app.include_router(v3_chat.router)
+    app.include_router(v3_assessment.router)
+    app.include_router(v3_tracking.router)
+    app.include_router(v3_incentive.router)
+    app.include_router(v3_knowledge.router)
+    print("[API] v3 路由已注册 (8 routers: auth/diagnostic/chat/assessment/tracking/incentive/knowledge/health)")
+except Exception as e:
+    print(f"[API] v3 路由注册失败: {e}")
+
 # 挂载静态文件服务
 try:
     from fastapi.staticfiles import StaticFiles

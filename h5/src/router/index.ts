@@ -191,6 +191,38 @@ const router = createRouter({
       component: () => import('@/views/ProgramProgress.vue'),
       meta: { title: '行为特征' }
     },
+    // ── v3 渐进式评估 + AI Coach + 知识库 ──
+    {
+      path: '/v3/assessment',
+      name: 'v3-assessment',
+      component: () => import('@/views/v3/Assessment.vue'),
+      meta: { title: '渐进式评估' }
+    },
+    {
+      path: '/v3/assessment/:batchId',
+      name: 'v3-assessment-batch',
+      component: () => import('@/views/v3/AssessmentBatch.vue'),
+      props: true,
+      meta: { title: '评估批次' }
+    },
+    {
+      path: '/v3/coach',
+      name: 'v3-coach',
+      component: () => import('@/views/v3/Coach.vue'),
+      meta: { title: 'AI 健康教练' }
+    },
+    {
+      path: '/v3/knowledge',
+      name: 'v3-knowledge',
+      component: () => import('@/views/v3/Knowledge.vue'),
+      meta: { title: '知识库', public: true }
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: () => import('@/views/v3/Register.vue'),
+      meta: { public: true }
+    },
     {
       path: '/:pathMatch(.*)*',
       redirect: '/'

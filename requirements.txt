@@ -81,6 +81,10 @@ loguru>=0.7.0
 
 # Task Scheduling
 apscheduler>=3.10.0
+celery[redis]>=5.4.0
+
+# Production Server
+gunicorn>=23.0.0
 
 # Other
 joblib>=1.5.3
