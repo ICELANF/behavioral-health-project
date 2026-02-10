@@ -381,8 +381,7 @@ const handleEdit = (record: ArticleContent) => {
 }
 
 const handleView = (record: ArticleContent) => {
-  // TODO: 打开预览弹窗
-  message.info('查看文章: ' + record.title)
+  window.open(`/content/articles?preview=${record.article_id}`, '_blank')
 }
 
 const handleSave = async () => {

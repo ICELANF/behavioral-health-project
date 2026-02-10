@@ -219,29 +219,79 @@ def create_user_tokens(user_id: int, username: str, role: str) -> Dict[str, str]
 
 class TokenBlacklist:
     """
-    Token 黑名单
+    Token 黑名单 — Redis 实现
 
-    内存实现，生产环境应替换为 Redis
+    使用 Redis SET + TTL 存储已撤销的 token 哈希，
+    跨 worker 共享，token 过期后自动清理。
+    Redis 不可用时降级为内存 set（单 worker 有效）。
     """
 
+    _PREFIX = "bhp:token_blacklist:"
+
     def __init__(self):
-        self._blacklist: set = set()
+        self._fallback: set = set()
+        self._redis = None
+        self._redis_checked = False
+
+    def _get_redis(self):
+        """延迟初始化 Redis 客户端（db=2，与 scheduler lock db=1 隔离）"""
+        if self._redis_checked:
+            return self._redis
+        self._redis_checked = True
+        try:
+            import redis
+            host = os.environ.get("REDIS_HOST", "localhost")
+            port = int(os.environ.get("REDIS_PORT", "6379"))
+            password = os.environ.get("REDIS_PASSWORD", "")
+            self._redis = redis.Redis(
+                host=host, port=port, password=password or None,
+                db=int(os.environ.get("REDIS_BLACKLIST_DB", "2")),
+                decode_responses=True, socket_timeout=2,
+            )
+            self._redis.ping()
+            logger.info(f"[TokenBlacklist] Redis 已连接 {host}:{port} db=2")
+        except Exception as e:
+            self._redis = None
+            logger.warning(f"[TokenBlacklist] Redis 不可用，降级为内存模式: {e}")
+        return self._redis
+
+    @staticmethod
+    def _hash(token: str) -> str:
+        import hashlib
+        return hashlib.sha256(token.encode()).hexdigest()
 
     def revoke(self, token: str):
-        """撤销 token"""
+        """撤销 token — 存入 Redis（TTL = token 剩余有效期）"""
         payload = decode_token(token)
-        if payload:
-            # 用 jti 或整个 token 的哈希
-            import hashlib
-            token_hash = hashlib.sha256(token.encode()).hexdigest()
-            self._blacklist.add(token_hash)
-            logger.info(f"Token 已撤销: {token_hash[:16]}...")
+        if not payload:
+            return
+        token_hash = self._hash(token)
+        # 计算剩余 TTL（秒），至少 60s 兜底
+        exp = payload.get("exp", 0)
+        ttl = max(int(exp - datetime.utcnow().timestamp()), 60)
+
+        r = self._get_redis()
+        if r is not None:
+            try:
+                r.setex(f"{self._PREFIX}{token_hash}", ttl, "1")
+                logger.info(f"Token 已撤销 (Redis, TTL={ttl}s): {token_hash[:16]}...")
+                return
+            except Exception as e:
+                logger.warning(f"[TokenBlacklist] Redis write 失败，降级内存: {e}")
+        # fallback
+        self._fallback.add(token_hash)
+        logger.info(f"Token 已撤销 (内存降级): {token_hash[:16]}...")
 
     def is_revoked(self, token: str) -> bool:
         """检查 token 是否已撤销"""
-        import hashlib
-        token_hash = hashlib.sha256(token.encode()).hexdigest()
-        return token_hash in self._blacklist
+        token_hash = self._hash(token)
+        r = self._get_redis()
+        if r is not None:
+            try:
+                return r.exists(f"{self._PREFIX}{token_hash}") > 0
+            except Exception:
+                pass
+        return token_hash in self._fallback
 
 
 # 全局黑名单实例

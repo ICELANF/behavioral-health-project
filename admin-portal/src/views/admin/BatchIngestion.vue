@@ -180,7 +180,6 @@ const handleUpload = async () => {
     })
 
     await request.post('v1/knowledge/batch-upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 120000,
     })
     message.success('导入任务已提交')

@@ -520,8 +520,8 @@ const goToCourseList = () => router.push('/course/list')
 const goToExamList = () => router.push('/exam/list')
 const goToQuestionBank = () => router.push('/question/bank')
 const goToStats = () => router.push('/dashboard')
-const goToMessages = () => message.info('消息中心')
-const goToProfile = () => message.info('个人中心')
+const goToMessages = () => router.push('/coach/messages')
+const goToProfile = () => router.push('/client/my/profile')
 
 const handleLogout = () => {
   localStorage.removeItem('admin_token')

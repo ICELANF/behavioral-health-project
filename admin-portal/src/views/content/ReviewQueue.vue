@@ -327,8 +327,7 @@ const openReview = (item: ReviewQueueItem) => {
 }
 
 const previewContent = (item: ReviewQueueItem) => {
-  message.info(`预览功能开发中: ${item.title}`)
-  // TODO: 打开内容预览页面
+  window.open(`/content/articles?preview=${item.content_id}`, '_blank')
 }
 
 const handleApprove = () => {
@@ -340,14 +339,18 @@ const handleApprove = () => {
   Modal.confirm({
     title: '确认通过',
     content: '确定通过该内容的审核吗？通过后将立即发布。',
-    onOk() {
-      // TODO: 调用API
-      message.success('审核通过，内容已发布')
-      reviewModalVisible.value = false
-      // 从队列中移除
-      queue.value = queue.value.filter(q => q.content_id !== currentItem.value?.content_id)
-      stats.pending = queue.value.length
-      stats.reviewed_today++
+    async onOk() {
+      try {
+        await request.post(`/v1/content-manage/${currentItem.value?.content_id}/publish`)
+        message.success('审核通过，内容已发布')
+        reviewModalVisible.value = false
+        queue.value = queue.value.filter(q => q.content_id !== currentItem.value?.content_id)
+        stats.pending = queue.value.length
+        stats.reviewed_today++
+      } catch (e) {
+        console.error('Approve failed:', e)
+        message.error('审核操作失败')
+      }
     }
   })
 }
@@ -362,13 +365,18 @@ const handleReject = () => {
     title: '确认拒绝',
     content: '确定拒绝该内容吗？',
     okType: 'danger',
-    onOk() {
-      // TODO: 调用API
-      message.success('已拒绝该内容')
-      reviewModalVisible.value = false
-      queue.value = queue.value.filter(q => q.content_id !== currentItem.value?.content_id)
-      stats.pending = queue.value.length
-      stats.reviewed_today++
+    async onOk() {
+      try {
+        await request.delete(`/v1/content-manage/${currentItem.value?.content_id}`)
+        message.success('已拒绝该内容')
+        reviewModalVisible.value = false
+        queue.value = queue.value.filter(q => q.content_id !== currentItem.value?.content_id)
+        stats.pending = queue.value.length
+        stats.reviewed_today++
+      } catch (e) {
+        console.error('Reject failed:', e)
+        message.error('拒绝操作失败')
+      }
     }
   })
 }
@@ -382,13 +390,21 @@ const handleRevision = () => {
   Modal.confirm({
     title: '确认退回修改',
     content: '确定退回该内容让作者修改吗？',
-    onOk() {
-      // TODO: 调用API
-      message.success('已退回作者修改')
-      reviewModalVisible.value = false
-      queue.value = queue.value.filter(q => q.content_id !== currentItem.value?.content_id)
-      stats.pending = queue.value.length
-      stats.reviewed_today++
+    async onOk() {
+      try {
+        await request.put(`/v1/content-manage/${currentItem.value?.content_id}`, {
+          status: 'draft',
+          review_comment: reviewComment.value,
+        })
+        message.success('已退回作者修改')
+        reviewModalVisible.value = false
+        queue.value = queue.value.filter(q => q.content_id !== currentItem.value?.content_id)
+        stats.pending = queue.value.length
+        stats.reviewed_today++
+      } catch (e) {
+        console.error('Revision failed:', e)
+        message.error('退回操作失败')
+      }
     }
   })
 }

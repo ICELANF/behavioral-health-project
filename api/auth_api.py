@@ -19,7 +19,8 @@ from datetime import datetime
 from core.database import get_db
 from core.models import User, UserRole, UserSession, UserActivityLog
 from core.auth import (
-    hash_password, authenticate_user, create_user_tokens, verify_token
+    hash_password, authenticate_user, create_user_tokens,
+    verify_token, verify_token_with_blacklist
 )
 from loguru import logger
 
@@ -107,8 +108,8 @@ async def get_current_user(
     """
     token = credentials.credentials
 
-    # 验证token
-    payload = verify_token(token, "access")
+    # 验证token（含黑名单检查）
+    payload = verify_token_with_blacklist(token, "access")
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

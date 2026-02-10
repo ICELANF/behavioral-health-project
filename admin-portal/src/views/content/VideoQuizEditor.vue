@@ -356,10 +356,36 @@ const handleSave = async () => {
 
   saving.value = true
   try {
-    // TODO: 调用 API 保存
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const payload = {
+      title: form.title,
+      description: form.description,
+      pass_score: form.pass_score,
+      max_attempts: form.max_attempts,
+      time_limit_seconds: form.time_limit_seconds,
+      coach_points_bonus: form.coach_points_bonus,
+      grower_minutes_bonus: form.grower_minutes_bonus,
+      questions: form.questions.map(q => ({
+        type: q.type,
+        content: q.content,
+        options: q.type !== 'judge' ? q.options : undefined,
+        correct_answer: q.correct_answer,
+        explanation: q.explanation,
+        points: q.points,
+      })),
+    }
+    const url = isEdit.value
+      ? `/v1/content/video/${videoId.value}/quiz/${quizId.value}`
+      : `/v1/content/video/${videoId.value}/quiz`
+    if (isEdit.value) {
+      await import('@/api/request').then(m => m.default.put(url, payload))
+    } else {
+      await import('@/api/request').then(m => m.default.post(url, payload))
+    }
     message.success('保存成功')
     router.back()
+  } catch (e) {
+    console.error('Save quiz failed:', e)
+    message.error('保存失败')
   } finally {
     saving.value = false
   }

@@ -33,6 +33,7 @@
           :is-user="message.role === 'user'"
           :expert="message.expert"
           :timestamp="message.timestamp"
+          :image-url="message.imageUrl || ''"
           :citations="message.citations || []"
           :has-knowledge="message.hasKnowledge || false"
           :has-model-supplement="message.hasModelSupplement || false"
@@ -53,14 +54,31 @@
       </template>
 
       <!-- 加载中 -->
-      <div v-if="isLoading" class="loading-indicator">
+      <div v-if="isLoading && !isThinking" class="loading-indicator">
         <van-loading type="spinner" size="24" />
         <span>思考中...</span>
+      </div>
+
+      <!-- AI 食物识别中动画 -->
+      <div v-if="isThinking" class="bhp-chat-bubble bhp-chat-bubble--assistant bhp-animate-in">
+        <div class="bhp-typing-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <div style="font-size: 12px; color: #94a3b8; margin-top: 4px;">
+          食物识别中...
+        </div>
       </div>
     </div>
 
     <!-- 效能感滑块 -->
     <EfficacySlider v-model="userStore.efficacyScore" />
+
+    <!-- 图片预览条 -->
+    <div v-if="pendingImage" class="image-preview-bar">
+      <van-image :src="pendingImageUrl" width="60" height="60" fit="cover" radius="6" />
+      <span class="preview-name">{{ pendingImage.name }}</span>
+      <van-icon name="cross" size="18" class="preview-close" @click="clearPendingImage" />
+    </div>
 
     <!-- 输入区域 -->
     <div class="input-area safe-area-bottom">
@@ -69,7 +87,15 @@
         size="small"
         round
         plain
-        @click="showWearablePopup = true"
+        @click="triggerImagePicker"
+      />
+      <input
+        ref="imageInput"
+        type="file"
+        accept="image/*"
+        capture="environment"
+        class="hidden-file-input"
+        @change="onImageSelected"
       />
       <van-field
         v-model="inputText"
@@ -83,92 +109,35 @@
         type="primary"
         size="small"
         round
-        :disabled="!inputText.trim() || isLoading"
+        :disabled="(!inputText.trim() && !pendingImage) || isLoading"
         @click="sendMessage"
       >
         发送
       </van-button>
     </div>
-
-    <!-- 穿戴数据弹窗 -->
-    <van-popup
-      v-model:show="showWearablePopup"
-      position="bottom"
-      round
-      :style="{ maxHeight: '60%' }"
-    >
-      <div class="wearable-popup">
-        <h3>穿戴设备数据</h3>
-        <van-cell-group inset>
-          <van-field
-            v-model.number="wearableForm.hr"
-            label="心率"
-            type="digit"
-            placeholder="请输入"
-          >
-            <template #button>bpm</template>
-          </van-field>
-          <van-field
-            v-model.number="wearableForm.steps"
-            label="步数"
-            type="digit"
-            placeholder="请输入"
-          >
-            <template #button>步</template>
-          </van-field>
-          <van-field
-            v-model.number="wearableForm.sleep_hours"
-            label="睡眠"
-            type="number"
-            placeholder="请输入"
-          >
-            <template #button>小时</template>
-          </van-field>
-          <van-field
-            v-model.number="wearableForm.hrv"
-            label="HRV"
-            type="digit"
-            placeholder="请输入"
-          >
-            <template #button>ms</template>
-          </van-field>
-        </van-cell-group>
-        <van-button
-          type="primary"
-          block
-          round
-          @click="saveWearableData"
-        >
-          确认
-        </van-button>
-      </div>
-    </van-popup>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch } from 'vue'
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
+import { showToast } from 'vant'
 import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import MessageBubble from '@/components/chat/MessageBubble.vue'
 import TaskCard from '@/components/chat/TaskCard.vue'
 import EfficacySlider from '@/components/chat/EfficacySlider.vue'
-import type { WearableData } from '@/api/types'
+import api from '@/api/index'
 
 const userStore = useUserStore()
 const chatStore = useChatStore()
 
 const inputText = ref('')
 const showExpertPicker = ref(false)
-const showWearablePopup = ref(false)
 const messageListRef = ref<HTMLElement>()
-
-const wearableForm = ref<WearableData>({
-  hr: undefined,
-  steps: undefined,
-  sleep_hours: undefined,
-  hrv: undefined
-})
+const imageInput = ref<HTMLInputElement | null>(null)
+const pendingImage = ref<File | null>(null)
+const pendingImageUrl = ref('')
+const isThinking = ref(false)
 
 const messages = computed(() => chatStore.messages)
 const isLoading = computed(() => chatStore.isLoading)
@@ -186,19 +155,131 @@ function onExpertSelect(action: { text: string; value: string }) {
   showExpertPicker.value = false
 }
 
+function triggerImagePicker() {
+  imageInput.value?.click()
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.readAsDataURL(file)
+  })
+}
+
+function onImageSelected(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+
+  pendingImage.value = file
+  pendingImageUrl.value = URL.createObjectURL(file)
+  // Reset input so same file can be re-selected
+  input.value = ''
+}
+
+function clearPendingImage() {
+  if (pendingImageUrl.value) {
+    URL.revokeObjectURL(pendingImageUrl.value)
+  }
+  pendingImage.value = null
+  pendingImageUrl.value = ''
+}
+
 async function sendMessage() {
   const text = inputText.value.trim()
-  if (!text || isLoading.value) return
+  const hasImage = !!pendingImage.value
 
-  inputText.value = ''
-  await chatStore.sendMessage(text)
+  if (!text && !hasImage) return
+  if (isLoading.value) return
+
+  if (hasImage) {
+    await sendImageMessage(text)
+  } else {
+    inputText.value = ''
+    await chatStore.sendMessage(text)
+  }
   scrollToBottom()
 }
 
-function saveWearableData() {
-  userStore.updateWearableData(wearableForm.value)
-  showWearablePopup.value = false
+async function sendImageMessage(text: string) {
+  const file = pendingImage.value!
+
+  // Convert to data URL for persistent display (blob URLs break on reload)
+  const dataUrl = await fileToDataUrl(file)
+
+  // Add user message with image
+  chatStore.messages.push({
+    id: 'msg_' + Date.now(),
+    role: 'user',
+    content: text || '识别这张图片',
+    imageUrl: dataUrl,
+    timestamp: Date.now(),
+  })
+  inputText.value = ''
+  clearPendingImage()
+
+  isThinking.value = true
+  chatStore.isLoading = true
+  await nextTick()
+  scrollToBottom()
+
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('meal_type', 'lunch')
+
+    // Do NOT set Content-Type manually — axios auto-sets multipart boundary
+    const res: any = await api.post('/api/v1/food/recognize', formData, {
+      timeout: 120000,
+    })
+
+    // Build response text from food recognition result
+    const lines: string[] = []
+    if (res.food_name) lines.push(`识别结果: ${res.food_name}`)
+    if (res.calories != null) lines.push(`热量: ${Number(res.calories).toFixed(1)} kcal`)
+    if (res.protein != null) lines.push(`蛋白质: ${Number(res.protein).toFixed(1)} g`)
+    if (res.fat != null) lines.push(`脂肪: ${Number(res.fat).toFixed(1)} g`)
+    if (res.carbs != null) lines.push(`碳水: ${Number(res.carbs).toFixed(1)} g`)
+    if (res.fiber != null) lines.push(`膳食纤维: ${Number(res.fiber).toFixed(1)} g`)
+    if (res.advice) lines.push(`\n营养建议: ${res.advice}`)
+    if (res.foods?.length) {
+      lines.push('\n食物明细:')
+      res.foods.forEach((f: any) => lines.push(`  - ${f.name} ${f.portion || ''} ${f.calories || ''} kcal`))
+    }
+
+    const resultText = lines.length > 0 ? lines.join('\n') : '已收到图片，但暂时无法识别内容。'
+
+    chatStore.messages.push({
+      id: 'msg_' + Date.now(),
+      role: 'assistant',
+      content: resultText,
+      imageUrl: res.image_url || '',
+      expert: currentExpertInfo.value?.name,
+      timestamp: Date.now(),
+    })
+  } catch (err: any) {
+    // 401 → interceptor already redirects to login, don't show error in chat
+    if (err?.response?.status === 401) return
+    const detail = err?.response?.data?.detail || '图片分析失败，请重试'
+    chatStore.messages.push({
+      id: 'msg_' + Date.now(),
+      role: 'assistant',
+      content: detail,
+      timestamp: Date.now(),
+    })
+    showToast({ message: detail, type: 'fail' })
+  } finally {
+    isThinking.value = false
+    chatStore.isLoading = false
+  }
 }
+
+onUnmounted(() => {
+  if (pendingImageUrl.value) {
+    URL.revokeObjectURL(pendingImageUrl.value)
+  }
+})
 
 function scrollToBottom() {
   nextTick(() => {
@@ -211,6 +292,15 @@ function scrollToBottom() {
 watch(messages, () => {
   scrollToBottom()
 }, { deep: true })
+
+// Clean up stale blob: imageUrls from persisted messages on load
+;(() => {
+  chatStore.messages.forEach(msg => {
+    if (msg.imageUrl && msg.imageUrl.startsWith('blob:')) {
+      msg.imageUrl = ''
+    }
+  })
+})()
 </script>
 
 <style lang="scss" scoped>
@@ -284,16 +374,31 @@ watch(messages, () => {
   }
 }
 
-.wearable-popup {
-  padding: $spacing-md;
+.hidden-file-input {
+  display: none;
+}
 
-  h3 {
-    text-align: center;
-    margin-bottom: $spacing-md;
+.image-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: $spacing-sm;
+  padding: $spacing-xs $spacing-md;
+  background-color: $background-color;
+  border-top: 1px solid $border-color;
+
+  .preview-name {
+    flex: 1;
+    font-size: $font-size-sm;
+    color: $text-color-secondary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .van-button {
-    margin-top: $spacing-md;
+  .preview-close {
+    color: $text-color-secondary;
+    cursor: pointer;
+    flex-shrink: 0;
   }
 }
 </style>

@@ -5,8 +5,20 @@
       <span class="expert-name">{{ expert }}</span>
     </div>
     <div class="bubble-content">
+      <!-- 图片消息 (skip broken blob: URLs) -->
+      <van-image
+        v-if="validImageUrl"
+        :src="validImageUrl"
+        width="200"
+        height="150"
+        fit="cover"
+        radius="8"
+        class="bubble-image"
+        @click="previewImage"
+      />
+
       <!-- 用户消息: 纯文本 -->
-      <div v-if="isUser" class="bubble-text">{{ content }}</div>
+      <div v-if="isUser && content" class="bubble-text">{{ content }}</div>
 
       <!-- AI消息: 支持引用标记 -->
       <template v-else>
@@ -35,6 +47,8 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { showImagePreview } from 'vant'
 import CitationMarker from './CitationMarker.vue'
 import CitationBlock from './CitationBlock.vue'
 
@@ -43,6 +57,7 @@ interface Props {
   isUser: boolean
   expert?: string
   timestamp: number
+  imageUrl?: string
   // RAG 引用数据
   citations?: any[]
   hasKnowledge?: boolean
@@ -52,6 +67,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  imageUrl: '',
   citations: () => [],
   hasKnowledge: false,
   hasModelSupplement: false,
@@ -60,6 +76,20 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 defineEmits(['cite-click'])
+
+// Filter out stale blob: URLs (they don't survive page reload)
+const validImageUrl = computed(() => {
+  const url = props.imageUrl
+  if (!url) return ''
+  if (url.startsWith('blob:')) return ''  // blob URLs break after reload
+  return url
+})
+
+function previewImage() {
+  if (validImageUrl.value) {
+    showImagePreview([validImageUrl.value])
+  }
+}
 
 function formatTime(ts: number): string {
   const date = new Date(ts)
@@ -116,6 +146,11 @@ function formatTime(ts: number): string {
   background-color: $background-color-light;
   border-radius: $border-radius-lg $border-radius-lg $border-radius-lg 4px;
   box-shadow: $shadow-sm;
+}
+
+.bubble-image {
+  margin-bottom: 4px;
+  cursor: pointer;
 }
 
 .bubble-text {

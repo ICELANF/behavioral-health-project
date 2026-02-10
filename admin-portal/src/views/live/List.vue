@@ -481,8 +481,11 @@ const cancelLive = (record: LiveSession) => {
 }
 
 const enterLiveRoom = (record: LiveSession) => {
-  message.info(`进入直播间: ${record.title}`)
-  // TODO: 跳转到直播间页面
+  Modal.info({
+    title: `直播间: ${record.title}`,
+    content: `讲师: ${record.instructor_name} | 观看人数: ${record.viewer_count || 0}`,
+    okText: '关闭',
+  })
 }
 
 const viewReplay = (record: LiveSession) => {

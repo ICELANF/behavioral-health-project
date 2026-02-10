@@ -617,8 +617,9 @@ const loadExam = async () => {
       Object.assign(formState, exam);
       // 加载已选题目
       if (exam.question_ids && exam.question_ids.length > 0) {
-        // TODO: 从API加载题目详情
-        selectedQuestions.value = mockQuestions
+        await questionStore.fetchQuestions({});
+        const allQuestions = questionStore.questions.length > 0 ? questionStore.questions : mockQuestions;
+        selectedQuestions.value = allQuestions
           .filter((q) => exam.question_ids.includes(q.question_id))
           .map((q) => ({ ...q, score: q.default_score || 1 }));
       }

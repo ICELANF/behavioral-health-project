@@ -802,9 +802,7 @@ async function handleImageSelected(event: Event, pushId: number, questionId: str
   try {
     const formData = new FormData()
     formData.append('file', file)
-    const res: any = await api.post('/api/v1/upload/survey-image', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    const res: any = await api.post('/api/v1/upload/survey-image', formData)
     enhanced.images.push(res.url)
     showToast({ message: '上传成功', position: 'bottom' })
   } catch (err: any) {

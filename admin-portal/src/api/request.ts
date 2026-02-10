@@ -18,6 +18,11 @@ request.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`
     }
 
+    // FormData: let axios auto-set Content-Type with correct multipart boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
+
     // 注入 X-Source-UI 协议头，与后端 SOP 6.2 防火墙对齐
     try {
       const { default: router } = await import('../router')

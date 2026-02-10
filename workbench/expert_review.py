@@ -610,8 +610,8 @@ if sig1 and sig2:
                     st.balloons()
                     st.success(f"🎉 报告已通过API推送至用户端！{result.get('message', '')}")
                 else:
-                    st.warning("API推送失败，请检查审核条目是否已全部处理")
-            if not published:
+                    st.error("API推送失败，请检查审核条目是否已全部处理")
+            if not published and not (assignment_id and st.session_state.token):
                 st.balloons()
                 st.success(f"🎉 报告 {current_review['report_id']} 已标记为发布（演示模式）")
             st.info(f"披露等级: {disclosure_level} | 审核人备注: {review_notes or '无'}")

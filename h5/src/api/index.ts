@@ -22,6 +22,10 @@ api.interceptors.request.use(
     if (user?.id) {
       config.headers['X-User-ID'] = String(user.id)
     }
+    // FormData: let axios auto-set Content-Type with correct multipart boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
+    }
     return config
   },
   (error) => {

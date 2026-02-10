@@ -137,6 +137,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import { programApi } from '@/api/program'
+import api from '@/api/index'
 
 const route = useRoute()
 const eid = route.params.id as string
@@ -179,12 +180,18 @@ const loadData = async () => {
   }
 }
 
-const onPhotoRead = (file: any, slot: string) => {
-  // In production, upload to server and get URL
-  // For now, use base64 as placeholder
-  if (file.content) {
+const onPhotoRead = async (file: any, slot: string) => {
+  if (!file.file) return
+  const formData = new FormData()
+  formData.append('file', file.file)
+  try {
+    const res: any = await api.post('/api/v1/upload/survey-image', formData)
     if (!photoUrls[slot]) photoUrls[slot] = []
-    photoUrls[slot].push(file.content.substring(0, 100) + '...')
+    photoUrls[slot].push(res.url || res.image_url)
+  } catch (e: any) {
+    showFailToast('图片上传失败')
+    const idx = photoFiles[slot]?.indexOf(file)
+    if (idx >= 0) photoFiles[slot].splice(idx, 1)
   }
 }
 

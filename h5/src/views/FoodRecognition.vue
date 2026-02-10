@@ -43,8 +43,10 @@
           style="margin-bottom: 16px"
         />
         <div class="analyzing-indicator">
-          <van-loading size="32" color="#1989fa" />
-          <p class="analyzing-text">AI 正在分析中...</p>
+          <div class="bhp-typing-dots">
+            <span></span><span></span><span></span>
+          </div>
+          <p class="analyzing-text">AI 食物识别中...</p>
           <p class="analyzing-hint">视觉模型分析需要 10-20 秒，请耐心等待</p>
         </div>
       </div>
@@ -246,7 +248,6 @@ async function onFileSelected(e: Event) {
 
   try {
     const res: any = await api.post('/api/v1/food/recognize', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
       timeout: 120000,
     })
     result.value = res

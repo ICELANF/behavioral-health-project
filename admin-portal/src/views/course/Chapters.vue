@@ -242,11 +242,12 @@ import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import { v4 as uuidv4 } from 'uuid'
+import request from '@/api/request'
 
 const route = useRoute()
 const courseId = route.params.courseId as string
 
-const course = ref({ title: '加载中...' })
+const course = ref({ title: '加载中...' } as any)
 const chapters = ref<any[]>([])
 const activeKeys = ref<string[]>([])
 
@@ -274,51 +275,32 @@ const quizTypeColors: Record<string, string> = {
   truefalse: 'orange'
 }
 
-// 模拟加载课程数据
-onMounted(() => {
-  // TODO: 调用API获取课程和章节数据
-  course.value = { title: '行为健康入门' }
-  chapters.value = [
-    {
-      chapter_id: '1',
-      title: '什么是行为健康',
-      video_id: 'v001',
-      video_url: '',
-      duration_seconds: 900,
-      quiz_trigger: 'after_video',
-      pass_score: 80,
-      allow_retry: true,
-      quizzes: [
-        {
-          quiz_id: 'q1',
-          type: 'single',
-          question: '行为健康的核心理念是什么？',
-          options: ['被动治疗', '主动预防', '药物干预', '手术治疗'],
-          answer: 1,
-          explanation: '行为健康强调主动预防，通过改变行为习惯来维护健康。'
-        },
-        {
-          quiz_id: 'q2',
-          type: 'multiple',
-          question: '以下哪些属于行为健康干预领域？',
-          options: ['饮食管理', '运动训练', '情绪调节', '睡眠优化'],
-          answers: [0, 1, 2, 3],
-          explanation: '以上都是行为健康的干预领域。'
-        }
-      ]
-    },
-    {
-      chapter_id: '2',
-      title: '行为改变的阶段模型',
-      video_id: '',
-      video_url: '',
-      duration_seconds: 0,
-      quiz_trigger: 'after_video',
-      pass_score: 80,
-      allow_retry: true,
-      quizzes: []
+onMounted(async () => {
+  try {
+    const { data } = await request.get(`/v1/content-manage/${courseId}`)
+    if (data) {
+      course.value = { title: data.title || '未命名课程', ...data }
     }
-  ]
+  } catch (e) {
+    console.error('Load course failed:', e)
+    course.value = { title: '加载失败' }
+  }
+  // Chapters are managed locally for this course until a chapters API is available
+  if (chapters.value.length === 0) {
+    chapters.value = [
+      {
+        chapter_id: uuidv4(),
+        title: '第一章',
+        video_id: '',
+        video_url: '',
+        duration_seconds: 0,
+        quiz_trigger: 'after_video',
+        pass_score: 80,
+        allow_retry: true,
+        quizzes: []
+      }
+    ]
+  }
   activeKeys.value = [chapters.value[0]?.chapter_id]
 })
 
@@ -394,17 +376,25 @@ const deleteChapter = (chapter: any) => {
 const handleVideoUpload = async (options: any, chapter: any) => {
   const { file, onSuccess, onError } = options
 
-  // TODO: 实际上传到阿里云VOD
-  message.loading('视频上传中...', 0)
-
-  setTimeout(() => {
+  message.loading('视频处理中...', 0)
+  // Use local blob URL for preview; production would upload to CDN
+  const localUrl = URL.createObjectURL(file)
+  const video = document.createElement('video')
+  video.preload = 'metadata'
+  video.onloadedmetadata = () => {
     message.destroy()
     chapter.video_id = 'v' + Date.now()
-    chapter.video_url = URL.createObjectURL(file)
-    chapter.duration_seconds = 600 // 模拟时长
-    message.success('视频上传成功')
+    chapter.video_url = localUrl
+    chapter.duration_seconds = Math.round(video.duration)
+    message.success('视频已加载')
     onSuccess?.()
-  }, 2000)
+  }
+  video.onerror = () => {
+    message.destroy()
+    message.error('视频文件无法解析')
+    onError?.(new Error('Invalid video'))
+  }
+  video.src = localUrl
 }
 
 const reuploadVideo = (chapter: any) => {

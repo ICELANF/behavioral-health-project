@@ -48,6 +48,7 @@ export interface ChatMessage {
   expert?: string
   timestamp: number
   tasks?: Task[]
+  imageUrl?: string
   // RAG 引用数据
   citations?: Citation[]
   hasKnowledge?: boolean

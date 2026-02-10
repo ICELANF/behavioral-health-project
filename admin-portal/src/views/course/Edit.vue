@@ -186,6 +186,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
+import request from '@/api/request'
 
 const route = useRoute()
 const router = useRouter()
@@ -217,12 +218,22 @@ const availableCourses = [
   { value: 'c2', label: '慢病与代谢基础认知' }
 ]
 
-onMounted(() => {
+onMounted(async () => {
   if (isEdit.value) {
-    // TODO: 加载课程数据
-    formState.title = '行为健康入门'
-    formState.level = 'L0'
-    formState.category = 'knowledge'
+    try {
+      const { data } = await request.get(`/v1/content-manage/${route.params.id}`)
+      if (data) {
+        formState.title = data.title || ''
+        formState.description = data.body || ''
+        formState.level = data.level || 'L0'
+        formState.category = data.domain || 'knowledge'
+        formState.tags = data.tags || []
+        formState.status = data.status || 'draft'
+      }
+    } catch (e) {
+      console.error('Load course failed:', e)
+      message.error('加载课程数据失败')
+    }
   }
 })
 
@@ -255,10 +266,24 @@ const handleCoverPreview = (file: any) => {
 const handleSubmit = async () => {
   submitting.value = true
   try {
-    // TODO: 调用API保存课程
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    message.success(isEdit.value ? '课程已更新' : '课程已创建')
+    const payload = {
+      content_type: 'course',
+      title: formState.title,
+      body: formState.description,
+      domain: formState.category,
+      level: formState.level,
+    }
+    if (isEdit.value) {
+      await request.put(`/v1/content-manage/${route.params.id}`, payload)
+      message.success('课程已更新')
+    } else {
+      await request.post('/v1/content-manage/create', payload)
+      message.success('课程已创建')
+    }
     router.push('/course/list')
+  } catch (e) {
+    console.error('Save course failed:', e)
+    message.error('保存失败')
   } finally {
     submitting.value = false
   }
