@@ -21,21 +21,25 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-// v3 store stub
-const useUserStore = () => ({ login: async () => {}, register: async () => {} })
 import { showToast } from 'vant'
+import { authApi } from '../../api/v3/index.js'
 
 const router = useRouter()
-const store = useUserStore()
 const phone = ref(''); const nickname = ref(''); const password = ref(''); const confirmPwd = ref('')
 const loading = ref(false)
 
 async function onRegister() {
   loading.value = true
   try {
-    const res = await store.register(phone.value, password.value, nickname.value)
-    if (res.ok) { showToast('注册成功'); router.push('/') }
-    else showToast(res.message || '注册失败')
+    const res = await authApi.register(phone.value, password.value, nickname.value)
+    if (res?.data) {
+      localStorage.setItem('access_token', res.data.tokens.access_token)
+      localStorage.setItem('refresh_token', res.data.tokens.refresh_token)
+      showToast('注册成功')
+      router.push('/')
+    } else {
+      showToast(res?.message || '注册失败')
+    }
   } catch (e) { showToast(e.response?.data?.detail || '网络错误') }
   finally { loading.value = false }
 }

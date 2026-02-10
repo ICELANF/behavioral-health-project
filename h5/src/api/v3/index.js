@@ -10,8 +10,14 @@ export const authApi = {
   register: (phone, password, nickname = '') =>
     http.post('/auth/register', { phone, password, nickname }),
 
-  login: (phone, password) =>
-    http.post('/auth/login', { phone, password }),
+  login: (identifier, password) => {
+    // 支持手机号或用户名登录
+    const isPhone = /^1\d{10}$/.test(identifier)
+    return http.post('/auth/login', {
+      ...(isPhone ? { phone: identifier } : { username: identifier }),
+      password,
+    })
+  },
 
   refresh: (refresh_token) =>
     http.post('/auth/refresh', { refresh_token }),
@@ -57,12 +63,12 @@ export const diagnosticApi = {
 export const assessmentApi = {
   batches: () => http.get('/assessment/batches'),
 
-  session: (userId) => http.get(`/assessment/session/${userId}`),
+  session: () => http.get('/assessment/session'),
 
   submit: (user_id, batch_id, answers, duration_seconds = 0) =>
     http.post('/assessment/submit', { user_id, batch_id, answers, duration_seconds }),
 
-  recommend: (userId) => http.get(`/assessment/recommend/${userId}`),
+  recommend: () => http.get('/assessment/recommend'),
 }
 
 // ══════════════════════════════════════════════
@@ -80,13 +86,13 @@ export const incentiveApi = {
   checkin: (user_id) => http.post('/incentive/checkin', { user_id }),
   taskComplete: (user_id, task_id) =>
     http.post('/incentive/task-complete', { user_id, task_id }),
-  balance: (userId) => http.get(`/incentive/balance/${userId}`),
+  balance: () => http.get('/incentive/balance'),
+  rxContext: () => http.get('/incentive/rx-context'),
 }
 
 // ══════════════════════════════════════════════
 // 系统
 // ══════════════════════════════════════════════
 export const systemApi = {
-  health: () => http.get('/health'),
   status: () => http.get('/status'),
 }

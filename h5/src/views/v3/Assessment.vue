@@ -3,7 +3,7 @@
     <van-nav-bar title="评估中心" left-arrow @click-left="$router.back()" />
 
     <!-- 推荐下一个 -->
-    <van-notice-bar v-if="recommended" left-icon="bullhorn-o" @click="$router.push(`/assessment/${recommended.batch_id}`)">
+    <van-notice-bar v-if="recommended" left-icon="bullhorn-o" @click="$router.push(`/v3/assessment/${recommended.batch_id}`)">
       推荐: {{ recommended.name }} ({{ recommended.estimated_minutes }}分钟)
     </van-notice-bar>
 
@@ -19,7 +19,7 @@
     <van-cell-group inset>
       <van-cell v-for="b in batches" :key="b.batch_id" :title="b.name"
         :label="`${b.question_count}题 · 约${b.estimated_minutes}分钟`"
-        is-link @click="$router.push(`/assessment/${b.batch_id}`)">
+        is-link @click="$router.push(`/v3/assessment/${b.batch_id}`)">
         <template #right-icon>
           <van-tag :type="isCompleted(b.batch_id) ? 'success' : 'default'" size="medium">
             {{ isCompleted(b.batch_id) ? '已完成' : '待完成' }}
@@ -32,12 +32,8 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-// v3 store stub
-const useUserStore = () => ({ userId: 0, token: localStorage.getItem('access_token') })
-// v3 API stub - TODO: wire up
-const assessmentApi = { getBatches: async () => ({ data: { data: [] } }), getSession: async () => ({ data: { data: {} } }), recommend: async () => ({ data: { data: null } }) }
+import { assessmentApi } from '../../api/v3/index.js'
 
-const store = useUserStore()
 const batches = ref([])
 const completedIds = ref([])
 const recommended = ref(null)
@@ -47,13 +43,17 @@ const progressPct = computed(() => batches.value.length ? Math.round(completedCo
 const isCompleted = (id) => completedIds.value.includes(id)
 
 onMounted(async () => {
-  const [bRes, sRes, rRes] = await Promise.all([
-    assessmentApi.batches(),
-    assessmentApi.session(store.userId),
-    assessmentApi.recommend(store.userId),
-  ])
-  if (bRes.ok) batches.value = bRes.data
-  if (sRes.ok) completedIds.value = sRes.data.completed_batches || []
-  if (rRes.ok) recommended.value = rRes.data
+  try {
+    const [bRes, sRes, rRes] = await Promise.all([
+      assessmentApi.batches(),
+      assessmentApi.session(),
+      assessmentApi.recommend(),
+    ])
+    if (bRes?.data) batches.value = bRes.data
+    if (sRes?.data) completedIds.value = sRes.data.completed_batches || []
+    if (rRes?.data) recommended.value = rRes.data
+  } catch (e) {
+    console.warn('[Assessment] load failed:', e)
+  }
 })
 </script>

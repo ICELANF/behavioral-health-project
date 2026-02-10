@@ -92,8 +92,10 @@ def recommend_next(
 
     根据用户已完成的批次和当前状态, 推荐最有价值的下一批
     """
-    recommender = AdaptiveRecommender(db)
     session = get_or_create_session(db, user.id)
     completed = session.completed_batches or []
-    recommendation = recommender.recommend_next(user.id, completed)
+    partial = session.partial_results or {}
+    recommendation = AdaptiveRecommender.recommend_next(
+        completed, partial, getattr(user, 'current_stage', None)
+    )
     return APIResponse(data=recommendation)

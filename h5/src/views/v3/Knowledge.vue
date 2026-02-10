@@ -23,7 +23,7 @@
           <div class="sources" v-if="sources.length">
             <div class="src-label">参考来源:</div>
             <div v-for="(s, i) in sources" :key="i" class="src-item">
-              📄 {{ s.source }} <span v-if="s.section">/ {{ s.section }}</span>
+              {{ s.source }} <span v-if="s.section">/ {{ s.section }}</span>
               <van-tag size="small">{{ (s.score * 100).toFixed(0) }}%</van-tag>
             </div>
           </div>
@@ -39,9 +39,8 @@
 
 <script setup>
 import { ref } from 'vue'
-// v3 API stub - TODO: wire up
-const chatApi = { knowledge: async () => ({ data: { data: { answer: '功能开发中...', sources: [] } } }), knowledgeSearch: async () => ({ data: { data: [] } }) }
 import { showToast } from 'vant'
+import { chatApi } from '../../api/v3/index.js'
 
 const query = ref('')
 const answer = ref('')
@@ -60,11 +59,11 @@ async function onSearch() {
 
   try {
     const res = await chatApi.knowledge(query.value.trim())
-    if (res.ok) {
-      answer.value = res.data.answer
+    if (res?.data) {
+      answer.value = res.data.answer || ''
       sources.value = res.data.sources || []
     } else {
-      showToast(res.message || '查询失败')
+      showToast(res?.message || '查询失败')
     }
   } catch { showToast('网络错误') }
   finally { loading.value = false }

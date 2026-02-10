@@ -117,12 +117,14 @@ async def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    user_id = payload.get("user_id")
+    # 兼容 V1 user_id 和 V3 sub
+    user_id = payload.get("user_id") or payload.get("sub")
     if user_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="无效的token",
         )
+    user_id = int(user_id)
 
     # 查询用户
     user = db.query(User).filter(User.id == user_id).first()

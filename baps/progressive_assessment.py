@@ -18,11 +18,7 @@ from sqlalchemy import (
 from sqlalchemy.sql import func
 from sqlalchemy.orm import Session
 
-try:
-    from database import Base
-except ImportError:
-    from sqlalchemy.orm import declarative_base
-    Base = declarative_base()
+from v3.database import Base
 
 
 # ══════════════════════════════════════════════

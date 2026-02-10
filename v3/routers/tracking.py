@@ -4,7 +4,7 @@
 
 鉴权: 所有端点需登录
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -51,7 +51,7 @@ def record_daily(
     return APIResponse(data={
         "outcome_id": outcome.id,
         "effectiveness_score": outcome.effectiveness_score,
-        "pdca_action": outcome.pdca_action,
+        "adjustment_action": outcome.adjustment_action,
         "adjustment_detail": outcome.adjustment_detail,
     })
 
@@ -69,12 +69,22 @@ def weekly_review(
     - 阶段转变建议
     - PDCA 调整汇总
     """
+    end_date = req.end_date or datetime.now()
+    week_start = end_date - timedelta(days=7)
     review = generate_weekly_review(
         db=db,
         user_id=user.id,
-        end_date=req.end_date or datetime.now(),
+        week_start=week_start,
     )
-    return APIResponse(data=review)
+    return APIResponse(data={
+        "outcome_id": review.id,
+        "period_start": str(review.period_start),
+        "period_end": str(review.period_end),
+        "completion_rate": review.completion_rate,
+        "effectiveness_score": review.effectiveness_score,
+        "adjustment_action": review.adjustment_action,
+        "adjustment_detail": review.adjustment_detail,
+    })
 
 
 @router.post("/stage-transition", response_model=APIResponse, summary="记录阶段转变")
@@ -89,14 +99,14 @@ def stage_transition(
     log = log_stage_transition(
         db=db,
         user_id=user.id,
-        from_stage=from_stage,
-        to_stage=to_stage,
+        transition_type="behavioral",
+        from_val=from_stage,
+        to_val=to_stage,
         trigger=trigger,
     )
-    db.commit()
     return APIResponse(data={
         "log_id": log.id,
         "from_stage": from_stage,
         "to_stage": to_stage,
-        "direction": log.direction,
+        "transition_type": log.transition_type,
     })

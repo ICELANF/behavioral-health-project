@@ -33,18 +33,14 @@
 </template>
 
 <script setup>
-import { ref, nextTick, onMounted } from 'vue'
-// v3 store stub
-const useUserStore = () => ({ userId: 0, token: localStorage.getItem('access_token') })
-// v3 API stub - TODO: wire up
-const chatApi = { message: async () => ({ data: { data: { answer: '功能开发中...', intent: 'pending', model: '', sources: [] } } }) }
+import { ref, nextTick } from 'vue'
+import { chatApi } from '../../api/v3/index.js'
 
-const store = useUserStore()
 const input = ref('')
 const loading = ref(false)
 const msgBox = ref(null)
 const messages = ref([
-  { role: 'assistant', content: `你好 ${store.nickname}！我是你的 AI 健康教练，有什么可以帮助你的？` },
+  { role: 'assistant', content: '你好！我是你的 AI 健康教练，有什么可以帮助你的？' },
 ])
 
 async function send() {
@@ -57,21 +53,19 @@ async function send() {
 
   loading.value = true
   try {
-    // 构建历史 (最近 10 轮)
     const history = messages.value.slice(-20).map(m => ({
       role: m.role, content: m.content,
     }))
-    history.pop() // 去掉刚加的 user 消息 (会在 message 参数传)
+    history.pop()
 
-    const res = await chatApi.send(store.userId, text, {
+    const res = await chatApi.send(null, text, {
       history: history.length > 1 ? history.slice(0, -1) : undefined,
-      behavioral_stage: store.stage,
     })
 
-    if (res.ok) {
+    if (res?.data) {
       messages.value.push({
         role: 'assistant',
-        content: res.data.answer,
+        content: res.data.answer || res.data.reply || '暂无回答',
         model: res.data.model,
         latency: res.data.latency_ms,
         intent: res.data.intent,

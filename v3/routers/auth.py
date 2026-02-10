@@ -30,10 +30,14 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=409, detail="手机号已注册")
 
+    # Auto-generate username from phone (DB requires NOT NULL)
+    auto_username = f"u{req.phone[-8:]}"
     user = User(
         phone=req.phone,
+        username=auto_username,
         password_hash=hash_password(req.password),
         nickname=req.nickname or f"用户{req.phone[-4:]}",
+        email=f"{auto_username}@placeholder.local",  # DB requires NOT NULL
     )
     db.add(user)
     db.commit()
@@ -49,11 +53,18 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
 @router.post("/login", response_model=APIResponse, summary="登录")
 def login(req: LoginRequest, db: Session = Depends(get_db)):
     """
-    手机号 + 密码登录 → 返回 access_token + refresh_token
+    手机号或用户名 + 密码登录 → 返回 access_token + refresh_token
     """
-    user = db.query(User).filter(User.phone == req.phone).first()
+    if not req.phone and not req.username:
+        raise HTTPException(status_code=422, detail="请提供 phone 或 username")
+
+    if req.phone:
+        user = db.query(User).filter(User.phone == req.phone).first()
+    else:
+        user = db.query(User).filter(User.username == req.username).first()
+
     if not user or not verify_password(req.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="手机号或密码错误")
+        raise HTTPException(status_code=401, detail="账号或密码错误")
 
     if not user.is_active:
         raise HTTPException(status_code=403, detail="账号已停用")

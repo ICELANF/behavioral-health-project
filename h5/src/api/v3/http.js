@@ -4,8 +4,8 @@
  * 自动: 请求附加 Bearer Token → 401 自动刷新 → 刷新失败跳登录
  */
 import axios from 'axios'
-import { useUserStore } from '../stores/user'
-import router from '../router'
+import { useUserStore } from '../../stores/user'
+import router from '../../router'
 
 const http = axios.create({
   baseURL: '/api/v3',

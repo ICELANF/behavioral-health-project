@@ -29,7 +29,13 @@ from v3.database import Base, get_db
 # 配置
 # ══════════════════════════════════════════════
 
-SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "bhp-v3-dev-secret-change-in-production")
+# 与 core/auth.py 保持一致的密钥派生逻辑
+_env_key = os.environ.get("JWT_SECRET_KEY", "")
+if _env_key:
+    SECRET_KEY = _env_key
+else:
+    import hashlib
+    SECRET_KEY = hashlib.sha256(b"dev-only-behavioral-health-2026").hexdigest()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.environ.get("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
 REFRESH_TOKEN_EXPIRE_DAYS = int(os.environ.get("REFRESH_TOKEN_EXPIRE_DAYS", "7"))
@@ -46,11 +52,13 @@ class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    phone = Column(String(20), unique=True, nullable=False, index=True)
+    phone = Column(String(20), unique=True, nullable=True, index=True)
+    username = Column(String(50), unique=True, nullable=True, index=True)
+    email = Column(String(120), nullable=True)
     password_hash = Column(String(128), nullable=False)
     nickname = Column(String(64), default="")
     avatar_url = Column(String(256), default="")
-    role = Column(String(32), default="user", index=True)     # user/bhp_coach/bhp_promoter/bhp_master/admin
+    role = Column(String(32), default="OBSERVER", index=True)  # matches userrole PG enum
     is_active = Column(Boolean, default=True)
     # v3.1 扩展字段
     health_competency_level = Column(String(4), default="Lv0")
@@ -123,11 +131,15 @@ def create_token_pair(user_id: int, role: str = "user") -> TokenPair:
 
 
 def decode_token(token: str) -> TokenPayload:
-    """解码并验证 JWT"""
+    """解码并验证 JWT — 兼容 V1 (user_id) 和 V3 (sub) 格式"""
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        # V3 uses "sub", V1 uses "user_id"
+        uid = payload.get("sub") or payload.get("user_id")
+        if uid is None:
+            raise JWTError("Token 缺少用户标识")
         return TokenPayload(
-            user_id=int(payload["sub"]),
+            user_id=int(uid),
             role=payload.get("role", "user"),
             exp=payload.get("exp", 0),
             token_type=payload.get("type", "access"),
@@ -193,9 +205,22 @@ async def get_optional_user(
         return None
 
 
+# V1→V3 角色映射 (兼容两套角色体系)
+_ROLE_MAP = {
+    # V1 role → V3 equivalent
+    "observer": "user", "grower": "user", "sharer": "user",
+    "coach": "bhp_coach", "promoter": "bhp_promoter",
+    "supervisor": "bhp_master", "master": "bhp_master",
+    "admin": "admin",
+    # V3 roles map to themselves
+    "user": "user", "bhp_coach": "bhp_coach",
+    "bhp_promoter": "bhp_promoter", "bhp_master": "bhp_master",
+}
+
+
 def require_role(*roles: str):
     """
-    角色权限装饰器工厂
+    角色权限装饰器工厂 — 兼容 V1 + V3 角色体系
 
     用法:
         @router.get("/admin/stats")
@@ -203,7 +228,10 @@ def require_role(*roles: str):
             ...
     """
     async def _check(user: User = Depends(get_current_user)) -> User:
-        if user.role not in roles:
+        user_role_lower = (user.role or "").lower()
+        mapped = _ROLE_MAP.get(user_role_lower, user_role_lower)
+        roles_lower = {r.lower() for r in roles}
+        if user_role_lower not in roles_lower and mapped not in roles_lower:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"需要角色: {', '.join(roles)}, 当前: {user.role}",
@@ -223,7 +251,8 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    phone: str = Field(..., min_length=11, max_length=11)
+    phone: str | None = Field(None, min_length=11, max_length=11)
+    username: str | None = Field(None, min_length=1, max_length=50)
     password: str = Field(..., min_length=1)
 
 
@@ -233,7 +262,8 @@ class RefreshRequest(BaseModel):
 
 class UserProfile(BaseModel):
     id: int
-    phone: str
+    phone: str | None = None
+    username: str | None = None
     nickname: str
     role: str
     current_stage: str

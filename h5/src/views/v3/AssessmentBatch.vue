@@ -43,10 +43,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
+import { assessmentApi } from '../../api/v3/index.js'
 
 const props = defineProps({ batchId: String })
 
-const batchName = ref(props.batchId)
+const batchName = ref('')
 const questions = ref([])
 const answers = ref([])
 const currentIdx = ref(0)
@@ -55,25 +56,20 @@ const submitting = ref(false)
 const startTime = ref(Date.now())
 const elapsed = ref(0)
 
-// 示例题目 (实际从后端批次定义获取)
-const DEMO_QUESTIONS = [
-  { text: '我已经开始考虑改变我的健康行为', options: [
-    { label: '非常不同意', value: 1 }, { label: '不同意', value: 2 }, { label: '中立', value: 3 },
-    { label: '同意', value: 4 }, { label: '非常同意', value: 5 },
-  ]},
-  { text: '我有信心能够坚持健康行为至少一个月', options: [
-    { label: '非常不同意', value: 1 }, { label: '不同意', value: 2 }, { label: '中立', value: 3 },
-    { label: '同意', value: 4 }, { label: '非常同意', value: 5 },
-  ]},
-  { text: '我的家人/朋友支持我改变健康行为', options: [
-    { label: '非常不同意', value: 1 }, { label: '不同意', value: 2 }, { label: '中立', value: 3 },
-    { label: '同意', value: 4 }, { label: '非常同意', value: 5 },
-  ]},
-]
-
-onMounted(() => {
-  questions.value = DEMO_QUESTIONS
-  answers.value = new Array(questions.value.length).fill(null)
+onMounted(async () => {
+  try {
+    const res = await assessmentApi.batches()
+    if (res?.data) {
+      const batch = res.data.find(b => b.batch_id === props.batchId)
+      if (batch) {
+        batchName.value = batch.name
+        questions.value = batch.questions || []
+        answers.value = new Array(questions.value.length).fill(null)
+      }
+    }
+  } catch (e) {
+    console.warn('[AssessmentBatch] load failed:', e)
+  }
   startTime.value = Date.now()
 })
 
@@ -88,8 +84,7 @@ async function submit() {
   submitting.value = true
   elapsed.value = Date.now() - startTime.value
   try {
-    // TODO: wire up v3 assessment API
-    console.log('Submit batch', props.batchId, answers.value)
+    await assessmentApi.submit(null, props.batchId, answers.value, Math.round(elapsed.value / 1000))
     submitted.value = true
   } catch { showToast('提交失败') }
   finally { submitting.value = false }

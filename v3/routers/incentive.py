@@ -50,10 +50,12 @@ def get_balance(
     balance = engine._get_or_create_balance(user.id)
     return APIResponse(data={
         "user_id": user.id,
-        "total_points": balance.total_points,
-        "available_points": balance.available_points,
-        "growth_level": balance.growth_level,
-        "streak_days": balance.current_streak,
+        "growth": balance.growth,
+        "contribution": balance.contribution,
+        "influence": balance.influence,
+        "total": balance.total,
+        "streak_days": balance.streak_days,
+        "longest_streak": balance.longest_streak,
     })
 
 
@@ -66,8 +68,8 @@ def rx_context(
     engine = PointEngine(db)
     balance = engine._get_or_create_balance(user.id)
     ctx = get_rx_context_from_incentive(
-        balance.growth_level or "G0",
-        balance.current_streak or 0,
+        engine._compute_growth_level(balance.total) if hasattr(engine, '_compute_growth_level') else "G0",
+        balance.streak_days or 0,
         {},
     )
     return APIResponse(data=ctx)

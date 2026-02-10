@@ -163,7 +163,7 @@ class BatchRecommendRequest(BaseModel):
 # ══════════════════════════════════════════════
 
 class DailyOutcomeRequest(BaseModel):
-    user_id: int
+    user_id: int | None = None  # optional: extracted from JWT token
     date: datetime | None = None
     tasks_assigned: int = Field(..., ge=0)
     tasks_completed: int = Field(..., ge=0)
@@ -178,7 +178,7 @@ class DailyOutcomeRequest(BaseModel):
 
 
 class WeeklyReviewRequest(BaseModel):
-    user_id: int
+    user_id: int | None = None  # optional: extracted from JWT token
     end_date: datetime | None = None
 
 
@@ -187,11 +187,11 @@ class WeeklyReviewRequest(BaseModel):
 # ══════════════════════════════════════════════
 
 class CheckinRequest(BaseModel):
-    user_id: int
+    user_id: int | None = None  # optional: extracted from JWT token
 
 
 class TaskCompleteRequest(BaseModel):
-    user_id: int
+    user_id: int | None = None  # optional: extracted from JWT token
     task_id: str
 
 

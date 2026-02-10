@@ -136,107 +136,137 @@ def upgrade() -> None:
     op.create_table(
         "intervention_outcomes",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False, index=True),
-        sa.Column("date", sa.DateTime, nullable=False),
-        sa.Column("tasks_assigned", sa.Integer),
-        sa.Column("tasks_completed", sa.Integer),
-        sa.Column("tasks_skipped", sa.Integer, server_default="0"),
+        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("outcome_type", sa.String(20), nullable=False),
+        sa.Column("period_start", sa.DateTime, nullable=False),
+        sa.Column("period_end", sa.DateTime, nullable=False),
         sa.Column("completion_rate", sa.Float),
         sa.Column("streak_days", sa.Integer, server_default="0"),
-        sa.Column("user_mood", sa.Integer, nullable=True),
-        sa.Column("user_difficulty", sa.Integer, nullable=True),
-        sa.Column("user_notes", sa.Text, server_default=""),
-        sa.Column("cultivation_stage", sa.String(32)),
+        sa.Column("tasks_assigned", sa.Integer, server_default="0"),
+        sa.Column("tasks_completed", sa.Integer, server_default="0"),
+        sa.Column("tasks_skipped", sa.Integer, server_default="0"),
         sa.Column("spi_before", sa.Float, nullable=True),
         sa.Column("spi_after", sa.Float, nullable=True),
         sa.Column("spi_delta", sa.Float, nullable=True),
+        sa.Column("stage_before", sa.String(4)),
+        sa.Column("stage_after", sa.String(4)),
+        sa.Column("readiness_before", sa.String(4)),
+        sa.Column("readiness_after", sa.String(4)),
+        sa.Column("cultivation_stage", sa.String(20)),
+        sa.Column("user_mood", sa.Integer, nullable=True),
+        sa.Column("user_difficulty", sa.Integer, nullable=True),
+        sa.Column("user_notes", sa.Text),
         sa.Column("effectiveness_score", sa.Float, nullable=True),
-        sa.Column("pdca_action", sa.String(16), nullable=True),
+        sa.Column("adjustment_action", sa.String(30)),
         sa.Column("adjustment_detail", sa.JSON, nullable=True),
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
     )
+    op.create_index("ix_outcome_user_type", "intervention_outcomes", ["user_id", "outcome_type"])
+    op.create_index("ix_outcome_user_period", "intervention_outcomes", ["user_id", "period_start"])
 
     # ── stage_transition_logs ──
     op.create_table(
         "stage_transition_logs",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False, index=True),
-        sa.Column("from_stage", sa.String(8)),
-        sa.Column("to_stage", sa.String(8)),
-        sa.Column("direction", sa.String(16)),
-        sa.Column("trigger", sa.String(32)),
+        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("transition_type", sa.String(20), nullable=False),
+        sa.Column("from_value", sa.String(10), nullable=False),
+        sa.Column("to_value", sa.String(10), nullable=False),
+        sa.Column("trigger", sa.String(50)),
+        sa.Column("evidence", sa.JSON, nullable=True),
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
     )
+    op.create_index("ix_stage_trans_user", "stage_transition_logs", ["user_id", "transition_type"])
 
-    # ── v3 point_events (积分事件) ──
+    # ── point_events (积分事件流水) ──
     op.create_table(
-        "v3_point_events",
+        "point_events",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False, index=True),
-        sa.Column("event_type", sa.String(32), nullable=False),
+        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("event_type", sa.String(30), nullable=False),
+        sa.Column("dimension", sa.String(15), nullable=False),
         sa.Column("points", sa.Integer, nullable=False),
-        sa.Column("description", sa.String(128)),
-        sa.Column("ref_id", sa.String(64), nullable=True),
+        sa.Column("source_type", sa.String(30)),
+        sa.Column("source_id", sa.String(50)),
+        sa.Column("description", sa.String(200)),
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
     )
+    op.create_index("ix_point_user_dim", "point_events", ["user_id", "dimension"])
+    op.create_index("ix_point_user_date", "point_events", ["user_id", "created_at"])
 
-    # ── v3 user_point_balances ──
+    # ── user_point_balances (三维积分余额) ──
     op.create_table(
-        "v3_user_point_balances",
-        sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), unique=True, nullable=False),
-        sa.Column("total_points", sa.Integer, server_default="0"),
-        sa.Column("available_points", sa.Integer, server_default="0"),
-        sa.Column("growth_level", sa.String(4), server_default="G0"),
-        sa.Column("current_streak", sa.Integer, server_default="0"),
+        "user_point_balances",
+        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), primary_key=True),
+        sa.Column("growth", sa.Integer, server_default="0"),
+        sa.Column("contribution", sa.Integer, server_default="0"),
+        sa.Column("influence", sa.Integer, server_default="0"),
+        sa.Column("total", sa.Integer, server_default="0"),
+        sa.Column("streak_days", sa.Integer, server_default="0"),
+        sa.Column("longest_streak", sa.Integer, server_default="0"),
+        sa.Column("last_checkin_date", sa.DateTime, nullable=True),
+        sa.Column("tasks_completed_total", sa.Integer, server_default="0"),
+        sa.Column("assessments_completed", sa.Integer, server_default="0"),
         sa.Column("updated_at", sa.DateTime, server_default=sa.func.now()),
     )
 
-    # ── incentive_rewards ──
+    # ── incentive_rewards (激励奖励定义) ──
     op.create_table(
         "incentive_rewards",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("name", sa.String(64), nullable=False),
+        sa.Column("reward_type", sa.String(30), nullable=False),
+        sa.Column("name", sa.String(50), nullable=False),
         sa.Column("description", sa.Text),
-        sa.Column("cost_points", sa.Integer, nullable=False),
-        sa.Column("reward_type", sa.String(32)),
+        sa.Column("icon", sa.String(10)),
+        sa.Column("unlock_dimension", sa.String(15)),
+        sa.Column("unlock_threshold", sa.Integer),
+        sa.Column("unlock_growth_level", sa.String(4)),
+        sa.Column("rx_effect", sa.JSON, nullable=True),
         sa.Column("is_active", sa.Boolean, server_default=sa.text("true")),
     )
 
-    # ── user_rewards ──
+    # ── user_rewards (用户已获得奖励) ──
     op.create_table(
         "user_rewards",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
         sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("reward_id", sa.Integer, sa.ForeignKey("incentive_rewards.id")),
-        sa.Column("points_spent", sa.Integer),
-        sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
+        sa.Column("reward_id", sa.Integer, sa.ForeignKey("incentive_rewards.id"), nullable=False),
+        sa.Column("earned_at", sa.DateTime, server_default=sa.func.now()),
+        sa.UniqueConstraint("user_id", "reward_id", name="uq_user_reward"),
     )
 
     # ── assessment_sessions (渐进式评估会话) ──
     op.create_table(
         "assessment_sessions",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False, index=True),
-        sa.Column("status", sa.String(16), server_default="in_progress"),
-        sa.Column("completed_batches", sa.JSON, server_default=sa.text("'[]'")),
-        sa.Column("total_duration_seconds", sa.Integer, server_default="0"),
-        sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
-        sa.Column("updated_at", sa.DateTime, server_default=sa.func.now()),
+        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("status", sa.String(15), nullable=False, server_default="in_progress"),
+        sa.Column("completed_batches", sa.JSON),
+        sa.Column("pending_batches", sa.JSON),
+        sa.Column("total_questions_answered", sa.Integer, server_default="0"),
+        sa.Column("total_questions", sa.Integer, server_default="176"),
+        sa.Column("partial_results", sa.JSON),
+        sa.Column("started_at", sa.DateTime, server_default=sa.func.now()),
+        sa.Column("last_activity", sa.DateTime, server_default=sa.func.now()),
+        sa.Column("completed_at", sa.DateTime, nullable=True),
+        sa.Column("expires_at", sa.DateTime, nullable=True),
     )
+    op.create_index("ix_assess_session_user", "assessment_sessions", ["user_id", "status"])
 
-    # ── batch_answers ──
+    # ── batch_answers (单批次答题记录) ──
     op.create_table(
         "batch_answers",
         sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
-        sa.Column("session_id", sa.Integer, sa.ForeignKey("assessment_sessions.id")),
+        sa.Column("session_id", sa.Integer, sa.ForeignKey("assessment_sessions.id"), nullable=False),
         sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("batch_id", sa.String(32), nullable=False),
-        sa.Column("answers", sa.JSON),
+        sa.Column("batch_id", sa.String(30), nullable=False),
+        sa.Column("questionnaire", sa.String(10), nullable=False),
+        sa.Column("answers", sa.JSON, nullable=False),
         sa.Column("scores", sa.JSON, nullable=True),
-        sa.Column("duration_seconds", sa.Integer, server_default="0"),
+        sa.Column("duration_seconds", sa.Integer),
         sa.Column("created_at", sa.DateTime, server_default=sa.func.now()),
     )
+    op.create_index("ix_batch_session", "batch_answers", ["session_id", "batch_id"])
 
     # ── llm_call_logs ──
     op.create_table(
@@ -285,7 +315,7 @@ def downgrade() -> None:
     tables = [
         "rag_query_logs", "llm_call_logs",
         "batch_answers", "assessment_sessions",
-        "user_rewards", "incentive_rewards", "v3_user_point_balances", "v3_point_events",
+        "user_rewards", "incentive_rewards", "user_point_balances", "point_events",
         "stage_transition_logs", "intervention_outcomes",
         "support_assessments", "obstacle_assessments",
         "self_efficacy_assessments", "comb_assessments",

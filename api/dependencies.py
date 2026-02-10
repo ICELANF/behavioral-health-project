@@ -49,10 +49,11 @@ def get_current_user(
         if payload is None:
             raise credentials_exception
 
-        # 获取用户ID
-        user_id: int = payload.get("user_id")
+        # 获取用户ID (兼容 V1 user_id 和 V3 sub)
+        user_id = payload.get("user_id") or payload.get("sub")
         if user_id is None:
             raise credentials_exception
+        user_id = int(user_id)
 
         # 从数据库获取用户
         user = db.query(User).filter(User.id == user_id).first()
