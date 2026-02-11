@@ -13,10 +13,13 @@ Step 8:   ResponseSynthesizer 统一教练风格 + 输出给用户
 Step 9:   写回 UserMasterProfile + 生成今日任务/追踪点
 """
 from __future__ import annotations
+import logging
 import time
 from typing import Any
 
 from .base import AgentInput, AgentResult, PolicyDecision
+
+logger = logging.getLogger(__name__)
 from .specialist_agents import (
     CrisisAgent, SleepAgent, GlucoseAgent, StressAgent,
     NutritionAgent, ExerciseAgent, MentalHealthAgent,
@@ -90,6 +93,59 @@ class MasterAgent:
 
         # Step 3: (外部完成) 更新 UserMasterProfile — 此处仅读取
 
+        # Step 2.5: SafetyPipeline L1 — 输入过滤
+        safety_meta = {}
+        input_category = "normal"
+        try:
+            from core.safety.pipeline import get_safety_pipeline
+            safety = get_safety_pipeline()
+            input_result = safety.process_input(message)
+            input_category = input_result.category
+            safety_meta["input_filter"] = {
+                "safe": input_result.safe,
+                "category": input_result.category,
+                "severity": input_result.severity,
+            }
+
+            # 危机检测 → 直接走 CrisisAgent
+            if input_result.category == "crisis" and input_result.severity == "critical":
+                crisis_agent = self._agents.get("crisis")
+                if crisis_agent:
+                    crisis_result = crisis_agent.process(agent_input)
+                    elapsed_ms = int((time.time() - t0) * 1000)
+                    return {
+                        "response": safety.get_crisis_response(),
+                        "tasks": [],
+                        "risk_level": "critical",
+                        "agents_used": ["crisis"],
+                        "gate_decision": "escalate_coach",
+                        "gate_reason": "safety_crisis_detected",
+                        "coordination": {},
+                        "insights": [],
+                        "processing_time_ms": elapsed_ms,
+                        "llm_enhanced": False,
+                        "safety": safety_meta,
+                    }
+
+            # 输入被阻断 → 返回拒绝消息
+            if not input_result.safe:
+                elapsed_ms = int((time.time() - t0) * 1000)
+                return {
+                    "response": "抱歉, 您的消息包含不适当的内容, 无法处理。如需帮助请联系客服。",
+                    "tasks": [],
+                    "risk_level": "high",
+                    "agents_used": [],
+                    "gate_decision": "deny",
+                    "gate_reason": "safety_input_blocked",
+                    "coordination": {},
+                    "insights": [],
+                    "processing_time_ms": elapsed_ms,
+                    "llm_enhanced": False,
+                    "safety": safety_meta,
+                }
+        except Exception as e:
+            logger.warning("SafetyPipeline L1 failed (non-blocking): %s", e)
+
         # Step 4: 路由
         target_domains = self.router.route(agent_input)
 
@@ -129,19 +185,63 @@ class MasterAgent:
                            if t.get("difficulty") in ("minimal", "easy", None)]
             final_recs = [r for r in final_recs if "挑战" not in r and "必须" not in r]
 
-        # Step 8: 合成回复
-        response = self._synthesize_response(
+        # Step 7.5: SafetyPipeline L3 — 生成约束 (注入安全 system prompt)
+        try:
+            from core.safety.pipeline import get_safety_pipeline
+            safety = get_safety_pipeline()
+            # 传入 input_category 以调整约束强度
+            guarded = safety.guard_generation(
+                system_prompt="",
+                input_category=input_category,
+                agent_domain=target_domains[0] if target_domains else "",
+                user_message=message,
+            )
+            safety_meta["generation_guard"] = {
+                "constraints": guarded.constraints,
+                "is_crisis": guarded.is_crisis,
+            }
+        except Exception as e:
+            logger.warning("SafetyPipeline L3 failed (non-blocking): %s", e)
+
+        # Step 8: 合成回复 (先尝试 LLM, 失败回退模板)
+        synthesis_result = self._synthesize_response(
             stage=profile.get("current_stage", "S0"),
             recommendations=final_recs,
             insights=insights,
             gate=gate_result,
+            user_message=message,
+            agent_results=agent_results,
         )
+
+        # Step 8.5: SafetyPipeline L4 — 输出过滤
+        try:
+            from core.safety.pipeline import get_safety_pipeline
+            safety = get_safety_pipeline()
+            output_result = safety.filter_output(
+                synthesis_result["response"],
+                input_category=input_category,
+            )
+            synthesis_result["response"] = output_result.text
+            safety_meta["output_filter"] = {
+                "grade": output_result.grade,
+                "annotations": output_result.annotations,
+                "disclaimer_added": output_result.disclaimer_added,
+            }
+        except Exception as e:
+            logger.warning("SafetyPipeline L4 failed (non-blocking): %s", e)
 
         # Step 9: (外部完成) 写回Profile + 生成任务
         elapsed_ms = int((time.time() - t0) * 1000)
 
+        # LLM 可观测字段
+        llm_enhanced_agents = [
+            r.agent_domain for r in agent_results if r.llm_enhanced
+        ]
+        agent_llm_latency = sum(r.llm_latency_ms for r in agent_results)
+        total_llm_latency = agent_llm_latency + synthesis_result.get("latency_ms", 0)
+
         return {
-            "response": response,
+            "response": synthesis_result["response"],
             "tasks": final_tasks,
             "risk_level": coordination.get("risk_level", "low"),
             "agents_used": target_domains,
@@ -150,6 +250,11 @@ class MasterAgent:
             "coordination": coordination,
             "insights": insights,
             "processing_time_ms": elapsed_ms,
+            "llm_enhanced": bool(llm_enhanced_agents) or synthesis_result.get("llm_used", False),
+            "llm_enhanced_agents": llm_enhanced_agents,
+            "llm_synthesis_used": synthesis_result.get("llm_used", False),
+            "llm_total_latency_ms": total_llm_latency,
+            "safety": safety_meta,
         }
 
     # ── 内部方法 ──
@@ -179,17 +284,63 @@ class MasterAgent:
         return "soft"
 
     def _synthesize_response(self, stage: str, recommendations: list[str],
-                             insights: list[str], gate) -> str:
-        """根据阶段 + 闸门决策合成教练风格的回复"""
-        # 交互模式 (§5.4)
+                             insights: list[str], gate,
+                             user_message: str = "",
+                             agent_results: list = None) -> dict:
+        """
+        合成教练风格的回复。
+        先尝试 LLM 合成 → 失败回退模板。
+        Returns: {"response": str, "llm_used": bool, "latency_ms": int}
+        """
+        # 尝试 LLM 合成 (通过 UnifiedLLMClient: 云优先 → 本地降级)
+        if user_message and agent_results:
+            try:
+                from core.llm_client import get_llm_client
+                from .prompts import SYNTHESIS_SYSTEM_PROMPT, build_synthesis_prompt
+
+                client = get_llm_client()
+                if client.is_available():
+                    agent_summaries = []
+                    for r in agent_results:
+                        agent_summaries.append({
+                            "domain": r.agent_domain,
+                            "recommendations": r.recommendations,
+                        })
+                    user_prompt = build_synthesis_prompt(
+                        user_message=user_message,
+                        stage=stage,
+                        gate_decision=gate.decision.value,
+                        insights=insights,
+                        agent_summaries=agent_summaries,
+                    )
+                    resp = client.chat(SYNTHESIS_SYSTEM_PROMPT, user_prompt,
+                                       timeout=45.0)
+                    if resp.success and resp.content:
+                        return {
+                            "response": resp.content,
+                            "llm_used": True,
+                            "latency_ms": resp.latency_ms,
+                            "llm_model": resp.model,
+                            "llm_provider": resp.provider,
+                        }
+            except Exception as e:
+                logger.warning("LLM synthesis failed, falling back to template: %s", e)
+
+        # 模板回退
+        return {
+            "response": self._template_synthesize(stage, recommendations, insights),
+            "llm_used": False,
+            "latency_ms": 0,
+        }
+
+    def _template_synthesize(self, stage: str, recommendations: list[str],
+                             insights: list[str]) -> str:
+        """原始模板合成 (降级方案)"""
         if stage in ("S0", "S1"):
-            tone = "共情模式"
             opener = "我理解你现在的状态。"
         elif stage in ("S2", "S3"):
-            tone = "引导模式"
             opener = "看起来你已经在思考改变了，"
         else:
-            tone = "执行模式"
             opener = "继续保持！"
 
         parts = [opener]

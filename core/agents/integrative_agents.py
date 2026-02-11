@@ -31,13 +31,14 @@ class BehaviorRxAgent(BaseAgent):
             recs.append("完整行为处方执行, 追踪依从性, 自主调整")
             tasks.append({"type": "full_rx", "difficulty": "moderate"})
 
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.8,
             risk_level=RiskLevel.LOW,
             recommendations=recs, tasks=tasks,
             metadata={"stage": stage, "spi": spi},
         )
+        return self._enhance_with_llm(result, inp)
 
 
 class WeightAgent(BaseAgent):
@@ -57,12 +58,13 @@ class WeightAgent(BaseAgent):
         elif bmi and bmi >= 24:
             findings.append(f"BMI={bmi}, 属于超重范围")
             recs.append("优先营养调整, 配合适度运动")
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.75 if findings else 0.5,
             risk_level=RiskLevel.MODERATE if (bmi and bmi >= 28) else RiskLevel.LOW,
             findings=findings, recommendations=recs,
         )
+        return self._enhance_with_llm(result, inp)
 
 
 class CardiacRehabAgent(BaseAgent):
@@ -81,9 +83,10 @@ class CardiacRehabAgent(BaseAgent):
             findings.append("心血管病史, 启动心脏康复路径")
             recs.append("分阶段心脏康复: 评估→低强度→渐进→维护")
             recs.append("运动处方须在安全心率区间(HRmax×50-70%)")
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.8 if has_cardiac else 0.3,
             risk_level=RiskLevel.MODERATE if has_cardiac else RiskLevel.LOW,
             findings=findings, recommendations=recs,
         )
+        return self._enhance_with_llm(result, inp)

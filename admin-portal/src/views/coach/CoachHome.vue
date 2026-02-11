@@ -1449,8 +1449,9 @@ const triggerCopilotAnalysis = async (msg: string, source: 'live' | 'sandbox') =
       })
       data = resp.data
     } else {
-      // 沙盒模式: 保留原 fetch 8003 逻辑
-      const resp = await fetch('http://localhost:8003/api/v1/test/simulate-chat', {
+      // 沙盒模式: 通过 Vite proxy 调用测试接口
+      const sandboxBase = import.meta.env.VITE_SANDBOX_API_URL || `${API_BASE}`
+      const resp = await fetch(`${sandboxBase}/v1/test/simulate-chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1700,7 +1701,8 @@ const generateFollowup = async (student: typeof pendingStudents.value[0]) => {
 请直接输出跟进消息内容，不要加任何前缀。`
 
   try {
-    const res = await fetch('http://127.0.0.1:8002/chat_sync', {
+    const engineBase = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:8002'
+    const res = await fetch(`${engineBase}/chat_sync`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ message: prompt, user_id: 'coach001' })

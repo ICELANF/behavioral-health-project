@@ -168,6 +168,14 @@
           <a-menu-item key="admin-credit-promotion" @click="$router.push('/admin/credit-system/promotion-review')">晋级审核</a-menu-item>
         </a-sub-menu>
 
+        <!-- 管理员可见 - 安全管理 (V005) -->
+        <a-sub-menu v-if="isAdmin" key="admin-safety">
+          <template #icon><SafetyCertificateOutlined /></template>
+          <template #title>安全管理</template>
+          <a-menu-item key="admin-safety-dashboard" @click="$router.push('/safety/dashboard')">安全仪表盘</a-menu-item>
+          <a-menu-item key="admin-safety-review" @click="$router.push('/safety/review')">审核队列</a-menu-item>
+        </a-sub-menu>
+
         <!-- 管理员可见 -->
         <a-menu-item v-if="isAdmin" key="settings" @click="$router.push('/settings')">
           <template #icon><SettingOutlined /></template>

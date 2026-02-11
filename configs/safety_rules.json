@@ -1,0 +1,55 @@
+{
+  "_comment": "安全规则配置 — 阈值/白名单/分级",
+
+  "thresholds": {
+    "max_input_length": 5000,
+    "max_output_length": 8000,
+    "crisis_auto_escalate": true,
+    "pii_log_enabled": false,
+    "disclaimer_always_append": false,
+    "review_queue_enabled": true
+  },
+
+  "evidence_tier_weights": {
+    "T1": 1.0,
+    "T2": 0.8,
+    "T3": 0.5,
+    "T4": 0.2
+  },
+
+  "severity_levels": {
+    "critical": {
+      "action": "block_and_escalate",
+      "notify_admin": true,
+      "log_input": true
+    },
+    "high": {
+      "action": "flag_for_review",
+      "notify_admin": true,
+      "log_input": true
+    },
+    "medium": {
+      "action": "add_disclaimer",
+      "notify_admin": false,
+      "log_input": true
+    },
+    "low": {
+      "action": "pass",
+      "notify_admin": false,
+      "log_input": false
+    }
+  },
+
+  "whitelist_domains": [
+    "nutrition",
+    "exercise",
+    "sleep",
+    "motivation",
+    "tcm"
+  ],
+
+  "escalation_contacts": {
+    "crisis_hotline": "400-161-9995",
+    "admin_notification": true
+  }
+}

@@ -48,13 +48,16 @@ const mockPatientDashboard: PatientDashboard = {
   ],
 }
 
+const ENGINE_API = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:8002'
+const MP_HEADERS = { 'Content-Type': 'application/json', 'X-User-ID': '1' }
+
 /**
  * 获取患者端 Dashboard 数据 - 从后端引擎获取实时数据
  */
 export async function getPatientDashboard(): Promise<PatientDashboard> {
   try {
-    const res = await fetch('http://127.0.0.1:8002/api/v1/mp/task/today', {
-      headers: { 'Content-Type': 'application/json', 'X-User-ID': '1' }
+    const res = await fetch(`${ENGINE_API}/api/v1/mp/task/today`, {
+      headers: MP_HEADERS
     })
     const data = await res.json()
 
@@ -123,9 +126,6 @@ export interface HealthSummary {
     missedDoses: number
   }
 }
-
-const ENGINE_API = 'http://127.0.0.1:8002'
-const MP_HEADERS = { 'Content-Type': 'application/json', 'X-User-ID': '1' }
 
 // 上次已知的血糖值（用于计算趋势）
 let lastKnownGlucose = 0

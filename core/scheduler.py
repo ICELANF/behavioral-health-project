@@ -209,6 +209,75 @@ def program_batch_analysis():
         logger.error(f"[Scheduler] 方案批量分析失败: {e}")
 
 
+# ── V005 安全日报定时任务 ──────────────────────────
+
+@with_redis_lock("scheduler:safety_daily_report", ttl=600)
+def safety_daily_report():
+    """每天02:00统计前一天安全事件, 写入日报"""
+    from datetime import timedelta
+    from core.database import get_db_session
+    from core.models import SafetyLog
+    from sqlalchemy import func, and_
+
+    try:
+        with get_db_session() as db:
+            now = datetime.now()
+            yesterday_start = (now - timedelta(days=1)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            yesterday_end = yesterday_start + timedelta(days=1)
+
+            total = db.query(func.count(SafetyLog.id)).filter(
+                and_(
+                    SafetyLog.created_at >= yesterday_start,
+                    SafetyLog.created_at < yesterday_end,
+                )
+            ).scalar() or 0
+
+            by_severity = dict(
+                db.query(SafetyLog.severity, func.count(SafetyLog.id)).filter(
+                    and_(
+                        SafetyLog.created_at >= yesterday_start,
+                        SafetyLog.created_at < yesterday_end,
+                    )
+                ).group_by(SafetyLog.severity).all()
+            )
+
+            by_type = dict(
+                db.query(SafetyLog.event_type, func.count(SafetyLog.id)).filter(
+                    and_(
+                        SafetyLog.created_at >= yesterday_start,
+                        SafetyLog.created_at < yesterday_end,
+                    )
+                ).group_by(SafetyLog.event_type).all()
+            )
+
+            # 写入日报记录
+            report = SafetyLog(
+                user_id=None,
+                event_type="daily_report",
+                severity="low",
+                input_text=None,
+                output_text=None,
+                filter_details={
+                    "date": yesterday_start.strftime("%Y-%m-%d"),
+                    "total_events": total,
+                    "by_severity": by_severity,
+                    "by_type": by_type,
+                },
+                resolved=True,
+            )
+            db.add(report)
+            db.commit()
+
+            logger.info(
+                f"[Scheduler] 安全日报: {yesterday_start.strftime('%Y-%m-%d')} "
+                f"total={total} severity={by_severity}"
+            )
+    except Exception as e:
+        logger.error(f"[Scheduler] 安全日报生成失败: {e}")
+
+
 def setup_scheduler() -> "AsyncIOScheduler | None":
     """
     配置并返回调度器
@@ -325,5 +394,14 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
         replace_existing=True,
     )
 
-    logger.info("[Scheduler] 定时任务调度器已配置 (含V004方案引擎)")
+    # ── V005 安全日报 ──
+    scheduler.add_job(
+        safety_daily_report,
+        CronTrigger(hour=2, minute=0),
+        id="safety_daily_report",
+        name="安全事件日报",
+        replace_existing=True,
+    )
+
+    logger.info("[Scheduler] 定时任务调度器已配置 (含V004方案引擎+V005安全日报)")
     return scheduler

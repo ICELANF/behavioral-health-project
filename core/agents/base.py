@@ -3,9 +3,13 @@ Agent基础类型定义
 来源: §9 十二专业Agent体系, §10 多Agent协调, §11 策略闸门
 """
 from __future__ import annotations
+import logging
+import time
 from enum import Enum
 from dataclasses import dataclass, field
 from typing import Any, Optional
+
+logger = logging.getLogger(__name__)
 
 
 # ── 风险等级 (§11.4) ──
@@ -69,6 +73,8 @@ class AgentResult:
     recommendations: list[str] = field(default_factory=list)
     tasks: list[dict] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)
+    llm_enhanced: bool = False
+    llm_latency_ms: int = 0
 
     def to_dict(self) -> dict:
         return {
@@ -79,6 +85,8 @@ class AgentResult:
             "recommendations": self.recommendations,
             "tasks": self.tasks,
             "metadata": self.metadata,
+            "llm_enhanced": self.llm_enhanced,
+            "llm_latency_ms": self.llm_latency_ms,
         }
 
 
@@ -92,6 +100,7 @@ class BaseAgent:
     data_fields: list[str] = []
     priority: int = 5           # 0=最高
     base_weight: float = 0.8    # §10.1 权重
+    enable_llm: bool = True     # LLM 增强开关 (CrisisAgent 关闭)
 
     def process(self, agent_input: AgentInput) -> AgentResult:
         raise NotImplementedError
@@ -100,6 +109,63 @@ class BaseAgent:
         """关键词匹配"""
         msg_lower = message.lower()
         return any(kw in msg_lower for kw in self.keywords)
+
+    def _enhance_with_llm(self, result: AgentResult, inp: AgentInput) -> AgentResult:
+        """
+        用 LLM 增强 recommendations 文本。
+        路由: UnifiedLLMClient (云优先 → 本地降级)
+        - 不修改 findings / risk_level / tasks
+        - 任何异常静默返回原始 result
+        """
+        if not self.enable_llm:
+            return result
+
+        try:
+            from core.llm_client import get_llm_client
+            from .prompts import DOMAIN_SYSTEM_PROMPTS, build_agent_enhancement_prompt
+
+            client = get_llm_client()
+            if not client.is_available():
+                return result
+
+            system_prompt = DOMAIN_SYSTEM_PROMPTS.get(self.domain.value, "")
+            if not system_prompt:
+                return result
+
+            user_prompt = build_agent_enhancement_prompt(
+                user_message=inp.message,
+                findings=result.findings,
+                recommendations=result.recommendations,
+                device_data=inp.device_data,
+            )
+
+            resp = client.chat(system_prompt, user_prompt)
+            if not resp.success or not resp.content:
+                return result
+
+            # 解析 LLM 输出: 每行 "- xxx" 作为一条建议
+            new_recs = []
+            for line in resp.content.strip().splitlines():
+                line = line.strip()
+                if line.startswith("- "):
+                    new_recs.append(line[2:].strip())
+                elif line.startswith("* "):
+                    new_recs.append(line[2:].strip())
+                elif line and not line.startswith("#"):
+                    new_recs.append(line)
+
+            if new_recs:
+                result.recommendations = new_recs[:5]
+                result.llm_enhanced = True
+                result.llm_latency_ms = resp.latency_ms
+                result.metadata["llm_model"] = resp.model
+                result.metadata["llm_provider"] = resp.provider
+
+            return result
+
+        except Exception as e:
+            logger.warning("Agent %s LLM enhancement failed: %s", self.domain.value, e)
+            return result
 
 
 # ── Agent权重表 (§10.1) ──

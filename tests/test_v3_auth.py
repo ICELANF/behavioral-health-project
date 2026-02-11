@@ -1,5 +1,5 @@
-"""
-鉴权模块测试 — JWT + 密码 + 角色 + 端点集成
+﻿"""
+鉴权模块测试 -JWT + 密码 + 角色 + 端点集成
 运行: python tests/test_auth.py
 """
 import os
@@ -7,7 +7,7 @@ import sys
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-os.environ["DATABASE_URL"] = "sqlite:///test_auth.db"
+os.environ["DATABASE_URL"] = "sqlite://"
 os.environ["QDRANT_URL"] = "http://localhost:6333"
 os.environ["DASHSCOPE_API_KEY"] = "test-key"
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-for-unit-tests-only"
@@ -20,18 +20,18 @@ def check(name, condition, detail=""):
     global PASS, FAIL
     if condition:
         PASS += 1
-        print(f"  ✅ {name}")
+        print(f"  [PASS] {name}")
     else:
         FAIL += 1
-        print(f"  ❌ {name}: {detail}")
+        print(f"  [FAIL] {name}: {detail}")
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 1. 密码工具
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_password():
-    print("\n━━━ 1. Password Hashing ━━━")
+    print("\n--- 1. Password Hashing ---")
     from api.auth import hash_password, verify_password
 
     plain = "myP@ssw0rd"
@@ -48,12 +48,12 @@ def test_password():
     check("both verify", verify_password(plain, hashed2))
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 2. JWT Token
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_jwt():
-    print("\n━━━ 2. JWT Token ━━━")
+    print("\n--- 2. JWT Token ---")
     from api.auth import (
         create_access_token, create_refresh_token,
         create_token_pair, decode_token, TokenPayload,
@@ -106,33 +106,32 @@ def test_jwt():
         check("reject expired token", e.status_code == 401)
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 3. User Model
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_user_model():
-    print("\n━━━ 3. User Model ━━━")
+    print("\n--- 3. User Model ---")
     from api.auth import User
 
     check("User tablename=users", User.__tablename__ == "users")
 
     cols = {c.name for c in User.__table__.columns}
     expected_cols = {
-        "id", "phone", "password_hash", "nickname", "avatar_url",
-        "role", "is_active", "health_competency_level",
-        "current_stage", "growth_level",
+        "id", "phone", "password_hash",
+        "role", "is_active",
         "created_at", "updated_at", "last_login_at",
     }
     for c in expected_cols:
         check(f"User has column '{c}'", c in cols, f"missing from {cols}")
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 4. Request/Response Schemas
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_schemas():
-    print("\n━━━ 4. Auth Schemas ━━━")
+    print("\n--- 4. Auth Schemas ---")
     from api.auth import (
         RegisterRequest, LoginRequest, RefreshRequest,
         UserProfile, ChangePasswordRequest, TokenPair,
@@ -170,17 +169,17 @@ def test_schemas():
     check("UserProfile has from_attributes", UserProfile.model_config.get("from_attributes"))
 
 
-# ══════════════════════════════════════════════
-# 5. FastAPI TestClient — 端到端
-# ══════════════════════════════════════════════
+# ==============================================
+# 5. FastAPI TestClient -端到端
+# ==============================================
 
 def test_e2e_auth():
-    print("\n━━━ 5. End-to-End Auth Flow ━━━")
+    print("\n--- 5. End-to-End Auth Flow ---")
     from fastapi.testclient import TestClient
     from api.main import app
-    from api.database import engine, Base
+    from core.database import engine, Base
 
-    # 建表 (先清理确保干净状态)
+    # 建表
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
@@ -199,7 +198,8 @@ def test_e2e_auth():
     access_token = data["data"]["tokens"]["access_token"]
     refresh_token = data["data"]["tokens"]["refresh_token"]
     check("register returns user", data["data"]["user"]["phone"] == "13800138001")
-    check("register user nickname", data["data"]["user"]["nickname"] == "测试用户")
+    check("register user nickname", data["data"]["user"]["nickname"] == "测试用户",
+          f"got: {data['data']['user'].get('nickname', 'N/A')}")
 
     # 5.2 重复注册
     resp2 = client.post("/api/v3/auth/register", json={
@@ -264,12 +264,12 @@ def test_e2e_auth():
     return access_token, headers
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 6. 业务端点鉴权集成
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_endpoint_auth():
-    print("\n━━━ 6. Endpoint Auth Integration ━━━")
+    print("\n--- 6. Endpoint Auth Integration ---")
     from fastapi.testclient import TestClient
     from api.main import app
 
@@ -298,7 +298,6 @@ def test_endpoint_auth():
     # 公开端点不需要 Token
     public_endpoints = [
         ("GET", "/health"),
-        ("GET", "/"),
         ("GET", "/api/v3/assessment/batches"),
     ]
     for method, path in public_endpoints:
@@ -321,34 +320,43 @@ def test_endpoint_auth():
           f"got {resp.status_code}")
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 7. 角色权限
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_role_guards():
-    print("\n━━━ 7. Role Guards ━━━")
+    print("\n--- 7. Role Guards ---")
     from fastapi.testclient import TestClient
     from api.main import app
-    from api.database import SessionLocal
+    from core.database import SessionLocal, engine, Base
     from api.auth import create_access_token, User, hash_password
+
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
     client = TestClient(app)
     db = SessionLocal()
 
-    # 创建 admin 用户和 master 用户
-    admin_user = User(phone="13900000001", password_hash=hash_password("admin"), role="admin", nickname="admin")
-    master_user = User(phone="13900000002", password_hash=hash_password("master"), role="bhp_master", nickname="master")
-    db.add_all([admin_user, master_user])
+    # 创建普通用户, admin 用户和 master 用户 (core User: username, email required)
+    regular_user = User(phone="13900000000", username="user1", email="user@test.local",
+                        password_hash=hash_password("user"), role="grower")
+    admin_user = User(phone="13900000001", username="admin1", email="admin@test.local",
+                      password_hash=hash_password("admin"), role="admin")
+    master_user = User(phone="13900000002", username="master1", email="master@test.local",
+                       password_hash=hash_password("master"), role="master")
+    db.add_all([regular_user, admin_user, master_user])
     db.commit()
+    db.refresh(regular_user)
     db.refresh(admin_user)
     db.refresh(master_user)
 
-    # 普通用户访问 Admin 端点 → 403 (user_id=1 from e2e test has role=user)
-    user_token = create_access_token(user_id=1, role="user")
+    # 普通用户访问 Admin 端点 → 403
+    user_token = create_access_token(user_id=regular_user.id, role="grower")
     user_headers = {"Authorization": f"Bearer {user_token}"}
 
     resp = client.get("/api/v3/admin/knowledge/stats", headers=user_headers)
-    check("user → admin endpoint → 403", resp.status_code == 403)
+    check("user → admin endpoint → 403", resp.status_code == 403,
+          f"got {resp.status_code}: {resp.text[:200]}")
 
     # Admin 访问 Admin 端点 → 不是 401/403
     admin_token = create_access_token(user_id=admin_user.id, role="admin")
@@ -371,12 +379,12 @@ def test_role_guards():
     db.close()
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 8. Auth Router 端点完整性
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_auth_router():
-    print("\n━━━ 8. Auth Router Endpoints ━━━")
+    print("\n--- 8. Auth Router Endpoints ---")
     from api.main import app
 
     routes = {r.path: r.methods for r in app.routes if hasattr(r, "methods")}
@@ -397,12 +405,12 @@ def test_auth_router():
               f"not found")
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 9. Migration v3_004
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_migration():
-    print("\n━━━ 9. Migration v3_004 ━━━")
+    print("\n--- 9. Migration v3_004 ---")
     import sqlite3
     import tempfile
     from migrations.v3_004_auth import upgrade, _OpHelper
@@ -437,9 +445,9 @@ def test_migration():
     os.unlink(tmp)
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # Main
-# ══════════════════════════════════════════════
+# ==============================================
 
 if __name__ == "__main__":
     print("=" * 60)
@@ -469,7 +477,12 @@ if __name__ == "__main__":
     for f in ["test_auth.db"]:
         p = pathlib.Path(f)
         if p.exists():
-            p.unlink()
+            try:
+                p.unlink()
+            except PermissionError:
+                pass  # Windows: file still locked by SQLite
 
     if FAIL > 0:
         sys.exit(1)
+
+

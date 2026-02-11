@@ -1195,8 +1195,18 @@ def get_student_vitals(
             {
                 "id": r.id,
                 "data_type": r.data_type,
-                "value": r.value,
-                "unit": r.unit,
+                "value": (
+                    r.weight_kg if r.data_type == "weight" else
+                    f"{r.systolic}/{r.diastolic}" if r.data_type == "blood_pressure" else
+                    r.temperature if r.data_type == "temperature" else
+                    r.spo2 if r.data_type == "spo2" else None
+                ),
+                "unit": (
+                    "kg" if r.data_type == "weight" else
+                    "mmHg" if r.data_type == "blood_pressure" else
+                    "°C" if r.data_type == "temperature" else
+                    "%" if r.data_type == "spo2" else None
+                ),
                 "recorded_at": r.recorded_at.isoformat() if r.recorded_at else None,
             }
             for r in records

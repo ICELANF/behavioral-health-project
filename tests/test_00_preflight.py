@@ -246,7 +246,8 @@ if failed > 0:
     for name, ok, msg in results:
         if not ok:
             print(f"     → {name}: {msg}")
-    sys.exit(1)
+    if __name__ == "__main__":
+        sys.exit(1)
 else:
     if soft_failed > 0:
         print(f"\n  {WARN} 以下可选项未通过 (Layer 2/5 数据库测试将跳过):")
@@ -254,4 +255,5 @@ else:
             if not ok:
                 print(f"     → {name}: {msg}")
     print(f"\n  {PASS} 所有必需预飞检查通过! 可以继续后续测试。")
-    sys.exit(0)
+    if __name__ == "__main__":
+        sys.exit(0)

@@ -1,5 +1,5 @@
 """
-API 层测试 — 路由注册 + Schema 验证 + 端点结构
+API 层测试 -路由注册 + Schema 验证 + 端点结构
 运行: python tests/test_api.py
 """
 import os
@@ -21,18 +21,18 @@ def check(name, condition, detail=""):
     global PASS, FAIL
     if condition:
         PASS += 1
-        print(f"  ✅ {name}")
+        print(f"  [PASS] {name}")
     else:
         FAIL += 1
-        print(f"  ❌ {name}: {detail}")
+        print(f"  [FAIL] {name}: {detail}")
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 1. Schema 验证
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_schemas():
-    print("\n━━━ 1. Pydantic Schemas ━━━")
+    print("\n--- 1. Pydantic Schemas ---")
     from api.schemas import (
         APIResponse, DiagnosticMinimalRequest, DiagnosticFullRequest,
         ChatRequest, ChatMessage, ChatResponse,
@@ -102,12 +102,12 @@ def test_schemas():
     check("daily outcome defaults", do.streak_days == 0)
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 2. FastAPI App 构建
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_app_creation():
-    print("\n━━━ 2. FastAPI App Creation ━━━")
+    print("\n--- 2. FastAPI App Creation ---")
     from api.main import app
 
     check("app instance created", app is not None)
@@ -150,12 +150,12 @@ def test_app_creation():
         check(f"route {path}", path in route_paths, f"not found in {route_paths[:5]}...")
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 3. 路由模块导入
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_router_imports():
-    print("\n━━━ 3. Router Module Imports ━━━")
+    print("\n--- 3. Router Module Imports ---")
     modules = [
         ("api.routers.diagnostic", "router"),
         ("api.routers.chat", "router"),
@@ -174,12 +174,12 @@ def test_router_imports():
             check(f"{mod_name}", False, str(e))
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 4. 依赖注入
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_dependencies():
-    print("\n━━━ 4. Dependencies ━━━")
+    print("\n--- 4. Dependencies ---")
     from api.dependencies import (
         get_llm_client, get_llm_router, get_qdrant_store,
         get_rag_pipeline, get_coach_agent, get_knowledge_loader,
@@ -208,12 +208,12 @@ def test_dependencies():
     check("diagnostic_pipeline new each time", pipeline is not get_diagnostic_pipeline())
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 5. Database 模块
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_database():
-    print("\n━━━ 5. Database Module ━━━")
+    print("\n--- 5. Database Module ---")
     from api.database import engine, SessionLocal, get_db, Base
 
     check("engine created", engine is not None)
@@ -229,12 +229,12 @@ def test_database():
         check("get_db closes properly", True)
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 6. Worker 模块
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_worker():
-    print("\n━━━ 6. Celery Worker ━━━")
+    print("\n--- 6. Celery Worker ---")
     from api.worker import celery_app, flush_llm_logs, generate_weekly_reviews
 
     check("celery app", celery_app is not None)
@@ -250,25 +250,25 @@ def test_worker():
     check("weekly task exists", generate_weekly_reviews is not None)
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 7. Docker 配置文件
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_docker_files():
-    print("\n━━━ 7. Docker Files ━━━")
+    print("\n--- 7. Docker Files ---")
     import pathlib
     base = pathlib.Path(__file__).parent.parent
 
     dockerfile = base / "Dockerfile"
     check("Dockerfile exists", dockerfile.exists())
-    content = dockerfile.read_text()
+    content = dockerfile.read_text(encoding="utf-8")
     check("Dockerfile has python 3.12", "python:3.12" in content)
     check("Dockerfile has healthcheck", "HEALTHCHECK" in content)
     check("Dockerfile has non-root user", "useradd" in content)
 
     compose = base / "docker-compose.yml"
     check("docker-compose.yml exists", compose.exists())
-    cc = compose.read_text()
+    cc = compose.read_text(encoding="utf-8")
     check("compose has postgres", "postgres:" in cc)
     check("compose has redis", "redis:" in cc)
     check("compose has qdrant", "qdrant:" in cc)
@@ -279,21 +279,22 @@ def test_docker_files():
 
     env_example = base / ".env.example"
     check(".env.example exists", env_example.exists())
-    ec = env_example.read_text()
+    ec = env_example.read_text(encoding="utf-8")
     check("env has DASHSCOPE_API_KEY", "DASHSCOPE_API_KEY" in ec)
     check("env has DEEPSEEK_API_KEY", "DEEPSEEK_API_KEY" in ec)
     check("env has DB_PASSWORD", "DB_PASSWORD" in ec)
 
     nginx_conf = base / "nginx" / "conf.d" / "default.conf"
     check("nginx config exists", nginx_conf.exists())
-    nc = nginx_conf.read_text()
-    check("nginx has rate limiting", "limit_req_zone" in nc)
-    check("nginx has SSL config", "ssl_certificate" in nc)
-    check("nginx has SPA fallback", "try_files" in nc)
+    if nginx_conf.exists():
+        nc = nginx_conf.read_text(encoding="utf-8")
+        check("nginx has rate limiting", "limit_req_zone" in nc)
+        check("nginx has SSL config", "ssl_certificate" in nc)
+        check("nginx has SPA fallback", "try_files" in nc)
 
     requirements = base / "requirements.txt"
     check("requirements.txt exists", requirements.exists())
-    rc = requirements.read_text()
+    rc = requirements.read_text(encoding="utf-8")
     check("requires fastapi", "fastapi" in rc)
     check("requires httpx", "httpx" in rc)
     check("requires sqlalchemy", "sqlalchemy" in rc)
@@ -305,12 +306,12 @@ def test_docker_files():
     check(".dockerignore exists", dockerignore.exists())
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # 8. OpenAPI 结构
-# ══════════════════════════════════════════════
+# ==============================================
 
 def test_openapi():
-    print("\n━━━ 8. OpenAPI Schema ━━━")
+    print("\n--- 8. OpenAPI Schema ---")
     from api.main import app
 
     schema = app.openapi()
@@ -333,9 +334,9 @@ def test_openapi():
               f"found: {tags_in_paths}")
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # Main
-# ══════════════════════════════════════════════
+# ==============================================
 
 if __name__ == "__main__":
     print("=" * 60)

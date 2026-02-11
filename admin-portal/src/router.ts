@@ -590,6 +590,27 @@ const routes: RouteRecordRaw[] = [
           }
         ]
       },
+      // ============ 安全管理 (V005) ============
+      {
+        path: 'safety',
+        name: 'SafetyManagement',
+        redirect: '/safety/dashboard',
+        meta: { title: '安全管理', icon: 'safety-certificate', requiresAdmin: true },
+        children: [
+          {
+            path: 'dashboard',
+            name: 'SafetyDashboard',
+            component: () => import('./views/safety/SafetyDashboard.vue'),
+            meta: { title: '安全仪表盘', requiresAdmin: true }
+          },
+          {
+            path: 'review',
+            name: 'SafetyReviewQueue',
+            component: () => import('./views/safety/SafetyReviewQueue.vue'),
+            meta: { title: '安全审核队列', requiresAdmin: true }
+          }
+        ]
+      },
       // 系统设置
       {
         path: 'settings',

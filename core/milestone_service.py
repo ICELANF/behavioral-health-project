@@ -449,10 +449,21 @@ incentive_router = APIRouter(prefix="/api/v1/incentive", tags=["incentive"])
 
 
 def _uid(request: Request) -> int:
-    """从请求中获取用户ID — 替换为项目的认证方式"""
+    """从请求中获取用户ID — 支持 JWT Bearer / X-User-Id / user_id"""
+    # 1. JWT Bearer token (标准认证)
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        try:
+            from core.auth import verify_token_with_blacklist
+            payload = verify_token_with_blacklist(auth_header.split(" ", 1)[1])
+            if payload and "user_id" in payload:
+                return int(payload["user_id"])
+        except Exception:
+            pass
+    # 2. 后备: X-User-Id header 或 user_id query param
     v = request.headers.get("X-User-Id") or request.query_params.get("user_id")
     if not v:
-        raise HTTPException(401, "需要X-User-Id或user_id参数")
+        raise HTTPException(401, "需要Authorization Bearer或X-User-Id参数")
     return int(v)
 
 

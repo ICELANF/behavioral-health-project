@@ -1,5 +1,5 @@
 """
-综合测试 — LLM/RAG 新模块 + 全量兼容性验证
+综合测试 -LLM/RAG 新模块 + 全量兼容性验证
 运行: python tests/test_llm_rag.py
 
 测试策略:
@@ -22,18 +22,18 @@ def check(name, condition, detail=""):
     global PASS, FAIL
     if condition:
         PASS += 1
-        print(f"  ✅ {name}")
+        print(f"  [PASS] {name}")
     else:
         FAIL += 1
-        print(f"  ❌ {name}: {detail}")
+        print(f"  [FAIL] {name}: {detail}")
 
 
-# ══════════════════════════════════════════════
-# 1. LLM Client — 配置与结构
-# ══════════════════════════════════════════════
+# ==============================================
+# 1. LLM Client -配置与结构
+# ==============================================
 
 def test_llm_client():
-    print("\n━━━ 1. LLM Client ━━━")
+    print("\n--- 1. LLM Client ---")
     from core.llm.client import (
         LLMClient, LLMResponse, MODEL_REGISTRY,
         LLMProvider, ModelConfig, LLMTimeoutError, LLMAPIError,
@@ -85,12 +85,12 @@ def test_llm_client():
     check("client instantiation ok", client is not None)
 
 
-# ══════════════════════════════════════════════
-# 2. LLM Router — 路由逻辑
-# ══════════════════════════════════════════════
+# ==============================================
+# 2. LLM Router -路由逻辑
+# ==============================================
 
 def test_llm_router():
-    print("\n━━━ 2. LLM Router ━━━")
+    print("\n--- 2. LLM Router ---")
     from core.llm.router import (
         LLMRouter, TaskComplexity, ROUTING_TABLE,
         INTENT_COMPLEXITY, UsageStats,
@@ -149,12 +149,12 @@ def test_llm_router():
     check("stats cost tracked", summary["total_cost_yuan"] == 0.006)
 
 
-# ══════════════════════════════════════════════
-# 3. Vector Store — Qdrant 操作 (Mock)
-# ══════════════════════════════════════════════
+# ==============================================
+# 3. Vector Store -Qdrant 操作 (Mock)
+# ==============================================
 
 def test_vector_store():
-    print("\n━━━ 3. Vector Store ━━━")
+    print("\n--- 3. Vector Store ---")
     from core.rag.vector_store import QdrantStore, SearchResult, EMBEDDING_DIM
 
     check("default embedding dim=1024", EMBEDDING_DIM == 1024)
@@ -175,12 +175,12 @@ def test_vector_store():
     check("search result metadata", sr.metadata["source"] == "spec.md")
 
 
-# ══════════════════════════════════════════════
-# 4. Knowledge Loader — 文本切分
-# ══════════════════════════════════════════════
+# ==============================================
+# 4. Knowledge Loader -文本切分
+# ==============================================
 
 def test_knowledge_loader():
-    print("\n━━━ 4. Knowledge Loader ━━━")
+    print("\n--- 4. Knowledge Loader ---")
     from core.rag.knowledge_loader import TextChunker, KnowledgeLoader, TextChunk
 
     chunker = TextChunker(chunk_size=200, chunk_overlap=30, min_chunk_size=20)
@@ -246,12 +246,12 @@ S1: 意识期, 开始思考改变。
           loader_cls._guess_doc_type("unknown.md") == "spec")
 
 
-# ══════════════════════════════════════════════
-# 5. RAG Pipeline — 结构 & 上下文构建
-# ══════════════════════════════════════════════
+# ==============================================
+# 5. RAG Pipeline -结构 & 上下文构建
+# ==============================================
 
 def test_rag_pipeline():
-    print("\n━━━ 5. RAG Pipeline ━━━")
+    print("\n--- 5. RAG Pipeline ---")
     from core.rag.pipeline import (
         RAGPipeline, RAGConfig, RAGResult,
         SYSTEM_KNOWLEDGE_QA, SYSTEM_COACH_WITH_PROFILE, SYSTEM_PRESCRIPTION,
@@ -320,12 +320,12 @@ def test_rag_pipeline():
     check("result.to_dict has latency", d["latency_ms"] == 350)
 
 
-# ══════════════════════════════════════════════
-# 6. Coach Agent — 集成逻辑
-# ══════════════════════════════════════════════
+# ==============================================
+# 6. Coach Agent -集成逻辑
+# ==============================================
 
 def test_coach_agent():
-    print("\n━━━ 6. Coach Agent ━━━")
+    print("\n--- 6. Coach Agent ---")
     from core.llm.coach_agent import (
         CoachAgent, UserContext, ConversationTurn,
         RAG_INTENTS, QUICK_REPLIES, INTENT_CLASSIFY_PROMPT,
@@ -382,12 +382,12 @@ def test_coach_agent():
     check("turn to_db_dict has cost", db_dict["cost_yuan"] == 0.001)
 
 
-# ══════════════════════════════════════════════
-# 7. Database Migration — 结构验证
-# ══════════════════════════════════════════════
+# ==============================================
+# 7. Database Migration -结构验证
+# ==============================================
 
 def test_migration():
-    print("\n━━━ 7. Migration v3_003 ━━━")
+    print("\n--- 7. Migration v3_003 ---")
     import sqlite3
     import tempfile, os
     from migrations.v3_003_llm_rag import upgrade, downgrade, _OpHelper
@@ -449,12 +449,12 @@ def test_migration():
     os.unlink(tmp)
 
 
-# ══════════════════════════════════════════════
-# 8. 现有 15 模块兼容性 — 全量导入
-# ══════════════════════════════════════════════
+# ==============================================
+# 8. 现有 15 模块兼容性 -全量导入
+# ==============================================
 
 def test_existing_compatibility():
-    print("\n━━━ 8. Existing Modules Compatibility ━━━")
+    print("\n--- 8. Existing Modules Compatibility ---")
 
     modules = [
         ("models_v3", "ChangeCauseCategory"),
@@ -502,12 +502,12 @@ def test_existing_compatibility():
             check(f"NEW {mod_name}.{attr_name}", False, str(e))
 
 
-# ══════════════════════════════════════════════
-# 9. 端到端集成 — DiagnosticPipeline → CoachAgent
-# ══════════════════════════════════════════════
+# ==============================================
+# 9. 端到端集成 -DiagnosticPipeline → CoachAgent
+# ==============================================
 
 def test_e2e_integration():
-    print("\n━━━ 9. End-to-End Integration ━━━")
+    print("\n--- 9. End-to-End Integration ---")
     from core.diagnostic_pipeline import DiagnosticPipeline
     from core.llm.coach_agent import UserContext
 
@@ -551,9 +551,9 @@ def test_e2e_integration():
           rx_ctx["rx_intensity_boost"] > 1.0)
 
 
-# ══════════════════════════════════════════════
+# ==============================================
 # Main
-# ══════════════════════════════════════════════
+# ==============================================
 
 if __name__ == "__main__":
     print("=" * 60)

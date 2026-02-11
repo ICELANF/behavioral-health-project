@@ -52,7 +52,7 @@
     </div>
 
     <div class="login-footer">
-      <p>登录即表示您同意 <a href="#">用户协议</a> 和 <a href="#">隐私政策</a></p>
+      <p>登录即表示您同意 <router-link to="/privacy-policy">用户协议</router-link> 和 <router-link to="/privacy-policy">隐私政策</router-link></p>
     </div>
   </div>
 </template>

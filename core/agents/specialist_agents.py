@@ -17,6 +17,7 @@ class CrisisAgent(BaseAgent):
                 "去死", "跳楼", "割腕", "安眠药", "遗书"]
     priority = 0
     base_weight = 1.0
+    enable_llm = False  # 危机干预必须确定性，不走 LLM
 
     CRITICAL_KW = ["自杀", "自残", "不想活", "结束生命", "去死", "跳楼", "割腕", "遗书"]
     WARNING_KW = ["活着没意思", "太痛苦了", "撑不下去", "崩溃", "绝望"]
@@ -75,12 +76,13 @@ class SleepAgent(BaseAgent):
         if any(kw in inp.message for kw in ["失眠", "睡不着"]):
             recs.append("认知行为疗法(CBT-I): 睡眠限制+刺激控制")
             tasks.append({"type": "sleep_diary", "duration": 14, "unit": "day"})
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.8 if findings else 0.5,
             risk_level=RiskLevel.MODERATE if findings else RiskLevel.LOW,
             findings=findings, recommendations=recs, tasks=tasks,
         )
+        return self._enhance_with_llm(result, inp)
 
 
 class GlucoseAgent(BaseAgent):
@@ -103,12 +105,13 @@ class GlucoseAgent(BaseAgent):
             elif cgm < 3.9:
                 findings.append(f"低血糖警告: {cgm} mmol/L")
                 recs.append("立即补充15g速效碳水, 15分钟后复测")
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.85 if findings else 0.5,
             risk_level=RiskLevel.HIGH if cgm and cgm < 3.9 else RiskLevel.LOW,
             findings=findings, recommendations=recs, tasks=tasks,
         )
+        return self._enhance_with_llm(result, inp)
 
 
 class StressAgent(BaseAgent):
@@ -129,12 +132,13 @@ class StressAgent(BaseAgent):
             tasks.append({"type": "breathing_exercise", "times_per_day": 3})
         if any(kw in inp.message for kw in ["压力", "焦虑", "紧张"]):
             recs.append("识别压力源, 建立压力应对清单")
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.8 if findings else 0.5,
             risk_level=RiskLevel.MODERATE if findings else RiskLevel.LOW,
             findings=findings, recommendations=recs, tasks=tasks,
         )
+        return self._enhance_with_llm(result, inp)
 
 
 class NutritionAgent(BaseAgent):
@@ -155,12 +159,13 @@ class NutritionAgent(BaseAgent):
             recs.append("控碳先行: 主食减1/3, 蔬菜先吃, 蛋白质加量")
         else:
             recs.append("精细化营养方案: 根据CGM数据个性化调整")
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.7,
             risk_level=RiskLevel.LOW,
             findings=findings, recommendations=recs,
         )
+        return self._enhance_with_llm(result, inp)
 
 
 class ExerciseAgent(BaseAgent):
@@ -179,12 +184,13 @@ class ExerciseAgent(BaseAgent):
             findings.append(f"日步数不足: {steps}步 (建议≥7000)")
             recs.append("每小时起身活动5分钟, 累积增加步数")
             tasks.append({"type": "hourly_walk", "duration": 5, "unit": "min"})
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.7 if findings else 0.5,
             risk_level=RiskLevel.LOW,
             findings=findings, recommendations=recs, tasks=tasks,
         )
+        return self._enhance_with_llm(result, inp)
 
 
 class MentalHealthAgent(BaseAgent):
@@ -202,12 +208,13 @@ class MentalHealthAgent(BaseAgent):
             recs.append("建议PHQ-9筛查 + 寻求专业心理支持")
         elif any(kw in inp.message for kw in ["情绪", "心情", "郁闷"]):
             recs.append("ABC情绪日记: 事件-信念-情绪, 每日记录")
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.75 if findings else 0.5,
             risk_level=RiskLevel.MODERATE if findings else RiskLevel.LOW,
             findings=findings, recommendations=recs,
         )
+        return self._enhance_with_llm(result, inp)
 
 
 class TCMWellnessAgent(BaseAgent):
@@ -220,12 +227,13 @@ class TCMWellnessAgent(BaseAgent):
 
     def process(self, inp: AgentInput) -> AgentResult:
         recs = ["结合体质辨识, 提供个性化中医养生建议"]
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.6,
             risk_level=RiskLevel.LOW,
             recommendations=recs,
         )
+        return self._enhance_with_llm(result, inp)
 
 
 class MotivationAgent(BaseAgent):
@@ -245,9 +253,10 @@ class MotivationAgent(BaseAgent):
             recs.append("动机访谈: 探索矛盾, '改变对你意味着什么?'")
         elif stage in ("S4", "S5", "S6"):
             recs.append("身份强化: '你已经是一个注重健康的人了'")
-        return AgentResult(
+        result = AgentResult(
             agent_domain=self.domain.value,
             confidence=0.7,
             risk_level=RiskLevel.LOW,
             findings=findings, recommendations=recs,
         )
+        return self._enhance_with_llm(result, inp)

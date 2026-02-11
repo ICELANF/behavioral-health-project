@@ -1,7 +1,7 @@
 {
   "user_id": "test-integration-user",
   "created_at": "2026-01-23T23:16:08.855338",
-  "updated_at": "2026-01-28T12:21:16.154665",
+  "updated_at": "2026-02-11T07:38:02.139792",
   "basic": {
     "age": null,
     "sex": null,
@@ -79,10 +79,10 @@
   },
   "risk_flags": [],
   "history": {
-    "total_sessions": 10,
+    "total_sessions": 42,
     "first_session": null,
-    "last_session": "2026-01-28T12:21:16.517035",
-    "total_tasks_assigned": 5,
+    "last_session": "2026-02-11T07:38:02.984980",
+    "total_tasks_assigned": 21,
     "total_tasks_completed": 0,
     "assessments_count": 0
   },
@@ -90,13 +90,13 @@
   "today": {
     "tasks": [
       {
-        "task_id": "task_2fc75219-4705-493c-9ad5-0a71eb23fc85_0",
+        "task_id": "task_8603e731-8722-4e03-abb7-93b1b29f8ac1_0",
         "title": "今日任务：15分钟轻度运动",
         "status": "pending"
       }
     ],
     "mood_log": [],
-    "device_sync_time": "2026-01-28T12:21:16.154665",
+    "device_sync_time": "2026-02-11T07:38:02.139792",
     "check_ins": 0
   },
   "session_history": [
@@ -129,9 +129,105 @@
       "timestamp": "2026-01-28T12:21:16.154665",
       "input_type": "text",
       "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "a5394225-93b5-4e0b-b1bd-1f8ed74aa661",
+      "timestamp": "2026-02-11T01:36:03.274956",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "98356065-e3dc-4a65-9bfe-5155a1722b17",
+      "timestamp": "2026-02-11T04:20:43.656663",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "91890915-bd9e-41a1-ad63-3c7106d79c96",
+      "timestamp": "2026-02-11T04:55:51.122340",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "97b3f352-e7a1-43a2-b57d-7602583ee796",
+      "timestamp": "2026-02-11T05:47:53.585761",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "b2bc9d55-5bfe-442e-beb1-52d30855524b",
+      "timestamp": "2026-02-11T06:06:35.353646",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "df51fbd6-293a-4c04-9bb6-86716fb4fa4c",
+      "timestamp": "2026-02-11T06:16:36.221381",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "d70c3d06-5e3c-413a-beae-1c265cdbc7f6",
+      "timestamp": "2026-02-11T06:30:06.452583",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "bd1cead6-5ff2-4953-86b6-4c326ceb0cd8",
+      "timestamp": "2026-02-11T06:31:21.136736",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "e0d3fc5c-9cf6-489e-b6f5-1a5148280f9b",
+      "timestamp": "2026-02-11T06:31:35.375324",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "c3e6048e-fdda-455f-8d00-56bb57779945",
+      "timestamp": "2026-02-11T06:32:20.283291",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "d3970ea8-bcbe-4e75-9adb-0d8b63a46c7d",
+      "timestamp": "2026-02-11T06:41:12.441530",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "18d090ac-9b22-429b-bdcb-516f7a686dff",
+      "timestamp": "2026-02-11T06:44:44.016722",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "478edc68-eb1d-4fcb-a3c2-da3c13c42358",
+      "timestamp": "2026-02-11T06:51:54.758595",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "c87c045a-1287-4f88-ba9d-f145dfdeff88",
+      "timestamp": "2026-02-11T06:56:25.179489",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "2417b485-f7df-4e4d-b30f-9678b84c1809",
+      "timestamp": "2026-02-11T07:30:53.975932",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "8603e731-8722-4e03-abb7-93b1b29f8ac1",
+      "timestamp": "2026-02-11T07:38:02.139792",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
     }
   ],
-  "last_updated": "2026-01-28T12:21:16.517049",
+  "last_updated": "2026-02-11T07:38:02.984994",
   "tracking_points": [
     "今日任务完成情况 (1项)",
     "睡眠质量记录",

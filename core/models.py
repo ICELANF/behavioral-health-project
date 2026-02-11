@@ -1,26 +1,21 @@
-"""
-数据库模型定义
-Database Models for Behavioral Health Platform
-
-定义核心数据表：
-- User: 用户表
-- Assessment: 评估记录表
-- Trigger: 触发器记录表
-- Intervention: 干预记录表
-- Session: 会话表
-"""
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import (
     Column, Integer, String, Text, DateTime, Float, Boolean,
     JSON, ForeignKey, Index, Enum as SQLEnum, text as sa_text,
-    UniqueConstraint,
+    UniqueConstraint, func,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 import enum
 import uuid
+
+# 🔥 新增：确保 pgvector 支持
+try:
+    from pgvector.sqlalchemy import Vector
+except ImportError:
+    Vector = None
 
 Base = declarative_base()
 
@@ -169,13 +164,20 @@ class User(Base):
     #   "preferences": {"notification_time": "09:00"}
     # }
 
+    # v3 扩展字段
+    nickname = Column(String(64), nullable=True, default="")
+    avatar_url = Column(String(256), nullable=True, default="")
+    health_competency_level = Column(String(4), nullable=True, default="Lv0")
+    current_stage = Column(String(4), nullable=True, default="S0")
+    growth_level = Column(String(4), nullable=True, default="G0")
+
     # 健康指标
     adherence_rate = Column(Float, default=0.0)  # 依从性百分比
     last_assessment_date = Column(DateTime, nullable=True)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
     last_login_at = Column(DateTime, nullable=True)
 
     # 关系
@@ -238,7 +240,7 @@ class Assessment(Base):
     status = Column(String(20), default="pending")  # pending/processing/completed/failed
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
     completed_at = Column(DateTime, nullable=True)
 
     # 元数据
@@ -286,7 +288,7 @@ class TriggerRecord(Base):
     # 示例：{"max_glucose": 13.5, "threshold": 10.0, "detection_method": "signal"}
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     # 关系
     assessment = relationship("Assessment", back_populates="triggers")
@@ -333,7 +335,7 @@ class Intervention(Base):
     completed = Column(Boolean, default=False)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
     sent_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
 
@@ -378,9 +380,9 @@ class UserSession(Base):
     is_active = Column(Boolean, default=True, index=True)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
     expires_at = Column(DateTime, nullable=False, index=True)
-    last_activity_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    last_activity_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     # 关系
     user = relationship("User", back_populates="sessions")
@@ -426,7 +428,7 @@ class HealthData(Base):
 
     # 时间戳
     recorded_at = Column(DateTime, nullable=False, index=True)  # 数据记录时间
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     # 索引
     __table_args__ = (
@@ -466,8 +468,8 @@ class ChatSession(Base):
     message_count = Column(Integer, default=0)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     # 关系
     messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan",
@@ -507,7 +509,7 @@ class ChatMessage(Base):
     msg_metadata = Column("metadata", JSON, nullable=True)  # 其他元数据
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     # 关系
     session = relationship("ChatSession", back_populates="messages")
@@ -575,8 +577,8 @@ class UserDevice(Base):
     sync_cursor = Column(String(200), nullable=True)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
     __table_args__ = (
         Index('idx_user_device_user', 'user_id'),
@@ -614,7 +616,7 @@ class GlucoseReading(Base):
 
     # 时间
     recorded_at = Column(DateTime, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index('idx_glucose_user_time', 'user_id', 'recorded_at'),
@@ -639,7 +641,7 @@ class HeartRateReading(Base):
     activity_type = Column(String(20), nullable=True)  # rest/walk/run/sleep
 
     recorded_at = Column(DateTime, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index('idx_hr_user_time', 'user_id', 'recorded_at'),
@@ -666,7 +668,7 @@ class HRVReading(Base):
     recovery_score = Column(Float, nullable=True)  # 0-100
 
     recorded_at = Column(DateTime, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index('idx_hrv_user_time', 'user_id', 'recorded_at'),
@@ -708,8 +710,8 @@ class SleepRecord(Base):
     # 详细数据 (JSON)
     stages_data = Column(JSON, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
     __table_args__ = (
         Index('idx_sleep_user_date', 'user_id', 'sleep_date'),
@@ -743,8 +745,8 @@ class ActivityRecord(Base):
     # 每小时数据 (JSON)
     hourly_data = Column(JSON, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
     __table_args__ = (
         Index('idx_activity_user_date', 'user_id', 'activity_date'),
@@ -775,7 +777,7 @@ class WorkoutRecord(Base):
     notes = Column(Text, nullable=True)
     gps_data = Column(JSON, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index('idx_workout_user_time', 'user_id', 'start_time'),
@@ -814,7 +816,7 @@ class VitalSign(Base):
     spo2 = Column(Float, nullable=True)
 
     recorded_at = Column(DateTime, nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index('idx_vital_user_type_time', 'user_id', 'data_type', 'recorded_at'),
@@ -1009,8 +1011,8 @@ class BehavioralProfile(Base):
     last_assessment_id = Column(String(50), nullable=True)
 
     # ====== 时间戳 ======
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     # 关系
     user = relationship("User", back_populates="behavioral_profile")
@@ -1043,7 +1045,7 @@ class BehaviorAuditLog(Base):
     source_ui = Column(String(20), nullable=True)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_audit_user_created', 'user_id', 'created_at'),
@@ -1065,7 +1067,7 @@ class BehaviorHistory(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String(50), nullable=False, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    timestamp = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     # 阶段
     from_stage = Column(String(10), nullable=False)
@@ -1097,7 +1099,7 @@ class BehaviorTrace(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(String(50), nullable=False, index=True)
-    timestamp = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    timestamp = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     # 阶段跃迁
     from_stage = Column(String(10), nullable=False)
@@ -1151,8 +1153,8 @@ class MicroActionTask(Base):
     completed_at = Column(DateTime, nullable=True)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
     # 关系
     logs = relationship("MicroActionLog", back_populates="task", cascade="all, delete-orphan")
@@ -1185,7 +1187,7 @@ class MicroActionLog(Base):
     mood_score = Column(Integer, nullable=True)  # 1-5 完成后心情
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     # 关系
     task = relationship("MicroActionTask", back_populates="logs")
@@ -1226,8 +1228,8 @@ class Reminder(Base):
     created_by = Column(Integer, nullable=True)  # coach user_id or null
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
     __table_args__ = (
         Index('idx_reminder_user_active', 'user_id', 'is_active'),
@@ -1264,7 +1266,7 @@ class AssessmentAssignment(Base):
     pipeline_result = Column(JSON, nullable=True)  # 评估管道完整输出
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
     completed_at = Column(DateTime, nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
     pushed_at = Column(DateTime, nullable=True)
@@ -1305,8 +1307,8 @@ class CoachReviewItem(Base):
     coach_note = Column(Text, nullable=True)  # 教练批注
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
     # 关系
     assignment = relationship("AssessmentAssignment", back_populates="review_items")
@@ -1350,7 +1352,7 @@ class DeviceAlert(Base):
     dedup_key = Column(String(100), nullable=False, index=True)  # user_id:type:YYYY-MM-DD-HH
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_device_alert_user', 'user_id', 'created_at'),
@@ -1382,7 +1384,7 @@ class CoachMessage(Base):
     is_read = Column(Boolean, default=False)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_coach_msg_student_read', 'student_id', 'is_read'),
@@ -1476,8 +1478,8 @@ class ChallengeTemplate(Base):
     enrollment_count = Column(Integer, default=0)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     # 关系
     day_pushes = relationship("ChallengeDayPush", back_populates="challenge", cascade="all, delete-orphan",
@@ -1524,8 +1526,8 @@ class ChallengeDayPush(Base):
     survey = Column(JSON, nullable=True)
 
     # 时间戳
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
     # 关系
     challenge = relationship("ChallengeTemplate", back_populates="day_pushes")
@@ -1572,8 +1574,8 @@ class ChallengeEnrollment(Base):
     streak_days = Column(Integer, default=0)  # 连续打卡天数
 
     # 时间戳
-    enrolled_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    enrolled_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
     # 关系
     challenge = relationship("ChallengeTemplate", back_populates="enrollments")
@@ -1608,7 +1610,7 @@ class ChallengeSurveyResponse(Base):
     responses = Column(JSON, nullable=False)
 
     # 时间戳
-    submitted_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    submitted_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     # 关系
     enrollment = relationship("ChallengeEnrollment", back_populates="survey_responses")
@@ -1689,7 +1691,7 @@ class CoachPushQueue(Base):
     # 时间戳
     reviewed_at = Column(DateTime, nullable=True)
     sent_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index('idx_cpq_coach_status', 'coach_id', 'status'),
@@ -1718,7 +1720,7 @@ class FoodAnalysis(Base):
     advice        = Column(Text, nullable=True)
     raw_response  = Column(Text, nullable=True)
     meal_type     = Column(String(20), nullable=True)
-    created_at    = Column(DateTime, default=datetime.utcnow)
+    created_at    = Column(DateTime, server_default=func.now())
 
     def __repr__(self):
         return f"<FoodAnalysis(id={self.id}, user={self.user_id}, food={self.food_name})>"
@@ -1777,58 +1779,48 @@ class DocumentStatus(str, enum.Enum):
 # 知识库 RAG 模型
 # ============================================
 
+# ============================================
+# 知识库模型 (V3.1 核心修复版)
+# ============================================
+
 class KnowledgeDocument(Base):
     """
-    知识库文档表
-
-    存储已入库的文档元数据：标题、作者、来源、范围、状态。
-    一个文档对应多个 KnowledgeChunk。
+    知识库文档主表
     """
     __tablename__ = "knowledge_documents"
 
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String(300), nullable=False)
+    file_type = Column(String(50), default="md")
+    file_hash = Column(String(128), unique=True, nullable=False, index=True)
+    scope = Column(String(50), default="global", index=True)
+    domain_id = Column(String(50), default="tcm", index=True)
+    status = Column(String(20), default="ready")
     author = Column(String(100), nullable=True)
-    source = Column(String(200), nullable=True)
-    domain_id = Column(String(50), nullable=True, index=True)  # nutrition/sleep/tcm/...
-    scope = Column(String(20), nullable=False, default="platform")  # tenant/domain/platform
+    source = Column(String(255), nullable=True)
     tenant_id = Column(String(64), nullable=True, index=True)
-    priority = Column(Integer, default=5)  # 1-10, 高=优先
-    is_active = Column(Boolean, default=True)
-    status = Column(String(20), default="draft")  # draft/processing/ready/error
-    file_path = Column(String(500), nullable=True)
-    file_type = Column(String(10), nullable=True)     # md/txt/pdf/docx
-    file_hash = Column(String(128), nullable=True)    # SHA256 去重
-    raw_content = Column(Text, nullable=True)  # 专家编写的原始 Markdown
+    description = Column(Text, nullable=True)
     chunk_count = Column(Integer, default=0)
+    file_size = Column(Integer, default=0)
+    priority = Column(Integer, default=5)
+    is_active = Column(Boolean, default=True)
 
-    # 内容治理字段
-    evidence_tier = Column(String(2), default="T3", server_default="T3", nullable=False)  # T1/T2/T3/T4
-    content_type = Column(String(30), nullable=True)  # guideline/consensus/rct/review/expert_opinion/case_report/experience_sharing
-    published_date = Column(DateTime, nullable=True)  # 原始材料发布日期
-    review_status = Column(String(20), nullable=True)  # pending/approved/rejected/not_required
-    reviewer_id = Column(Integer, nullable=True)  # 审核人 User.id
-    reviewed_at = Column(DateTime, nullable=True)  # 审核时间
-    contributor_id = Column(Integer, nullable=True)  # 贡献者 User.id
-    expires_at = Column(DateTime, nullable=True)  # 内容过期时间
+    # 内容治理 (migration 012/013)
+    raw_content = Column(Text, nullable=True)
+    file_path = Column(String(500), nullable=True)
+    evidence_tier = Column(String(2), server_default="T3", nullable=False)
+    content_type = Column(String(30), nullable=True)
+    published_date = Column(DateTime, nullable=True)
+    review_status = Column(String(20), nullable=True)
+    reviewer_id = Column(Integer, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    contributor_id = Column(Integer, nullable=True)
+    expires_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, nullable=True)  # 更新时间
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    # 关系
     chunks = relationship("KnowledgeChunk", back_populates="document", cascade="all, delete-orphan")
-
-    __table_args__ = (
-        Index('idx_kdoc_scope_domain', 'scope', 'domain_id'),
-        Index('idx_kdoc_scope_tenant', 'scope', 'tenant_id'),
-        Index('idx_kdoc_status', 'status'),
-        Index('idx_kdoc_review_status', 'review_status'),
-        Index('idx_kdoc_evidence_tier', 'evidence_tier'),
-        Index('idx_kdoc_contributor', 'contributor_id'),
-    )
-
-    def __repr__(self):
-        return f"<KnowledgeDocument(id={self.id}, title='{self.title}', scope={self.scope})>"
 
 
 class KnowledgeDomain(Base):
@@ -1836,57 +1828,44 @@ class KnowledgeDomain(Base):
     __tablename__ = "knowledge_domains"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    domain_id = Column(String(50), unique=True, nullable=False, index=True)
+    domain_id = Column(String(50), unique=True, nullable=False)
     label = Column(String(100), nullable=False)
     description = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
 
 class KnowledgeChunk(Base):
     """
-    知识库分块表
-
-    文档切分后的文本块，每块含嵌入向量（JSON 存储，Python 层余弦相似度）。
-    冗余 doc_title/doc_author/doc_source 加速检索时组装引用标签。
+    知识库分片表 (带向量存储)
     """
     __tablename__ = "knowledge_chunks"
 
     id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, ForeignKey("knowledge_documents.id"), nullable=False, index=True)
-
-    # 分块内容
-    content = Column(Text, nullable=False)
-    heading = Column(String(200), nullable=True)
-    page_number = Column(Integer, nullable=True)
-    chunk_index = Column(Integer, default=0)
-
-    # 冗余字段 (加速检索)
+    document_id = Column(Integer, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False)
+    heading = Column(String(255), nullable=True)
     doc_title = Column(String(300), nullable=True)
     doc_author = Column(String(100), nullable=True)
-    doc_source = Column(String(200), nullable=True)
-
-    # 范围
-    scope = Column(String(20), nullable=False, default="platform")
+    doc_source = Column(String(255), nullable=True)
     domain_id = Column(String(50), nullable=True)
-    tenant_id = Column(String(64), nullable=True)
+    tenant_id = Column(String(64), nullable=True, index=True)
+    page_number = Column(Integer, nullable=True)
 
-    # 嵌入向量 (JSON 文本: [0.01, -0.02, ...])
-    embedding = Column(Text, nullable=True)
+    scope = Column(String(50), default="global", index=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    content = Column(Text, nullable=False)
+    chunk_index = Column(Integer, nullable=False)
 
-    # 关系
+    # 🔥 检查点 2：必须改为 768，否则报错 dim mismatch (expected 1536, got 768)
+    if Vector is not None:
+        embedding = Column(Vector(768), nullable=True)
+    else:
+        embedding = Column(JSON, nullable=True)
+
+    chunk_metadata = Column("metadata", JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
     document = relationship("KnowledgeDocument", back_populates="chunks")
-
-    __table_args__ = (
-        Index('idx_kchunk_doc', 'document_id'),
-        Index('idx_kchunk_scope_domain', 'scope', 'domain_id'),
-        Index('idx_kchunk_scope_tenant', 'scope', 'tenant_id'),
-    )
-
-    def __repr__(self):
-        return f"<KnowledgeChunk(id={self.id}, doc={self.document_id}, idx={self.chunk_index})>"
 
 
 class KnowledgeCitation(Base):
@@ -1913,7 +1892,7 @@ class KnowledgeCitation(Base):
     citation_text = Column(String(500), nullable=True)
     citation_label = Column(String(300), nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_kcite_session', 'session_id'),
@@ -2019,8 +1998,8 @@ class ContentItem(Base):
     # 是否含测试
     has_quiz = Column(Boolean, default=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     __table_args__ = (
         Index('idx_ci_type_status', 'content_type', 'status'),
@@ -2039,7 +2018,7 @@ class ContentLike(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content_id = Column(Integer, ForeignKey("content_items.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index('idx_cl_user_content', 'user_id', 'content_id', unique=True),
@@ -2053,7 +2032,7 @@ class ContentBookmark(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     content_id = Column(Integer, ForeignKey("content_items.id"), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index('idx_cb_user_content', 'user_id', 'content_id', unique=True),
@@ -2073,7 +2052,7 @@ class ContentComment(Base):
     like_count = Column(Integer, default=0)
     status = Column(String(20), default="active", nullable=False)  # active/hidden/deleted
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_cc_content_status', 'content_id', 'status'),
@@ -2099,8 +2078,8 @@ class LearningProgress(Base):
     time_spent_seconds = Column(Integer, default=0)
     status = Column(String(20), default="not_started")  # not_started/in_progress/completed
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     __table_args__ = (
         Index('idx_lp_user_content', 'user_id', 'content_id', unique=True),
@@ -2117,7 +2096,7 @@ class LearningTimeLog(Base):
     content_id = Column(Integer, nullable=True)
     domain = Column(String(50), nullable=True)
     minutes = Column(Integer, nullable=False)
-    earned_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    earned_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_ltl_user_date', 'user_id', 'earned_at'),
@@ -2134,7 +2113,7 @@ class LearningPointsLog(Base):
     source_id = Column(String(50), nullable=True)  # 关联的内容/考试ID
     points = Column(Integer, nullable=False)
     category = Column(String(20), nullable=False)  # growth/contribution/influence
-    earned_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    earned_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_lpl_user_cat', 'user_id', 'category'),
@@ -2167,7 +2146,7 @@ class UserLearningStats(Base):
     quiz_total = Column(Integer, default=0)
     quiz_passed = Column(Integer, default=0)
 
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     __table_args__ = (
         Index('idx_uls_points', 'total_points'),
@@ -2198,8 +2177,8 @@ class ExamDefinition(Base):
     status = Column(String(20), default="draft", nullable=False)  # draft/published/archived
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     __table_args__ = (
         Index('idx_exam_status', 'status'),
@@ -2226,8 +2205,8 @@ class QuestionBank(Base):
     tags = Column(JSON, nullable=True)  # ["nutrition", "L2"]
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     __table_args__ = (
         Index('idx_qb_type', 'question_type'),
@@ -2251,7 +2230,7 @@ class ExamResult(Base):
     answers = Column(JSON, nullable=True)  # {"q1": "A", "q2": ["B","C"], ...}
     duration_seconds = Column(Integer, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_er_user_exam', 'user_id', 'exam_id'),
@@ -2274,7 +2253,7 @@ class UserActivityLog(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     activity_type = Column(String(30), nullable=False, index=True)  # login/share/learn/comment/like/exam/assess
     detail = Column(JSON, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_ual_user_type', 'user_id', 'activity_type'),
@@ -2304,8 +2283,8 @@ class BatchIngestionJob(Base):
     error_message = Column(Text, nullable=True)
     result_doc_ids = Column(JSON, nullable=True)  # 创建的 KnowledgeDocument IDs
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     __table_args__ = (
         Index('idx_bij_status', 'status'),
@@ -2387,8 +2366,8 @@ class ExpertTenant(Base):
     revenue_share_expert = Column(Float, default=0.80, comment="专家分成比例")
     trial_expires_at = Column(DateTime, nullable=True, comment="试用到期时间")
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
     # 关系
     clients = relationship("TenantClient", back_populates="tenant", lazy="dynamic")
@@ -2419,7 +2398,7 @@ class TenantClient(Base):
     service_package = Column(String(64), default="trial", comment="购买的服务包ID")
 
     status = Column(SQLEnum(ClientStatus), default=ClientStatus.active, nullable=False, index=True)
-    enrolled_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    enrolled_at = Column(DateTime, server_default=func.now(), nullable=False)
     graduated_at = Column(DateTime, nullable=True)
 
     total_sessions = Column(Integer, default=0, comment="累计会话次数")
@@ -2454,7 +2433,7 @@ class TenantAgentMapping(Base):
     is_primary = Column(Boolean, default=False, comment="是否为主力Agent")
     sort_order = Column(Integer, default=0, comment="排序权重")
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     tenant = relationship("ExpertTenant", back_populates="agent_mappings")
 
@@ -2475,7 +2454,7 @@ class TenantAuditLog(Base):
     actor_id = Column(Integer, nullable=False, comment="操作者用户ID")
     action = Column(String(64), nullable=False, comment="操作类型")
     detail = Column(JSON, default=dict, comment="操作详情")
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index("idx_audit_tenant_time", "tenant_id", "created_at"),
@@ -2550,8 +2529,8 @@ class Survey(Base):
 
     short_code = Column(String(8), unique=True, index=True, comment="短链码")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
     published_at = Column(DateTime, nullable=True)
     closed_at = Column(DateTime, nullable=True)
 
@@ -2583,7 +2562,7 @@ class SurveyQuestion(Base):
     config = Column(JSON, default=dict, comment="题目配置 JSON")
     skip_logic = Column(JSON, nullable=True, comment="跳题逻辑 JSON")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
     survey = relationship("Survey", back_populates="questions")
     answers = relationship("SurveyResponseAnswer", back_populates="question", cascade="all, delete-orphan")
@@ -2605,7 +2584,7 @@ class SurveyResponse(Base):
     respondent_ua = Column(String(500), nullable=True)
     device_type = Column(String(20), default="unknown")
 
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, server_default=func.now())
     completed_at = Column(DateTime, nullable=True)
     duration_sec = Column(Integer, nullable=True, comment="填写耗时秒")
 
@@ -2615,7 +2594,7 @@ class SurveyResponse(Base):
     baps_synced = Column(Boolean, default=False)
     baps_synced_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
     survey = relationship("Survey", back_populates="responses")
     answers = relationship("SurveyResponseAnswer", back_populates="response", cascade="all, delete-orphan")
@@ -2638,7 +2617,7 @@ class SurveyResponseAnswer(Base):
     answer_value = Column(JSON, nullable=False, comment="答案 JSON")
     score = Column(Float, nullable=True, comment="自动评分")
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
     response = relationship("SurveyResponse", back_populates="answers")
     question = relationship("SurveyQuestion", back_populates="answers")
@@ -2664,7 +2643,7 @@ class SurveyDistribution(Base):
     click_count = Column(Integer, default=0)
     submit_count = Column(Integer, default=0)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
 
     survey = relationship("Survey", back_populates="distributions")
@@ -2727,13 +2706,13 @@ class CourseModule(Base):
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
                 server_default=sa_text("gen_random_uuid()"))
-    code = Column(String(30), unique=True, nullable=False, comment="模块编码 OBS-M1-01")
+    code = Column(String(32), unique=True, nullable=False, comment="模块编码 OBS-M1-01")
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
 
     module_type = Column(String(20), nullable=False, comment="M1/M2/M3/M4/ELECTIVE")
     elective_cat = Column(String(30), nullable=True, comment="选修课分类")
-    tier = Column(String(5), nullable=True, comment="T1-T4证据层级")
+    tier = Column(String(15), nullable=True, comment="T1-T4证据层级")
     target_role = Column(SQLEnum(UserRole, create_type=False), nullable=False,
                          comment="目标角色等级")
 
@@ -2745,8 +2724,8 @@ class CourseModule(Base):
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
     # 关系
     credits = relationship("UserCredit", back_populates="module", cascade="all, delete-orphan")
@@ -2769,11 +2748,11 @@ class UserCredit(Base):
 
     credit_earned = Column(Float, nullable=False, comment="获得学分")
     score = Column(Float, nullable=True, comment="成绩 0-100")
-    completed_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, server_default=func.now())
     evidence_type = Column(String(30), nullable=True, comment="评估证据类型")
     evidence_ref = Column(String(500), nullable=True, comment="证据材料URL")
     reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="审核人")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
     # 关系
     module = relationship("CourseModule", back_populates="credits")
@@ -2799,7 +2778,7 @@ class CompanionRelation(Base):
     status = Column(String(20), default="active", comment="active/graduated/dropped")
 
     quality_score = Column(Float, nullable=True, comment="带教质量评分 1-5")
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, server_default=func.now())
     graduated_at = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
 
@@ -2834,7 +2813,7 @@ class PromotionApplication(Base):
     review_comment = Column(Text, nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, server_default=func.now())
 
     __table_args__ = (
         Index("idx_pa_user", "user_id"),
@@ -2867,8 +2846,7 @@ class UserChangeCauseScore(Base):
     assessment_id = Column(Integer, nullable=False)
     cause_id = Column(String(4), ForeignKey("change_causes.id"), nullable=False)
     score = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow,
-                        server_default=sa_text("now()"))
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
 
     __table_args__ = (
         Index("ix_user_cause_ua", "user_id", "assessment_id"),
@@ -2905,8 +2883,8 @@ class HealthCompetencyAssessment(Base):
     level_scores = Column(JSON, nullable=False)
     current_level = Column(String(4), nullable=False)
     recommended_content_stage = Column(String(20))
-    created_at = Column(DateTime, default=datetime.utcnow,
-                        server_default=sa_text("now()"))
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+                     
 
 
 class COMBAssessment(Base):
@@ -2919,8 +2897,8 @@ class COMBAssessment(Base):
     dimension_scores = Column(JSON, nullable=False)
     bottleneck = Column(String(20))
     total_score = Column(Float, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow,
-                        server_default=sa_text("now()"))
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+                      
 
 
 class SelfEfficacyAssessment(Base):
@@ -2932,8 +2910,8 @@ class SelfEfficacyAssessment(Base):
     answers = Column(JSON, nullable=False)
     avg_score = Column(Float, nullable=False)
     level = Column(String(10), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow,
-                        server_default=sa_text("now()"))
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+                        
 
 
 class ObstacleAssessment(Base):
@@ -2946,8 +2924,8 @@ class ObstacleAssessment(Base):
     category_scores = Column(JSON, nullable=False)
     top_obstacles = Column(JSON, nullable=False)
     rx_adjustments = Column(JSON)
-    created_at = Column(DateTime, default=datetime.utcnow,
-                        server_default=sa_text("now()"))
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+                        
 
 
 class SupportAssessment(Base):
@@ -2961,8 +2939,44 @@ class SupportAssessment(Base):
     total_score = Column(Float, nullable=False)
     support_level = Column(String(10), nullable=False)
     weakest_layer = Column(String(20))
-    created_at = Column(DateTime, default=datetime.utcnow,
-                        server_default=sa_text("now()"))
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+
+
+# ============================================
+# V005 安全日志 + 内容音频
+# ============================================
+
+class SafetyLog(Base):
+    """安全事件日志"""
+    __tablename__ = "safety_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    event_type = Column(String(30), nullable=False, index=True)
+    # event_type: input_blocked / output_filtered / crisis_detected / daily_report
+    severity = Column(String(15), nullable=False, default="low", index=True)
+    # severity: low / medium / high / critical
+    input_text = Column(Text, nullable=True)
+    output_text = Column(Text, nullable=True)
+    filter_details = Column(JSON, nullable=True)
+    resolved = Column(Boolean, default=False, index=True)
+    resolved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    resolved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+
+
+class ContentAudio(Base):
+    """内容音频附件"""
+    __tablename__ = "content_audio"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    content_item_id = Column(Integer, ForeignKey("content_items.id"), nullable=False, index=True)
+    audio_url = Column(String(500), nullable=False)
+    duration_seconds = Column(Integer, nullable=True)
+    voice_type = Column(String(30), default="tts_female")
+    # voice_type: tts_female / tts_male / human
+    transcript = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
 
 
 def get_table_names():
@@ -3070,6 +3084,9 @@ def get_table_names():
         "self_efficacy_assessments",
         "obstacle_assessments",
         "support_assessments",
+        # V005 安全+音频
+        "safety_logs",
+        "content_audio",
     ]
 
 
@@ -3165,5 +3182,8 @@ def get_model_by_name(name: str):
         "SelfEfficacyAssessment": SelfEfficacyAssessment,
         "ObstacleAssessment": ObstacleAssessment,
         "SupportAssessment": SupportAssessment,
+        # V005 安全+音频
+        "SafetyLog": SafetyLog,
+        "ContentAudio": ContentAudio,
     }
     return models.get(name)

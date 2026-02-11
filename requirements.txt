@@ -26,10 +26,12 @@ requests>=2.32.5
 sqlalchemy>=2.0.45
 aiosqlite>=0.22.1
 psycopg2-binary>=2.9.9
+asyncpg>=0.30.0
+pgvector>=0.3.0
 
 # LLM & AI Integration
 ollama>=0.6.1
-# openai>=2.15.0  # 暂不使用，当前使用Ollama本地推理
+openai>=1.40.0
 llama-index>=0.14.12
 llama-index-core>=0.14.12
 llama-index-embeddings-ollama>=0.8.6
@@ -85,6 +87,9 @@ celery[redis]>=5.4.0
 
 # Production Server
 gunicorn>=23.0.0
+
+# TTS (optional)
+edge-tts>=6.1.0
 
 # Other
 joblib>=1.5.3

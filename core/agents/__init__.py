@@ -23,6 +23,7 @@ from .router import AgentRouter
 from .coordinator import MultiAgentCoordinator
 from .policy_gate import RuntimePolicyGate
 from .master_agent import MasterAgent
+from .ollama_client import SyncOllamaClient, get_ollama_client
 
 __all__ = [
     # 专科Agent (9)
@@ -34,4 +35,6 @@ __all__ = [
     # 基础设施
     "AgentRouter", "MultiAgentCoordinator", "RuntimePolicyGate",
     "MasterAgent",
+    # LLM 客户端
+    "SyncOllamaClient", "get_ollama_client",
 ]

@@ -25,6 +25,13 @@ services:
       - PYTHONUNBUFFERED=1
       - OLLAMA_API_URL=http://host.docker.internal:11434
       - DATABASE_URL=postgresql://postgres:difyai123456@db:5432/health_platform
+      # V005 云 LLM 配置
+      - CLOUD_LLM_PROVIDER=${CLOUD_LLM_PROVIDER:-}
+      - CLOUD_LLM_API_KEY=${CLOUD_LLM_API_KEY:-}
+      - CLOUD_LLM_BASE_URL=${CLOUD_LLM_BASE_URL:-https://api.deepseek.com/v1}
+      - CLOUD_LLM_MODEL=${CLOUD_LLM_MODEL:-deepseek-chat}
+      - LLM_ROUTE_STRATEGY=${LLM_ROUTE_STRATEGY:-cloud_first}
+      - SAFETY_ENABLED=${SAFETY_ENABLED:-true}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:

@@ -1,7 +1,7 @@
 <template>
   <div class="student-behavioral-profile">
     <a-breadcrumb style="margin-bottom: 16px">
-      <a-breadcrumb-item><router-link to="/admin/coach/my/students">我的学员</router-link></a-breadcrumb-item>
+      <a-breadcrumb-item><router-link to="/coach/my/students">我的学员</router-link></a-breadcrumb-item>
       <a-breadcrumb-item>行为画像</a-breadcrumb-item>
     </a-breadcrumb>
 

@@ -115,3 +115,50 @@ def require_coach_or_admin(current_user: User = Depends(get_current_user)) -> Us
             detail="需要教练或管理员权限"
         )
     return current_user
+
+
+# ══════════════════════════════════════════════
+# V3 Dependencies (merged from bhp_v3)
+# ══════════════════════════════════════════════
+
+try:
+    from core.llm.client import LLMClient
+    from core.llm.router import LLMRouter
+    from core.llm.coach_agent import CoachAgent
+    from core.rag.vector_store import QdrantStore
+    from core.rag.pipeline import RAGPipeline, RAGConfig
+    from core.rag.knowledge_loader import KnowledgeLoader
+    from core.diagnostic_pipeline import DiagnosticPipeline
+    from functools import lru_cache as _lru_cache
+    import os as _os
+
+    @_lru_cache()
+    def get_llm_client() -> LLMClient:
+        return LLMClient()
+
+    @_lru_cache()
+    def get_llm_router() -> LLMRouter:
+        return LLMRouter(get_llm_client())
+
+    @_lru_cache()
+    def get_qdrant_store() -> QdrantStore:
+        url = _os.environ.get("QDRANT_URL", "http://qdrant:6333")
+        return QdrantStore(base_url=url)
+
+    @_lru_cache()
+    def get_rag_pipeline() -> RAGPipeline:
+        return RAGPipeline(get_llm_client(), get_llm_router(), get_qdrant_store(), RAGConfig())
+
+    @_lru_cache()
+    def get_coach_agent() -> CoachAgent:
+        return CoachAgent(llm_client=get_llm_client(), router=get_llm_router(), rag_pipeline=get_rag_pipeline())
+
+    @_lru_cache()
+    def get_knowledge_loader() -> KnowledgeLoader:
+        return KnowledgeLoader(get_llm_client(), get_qdrant_store())
+
+    def get_diagnostic_pipeline():
+        return DiagnosticPipeline()
+
+except ImportError:
+    pass  # v3 LLM/RAG modules not available in this environment

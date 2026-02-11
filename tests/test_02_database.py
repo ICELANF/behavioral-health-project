@@ -19,7 +19,9 @@ DATABASE_URL = os.environ.get(
 def get_async_engine():
     from sqlalchemy.ext.asyncio import create_async_engine
     url = DATABASE_URL
-    if "asyncpg" not in url:
+    if url.startswith("sqlite"):
+        url = url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+    elif "asyncpg" not in url:
         url = url.replace("postgresql://", "postgresql+asyncpg://")
     return create_async_engine(url, echo=False)
 
@@ -135,25 +137,27 @@ class TestDocumentCRUD(IsolatedAsyncioTestCase):
         from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
         from sqlalchemy.orm import sessionmaker
         url = DATABASE_URL
-        if "asyncpg" not in url:
+        if url.startswith("sqlite"):
+            url = url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+        elif "asyncpg" not in url:
             url = url.replace("postgresql://", "postgresql+asyncpg://")
         self.engine = create_async_engine(url, echo=False)
         self.SessionLocal = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
-        self._created_doc_ids = []
+        self._created_document_ids = []
 
     async def asyncTearDown(self):
         """清理测试数据"""
-        if self._created_doc_ids:
+        if self._created_document_ids:
             from sqlalchemy import text
             async with self.engine.connect() as conn:
-                for doc_id in self._created_doc_ids:
+                for document_id in self._created_document_ids:
                     await conn.execute(
                         text("DELETE FROM knowledge_chunks WHERE document_id = :id"),
-                        {"id": doc_id}
+                        {"id": document_id}
                     )
                     await conn.execute(
                         text("DELETE FROM knowledge_documents WHERE id = :id"),
-                        {"id": doc_id}
+                        {"id": document_id}
                     )
                 await conn.commit()
         await self.engine.dispose()
@@ -169,10 +173,10 @@ class TestDocumentCRUD(IsolatedAsyncioTestCase):
                     ('测试文档-单元测试', 'md', 'test_hash_001', 'platform', 'general', 'ready', 5, true)
                 RETURNING id
             """))
-            doc_id = row.scalar()
+            document_id = row.scalar()
             await conn.commit()
-            self.assertIsNotNone(doc_id)
-            self._created_doc_ids.append(doc_id)
+            self.assertIsNotNone(document_id)
+            self._created_document_ids.append(document_id)
 
     async def test_insert_chunk_with_embedding(self):
         """插入带 embedding 的 chunk"""
@@ -188,25 +192,25 @@ class TestDocumentCRUD(IsolatedAsyncioTestCase):
                     ('Embed测试文档', 'md', 'test_hash_002', 'domain', 'tcm', 'ready', 7, true)
                 RETURNING id
             """))
-            doc_id = row.scalar()
-            self._created_doc_ids.append(doc_id)
+            document_id = row.scalar()
+            self._created_document_ids.append(document_id)
 
             # 插入 chunk (768 维零向量)
             zeros_768 = [0.0] * 768
             vec_str = str(zeros_768)  # pgvector 接受 Python 列表字符串形式
             await conn.execute(text(f"""
                 INSERT INTO knowledge_chunks
-                    (document_id, chunk_index, content, heading, scope, embedding)
+                    (document_id, chunk_index, content, scope, embedding)
                 VALUES
-                    (:doc_id, 0, '测试内容：体质辨识', '第一章', 'domain',
+                    (:document_id, 0, '测试内容：体质辨识', 'domain',
                      '{vec_str}'::vector(768))
-            """), {"doc_id": doc_id})
+            """), {"document_id": document_id})
             await conn.commit()
 
             # 验证
             row = await conn.execute(text("""
-                SELECT id, content FROM knowledge_chunks WHERE document_id = :doc_id
-            """), {"doc_id": doc_id})
+                SELECT id, content FROM knowledge_chunks WHERE document_id = :document_id
+            """), {"document_id": document_id})
             chunk = row.fetchone()
             self.assertIsNotNone(chunk, "chunk 插入失败!")
             self.assertIn('体质辨识', chunk[1])
@@ -223,8 +227,8 @@ class TestDocumentCRUD(IsolatedAsyncioTestCase):
                 VALUES ('向量检索测试', 'md', 'test_hash_003', 'platform', 'general', 'ready', 5, true)
                 RETURNING id
             """))
-            doc_id = row.scalar()
-            self._created_doc_ids.append(doc_id)
+            document_id = row.scalar()
+            self._created_document_ids.append(document_id)
 
             # 插入一个非零向量
             vec = [0.01] * 768
@@ -232,11 +236,11 @@ class TestDocumentCRUD(IsolatedAsyncioTestCase):
             vec_str = str(vec)
             await conn.execute(text(f"""
                 INSERT INTO knowledge_chunks
-                    (document_id, chunk_index, content, heading, scope, embedding)
+                    (document_id, chunk_index, content, scope, embedding)
                 VALUES
-                    (:doc_id, 0, '测试向量检索', '章节', 'platform',
+                    (:document_id, 0, '测试向量检索', 'platform',
                      '{vec_str}'::vector(768))
-            """), {"doc_id": doc_id})
+            """), {"document_id": document_id})
             await conn.commit()
 
             # 用相似向量检索
@@ -245,10 +249,10 @@ class TestDocumentCRUD(IsolatedAsyncioTestCase):
                 SELECT c.id, c.content,
                        c.embedding <=> '{query_vec}'::vector(768) AS distance
                 FROM knowledge_chunks c
-                WHERE c.document_id = :doc_id
+                WHERE c.document_id = :document_id
                 ORDER BY distance
                 LIMIT 5
-            """), {"doc_id": doc_id})
+            """), {"document_id": document_id})
             results = row.fetchall()
             self.assertTrue(len(results) > 0, "向量检索无结果!")
             # 距离应接近 0 (自己检索自己)
@@ -260,18 +264,21 @@ class TestScopeFiltering(IsolatedAsyncioTestCase):
 
     async def asyncSetUp(self):
         from sqlalchemy.ext.asyncio import create_async_engine
-        url = DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://") \
-            if "asyncpg" not in DATABASE_URL else DATABASE_URL
+        url = DATABASE_URL
+        if url.startswith("sqlite"):
+            url = url.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
+        elif "asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://")
         self.engine = create_async_engine(url, echo=False)
-        self._doc_ids = []
+        self._document_ids = []
 
     async def asyncTearDown(self):
         from sqlalchemy import text
-        if self._doc_ids:
+        if self._document_ids:
             async with self.engine.connect() as conn:
-                for doc_id in self._doc_ids:
-                    await conn.execute(text("DELETE FROM knowledge_chunks WHERE document_id = :id"), {"id": doc_id})
-                    await conn.execute(text("DELETE FROM knowledge_documents WHERE id = :id"), {"id": doc_id})
+                for document_id in self._document_ids:
+                    await conn.execute(text("DELETE FROM knowledge_chunks WHERE document_id = :id"), {"id": document_id})
+                    await conn.execute(text("DELETE FROM knowledge_documents WHERE id = :id"), {"id": document_id})
                 await conn.commit()
         await self.engine.dispose()
 
@@ -295,15 +302,15 @@ class TestScopeFiltering(IsolatedAsyncioTestCase):
                     VALUES (:title, 'md', :hash, :scope, 'tcm', 'ready', 5, true)
                     RETURNING id
                 """), {"title": f"scope测试-{scope}", "hash": f"scope_test_{scope}", "scope": scope})
-                doc_id = row.scalar()
-                self._doc_ids.append(doc_id)
+                document_id = row.scalar()
+                self._document_ids.append(document_id)
 
                 vec_str = str(base_vec)
                 await conn.execute(text(f"""
                     INSERT INTO knowledge_chunks
-                        (document_id, chunk_index, content, heading, scope, embedding)
-                    VALUES (:doc_id, 0, :content, '', :scope, '{vec_str}'::vector(768))
-                """), {"doc_id": doc_id, "content": content, "scope": scope})
+                        (document_id, chunk_index, content, scope, embedding)
+                    VALUES (:document_id, 0, :content, :scope, '{vec_str}'::vector(768))
+                """), {"document_id": document_id, "content": content, "scope": scope})
 
             await conn.commit()
 
@@ -322,7 +329,7 @@ class TestScopeFiltering(IsolatedAsyncioTestCase):
                 JOIN knowledge_documents d ON d.id = c.document_id
                 WHERE d.is_active = true
                   AND d.status = 'ready'
-                  AND d.id IN ({','.join(str(i) for i in self._doc_ids)})
+                  AND d.id IN ({','.join(str(i) for i in self._document_ids)})
                 ORDER BY boosted_score DESC
             """))
             results = rows.fetchall()

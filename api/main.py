@@ -117,7 +117,7 @@ async def lifespan(app):
         _scheduler.shutdown(wait=False)
         print("[API] APScheduler 已关闭")
 
-app = FastAPI(title="Xingjian Agent Gateway", version="16.0.0", lifespan=lifespan)
+app = FastAPI(title="BHP Xingjian Agent Gateway", version="3.1.0", lifespan=lifespan)
 
 # --- 配置中心 (从 api.config 集中读取) ---
 from api.config import DIFY_API_URL, DIFY_API_KEY, OLLAMA_API_URL, OLLAMA_MODEL
@@ -1243,6 +1243,14 @@ try:
     print("[API] V004 智能监测方案路由已注册")
 except ImportError as e:
     print(f"[API] V004 智能监测方案路由注册失败: {e}")
+
+# ========== V005 安全管理路由 ==========
+try:
+    from api.safety_api import router as safety_router
+    app.include_router(safety_router)
+    print("[API] V005 安全管理路由已注册")
+except ImportError as e:
+    print(f"[API] V005 安全管理路由注册失败: {e}")
 
 # ========== V003 激励体系路由 ==========
 try:
