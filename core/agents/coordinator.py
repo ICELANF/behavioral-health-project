@@ -17,6 +17,17 @@ from .base import (
 class MultiAgentCoordinator:
     """协调多个Agent的结果, 消解冲突, 输出统一结论"""
 
+    def __init__(self):
+        # 尝试从模板缓存加载冲突优先级, 失败降级到硬编码
+        self._conflict_priority = CONFLICT_PRIORITY
+        try:
+            from core.agent_template_service import build_conflict_priority_from_templates
+            tpl_conflicts = build_conflict_priority_from_templates()
+            if tpl_conflicts:
+                self._conflict_priority = tpl_conflicts
+        except Exception:
+            pass
+
     def coordinate(self, results: list[AgentResult]) -> dict:
         if not results:
             return {"findings": [], "recommendations": [], "risk_level": "low",
@@ -99,16 +110,16 @@ class MultiAgentCoordinator:
                 # 检查recommendation文本层面的矛盾关键词
                 pair = (a.agent_domain, b.agent_domain)
                 sorted_pair = tuple(sorted(pair))
-                if sorted_pair in CONFLICT_PRIORITY or \
-                   (sorted_pair[1], sorted_pair[0]) in CONFLICT_PRIORITY:
+                if sorted_pair in self._conflict_priority or \
+                   (sorted_pair[1], sorted_pair[0]) in self._conflict_priority:
                     conflicts.append({
                         "type": ConflictType.PRIORITY.value,
                         "agents": list(pair),
                         "resolved": True,
-                        "winner": CONFLICT_PRIORITY.get(
+                        "winner": self._conflict_priority.get(
                             sorted_pair,
-                            CONFLICT_PRIORITY.get((sorted_pair[1], sorted_pair[0]),
-                                                  sorted_pair[0])
+                            self._conflict_priority.get((sorted_pair[1], sorted_pair[0]),
+                                                        sorted_pair[0])
                         ),
                     })
         return conflicts

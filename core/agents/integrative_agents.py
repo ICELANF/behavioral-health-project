@@ -90,3 +90,13 @@ class CardiacRehabAgent(BaseAgent):
             findings=findings, recommendations=recs,
         )
         return self._enhance_with_llm(result, inp)
+
+
+# ── 注册到 AGENT_CLASS_REGISTRY ──
+from .base import AGENT_CLASS_REGISTRY
+
+AGENT_CLASS_REGISTRY.update({
+    "behavior_rx": BehaviorRxAgent,
+    "weight": WeightAgent,
+    "cardiac_rehab": CardiacRehabAgent,
+})

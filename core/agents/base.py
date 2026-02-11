@@ -128,7 +128,10 @@ class BaseAgent:
             if not client.is_available():
                 return result
 
-            system_prompt = DOMAIN_SYSTEM_PROMPTS.get(self.domain.value, "")
+            # 优先级: _template_system_prompt > DOMAIN_SYSTEM_PROMPTS[domain]
+            system_prompt = getattr(self, '_template_system_prompt', None)
+            if not system_prompt:
+                system_prompt = DOMAIN_SYSTEM_PROMPTS.get(self.domain.value, "") if self.domain else ""
             if not system_prompt:
                 return result
 
@@ -211,3 +214,7 @@ CONFLICT_PRIORITY: dict[tuple[str, str], str] = {
     ("stress", "exercise"): "stress",
     ("mental", "exercise"): "mental",
 }
+
+
+# ── Agent 类注册表 — 预置 Agent 类映射 ──
+AGENT_CLASS_REGISTRY: dict[str, type] = {}

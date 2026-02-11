@@ -17,12 +17,23 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 _master_agent = None
 
 def get_master_agent():
-    """懒加载 MasterAgent"""
+    """懒加载 MasterAgent — 优先从 DB 模板加载, 降级到硬编码"""
     global _master_agent
     if _master_agent is None:
         try:
             from core.master_agent import MasterAgent
-            _master_agent = MasterAgent()
+            # 尝试用 DB session 初始化 (从模板加载 Agent)
+            db_session = None
+            try:
+                from core.database import SessionLocal
+                db_session = SessionLocal()
+                _master_agent = MasterAgent(db_session=db_session)
+            except Exception as e:
+                print(f"[API] MasterAgent DB 模板加载失败, 使用硬编码: {e}")
+                _master_agent = MasterAgent()
+            finally:
+                if db_session:
+                    db_session.close()
             print("[API] MasterAgent 初始化成功")
         except Exception as e:
             print(f"[API] MasterAgent 初始化失败: {e}")
@@ -102,7 +113,7 @@ _scheduler = None
 
 @asynccontextmanager
 async def lifespan(app):
-    """启动/关闭 APScheduler"""
+    """启动/关闭 APScheduler + Agent 模板缓存预热"""
     global _scheduler
     try:
         from core.scheduler import setup_scheduler
@@ -112,6 +123,20 @@ async def lifespan(app):
             print("[API] APScheduler 已启动")
     except Exception as e:
         print(f"[API] APScheduler 启动失败: {e}")
+
+    # Agent 模板缓存预热
+    try:
+        from core.database import SessionLocal
+        from core.agent_template_service import load_templates
+        db = SessionLocal()
+        try:
+            templates = load_templates(db)
+            print(f"[API] Agent 模板缓存预热完成: {len(templates)} 个模板")
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[API] Agent 模板缓存预热失败 (非阻塞): {e}")
+
     yield
     if _scheduler:
         _scheduler.shutdown(wait=False)
@@ -1251,6 +1276,14 @@ try:
     print("[API] V005 安全管理路由已注册")
 except ImportError as e:
     print(f"[API] V005 安全管理路由注册失败: {e}")
+
+# ========== V006 Agent 模板管理路由 ==========
+try:
+    from api.agent_template_api import router as agent_template_router
+    app.include_router(agent_template_router)
+    print("[API] V006 Agent 模板管理路由已注册")
+except ImportError as e:
+    print(f"[API] V006 Agent 模板管理路由注册失败: {e}")
 
 # ========== V003 激励体系路由 ==========
 try:

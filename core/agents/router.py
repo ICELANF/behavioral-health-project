@@ -24,6 +24,16 @@ class AgentRouter:
     def __init__(self, agents: dict[str, "BaseAgent"]):
         self.agents = agents  # domain_str -> agent instance
 
+        # 尝试从模板缓存加载关联网络, 失败降级到硬编码
+        self._correlations = DOMAIN_CORRELATIONS
+        try:
+            from core.agent_template_service import build_correlations_from_templates
+            tpl_corr = build_correlations_from_templates()
+            if tpl_corr:
+                self._correlations = tpl_corr
+        except Exception:
+            pass
+
     def route(self, inp: AgentInput, max_agents: int = 2) -> list[str]:
         """
         返回应激活的agent domain列表 (按优先级排序)
@@ -67,7 +77,7 @@ class AgentRouter:
 
         # 规则6: 领域关联 — 补充协同Agent
         if len(primary) == 1:
-            corr = DOMAIN_CORRELATIONS.get(primary[0], [])
+            corr = self._correlations.get(primary[0], [])
             for c in corr:
                 if c in self.agents and c not in primary:
                     # 仅在关联Agent也有关键词匹配时才加入

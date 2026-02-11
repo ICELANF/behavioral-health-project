@@ -2979,6 +2979,36 @@ class ContentAudio(Base):
     created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
 
 
+class AgentTemplate(Base):
+    """Agent 模板 — 将 Agent 定义从代码搬到数据库"""
+    __tablename__ = "agent_templates"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(32), unique=True, nullable=False, index=True)
+    display_name = Column(String(64), nullable=False)
+    agent_type = Column(String(20), server_default="specialist")
+    # agent_type: specialist / integrative / dynamic_llm
+    domain_enum = Column(String(32), nullable=True)
+    description = Column(Text, nullable=True)
+    keywords = Column(JSON, server_default="[]")
+    data_fields = Column(JSON, server_default="[]")
+    correlations = Column(JSON, server_default="[]")
+    priority = Column(Integer, server_default="5")
+    base_weight = Column(Float, server_default="0.8")
+    enable_llm = Column(Boolean, server_default=sa_text("true"))
+    system_prompt = Column(Text, nullable=True)
+    conflict_wins_over = Column(JSON, server_default="[]")
+    is_preset = Column(Boolean, server_default=sa_text("false"))
+    is_enabled = Column(Boolean, server_default=sa_text("true"), index=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+    updated_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+
+    __table_args__ = (
+        Index('idx_at_type_enabled', 'agent_type', 'is_enabled'),
+    )
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -3087,6 +3117,8 @@ def get_table_names():
         # V005 安全+音频
         "safety_logs",
         "content_audio",
+        # V006 Agent 模板
+        "agent_templates",
     ]
 
 
@@ -3185,5 +3217,7 @@ def get_model_by_name(name: str):
         # V005 安全+音频
         "SafetyLog": SafetyLog,
         "ContentAudio": ContentAudio,
+        # V006 Agent 模板
+        "AgentTemplate": AgentTemplate,
     }
     return models.get(name)

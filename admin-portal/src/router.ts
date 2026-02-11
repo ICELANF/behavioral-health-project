@@ -590,6 +590,25 @@ const routes: RouteRecordRaw[] = [
           }
         ]
       },
+      // ============ Agent 模板管理 (V006) ============
+      {
+        path: 'agent-templates',
+        name: 'AgentTemplateList',
+        component: () => import('./views/admin/AgentTemplateList.vue'),
+        meta: { title: 'Agent 模板管理', requiresAdmin: true }
+      },
+      {
+        path: 'agent-templates/create',
+        name: 'AgentTemplateCreate',
+        component: () => import('./views/admin/AgentTemplateEdit.vue'),
+        meta: { title: '创建 Agent', requiresAdmin: true }
+      },
+      {
+        path: 'agent-templates/edit/:agentId',
+        name: 'AgentTemplateEdit',
+        component: () => import('./views/admin/AgentTemplateEdit.vue'),
+        meta: { title: '编辑 Agent', requiresAdmin: true }
+      },
       // ============ 安全管理 (V005) ============
       {
         path: 'safety',

@@ -260,3 +260,19 @@ class MotivationAgent(BaseAgent):
             findings=findings, recommendations=recs,
         )
         return self._enhance_with_llm(result, inp)
+
+
+# ── 注册到 AGENT_CLASS_REGISTRY ──
+from .base import AGENT_CLASS_REGISTRY
+
+AGENT_CLASS_REGISTRY.update({
+    "crisis": CrisisAgent,
+    "sleep": SleepAgent,
+    "glucose": GlucoseAgent,
+    "stress": StressAgent,
+    "nutrition": NutritionAgent,
+    "exercise": ExerciseAgent,
+    "mental": MentalHealthAgent,
+    "tcm": TCMWellnessAgent,
+    "motivation": MotivationAgent,
+})

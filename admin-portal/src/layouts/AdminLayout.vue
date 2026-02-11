@@ -168,6 +168,12 @@
           <a-menu-item key="admin-credit-promotion" @click="$router.push('/admin/credit-system/promotion-review')">晋级审核</a-menu-item>
         </a-sub-menu>
 
+        <!-- 管理员可见 - Agent 管理 (V006) -->
+        <a-menu-item v-if="isAdmin" key="admin-agent-templates" @click="$router.push('/admin/agent-templates')">
+          <template #icon><RobotOutlined /></template>
+          <span>Agent 管理</span>
+        </a-menu-item>
+
         <!-- 管理员可见 - 安全管理 (V005) -->
         <a-sub-menu v-if="isAdmin" key="admin-safety">
           <template #icon><SafetyCertificateOutlined /></template>
@@ -333,6 +339,7 @@ import {
   MedicineBoxOutlined,
   ShareAltOutlined,
   SafetyCertificateOutlined,
+  RobotOutlined,
   UsergroupAddOutlined,
   ApartmentOutlined,
   SearchOutlined,

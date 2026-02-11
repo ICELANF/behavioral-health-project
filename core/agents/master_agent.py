@@ -36,22 +36,36 @@ class MasterAgent:
     中枢控制器, 串联9步处理流程
     """
 
-    def __init__(self):
-        # 初始化所有Agent
-        self._agents: dict[str, Any] = {
-            "crisis": CrisisAgent(),
-            "sleep": SleepAgent(),
-            "glucose": GlucoseAgent(),
-            "stress": StressAgent(),
-            "nutrition": NutritionAgent(),
-            "exercise": ExerciseAgent(),
-            "mental": MentalHealthAgent(),
-            "tcm": TCMWellnessAgent(),
-            "motivation": MotivationAgent(),
-            "behavior_rx": BehaviorRxAgent(),
-            "weight": WeightAgent(),
-            "cardiac_rehab": CardiacRehabAgent(),
-        }
+    def __init__(self, db_session=None):
+        # 尝试从 DB 模板加载 Agent (增量叠加, 硬编码降级)
+        agents_from_db = None
+        if db_session:
+            try:
+                from core.agent_template_service import build_agents_from_templates
+                agents_from_db = build_agents_from_templates(db_session)
+            except Exception as e:
+                logger.warning("从模板加载 Agent 失败, 使用硬编码: %s", e)
+
+        if agents_from_db:
+            self._agents: dict[str, Any] = agents_from_db
+            logger.info("MasterAgent 使用 DB 模板初始化 (%d 个 Agent)", len(self._agents))
+        else:
+            # ── 原有硬编码, 一字不改 ──
+            self._agents: dict[str, Any] = {
+                "crisis": CrisisAgent(),
+                "sleep": SleepAgent(),
+                "glucose": GlucoseAgent(),
+                "stress": StressAgent(),
+                "nutrition": NutritionAgent(),
+                "exercise": ExerciseAgent(),
+                "mental": MentalHealthAgent(),
+                "tcm": TCMWellnessAgent(),
+                "motivation": MotivationAgent(),
+                "behavior_rx": BehaviorRxAgent(),
+                "weight": WeightAgent(),
+                "cardiac_rehab": CardiacRehabAgent(),
+            }
+
         self.router = AgentRouter(self._agents)
         self.coordinator = MultiAgentCoordinator()
         self.policy_gate = RuntimePolicyGate()
