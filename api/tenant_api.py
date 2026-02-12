@@ -65,6 +65,21 @@ class AgentBatchUpdate(BaseModel):
     agents: List[AgentMappingUpdate]
 
 
+class RoutingConfigUpdate(BaseModel):
+    """路由配置更新"""
+    routing_correlations: Optional[dict] = None  # {"sleep": ["glucose", "stress"]}
+    routing_conflicts: Optional[dict] = None     # {"sleep|exercise": "sleep"}
+    default_fallback_agent: Optional[str] = None
+    agent_keywords: Optional[List[dict]] = None  # [{"agent_id": "sleep", "keywords": [...], "boost": 1.5}]
+
+
+class RoutingTestRequest(BaseModel):
+    """路由测试请求"""
+    message: str
+    profile: Optional[dict] = None
+    device_data: Optional[dict] = None
+
+
 # ============================================
 # Helper functions
 # ============================================
@@ -543,3 +558,162 @@ def tenant_stats(
             "new_this_month": new_this_month,
         },
     }
+
+
+# ============================================
+# 路由配置 (Phase 2)
+# ============================================
+
+@router.get("/{tenant_id}/routing")
+def get_routing_config(
+    tenant_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取租户路由配置"""
+    tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="租户不存在")
+    _check_tenant_access(tenant, current_user)
+
+    # 加载 Agent 映射中的路由关键词
+    mappings = db.query(TenantAgentMapping).filter(
+        TenantAgentMapping.tenant_id == tenant_id
+    ).order_by(TenantAgentMapping.sort_order).all()
+
+    agent_keywords = [
+        {
+            "agent_id": m.agent_id,
+            "display_name": m.display_name,
+            "custom_keywords": m.custom_keywords or [],
+            "keyword_boost": m.keyword_boost if m.keyword_boost is not None else 1.5,
+            "is_enabled": m.is_enabled,
+        }
+        for m in mappings
+    ]
+
+    return {
+        "success": True,
+        "data": {
+            "routing_correlations": tenant.routing_correlations or {},
+            "routing_conflicts": tenant.routing_conflicts or {},
+            "default_fallback_agent": tenant.default_fallback_agent or "behavior_rx",
+            "agent_keywords": agent_keywords,
+        },
+    }
+
+
+@router.put("/{tenant_id}/routing")
+def update_routing_config(
+    tenant_id: str,
+    data: RoutingConfigUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """更新租户路由配置"""
+    tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="租户不存在")
+    _check_tenant_access(tenant, current_user)
+
+    # 更新租户级配置
+    if data.routing_correlations is not None:
+        tenant.routing_correlations = data.routing_correlations
+    if data.routing_conflicts is not None:
+        tenant.routing_conflicts = data.routing_conflicts
+    if data.default_fallback_agent is not None:
+        tenant.default_fallback_agent = data.default_fallback_agent
+
+    # 更新 Agent 映射中的关键词
+    if data.agent_keywords:
+        for ak in data.agent_keywords:
+            mapping = db.query(TenantAgentMapping).filter(
+                TenantAgentMapping.tenant_id == tenant_id,
+                TenantAgentMapping.agent_id == ak.get("agent_id"),
+            ).first()
+            if mapping:
+                if "keywords" in ak:
+                    mapping.custom_keywords = ak["keywords"]
+                if "boost" in ak:
+                    mapping.keyword_boost = ak["boost"]
+            else:
+                # 自动创建映射
+                db.add(TenantAgentMapping(
+                    tenant_id=tenant_id,
+                    agent_id=ak.get("agent_id", ""),
+                    custom_keywords=ak.get("keywords", []),
+                    keyword_boost=ak.get("boost", 1.5),
+                    created_at=datetime.utcnow(),
+                ))
+
+    tenant.updated_at = datetime.utcnow()
+
+    # 审计
+    db.add(TenantAuditLog(
+        tenant_id=tenant_id,
+        actor_id=current_user.id,
+        action="routing_update",
+        detail=data.dict(exclude_unset=True),
+        created_at=datetime.utcnow(),
+    ))
+
+    db.commit()
+    return {"success": True, "message": "路由配置已更新"}
+
+
+@router.post("/{tenant_id}/routing/test")
+def test_routing(
+    tenant_id: str,
+    data: RoutingTestRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """测试路由效果 — 给定消息, 返回路由结果 (不执行Agent)"""
+    tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="租户不存在")
+    _check_tenant_access(tenant, current_user)
+
+    from core.agent_template_service import get_tenant_routing_context
+    from core.agents.base import AgentInput
+
+    # 加载租户路由上下文
+    tenant_ctx = get_tenant_routing_context(tenant_id, db)
+
+    # 构建轻量 MasterAgent (core.agents 版, 有 .router)
+    try:
+        from core.agents.master_agent import MasterAgent as AgentsMasterAgent
+
+        master = AgentsMasterAgent(db_session=db)
+
+        inp = AgentInput(
+            user_id=current_user.id,
+            message=data.message,
+            profile=data.profile or {},
+            device_data=data.device_data or {},
+        )
+
+        # 不带租户上下文的路由
+        platform_routes = master.router.route(inp, tenant_ctx=None)
+        # 带租户上下文的路由
+        tenant_routes = master.router.route(inp, tenant_ctx=tenant_ctx)
+
+        return {
+            "success": True,
+            "data": {
+                "message": data.message,
+                "platform_routing": platform_routes,
+                "tenant_routing": tenant_routes,
+                "tenant_ctx_summary": {
+                    "custom_keywords_count": sum(
+                        len(v.get("keywords", []))
+                        for v in (tenant_ctx or {}).get("agent_keyword_overrides", {}).values()
+                    ),
+                    "correlations_overrides": len((tenant_ctx or {}).get("correlations") or {}),
+                    "conflicts_overrides": len((tenant_ctx or {}).get("conflicts") or {}),
+                    "fallback_agent": (tenant_ctx or {}).get("fallback_agent", "behavior_rx"),
+                },
+            },
+        }
+    except ImportError:
+        raise HTTPException(status_code=503, detail="路由服务不可用")

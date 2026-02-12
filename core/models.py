@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import (
-    Column, Integer, String, Text, DateTime, Float, Boolean,
+    Column, Integer, String, Text, DateTime, Date, Float, Boolean,
     JSON, ForeignKey, Index, Enum as SQLEnum, text as sa_text,
     UniqueConstraint, func,
 )
@@ -1904,6 +1904,43 @@ class KnowledgeCitation(Base):
         return f"<KnowledgeCitation(id={self.id}, chunk={self.chunk_id}, score={self.relevance_score})>"
 
 
+class KnowledgeContribution(Base):
+    """
+    知识共享贡献表 — 专家将私有知识贡献到领域共享池的请求记录
+
+    工作流: pending → approved/rejected
+    approved 后, document.scope 从 'tenant' 改为 'domain', chunks 同步更新
+    """
+    __tablename__ = "knowledge_contributions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    document_id = Column(Integer, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False)
+    tenant_id = Column(String(64), nullable=False, index=True, comment="贡献者租户ID")
+    contributor_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="贡献者用户ID")
+    domain_id = Column(String(50), nullable=False, comment="目标领域")
+
+    # 贡献说明
+    reason = Column(Text, nullable=True, comment="贡献理由/说明")
+
+    # 审核状态
+    status = Column(String(20), nullable=False, server_default="pending", comment="pending/approved/rejected")
+    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="审核者用户ID")
+    review_comment = Column(Text, nullable=True, comment="审核意见")
+    reviewed_at = Column(DateTime, nullable=True)
+
+    # 审计
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_kcontrib_status", "status"),
+        Index("idx_kcontrib_tenant", "tenant_id", "status"),
+        Index("idx_kcontrib_domain", "domain_id", "status"),
+    )
+
+    def __repr__(self):
+        return f"<KnowledgeContribution(id={self.id}, doc={self.document_id}, status={self.status})>"
+
+
 # ============================================
 # 内容交互枚举
 # ============================================
@@ -2353,6 +2390,14 @@ class ExpertTenant(Base):
     enabled_agents = Column(JSON, nullable=False, default=list, comment="启用的Agent ID列表")
     agent_persona_overrides = Column(JSON, default=dict, comment="Agent话术覆盖")
 
+    # 路由配置 (Phase 2)
+    routing_correlations = Column(JSON, nullable=False, server_default='{}', default=dict,
+                                  comment='专家自定义关联网络 {"sleep":["glucose","stress"]}')
+    routing_conflicts = Column(JSON, nullable=False, server_default='{}', default=dict,
+                               comment='专家自定义冲突规则 {"sleep|exercise":"sleep"}')
+    default_fallback_agent = Column(String(32), nullable=False, server_default='behavior_rx',
+                                    default='behavior_rx', comment='默认回退Agent')
+
     # 业务配置
     enabled_paths = Column(JSON, default=list, comment="启用的学习路径ID")
     service_packages = Column(JSON, default=list, comment="服务包配置")
@@ -2432,6 +2477,12 @@ class TenantAgentMapping(Base):
     is_enabled = Column(Boolean, default=True, nullable=False)
     is_primary = Column(Boolean, default=False, comment="是否为主力Agent")
     sort_order = Column(Integer, default=0, comment="排序权重")
+
+    # 路由配置 (Phase 2)
+    custom_keywords = Column(JSON, nullable=False, server_default='[]', default=list,
+                             comment='专家自定义路由关键词')
+    keyword_boost = Column(Float, nullable=False, server_default='1.5', default=1.5,
+                           comment='专家关键词得分加权倍数')
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
@@ -3009,6 +3060,232 @@ class AgentTemplate(Base):
     )
 
 
+# ============================================
+# Phase 4: 反馈学习闭环
+# ============================================
+
+class AgentFeedback(Base):
+    """
+    Agent 反馈记录 — 用户/教练对 Agent 回复的评价
+
+    persist 版本, 替代 agent_api.py 的内存存储
+    """
+    __tablename__ = "agent_feedbacks"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(32), nullable=False, index=True, comment="Agent 标识")
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="用户ID")
+    session_id = Column(String(100), nullable=True, comment="会话ID")
+
+    # 反馈内容
+    feedback_type = Column(String(20), nullable=False, comment="accept/reject/modify/rate")
+    rating = Column(Integer, nullable=True, comment="1-5 评分")
+    comment = Column(Text, nullable=True, comment="文字反馈")
+    modifications = Column(JSON, nullable=True, comment="修改建议")
+
+    # 上下文快照
+    user_message = Column(Text, nullable=True, comment="用户原始消息")
+    agent_response = Column(Text, nullable=True, comment="Agent 回复")
+    agents_used = Column(JSON, nullable=True, comment="激活的 Agent 列表")
+    confidence = Column(Float, nullable=True, comment="Agent 置信度")
+    processing_time_ms = Column(Integer, nullable=True)
+
+    # 租户
+    tenant_id = Column(String(64), nullable=True, index=True)
+
+    # 审计
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_af_agent_time", "agent_id", "created_at"),
+        Index("idx_af_user", "user_id", "created_at"),
+    )
+
+
+class AgentMetricsDaily(Base):
+    """
+    Agent 日维度质量指标 — 由定时任务聚合
+
+    指标: 满意度(avg_rating), 采纳率(acceptance_rate), 平均耗时, 调用量
+    """
+    __tablename__ = "agent_metrics_daily"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(32), nullable=False, comment="Agent 标识")
+    metric_date = Column(Date, nullable=False, comment="指标日期")
+
+    # 调用量
+    total_calls = Column(Integer, default=0)
+    llm_calls = Column(Integer, default=0)
+
+    # 反馈统计
+    feedback_count = Column(Integer, default=0)
+    accept_count = Column(Integer, default=0)
+    reject_count = Column(Integer, default=0)
+    modify_count = Column(Integer, default=0)
+    rate_count = Column(Integer, default=0)
+    total_rating = Column(Integer, default=0, comment="评分总和 (用于算均值)")
+
+    # 性能指标
+    avg_processing_ms = Column(Float, default=0)
+    avg_confidence = Column(Float, default=0)
+
+    # 计算字段 (冗余存储, 便于查询)
+    acceptance_rate = Column(Float, default=0, comment="采纳率 = accept / feedback_count")
+    avg_rating = Column(Float, default=0, comment="平均评分 = total_rating / rate_count")
+
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_amd_agent_date", "agent_id", "metric_date", unique=True),
+    )
+
+
+class AgentPromptVersion(Base):
+    """
+    Agent Prompt 版本记录 — 追踪 system_prompt 变更, 支持 A/B 测试
+
+    每次 AgentTemplate.system_prompt 变更时创建新版本
+    """
+    __tablename__ = "agent_prompt_versions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(32), nullable=False, index=True)
+    version = Column(Integer, nullable=False, comment="版本号 (递增)")
+    system_prompt = Column(Text, nullable=False, comment="该版本的 system_prompt")
+    change_reason = Column(Text, nullable=True, comment="变更原因")
+
+    # A/B 测试
+    is_active = Column(Boolean, server_default=sa_text("false"), comment="是否为当前激活版本")
+    traffic_pct = Column(Integer, server_default="100", comment="流量百分比 (0-100)")
+
+    # 指标快照 (变更时记录前一版本的指标)
+    prev_avg_rating = Column(Float, nullable=True)
+    prev_acceptance_rate = Column(Float, nullable=True)
+
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_apv_agent_version", "agent_id", "version", unique=True),
+    )
+
+
+# ============================================
+# Phase 5: Agent 生态
+# ============================================
+
+class AgentMarketplaceListing(Base):
+    """
+    Agent 模板市场 — 专家发布的可复用 Agent 模板
+
+    工作流: draft → submitted → approved/rejected → published
+    其他专家可 install (克隆到自己的租户)
+    """
+    __tablename__ = "agent_marketplace_listings"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    template_id = Column(Integer, ForeignKey("agent_templates.id"), nullable=False, comment="源模板")
+    publisher_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="发布者")
+    tenant_id = Column(String(64), nullable=False, comment="来源租户")
+
+    # 展示信息
+    title = Column(String(128), nullable=False, comment="市场标题")
+    description = Column(Text, nullable=True, comment="详细描述")
+    category = Column(String(50), nullable=True, comment="分类: health/nutrition/mental/etc")
+    tags = Column(JSON, server_default="[]", comment="标签列表")
+    cover_url = Column(String(500), nullable=True, comment="封面图 URL")
+
+    # 状态
+    status = Column(String(20), nullable=False, server_default="draft",
+                    comment="draft/submitted/approved/rejected/published/archived")
+    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    review_comment = Column(Text, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+
+    # 统计
+    install_count = Column(Integer, server_default="0", comment="安装次数")
+    avg_rating = Column(Float, server_default="0", comment="平均评分")
+    rating_count = Column(Integer, server_default="0", comment="评分人数")
+
+    # 版本
+    version = Column(String(20), server_default="1.0.0")
+
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_aml_status", "status"),
+        Index("idx_aml_category", "category", "status"),
+        Index("idx_aml_publisher", "publisher_id"),
+    )
+
+
+class AgentComposition(Base):
+    """
+    Agent 组合编排 — 多个 Agent 协作的预定义流水线
+
+    定义 Agent 调用顺序、条件触发、结果合并策略
+    """
+    __tablename__ = "agent_compositions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False, comment="组合名称")
+    description = Column(Text, nullable=True)
+    tenant_id = Column(String(64), nullable=True, comment="所属租户 (NULL=平台级)")
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
+
+    # 编排定义 (JSON)
+    # [{"agent_id": "glucose", "order": 1, "condition": "always"},
+    #  {"agent_id": "nutrition", "order": 2, "condition": "if:glucose.risk_level>low"},
+    #  {"agent_id": "exercise", "order": 3, "condition": "optional"}]
+    pipeline = Column(JSON, nullable=False, server_default="[]", comment="编排流水线定义")
+
+    # 合并策略
+    merge_strategy = Column(String(30), server_default="weighted_average",
+                            comment="weighted_average/priority_first/consensus")
+
+    is_enabled = Column(Boolean, server_default=sa_text("true"))
+    is_default = Column(Boolean, server_default=sa_text("false"), comment="是否为租户默认编排")
+
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_ac_tenant", "tenant_id", "is_enabled"),
+    )
+
+
+class AgentGrowthPoints(Base):
+    """
+    Agent 成长积分 — 与六级体系打通
+
+    记录专家通过 Agent 获得的成长积分 (创建、优化、共享、被安装等)
+    """
+    __tablename__ = "agent_growth_points"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    agent_id = Column(String(32), nullable=True, comment="关联 Agent")
+
+    # 积分事件
+    event_type = Column(String(50), nullable=False,
+                        comment="create_agent/optimize_prompt/share_knowledge/template_installed/feedback_positive")
+    points = Column(Integer, nullable=False, comment="积分值")
+    description = Column(String(255), nullable=True, comment="事件描述")
+
+    # 关联
+    reference_id = Column(Integer, nullable=True, comment="关联实体ID (template_id/contribution_id/etc)")
+    reference_type = Column(String(50), nullable=True, comment="关联实体类型")
+
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_agp_user", "user_id", "created_at"),
+        Index("idx_agp_event", "event_type"),
+    )
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -3219,5 +3496,15 @@ def get_model_by_name(name: str):
         "ContentAudio": ContentAudio,
         # V006 Agent 模板
         "AgentTemplate": AgentTemplate,
+        # Phase 3 知识共享
+        "KnowledgeContribution": KnowledgeContribution,
+        # Phase 4 反馈闭环
+        "AgentFeedback": AgentFeedback,
+        "AgentMetricsDaily": AgentMetricsDaily,
+        "AgentPromptVersion": AgentPromptVersion,
+        # Phase 5 Agent 生态
+        "AgentMarketplaceListing": AgentMarketplaceListing,
+        "AgentComposition": AgentComposition,
+        "AgentGrowthPoints": AgentGrowthPoints,
     }
     return models.get(name)

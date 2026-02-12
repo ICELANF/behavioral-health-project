@@ -209,6 +209,23 @@ def program_batch_analysis():
         logger.error(f"[Scheduler] 方案批量分析失败: {e}")
 
 
+# ── Phase 4 反馈指标聚合定时任务 ────────────────────
+
+@with_redis_lock("scheduler:agent_metrics_aggregate", ttl=600)
+def agent_metrics_aggregate():
+    """每天01:30聚合前一天Agent反馈指标"""
+    from core.database import get_db_session
+    from core.feedback_service import aggregate_daily_metrics
+
+    try:
+        with get_db_session() as db:
+            count = aggregate_daily_metrics(db)
+            db.commit()
+            logger.info("[Scheduler] Agent指标聚合完成, agents=%d", count)
+    except Exception as e:
+        logger.error("[Scheduler] Agent指标聚合失败: %s", e)
+
+
 # ── V005 安全日报定时任务 ──────────────────────────
 
 @with_redis_lock("scheduler:safety_daily_report", ttl=600)
@@ -403,5 +420,14 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
         replace_existing=True,
     )
 
-    logger.info("[Scheduler] 定时任务调度器已配置 (含V004方案引擎+V005安全日报)")
+    # ── Phase 4 反馈指标聚合 ──
+    scheduler.add_job(
+        agent_metrics_aggregate,
+        CronTrigger(hour=1, minute=30),
+        id="agent_metrics_aggregate",
+        name="Agent反馈指标聚合",
+        replace_existing=True,
+    )
+
+    logger.info("[Scheduler] 定时任务调度器已配置 (含V004方案引擎+V005安全日报+Phase4指标聚合)")
     return scheduler

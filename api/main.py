@@ -1285,6 +1285,30 @@ try:
 except ImportError as e:
     print(f"[API] V006 Agent 模板管理路由注册失败: {e}")
 
+# ========== Phase 5 Agent 生态路由 ==========
+try:
+    from api.agent_ecosystem_api import router as agent_ecosystem_router
+    app.include_router(agent_ecosystem_router)
+    print("[API] Phase 5 Agent 生态路由已注册")
+except ImportError as e:
+    print(f"[API] Phase 5 Agent 生态路由注册失败: {e}")
+
+# ========== Phase 4 反馈学习闭环路由 ==========
+try:
+    from api.agent_feedback_api import router as agent_feedback_router
+    app.include_router(agent_feedback_router)
+    print("[API] Phase 4 反馈学习闭环路由已注册")
+except ImportError as e:
+    print(f"[API] Phase 4 反馈学习闭环路由注册失败: {e}")
+
+# ========== Phase 3 知识共享路由 ==========
+try:
+    from api.knowledge_sharing_api import router as knowledge_sharing_router
+    app.include_router(knowledge_sharing_router)
+    print("[API] Phase 3 知识共享路由已注册")
+except ImportError as e:
+    print(f"[API] Phase 3 知识共享路由注册失败: {e}")
+
 # ========== V003 激励体系路由 ==========
 try:
     from core.milestone_service import incentive_router

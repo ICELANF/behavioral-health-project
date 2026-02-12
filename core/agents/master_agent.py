@@ -75,7 +75,8 @@ class MasterAgent:
                 message: str,
                 profile: dict = None,
                 device_data: dict = None,
-                context: dict = None) -> dict:
+                context: dict = None,
+                tenant_ctx: dict = None) -> dict:
         """
         主处理入口 — 9步流水线
 
@@ -160,8 +161,8 @@ class MasterAgent:
         except Exception as e:
             logger.warning("SafetyPipeline L1 failed (non-blocking): %s", e)
 
-        # Step 4: 路由
-        target_domains = self.router.route(agent_input)
+        # Step 4: 路由 (租户上下文: 专家自定义 > 平台预置)
+        target_domains = self.router.route(agent_input, tenant_ctx=tenant_ctx)
 
         # Step 4.5: InsightGenerator (简化: 提取关键数据洞察)
         insights = self._generate_insights(profile, device_data)
@@ -174,8 +175,8 @@ class MasterAgent:
                 result = agent.process(agent_input)
                 agent_results.append(result)
 
-        # Step 6: 多Agent协调
-        coordination = self.coordinator.coordinate(agent_results)
+        # Step 6: 多Agent协调 (租户上下文: 专家冲突规则覆盖)
+        coordination = self.coordinator.coordinate(agent_results, tenant_ctx=tenant_ctx)
 
         # Step 7: 策略闸门 + 干预规划
         gate_result = self.policy_gate.evaluate(

@@ -168,11 +168,15 @@
           <a-menu-item key="admin-credit-promotion" @click="$router.push('/admin/credit-system/promotion-review')">晋级审核</a-menu-item>
         </a-sub-menu>
 
-        <!-- 管理员可见 - Agent 管理 (V006) -->
-        <a-menu-item v-if="isAdmin" key="admin-agent-templates" @click="$router.push('/admin/agent-templates')">
+        <!-- 管理员可见 - Agent 管理 (V006 + Phase 2) -->
+        <a-sub-menu v-if="isAdmin" key="admin-agent">
           <template #icon><RobotOutlined /></template>
-          <span>Agent 管理</span>
-        </a-menu-item>
+          <template #title>Agent 管理</template>
+          <a-menu-item key="admin-agent-templates" @click="$router.push('/admin/agent-templates')">模板管理</a-menu-item>
+          <a-menu-item key="admin-tenant-routing" @click="showTenantPicker = true">路由配置</a-menu-item>
+          <a-menu-item key="admin-agent-growth" @click="$router.push('/admin/agent-growth')">成长报告</a-menu-item>
+          <a-menu-item key="admin-agent-ecosystem" @click="$router.push('/admin/agent-ecosystem')">模板市场</a-menu-item>
+        </a-sub-menu>
 
         <!-- 管理员可见 - 安全管理 (V005) -->
         <a-sub-menu v-if="isAdmin" key="admin-safety">
@@ -181,6 +185,12 @@
           <a-menu-item key="admin-safety-dashboard" @click="$router.push('/safety/dashboard')">安全仪表盘</a-menu-item>
           <a-menu-item key="admin-safety-review" @click="$router.push('/safety/review')">审核队列</a-menu-item>
         </a-sub-menu>
+
+        <!-- 管理员可见 - 知识共享 (Phase 3) -->
+        <a-menu-item v-if="isAdmin" key="admin-knowledge-sharing" @click="$router.push('/admin/knowledge-sharing')">
+          <template #icon><ShareAltOutlined /></template>
+          <span>知识共享</span>
+        </a-menu-item>
 
         <!-- 管理员可见 -->
         <a-menu-item v-if="isAdmin" key="settings" @click="$router.push('/settings')">
@@ -318,6 +328,16 @@
         <router-view />
       </a-layout-content>
     </a-layout>
+
+    <!-- Phase 2: 租户路由选择器弹窗 -->
+    <a-modal v-model:open="showTenantPicker" title="选择租户" @ok="goTenantRouting" okText="进入配置">
+      <a-form layout="vertical">
+        <a-form-item label="租户 ID">
+          <a-input v-model:value="tenantPickerValue" placeholder="例: dr-chen-endo" />
+          <div style="color: #999; font-size: 12px; margin-top: 4px">输入专家租户ID, 进入其路由配置页面</div>
+        </a-form-item>
+      </a-form>
+    </a-modal>
   </a-layout>
 </template>
 
@@ -378,6 +398,17 @@ const roleLevel = computed(() => {
 const isAdmin = computed(() => roleLevel.value >= 99)
 const isExpert = computed(() => roleLevel.value >= 5)
 const isCoach = computed(() => roleLevel.value >= 4)
+
+// Phase 2: 租户路由选择器
+const showTenantPicker = ref(false)
+const tenantPickerValue = ref('')
+function goTenantRouting() {
+  if (tenantPickerValue.value) {
+    showTenantPicker.value = false
+    router.push(`/admin/tenant-routing/${tenantPickerValue.value}`)
+    tenantPickerValue.value = ''
+  }
+}
 
 // 面包屑
 const breadcrumbs = computed(() => {

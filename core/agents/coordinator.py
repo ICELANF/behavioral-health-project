@@ -8,6 +8,7 @@ MultiAgentCoordinator — 多Agent协调 + 冲突消解
   8.提取共识/分歧 → 9.生成摘要
 """
 from __future__ import annotations
+from typing import Optional
 from .base import (
     AgentResult, RiskLevel, ConflictType,
     AGENT_BASE_WEIGHTS, CONFLICT_PRIORITY,
@@ -28,16 +29,23 @@ class MultiAgentCoordinator:
         except Exception:
             pass
 
-    def coordinate(self, results: list[AgentResult]) -> dict:
+    def coordinate(self, results: list[AgentResult],
+                   tenant_ctx: Optional[dict] = None) -> dict:
         if not results:
             return {"findings": [], "recommendations": [], "risk_level": "low",
                     "confidence": 0.0, "summary": "无Agent输出"}
+
+        # 合并冲突规则: 租户级覆盖 > 模板/硬编码
+        conflict_priority = dict(self._conflict_priority)
+        tenant_conflicts = (tenant_ctx or {}).get("conflicts")
+        if tenant_conflicts:
+            conflict_priority.update(tenant_conflicts)
 
         # Step 1: 分配权重
         weighted = self._assign_weights(results)
 
         # Step 2-3: 检测并消解冲突
-        conflicts = self._detect_conflicts(results)
+        conflicts = self._detect_conflicts(results, conflict_priority)
         resolved = self._resolve_conflicts(results, conflicts)
 
         # Step 4: 融合Findings
@@ -102,24 +110,24 @@ class MultiAgentCoordinator:
             for r in results
         }
 
-    def _detect_conflicts(self, results: list[AgentResult]) -> list[dict]:
+    def _detect_conflicts(self, results: list[AgentResult],
+                          conflict_priority: Optional[dict] = None) -> list[dict]:
+        cp = conflict_priority or self._conflict_priority
         conflicts = []
-        domains = [r.agent_domain for r in results]
         for i, a in enumerate(results):
             for b in results[i + 1:]:
-                # 检查recommendation文本层面的矛盾关键词
                 pair = (a.agent_domain, b.agent_domain)
                 sorted_pair = tuple(sorted(pair))
-                if sorted_pair in self._conflict_priority or \
-                   (sorted_pair[1], sorted_pair[0]) in self._conflict_priority:
+                if sorted_pair in cp or \
+                   (sorted_pair[1], sorted_pair[0]) in cp:
                     conflicts.append({
                         "type": ConflictType.PRIORITY.value,
                         "agents": list(pair),
                         "resolved": True,
-                        "winner": self._conflict_priority.get(
+                        "winner": cp.get(
                             sorted_pair,
-                            self._conflict_priority.get((sorted_pair[1], sorted_pair[0]),
-                                                        sorted_pair[0])
+                            cp.get((sorted_pair[1], sorted_pair[0]),
+                                   sorted_pair[0])
                         ),
                     })
         return conflicts

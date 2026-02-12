@@ -160,3 +160,60 @@ def build_conflict_priority_from_templates() -> Optional[dict[tuple[str, str], s
             conflicts[key] = agent_id
 
     return conflicts if conflicts else None
+
+
+# ── Phase 2: 租户路由上下文 ──
+
+def get_tenant_routing_context(tenant_id: str, db) -> Optional[dict]:
+    """
+    加载专家租户的路由配置 (关键词/关联/冲突/回退)
+    返回 None 表示无租户或加载失败, 调用方降级到平台默认
+    """
+    try:
+        from core.models import ExpertTenant, TenantAgentMapping
+
+        tenant = db.query(ExpertTenant).filter(
+            ExpertTenant.id == tenant_id
+        ).first()
+        if not tenant:
+            return None
+
+        # 加载该租户的 Agent 映射 (含自定义关键词)
+        mappings = db.query(TenantAgentMapping).filter(
+            TenantAgentMapping.tenant_id == tenant_id,
+            TenantAgentMapping.is_enabled == True,  # noqa: E712
+        ).all()
+
+        # 构建每个 Agent 的自定义关键词 + boost
+        agent_keyword_overrides: dict[str, dict] = {}
+        for m in mappings:
+            kws = m.custom_keywords or []
+            if kws:
+                agent_keyword_overrides[m.agent_id] = {
+                    "keywords": kws,
+                    "boost": m.keyword_boost if m.keyword_boost else 1.5,
+                }
+
+        # 解析租户级关联覆盖: {"sleep": ["glucose", "stress"]}
+        routing_corr = tenant.routing_correlations or {}
+
+        # 解析租户级冲突覆盖: {"sleep|exercise": "sleep"}
+        routing_conflicts_raw = tenant.routing_conflicts or {}
+        routing_conflicts: dict[tuple[str, str], str] = {}
+        for pair_key, winner in routing_conflicts_raw.items():
+            parts = pair_key.split("|")
+            if len(parts) == 2:
+                routing_conflicts[tuple(sorted(parts))] = winner
+
+        return {
+            "tenant_id": tenant_id,
+            "agent_keyword_overrides": agent_keyword_overrides,
+            "correlations": routing_corr if routing_corr else None,
+            "conflicts": routing_conflicts if routing_conflicts else None,
+            "fallback_agent": tenant.default_fallback_agent or "behavior_rx",
+            "enabled_agents": [m.agent_id for m in mappings],
+        }
+
+    except Exception as e:
+        logger.warning("加载租户 %s 路由上下文失败: %s", tenant_id, e)
+        return None

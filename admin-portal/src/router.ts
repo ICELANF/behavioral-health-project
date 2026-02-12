@@ -609,6 +609,34 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./views/admin/AgentTemplateEdit.vue'),
         meta: { title: '编辑 Agent', requiresAdmin: true }
       },
+      // ============ 租户路由配置 (Phase 2) ============
+      {
+        path: 'tenant-routing/:tenantId',
+        name: 'TenantRoutingConfig',
+        component: () => import('./views/admin/TenantRoutingConfig.vue'),
+        meta: { title: '租户路由配置', requiresAdmin: true }
+      },
+      // ============ Agent 生态 (Phase 5) ============
+      {
+        path: 'agent-ecosystem',
+        name: 'AgentMarketplace',
+        component: () => import('./views/admin/AgentMarketplace.vue'),
+        meta: { title: 'Agent 生态', requiresAdmin: true }
+      },
+      // ============ Agent 成长报告 (Phase 4) ============
+      {
+        path: 'agent-growth',
+        name: 'AgentGrowthReport',
+        component: () => import('./views/admin/AgentGrowthReport.vue'),
+        meta: { title: 'Agent 成长报告', requiresAdmin: true }
+      },
+      // ============ 知识共享管理 (Phase 3) ============
+      {
+        path: 'knowledge-sharing',
+        name: 'KnowledgeSharingReview',
+        component: () => import('./views/admin/KnowledgeSharingReview.vue'),
+        meta: { title: '知识共享管理', requiresAdmin: true }
+      },
       // ============ 安全管理 (V005) ============
       {
         path: 'safety',
