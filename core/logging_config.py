@@ -7,7 +7,7 @@ from loguru import logger
 
 def setup_logging():
     """Configure production logging"""
-    log_level = os.getenv("LOG_LEVEL", "INFO")
+    log_level = os.getenv("LOG_LEVEL", "INFO").upper()
     log_format = os.getenv("LOG_FORMAT", "text")  # text or json
     log_dir = os.getenv("LOG_DIR", "logs")
 

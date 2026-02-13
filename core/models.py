@@ -2334,6 +2334,7 @@ class BatchIngestionJob(Base):
 
 class TenantStatus(str, enum.Enum):
     """租户状态"""
+    pending_review = "pending_review"  # 专家自助注册待审核
     trial = "trial"
     active = "active"
     suspended = "suspended"
@@ -2410,6 +2411,14 @@ class ExpertTenant(Base):
     max_clients = Column(Integer, default=50, comment="客户数上限")
     revenue_share_expert = Column(Float, default=0.80, comment="专家分成比例")
     trial_expires_at = Column(DateTime, nullable=True, comment="试用到期时间")
+
+    # 自助注册申请字段
+    application_status = Column(String(20), nullable=True, index=True,
+        comment="pending_review/approved/rejected/NULL(旧数据)")
+    application_data = Column(JSON, default=dict,
+        comment="申请表单原始数据")
+    applied_at = Column(DateTime, nullable=True,
+        comment="申请提交时间")
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)

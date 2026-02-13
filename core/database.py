@@ -49,17 +49,21 @@ else:
         echo=False
     )
 
-# 异步引擎创建
+# 异步引擎创建 (graceful: asyncpg may not be installed)
 ASYNC_URL = DATABASE_URL if "+asyncpg" in DATABASE_URL else DATABASE_URL.replace("postgresql://", "postgresql+asyncpg://")
 
-if "sqlite" in ASYNC_URL:
-    async_engine = create_async_engine(ASYNC_URL.replace("sqlite:", "sqlite+aiosqlite:", 1))
-else:
-    async_engine = create_async_engine(
-        ASYNC_URL,
-        pool_pre_ping=True,
-        echo=False
-    )
+async_engine = None
+try:
+    if "sqlite" in ASYNC_URL:
+        async_engine = create_async_engine(ASYNC_URL.replace("sqlite:", "sqlite+aiosqlite:", 1))
+    else:
+        async_engine = create_async_engine(
+            ASYNC_URL,
+            pool_pre_ping=True,
+            echo=False
+        )
+except Exception as e:
+    logger.warning(f"异步引擎创建失败 (asyncpg 未安装?), 仅使用同步引擎: {e}")
 
 # ============================================
 # 会话类定义
@@ -67,13 +71,16 @@ else:
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-AsyncSessionLocal = async_sessionmaker(
-    bind=async_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False
-)
+if async_engine is not None:
+    AsyncSessionLocal = async_sessionmaker(
+        bind=async_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False
+    )
+else:
+    AsyncSessionLocal = None
 
 # ============================================
 # 数据库初始化 (核心修复：包含扩展和表结构)

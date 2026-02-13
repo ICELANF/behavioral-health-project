@@ -450,9 +450,9 @@ const showBadgeDetail = (badge: any) => {
   }
 }
 
-// 查看所有成就
+// 查看所有成就 → 学习进度页
 const showAllAchievements = () => {
-  message.info('查看所有成就功能开发中...')
+  router.push('/client/learning-progress')
 }
 
 // 返回

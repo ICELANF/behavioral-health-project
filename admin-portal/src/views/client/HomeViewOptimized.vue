@@ -279,7 +279,7 @@ const goToDetail = (type: string) => {
   if (routes[type]) {
     router.push(routes[type])
   } else {
-    message.info(`正在打开${type}详情...`)
+    router.push('/client')
   }
 }
 

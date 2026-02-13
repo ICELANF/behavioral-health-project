@@ -1094,8 +1094,8 @@
                       </div>
                       <div class="suggestion-message">{{ sug.content }}</div>
                       <div class="suggestion-actions">
-                        <a-button type="primary" size="small" @click="message.success('已采纳建议：' + sug.title)">采纳</a-button>
-                        <a-button size="small" @click="message.info('已标记参考')">参考</a-button>
+                        <a-button type="primary" size="small" @click="adoptSuggestion(sug)">采纳</a-button>
+                        <a-button size="small" @click="markReference(sug)">参考</a-button>
                       </div>
                     </div>
                   </div>
@@ -2022,6 +2022,16 @@ async function pushAssignment() {
 }
 
 
+
+const adoptSuggestion = (sug: any) => {
+  sug.adopted = true
+  message.success('已采纳建议：' + sug.title)
+}
+
+const markReference = (sug: any) => {
+  sug.referenced = true
+  message.info('已标记为参考')
+}
 
 const goToMessages = () => {
   router.push('/coach/messages')

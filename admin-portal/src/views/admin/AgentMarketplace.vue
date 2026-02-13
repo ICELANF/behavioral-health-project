@@ -31,6 +31,16 @@
             <template v-if="column.key === 'status'">
               <a-tag :color="statusColor(record.status)">{{ statusLabel(record.status) }}</a-tag>
             </template>
+            <template v-if="column.key === 'install_action'">
+              <a-popconfirm
+                v-if="myTenantId && record.status === 'published'"
+                :title="`安装 '${record.title}' 到我的工作室?`"
+                @confirm="handleInstallTemplate(record.id)"
+              >
+                <a-button type="link" size="small" :loading="installingId === record.id">安装</a-button>
+              </a-popconfirm>
+              <span v-else-if="!myTenantId" style="color: #999; font-size: 12px">无租户</span>
+            </template>
           </template>
         </a-table>
       </a-tab-pane>
@@ -164,6 +174,9 @@ const pipelineJson = ref('[]')
 const growthData = ref<any>({})
 const pointsConfig = ref<any[]>([])
 
+// 我的租户
+const myTenantId = ref('')
+
 const marketplaceColumns = [
   { title: 'ID', dataIndex: 'id', width: 50 },
   { title: '标题', dataIndex: 'title', ellipsis: true },
@@ -172,6 +185,7 @@ const marketplaceColumns = [
   { title: '安装数', dataIndex: 'install_count', width: 70 },
   { title: '状态', key: 'status', width: 80 },
   { title: '发布时间', dataIndex: 'created_at', width: 150 },
+  { title: '操作', key: 'install_action', width: 100 },
 ]
 
 const pendingColumns = [
@@ -283,6 +297,37 @@ async function handleCreateComposition() {
   } finally { compositionCreating.value = false }
 }
 
+// 安装模板
+const installingId = ref<number | null>(null)
+
+async function handleInstallTemplate(listingId: number) {
+  if (!myTenantId.value) {
+    message.warning('未检测到租户信息')
+    return
+  }
+  installingId.value = listingId
+  try {
+    await request.post(`/v1/agent-ecosystem/marketplace/${listingId}/install`, {
+      target_tenant_id: myTenantId.value,
+    })
+    message.success('安装成功')
+    loadMarketplace()
+  } catch (e: any) {
+    message.error(e?.response?.data?.detail || '安装失败')
+  } finally {
+    installingId.value = null
+  }
+}
+
+async function detectMyTenant() {
+  try {
+    const res = await request.get('/v1/tenants/mine')
+    myTenantId.value = res.data?.data?.id || ''
+  } catch {
+    myTenantId.value = ''
+  }
+}
+
 function handleTabChange(key: string) {
   if (key === 'marketplace') loadMarketplace()
   else if (key === 'pending') loadPending()
@@ -297,6 +342,7 @@ function handleMarketplaceTableChange(p: any) {
 
 onMounted(() => {
   loadMarketplace()
+  detectMyTenant()
 })
 </script>
 

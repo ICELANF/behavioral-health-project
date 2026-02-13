@@ -131,7 +131,7 @@ const exportCSV = () => {
 }
 
 const exportExcel = () => {
-  message.info('Excel 导出功能需要后端支持')
+  message.info('Excel 导出功能即将上线')
 }
 </script>
 

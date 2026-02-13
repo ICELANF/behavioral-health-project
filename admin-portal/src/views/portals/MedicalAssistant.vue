@@ -32,7 +32,7 @@
           <span class="card-title">快捷功能</span>
         </div>
         <div class="action-grid">
-          <div v-for="action in quickActions" :key="action.key" class="action-item" @click="handleAction(action.key)">
+          <div v-for="action in quickActions" :key="action.key" class="action-item" @click="goAction(action.key)">
             <div class="action-icon" :style="{ background: action.bg }">{{ action.icon }}</div>
             <div class="action-name">{{ action.label }}</div>
           </div>
@@ -43,10 +43,10 @@
       <div class="section-card">
         <div class="card-header">
           <span class="card-title">行为处方模板</span>
-          <a class="more-link">管理 ></a>
+          <a class="more-link" @click="router.push('/rx/strategies')">管理 ></a>
         </div>
         <div class="template-list">
-          <div v-for="tpl in prescriptionTemplates" :key="tpl.id" class="template-item" @click="usePrescription(tpl)">
+          <div v-for="tpl in prescriptionTemplates" :key="tpl.id" class="template-item" @click="goPrescription(tpl)">
             <div class="template-icon" :style="{ background: tpl.bg, color: tpl.color }">{{ tpl.icon }}</div>
             <div class="template-info">
               <div class="template-name">{{ tpl.name }}</div>
@@ -88,7 +88,7 @@
           <span class="card-title">最近开具</span>
         </div>
         <div class="recent-list">
-          <div v-for="rx in recentPrescriptions" :key="rx.id" class="recent-item" @click="viewPrescription(rx)">
+          <div v-for="rx in recentPrescriptions" :key="rx.id" class="recent-item" @click="goViewRx(rx)">
             <div class="recent-left">
               <div class="recent-patient">{{ rx.patient }}</div>
               <div class="recent-rx">{{ rx.name }}</div>
@@ -156,25 +156,41 @@ const recentPrescriptions = ref([
   { id: 3, patient: '王伟', name: '运动康复处方', date: '02-01', status: 'completed', statusLabel: '已完成' },
 ])
 
+// ---- 患者搜索 → 学员管理页 ----
 const onPatientSearch = (value: string) => {
-  message.info(`搜索患者: ${value}`)
+  if (!value.trim()) return
+  router.push({ path: '/student', query: { search: value.trim() } })
 }
 
-const handleAction = (key: string) => {
-  message.info(`操作: ${key}`)
+// ---- 快捷功能路由映射 ----
+const actionRouteMap: Record<string, string> = {
+  'new-rx': '/rx/dashboard',
+  'follow-up': '/coach/messages',
+  'assessment': '/client/assessment/list',
+  'referral': '/coach/my/students',
+  'education': '/portal/public',
+  'data': '/admin/analytics',
 }
 
-const usePrescription = (tpl: { name: string }) => {
-  message.info(`使用模板: ${tpl.name}`)
+const goAction = (key: string) => {
+  const target = actionRouteMap[key] || '/rx/dashboard'
+  router.push(target)
 }
 
+// ---- 处方模板 → 行为处方仪表盘 ----
+const goPrescription = (tpl: { id: number; name: string }) => {
+  router.push({ path: '/rx/strategies', query: { template: String(tpl.id) } })
+}
+
+// ---- 待办勾选 ----
 const toggleTodo = (todo: { done: boolean; title: string }) => {
   todo.done = !todo.done
   if (todo.done) message.success(`完成: ${todo.title}`)
 }
 
-const viewPrescription = (rx: { name: string }) => {
-  message.info(`查看处方: ${rx.name}`)
+// ---- 查看历史处方 → 处方详情 ----
+const goViewRx = (rx: { id: number; name: string }) => {
+  router.push({ path: `/rx/detail/${rx.id}` })
 }
 </script>
 

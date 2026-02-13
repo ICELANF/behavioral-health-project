@@ -139,7 +139,7 @@ const useTool = (tool: any) => {
   if (target) {
     router.push(target)
   } else {
-    message.info(`正在打开 ${tool.name}...`)
+    router.push('/coach/my/students')
   }
 }
 

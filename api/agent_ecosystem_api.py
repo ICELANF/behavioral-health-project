@@ -193,6 +193,41 @@ def install_template(
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@router.get("/marketplace/recommended")
+def recommended_marketplace(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """按专家领域推荐市场 Agent"""
+    from core.ecosystem_service import get_recommended_listings
+    from core.models import ExpertTenant
+
+    tenant = db.query(ExpertTenant).filter(
+        ExpertTenant.expert_user_id == current_user.id,
+    ).first()
+    if not tenant:
+        # 无租户, 返回空
+        return {"success": True, "data": {"items": [], "total": 0}}
+
+    result = get_recommended_listings(tenant.id, db, skip=skip, limit=limit)
+    return {
+        "success": True,
+        "data": {
+            "items": [
+                {
+                    **_listing_to_dict(r["listing"]),
+                    "is_installed": r["is_installed"],
+                    "relevance": r["relevance"],
+                }
+                for r in result["items"]
+            ],
+            "total": result["total"],
+        },
+    }
+
+
 # ── Composition ──
 
 @router.get("/compositions")

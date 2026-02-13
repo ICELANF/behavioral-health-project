@@ -198,6 +198,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   SearchOutlined,
   PlusOutlined,
@@ -212,6 +213,8 @@ import request from '@/api/request'
 import type { ArticleContent, ContentSource, ContentStatus } from '@/types/content'
 import { CONTENT_SOURCE_CONFIG } from '@/types/content'
 import { TRIGGER_DOMAINS } from '@/constants'
+
+const router = useRouter()
 
 // 筛选条件
 const filters = reactive({
@@ -463,7 +466,11 @@ const handleDelete = async (record: ArticleContent) => {
 }
 
 const handleBatchReview = () => {
-  message.info('批量审核 ' + selectedRows.value.length + ' 篇文章')
+  if (!selectedRows.value.length) {
+    message.warning('请先选择要审核的文章')
+    return
+  }
+  router.push({ path: '/content/review', query: { ids: selectedRows.value.map((r: any) => r.id).join(',') } })
 }
 
 // 获取文章列表 (调用真实 API)

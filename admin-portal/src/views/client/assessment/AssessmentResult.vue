@@ -64,6 +64,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { message } from 'ant-design-vue'
 
 const route = useRoute()
 const assessmentId = route.params.id
@@ -147,8 +148,8 @@ const trendColor = (score) => {
   return '#389e0d'
 }
 
-const shareToCoach = () => { alert('结果已分享给您的健康教练') }
-const downloadPDF = () => { alert('PDF 下载功能开发中') }
+const shareToCoach = () => { message.success('结果已分享给您的健康教练') }
+const downloadPDF = () => { message.info('PDF 下载功能即将上线') }
 </script>
 
 <style scoped>

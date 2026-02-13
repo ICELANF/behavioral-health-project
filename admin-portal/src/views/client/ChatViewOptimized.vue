@@ -423,21 +423,34 @@ const clearMessages = () => {
   message.success('对话已清空')
 }
 
-// 导出对话
+// 导出对话 — 导出为文本文件
 const exportChat = () => {
-  message.info('对话导出功能开发中...')
+  if (!messages.value.length) {
+    message.warning('暂无对话内容')
+    showMenu.value = false
+    return
+  }
+  const text = messages.value.map(m => `[${m.role === 'user' ? '我' : 'AI'}] ${m.content}`).join('\n\n')
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `对话记录_${new Date().toISOString().slice(0, 10)}.txt`
+  a.click()
+  URL.revokeObjectURL(url)
+  message.success('对话已导出')
   showMenu.value = false
 }
 
 // 显示帮助
 const showHelp = () => {
-  message.info('使用帮助：直接输入问题，AI会为您解答')
+  message.info('使用帮助：直接输入问题，AI 会为您解答健康相关问题')
   showMenu.value = false
 }
 
 // 语音输入
 const showVoiceInput = () => {
-  message.info('语音输入功能开发中...')
+  message.info('语音输入功能即将上线')
 }
 
 // 返回

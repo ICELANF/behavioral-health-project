@@ -53,6 +53,40 @@ def get_agent_master():
     return _agent_master
 
 
+def reset_agent_master():
+    """重置 v6 单例, 下次调用 get_agent_master() 时重建 (Agent 模板变更后调用)"""
+    global _agent_master
+    _agent_master = None
+
+
+def _resolve_tenant_ctx_by_user_id(user_id: str, db) -> Optional[Dict[str, Any]]:
+    """从 user_id 字符串解析 tenant_ctx (供 orchestrator 端点用)"""
+    try:
+        from core.models import ExpertTenant, TenantClient
+        from core.agent_template_service import get_tenant_routing_context
+
+        uid = int(user_id)
+
+        # 1. 用户是专家
+        tenant = db.query(ExpertTenant).filter(
+            ExpertTenant.expert_user_id == uid,
+        ).first()
+        if tenant:
+            return get_tenant_routing_context(tenant.id, db)
+
+        # 2. 用户是租户客户
+        client = db.query(TenantClient).filter(
+            TenantClient.user_id == uid,
+            TenantClient.status == "active",
+        ).first()
+        if client:
+            return get_tenant_routing_context(client.tenant_id, db)
+
+        return None
+    except Exception:
+        return None
+
+
 # ============================================================================
 # Pydantic 模型
 # ============================================================================
@@ -736,6 +770,18 @@ async def orchestrator_process(request: OrchestratorRequest):
         raise HTTPException(status_code=503, detail="MasterAgent 服务不可用")
 
     try:
+        # 解析 tenant_ctx
+        tenant_ctx = None
+        try:
+            from core.database import SessionLocal
+            _db = SessionLocal()
+            try:
+                tenant_ctx = _resolve_tenant_ctx_by_user_id(request.user_id, _db)
+            finally:
+                _db.close()
+        except Exception:
+            pass
+
         # 构建输入
         input_json = {
             "user_id": request.user_id,
@@ -748,6 +794,10 @@ async def orchestrator_process(request: OrchestratorRequest):
 
         if request.device_data:
             input_json["device_data"] = request.device_data.dict(exclude_none=True)
+
+        # 注入 tenant_ctx 到输入
+        if tenant_ctx:
+            input_json["tenant_ctx"] = tenant_ctx
 
         # 使用 Pipeline 处理
         response_dict, pipeline_summary = master_agent.process_with_pipeline(input_json)
@@ -1361,6 +1411,22 @@ try:
     print("[API] V006 Agent 模板管理路由已注册")
 except ImportError as e:
     print(f"[API] V006 Agent 模板管理路由注册失败: {e}")
+
+# ========== 专家自助注册入驻路由 ==========
+try:
+    from api.expert_registration_api import router as expert_registration_router
+    app.include_router(expert_registration_router)
+    print("[API] 专家自助注册入驻路由已注册")
+except ImportError as e:
+    print(f"[API] 专家自助注册入驻路由注册失败: {e}")
+
+# ========== 专家自助 Agent 管理路由 ==========
+try:
+    from api.expert_agent_api import router as expert_agent_router
+    app.include_router(expert_agent_router)
+    print("[API] 专家自助 Agent 管理路由已注册")
+except ImportError as e:
+    print(f"[API] 专家自助 Agent 管理路由注册失败: {e}")
 
 # ========== Phase 5 Agent 生态路由 ==========
 try:

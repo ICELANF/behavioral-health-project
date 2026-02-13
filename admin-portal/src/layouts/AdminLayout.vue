@@ -44,6 +44,7 @@
           <a-menu-item key="expert-my-supervision" @click="$router.push('/expert/my/supervision')">我的督导</a-menu-item>
           <a-menu-item key="expert-my-reviews" @click="$router.push('/expert/my/reviews')">我的审核</a-menu-item>
           <a-menu-item key="expert-my-research" @click="$router.push('/expert/my/research')">研究数据</a-menu-item>
+          <a-menu-item key="expert-my-agents" @click="$router.push('/expert/my-agents')">我的 Agent</a-menu-item>
         </a-sub-menu>
 
         <!-- 专家及以上可见 -->
@@ -176,6 +177,12 @@
           <a-menu-item key="rx-agents" @click="$router.push('/rx/agents')">Agent 集群</a-menu-item>
           <a-menu-item key="rx-strategies" @click="$router.push('/rx/strategies')">策略模板库</a-menu-item>
         </a-sub-menu>
+
+        <!-- 管理员可见 - 专家入驻审核 -->
+        <a-menu-item v-if="isAdmin" key="admin-expert-applications" @click="$router.push('/admin/expert-applications')">
+          <template #icon><SolutionOutlined /></template>
+          <span>入驻审核</span>
+        </a-menu-item>
 
         <!-- 管理员可见 - Agent 管理 (V006 + Phase 2) -->
         <a-sub-menu v-if="isAdmin" key="admin-agent">
@@ -442,11 +449,16 @@ watch(() => route.path, (path) => {
   } else if (path.startsWith('/coach/student-assessment')) {
     openKeys.value = ['coach-my']
     selectedKeys.value = ['coach-my-students']
+  } else if (path === '/expert/my-agents') {
+    openKeys.value = ['expert-my']
+    selectedKeys.value = ['expert-my-agents']
   } else if (path.startsWith('/expert/my/')) {
     openKeys.value = ['expert-my']
     if (path.includes('supervision')) selectedKeys.value = ['expert-my-supervision']
     else if (path.includes('reviews')) selectedKeys.value = ['expert-my-reviews']
     else if (path.includes('research')) selectedKeys.value = ['expert-my-research']
+  } else if (path === '/admin/expert-applications') {
+    selectedKeys.value = ['admin-expert-applications']
   } else if (path === '/admin/challenges') {
     selectedKeys.value = ['admin-challenges']
   } else if (path === '/admin/user-management') {

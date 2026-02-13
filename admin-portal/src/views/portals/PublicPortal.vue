@@ -29,7 +29,7 @@
             v-for="cat in categories"
             :key="cat.key"
             class="category-item"
-            @click="selectCategory(cat.key)"
+            @click="goCategory(cat.key)"
           >
             <div class="category-icon" :style="{ background: cat.bg }">{{ cat.icon }}</div>
             <div class="category-name">{{ cat.label }}</div>
@@ -41,10 +41,10 @@
       <div class="section-card">
         <div class="card-header">
           <span class="card-title">热门科普</span>
-          <a class="more-link">更多 ></a>
+          <a class="more-link" @click="router.push('/client')">更多 ></a>
         </div>
         <div class="article-list">
-          <div v-for="article in hotArticles" :key="article.id" class="article-item" @click="openArticle(article)">
+          <div v-for="article in hotArticles" :key="article.id" class="article-item" @click="goArticle(article)">
             <div class="article-info">
               <div class="article-title">{{ article.title }}</div>
               <div class="article-meta">
@@ -65,7 +65,7 @@
           <span class="card-title">健康自测</span>
         </div>
         <div class="tool-grid">
-          <div v-for="tool in selfTestTools" :key="tool.id" class="tool-card" @click="openTool(tool)">
+          <div v-for="tool in selfTestTools" :key="tool.id" class="tool-card" @click="goTool(tool)">
             <div class="tool-icon">{{ tool.icon }}</div>
             <div class="tool-name">{{ tool.name }}</div>
             <div class="tool-desc">{{ tool.desc }}</div>
@@ -130,20 +130,45 @@ const selfTestTools = ref([
   { id: 4, icon: '🏃', name: '运动能力测评', desc: '运动处方参考' },
 ])
 
+// ---- 科普分类 → 患者端首页 (带分类参数) ----
+const categoryRouteMap: Record<string, string> = {
+  glucose: '/client/device-dashboard',
+  diet: '/client',
+  exercise: '/client',
+  mental: '/client/assessment/list',
+  medication: '/client',
+  sleep: '/client',
+  weight: '/client',
+  prevention: '/client',
+}
+
+const goCategory = (key: string) => {
+  const target = categoryRouteMap[key] || '/client'
+  router.push({ path: target, query: { category: key } })
+}
+
+// ---- 搜索 → 患者端首页 (带关键词) ----
 const onSearch = (value: string) => {
-  message.info(`搜索: ${value}`)
+  if (!value.trim()) return
+  router.push({ path: '/client', query: { search: value.trim() } })
 }
 
-const selectCategory = (key: string) => {
-  message.info(`进入分类: ${key}`)
+// ---- 热门文章 → 内容详情 / 患者端首页 ----
+const goArticle = (article: { id: number; title: string }) => {
+  router.push({ path: '/client', query: { article: String(article.id) } })
 }
 
-const openArticle = (article: { title: string }) => {
-  message.info(`打开文章: ${article.title}`)
+// ---- 自测工具 → 评估列表 ----
+const toolRouteMap: Record<number, string> = {
+  1: '/client/assessment/list',
+  2: '/client/assessment/list',
+  3: '/client/assessment/list',
+  4: '/client/assessment/list',
 }
 
-const openTool = (tool: { name: string }) => {
-  message.info(`打开工具: ${tool.name}`)
+const goTool = (tool: { id: number; name: string }) => {
+  const target = toolRouteMap[tool.id] || '/client/assessment/list'
+  router.push({ path: target, query: { tool: tool.name } })
 }
 </script>
 

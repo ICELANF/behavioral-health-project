@@ -218,6 +218,53 @@ def _check_tenant_access(tenant: ExpertTenant, user: User):
 
 
 # ============================================
+# 当前用户关联租户
+# ============================================
+
+@router.get("/mine")
+def get_my_tenant(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取当前用户关联的租户 (作为 owner 或 client)"""
+    # 1. 查 ExpertTenant.expert_user_id == user.id
+    tenant = db.query(ExpertTenant).filter(
+        ExpertTenant.expert_user_id == current_user.id,
+    ).first()
+    if tenant:
+        return {
+            "success": True,
+            "data": {
+                "id": tenant.id,
+                "brand_name": tenant.brand_name,
+                "status": tenant.status.value if tenant.status else None,
+                "application_status": tenant.application_status,
+                "role": "owner",
+            },
+        }
+
+    # 2. 查 TenantClient.user_id == user.id (active)
+    client = db.query(TenantClient).filter(
+        TenantClient.user_id == current_user.id,
+        TenantClient.status == "active",
+    ).first()
+    if client:
+        t = db.query(ExpertTenant).filter(ExpertTenant.id == client.tenant_id).first()
+        return {
+            "success": True,
+            "data": {
+                "id": client.tenant_id,
+                "brand_name": t.brand_name if t else None,
+                "status": t.status.value if t and t.status else None,
+                "application_status": t.application_status if t else None,
+                "role": "client",
+            },
+        }
+
+    return {"success": True, "data": None}
+
+
+# ============================================
 # 公开端点
 # ============================================
 

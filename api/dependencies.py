@@ -4,6 +4,8 @@ API Dependencies
 
 提供API端点的通用依赖项，如认证、授权等
 """
+from typing import Optional
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -115,6 +117,42 @@ def require_coach_or_admin(current_user: User = Depends(get_current_user)) -> Us
             detail="需要教练或管理员权限"
         )
     return current_user
+
+
+def resolve_tenant_ctx(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Optional[dict]:
+    """
+    解析当前用户的租户路由上下文。
+    1. 用户是专家(ExpertTenant.expert_user_id) → 自己的 tenant_id
+    2. 用户是租户客户(TenantClient active) → 所属 tenant_id
+    3. 无关联 → None (使用平台默认)
+    """
+    try:
+        from core.models import ExpertTenant, TenantClient
+        from core.agent_template_service import get_tenant_routing_context
+
+        # 1. 用户是专家 → 自己的 tenant
+        tenant = db.query(ExpertTenant).filter(
+            ExpertTenant.expert_user_id == current_user.id,
+        ).first()
+        if tenant:
+            return get_tenant_routing_context(tenant.id, db)
+
+        # 2. 用户是租户客户
+        client = db.query(TenantClient).filter(
+            TenantClient.user_id == current_user.id,
+            TenantClient.status == "active",
+        ).first()
+        if client:
+            return get_tenant_routing_context(client.tenant_id, db)
+
+        # 3. 普通用户
+        return None
+    except Exception as e:
+        logger.warning("resolve_tenant_ctx 失败 (降级到平台默认): %s", e)
+        return None
 
 
 # ══════════════════════════════════════════════

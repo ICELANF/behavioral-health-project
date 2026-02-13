@@ -127,7 +127,7 @@
             <a-form-item>
               <div class="form-actions">
                 <a-checkbox v-model:checked="rememberMe">记住登录</a-checkbox>
-                <a class="forgot-link">忘记密码？</a>
+                <a class="forgot-link" @click="message.info('请联系管理员重置密码')">忘记密码？</a>
               </div>
             </a-form-item>
 

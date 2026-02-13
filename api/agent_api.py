@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from core.database import get_db
-from api.dependencies import get_current_user
+from api.dependencies import get_current_user, resolve_tenant_ctx
 
 router = APIRouter(tags=["agent"])
 
@@ -156,74 +156,125 @@ _pending_reviews: List[Dict[str, Any]] = []
 # 工具函数
 # ---------------------------------------------------------------------------
 
-def _run_agent_task(req: AgentRunRequest) -> Dict[str, Any]:
+def _run_agent_task(req: AgentRunRequest,
+                    tenant_ctx: Optional[Dict] = None) -> Dict[str, Any]:
     """
     执行Agent任务。
-    当前版本: 尝试调用 MasterAgent，若不可用则返回模拟结果。
+    优先 v6 MasterAgent (template-aware + tenant_ctx)，
+    失败降级到 v0 MasterAgent，再失败返回模拟结果。
     """
     task_id = str(uuid.uuid4())[:8]
     started_at = datetime.now().isoformat()
+    v6_used = False
+    agents_used: List[str] = []
 
-    # 尝试调用真实 MasterAgent
+    # 优先: v6 MasterAgent (template-aware + tenant_ctx)
     try:
-        from core.master_agent import MasterAgent, UserInput, InputType
-        agent = MasterAgent()
-        user_input = UserInput(
-            user_id=req.user_id,
-            input_type=InputType.TEXT,
-            content=f"[{req.agent_type}] {req.expected_output}",
-            session_id=task_id,
-        )
-        result = agent.process(user_input)
-        suggestions = []
-        if hasattr(result, 'response') and result.response:
-            suggestions.append({
-                "id": f"sug-{task_id}",
-                "type": "action",
-                "priority": 7,
-                "text": getattr(result.response, 'reply', str(result.response)),
-            })
-        output = {
-            "task_id": task_id,
-            "agent_id": f"{req.agent_type}-agent",
-            "agent_type": req.agent_type,
-            "output_type": req.expected_output,
-            "confidence": 0.85,
-            "suggestions": suggestions,
-            "risk_flags": [],
-            "need_human_review": False,
-            "metadata": {
-                "processing_time_ms": 120,
-                "model_version": "xingjian-coach-v1.0",
-            },
-            "created_at": started_at,
-        }
-    except Exception:
-        # Fallback: 生成模拟结果
-        output = {
-            "task_id": task_id,
-            "agent_id": f"{req.agent_type}-agent",
-            "agent_type": req.agent_type,
-            "output_type": req.expected_output,
-            "confidence": 0.75,
-            "suggestions": [
-                {
-                    "id": f"sug-{task_id}-1",
+        from api.main import get_agent_master
+        agent_master = get_agent_master()
+        if agent_master:
+            result = agent_master.process(
+                user_id=int(req.user_id),
+                message=f"[{req.agent_type}] {req.expected_output}",
+                context=req.context,
+                tenant_ctx=tenant_ctx,
+            )
+            suggestions = []
+            resp_text = result.get("response", "")
+            if resp_text:
+                suggestions.append({
+                    "id": f"sug-{task_id}",
                     "type": "action",
-                    "priority": 6,
-                    "text": f"[{req.agent_type}] 基于用户 {req.user_id} 的数据分析，建议关注当前行为模式并持续跟踪。",
-                    "rationale": "基于多维度行为数据综合判断",
+                    "priority": 7,
+                    "text": resp_text,
+                })
+            agents_used = result.get("agents_used", [])
+            v6_used = True
+            output = {
+                "task_id": task_id,
+                "agent_id": f"{req.agent_type}-agent",
+                "agent_type": req.agent_type,
+                "output_type": req.expected_output,
+                "confidence": 0.85,
+                "suggestions": suggestions,
+                "risk_flags": [],
+                "need_human_review": False,
+                "tenant_ctx_applied": tenant_ctx is not None,
+                "agents_used": agents_used,
+                "metadata": {
+                    "processing_time_ms": result.get("processing_time_ms", 120),
+                    "model_version": "agent-master-v6",
+                    "llm_enhanced": result.get("llm_enhanced", False),
                 },
-            ],
-            "risk_flags": [],
-            "need_human_review": req.priority == "high",
-            "review_reason": "高优先级任务需教练确认" if req.priority == "high" else None,
-            "metadata": {
-                "processing_time_ms": 50,
-                "model_version": "fallback-v1.0",
-            },
-            "created_at": started_at,
-        }
+                "created_at": started_at,
+            }
+        else:
+            raise RuntimeError("v6 not available")
+    except Exception:
+        # 降级: v0 MasterAgent
+        try:
+            from core.master_agent import MasterAgent, UserInput, InputType
+            agent = MasterAgent()
+            user_input = UserInput(
+                user_id=req.user_id,
+                input_type=InputType.TEXT,
+                content=f"[{req.agent_type}] {req.expected_output}",
+                session_id=task_id,
+            )
+            result = agent.process(user_input)
+            suggestions = []
+            if hasattr(result, 'response') and result.response:
+                suggestions.append({
+                    "id": f"sug-{task_id}",
+                    "type": "action",
+                    "priority": 7,
+                    "text": getattr(result.response, 'reply', str(result.response)),
+                })
+            output = {
+                "task_id": task_id,
+                "agent_id": f"{req.agent_type}-agent",
+                "agent_type": req.agent_type,
+                "output_type": req.expected_output,
+                "confidence": 0.85,
+                "suggestions": suggestions,
+                "risk_flags": [],
+                "need_human_review": False,
+                "tenant_ctx_applied": False,
+                "agents_used": [req.agent_type],
+                "metadata": {
+                    "processing_time_ms": 120,
+                    "model_version": "xingjian-coach-v1.0",
+                },
+                "created_at": started_at,
+            }
+        except Exception:
+            # Fallback: 生成模拟结果
+            output = {
+                "task_id": task_id,
+                "agent_id": f"{req.agent_type}-agent",
+                "agent_type": req.agent_type,
+                "output_type": req.expected_output,
+                "confidence": 0.75,
+                "suggestions": [
+                    {
+                        "id": f"sug-{task_id}-1",
+                        "type": "action",
+                        "priority": 6,
+                        "text": f"[{req.agent_type}] 基于用户 {req.user_id} 的数据分析，建议关注当前行为模式并持续跟踪。",
+                        "rationale": "基于多维度行为数据综合判断",
+                    },
+                ],
+                "risk_flags": [],
+                "need_human_review": req.priority == "high",
+                "review_reason": "高优先级任务需教练确认" if req.priority == "high" else None,
+                "tenant_ctx_applied": False,
+                "agents_used": [],
+                "metadata": {
+                    "processing_time_ms": 50,
+                    "model_version": "fallback-v1.0",
+                },
+                "created_at": started_at,
+            }
 
     # 记录执行历史
     record = {
@@ -252,18 +303,48 @@ def _run_agent_task(req: AgentRunRequest) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 @router.get("/api/v1/agent/list")
-async def list_agents(current_user=Depends(get_current_user)):
-    """获取所有已注册Agent列表"""
-    return {"success": True, "data": _registered_agents}
+async def list_agents(
+    current_user=Depends(get_current_user),
+    tenant_ctx: Optional[Dict] = Depends(resolve_tenant_ctx),
+):
+    """获取所有已注册Agent列表 (优先从模板缓存读取)"""
+    try:
+        from core.agent_template_service import get_cached_templates, is_cache_loaded
+        if is_cache_loaded():
+            templates = get_cached_templates()
+            enabled_set = set((tenant_ctx or {}).get("enabled_agents", []))
+            agents = []
+            for agent_id, tpl in templates.items():
+                # 租户过滤: crisis 始终保留
+                if enabled_set and agent_id != "crisis" and agent_id not in enabled_set:
+                    continue
+                agents.append({
+                    "agent_id": f"{agent_id}-agent",
+                    "agent_type": agent_id,
+                    "name": tpl.get("display_name", agent_id),
+                    "description": tpl.get("description", ""),
+                    "version": "1.0.0",
+                    "status": "online" if tpl.get("is_enabled") else "offline",
+                    "agent_type_category": tpl.get("agent_type", "specialist"),
+                    "is_preset": tpl.get("is_preset", True),
+                    "keywords": tpl.get("keywords", []),
+                })
+            return {"success": True, "data": agents, "source": "template_cache"}
+    except Exception:
+        pass
+
+    # 回退到硬编码列表
+    return {"success": True, "data": _registered_agents, "source": "hardcoded"}
 
 
 @router.post("/api/v1/agent/run")
 async def run_agent(
     req: AgentRunRequest,
     current_user=Depends(get_current_user),
+    tenant_ctx: Optional[Dict] = Depends(resolve_tenant_ctx),
 ):
-    """运行Agent任务"""
-    output = _run_agent_task(req)
+    """运行Agent任务 (v6 + tenant_ctx 优先, v0 降级)"""
+    output = _run_agent_task(req, tenant_ctx=tenant_ctx)
     return {"success": True, "data": output}
 
 
@@ -427,12 +508,33 @@ async def inject_governance_log(
 @router.get("/api/v1/agent/status")
 async def agent_system_status(current_user=Depends(get_current_user)):
     """获取多Agent系统整体状态"""
-    # 检查 MasterAgent 可用性
+    # 检查 v0 MasterAgent 可用性
     master_available = False
     try:
         from core.master_agent import MasterAgent
         _ = MasterAgent()
         master_available = True
+    except Exception:
+        pass
+
+    # 检查 v6 AgentMaster 可用性
+    agent_master_v6 = False
+    v6_agent_count = 0
+    try:
+        from api.main import get_agent_master
+        am = get_agent_master()
+        if am:
+            agent_master_v6 = True
+            v6_agent_count = len(am._agents)
+    except Exception:
+        pass
+
+    # 模板缓存
+    template_count = 0
+    try:
+        from core.agent_template_service import get_cached_templates, is_cache_loaded
+        if is_cache_loaded():
+            template_count = len(get_cached_templates())
     except Exception:
         pass
 
@@ -450,6 +552,9 @@ async def agent_system_status(current_user=Depends(get_current_user)):
         "success": True,
         "data": {
             "master_agent": master_available,
+            "agent_master_v6": agent_master_v6,
+            "v6_agent_count": v6_agent_count,
+            "template_cache_count": template_count,
             "scheduler": scheduler_running,
             "agents_online": len(online_agents),
             "agents_total": len(_registered_agents),

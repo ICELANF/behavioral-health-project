@@ -82,7 +82,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+
+const router = useRouter()
 
 const activeTab = ref('pending')
 
@@ -134,7 +137,7 @@ const rejectItem = (item: any) => {
 }
 
 const viewDetail = (item: any) => {
-  message.info(`查看详情: ${item.title}`)
+  router.push(`/content/review?id=${item.id}`)
 }
 </script>
 

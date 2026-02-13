@@ -348,7 +348,7 @@ const resetFilters = () => {
 }
 
 const handleImport = () => {
-  message.info('批量导入功能开发中')
+  message.info('批量导入功能即将上线')
   showImportModal.value = false
 }
 

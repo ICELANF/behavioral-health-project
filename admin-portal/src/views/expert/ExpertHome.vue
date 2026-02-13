@@ -484,7 +484,7 @@ const rejectApplication = (application: typeof pendingApplications.value[0]) => 
 }
 
 const viewApplicationDetail = (application: typeof pendingApplications.value[0]) => {
-  message.info(`查看 ${application.coachName} 的申请详情`)
+  router.push(`/coach/detail/${application.id}`)
 }
 
 const openCoachDetail = (coach: typeof supervisedCoaches.value[0]) => {
@@ -492,11 +492,11 @@ const openCoachDetail = (coach: typeof supervisedCoaches.value[0]) => {
 }
 
 const startLive = (live: typeof upcomingLives.value[0]) => {
-  message.info(`开始直播：${live.title}`)
+  router.push(`/live/edit/${live.id}`)
 }
 
 const enterLive = (live: typeof upcomingLives.value[0]) => {
-  message.info(`进入直播间：${live.title}`)
+  router.push(`/live/edit/${live.id}`)
 }
 
 const editLive = (live: typeof upcomingLives.value[0]) => {
@@ -504,11 +504,11 @@ const editLive = (live: typeof upcomingLives.value[0]) => {
 }
 
 const reviewCase = (caseItem: typeof pendingCases.value[0]) => {
-  message.info(`评审案例：${caseItem.title}`)
+  router.push(`/content/review?id=${caseItem.id}&type=case`)
 }
 
 const viewCase = (caseItem: typeof pendingCases.value[0]) => {
-  message.info(`查看案例：${caseItem.title}`)
+  router.push(`/content/cases`)
 }
 
 // 导航

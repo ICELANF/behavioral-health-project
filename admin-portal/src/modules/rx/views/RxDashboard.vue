@@ -279,11 +279,13 @@ function onRxComputed(result: ComputeRxResponse) {
 }
 
 function onAgentSelect(agent: AgentStatusEntry) {
-  message.info(`选择了 ${agent.name} Agent`)
+  activeTab.value = 'agents'
+  message.success(`已选择 ${agent.name} Agent`)
 }
 
 function onStrategySelect(strategy: StrategyTemplate) {
-  message.info(`选择策略: ${strategy.name_zh}`)
+  activeTab.value = 'strategies'
+  message.success(`已选择策略: ${strategy.name_zh}`)
 }
 
 async function loadHistory() {

@@ -138,6 +138,18 @@ const router = createRouter({
       meta: { title: '专家工作室', public: true }
     },
     {
+      path: '/expert-register',
+      name: 'expert-register',
+      component: () => import('@/views/ExpertRegister.vue'),
+      meta: { title: '申请入驻', public: true }
+    },
+    {
+      path: '/expert-application-status',
+      name: 'expert-application-status',
+      component: () => import('@/views/ExpertApplicationStatus.vue'),
+      meta: { title: '申请状态' }
+    },
+    {
       path: '/studio/:tenantId',
       name: 'expert-studio',
       component: () => import('@/views/ExpertStudio.vue'),

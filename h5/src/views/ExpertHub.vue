@@ -65,6 +65,18 @@
     </div>
 
     <van-empty v-if="!loading && filteredExperts.length === 0" description="暂无匹配的专家工作室" />
+
+    <!-- 申请入驻入口 -->
+    <div class="apply-entry">
+      <div class="apply-card" @click="router.push('/expert-register')">
+        <div class="apply-icon">🚀</div>
+        <div class="apply-text">
+          <h4>成为入驻专家</h4>
+          <p>开通您的专属工作室，获得 AI Agent 助手</p>
+        </div>
+        <van-icon name="arrow" color="#969799" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -185,5 +197,42 @@ onMounted(() => {
 
 .enter-btn {
   margin-top: auto;
+}
+
+.apply-entry {
+  padding: 16px;
+}
+
+.apply-card {
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  border: 1px solid #BFDBFE;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.apply-icon {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.apply-text {
+  flex: 1;
+}
+
+.apply-text h4 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1E40AF;
+  margin: 0 0 4px;
+}
+
+.apply-text p {
+  font-size: 12px;
+  color: #6B7280;
+  margin: 0;
 }
 </style>

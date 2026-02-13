@@ -427,9 +427,9 @@ const handleArchive = async (record: ExamDefinition) => {
   });
 };
 
-// 复制考试
+// 复制考试 → 跳转创建页并带源 ID
 const handleCopy = (record: ExamDefinition) => {
-  message.info('复制功能开发中');
+  router.push({ path: '/exam/create', query: { copyFrom: String(record.id) } })
 };
 
 // 删除考试

@@ -168,7 +168,7 @@
       <div class="section-card" v-if="recommendations.videos.length">
         <div class="card-header">
           <span class="card-title">🎬 推荐视频</span>
-          <a class="more-link">更多 ›</a>
+          <a class="more-link" @click="router.push('/client/learning-progress')">更多 ›</a>
         </div>
         <div class="video-scroll">
           <div
@@ -199,7 +199,7 @@
       <div class="section-card" v-if="recommendations.courses.length">
         <div class="card-header">
           <span class="card-title">📚 精选课程</span>
-          <a class="more-link">更多 ›</a>
+          <a class="more-link" @click="router.push('/client/learning-progress')">更多 ›</a>
         </div>
         <div class="course-list">
           <div
@@ -237,7 +237,7 @@
       <div class="section-card coach-section" v-if="recommendations.coachActions.length">
         <div class="card-header">
           <span class="card-title">👨‍⚕️ 教练指导</span>
-          <a class="more-link">预约教练 ›</a>
+          <a class="more-link" @click="router.push('/client/my/profile')">预约教练 ›</a>
         </div>
         <div class="coach-actions">
           <div

@@ -221,6 +221,58 @@ def list_pending_listings(db: Session, skip: int = 0, limit: int = 20) -> dict:
     return {"items": items, "total": total}
 
 
+def get_recommended_listings(
+    tenant_id: str,
+    db: Session,
+    skip: int = 0,
+    limit: int = 20,
+) -> dict:
+    """根据专家领域推荐市场 Agent (排除已安装的)"""
+    from core.models import ExpertTenant, TenantAgentMapping
+
+    tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
+    specialties = (tenant.expert_specialties or []) if tenant else []
+
+    # 查询已发布的市场模板
+    q = db.query(AgentMarketplaceListing).filter(
+        AgentMarketplaceListing.status == "published",
+    )
+
+    # 排除已安装的 (通过 TenantAgentMapping)
+    installed_ids = set()
+    if tenant:
+        mappings = db.query(TenantAgentMapping.agent_id).filter(
+            TenantAgentMapping.tenant_id == tenant_id,
+        ).all()
+        installed_ids = {m[0] for m in mappings}
+
+    total = q.count()
+    items = q.order_by(
+        AgentMarketplaceListing.install_count.desc(),
+    ).offset(skip).limit(limit).all()
+
+    # 标记是否已安装 + 领域相关性
+    result_items = []
+    for item in items:
+        tpl = db.query(AgentTemplate).filter(AgentTemplate.id == item.template_id).first()
+        agent_id = tpl.agent_id if tpl else None
+        is_installed = agent_id in installed_ids if agent_id else False
+        # 领域相关性: category 匹配 specialties
+        relevance = 1 if item.category and any(
+            s.lower() in item.category.lower() for s in specialties
+        ) else 0
+        result_items.append({
+            "listing": item,
+            "is_installed": is_installed,
+            "relevance": relevance,
+        })
+
+    # 按相关性 + 安装数排序
+    result_items.sort(key=lambda x: (-x["relevance"], -(x["listing"].install_count or 0)))
+
+    return {"items": result_items, "total": total}
+
+
 # ── Composition ──
 
 def create_composition(

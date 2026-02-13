@@ -582,8 +582,8 @@ const handleReview = (record: any) => {
   router.push(`/content/review?id=${record.course_id}&type=course`)
 }
 
-const handlePreview = (_record: any) => {
-  message.info('预览功能开发中')
+const handlePreview = (record: any) => {
+  window.open(`/course/edit/${record.course_id || record.id}`, '_blank')
 }
 
 const handleDelete = (record: any) => {

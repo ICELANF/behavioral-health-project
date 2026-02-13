@@ -499,6 +499,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./views/admin/ExpertContentStudio.vue'),
         meta: { title: '内容工作室' }
       },
+      // ============ 专家自助 Agent 管理 ============
+      {
+        path: 'expert/my-agents',
+        name: 'ExpertAgentManage',
+        component: () => import('./views/expert/ExpertAgentManage.vue'),
+        meta: { title: '我的 Agent' }
+      },
       // ============ Expert "我的" 模块 ============
       {
         path: 'expert/my/supervision',
@@ -590,6 +597,13 @@ const routes: RouteRecordRaw[] = [
             meta: { title: '晋级审核' }
           }
         ]
+      },
+      // ============ 专家入驻审核 ============
+      {
+        path: 'admin/expert-applications',
+        name: 'ExpertApplicationReview',
+        component: () => import('./views/admin/ExpertApplicationReview.vue'),
+        meta: { title: '专家入驻审核', requiresAdmin: true }
       },
       // ============ Agent 模板管理 (V006) ============
       {

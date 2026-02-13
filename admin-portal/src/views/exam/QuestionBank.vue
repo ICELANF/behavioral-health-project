@@ -322,7 +322,7 @@ const handleBatchAction = ({ key }: { key: string }) => {
     URL.revokeObjectURL(url)
     message.success(`已导出 ${selected.length} 道题目`)
   } else if (key === 'move') {
-    message.info('移动分类功能开发中')
+    message.info('移动分类功能即将上线')
   }
 }
 
