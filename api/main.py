@@ -14,30 +14,43 @@ from pydantic import BaseModel, Field
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 延迟导入 Master Agent (避免循环依赖)
-_master_agent = None
+_master_agent = None      # v0 MasterAgent (orchestrator 9-step pipeline)
+_agent_master = None       # v6 MasterAgent (template-aware 12-agent router)
 
 def get_master_agent():
-    """懒加载 MasterAgent — 优先从 DB 模板加载, 降级到硬编码"""
+    """懒加载 v0 MasterAgent (orchestrator 用)"""
     global _master_agent
     if _master_agent is None:
         try:
             from core.master_agent import MasterAgent
-            # 尝试用 DB session 初始化 (从模板加载 Agent)
+            _master_agent = MasterAgent()
+            print("[API] MasterAgent (v0) 初始化成功")
+        except Exception as e:
+            print(f"[API] MasterAgent (v0) 初始化失败: {e}")
+    return _master_agent
+
+
+def get_agent_master():
+    """懒加载 v6 MasterAgent (template-aware, 用于 agent routing)"""
+    global _agent_master
+    if _agent_master is None:
+        try:
+            from core.agents.master_agent import MasterAgent as AgentMaster
             db_session = None
             try:
                 from core.database import SessionLocal
                 db_session = SessionLocal()
-                _master_agent = MasterAgent(db_session=db_session)
+                _agent_master = AgentMaster(db_session=db_session)
+                print(f"[API] AgentMaster (v6) 从 DB 模板初始化成功")
             except Exception as e:
-                print(f"[API] MasterAgent DB 模板加载失败, 使用硬编码: {e}")
-                _master_agent = MasterAgent()
+                print(f"[API] AgentMaster (v6) DB 加载失败, 使用硬编码: {e}")
+                _agent_master = AgentMaster()
             finally:
                 if db_session:
                     db_session.close()
-            print("[API] MasterAgent 初始化成功")
         except Exception as e:
-            print(f"[API] MasterAgent 初始化失败: {e}")
-    return _master_agent
+            print(f"[API] AgentMaster (v6) 初始化失败: {e}")
+    return _agent_master
 
 
 # ============================================================================
@@ -136,6 +149,62 @@ async def lifespan(app):
             db.close()
     except Exception as e:
         print(f"[API] Agent 模板缓存预热失败 (非阻塞): {e}")
+
+    # v6 AgentMaster 初始化 (template-aware, 用于 agent routing)
+    try:
+        am = get_agent_master()
+        if am:
+            print(f"[API] AgentMaster (v6) 初始化完成, {len(am._agents)} 个 Agent")
+    except Exception as e:
+        print(f"[API] AgentMaster (v6) 初始化失败 (非阻塞): {e}")
+
+    # V007 PolicyEngine 规则缓存预热
+    try:
+        from core.database import SessionLocal
+        from core.rule_registry import RuleRegistry
+        db = SessionLocal()
+        try:
+            registry = RuleRegistry(db_session_factory=lambda: db)
+            registry.initialize()
+            print(f"[API] V007 PolicyEngine 规则缓存预热完成")
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[API] V007 PolicyEngine 规则缓存预热失败 (非阻塞): {e}")
+
+    # Behavior Rx: 专家 Agent 初始化 + MasterAgent 补丁 + DI 注入
+    try:
+        from behavior_rx.master_agent_integration import (
+            setup_expert_agents, patch_master_agent_v0,
+        )
+        from behavior_rx.behavior_rx_engine import BehaviorRxEngine
+        from behavior_rx.agent_handoff_service import AgentHandoffService
+        from core.agents.master_agent import MasterAgent
+
+        # 创建共享实例 (所有组件复用同一份)
+        _rx_engine = BehaviorRxEngine()
+        _handoff_svc = AgentHandoffService()
+        expert_router = setup_expert_agents(
+            rx_engine=_rx_engine, handoff_service=_handoff_svc
+        )
+        patch_master_agent_v0(MasterAgent)
+        # 注入到全局 MasterAgent 实例
+        ma = get_master_agent()
+        if ma and hasattr(ma, 'register_expert_router'):
+            ma.register_expert_router(expert_router)
+        # 注入共享实例到 rx_routes DI (解决单例脱节问题)
+        try:
+            from behavior_rx.rx_routes import set_shared_instances
+            set_shared_instances(
+                engine=_rx_engine,
+                handoff=_handoff_svc,
+                orchestrator=expert_router._orchestrator,
+            )
+        except Exception as inject_err:
+            print(f"[API] Behavior Rx DI 注入失败: {inject_err}")
+        print("[API] Behavior Rx 专家 Agent 已初始化 + MasterAgent 已补丁 + DI 已注入")
+    except Exception as e:
+        print(f"[API] Behavior Rx 初始化失败 (非阻塞): {e}")
 
     yield
     if _scheduler:
@@ -1277,6 +1346,14 @@ try:
 except ImportError as e:
     print(f"[API] V005 安全管理路由注册失败: {e}")
 
+# ========== V007 策略引擎路由 ==========
+try:
+    from api.policy_api import router as policy_router
+    app.include_router(policy_router)
+    print("[API] V007 策略引擎路由已注册")
+except ImportError as e:
+    print(f"[API] V007 策略引擎路由注册失败: {e}")
+
 # ========== V006 Agent 模板管理路由 ==========
 try:
     from api.agent_template_api import router as agent_template_router
@@ -1316,6 +1393,14 @@ try:
     print("[API] V003 激励体系路由已注册")
 except Exception as e:
     print(f"[API] V003 激励体系路由注册失败: {e}")
+
+# ========== 行为处方 (Behavior Rx) 路由 ==========
+try:
+    from behavior_rx.rx_routes import router as rx_router
+    app.include_router(rx_router)
+    print("[API] 行为处方 (Behavior Rx) 路由已注册")
+except ImportError as e:
+    print(f"[API] 行为处方路由注册失败: {e}")
 
 # 注册遗漏的 routes.py 路由（审计修复 #7）
 try:

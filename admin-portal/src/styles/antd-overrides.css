@@ -1,18 +1,24 @@
 /* ═══════════════════════════════════════════════
-   BHP Admin 端 — Ant Design Vue 主题覆盖
+   BHP Admin 端 — Ant Design Vue 主题覆盖 v2.0
    用法: 在 main.ts 中 import './styles/antd-overrides.css'
    注意: 必须在 Ant Design 的 CSS 之后引入
    ═══════════════════════════════════════════════ */
 
 :root {
   /* ── Ant Design 品牌色 ── */
-  --ant-primary-color: var(--bhp-brand-primary);
-  --ant-primary-color-hover: var(--bhp-brand-primary-light);
-  --ant-primary-color-active: var(--bhp-brand-primary-dark);
+  --ant-primary-color: var(--bhp-primary-500);
+  --ant-primary-color-hover: var(--bhp-primary-400);
+  --ant-primary-color-active: var(--bhp-primary-600);
   --ant-success-color: var(--bhp-success);
   --ant-warning-color: var(--bhp-warning);
   --ant-error-color: var(--bhp-danger);
   --ant-info-color: var(--bhp-info);
+
+  /* ── 映射新增主题变量 ── */
+  --ant-text-color: var(--text);
+  --ant-text-color-secondary: var(--text-secondary);
+  --ant-border-color-base: var(--border);
+  --ant-component-background: var(--surface);
 }
 
 /* ════════════════════════════════════════

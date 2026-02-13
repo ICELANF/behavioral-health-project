@@ -2994,6 +2994,342 @@ class SupportAssessment(Base):
 
 
 # ============================================
+# V003 激励体系 — 9 tables
+# ============================================
+
+class Badge(Base):
+    """徽章定义"""
+    __tablename__ = "badges"
+    id = Column(String(64), primary_key=True)
+    name = Column(String(100), nullable=False)
+    description = Column(Text)
+    category = Column(String(32), nullable=False)
+    icon = Column(String(16))
+    rarity = Column(String(20), nullable=False, server_default="common")  # badge_rarity enum
+    condition_json = Column(JSON, nullable=False)
+    visual_json = Column(JSON)
+    sort_order = Column(Integer, server_default=sa_text("0"))
+    is_active = Column(Boolean, server_default=sa_text("true"))
+    created_at = Column(DateTime(timezone=True), server_default=sa_text("now()"))
+    __table_args__ = (
+        Index("idx_badges_category", "category"),
+        Index("idx_badges_rarity", "rarity"),
+    )
+
+
+class UserBadge(Base):
+    """用户已获得徽章"""
+    __tablename__ = "user_badges"
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    badge_id = Column(String(64), ForeignKey("badges.id"), nullable=False)
+    earned_at = Column(DateTime(timezone=True), nullable=False, server_default=sa_text("now()"))
+    metadata_ = Column("metadata", JSON)
+    __table_args__ = (
+        UniqueConstraint("user_id", "badge_id"),
+        Index("idx_ub_user", "user_id"),
+        Index("idx_ub_badge", "badge_id"),
+        Index("idx_ub_earned", "earned_at"),
+    )
+
+
+class UserMilestone(Base):
+    """用户里程碑"""
+    __tablename__ = "user_milestones"
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    milestone = Column(String(20), nullable=False)  # milestone_key enum
+    achieved_at = Column(DateTime(timezone=True), nullable=False, server_default=sa_text("now()"))
+    streak_days = Column(Integer)
+    rewards_json = Column(JSON, nullable=False)
+    ritual_played = Column(Boolean, server_default=sa_text("false"))
+    __table_args__ = (
+        UniqueConstraint("user_id", "milestone"),
+        Index("idx_um_user", "user_id"),
+        Index("idx_um_milestone", "milestone"),
+    )
+
+
+class UserStreak(Base):
+    """用户连续打卡记录"""
+    __tablename__ = "user_streaks"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    current_streak = Column(Integer, nullable=False, server_default=sa_text("0"))
+    longest_streak = Column(Integer, nullable=False, server_default=sa_text("0"))
+    last_checkin_date = Column(Date)
+    grace_used_month = Column(Integer, server_default=sa_text("0"))
+    recovery_count = Column(Integer, server_default=sa_text("0"))
+    updated_at = Column(DateTime(timezone=True), server_default=sa_text("now()"))
+
+
+class FlipCardRecord(Base):
+    """翻牌记录"""
+    __tablename__ = "flip_card_records"
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    pool_id = Column(String(64), nullable=False)
+    shown_items = Column(JSON, nullable=False)
+    chosen_item_id = Column(String(64), nullable=False)
+    reward_json = Column(JSON, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=sa_text("now()"))
+    __table_args__ = (
+        Index("idx_fcr_user", "user_id"),
+    )
+
+
+class NudgeRecord(Base):
+    """推送/提醒记录"""
+    __tablename__ = "nudge_records"
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    milestone = Column(String(20))  # milestone_key enum
+    channel = Column(String(20), nullable=False)  # nudge_channel enum
+    title = Column(String(200))
+    message = Column(Text)
+    sent_at = Column(DateTime(timezone=True), server_default=sa_text("now()"))
+    opened_at = Column(DateTime(timezone=True))
+    acted_on = Column(Boolean, server_default=sa_text("false"))
+    __table_args__ = (
+        Index("idx_nr_user", "user_id", "sent_at"),
+    )
+
+
+class UserMemorial(Base):
+    """用户纪念卡/成就记录"""
+    __tablename__ = "user_memorials"
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    type = Column(String(64), nullable=False)
+    template = Column(String(64))
+    data_snapshot = Column(JSON, nullable=False)
+    asset_url = Column(String(500))
+    shared_count = Column(Integer, server_default=sa_text("0"))
+    created_at = Column(DateTime(timezone=True), server_default=sa_text("now()"))
+    __table_args__ = (
+        Index("idx_umem_user", "user_id"),
+    )
+
+
+class PointTransaction(Base):
+    """积分流水"""
+    __tablename__ = "point_transactions"
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    point_type = Column(String(32), nullable=False)
+    amount = Column(Integer, nullable=False)
+    action = Column(String(64), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=sa_text("now()"))
+    __table_args__ = (
+        Index("idx_ptx_user", "user_id"),
+        Index("idx_ptx_action", "action"),
+    )
+
+
+class UserPoint(Base):
+    """用户积分汇总 (复合PK: user_id + point_type)"""
+    __tablename__ = "user_points"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    point_type = Column(String(32), primary_key=True)
+    total_points = Column(Integer, nullable=False, server_default=sa_text("0"))
+
+
+# ============================================
+# m019 诊断管线补充 — 10 tables (migration 019 已建表)
+# ============================================
+
+class InterventionOutcome(Base):
+    """干预效果追踪记录"""
+    __tablename__ = "intervention_outcomes"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    outcome_type = Column(String(20), nullable=False)
+    period_start = Column(DateTime, nullable=False)
+    period_end = Column(DateTime, nullable=False)
+    completion_rate = Column(Float)
+    streak_days = Column(Integer, server_default=sa_text("0"))
+    tasks_assigned = Column(Integer, server_default=sa_text("0"))
+    tasks_completed = Column(Integer, server_default=sa_text("0"))
+    tasks_skipped = Column(Integer, server_default=sa_text("0"))
+    spi_before = Column(Float)
+    spi_after = Column(Float)
+    spi_delta = Column(Float)
+    stage_before = Column(String(4))
+    stage_after = Column(String(4))
+    readiness_before = Column(String(4))
+    readiness_after = Column(String(4))
+    cultivation_stage = Column(String(20))
+    user_mood = Column(Integer)
+    user_difficulty = Column(Integer)
+    user_notes = Column(Text)
+    effectiveness_score = Column(Float)
+    adjustment_action = Column(String(30))
+    adjustment_detail = Column(JSON)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    __table_args__ = (
+        Index("ix_outcome_user_type", "user_id", "outcome_type"),
+        Index("ix_outcome_user_period", "user_id", "period_start"),
+    )
+
+
+class StageTransitionLog(Base):
+    """阶段转换历史"""
+    __tablename__ = "stage_transition_logs"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    transition_type = Column(String(20), nullable=False)
+    from_value = Column(String(10), nullable=False)
+    to_value = Column(String(10), nullable=False)
+    trigger = Column(String(50))
+    evidence = Column(JSON)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    __table_args__ = (
+        Index("ix_stage_trans_user", "user_id", "transition_type"),
+    )
+
+
+class PointEvent(Base):
+    """积分事件流水 (三维积分)"""
+    __tablename__ = "point_events"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    event_type = Column(String(30), nullable=False)
+    dimension = Column(String(15), nullable=False)
+    points = Column(Integer, nullable=False)
+    source_type = Column(String(30))
+    source_id = Column(String(50))
+    description = Column(String(200))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    __table_args__ = (
+        Index("ix_point_user_dim", "user_id", "dimension"),
+        Index("ix_point_user_date", "user_id", "created_at"),
+    )
+
+
+class UserPointBalance(Base):
+    """用户积分余额 (三维)"""
+    __tablename__ = "user_point_balances"
+    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+    growth = Column(Integer, server_default=sa_text("0"))
+    contribution = Column(Integer, server_default=sa_text("0"))
+    influence = Column(Integer, server_default=sa_text("0"))
+    total = Column(Integer, server_default=sa_text("0"))
+    streak_days = Column(Integer, server_default=sa_text("0"))
+    longest_streak = Column(Integer, server_default=sa_text("0"))
+    last_checkin_date = Column(DateTime)
+    tasks_completed_total = Column(Integer, server_default=sa_text("0"))
+    assessments_completed = Column(Integer, server_default=sa_text("0"))
+    updated_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+class IncentiveReward(Base):
+    """激励奖励定义"""
+    __tablename__ = "incentive_rewards"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    reward_type = Column(String(30), nullable=False)
+    name = Column(String(50), nullable=False)
+    description = Column(Text)
+    icon = Column(String(10))
+    unlock_dimension = Column(String(15))
+    unlock_threshold = Column(Integer)
+    unlock_growth_level = Column(String(4))
+    rx_effect = Column(JSON)
+    is_active = Column(Boolean, server_default=sa_text("true"))
+
+
+class UserReward(Base):
+    """用户已获得的奖励"""
+    __tablename__ = "user_rewards"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    reward_id = Column(Integer, ForeignKey("incentive_rewards.id"), nullable=False)
+    earned_at = Column(DateTime, server_default=sa_text("now()"))
+    __table_args__ = (
+        UniqueConstraint("user_id", "reward_id", name="uq_user_reward"),
+    )
+
+
+class AssessmentSession(Base):
+    """渐进式评估会话"""
+    __tablename__ = "assessment_sessions"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    status = Column(String(15), nullable=False, server_default=sa_text("'in_progress'"))
+    completed_batches = Column(JSON)
+    pending_batches = Column(JSON)
+    total_questions_answered = Column(Integer, server_default=sa_text("0"))
+    total_questions = Column(Integer, server_default=sa_text("176"))
+    partial_results = Column(JSON)
+    started_at = Column(DateTime, server_default=sa_text("now()"))
+    last_activity = Column(DateTime, server_default=sa_text("now()"))
+    completed_at = Column(DateTime)
+    expires_at = Column(DateTime)
+    __table_args__ = (
+        Index("ix_assess_session_user", "user_id", "status"),
+    )
+
+
+class BatchAnswer(Base):
+    """单批次答题记录"""
+    __tablename__ = "batch_answers"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    batch_id = Column(String(30), nullable=False)
+    questionnaire = Column(String(10), nullable=False)
+    answers = Column(JSON, nullable=False)
+    scores = Column(JSON)
+    duration_seconds = Column(Integer)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    __table_args__ = (
+        Index("ix_batch_session", "session_id", "batch_id"),
+    )
+
+
+class LLMCallLog(Base):
+    """LLM 调用日志"""
+    __tablename__ = "llm_call_logs"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer)
+    session_id = Column(String(64))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    intent = Column(String(32))
+    complexity = Column(String(16))
+    model_requested = Column(String(64))
+    model_actual = Column(String(64))
+    provider = Column(String(32))
+    fell_back = Column(Boolean, server_default=sa_text("false"))
+    input_tokens = Column(Integer, server_default=sa_text("0"))
+    output_tokens = Column(Integer, server_default=sa_text("0"))
+    cost_yuan = Column(Float, server_default=sa_text("0"))
+    latency_ms = Column(Integer, server_default=sa_text("0"))
+    finish_reason = Column(String(32))
+    user_message_preview = Column(Text)
+    assistant_message_preview = Column(Text)
+    error_message = Column(Text)
+    __table_args__ = (
+        Index("ix_llm_logs_user_date", "user_id", "created_at"),
+    )
+
+
+class RAGQueryLog(Base):
+    """RAG 查询日志"""
+    __tablename__ = "rag_query_logs"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    query_text = Column(Text)
+    query_type = Column(String(32))
+    doc_type_filter = Column(String(32))
+    top_k = Column(Integer, server_default=sa_text("5"))
+    results_count = Column(Integer, server_default=sa_text("0"))
+    top_score = Column(Float, server_default=sa_text("0"))
+    avg_score = Column(Float, server_default=sa_text("0"))
+    sources_json = Column(Text)
+    total_latency_ms = Column(Integer, server_default=sa_text("0"))
+    llm_call_log_id = Column(Integer)
+
+
+# ============================================
 # V005 安全日志 + 内容音频
 # ============================================
 
@@ -3286,6 +3622,323 @@ class AgentGrowthPoints(Base):
     )
 
 
+# ============================================
+# V007 Phase A: Policy Engine (6 tables)
+# ============================================
+
+class PolicyRule(Base):
+    """策略规则定义 — V007 Policy OS"""
+    __tablename__ = 'policy_rules'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    rule_name = Column(String(100), nullable=False, unique=True)
+    rule_type = Column(String(30), nullable=False)  # routing|safety|cost|conflict|stage
+    condition_expr = Column(JSON, nullable=False)    # JSON-Logic expression
+    action_type = Column(String(30), nullable=False)  # select_agent|block|escalate|cost_limit
+    action_params = Column(JSON, nullable=False)
+    priority = Column(Integer, server_default=sa_text("50"))
+    tenant_id = Column(String(50), nullable=True)
+    is_enabled = Column(Boolean, server_default=sa_text("true"))
+    evidence_tier = Column(String(5), nullable=True)
+    description = Column(Text, nullable=True)
+    created_by = Column(String(50), nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    updated_at = Column(DateTime, server_default=sa_text("now()"))
+
+    priorities = relationship('RulePriority', foreign_keys='RulePriority.rule_id',
+                              back_populates='rule', cascade='all, delete-orphan')
+
+    __table_args__ = (
+        Index('idx_policy_rules_type', 'rule_type', 'is_enabled'),
+        Index('idx_policy_rules_tenant', 'tenant_id', 'priority'),
+    )
+
+
+class RulePriority(Base):
+    """规则优先级层级树"""
+    __tablename__ = 'rule_priority'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    rule_id = Column(Integer, ForeignKey('policy_rules.id', ondelete='CASCADE'), nullable=False)
+    parent_rule_id = Column(Integer, ForeignKey('policy_rules.id'), nullable=True)
+    level = Column(Integer, server_default=sa_text("0"))
+    override_mode = Column(String(20), server_default="merge")
+    effective_from = Column(DateTime, nullable=True)
+    effective_until = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+    rule = relationship('PolicyRule', foreign_keys=[rule_id], back_populates='priorities')
+    parent_rule = relationship('PolicyRule', foreign_keys=[parent_rule_id])
+
+
+class AgentApplicabilityMatrix(Base):
+    """Agent适用性矩阵"""
+    __tablename__ = 'agent_applicability_matrix'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(50), nullable=False)
+    stage_range = Column(String(20), nullable=False)   # 'S0-S2' | 'ALL'
+    risk_level = Column(String(20), server_default="normal")
+    intensity_level = Column(Integer, server_default=sa_text("3"))
+    max_daily_calls = Column(Integer, server_default=sa_text("10"))
+    cooldown_hours = Column(Integer, server_default=sa_text("0"))
+    contraindications = Column(JSON, server_default="[]")
+    tenant_id = Column(String(50), nullable=True)
+    is_enabled = Column(Boolean, server_default=sa_text("true"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    updated_at = Column(DateTime, server_default=sa_text("now()"))
+
+    def is_applicable(self, user_stage: str, user_risk: str) -> bool:
+        if not self.is_enabled:
+            return False
+        if self.stage_range == 'ALL':
+            stage_match = True
+        else:
+            parts = self.stage_range.split('-')
+            s_start = int(parts[0].replace('S', ''))
+            s_end = int(parts[1].replace('S', ''))
+            user_s = int(user_stage.replace('S', ''))
+            stage_match = s_start <= user_s <= s_end
+        risk_order = {'low': 0, 'normal': 1, 'high': 2, 'critical': 3}
+        risk_match = risk_order.get(user_risk, 1) >= risk_order.get(self.risk_level, 1)
+        return stage_match and risk_match
+
+    __table_args__ = (
+        Index('idx_aam_agent', 'agent_id', 'is_enabled'),
+        Index('idx_aam_stage', 'stage_range', 'risk_level'),
+    )
+
+
+class ConflictMatrix(Base):
+    """冲突矩阵"""
+    __tablename__ = 'conflict_matrix'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_a_id = Column(String(50), nullable=False)
+    agent_b_id = Column(String(50), nullable=False)
+    conflict_type = Column(String(30), nullable=False)       # exclusive|cooperative|conditional
+    resolution_strategy = Column(String(30), nullable=False)  # 5 strategies
+    winner_rule = Column(JSON, nullable=True)
+    tenant_id = Column(String(50), nullable=True)
+    is_enabled = Column(Boolean, server_default=sa_text("true"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+    __table_args__ = (
+        Index('idx_conflict_agents', 'agent_a_id', 'agent_b_id'),
+    )
+
+
+class DecisionTrace(Base):
+    """决策追踪日志"""
+    __tablename__ = 'decision_trace'
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
+                server_default=sa_text("gen_random_uuid()"))
+    event_id = Column(String(100), nullable=False)
+    user_id = Column(Integer, nullable=False)
+    tenant_id = Column(String(50), nullable=True)
+    session_id = Column(String(100), nullable=True)
+    triggered_agents = Column(JSON, nullable=False)
+    policy_applied = Column(JSON, nullable=False)
+    rule_weights = Column(JSON, nullable=False)
+    conflict_resolution = Column(JSON, nullable=True)
+    final_output = Column(String(50), nullable=False)
+    secondary_agents = Column(JSON, nullable=True)
+    llm_model = Column(String(50), nullable=True)
+    token_cost = Column(Integer, server_default=sa_text("0"))
+    latency_ms = Column(Integer, server_default=sa_text("0"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+    __table_args__ = (
+        Index('idx_trace_event', 'event_id'),
+    )
+
+
+class CostBudgetLedger(Base):
+    """成本预算台账"""
+    __tablename__ = 'cost_budget_ledger'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    tenant_id = Column(String(50), nullable=False)
+    user_id = Column(Integer, nullable=True)
+    budget_type = Column(String(20), nullable=False)   # daily|monthly|total
+    max_tokens = Column(Integer, nullable=False)
+    used_tokens = Column(Integer, server_default=sa_text("0"))
+    max_cost_cny = Column(Float, nullable=True)
+    used_cost_cny = Column(Float, server_default=sa_text("0"))
+    period_start = Column(Date, nullable=False)
+    period_end = Column(Date, nullable=False)
+    overflow_action = Column(String(20), server_default="downgrade")
+    is_active = Column(Boolean, server_default=sa_text("true"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    updated_at = Column(DateTime, server_default=sa_text("now()"))
+
+    @property
+    def remaining_tokens(self) -> int:
+        return max(0, (self.max_tokens or 0) - (self.used_tokens or 0))
+
+    @property
+    def usage_ratio(self) -> float:
+        if not self.max_tokens:
+            return 1.0
+        return (self.used_tokens or 0) / self.max_tokens
+
+    __table_args__ = (
+        Index('idx_budget_tenant', 'tenant_id', 'budget_type', 'is_active'),
+    )
+
+
+# ============================================
+# V007 Phase B: Skill Graph (9 tables)
+# ============================================
+
+class ExpertDomain(Base):
+    """Agent知识领域边界"""
+    __tablename__ = 'expert_domain'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(50), nullable=False, index=True)
+    domain_name = Column(String(100), nullable=False)
+    domain_type = Column(String(30), nullable=False)  # primary|secondary|supportive
+    knowledge_scope = Column(JSON, nullable=True)
+    authority_level = Column(Integer, server_default=sa_text("3"))
+    tenant_id = Column(String(50), nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+class InterventionProtocol(Base):
+    """结构化干预协议"""
+    __tablename__ = 'intervention_protocol'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(50), nullable=False, index=True)
+    protocol_name = Column(String(100), nullable=False)
+    trigger_condition = Column(JSON, nullable=False)
+    response_template = Column(Text, nullable=True)
+    intensity_range = Column(String(10), server_default="1-5")
+    duration_days = Column(Integer, nullable=True)
+    success_criteria = Column(JSON, nullable=True)
+    escalation_protocol = Column(String(100), nullable=True)
+    is_enabled = Column(Boolean, server_default=sa_text("true"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+class RiskBoundary(Base):
+    """风险边界与自动退出"""
+    __tablename__ = 'risk_boundary'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(50), nullable=False, index=True)
+    risk_type = Column(String(50), nullable=False)
+    max_risk_level = Column(String(20), nullable=False)
+    escalation_target = Column(String(50), nullable=False)
+    auto_exit_condition = Column(JSON, nullable=True)
+    alert_message = Column(Text, nullable=True)
+    is_enabled = Column(Boolean, server_default=sa_text("true"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+class StageApplicability(Base):
+    """阶段适用性"""
+    __tablename__ = 'stage_applicability'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(50), nullable=False)
+    stage_code = Column(String(5), nullable=False)   # S0-S6
+    effectiveness_score = Column(Float, server_default=sa_text("0.5"))
+    recommended_intensity = Column(Integer, server_default=sa_text("3"))
+    is_primary = Column(Boolean, server_default=sa_text("false"))
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+    __table_args__ = (
+        Index('idx_stage_app_agent', 'agent_id', 'stage_code'),
+        Index('idx_stage_app_primary', 'stage_code', 'is_primary'),
+    )
+
+
+class Contraindication(Base):
+    """禁忌症"""
+    __tablename__ = 'contraindications'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(50), nullable=False, index=True)
+    condition_type = Column(String(30), nullable=False)  # medical|psychological|behavioral|stage
+    condition_value = Column(String(200), nullable=False)
+    severity = Column(String(20), server_default="warning")   # warning|block
+    alternative_agent_id = Column(String(50), nullable=True)
+    reason = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+class EvidenceTierBinding(Base):
+    """证据等级绑定"""
+    __tablename__ = 'evidence_tier_binding'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(50), nullable=False, index=True)
+    evidence_tier = Column(String(5), nullable=False)   # T1-T5
+    source_documents = Column(JSON, nullable=True)
+    last_reviewed_at = Column(DateTime, nullable=True)
+    reviewer = Column(String(50), nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+class AgentSkillGraph(Base):
+    """Agent技能图谱"""
+    __tablename__ = 'agent_skill_graph'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    agent_id = Column(String(50), nullable=False, unique=True)
+    skill_vector = Column(JSON, nullable=False)
+    capability_fingerprint = Column(String(64), nullable=True)
+    last_calibrated_at = Column(DateTime, nullable=True)
+    calibration_source = Column(String(50), nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    updated_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+class PolicyInterventionOutcome(Base):
+    """V007干预效果 (distinct from m019 intervention_outcomes)"""
+    __tablename__ = 'policy_intervention_outcome'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False)
+    agent_id = Column(String(50), nullable=False)
+    intervention_start = Column(DateTime, nullable=False)
+    intervention_end = Column(DateTime, nullable=True)
+    ies_score = Column(Float, nullable=True)
+    stage_before = Column(String(5), nullable=True)
+    stage_after = Column(String(5), nullable=True)
+    adherence_index = Column(Float, nullable=True)
+    risk_delta = Column(Float, nullable=True)
+    token_cost_total = Column(Integer, server_default=sa_text("0"))
+    metadata_ = Column("metadata", JSON, nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+    __table_args__ = (
+        Index('idx_policy_outcome_user', 'user_id', 'agent_id'),
+    )
+
+
+class PolicyStageTransitionLog(Base):
+    """V007阶段跃迁日志 (distinct from m019 stage_transition_logs)"""
+    __tablename__ = 'policy_stage_transition_log'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False)
+    from_stage = Column(String(5), nullable=False)
+    to_stage = Column(String(5), nullable=False)
+    trigger_agent_id = Column(String(50), nullable=True)
+    trigger_event = Column(String(100), nullable=True)
+    confidence = Column(Float, server_default=sa_text("0.8"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+    __table_args__ = (
+        Index('idx_policy_stage_trans_user', 'user_id', 'created_at'),
+    )
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -3382,6 +4035,17 @@ def get_table_names():
         # 积分系统
         "point_transactions",
         "user_points",
+        # m019 诊断管线补充
+        "intervention_outcomes",
+        "stage_transition_logs",
+        "point_events",
+        "user_point_balances",
+        "incentive_rewards",
+        "user_rewards",
+        "assessment_sessions",
+        "batch_answers",
+        "llm_call_logs",
+        "rag_query_logs",
         # V3.1 诊断评估
         "change_causes",
         "user_change_cause_scores",
@@ -3396,6 +4060,23 @@ def get_table_names():
         "content_audio",
         # V006 Agent 模板
         "agent_templates",
+        # V007 Phase A: Policy Engine
+        "policy_rules",
+        "rule_priority",
+        "agent_applicability_matrix",
+        "conflict_matrix",
+        "decision_trace",
+        "cost_budget_ledger",
+        # V007 Phase B: Skill Graph
+        "expert_domain",
+        "intervention_protocol",
+        "risk_boundary",
+        "stage_applicability",
+        "contraindications",
+        "evidence_tier_binding",
+        "agent_skill_graph",
+        "policy_intervention_outcome",
+        "policy_stage_transition_log",
     ]
 
 
@@ -3491,6 +4172,27 @@ def get_model_by_name(name: str):
         "SelfEfficacyAssessment": SelfEfficacyAssessment,
         "ObstacleAssessment": ObstacleAssessment,
         "SupportAssessment": SupportAssessment,
+        # V003 激励体系
+        "Badge": Badge,
+        "UserBadge": UserBadge,
+        "UserMilestone": UserMilestone,
+        "UserStreak": UserStreak,
+        "FlipCardRecord": FlipCardRecord,
+        "NudgeRecord": NudgeRecord,
+        "UserMemorial": UserMemorial,
+        "PointTransaction": PointTransaction,
+        "UserPoint": UserPoint,
+        # m019 诊断管线补充
+        "InterventionOutcome": InterventionOutcome,
+        "StageTransitionLog": StageTransitionLog,
+        "PointEvent": PointEvent,
+        "UserPointBalance": UserPointBalance,
+        "IncentiveReward": IncentiveReward,
+        "UserReward": UserReward,
+        "AssessmentSession": AssessmentSession,
+        "BatchAnswer": BatchAnswer,
+        "LLMCallLog": LLMCallLog,
+        "RAGQueryLog": RAGQueryLog,
         # V005 安全+音频
         "SafetyLog": SafetyLog,
         "ContentAudio": ContentAudio,
@@ -3506,5 +4208,22 @@ def get_model_by_name(name: str):
         "AgentMarketplaceListing": AgentMarketplaceListing,
         "AgentComposition": AgentComposition,
         "AgentGrowthPoints": AgentGrowthPoints,
+        # V007 Phase A: Policy Engine
+        "PolicyRule": PolicyRule,
+        "RulePriority": RulePriority,
+        "AgentApplicabilityMatrix": AgentApplicabilityMatrix,
+        "ConflictMatrix": ConflictMatrix,
+        "DecisionTrace": DecisionTrace,
+        "CostBudgetLedger": CostBudgetLedger,
+        # V007 Phase B: Skill Graph
+        "ExpertDomain": ExpertDomain,
+        "InterventionProtocol": InterventionProtocol,
+        "RiskBoundary": RiskBoundary,
+        "StageApplicability": StageApplicability,
+        "Contraindication": Contraindication,
+        "EvidenceTierBinding": EvidenceTierBinding,
+        "AgentSkillGraph": AgentSkillGraph,
+        "PolicyInterventionOutcome": PolicyInterventionOutcome,
+        "PolicyStageTransitionLog": PolicyStageTransitionLog,
     }
     return models.get(name)

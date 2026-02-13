@@ -20,6 +20,14 @@ from typing import Any
 from .base import AgentInput, AgentResult, PolicyDecision
 
 logger = logging.getLogger(__name__)
+
+# V007 PolicyEngine (延迟导入, 降级安全)
+try:
+    from core.policy_engine import PolicyEngine, Event, UserContext, ExecutionPlan
+    _HAS_POLICY_ENGINE = True
+except ImportError:
+    _HAS_POLICY_ENGINE = False
+
 from .specialist_agents import (
     CrisisAgent, SleepAgent, GlucoseAgent, StressAgent,
     NutritionAgent, ExerciseAgent, MentalHealthAgent,
@@ -69,6 +77,17 @@ class MasterAgent:
         self.router = AgentRouter(self._agents)
         self.coordinator = MultiAgentCoordinator()
         self.policy_gate = RuntimePolicyGate()
+
+        # V007 PolicyEngine 初始化 (可选, 降级安全)
+        self._policy_engine = None
+        self._db_session = db_session
+        if db_session and _HAS_POLICY_ENGINE:
+            try:
+                self._policy_engine = PolicyEngine(db_session=db_session)
+                self._policy_engine.rule_registry.initialize()
+                logger.info("V007 PolicyEngine 初始化成功")
+            except Exception as e:
+                logger.warning("V007 PolicyEngine 初始化失败 (non-blocking): %s", e)
 
     def process(self,
                 user_id: int,
@@ -161,8 +180,39 @@ class MasterAgent:
         except Exception as e:
             logger.warning("SafetyPipeline L1 failed (non-blocking): %s", e)
 
-        # Step 4: 路由 (租户上下文: 专家自定义 > 平台预置)
-        target_domains = self.router.route(agent_input, tenant_ctx=tenant_ctx)
+        # Step 4: 路由 — 优先 PolicyEngine, 降级到 AgentRouter
+        policy_trace_id = None
+        policy_meta = {}
+        if self._policy_engine:
+            try:
+                event = Event(
+                    type='user_message',
+                    content=message,
+                    domain_keywords=list(context.get('domains', [])),
+                    metadata={'session_id': context.get('session_id')},
+                )
+                policy_ctx = UserContext(
+                    user_id=user_id,
+                    tenant_id=(tenant_ctx or {}).get('tenant_id'),
+                    current_stage=profile.get('current_stage', 'S0'),
+                    risk_level=context.get('risk_level', 'normal'),
+                    domain=context.get('primary_domain', ''),
+                    preferred_model=context.get('preferred_model', 'deepseek-chat'),
+                )
+                plan = self._policy_engine.evaluate(event, policy_ctx)
+                if plan.primary_agent != 'BLOCKED':
+                    target_domains = [plan.primary_agent] + plan.secondary_agents
+                    policy_trace_id = plan.trace_id
+                    policy_meta = plan.metadata or {}
+                    logger.info("PolicyEngine 决策: primary=%s, model=%s",
+                                plan.primary_agent, plan.model)
+                else:
+                    target_domains = self.router.route(agent_input, tenant_ctx=tenant_ctx)
+            except Exception as e:
+                logger.warning("PolicyEngine evaluate 失败, 降级到 AgentRouter: %s", e)
+                target_domains = self.router.route(agent_input, tenant_ctx=tenant_ctx)
+        else:
+            target_domains = self.router.route(agent_input, tenant_ctx=tenant_ctx)
 
         # Step 4.5: InsightGenerator (简化: 提取关键数据洞察)
         insights = self._generate_insights(profile, device_data)
@@ -270,6 +320,8 @@ class MasterAgent:
             "llm_synthesis_used": synthesis_result.get("llm_used", False),
             "llm_total_latency_ms": total_llm_latency,
             "safety": safety_meta,
+            "policy_trace_id": policy_trace_id,
+            "policy_metadata": policy_meta,
         }
 
     # ── 内部方法 ──

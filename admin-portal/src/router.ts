@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { portalRoutes } from './router/portal_routes'
 import { reactRoutes } from './router/react_routes'
+import { rxRoutes } from './modules/rx/router/rx-routes'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -658,6 +659,8 @@ const routes: RouteRecordRaw[] = [
           }
         ]
       },
+      // ============ 行为处方 (Behavior Rx) ============
+      ...rxRoutes,
       // 系统设置
       {
         path: 'settings',

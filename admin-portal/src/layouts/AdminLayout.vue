@@ -168,6 +168,15 @@
           <a-menu-item key="admin-credit-promotion" @click="$router.push('/admin/credit-system/promotion-review')">晋级审核</a-menu-item>
         </a-sub-menu>
 
+        <!-- 教练及以上可见 - 行为处方 (Behavior Rx) -->
+        <a-sub-menu v-if="isCoach" key="rx">
+          <template #icon><MedicineBoxOutlined /></template>
+          <template #title>行为处方</template>
+          <a-menu-item key="rx-dashboard" @click="$router.push('/rx/dashboard')">处方仪表盘</a-menu-item>
+          <a-menu-item key="rx-agents" @click="$router.push('/rx/agents')">Agent 集群</a-menu-item>
+          <a-menu-item key="rx-strategies" @click="$router.push('/rx/strategies')">策略模板库</a-menu-item>
+        </a-sub-menu>
+
         <!-- 管理员可见 - Agent 管理 (V006 + Phase 2) -->
         <a-sub-menu v-if="isAdmin" key="admin-agent">
           <template #icon><RobotOutlined /></template>

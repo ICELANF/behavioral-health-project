@@ -1,14 +1,14 @@
 /* ═══════════════════════════════════════════════
-   BHP H5 端 — Vant UI 主题覆盖
+   BHP H5 端 — Vant UI 主题覆盖 v2.0
    用法: 在 main.ts 中 import './styles/vant-overrides.css'
    注意: 必须在 Vant 的 CSS 之后引入
    ═══════════════════════════════════════════════ */
 
 :root {
   /* ── Vant 品牌色映射 ── */
-  --van-primary-color: var(--bhp-brand-primary);
-  --van-primary-color-dark: var(--bhp-brand-primary-dark);
-  --van-primary-color-light: var(--bhp-brand-primary-light);
+  --van-primary-color: var(--bhp-primary-500);
+  --van-primary-color-dark: var(--bhp-primary-600);
+  --van-primary-color-light: var(--bhp-primary-400);
   --van-success-color: var(--bhp-success);
   --van-warning-color: var(--bhp-warning);
   --van-danger-color: var(--bhp-danger);
@@ -80,7 +80,7 @@
 
 /* ── 标签页增强 ── */
 .van-tabs__line {
-  background: var(--bhp-brand-primary);
+  background: var(--bhp-primary-500);
   border-radius: var(--radius-full);
   height: 3px;
 }

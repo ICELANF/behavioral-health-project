@@ -1,0 +1,416 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "BehaviorOS 行为处方策略库 — 12 种行为策略模板",
+    "total_strategies": 12,
+    "domains": ["general", "metabolic", "cardiac", "adherence"],
+    "ttm_stages": "S0(前意识)→S1(意识)→S2(准备)→S3(行动)→S4(维持)→S5(巩固)→S6(终止)"
+  },
+  "strategies": [
+    {
+      "strategy_type": "consciousness_raising",
+      "name": "Consciousness Raising",
+      "name_zh": "意识提升",
+      "ttm_stage_range": [0, 2],
+      "core_mechanism": "通过信息输入和认知激活,使个体从不知→知道,建立对目标行为的基础认知",
+      "typical_applications": [
+        "首次诊断后的疾病认知教育",
+        "健康风险因子的可视化呈现",
+        "行为-结果因果链条的建立"
+      ],
+      "default_intensity": "low",
+      "default_pace": "slow",
+      "default_micro_actions": [
+        {"action": "阅读一段健康科普内容", "difficulty": 0.1, "trigger": "每日早间", "duration_min": 3},
+        {"action": "回答一个认知小测试", "difficulty": 0.15, "trigger": "阅读后", "duration_min": 2}
+      ],
+      "default_reward_triggers": [
+        {"condition": "完成3次认知学习", "reward_type": "badge", "message": "认知先锋🌟 你已打开健康管理的大门"}
+      ],
+      "default_resistance_threshold": 0.2,
+      "personality_modifiers": {
+        "high_O": {"boost": 0.2, "note": "高开放性 → 偏好探索式信息呈现"},
+        "high_N": {"boost": -0.1, "note": "高神经质 → 避免恐惧诉求,使用温和信息"},
+        "high_C": {"boost": 0.15, "note": "高尽责性 → 提供数据和证据支撑"},
+        "low_O": {"boost": -0.15, "note": "低开放性 → 使用熟悉场景和类比"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "血糖波动可视化、代谢综合征风险图谱"},
+        "cardiac": {"focus": "心脏事件后的身体恢复认知、运动安全知识"},
+        "adherence": {"focus": "药物作用机制可视化、不依从后果教育"}
+      },
+      "evidence_tier": "T1"
+    },
+    {
+      "strategy_type": "dramatic_relief",
+      "name": "Dramatic Relief",
+      "name_zh": "情绪唤醒",
+      "ttm_stage_range": [0, 1],
+      "core_mechanism": "通过情感体验(故事/案例/体验)产生情绪冲击,激发改变动机",
+      "typical_applications": [
+        "康复成功案例分享 (正面唤醒)",
+        "并发症风险故事 (适度警醒)",
+        "家人视角的期望表达"
+      ],
+      "default_intensity": "moderate",
+      "default_pace": "slow",
+      "default_micro_actions": [
+        {"action": "听一个同伴康复故事", "difficulty": 0.1, "trigger": "每周2次", "duration_min": 5},
+        {"action": "写下此刻的一个感受", "difficulty": 0.2, "trigger": "故事后", "duration_min": 2}
+      ],
+      "default_reward_triggers": [
+        {"condition": "分享个人感受", "reward_type": "praise", "message": "愿意表达感受本身就是勇气💛"}
+      ],
+      "default_resistance_threshold": 0.25,
+      "personality_modifiers": {
+        "high_N": {"boost": -0.3, "note": "高神经质 → 大幅减少恐惧唤醒,偏向正面故事"},
+        "high_E": {"boost": 0.15, "note": "高外向性 → 增加社交体验分享"},
+        "high_A": {"boost": 0.1, "note": "高宜人性 → 家人视角故事更有效"},
+        "low_N": {"boost": 0.1, "note": "低神经质 → 可适度使用警醒内容"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "糖尿病并发症预防故事、血糖达标成功案例"},
+        "cardiac": {"focus": "心脏康复重返运动的故事、家人陪伴康复历程"},
+        "adherence": {"focus": "按时服药改善生活质量案例、停药风险案例"}
+      },
+      "evidence_tier": "T2"
+    },
+    {
+      "strategy_type": "self_reevaluation",
+      "name": "Self-Reevaluation",
+      "name_zh": "自我再评价",
+      "ttm_stage_range": [1, 2],
+      "core_mechanism": "引导个体重新审视当前行为与自我价值/身份的一致性,产生认知失调推动改变",
+      "typical_applications": [
+        "价值观-行为一致性反思",
+        "未来自我想象练习",
+        "身份认同重构 (我是一个注重健康的人)"
+      ],
+      "default_intensity": "moderate",
+      "default_pace": "standard",
+      "default_micro_actions": [
+        {"action": "完成一次'未来自我'想象练习", "difficulty": 0.25, "trigger": "每周1次", "duration_min": 5},
+        {"action": "列出改变对我最重要的3个理由", "difficulty": 0.2, "trigger": "本周内", "duration_min": 3}
+      ],
+      "default_reward_triggers": [
+        {"condition": "完成自我反思练习", "reward_type": "praise", "message": "你正在清晰地看见更好的自己✨"}
+      ],
+      "default_resistance_threshold": 0.3,
+      "personality_modifiers": {
+        "high_O": {"boost": 0.2, "note": "高开放性 → 深度自我探索练习"},
+        "high_C": {"boost": 0.1, "note": "高尽责性 → 目标-行为一致性分析"},
+        "high_N": {"boost": -0.1, "note": "高神经质 → 温和引导,避免自我批判"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "我希望成为的健康管理者形象"},
+        "cardiac": {"focus": "康复后我想过的生活画面"},
+        "adherence": {"focus": "对家人的责任与自我照护的统一"}
+      },
+      "evidence_tier": "T2"
+    },
+    {
+      "strategy_type": "decisional_balance",
+      "name": "Decisional Balance",
+      "name_zh": "决策平衡",
+      "ttm_stage_range": [1, 3],
+      "core_mechanism": "系统化权衡改变的利弊,帮助个体从矛盾心态转向行动决心",
+      "typical_applications": [
+        "改变利弊四象限分析",
+        "短期代价 vs 长期收益对比",
+        "不改变的隐性成本核算"
+      ],
+      "default_intensity": "moderate",
+      "default_pace": "standard",
+      "default_micro_actions": [
+        {"action": "列出改变的3个好处和3个困难", "difficulty": 0.2, "trigger": "本周", "duration_min": 5},
+        {"action": "给每个利弊打1-10分的重要性", "difficulty": 0.15, "trigger": "列出后", "duration_min": 3}
+      ],
+      "default_reward_triggers": [
+        {"condition": "完成决策分析", "reward_type": "praise", "message": "理性分析是最好的起点🎯"}
+      ],
+      "default_resistance_threshold": 0.35,
+      "personality_modifiers": {
+        "high_C": {"boost": 0.25, "note": "高尽责性 → 热爱系统分析,效果最佳"},
+        "high_O": {"boost": 0.1, "note": "高开放性 → 增加创造性选项"},
+        "low_C": {"boost": -0.15, "note": "低尽责性 → 简化为直觉式2选1"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "控糖行为的短期不便 vs 长期并发症预防"},
+        "cardiac": {"focus": "运动恐惧的短期安全感 vs 长期心功能恶化"},
+        "adherence": {"focus": "服药麻烦 vs 疾病复发代价"}
+      },
+      "evidence_tier": "T1"
+    },
+    {
+      "strategy_type": "cognitive_restructuring",
+      "name": "Cognitive Restructuring",
+      "name_zh": "认知重构",
+      "ttm_stage_range": [0, 4],
+      "core_mechanism": "识别并修正阻碍行为改变的不合理认知,建立促进性信念系统",
+      "typical_applications": [
+        "灾难化思维矫正 (一次失败≠永远失败)",
+        "全或无思维松动 (完美主义→弹性标准)",
+        "自我效能信念重建"
+      ],
+      "default_intensity": "moderate",
+      "default_pace": "standard",
+      "default_micro_actions": [
+        {"action": "记录一个阻碍改变的想法", "difficulty": 0.2, "trigger": "遇到困难时", "duration_min": 2},
+        {"action": "用证据检验这个想法的准确性", "difficulty": 0.3, "trigger": "记录后", "duration_min": 3}
+      ],
+      "default_reward_triggers": [
+        {"condition": "成功质疑一个不合理信念", "reward_type": "praise", "message": "思维的转变是行为改变的基石🧠"}
+      ],
+      "default_resistance_threshold": 0.35,
+      "personality_modifiers": {
+        "high_N": {"boost": 0.25, "note": "高神经质 → 最需要认知重构, 温和引导"},
+        "high_O": {"boost": 0.15, "note": "高开放性 → 接受新视角能力强"},
+        "low_O": {"boost": -0.2, "note": "低开放性 → 使用具体实例而非抽象概念"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "'我已经得病了努力也没用' → 行为改变可以逆转指标"},
+        "cardiac": {"focus": "'运动会让心脏出事' → 适度运动是康复核心"},
+        "adherence": {"focus": "'感觉好了就不用吃药' → 用药维持的科学依据"}
+      },
+      "evidence_tier": "T1"
+    },
+    {
+      "strategy_type": "self_liberation",
+      "name": "Self-Liberation",
+      "name_zh": "自我解放",
+      "ttm_stage_range": [2, 3],
+      "core_mechanism": "通过公开承诺和选择自主感,将内部动机转化为外显行动承诺",
+      "typical_applications": [
+        "行动计划签署 (个人健康契约)",
+        "向家人/社群公开宣布目标",
+        "自主选择首个可执行行为"
+      ],
+      "default_intensity": "moderate",
+      "default_pace": "standard",
+      "default_micro_actions": [
+        {"action": "写下你的第一个健康行动目标", "difficulty": 0.2, "trigger": "今天", "duration_min": 3},
+        {"action": "告诉一个人你的计划", "difficulty": 0.35, "trigger": "写完后", "duration_min": 2}
+      ],
+      "default_reward_triggers": [
+        {"condition": "完成承诺签署", "reward_type": "badge", "message": "行动宣言者🎯 你已向自己做出承诺"},
+        {"condition": "公开分享目标", "reward_type": "points", "message": "+50积分 勇气加成!"}
+      ],
+      "default_resistance_threshold": 0.3,
+      "personality_modifiers": {
+        "high_E": {"boost": 0.2, "note": "高外向性 → 公开承诺效果更好"},
+        "high_C": {"boost": 0.15, "note": "高尽责性 → 书面契约有约束力"},
+        "low_E": {"boost": -0.15, "note": "低外向性 → 私下承诺即可,不强制公开"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "签署个人血糖管理计划"},
+        "cardiac": {"focus": "康复运动第一步承诺"},
+        "adherence": {"focus": "服药提醒设置并告知家人"}
+      },
+      "evidence_tier": "T2"
+    },
+    {
+      "strategy_type": "stimulus_control",
+      "name": "Stimulus Control",
+      "name_zh": "刺激控制",
+      "ttm_stage_range": [3, 5],
+      "core_mechanism": "通过环境重构,增加有利刺激、减少不利刺激,降低行为执行的认知成本",
+      "typical_applications": [
+        "环境线索设置 (药物放在可见处)",
+        "障碍移除 (远离高糖食物)",
+        "行为锚点设置 (固定时间/地点)"
+      ],
+      "default_intensity": "moderate",
+      "default_pace": "standard",
+      "default_micro_actions": [
+        {"action": "在固定位置设置一个健康行为线索", "difficulty": 0.15, "trigger": "今天", "duration_min": 5},
+        {"action": "移除一个阻碍健康行为的环境因素", "difficulty": 0.25, "trigger": "本周", "duration_min": 10}
+      ],
+      "default_reward_triggers": [
+        {"condition": "连续3天在设定线索处执行行为", "reward_type": "praise", "message": "环境已成为你的健康盟友🏠"}
+      ],
+      "default_resistance_threshold": 0.25,
+      "personality_modifiers": {
+        "high_C": {"boost": 0.2, "note": "高尽责性 → 系统化环境改造"},
+        "low_C": {"boost": 0.1, "note": "低尽责性 → 刺激控制尤其重要,替代意志力"},
+        "high_N": {"boost": 0.1, "note": "高神经质 → 减少诱惑暴露降低焦虑"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "厨房健康化改造、血糖仪放在餐桌旁"},
+        "cardiac": {"focus": "运动装备放在门口、心率带随身携带"},
+        "adherence": {"focus": "药盒放在牙刷旁、设置手机服药提醒"}
+      },
+      "evidence_tier": "T1"
+    },
+    {
+      "strategy_type": "contingency_management",
+      "name": "Contingency Management",
+      "name_zh": "强化管理",
+      "ttm_stage_range": [3, 5],
+      "core_mechanism": "通过即时正强化(奖励)和消退不良行为的强化源,塑造和巩固目标行为",
+      "typical_applications": [
+        "行为完成后的即时奖励",
+        "连续打卡的阶梯式奖励",
+        "家属参与的社会强化"
+      ],
+      "default_intensity": "moderate",
+      "default_pace": "standard",
+      "default_micro_actions": [
+        {"action": "完成今天的健康行为并记录", "difficulty": 0.2, "trigger": "每天", "duration_min": 5},
+        {"action": "给自己一个小奖励", "difficulty": 0.1, "trigger": "完成后", "duration_min": 2}
+      ],
+      "default_reward_triggers": [
+        {"condition": "连续7天完成", "reward_type": "badge", "message": "一周达人🏅 习惯正在形成!"},
+        {"condition": "连续30天完成", "reward_type": "milestone", "message": "月度里程碑🎉 你已证明了自己!"}
+      ],
+      "default_resistance_threshold": 0.25,
+      "personality_modifiers": {
+        "high_E": {"boost": 0.2, "note": "高外向性 → 社会奖励更有效"},
+        "high_A": {"boost": 0.15, "note": "高宜人性 → 家人认可是强大强化物"},
+        "low_C": {"boost": 0.2, "note": "低尽责性 → 外部强化补偿内在动机不足"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "血糖达标奖励、健康饮食打卡积分"},
+        "cardiac": {"focus": "完成康复运动处方奖励、心率目标达成庆祝"},
+        "adherence": {"focus": "按时服药连续打卡、按期复诊奖励"}
+      },
+      "evidence_tier": "T1"
+    },
+    {
+      "strategy_type": "habit_stacking",
+      "name": "Habit Stacking",
+      "name_zh": "习惯叠加",
+      "ttm_stage_range": [3, 5],
+      "core_mechanism": "将新行为绑定到已有稳固习惯上,利用已有神经通路降低新行为启动成本",
+      "typical_applications": [
+        "刷牙后→测血糖",
+        "午餐后→散步10分钟",
+        "早餐时→服药"
+      ],
+      "default_intensity": "low",
+      "default_pace": "standard",
+      "default_micro_actions": [
+        {"action": "选择一个已有习惯,绑定一个新健康行为", "difficulty": 0.15, "trigger": "今天", "duration_min": 3},
+        {"action": "执行绑定行为链", "difficulty": 0.2, "trigger": "每天", "duration_min": 5}
+      ],
+      "default_reward_triggers": [
+        {"condition": "习惯链连续执行5天", "reward_type": "praise", "message": "新旧习惯已牢牢绑定🔗"},
+        {"condition": "习惯链连续执行21天", "reward_type": "badge", "message": "习惯建筑师🏗️"}
+      ],
+      "default_resistance_threshold": 0.2,
+      "personality_modifiers": {
+        "high_C": {"boost": 0.15, "note": "高尽责性 → 容易建立规律习惯链"},
+        "low_C": {"boost": 0.25, "note": "低尽责性 → 习惯叠加特别有效,减少决策疲劳"},
+        "high_O": {"boost": -0.1, "note": "高开放性 → 可能觉得太固定,需增加变化"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "餐前→测血糖, 刷牙→服降糖药"},
+        "cardiac": {"focus": "起床→穿运动鞋, 午餐后→散步"},
+        "adherence": {"focus": "早餐→晨间服药, 睡前→检查明日药盒"}
+      },
+      "evidence_tier": "T1"
+    },
+    {
+      "strategy_type": "systematic_desensitization",
+      "name": "Systematic Desensitization",
+      "name_zh": "系统脱敏",
+      "ttm_stage_range": [1, 4],
+      "core_mechanism": "通过渐进暴露,从最低焦虑水平开始逐步接近恐惧对象,消除回避行为",
+      "typical_applications": [
+        "运动恐惧脱敏 (心脏康复患者)",
+        "注射/抽血恐惧脱敏",
+        "就医焦虑脱敏"
+      ],
+      "default_intensity": "low",
+      "default_pace": "slow",
+      "default_micro_actions": [
+        {"action": "想象目标场景并练习放松", "difficulty": 0.15, "trigger": "每天", "duration_min": 5},
+        {"action": "在安全环境中小幅接近恐惧对象", "difficulty": 0.3, "trigger": "准备好时", "duration_min": 10}
+      ],
+      "default_reward_triggers": [
+        {"condition": "完成一级暴露", "reward_type": "praise", "message": "你迈出了勇敢的一步💪"},
+        {"condition": "完成三级暴露层次", "reward_type": "badge", "message": "恐惧征服者🦁"}
+      ],
+      "default_resistance_threshold": 0.4,
+      "personality_modifiers": {
+        "high_N": {"boost": 0.3, "note": "高神经质 → 最需要脱敏,但需更慢的节奏"},
+        "low_E": {"boost": 0.1, "note": "低外向性 → 私密环境中进行脱敏"},
+        "high_C": {"boost": 0.1, "note": "高尽责性 → 系统化层次推进"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "自我注射脱敏、血糖监测恐惧消除"},
+        "cardiac": {"focus": "运动恐惧3周渐进脱敏方案: 想象→观察→辅助行走→独立步行→轻度运动"},
+        "adherence": {"focus": "就医焦虑脱敏、检查恐惧消除"}
+      },
+      "evidence_tier": "T1"
+    },
+    {
+      "strategy_type": "relapse_prevention",
+      "name": "Relapse Prevention",
+      "name_zh": "复发预防",
+      "ttm_stage_range": [3, 6],
+      "core_mechanism": "识别高风险情境,建立应对计划,将偶发滑落与全面复发区分,维持行为改变",
+      "typical_applications": [
+        "高风险情境预案 (节假日、压力事件)",
+        "滑落 vs 复发的认知区分",
+        "应急应对卡片制作"
+      ],
+      "default_intensity": "moderate",
+      "default_pace": "standard",
+      "default_micro_actions": [
+        {"action": "列出3个可能导致行为中断的高风险情境", "difficulty": 0.2, "trigger": "本周", "duration_min": 5},
+        {"action": "为每个情境制作一个应对卡片", "difficulty": 0.3, "trigger": "列出后", "duration_min": 10}
+      ],
+      "default_reward_triggers": [
+        {"condition": "成功度过一次高风险情境", "reward_type": "badge", "message": "抗风险高手🛡️ 你已准备好应对挑战"},
+        {"condition": "滑落后24h内恢复", "reward_type": "praise", "message": "快速恢复才是真正的强大💫"}
+      ],
+      "default_resistance_threshold": 0.35,
+      "personality_modifiers": {
+        "high_N": {"boost": 0.2, "note": "高神经质 → 提前准备降低焦虑"},
+        "high_C": {"boost": 0.15, "note": "高尽责性 → 系统化预案建设"},
+        "low_C": {"boost": 0.1, "note": "低尽责性 → 简化为1-2个关键应对策略"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "节假日饮食失控预案、旅行期间血糖管理"},
+        "cardiac": {"focus": "运动中断后的重启方案、天气/身体不适应对"},
+        "adherence": {"focus": "忘药后的补救方案、情绪低落期的服药维持"}
+      },
+      "evidence_tier": "T1"
+    },
+    {
+      "strategy_type": "self_monitoring",
+      "name": "Self-Monitoring",
+      "name_zh": "自我监测",
+      "ttm_stage_range": [2, 6],
+      "core_mechanism": "通过系统记录和反思行为数据,建立行为-结果意识,支持自我调节",
+      "typical_applications": [
+        "血糖/血压/体重趋势追踪",
+        "饮食日记",
+        "运动量记录与反思",
+        "服药打卡"
+      ],
+      "default_intensity": "low",
+      "default_pace": "standard",
+      "default_micro_actions": [
+        {"action": "记录今天的关键健康数据", "difficulty": 0.1, "trigger": "每天固定时间", "duration_min": 2},
+        {"action": "每周回顾趋势变化", "difficulty": 0.2, "trigger": "每周日", "duration_min": 5}
+      ],
+      "default_reward_triggers": [
+        {"condition": "连续7天记录", "reward_type": "praise", "message": "数据是你最好的健康顾问📊"},
+        {"condition": "发现一个行为-数据关联", "reward_type": "badge", "message": "数据侦探🔍"}
+      ],
+      "default_resistance_threshold": 0.2,
+      "personality_modifiers": {
+        "high_C": {"boost": 0.25, "note": "高尽责性 → 天然热爱记录和追踪"},
+        "high_O": {"boost": 0.1, "note": "高开放性 → 提供数据可视化探索"},
+        "low_C": {"boost": -0.2, "note": "低尽责性 → 极简记录,自动化数据采集"}
+      },
+      "domain_variants": {
+        "metabolic": {"focus": "血糖7点法追踪、饮食-血糖相关性分析"},
+        "cardiac": {"focus": "运动心率记录、RPE主观感受评分"},
+        "adherence": {"focus": "服药打卡记录、复诊日期追踪"}
+      },
+      "evidence_tier": "T1"
+    }
+  ]
+}
