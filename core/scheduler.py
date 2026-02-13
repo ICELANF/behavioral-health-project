@@ -20,6 +20,12 @@ except ImportError:
     HAS_APSCHEDULER = False
     logger.warning("APScheduler not installed, scheduled tasks disabled")
 
+# === Celery Migration Switch (deploy_celery.sh) ===
+import os as _os
+_USE_CELERY = _os.getenv("USE_CELERY", "false").lower() == "true"
+_DISABLE_APSCHEDULER = _os.getenv("DISABLE_APSCHEDULER", "false").lower() == "true"
+# === End Switch ===
+
 
 @with_redis_lock("scheduler:daily_task_generation", ttl=600)
 def daily_task_generation():

@@ -1,0 +1,2253 @@
+meta:
+  version: 2.0.0
+  generated: '2026-02-14T01:53:57.988555'
+  source: contract_extraction_v2 + celery_migration Phase C
+  authority_rules:
+    orm_models: core/models.py为权威源, 列最多的定义为准
+    api_endpoints: openapi_dump.json为权威(428), 静态分析补充auth_level
+    agents: 排除behavior_rx_v32_complete重复
+totals:
+  orm_tables_unique: 120
+  api_endpoints_openapi: 428
+  api_endpoints_static: 665
+  agents_domain: 17
+  agents_expert: 4
+  celery_beat_tasks: 16
+  celery_event_tasks: 1
+  apscheduler_jobs_migrated: 13
+  event_handlers: 40
+  config_files: 60
+  alembic_migrations: 31
+  vue_routes: 144
+  vue_components: 204
+  safety_rules: 11
+  docker_services: 8
+orm_models:
+  total_unique: 120
+  authority: core/models.py
+  tables:
+    activity_records:
+      class: ''
+      file: core/models.py
+      column_count: 15
+      columns:
+      - id
+      - user_id
+      - activity_date
+      - steps
+      - distance_m
+      - floors_climbed
+      - calories_total
+      - calories_active
+      - sedentary_min
+      - light_active_min
+      - moderate_active_min
+      - vigorous_active_min
+      - hourly_data
+      - created_at
+      - updated_at
+    agent_applicability_matrix:
+      class: ''
+      file: core/models.py
+      column_count: 12
+      columns:
+      - id
+      - agent_id
+      - stage_range
+      - risk_level
+      - intensity_level
+      - max_daily_calls
+      - cooldown_hours
+      - contraindications
+      - tenant_id
+      - is_enabled
+      - created_at
+      - updated_at
+    agent_compositions:
+      class: ''
+      file: core/models.py
+      column_count: 11
+      columns:
+      - id
+      - name
+      - description
+      - tenant_id
+      - created_by
+      - pipeline
+      - merge_strategy
+      - is_enabled
+      - is_default
+      - created_at
+      - updated_at
+    agent_feedbacks:
+      class: ''
+      file: core/models.py
+      column_count: 15
+      columns:
+      - id
+      - agent_id
+      - user_id
+      - session_id
+      - feedback_type
+      - rating
+      - comment
+      - modifications
+      - user_message
+      - agent_response
+      - agents_used
+      - confidence
+      - processing_time_ms
+      - tenant_id
+      - created_at
+    agent_growth_points:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - user_id
+      - agent_id
+      - event_type
+      - points
+      - description
+      - reference_id
+      - reference_type
+      - created_at
+    agent_handoff_log:
+      class: ''
+      file: behavior_rx/core/rx_models.py
+      column_count: 16
+      columns:
+      - id
+      - user_id
+      - session_id
+      - from_agent
+      - to_agent
+      - handoff_type
+      - status
+      - rx_context
+      - rx_prescription_id
+      - trigger_reason
+      - trigger_data
+      - outcome
+      - resolution_notes
+      - initiated_at
+      - completed_at
+      - created_at
+    agent_marketplace_listings:
+      class: ''
+      file: core/models.py
+      column_count: 19
+      columns:
+      - id
+      - template_id
+      - publisher_id
+      - tenant_id
+      - title
+      - description
+      - category
+      - tags
+      - cover_url
+      - status
+      - reviewer_id
+      - review_comment
+      - reviewed_at
+      - install_count
+      - avg_rating
+      - rating_count
+      - version
+      - created_at
+      - updated_at
+    agent_metrics_daily:
+      class: ''
+      file: core/models.py
+      column_count: 16
+      columns:
+      - id
+      - agent_id
+      - metric_date
+      - total_calls
+      - llm_calls
+      - feedback_count
+      - accept_count
+      - reject_count
+      - modify_count
+      - rate_count
+      - total_rating
+      - avg_processing_ms
+      - avg_confidence
+      - acceptance_rate
+      - avg_rating
+      - created_at
+    agent_prompt_versions:
+      class: ''
+      file: core/models.py
+      column_count: 11
+      columns:
+      - id
+      - agent_id
+      - version
+      - system_prompt
+      - change_reason
+      - is_active
+      - traffic_pct
+      - prev_avg_rating
+      - prev_acceptance_rate
+      - created_by
+      - created_at
+    agent_skill_graph:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - agent_id
+      - skill_vector
+      - capability_fingerprint
+      - last_calibrated_at
+      - calibration_source
+      - created_at
+      - updated_at
+    agent_templates:
+      class: ''
+      file: core/models.py
+      column_count: 19
+      columns:
+      - id
+      - agent_id
+      - display_name
+      - agent_type
+      - domain_enum
+      - description
+      - keywords
+      - data_fields
+      - correlations
+      - priority
+      - base_weight
+      - enable_llm
+      - system_prompt
+      - conflict_wins_over
+      - is_preset
+      - is_enabled
+      - created_by
+      - created_at
+      - updated_at
+    assessment_assignments:
+      class: ''
+      file: core/models.py
+      column_count: 11
+      columns:
+      - id
+      - coach_id
+      - student_id
+      - scales
+      - status
+      - note
+      - pipeline_result
+      - created_at
+      - completed_at
+      - reviewed_at
+      - pushed_at
+    assessment_sessions:
+      class: ''
+      file: baps/progressive_assessment.py
+      column_count: 12
+      columns:
+      - id
+      - user_id
+      - status
+      - completed_batches
+      - pending_batches
+      - total_questions_answered
+      - total_questions
+      - partial_results
+      - started_at
+      - last_activity
+      - completed_at
+      - expires_at
+    assessments:
+      class: ''
+      file: core/models.py
+      column_count: 25
+      columns:
+      - id
+      - assessment_id
+      - user_id
+      - text_content
+      - glucose_values
+      - hrv_values
+      - activity_data
+      - sleep_data
+      - user_profile_snapshot
+      - risk_level
+      - risk_score
+      - primary_concern
+      - urgency
+      - severity_distribution
+      - reasoning
+      - primary_agent
+      - secondary_agents
+      - priority
+      - response_time
+      - routing_reasoning
+      - recommended_actions
+      - status
+      - created_at
+      - completed_at
+      - context
+    badges:
+      class: ''
+      file: core/models.py
+      column_count: 11
+      columns:
+      - id
+      - name
+      - description
+      - category
+      - icon
+      - rarity
+      - condition_json
+      - visual_json
+      - sort_order
+      - is_active
+      - created_at
+    batch_answers:
+      class: ''
+      file: baps/progressive_assessment.py
+      column_count: 9
+      columns:
+      - id
+      - session_id
+      - user_id
+      - batch_id
+      - questionnaire
+      - answers
+      - scores
+      - duration_seconds
+      - created_at
+    batch_ingestion_jobs:
+      class: ''
+      file: core/models.py
+      column_count: 12
+      columns:
+      - id
+      - user_id
+      - filename
+      - file_type
+      - status
+      - total_files
+      - processed_files
+      - total_chunks
+      - error_message
+      - result_doc_ids
+      - created_at
+      - updated_at
+    behavior_audit_logs:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - user_id
+      - from_stage
+      - to_stage
+      - narrative
+      - source_ui
+      - created_at
+    behavior_history:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - user_id
+      - timestamp
+      - from_stage
+      - to_stage
+      - is_transition
+      - belief_score
+      - narrative_sent
+    behavior_traces:
+      class: ''
+      file: core/models.py
+      column_count: 10
+      columns:
+      - id
+      - user_id
+      - timestamp
+      - from_stage
+      - to_stage
+      - is_transition
+      - belief_score
+      - action_count
+      - narrative_sent
+      - source_ui
+    behavioral_profiles:
+      class: ''
+      file: core/models.py
+      column_count: 26
+      columns:
+      - id
+      - user_id
+      - current_stage
+      - stage_confidence
+      - stage_stability
+      - stage_updated_at
+      - big5_scores
+      - bpt6_type
+      - bpt6_scores
+      - capacity_total
+      - capacity_weak
+      - capacity_strong
+      - spi_score
+      - spi_level
+      - ttm7_stage_scores
+      - ttm7_sub_scores
+      - primary_domains
+      - domain_details
+      - interaction_mode
+      - psychological_level
+      - risk_flags
+      - friendly_stage_name
+      - friendly_stage_desc
+      - last_assessment_id
+      - created_at
+      - updated_at
+    challenge_day_pushes:
+      class: ''
+      file: core/models.py
+      column_count: 12
+      columns:
+      - id
+      - challenge_id
+      - day_number
+      - push_time
+      - sort_order
+      - is_core
+      - tag
+      - management_content
+      - behavior_guidance
+      - survey
+      - created_at
+      - updated_at
+    challenge_enrollments:
+      class: ''
+      file: core/models.py
+      column_count: 13
+      columns:
+      - id
+      - user_id
+      - challenge_id
+      - coach_id
+      - status
+      - current_day
+      - started_at
+      - completed_at
+      - completed_pushes
+      - completed_surveys
+      - streak_days
+      - enrolled_at
+      - updated_at
+    challenge_push_logs:
+      class: ''
+      file: core/models.py
+      column_count: 6
+      columns:
+      - id
+      - enrollment_id
+      - push_id
+      - status
+      - sent_at
+      - read_at
+    challenge_survey_responses:
+      class: ''
+      file: core/models.py
+      column_count: 6
+      columns:
+      - id
+      - enrollment_id
+      - push_id
+      - user_id
+      - responses
+      - submitted_at
+    challenge_templates:
+      class: ''
+      file: core/models.py
+      column_count: 23
+      columns:
+      - id
+      - title
+      - description
+      - category
+      - cover_image
+      - duration_days
+      - config_key
+      - daily_push_times
+      - day_topics
+      - created_by
+      - status
+      - reviewer1_id
+      - reviewer1_status
+      - reviewer1_note
+      - reviewer1_at
+      - reviewer2_id
+      - reviewer2_status
+      - reviewer2_note
+      - reviewer2_at
+      - published_at
+      - enrollment_count
+      - created_at
+      - updated_at
+    change_causes:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - category
+      - name_zh
+      - name_en
+      - description
+      - assessment_question
+      - weight
+    chat_messages:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - session_id
+      - role
+      - content
+      - model
+      - tokens_used
+      - msg_metadata
+      - created_at
+    chat_sessions:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - session_id
+      - user_id
+      - title
+      - model
+      - is_active
+      - message_count
+      - created_at
+      - updated_at
+    coach_messages:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - coach_id
+      - student_id
+      - content
+      - message_type
+      - is_read
+      - created_at
+    coach_push_queue:
+      class: ''
+      file: core/models.py
+      column_count: 16
+      columns:
+      - id
+      - coach_id
+      - student_id
+      - source_type
+      - source_id
+      - title
+      - content
+      - content_extra
+      - suggested_time
+      - scheduled_time
+      - priority
+      - status
+      - coach_note
+      - reviewed_at
+      - sent_at
+      - created_at
+    coach_review_items:
+      class: ''
+      file: core/models.py
+      column_count: 10
+      columns:
+      - id
+      - assignment_id
+      - category
+      - domain
+      - original_content
+      - coach_content
+      - status
+      - coach_note
+      - created_at
+      - updated_at
+    comb_assessments:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - user_id
+      - answers
+      - dimension_scores
+      - bottleneck
+      - total_score
+      - created_at
+    companion_relations:
+      class: ''
+      file: core/models.py
+      column_count: 10
+      columns:
+      - id
+      - mentor_id
+      - mentee_id
+      - mentor_role
+      - mentee_role
+      - status
+      - quality_score
+      - started_at
+      - graduated_at
+      - notes
+    conflict_matrix:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - agent_a_id
+      - agent_b_id
+      - conflict_type
+      - resolution_strategy
+      - winner_rule
+      - tenant_id
+      - is_enabled
+      - created_at
+    content_audio:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - content_item_id
+      - audio_url
+      - duration_seconds
+      - voice_type
+      - transcript
+      - created_at
+    content_bookmarks:
+      class: ''
+      file: core/models.py
+      column_count: 4
+      columns:
+      - id
+      - user_id
+      - content_id
+      - created_at
+    content_comments:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - user_id
+      - content_id
+      - parent_id
+      - content
+      - rating
+      - like_count
+      - status
+      - created_at
+    content_items:
+      class: ''
+      file: core/models.py
+      column_count: 18
+      columns:
+      - id
+      - content_type
+      - title
+      - body
+      - cover_url
+      - media_url
+      - domain
+      - level
+      - author_id
+      - tenant_id
+      - status
+      - view_count
+      - like_count
+      - comment_count
+      - collect_count
+      - has_quiz
+      - created_at
+      - updated_at
+    content_likes:
+      class: ''
+      file: core/models.py
+      column_count: 4
+      columns:
+      - id
+      - user_id
+      - content_id
+      - created_at
+    contraindications:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - agent_id
+      - condition_type
+      - condition_value
+      - severity
+      - alternative_agent_id
+      - reason
+      - created_at
+    cost_budget_ledger:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - tenant_id
+      - user_id
+      - budget_type
+      - max_tokens
+      - used_tokens
+      - max_cost_cny
+      - used_cost_cny
+      - period_start
+      - period_end
+      - overflow_action
+      - is_active
+      - created_at
+      - updated_at
+    course_modules:
+      class: ''
+      file: core/models.py
+      column_count: 16
+      columns:
+      - id
+      - code
+      - title
+      - description
+      - module_type
+      - elective_cat
+      - tier
+      - target_role
+      - credit_value
+      - theory_ratio
+      - prereq_modules
+      - content_ref
+      - is_active
+      - sort_order
+      - created_at
+      - updated_at
+    decision_trace:
+      class: ''
+      file: core/models.py
+      column_count: 15
+      columns:
+      - id
+      - event_id
+      - user_id
+      - tenant_id
+      - session_id
+      - triggered_agents
+      - policy_applied
+      - rule_weights
+      - conflict_resolution
+      - final_output
+      - secondary_agents
+      - llm_model
+      - token_cost
+      - latency_ms
+      - created_at
+    device_alerts:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - user_id
+      - coach_id
+      - alert_type
+      - severity
+      - message
+      - data_value
+      - threshold_value
+      - data_type
+      - user_read
+      - coach_read
+      - resolved
+      - dedup_key
+      - created_at
+    evidence_tier_binding:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - agent_id
+      - evidence_tier
+      - source_documents
+      - last_reviewed_at
+      - reviewer
+      - created_at
+    exam_definitions:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - exam_id
+      - exam_name
+      - description
+      - level
+      - exam_type
+      - passing_score
+      - duration_minutes
+      - max_attempts
+      - question_ids
+      - status
+      - created_by
+      - created_at
+      - updated_at
+    exam_results:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - user_id
+      - exam_id
+      - attempt_number
+      - score
+      - status
+      - answers
+      - duration_seconds
+      - created_at
+    expert_domain:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - agent_id
+      - domain_name
+      - domain_type
+      - knowledge_scope
+      - authority_level
+      - tenant_id
+      - created_at
+    expert_tenants:
+      class: ''
+      file: core/models.py
+      column_count: 32
+      columns:
+      - id
+      - expert_user_id
+      - brand_name
+      - brand_tagline
+      - brand_avatar
+      - brand_logo_url
+      - brand_colors
+      - brand_theme_id
+      - custom_domain
+      - expert_title
+      - expert_self_intro
+      - expert_specialties
+      - expert_credentials
+      - enabled_agents
+      - agent_persona_overrides
+      - routing_correlations
+      - routing_conflicts
+      - default_fallback_agent
+      - enabled_paths
+      - service_packages
+      - questionnaire_overrides
+      - welcome_message
+      - status
+      - tier
+      - max_clients
+      - revenue_share_expert
+      - trial_expires_at
+      - application_status
+      - application_data
+      - applied_at
+      - created_at
+      - updated_at
+    flip_card_records:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - user_id
+      - pool_id
+      - shown_items
+      - chosen_item_id
+      - reward_json
+      - created_at
+    food_analyses:
+      class: ''
+      file: core/models.py
+      column_count: 13
+      columns:
+      - id
+      - user_id
+      - image_url
+      - food_name
+      - calories
+      - protein
+      - fat
+      - carbs
+      - fiber
+      - advice
+      - raw_response
+      - meal_type
+      - created_at
+    glucose_readings:
+      class: ''
+      file: core/models.py
+      column_count: 12
+      columns:
+      - id
+      - user_id
+      - device_id
+      - value
+      - unit
+      - trend
+      - trend_rate
+      - source
+      - meal_tag
+      - notes
+      - recorded_at
+      - created_at
+    health_competency_assessments:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - user_id
+      - answers
+      - level_scores
+      - current_level
+      - recommended_content_stage
+      - created_at
+    health_data:
+      class: ''
+      file: core/models.py
+      column_count: 11
+      columns:
+      - id
+      - user_id
+      - data_type
+      - value
+      - values
+      - unit
+      - data_metadata
+      - source
+      - device_id
+      - recorded_at
+      - created_at
+    heart_rate_readings:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - user_id
+      - device_id
+      - hr
+      - activity_type
+      - recorded_at
+      - created_at
+    hrv_readings:
+      class: ''
+      file: core/models.py
+      column_count: 12
+      columns:
+      - id
+      - user_id
+      - device_id
+      - sdnn
+      - rmssd
+      - lf
+      - hf
+      - lf_hf_ratio
+      - stress_score
+      - recovery_score
+      - recorded_at
+      - created_at
+    incentive_rewards:
+      class: ''
+      file: core/incentive_integration.py
+      column_count: 10
+      columns:
+      - id
+      - reward_type
+      - name
+      - description
+      - icon
+      - unlock_dimension
+      - unlock_threshold
+      - unlock_growth_level
+      - rx_effect
+      - is_active
+    intervention_outcomes:
+      class: ''
+      file: core/intervention_tracker.py
+      column_count: 25
+      columns:
+      - id
+      - user_id
+      - outcome_type
+      - period_start
+      - period_end
+      - completion_rate
+      - streak_days
+      - tasks_assigned
+      - tasks_completed
+      - tasks_skipped
+      - spi_before
+      - spi_after
+      - spi_delta
+      - stage_before
+      - stage_after
+      - readiness_before
+      - readiness_after
+      - cultivation_stage
+      - user_mood
+      - user_difficulty
+      - user_notes
+      - effectiveness_score
+      - adjustment_action
+      - adjustment_detail
+      - created_at
+    intervention_protocol:
+      class: ''
+      file: core/models.py
+      column_count: 11
+      columns:
+      - id
+      - agent_id
+      - protocol_name
+      - trigger_condition
+      - response_template
+      - intensity_range
+      - duration_days
+      - success_criteria
+      - escalation_protocol
+      - is_enabled
+      - created_at
+    intervention_strategies:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - stage_code
+      - readiness_level
+      - stage_name
+      - cause_code
+      - cause_category
+      - cause_name
+      - strategy_type
+      - coach_script
+    interventions:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - assessment_id
+      - agent_type
+      - intervention_type
+      - title
+      - description
+      - actions
+      - status
+      - user_feedback
+      - feedback_score
+      - completed
+      - created_at
+      - sent_at
+      - completed_at
+    knowledge_chunks:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - document_id
+      - heading
+      - doc_title
+      - doc_author
+      - doc_source
+      - domain_id
+      - tenant_id
+      - page_number
+      - scope
+      - content
+      - chunk_index
+      - chunk_metadata
+      - created_at
+    knowledge_citations:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - session_id
+      - message_id
+      - agent_id
+      - tenant_id
+      - user_id
+      - chunk_id
+      - document_id
+      - query_text
+      - relevance_score
+      - rank_position
+      - citation_text
+      - citation_label
+      - created_at
+    knowledge_contributions:
+      class: ''
+      file: core/models.py
+      column_count: 11
+      columns:
+      - id
+      - document_id
+      - tenant_id
+      - contributor_id
+      - domain_id
+      - reason
+      - status
+      - reviewer_id
+      - review_comment
+      - reviewed_at
+      - created_at
+    knowledge_documents:
+      class: ''
+      file: core/models.py
+      column_count: 27
+      columns:
+      - id
+      - title
+      - file_type
+      - file_hash
+      - scope
+      - domain_id
+      - status
+      - author
+      - source
+      - tenant_id
+      - description
+      - chunk_count
+      - file_size
+      - priority
+      - is_active
+      - raw_content
+      - file_path
+      - evidence_tier
+      - content_type
+      - published_date
+      - review_status
+      - reviewer_id
+      - reviewed_at
+      - contributor_id
+      - expires_at
+      - created_at
+      - updated_at
+    knowledge_domains:
+      class: ''
+      file: backend/models/knowledge.py
+      column_count: 6
+      columns:
+      - id
+      - domain_id
+      - label
+      - description
+      - is_active
+      - created_at
+    learning_points_logs:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - user_id
+      - source_type
+      - source_id
+      - points
+      - category
+      - earned_at
+    learning_progress:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - user_id
+      - content_id
+      - progress_percent
+      - last_position
+      - time_spent_seconds
+      - status
+      - created_at
+      - updated_at
+    learning_time_logs:
+      class: ''
+      file: core/models.py
+      column_count: 6
+      columns:
+      - id
+      - user_id
+      - content_id
+      - domain
+      - minutes
+      - earned_at
+    llm_call_logs:
+      class: ''
+      file: core/models.py
+      column_count: 18
+      columns:
+      - id
+      - user_id
+      - session_id
+      - created_at
+      - intent
+      - complexity
+      - model_requested
+      - model_actual
+      - provider
+      - fell_back
+      - input_tokens
+      - output_tokens
+      - cost_yuan
+      - latency_ms
+      - finish_reason
+      - user_message_preview
+      - assistant_message_preview
+      - error_message
+    micro_action_logs:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - task_id
+      - user_id
+      - action
+      - note
+      - mood_score
+      - created_at
+    micro_action_tasks:
+      class: ''
+      file: core/models.py
+      column_count: 13
+      columns:
+      - id
+      - user_id
+      - domain
+      - title
+      - description
+      - difficulty
+      - source
+      - source_id
+      - status
+      - scheduled_date
+      - completed_at
+      - created_at
+      - updated_at
+    nudge_records:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - user_id
+      - milestone
+      - channel
+      - title
+      - message
+      - sent_at
+      - opened_at
+      - acted_on
+    obstacle_assessments:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - user_id
+      - answers
+      - category_scores
+      - top_obstacles
+      - rx_adjustments
+      - created_at
+    point_events:
+      class: ''
+      file: core/incentive_integration.py
+      column_count: 9
+      columns:
+      - id
+      - user_id
+      - event_type
+      - dimension
+      - points
+      - source_type
+      - source_id
+      - description
+      - created_at
+    point_transactions:
+      class: ''
+      file: core/models.py
+      column_count: 6
+      columns:
+      - id
+      - user_id
+      - point_type
+      - amount
+      - action
+      - created_at
+    policy_intervention_outcome:
+      class: ''
+      file: core/models.py
+      column_count: 13
+      columns:
+      - id
+      - user_id
+      - agent_id
+      - intervention_start
+      - intervention_end
+      - ies_score
+      - stage_before
+      - stage_after
+      - adherence_index
+      - risk_delta
+      - token_cost_total
+      - metadata_
+      - created_at
+    policy_rules:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - rule_name
+      - rule_type
+      - condition_expr
+      - action_type
+      - action_params
+      - priority
+      - tenant_id
+      - is_enabled
+      - evidence_tier
+      - description
+      - created_by
+      - created_at
+      - updated_at
+    policy_stage_transition_log:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - user_id
+      - from_stage
+      - to_stage
+      - trigger_agent_id
+      - trigger_event
+      - confidence
+      - created_at
+    promotion_applications:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - user_id
+      - from_role
+      - to_role
+      - status
+      - credit_snapshot
+      - point_snapshot
+      - companion_snapshot
+      - practice_snapshot
+      - check_result
+      - reviewer_id
+      - review_comment
+      - reviewed_at
+      - created_at
+    question_bank:
+      class: ''
+      file: core/models.py
+      column_count: 13
+      columns:
+      - id
+      - question_id
+      - content
+      - question_type
+      - options
+      - answer
+      - explanation
+      - domain
+      - difficulty
+      - tags
+      - created_by
+      - created_at
+      - updated_at
+    rag_query_logs:
+      class: ''
+      file: core/models.py
+      column_count: 13
+      columns:
+      - id
+      - user_id
+      - created_at
+      - query_text
+      - query_type
+      - doc_type_filter
+      - top_k
+      - results_count
+      - top_score
+      - avg_score
+      - sources_json
+      - total_latency_ms
+      - llm_call_log_id
+    reminders:
+      class: ''
+      file: core/models.py
+      column_count: 12
+      columns:
+      - id
+      - user_id
+      - type
+      - title
+      - content
+      - cron_expr
+      - next_fire_at
+      - is_active
+      - source
+      - created_by
+      - created_at
+      - updated_at
+    risk_boundary:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - agent_id
+      - risk_type
+      - max_risk_level
+      - escalation_target
+      - auto_exit_condition
+      - alert_message
+      - is_enabled
+      - created_at
+    rule_priority:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - rule_id
+      - parent_rule_id
+      - level
+      - override_mode
+      - effective_from
+      - effective_until
+      - created_at
+    rx_prescriptions:
+      class: ''
+      file: behavior_rx/core/rx_models.py
+      column_count: 25
+      columns:
+      - id
+      - user_id
+      - session_id
+      - agent_type
+      - ttm_stage
+      - bigfive_profile
+      - capacity_score
+      - goal_behavior
+      - strategy_type
+      - secondary_strategies
+      - intensity
+      - pace
+      - communication_style
+      - micro_actions
+      - reward_triggers
+      - resistance_threshold
+      - escalation_rules
+      - domain_context
+      - effectiveness_score
+      - adherence_index
+      - outcome_label
+      - is_active
+      - superseded_by
+      - created_at
+      - updated_at
+    rx_strategy_templates:
+      class: ''
+      file: behavior_rx/core/rx_models.py
+      column_count: 21
+      columns:
+      - id
+      - strategy_type
+      - domain
+      - ttm_stage_min
+      - ttm_stage_max
+      - name
+      - name_zh
+      - description
+      - core_mechanism
+      - typical_applications
+      - default_intensity
+      - default_pace
+      - default_micro_actions
+      - default_reward_triggers
+      - default_resistance_threshold
+      - personality_modifiers
+      - evidence_tier
+      - is_enabled
+      - version
+      - created_at
+      - updated_at
+    safety_logs:
+      class: ''
+      file: core/models.py
+      column_count: 11
+      columns:
+      - id
+      - user_id
+      - event_type
+      - severity
+      - input_text
+      - output_text
+      - filter_details
+      - resolved
+      - resolved_by
+      - resolved_at
+      - created_at
+    self_efficacy_assessments:
+      class: ''
+      file: core/models.py
+      column_count: 6
+      columns:
+      - id
+      - user_id
+      - answers
+      - avg_score
+      - level
+      - created_at
+    sleep_records:
+      class: ''
+      file: core/models.py
+      column_count: 20
+      columns:
+      - id
+      - user_id
+      - device_id
+      - sleep_date
+      - sleep_start
+      - sleep_end
+      - total_duration_min
+      - awake_min
+      - light_min
+      - deep_min
+      - rem_min
+      - sleep_score
+      - efficiency
+      - awakenings
+      - onset_latency_min
+      - avg_spo2
+      - min_spo2
+      - stages_data
+      - created_at
+      - updated_at
+    stage_applicability:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - agent_id
+      - stage_code
+      - effectiveness_score
+      - recommended_intensity
+      - is_primary
+      - notes
+      - created_at
+    stage_transition_logs:
+      class: ''
+      file: core/intervention_tracker.py
+      column_count: 8
+      columns:
+      - id
+      - user_id
+      - transition_type
+      - from_value
+      - to_value
+      - trigger
+      - evidence
+      - created_at
+    support_assessments:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - user_id
+      - answers
+      - layer_scores
+      - total_score
+      - support_level
+      - weakest_layer
+      - created_at
+    survey_distributions:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - survey_id
+      - channel
+      - channel_config
+      - tracking_code
+      - click_count
+      - submit_count
+      - created_at
+      - created_by
+    survey_questions:
+      class: ''
+      file: core/models.py
+      column_count: 10
+      columns:
+      - id
+      - survey_id
+      - question_type
+      - sort_order
+      - title
+      - description
+      - is_required
+      - config
+      - skip_logic
+      - created_at
+    survey_response_answers:
+      class: ''
+      file: core/models.py
+      column_count: 6
+      columns:
+      - id
+      - response_id
+      - question_id
+      - answer_value
+      - score
+      - created_at
+    survey_responses:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - survey_id
+      - user_id
+      - respondent_ip
+      - respondent_ua
+      - device_type
+      - started_at
+      - completed_at
+      - duration_sec
+      - is_complete
+      - current_page
+      - baps_synced
+      - baps_synced_at
+      - created_at
+    surveys:
+      class: ''
+      file: core/models.py
+      column_count: 16
+      columns:
+      - id
+      - title
+      - description
+      - survey_type
+      - status
+      - created_by
+      - tenant_id
+      - settings
+      - baps_mapping
+      - response_count
+      - avg_duration
+      - short_code
+      - created_at
+      - updated_at
+      - published_at
+      - closed_at
+    tenant_agent_mappings:
+      class: ''
+      file: core/models.py
+      column_count: 14
+      columns:
+      - id
+      - tenant_id
+      - agent_id
+      - display_name
+      - display_avatar
+      - greeting
+      - tone
+      - bio
+      - is_enabled
+      - is_primary
+      - sort_order
+      - custom_keywords
+      - keyword_boost
+      - created_at
+    tenant_audit_logs:
+      class: ''
+      file: core/models.py
+      column_count: 6
+      columns:
+      - id
+      - tenant_id
+      - actor_id
+      - action
+      - detail
+      - created_at
+    tenant_clients:
+      class: ''
+      file: core/models.py
+      column_count: 11
+      columns:
+      - id
+      - tenant_id
+      - user_id
+      - source
+      - service_package
+      - status
+      - enrolled_at
+      - graduated_at
+      - total_sessions
+      - last_active_at
+      - notes
+    trigger_records:
+      class: ''
+      file: core/models.py
+      column_count: 9
+      columns:
+      - id
+      - assessment_id
+      - tag_id
+      - name
+      - category
+      - severity
+      - confidence
+      - trigger_metadata
+      - created_at
+    user_activity_logs:
+      class: ''
+      file: core/models.py
+      column_count: 5
+      columns:
+      - id
+      - user_id
+      - activity_type
+      - detail
+      - created_at
+    user_badges:
+      class: ''
+      file: core/models.py
+      column_count: 5
+      columns:
+      - id
+      - user_id
+      - badge_id
+      - earned_at
+      - metadata_
+    user_change_cause_scores:
+      class: ''
+      file: core/models.py
+      column_count: 6
+      columns:
+      - id
+      - user_id
+      - assessment_id
+      - cause_id
+      - score
+      - created_at
+    user_credits:
+      class: ''
+      file: core/models.py
+      column_count: 10
+      columns:
+      - id
+      - user_id
+      - module_id
+      - credit_earned
+      - score
+      - completed_at
+      - evidence_type
+      - evidence_ref
+      - reviewer_id
+      - created_at
+    user_devices:
+      class: ''
+      file: core/models.py
+      column_count: 16
+      columns:
+      - id
+      - user_id
+      - device_id
+      - device_type
+      - manufacturer
+      - model
+      - firmware_version
+      - serial_number
+      - status
+      - battery_level
+      - auth_token
+      - auth_expires_at
+      - last_sync_at
+      - sync_cursor
+      - created_at
+      - updated_at
+    user_learning_stats:
+      class: ''
+      file: core/models.py
+      column_count: 13
+      columns:
+      - id
+      - user_id
+      - total_minutes
+      - total_points
+      - growth_points
+      - contribution_points
+      - influence_points
+      - current_streak
+      - longest_streak
+      - last_learn_date
+      - quiz_total
+      - quiz_passed
+      - updated_at
+    user_memorials:
+      class: ''
+      file: core/models.py
+      column_count: 8
+      columns:
+      - id
+      - user_id
+      - type
+      - template
+      - data_snapshot
+      - asset_url
+      - shared_count
+      - created_at
+    user_milestones:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - id
+      - user_id
+      - milestone
+      - achieved_at
+      - streak_days
+      - rewards_json
+      - ritual_played
+    user_point_balances:
+      class: ''
+      file: core/incentive_integration.py
+      column_count: 11
+      columns:
+      - user_id
+      - growth
+      - contribution
+      - influence
+      - total
+      - streak_days
+      - longest_streak
+      - last_checkin_date
+      - tasks_completed_total
+      - assessments_completed
+      - updated_at
+    user_points:
+      class: ''
+      file: core/models.py
+      column_count: 3
+      columns:
+      - user_id
+      - point_type
+      - total_points
+    user_rewards:
+      class: ''
+      file: core/incentive_integration.py
+      column_count: 4
+      columns:
+      - id
+      - user_id
+      - reward_id
+      - earned_at
+    user_sessions:
+      class: ''
+      file: core/models.py
+      column_count: 12
+      columns:
+      - id
+      - session_id
+      - user_id
+      - token
+      - refresh_token
+      - ip_address
+      - user_agent
+      - device_info
+      - is_active
+      - created_at
+      - expires_at
+      - last_activity_at
+    user_state_sync:
+      class: ''
+      file: services/state_sync/manager.py
+      column_count: 13
+      columns:
+      - id
+      - event_id
+      - user_id
+      - event_type
+      - timestamp
+      - client_view
+      - coach_view
+      - expert_view
+      - trigger_id
+      - action_id
+      - processed
+      - created_at
+      - updated_at
+    user_streaks:
+      class: ''
+      file: core/models.py
+      column_count: 7
+      columns:
+      - user_id
+      - current_streak
+      - longest_streak
+      - last_checkin_date
+      - grace_used_month
+      - recovery_count
+      - updated_at
+    users:
+      class: ''
+      file: core/models.py
+      column_count: 22
+      columns:
+      - id
+      - username
+      - email
+      - phone
+      - password_hash
+      - is_active
+      - is_verified
+      - role
+      - full_name
+      - date_of_birth
+      - gender
+      - profile
+      - nickname
+      - avatar_url
+      - health_competency_level
+      - current_stage
+      - growth_level
+      - adherence_rate
+      - last_assessment_date
+      - created_at
+      - updated_at
+      - last_login_at
+    vital_signs:
+      class: ''
+      file: core/models.py
+      column_count: 17
+      columns:
+      - id
+      - user_id
+      - device_id
+      - data_type
+      - weight_kg
+      - bmi
+      - body_fat_percent
+      - muscle_mass_kg
+      - water_percent
+      - visceral_fat
+      - systolic
+      - diastolic
+      - pulse
+      - temperature
+      - spo2
+      - recorded_at
+      - created_at
+    workout_records:
+      class: ''
+      file: core/models.py
+      column_count: 15
+      columns:
+      - id
+      - user_id
+      - device_id
+      - workout_type
+      - start_time
+      - end_time
+      - duration_min
+      - distance_m
+      - calories
+      - avg_hr
+      - max_hr
+      - avg_pace
+      - notes
+      - gps_data
+      - created_at
+api_endpoints:
+  openapi_operations: 428
+  static_analysis: 665
+  auth_distribution:
+    authenticated: 223
+    public: 165
+    custom: 111
+    coach_or_admin: 96
+    admin_only: 66
+    role_required: 4
+  note: OpenAPI为权威, 静态分析665含路径组合和非主app端点
+agents:
+  domain_agents:
+  - class: MasterAgent
+    file: core/master_agent.py
+    priority: null
+  - class: GenericLLMAgent
+    file: core/agents/generic_llm_agent.py
+    priority: null
+  - class: BehaviorRxAgent
+    file: core/agents/integrative_agents.py
+    priority: 2
+  - class: WeightAgent
+    file: core/agents/integrative_agents.py
+    priority: 2
+  - class: CardiacRehabAgent
+    file: core/agents/integrative_agents.py
+    priority: 1
+  - class: CrisisAgent
+    file: core/agents/specialist_agents.py
+    priority: 0
+  - class: SleepAgent
+    file: core/agents/specialist_agents.py
+    priority: 2
+  - class: GlucoseAgent
+    file: core/agents/specialist_agents.py
+    priority: 1
+  - class: StressAgent
+    file: core/agents/specialist_agents.py
+    priority: 2
+  - class: NutritionAgent
+    file: core/agents/specialist_agents.py
+    priority: 3
+  - class: ExerciseAgent
+    file: core/agents/specialist_agents.py
+    priority: 3
+  - class: MentalHealthAgent
+    file: core/agents/specialist_agents.py
+    priority: 2
+  - class: TCMWellnessAgent
+    file: core/agents/specialist_agents.py
+    priority: 4
+  - class: MotivationAgent
+    file: core/agents/specialist_agents.py
+    priority: 3
+  - class: SafetyAgent
+    file: core/v14/agents.py
+    priority: null
+  - class: ResistanceAgent
+    file: core/v14/agents.py
+    priority: null
+  - class: ExplainAgent
+    file: core/v14/agents.py
+    priority: null
+  expert_agents:
+  - class: AdherenceExpertAgent
+    file: behavior_rx/agents/adherence_expert_agent.py
+  - class: BehaviorCoachAgent
+    file: behavior_rx/agents/behavior_coach_agent.py
+  - class: CardiacExpertAgent
+    file: behavior_rx/agents/cardiac_expert_agent.py
+  - class: MetabolicExpertAgent
+    file: behavior_rx/agents/metabolic_expert_agent.py
+  total: 21
+celery_tasks:
+  status: Phase C — APScheduler已下线, Celery全权接管
+  files:
+  - api/worker.py
+  - api/tasks/scheduler_tasks.py
+  - api/tasks/governance_tasks.py
+  - api/tasks/event_tasks.py
+  beat_schedule:
+  - name: daily_task_generation
+    schedule: cron(6:00)
+    source: migrated
+  - name: reminder_check
+    schedule: every 60s
+    source: migrated
+    protection: expires=50s + distributed_lock
+  - name: expired_task_cleanup
+    schedule: cron(23:00)
+    source: migrated
+  - name: process_approved_pushes
+    schedule: every 300s
+    source: migrated
+    protection: expires=280s + distributed_lock
+  - name: expire_stale_queue_items
+    schedule: cron(6:00)
+    source: migrated
+  - name: knowledge_freshness_check
+    schedule: cron(7:00)
+    source: migrated
+  - name: program_advance_day
+    schedule: cron(0:00)
+    source: migrated
+  - name: program_push_morning
+    schedule: cron(9:00)
+    source: migrated
+  - name: program_push_noon
+    schedule: cron(11:30)
+    source: migrated
+  - name: program_push_evening
+    schedule: cron(17:30)
+    source: migrated
+  - name: program_batch_analysis
+    schedule: cron(23:30)
+    source: migrated
+  - name: safety_daily_report
+    schedule: cron(2:00)
+    source: migrated
+  - name: agent_metrics_aggregate
+    schedule: cron(1:00)
+    source: migrated
+  - name: governance_health_check
+    schedule: cron(23:30)
+    source: new
+  - name: coach_challenge_7d_push
+    schedule: cron(9:00)
+    source: new
+  - name: expert_program_14d_push
+    schedule: cron(0:05)
+    source: new
+  event_driven:
+  - name: promotion_ceremony
+    trigger: API .delay(user_id, from_role, to_role)
+    source: new
+  - name: process_event
+    trigger: trigger_router → .delay(event_type, handler, data)
+    source: new
+  - name: process_event_batch
+    trigger: batch dispatch
+    source: new
+  event_handlers:
+    total: 40
+    router: core/v14/trigger_router.py
+    types:
+    - TASK
+    - CGM
+    - TEXT_INPUT
+    - TASK_COMPLETE
+    - startup
+    - EMOTION
+    - RHYTHM
+    - USAGE
+    - DEVICE_DATA
+safety_pipeline:
+  policy_gate_rules: 11
+  safety_functions: 14
+  crisis_keywords:
+  - 去死
+  - 割腕
+  - 遗书
+  - 自残
+  - 跳楼
+  - 结束生命
+  - 自杀
+  - 不想活
+frontend:
+  vue_routes: 144
+  vue_components: 204
+  api_services: 216
+  route_guards:
+    explicit_role: 2
+    requires_auth_only: 43
+    unguarded: 99
+    gap: 后端162个受限端点(96 coach_or_admin + 66 admin_only), 前端仅2条role守卫
+infrastructure:
+  docker_services:
+  - name: app
+    container: bhp_v3_api
+    port: 8000
+    role: FastAPI
+  - name: worker
+    container: bhp_v3_worker
+    role: Celery Worker (prefork)
+  - name: beat
+    container: bhp_v3_beat
+    role: Celery Beat Scheduler
+  - name: flower
+    container: bhp_v3_flower
+    port: 5555
+    role: Celery Monitor
+  - name: db
+    container: bhp_v3_postgres
+    port: 5432
+    role: PostgreSQL + pgvector
+  - name: redis
+    container: bhp_v3_redis
+    role: Redis (broker=db1, backend=db2)
+  - name: qdrant
+    container: bhp_v3_qdrant
+    port: 6333
+    role: Vector DB
+  - name: nginx
+    container: bhp_v3_nginx
+    port: 80/443
+    role: Reverse Proxy
+  celery_config:
+    broker: redis://:***@redis:6379/1
+    backend: redis://:***@redis:6379/2
+    worker_pool: prefork (sync)
+    db_session: SYNC_DATABASE_URL (psycopg2)
+    timezone: Asia/Shanghai
+    concurrency: 4
+known_gaps:
+- id: GAP-001
+  area: 前端路由守卫
+  severity: medium
+  status: pending
+  description: 144路由中仅2条有role守卫, 后端162个受限端点未在前端拦截
+- id: GAP-002
+  area: OpenAPI覆盖差异
+  severity: low
+  status: known
+  description: 静态分析665 vs OpenAPI 428, 差异含baps_api/xingjian-agent独立端点
+- id: GAP-003
+  area: Pydantic Schema去重
+  severity: low
+  status: known
+  description: 319 schemas中存在跨文件重复(如ChatRequest在7个文件)
+- id: GAP-004
+  area: 治理任务业务逻辑
+  severity: medium
+  status: in_progress
+  description: governance/challenge/program 3个Celery任务为框架代码, TODO待实现
+- id: GAP-005
+  area: behavior_rx模块
+  severity: low
+  status: known
+  description: behavior_rx_v32_complete是behavior_rx的旧版副本, 已从提取中排除

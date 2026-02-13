@@ -84,6 +84,7 @@ loguru==0.7.3
 # Task Scheduling
 apscheduler==3.11.2
 celery[redis]==5.6.2
+flower==2.0.1
 
 # Production Server
 gunicorn==25.0.3

@@ -1,0 +1,154 @@
+version: '3.8'
+
+services:
+  # 1. 核心 API 服务 (保持全配置)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bhp_v3_api
+    restart: always
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
+      - REDIS_URL=redis://redis:6379/0
+      - QDRANT_URL=http://qdrant:6333
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=.
+      - LOG_LEVEL=info
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      qdrant:
+        condition: service_started
+    volumes:
+      - .:/app
+      - ./static:/app/api/static  # 确保静态资源可用
+    networks:
+      - bhp_network
+
+  # 2. Celery 异步任务 (核心！不能删)
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bhp_v3_worker
+    command: celery -A api.worker.celery_app worker --loglevel=info
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - PYTHONPATH=.
+    depends_on:
+      - redis
+      - db
+    volumes:
+      - .:/app
+    networks:
+      - bhp_network
+
+  # 3. PostgreSQL 数据库 (采用 pg15 优化版镜像)  postgres: db
+  db:
+    image: pgvector/pgvector:pg15  # 换成这个更通用的修复镜像
+    container_name: bhp_v3_postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=bhp_user
+      - POSTGRES_PASSWORD=bhp_password
+      - POSTGRES_DB=bhp_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - bhp_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bhp_user -d bhp_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bhp_network
+
+  # 4. Qdrant 向量数据库 (保留知识库支持)
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: bhp_v3_qdrant
+    ports:
+      - "6333:6333"
+    volumes:
+      - bhp_qdrant_data:/qdrant/storage
+    networks:
+      - bhp_network
+
+  # 5. Redis
+  redis:
+    image: redis:7-alpine
+    container_name: bhp_v3_redis
+    networks:
+      - bhp_network
+
+  # --- Celery Beat (deploy_celery.sh) ---
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bhp_v3_beat
+    command: celery -A api.worker.celery_app beat --loglevel=info
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - PYTHONPATH=.
+    depends_on:
+      - redis
+      - db
+    volumes:
+      - .:/app
+    networks:
+      - bhp_network
+
+  # --- Celery Flower (deploy_celery.sh) ---
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bhp_v3_flower
+    command: celery -A api.worker.celery_app flower --port=5555
+    restart: always
+    ports:
+      - "5555:5555"
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - PYTHONPATH=.
+    depends_on:
+      - redis
+    networks:
+      - bhp_network
+
+  # 6. Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    container_name: bhp_v3_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    depends_on:
+      - app
+    restart: unless-stopped
+    networks:
+      - bhp_network
+
+networks:
+  bhp_network:
+    driver: bridge
+
+volumes:
+  bhp_db_data:
+  bhp_qdrant_data:
