@@ -37,7 +37,12 @@ from core.models import Base
 target_metadata = Base.metadata
 
 # Override sqlalchemy.url from environment variable if available
+# Alembic requires sync driver — auto-convert asyncpg → psycopg2
 database_url = os.getenv("DATABASE_URL", "sqlite:///./data/behavioral_health.db")
+if "+asyncpg" in database_url:
+    database_url = database_url.replace("+asyncpg", "+psycopg2")
+elif database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 config.set_main_option("sqlalchemy.url", database_url)
 
 

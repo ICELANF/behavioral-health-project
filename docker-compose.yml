@@ -39,6 +39,11 @@ services:
     container_name: bhp_v3_worker
     command: celery -A api.worker.celery_app worker --loglevel=info
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A api.worker.celery_app inspect ping --timeout 10 || exit 1"]
+      interval: 60s
+      timeout: 15s
+      retries: 3
     environment:
       - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
       - REDIS_URL=redis://redis:6379/0
@@ -99,6 +104,11 @@ services:
     container_name: bhp_v3_beat
     command: celery -A api.worker.celery_app beat --loglevel=info
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f 'celery.*beat' || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
     environment:
       - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
       - REDIS_URL=redis://redis:6379/0
@@ -120,6 +130,11 @@ services:
     container_name: bhp_v3_flower
     command: celery -A api.worker.celery_app flower --port=5555
     restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5555/ || exit 1"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
     ports:
       - "5555:5555"
     environment:
