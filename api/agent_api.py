@@ -13,8 +13,12 @@ from fastapi import APIRouter, Depends, Query, Body
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
+import logging
+
 from core.database import get_db
 from api.dependencies import get_current_user, resolve_tenant_ctx
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["agent"])
 
@@ -389,6 +393,22 @@ async def run_agent(
         )
         result = agent.process(agent_input)
 
+        # ── 审计日志 ──
+        try:
+            from core.models import UserActivityLog
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="agent.run",
+                detail={
+                    "agent_id": "trust_guide",
+                    "observer_mode": True,
+                    "dialog_count": journey.observer_dialog_count,
+                },
+                created_at=datetime.utcnow(),
+            ))
+        except Exception:
+            logger.warning("审计日志写入失败")
+
         # Update dialog count
         journey.observer_dialog_count += 1
         db.commit()
@@ -418,7 +438,83 @@ async def run_agent(
         }
     # ── End Observer white-list ──────────────────────────
 
+    # ── SafetyPipeline L1: 输入过滤 ──
+    _safety_pipeline = None
+    _input_category = "normal"
+    try:
+        from core.safety.pipeline import get_safety_pipeline
+        _safety_pipeline = get_safety_pipeline()
+        _input_result = _safety_pipeline.process_input(req.expected_output)
+        _input_category = _input_result.category
+        if not _input_result.safe:
+            try:
+                from core.models import SafetyLog
+                db.add(SafetyLog(
+                    user_id=current_user.id if hasattr(current_user, 'id') else None,
+                    event_type="input_blocked",
+                    severity=_input_result.severity,
+                    input_text=req.expected_output[:500],
+                    filter_details={"category": _input_result.category, "terms": _input_result.blocked_terms, "source": "agent_run"},
+                ))
+                db.commit()
+            except Exception:
+                logger.warning("SafetyLog write failed")
+            _safe_reply = _safety_pipeline.get_crisis_response() if _input_result.category == "crisis" else "抱歉，您的消息包含不适当的内容，无法处理。"
+            return {"success": False, "error": "safety_blocked", "message": _safe_reply, "safety_filtered": True}
+    except Exception as e:
+        logger.warning(f"SafetyPipeline input filter degraded: {e}")
+
     output = _run_agent_task(req, tenant_ctx=tenant_ctx)
+
+    # ── SafetyPipeline L4: 输出过滤 ──
+    try:
+        if _safety_pipeline and isinstance(output, dict):
+            _agent_text = output.get("output", "") or output.get("response", "") or ""
+            if _agent_text:
+                _output_result = _safety_pipeline.filter_output(_agent_text, _input_category)
+                if _output_result.grade == "blocked":
+                    _filtered_text = "抱歉，生成的内容未通过安全审核。如需专业建议请咨询医生。"
+                elif _output_result.grade == "review_needed":
+                    _filtered_text = _output_result.text
+                else:
+                    _filtered_text = _output_result.text
+                if "output" in output:
+                    output["output"] = _filtered_text
+                elif "response" in output:
+                    output["response"] = _filtered_text
+                if _output_result.grade in ("blocked", "review_needed"):
+                    try:
+                        from core.models import SafetyLog
+                        db.add(SafetyLog(
+                            user_id=current_user.id if hasattr(current_user, 'id') else None,
+                            event_type="output_blocked" if _output_result.grade == "blocked" else "output_review",
+                            severity="high" if _output_result.grade == "blocked" else "medium",
+                            input_text=req.expected_output[:500],
+                            output_text=_agent_text[:500],
+                            filter_details={"grade": _output_result.grade, "annotations": _output_result.annotations, "source": "agent_run"},
+                        ))
+                        db.commit()
+                    except Exception:
+                        logger.warning("SafetyLog write failed (agent output)")
+    except Exception as e:
+        logger.warning(f"SafetyPipeline output filter degraded: {e}")
+
+    # ── 审计日志 ──
+    try:
+        from core.models import UserActivityLog
+        db.add(UserActivityLog(
+            user_id=current_user.id if hasattr(current_user, 'id') else 0,
+            activity_type="agent.run",
+            detail={
+                "input_len": len(req.expected_output) if req.expected_output else 0,
+                "tenant_ctx": bool(tenant_ctx),
+            },
+            created_at=datetime.utcnow(),
+        ))
+        db.commit()
+    except Exception:
+        logger.warning("审计日志写入失败")
+
     return {"success": True, "data": output}
 
 

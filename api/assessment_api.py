@@ -379,6 +379,19 @@ def submit_assessment(
 
         logger.info(f"✓ 评估提交成功: {assessment_id}, 风险等级: {risk_level}")
 
+        # assessment_submit 积分
+        try:
+            from core.models import PointTransaction
+            db.add(PointTransaction(
+                user_id=current_user.id,
+                action="assessment_submit",
+                point_type="growth",
+                amount=5,
+            ))
+            db.commit()
+        except Exception as e:
+            logger.warning(f"积分记录失败: {e}")
+
         return assessment_to_dict(assessment)
 
     except HTTPException:

@@ -12,13 +12,16 @@ import json
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 import uvicorn
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from api.dependencies import get_current_user
+from core.models import User
 
 from core.baps.scoring_engine import BAPSScoringEngine
 from core.baps.report_generator import BAPSReportGenerator
@@ -166,7 +169,7 @@ async def health_check():
 # ============ 问卷管理端点 ============
 
 @app.get("/questionnaires", tags=["问卷管理"])
-async def list_questionnaires():
+async def list_questionnaires(current_user: User = Depends(get_current_user)):
     """获取所有可用问卷列表"""
     result = []
     for key, q in questionnaires.items():
@@ -182,7 +185,7 @@ async def list_questionnaires():
 
 
 @app.get("/questionnaires/{questionnaire_type}", tags=["问卷管理"])
-async def get_questionnaire(questionnaire_type: str):
+async def get_questionnaire(questionnaire_type: str, current_user: User = Depends(get_current_user)):
     """获取指定问卷的详细信息和题目"""
     if questionnaire_type not in questionnaires:
         raise HTTPException(status_code=404, detail=f"问卷类型 '{questionnaire_type}' 不存在")
@@ -210,7 +213,8 @@ async def get_questionnaire(questionnaire_type: str):
 @app.get("/questionnaires/{questionnaire_type}/items", tags=["问卷管理"])
 async def get_questionnaire_items(
     questionnaire_type: str,
-    dimension: Optional[str] = Query(None, description="筛选特定维度")
+    dimension: Optional[str] = Query(None, description="筛选特定维度"),
+    current_user: User = Depends(get_current_user),
 ):
     """获取问卷题目列表"""
     if questionnaire_type not in questionnaires:
@@ -232,7 +236,7 @@ async def get_questionnaire_items(
 # ============ 评估端点 ============
 
 @app.post("/assess/big_five", tags=["评估"])
-async def assess_big_five(request: BigFiveAnswers):
+async def assess_big_five(request: BigFiveAnswers, current_user: User = Depends(get_current_user)):
     """
     大五人格评估
 
@@ -247,7 +251,7 @@ async def assess_big_five(request: BigFiveAnswers):
 
 
 @app.post("/assess/bpt6", tags=["评估"])
-async def assess_bpt6(request: BPT6Answers):
+async def assess_bpt6(request: BPT6Answers, current_user: User = Depends(get_current_user)):
     """
     BPT-6行为模式分型评估
 
@@ -262,7 +266,7 @@ async def assess_bpt6(request: BPT6Answers):
 
 
 @app.post("/assess/capacity", tags=["评估"])
-async def assess_capacity(request: CAPACITYAnswers):
+async def assess_capacity(request: CAPACITYAnswers, current_user: User = Depends(get_current_user)):
     """
     CAPACITY改变潜力诊断
 
@@ -277,7 +281,7 @@ async def assess_capacity(request: CAPACITYAnswers):
 
 
 @app.post("/assess/spi", tags=["评估"])
-async def assess_spi(request: SPIAnswers):
+async def assess_spi(request: SPIAnswers, current_user: User = Depends(get_current_user)):
     """
     SPI成功可能性评估
 
@@ -292,7 +296,7 @@ async def assess_spi(request: SPIAnswers):
 
 
 @app.post("/assess/ttm7", tags=["评估"])
-async def assess_ttm7(request: TTM7Answers):
+async def assess_ttm7(request: TTM7Answers, current_user: User = Depends(get_current_user)):
     """
     TTM7改变阶段评估
 
@@ -307,7 +311,7 @@ async def assess_ttm7(request: TTM7Answers):
 
 
 @app.post("/assess/comprehensive", tags=["评估"])
-async def assess_comprehensive(request: ComprehensiveAnswers):
+async def assess_comprehensive(request: ComprehensiveAnswers, current_user: User = Depends(get_current_user)):
     """
     综合评估
 
@@ -331,7 +335,7 @@ async def assess_comprehensive(request: ComprehensiveAnswers):
 
 
 @app.post("/assess/comprehensive/markdown", tags=["评估"], response_class=PlainTextResponse)
-async def assess_comprehensive_markdown(request: ComprehensiveAnswers):
+async def assess_comprehensive_markdown(request: ComprehensiveAnswers, current_user: User = Depends(get_current_user)):
     """
     综合评估（Markdown格式）
 
@@ -352,7 +356,7 @@ async def assess_comprehensive_markdown(request: ComprehensiveAnswers):
 
 
 @app.post("/assess/quick", tags=["评估"])
-async def quick_assess(request: QuickAssessmentRequest):
+async def quick_assess(request: QuickAssessmentRequest, current_user: User = Depends(get_current_user)):
     """
     快速评估
 
@@ -484,7 +488,7 @@ async def get_dify_tools_schema():
 # ============ 模拟测试数据端点 ============
 
 @app.get("/test/sample-answers/{questionnaire_type}", tags=["测试"])
-async def get_sample_answers(questionnaire_type: str):
+async def get_sample_answers(questionnaire_type: str, current_user: User = Depends(get_current_user)):
     """获取问卷的示例答案（用于测试）"""
     if questionnaire_type not in questionnaires:
         raise HTTPException(status_code=404, detail=f"问卷类型 '{questionnaire_type}' 不存在")
@@ -510,7 +514,7 @@ async def get_sample_answers(questionnaire_type: str):
 
 
 @app.post("/test/full-assessment", tags=["测试"])
-async def test_full_assessment():
+async def test_full_assessment(current_user: User = Depends(get_current_user)):
     """
     完整评估测试
 

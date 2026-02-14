@@ -12,6 +12,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
+from loguru import logger
+
 from core.database import get_db
 from core.models import User, KnowledgeDocument, TIER_PRIORITY_MAP
 from core.auth import get_role_level
@@ -124,6 +126,18 @@ def submit_contribution(
     doc.scope = "platform"
     db.commit()
     db.refresh(doc)
+
+    try:
+        from core.models import PointTransaction
+        db.add(PointTransaction(
+            user_id=current_user.id,
+            action="contribution_submit",
+            point_type="contribution",
+            amount=5,
+        ))
+        db.commit()
+    except Exception as e:
+        logger.warning(f"积分记录失败: {e}")
 
     return {"success": True, "data": _doc_to_dict(doc)}
 

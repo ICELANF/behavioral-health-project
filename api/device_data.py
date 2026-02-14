@@ -19,6 +19,7 @@ from sqlalchemy import func, and_
 from loguru import logger
 import enum
 
+from api.dependencies import get_current_user
 from core.database import get_db_session, db_transaction
 from core.models import (
     UserDevice, DeviceType, DeviceStatus,
@@ -196,11 +197,12 @@ def calculate_glucose_stats(readings: List[GlucoseReading]) -> GlucoseStatistics
     )
 
 
+# DEPRECATED: 建议端点直接使用 Depends(get_current_user)
 async def get_current_user_id(
-    x_user_id: int = Header(default=1, alias="X-User-ID")
+    current_user=Depends(get_current_user),
 ) -> int:
-    """获取当前用户ID"""
-    return x_user_id
+    """获取当前用户ID (JWT认证)"""
+    return current_user.id
 
 
 # ============================================

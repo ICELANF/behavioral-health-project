@@ -16,6 +16,9 @@ from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends
 
+from api.dependencies import get_current_user, require_admin
+from core.models import User
+
 from .schemas import (
     ChatRequest,
     ChatResponse,
@@ -117,7 +120,7 @@ async def health_check():
     summary="获取专家列表",
     description="获取所有可用的专家信息"
 )
-async def list_experts(orchestrator=Depends(get_orchestrator)):
+async def list_experts(orchestrator=Depends(get_orchestrator), current_user: User = Depends(get_current_user)):
     """获取专家列表"""
     experts_data = orchestrator.get_available_experts()
 
@@ -152,7 +155,8 @@ async def list_experts(orchestrator=Depends(get_orchestrator)):
 )
 async def chat(
     request: OctopusChatRequest,
-    orchestrator=Depends(get_orchestrator)
+    orchestrator=Depends(get_orchestrator),
+    current_user: User = Depends(get_current_user),
 ):
     """八爪鱼智能对话接口
 
@@ -291,7 +295,8 @@ async def chat(
 )
 async def decompose_advice(
     request: DecomposeRequest,
-    decomposer=Depends(get_decomposer)
+    decomposer=Depends(get_decomposer),
+    current_user: User = Depends(get_current_user),
 ):
     """任务分解接口
 
@@ -340,7 +345,7 @@ async def decompose_advice(
     summary="删除会话",
     description="删除指定的会话及其历史记录"
 )
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, current_user: User = Depends(get_current_user)):
     """删除会话"""
     success = session_manager.delete_session(session_id)
     if not success:
@@ -356,8 +361,8 @@ async def delete_session(session_id: str):
     summary="重置所有会话",
     description="清空所有会话（管理接口）"
 )
-async def reset_all_sessions():
-    """重置所有会话"""
+async def reset_all_sessions(current_user: User = Depends(require_admin)):
+    """重置所有会话（管理接口，待下线）"""
     count = session_manager.get_session_count()
     session_manager.clear_all()
 

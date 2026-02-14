@@ -185,6 +185,7 @@ class User(Base):
     nickname = Column(String(64), nullable=True, default="")
     avatar_url = Column(String(256), nullable=True, default="")
     health_competency_level = Column(String(4), nullable=True, default="Lv0")
+    # DEPRECATED: 使用 JourneyState.journey_stage 或 BehavioralProfile.current_stage
     current_stage = Column(String(4), nullable=True, default="S0")
     growth_level = Column(String(4), nullable=True, default="G0")
 
@@ -4016,6 +4017,14 @@ class JourneyState(Base):
     activated_at = Column(DateTime, nullable=True)   # Observer→Grower moment
     graduated_at = Column(DateTime, nullable=True)   # S5 graduation moment
 
+    # Stage tracking (migration 033)
+    stage_entered_at = Column(DateTime, server_default=func.now())
+    stability_start_date = Column(Date, nullable=True)
+    stability_days = Column(Integer, nullable=False, default=0)
+    interruption_count = Column(Integer, nullable=False, default=0)
+    last_interruption_at = Column(DateTime, nullable=True)
+    stage_transition_count = Column(Integer, nullable=False, default=0)
+
     # Observer trial tracking
     observer_dialog_count = Column(Integer, nullable=False, default=0)
     observer_last_dialog_date = Column(Date, nullable=True)
@@ -4089,6 +4098,369 @@ class AgencyScoreLog(Base):
 
     def __repr__(self):
         return f"<AgencyScoreLog(user={self.user_id}, signal={self.signal_name}, value={self.signal_value})>"
+
+
+# ============================================
+# V4.0 Phase 2 — Stage Engine + Governance (migration 033)
+# ============================================
+
+class StageTransitionLogV4(Base):
+    """V4.0 阶段跃迁日志 — 复用 m019 stage_transition_logs 表结构"""
+    __tablename__ = "stage_transition_logs"
+    __table_args__ = {"extend_existing": True}
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    transition_type = Column(String(20), nullable=False, default="stage")
+    from_value = Column(String(10), nullable=False)
+    to_value = Column(String(10), nullable=False)
+    trigger = Column(String(50), nullable=True)
+    evidence = Column(JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    # ── 便捷别名 (仅 Python 层, 不产生额外 SQL 列) ──
+    @property
+    def from_stage(self):
+        return self.from_value
+
+    @property
+    def to_stage(self):
+        return self.to_value
+
+    @property
+    def reason(self):
+        return self.trigger
+
+    @property
+    def triggered_by(self):
+        ev = self.evidence or {}
+        return ev.get("triggered_by", "system") if isinstance(ev, dict) else "system"
+
+    @property
+    def triggered_by_user_id(self):
+        ev = self.evidence or {}
+        return ev.get("triggered_by_user_id") if isinstance(ev, dict) else None
+
+
+class ResponsibilityMetric(Base):
+    """责任追踪指标记录"""
+    __tablename__ = "responsibility_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    metric_code = Column(String(20), nullable=False)
+    metric_value = Column(Float, nullable=False, default=0.0)
+    threshold_value = Column(Float, nullable=True)
+    status = Column(String(20), nullable=False, default="healthy")
+    period_start = Column(Date, nullable=False)
+    period_end = Column(Date, nullable=False)
+    details = Column(JSON, default={})
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
+
+
+class AntiCheatEvent(Base):
+    """防刷策略事件记录"""
+    __tablename__ = "anti_cheat_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    strategy = Column(String(10), nullable=False)
+    event_type = Column(String(50), nullable=False)
+    details = Column(JSON, default={})
+    action_taken = Column(String(50), nullable=True)
+    resolved = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+
+class GovernanceViolation(Base):
+    """治理违规记录"""
+    __tablename__ = "governance_violations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    violation_type = Column(String(30), nullable=False)
+    severity = Column(String(20), nullable=False, default="light")
+    description = Column(Text, nullable=True)
+    point_penalty = Column(Integer, nullable=False, default=0)
+    action_taken = Column(String(50), nullable=True)
+    protection_until = Column(Date, nullable=True)
+    recovery_path = Column(Text, nullable=True)
+    resolved = Column(Boolean, nullable=False, default=False)
+    resolved_by = Column(Integer, nullable=True)
+    resolved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+
+class DualTrackStatus(Base):
+    """双轨晋级状态机"""
+    __tablename__ = "dual_track_status"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    target_level = Column(Integer, nullable=False)
+    points_track_passed = Column(Boolean, nullable=False, default=False)
+    growth_track_passed = Column(Boolean, nullable=False, default=False)
+    status = Column(String(30), nullable=False, default="normal_growth")
+    gap_analysis = Column(JSON, default={})
+    points_checked_at = Column(DateTime, nullable=True)
+    growth_checked_at = Column(DateTime, nullable=True)
+    ceremony_triggered_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
+
+
+# ============================================
+# Migration 035 — Contract Registry Sync
+# ============================================
+
+class IESScore(Base):
+    """IES 干预效果评分 (4分量公式: 0.4×完成 + 0.2×活跃 + 0.25×进展 - 0.15×抗阻)"""
+    __tablename__ = "ies_scores"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    agent_type = Column(String(50), nullable=True)
+    period_start = Column(Date, nullable=False)
+    period_end = Column(Date, nullable=False)
+    completion_rate = Column(Float, nullable=False, default=0.0)
+    activity_rate = Column(Float, nullable=False, default=0.0)
+    progression_delta = Column(Float, nullable=False, default=0.0)
+    resistance_index = Column(Float, nullable=False, default=0.0)
+    ies_score = Column(Float, nullable=False, default=0.0)
+    interpretation = Column(String(30), nullable=False, default="no_change")
+    details = Column(JSON, default={})
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_ies_scores_user', 'user_id', 'period_end'),
+        Index('idx_ies_scores_agent', 'agent_type', 'period_end'),
+    )
+
+
+class IESDecisionLog(Base):
+    """IES 决策追踪日志 — Rx自动调整记录"""
+    __tablename__ = "ies_decision_log"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ies_score_id = Column(Integer, ForeignKey("ies_scores.id"), nullable=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    decision_type = Column(String(30), nullable=False)
+    old_value = Column(String(100), nullable=True)
+    new_value = Column(String(100), nullable=True)
+    reason = Column(Text, nullable=True)
+    auto_applied = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_ies_decision_user', 'user_id', 'created_at'),
+    )
+
+
+class UserContract(Base):
+    """用户契约生命周期 — 从访客到大师的契约追踪"""
+    __tablename__ = "user_contracts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    contract_type = Column(String(30), nullable=False)  # observer/grower/sharer/coach/promoter/master
+    role_at_signing = Column(String(20), nullable=False)
+    level_at_signing = Column(Integer, nullable=False, default=0)
+    content_snapshot = Column(JSON, default={})
+    signed_at = Column(DateTime, server_default=func.now(), nullable=False)
+    expires_at = Column(DateTime, nullable=True)
+    status = Column(String(20), nullable=False, default="active")  # active/expired/revoked/renewed
+    renewed_from_id = Column(Integer, ForeignKey("user_contracts.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_user_contracts_user', 'user_id', 'status'),
+        Index('idx_user_contracts_type', 'contract_type', 'status'),
+    )
+
+
+class EthicalDeclaration(Base):
+    """伦理声明 — Coach 5条 / Promoter 7条 签署记录"""
+    __tablename__ = "ethical_declarations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    declaration_type = Column(String(30), nullable=False)  # coach_5clause / promoter_7clause
+    clauses = Column(JSON, nullable=False, default=[])
+    total_clauses = Column(Integer, nullable=False, default=0)
+    accepted_all = Column(Boolean, nullable=False, default=False)
+    ip_address = Column(String(45), nullable=True)
+    user_agent = Column(String(300), nullable=True)
+    signed_at = Column(DateTime, server_default=func.now(), nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_ethical_decl_user', 'user_id', 'declaration_type'),
+    )
+
+
+# ============================================
+# Migration 036 — 400分制考核 + 收益分配 + 沙箱测试
+# ============================================
+
+class CoachExamRecord(Base):
+    """400分制教练考核记录"""
+    __tablename__ = "coach_exam_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    target_level = Column(Integer, nullable=False)
+    theory_score = Column(Float, default=0)
+    theory_details = Column(JSON, default={})
+    skill_score = Column(Float, default=0)
+    skill_details = Column(JSON, default={})
+    comprehensive_score = Column(Float, default=0)
+    comprehensive_details = Column(JSON, default={})
+    total_score = Column(Float, default=0)
+    status = Column(String(20), default="in_progress")
+    passed = Column(Boolean, default=False)
+    attempt_number = Column(Integer, default=1)
+    examiner_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    exam_date = Column(Date, nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_coach_exam_coach_level', 'coach_id', 'target_level'),
+    )
+
+
+class RevenueShare(Base):
+    """收益分配记录"""
+    __tablename__ = "revenue_shares"
+
+    id = Column(Integer, primary_key=True, index=True)
+    beneficiary_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    source_type = Column(String(30), nullable=False)
+    source_id = Column(Integer, nullable=True)
+    amount = Column(Float, nullable=False)
+    currency = Column(String(5), default="CNY")
+    status = Column(String(20), default="pending")
+    calculation = Column(JSON, default={})
+    approved_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    paid_at = Column(DateTime, nullable=True)
+    period_start = Column(Date, nullable=True)
+    period_end = Column(Date, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_revenue_beneficiary_status', 'beneficiary_id', 'status'),
+    )
+
+
+class SandboxTestResult(Base):
+    """沙箱自动化测试结果"""
+    __tablename__ = "sandbox_test_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(String(32), nullable=False)
+    test_suite = Column(String(50), nullable=False)
+    test_case_id = Column(String(50), nullable=False)
+    scenario = Column(JSON, nullable=False)
+    expected_output = Column(JSON, nullable=True)
+    actual_output = Column(JSON, nullable=True)
+    passed = Column(Boolean, nullable=False)
+    score = Column(Float, nullable=True)
+    error_detail = Column(Text, nullable=True)
+    execution_ms = Column(Integer, nullable=True)
+    run_id = Column(String(50), nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_sandbox_agent_suite_run', 'agent_id', 'test_suite', 'run_id'),
+    )
+
+
+class CoachSupervisionRecord(Base):
+    """教练督导记录"""
+    __tablename__ = "coach_supervision_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    supervisor_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    session_type = Column(String(30), nullable=False)
+    scheduled_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)
+    status = Column(String(20), default="scheduled")
+    template_id = Column(String(50), nullable=True)
+    session_notes = Column(Text, nullable=True)
+    action_items = Column(JSON, default=[])
+    quality_rating = Column(Float, nullable=True)
+    compliance_met = Column(Boolean, default=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_supervision_coach', 'coach_id', 'status'),
+        Index('idx_supervision_supervisor', 'supervisor_id', 'status'),
+    )
+
+
+class CoachKpiMetric(Base):
+    """教练KPI红绿灯仪表盘"""
+    __tablename__ = "coach_kpi_metrics"
+
+    id = Column(Integer, primary_key=True, index=True)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    period_type = Column(String(10), nullable=False)
+    period_start = Column(Date, nullable=False)
+    period_end = Column(Date, nullable=False)
+    active_client_count = Column(Integer, default=0)
+    session_completion_rate = Column(Float, default=0.0)
+    client_retention_rate = Column(Float, default=0.0)
+    stage_advancement_rate = Column(Float, default=0.0)
+    assessment_coverage = Column(Float, default=0.0)
+    intervention_adherence = Column(Float, default=0.0)
+    client_satisfaction = Column(Float, default=0.0)
+    safety_incident_count = Column(Integer, default=0)
+    supervision_compliance = Column(Float, default=0.0)
+    knowledge_contribution = Column(Integer, default=0)
+    overall_status = Column(String(10), default="green")
+    alert_details = Column(JSON, default={})
+    auto_escalated = Column(Boolean, default=False)
+    escalated_to = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('coach_id', 'period_type', 'period_start', name='uq_kpi_coach_period'),
+        Index('idx_kpi_coach_period', 'coach_id', 'period_type', 'period_start'),
+        Index('idx_kpi_overall_status', 'overall_status'),
+    )
+
+
+class PeerTracking(Base):
+    """四同道者追踪记录"""
+    __tablename__ = "peer_tracking"
+
+    id = Column(Integer, primary_key=True, index=True)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    peer_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    coach_level = Column(Integer, nullable=False)
+    relationship_type = Column(String(20), default="companion")
+    status = Column(String(20), default="active")
+    started_at = Column(DateTime, server_default=func.now(), nullable=False)
+    completed_at = Column(DateTime, nullable=True)
+    quality_score = Column(Float, nullable=True)
+    interaction_count = Column(Integer, default=0)
+    last_interaction_at = Column(DateTime, nullable=True)
+    verified = Column(Boolean, default=False)
+    verified_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('coach_id', 'peer_id', 'coach_level', name='uq_peer_coach_level'),
+        Index('idx_peer_coach_level', 'coach_id', 'coach_level', 'status'),
+        Index('idx_peer_peer_id', 'peer_id', 'status'),
+    )
 
 
 def get_table_names():
@@ -4233,6 +4605,24 @@ def get_table_names():
         "journey_states",
         "trust_score_logs",
         "agency_score_logs",
+        # V4.0 Stage Engine + Governance (migration 033)
+        "stage_transition_logs",
+        "responsibility_metrics",
+        "anti_cheat_events",
+        "governance_violations",
+        "dual_track_status",
+        # Migration 035 — Contract Registry Sync
+        "ies_scores",
+        "ies_decision_log",
+        "user_contracts",
+        "ethical_declarations",
+        # Migration 036 — 400分制考核 + 收益分配 + 沙箱测试
+        "coach_exam_records",
+        "revenue_shares",
+        "sandbox_test_results",
+        "coach_supervision_records",
+        "coach_kpi_metrics",
+        "peer_tracking",
     ]
 
 
@@ -4385,5 +4775,22 @@ def get_model_by_name(name: str):
         "JourneyState": JourneyState,
         "TrustScoreLog": TrustScoreLog,
         "AgencyScoreLog": AgencyScoreLog,
+        # V4.0 Stage Engine + Governance
+        "ResponsibilityMetric": ResponsibilityMetric,
+        "AntiCheatEvent": AntiCheatEvent,
+        "GovernanceViolation": GovernanceViolation,
+        "DualTrackStatus": DualTrackStatus,
+        # Migration 035 — Contract Registry Sync
+        "IESScore": IESScore,
+        "IESDecisionLog": IESDecisionLog,
+        "UserContract": UserContract,
+        "EthicalDeclaration": EthicalDeclaration,
+        # Migration 036 — 400分制考核 + 收益分配 + 沙箱测试
+        "CoachExamRecord": CoachExamRecord,
+        "RevenueShare": RevenueShare,
+        "SandboxTestResult": SandboxTestResult,
+        "CoachSupervisionRecord": CoachSupervisionRecord,
+        "CoachKpiMetric": CoachKpiMetric,
+        "PeerTracking": PeerTracking,
     }
     return models.get(name)

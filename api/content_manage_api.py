@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from loguru import logger
 
 from core.database import get_db
-from core.models import ContentItem, User
+from core.models import ContentItem, User, UserActivityLog
 from api.dependencies import get_current_user, require_coach_or_admin
 
 router = APIRouter(prefix="/api/v1/content-manage", tags=["内容管理"])
@@ -85,6 +85,17 @@ def create_content(
         updated_at=datetime.utcnow(),
     )
     db.add(item)
+    db.flush()
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="content.create",
+            detail={"content_id": item.id, "title": req.title, "type": req.content_type},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     db.refresh(item)
     return _item_to_dict(item)
@@ -116,6 +127,16 @@ def batch_create_content(
         )
         db.add(item)
         created.append(item)
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="content.batch_create",
+            detail={"count": len(created), "titles": [r.title for r in items[:5]]},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     return {"created": len(created), "items": [_item_to_dict(i) for i in created]}
 
@@ -172,6 +193,16 @@ def update_content(
         item.has_quiz = req.has_quiz
 
     item.updated_at = datetime.utcnow()
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="content.update",
+            detail={"content_id": item_id, "fields": list(req.dict(exclude_unset=True).keys())},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     db.refresh(item)
     return _item_to_dict(item)
@@ -190,6 +221,16 @@ def publish_content(
 
     item.status = "published"
     item.updated_at = datetime.utcnow()
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="content.publish",
+            detail={"content_id": item_id},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     return {"message": "发布成功", "id": item.id}
 
@@ -208,6 +249,16 @@ def batch_publish(
             item.status = "published"
             item.updated_at = datetime.utcnow()
             count += 1
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="content.batch_publish",
+            detail={"item_ids": item_ids[:10], "count": count},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     return {"published": count}
 
@@ -225,5 +276,15 @@ def delete_content(
 
     item.status = "archived"
     item.updated_at = datetime.utcnow()
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="content.delete",
+            detail={"content_id": item_id, "title": item.title},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     return {"message": "已归档"}

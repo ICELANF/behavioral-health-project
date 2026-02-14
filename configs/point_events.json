@@ -309,6 +309,103 @@
           "description": "行业标准制定参与"
         }
       ]
+    },
+    {
+      "_section": "治理积分事件 (V4.0 governance) — 责任与合规的度量",
+      "items": [
+        {
+          "action": "ethics_test_complete",
+          "point_type": "growth",
+          "amount": 50,
+          "max_per_day": 1,
+          "eligible_roles": ["sharer", "coach", "promoter", "master"],
+          "triggers_credit": true,
+          "credit_note": "伦理测试通过同步写入学分",
+          "description": "通过伦理边界测试"
+        },
+        {
+          "action": "self_assessment_complete",
+          "point_type": "growth",
+          "amount": 30,
+          "max_per_day": 1,
+          "eligible_roles": ["grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "完成自我评估(责任指标自查)"
+        },
+        {
+          "action": "credential_renewal",
+          "point_type": "growth",
+          "amount": 20,
+          "max_per_day": 0,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": true,
+          "credit_note": "资质续期同步写入学分",
+          "description": "资质/认证续期完成"
+        },
+        {
+          "action": "ethics_pledge_sign",
+          "point_type": "contribution",
+          "amount": 30,
+          "max_per_day": 0,
+          "eligible_roles": ["sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "签署/更新伦理承诺书"
+        },
+        {
+          "action": "conflict_disclosure_update",
+          "point_type": "contribution",
+          "amount": 20,
+          "max_per_day": 0,
+          "eligible_roles": ["promoter", "master"],
+          "triggers_credit": false,
+          "description": "利益冲突披露更新(半年更新)"
+        },
+        {
+          "action": "alert_handled_timely",
+          "point_type": "contribution",
+          "amount": 15,
+          "max_per_day": 5,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "告警及时处理(4h内高风险)"
+        },
+        {
+          "action": "message_reply_timely",
+          "point_type": "contribution",
+          "amount": 10,
+          "max_per_day": 10,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "消息及时响应(24h内)"
+        },
+        {
+          "action": "agent_feedback_reply",
+          "point_type": "contribution",
+          "amount": 10,
+          "max_per_day": 5,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "Agent反馈回复(质量确认)"
+        },
+        {
+          "action": "supervision_meeting",
+          "point_type": "influence",
+          "amount": 50,
+          "max_per_day": 0,
+          "eligible_roles": ["promoter", "master"],
+          "triggers_credit": false,
+          "description": "完成督导会议(下级教练)"
+        },
+        {
+          "action": "knowledge_contribute",
+          "point_type": "influence",
+          "amount": 30,
+          "max_per_day": 3,
+          "eligible_roles": ["coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "知识贡献(知识库文档入库)"
+        }
+      ]
     }
   ],
   "linkage_rules": {

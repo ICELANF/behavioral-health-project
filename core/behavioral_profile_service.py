@@ -20,8 +20,26 @@ from loguru import logger
 
 from core.models import (
     BehavioralProfile, BehavioralStage, StageStability,
-    InteractionMode, PsychologicalLevel, User
+    InteractionMode, PsychologicalLevel, User, JourneyState,
 )
+
+# ── Behavioral→Journey stage mapping ────────────────────
+# S0 (pre_contemplation) → s0_authorization
+# S1 (contemplation)     → s1_awareness
+# S2 (preparation)       → s2_trial
+# S3 (action)            → s3_pathway
+# S4 (maintenance)       → s4_internalization
+# S5 (termination)       → s5_graduation
+# S6 (内化为常)          → s5_graduation
+BEHAVIORAL_TO_JOURNEY = {
+    "S0": "s0_authorization",
+    "S1": "s1_awareness",
+    "S2": "s2_trial",
+    "S3": "s3_pathway",
+    "S4": "s4_internalization",
+    "S5": "s5_graduation",
+    "S6": "s5_graduation",
+}
 from core.baps.scoring_engine import (
     BAPSScoringEngine, TTM7Result, BigFiveResult,
     BPT6Result, CAPACITYResult, SPIResult
@@ -82,6 +100,24 @@ class BehavioralProfileService:
         self.scoring_engine = BAPSScoringEngine()
         self.spi_mapping = SPI_MAPPING
 
+    @staticmethod
+    def _sync_journey_state(db: Session, user_id: int, behavioral_stage: str):
+        """同步 BehavioralProfile.current_stage → JourneyState.journey_stage"""
+        journey_stage = BEHAVIORAL_TO_JOURNEY.get(behavioral_stage)
+        if not journey_stage:
+            return
+        try:
+            journey = db.query(JourneyState).filter(
+                JourneyState.user_id == user_id
+            ).first()
+            if not journey:
+                logger.warning(f"Stage sync: user={user_id} JourneyState not found, skipping")
+                return
+            journey.journey_stage = journey_stage
+            logger.info(f"Stage sync: user={user_id} journey={journey_stage} → profile={behavioral_stage}")
+        except Exception as e:
+            logger.warning(f"Stage sync failed: user={user_id} {e}")
+
     def generate_profile(
         self,
         db: Session,
@@ -117,6 +153,8 @@ class BehavioralProfileService:
             profile.ttm7_sub_scores = ttm7_result.sub_scores
             profile.friendly_stage_name = ttm7_result.friendly_name
             profile.friendly_stage_desc = ttm7_result.friendly_description
+            # Sync to JourneyState.journey_stage
+            self._sync_journey_state(db, user_id, ttm7_result.current_stage)
 
         # 2. 大五人格
         if big5_result:
@@ -203,6 +241,9 @@ class BehavioralProfileService:
         profile.stage_confidence = confidence
         profile.stage_stability = StageStability(stability)
         profile.stage_updated_at = datetime.utcnow()
+
+        # Sync to JourneyState.journey_stage
+        self._sync_journey_state(db, user_id, new_stage)
 
         # 更新交互模式
         bpt6_type = profile.bpt6_type or "mixed"

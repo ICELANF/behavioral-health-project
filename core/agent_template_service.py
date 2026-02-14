@@ -96,6 +96,7 @@ def build_agents_from_templates(db) -> Optional[dict]:
         if not AGENT_CLASS_REGISTRY:
             import core.agents.specialist_agents  # noqa: F401
             import core.agents.integrative_agents  # noqa: F401
+            import core.agents.v4_agents  # noqa: F401
 
         agents = {}
         for agent_id, tpl in templates.items():

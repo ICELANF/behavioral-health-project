@@ -16,6 +16,7 @@ Phase 3: 知识共享 API
 """
 
 import logging
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -23,7 +24,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from core.database import get_db
-from core.models import User, KnowledgeDomain
+from core.models import User, KnowledgeDomain, UserActivityLog
 from api.dependencies import get_current_user, require_coach_or_admin
 
 logger = logging.getLogger(__name__)
@@ -67,6 +68,16 @@ def contribute_knowledge(
             domain_id=data.domain_id,
             reason=data.reason,
         )
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="knowledge.submit",
+                detail={"document_id": data.document_id, "domain_id": data.domain_id, "tenant_id": tenant_id},
+                created_at=datetime.utcnow(),
+            ))
+            db.flush()
+        except Exception:
+            logger.warning("审计日志写入失败")
         db.commit()
         return {
             "success": True,
@@ -119,6 +130,16 @@ def revoke_contribution(
 
     try:
         contrib = _revoke(db, contribution_id, tenant_id)
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="knowledge.revoke",
+                detail={"contribution_id": contribution_id},
+                created_at=datetime.utcnow(),
+            ))
+            db.flush()
+        except Exception:
+            logger.warning("审计日志写入失败")
         db.commit()
         return {"success": True, "data": _contrib_to_dict(contrib, db)}
     except ValueError as e:
@@ -165,6 +186,16 @@ def approve_contribution_endpoint(
             reviewer_id=current_user.id,
             comment=data.comment,
         )
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="knowledge.approve",
+                detail={"contribution_id": contribution_id, "reviewer_id": current_user.id, "comment": data.comment[:100] if data.comment else ""},
+                created_at=datetime.utcnow(),
+            ))
+            db.flush()
+        except Exception:
+            logger.warning("审计日志写入失败")
         db.commit()
         return {"success": True, "data": _contrib_to_dict(contrib, db)}
     except ValueError as e:
@@ -188,6 +219,16 @@ def reject_contribution_endpoint(
             reviewer_id=current_user.id,
             comment=data.comment,
         )
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="knowledge.reject",
+                detail={"contribution_id": contribution_id, "reviewer_id": current_user.id, "comment": data.comment[:100] if data.comment else ""},
+                created_at=datetime.utcnow(),
+            ))
+            db.flush()
+        except Exception:
+            logger.warning("审计日志写入失败")
         db.commit()
         return {"success": True, "data": _contrib_to_dict(contrib, db)}
     except ValueError as e:

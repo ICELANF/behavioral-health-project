@@ -205,6 +205,42 @@ async def send_message(
     db.commit()
     db.refresh(user_msg)
 
+    # ── SafetyPipeline L1: 输入过滤 ──
+    _safety_pipeline = None
+    _input_category = "normal"
+    try:
+        from core.safety.pipeline import get_safety_pipeline
+        _safety_pipeline = get_safety_pipeline()
+        _input_result = _safety_pipeline.process_input(request.content)
+        _input_category = _input_result.category
+        if not _input_result.safe:
+            try:
+                from core.models import SafetyLog
+                db.add(SafetyLog(
+                    user_id=current_user.id,
+                    event_type="input_blocked",
+                    severity=_input_result.severity,
+                    input_text=request.content[:500],
+                    filter_details={"category": _input_result.category, "terms": _input_result.blocked_terms},
+                ))
+                db.commit()
+            except Exception:
+                logger.warning("SafetyLog write failed")
+            _safe_reply = _safety_pipeline.get_crisis_response() if _input_result.category == "crisis" else "抱歉，您的消息包含不适当的内容，无法处理。如需帮助请联系专业人员。"
+            safe_msg = ChatMessage(session_id=session.id, role="assistant", content=_safe_reply, model="safety")
+            db.add(safe_msg)
+            session.message_count += 1
+            session.updated_at = datetime.utcnow()
+            db.commit()
+            db.refresh(safe_msg)
+            return {
+                "user_message": {"id": user_msg.id, "role": "user", "content": user_msg.content, "created_at": user_msg.created_at.isoformat()},
+                "assistant_message": {"id": safe_msg.id, "role": "assistant", "content": safe_msg.content, "model": "safety", "created_at": safe_msg.created_at.isoformat()},
+                "safety_filtered": True,
+            }
+    except Exception as e:
+        logger.warning(f"SafetyPipeline input filter degraded: {e}")
+
     # 获取历史消息用于上下文
     history_msgs = db.query(ChatMessage).filter(
         ChatMessage.session_id == session.id
@@ -283,6 +319,50 @@ async def send_message(
             "如果有具体的健康问题，请随时告诉我，我会为您提供更针对性的建议。"
         )
 
+    # ── SafetyPipeline L4: 输出过滤 ──
+    _final_text = rag_data["text"] if rag_data else ai_reply
+    try:
+        if _safety_pipeline:
+            _output_result = _safety_pipeline.filter_output(_final_text, _input_category)
+            if _output_result.grade == "blocked":
+                _final_text = "抱歉，生成的内容未通过安全审核。如需专业建议请咨询医生。"
+                try:
+                    from core.models import SafetyLog
+                    db.add(SafetyLog(
+                        user_id=current_user.id,
+                        event_type="output_blocked",
+                        severity="high",
+                        input_text=request.content[:500],
+                        output_text=ai_reply[:500],
+                        filter_details={"grade": "blocked", "annotations": _output_result.annotations},
+                    ))
+                    db.commit()
+                except Exception:
+                    logger.warning("SafetyLog write failed (output_blocked)")
+            elif _output_result.grade == "review_needed":
+                _final_text = _output_result.text
+                try:
+                    from core.models import SafetyLog
+                    db.add(SafetyLog(
+                        user_id=current_user.id,
+                        event_type="output_review",
+                        severity="medium",
+                        input_text=request.content[:500],
+                        output_text=ai_reply[:500],
+                        filter_details={"grade": "review_needed", "annotations": _output_result.annotations, "disclaimer": _output_result.disclaimer_added},
+                    ))
+                    db.commit()
+                except Exception:
+                    logger.warning("SafetyLog write failed (output_review)")
+            else:
+                _final_text = _output_result.text
+            if rag_data:
+                rag_data["text"] = _final_text
+            else:
+                ai_reply = _final_text
+    except Exception as e:
+        logger.warning(f"SafetyPipeline output filter degraded: {e}")
+
     # 保存AI回复 (metadata 包含 RAG 引用)
     import json as _json
     ai_msg = ChatMessage(
@@ -308,6 +388,24 @@ async def send_message(
     db.refresh(ai_msg)
 
     logger.info(f"✓ 聊天回复: session={session_id}, user={current_user.username}, rag={bool(rag_data and rag_data.get('hasKnowledge'))}")
+
+    # ── 审计日志 ──
+    try:
+        from core.models import UserActivityLog
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="chat.send_message",
+            detail={
+                "session_id": session_id,
+                "msg_len": len(request.content),
+                "model": model,
+                "rag": bool(rag_data and rag_data.get("hasKnowledge")),
+            },
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
 
     result = {
         "user_message": {

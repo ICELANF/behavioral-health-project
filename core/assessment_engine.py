@@ -15,19 +15,12 @@ from loguru import logger
 
 from core.trigger_engine import get_trigger_engine, Trigger, TriggerSeverity
 from core.multimodal_client import get_multimodal_client
+from core.models import RiskLevel
 
 
 # ============================================
 # 风险评估结果
 # ============================================
-
-class RiskLevel(Enum):
-    """风险等级"""
-    R0 = "R0"  # 正常
-    R1 = "R1"  # 轻度风险
-    R2 = "R2"  # 中度风险
-    R3 = "R3"  # 高度风险
-    R4 = "R4"  # 危机状态
 
 
 class AgentType(Enum):

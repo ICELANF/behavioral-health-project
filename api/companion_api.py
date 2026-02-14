@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Optional
 
+from loguru import logger
+
 from core.database import get_db
 from api.dependencies import get_current_user, require_admin, require_coach_or_admin
 from core.models import User, CompanionRelation, CompanionStatus
@@ -136,6 +138,19 @@ def invite_mentee(
     db.add(cr)
     db.commit()
     db.refresh(cr)
+
+    try:
+        from core.models import PointTransaction
+        db.add(PointTransaction(
+            user_id=current_user.id,
+            action="companion_add",
+            point_type="contribution",
+            amount=3,
+        ))
+        db.commit()
+    except Exception as e:
+        logger.warning(f"积分记录失败: {e}")
+
     return {"message": "带教关系已建立", "id": str(cr.id), "mentee_id": mentee_id}
 
 

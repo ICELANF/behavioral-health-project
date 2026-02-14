@@ -16,6 +16,8 @@ from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
+from loguru import logger
+
 from core.database import get_db
 from core.micro_action_service import MicroActionTaskService
 from core.behavior_facts_service import BehaviorFactsService
@@ -73,6 +75,19 @@ async def complete_task(
             note=body.note,
             mood_score=body.mood_score,
         )
+        # micro_action_complete 积分
+        try:
+            from core.models import PointTransaction
+            db.add(PointTransaction(
+                user_id=current_user.id,
+                action="micro_action_complete",
+                point_type="growth",
+                amount=3,
+            ))
+            db.commit()
+        except Exception as e:
+            logger.warning(f"积分记录失败: {e}")
+
         return {
             "success": True,
             "task": task_service._task_to_dict(task),

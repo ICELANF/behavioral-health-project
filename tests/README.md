@@ -1,99 +1,92 @@
-# 行为健康平台 · 本地测试套件
+# BehaviorOS V4.0 — pytest 测试套件
 
-## Knowledge RAG v2 · 本地知识优先 测试方案
+## 架构
 
-### 快速开始
+```
+tests/
+├── conftest.py                  # 共享Fixtures (DB/工厂/Mock/常量)
+├── pytest.ini                   # pytest 配置
+├── run_tests.sh                 # 运行脚本
+├── test_models.py               # 数据模型完整性 (7个测试类, 26个case)
+├── test_stage_engine.py         # StageEngine 阶段引擎 (5个类, 18个case)
+├── test_dual_track.py           # DualTrackEngine 双轨晋级 (5个类, 13个case)
+├── test_anti_cheat.py           # AntiCheatEngine 防刷引擎 (6个类, 14个case)
+├── test_safety_pipeline.py      # SafetyPipeline 安全管线 (7个类, 20个case)
+├── test_incentive_engine.py     # 积分激励引擎 (6个类, 12个case)
+├── test_agency_engine.py        # AgencyEngine 主体性 (5个类, 12个case)
+├── test_trust_score.py          # TrustScoreService 信任分 (6个类, 12个case)
+└── test_governance.py           # 治理体系 (5个类, 14个case)
+```
+
+## 统计
+
+| 维度 | 数量 |
+|------|------|
+| 测试文件 | 9 |
+| 测试类 | 52 |
+| 测试用例 | **141** |
+| 覆盖服务 | 8 (StageEngine / DualTrack / AntiCheat / Safety / Incentive / Agency / Trust / Governance) |
+| 模型工厂 | 7 (User / Journey / DualTrack / AntiCheat / SafetyLog / Profile / Violation) |
+| 角色Fixture | 7 (observer / grower / sharer / coach / promoter / master / admin) |
+| Mock | 3 (mock_llm / mock_llm_unsafe / mock_llm_crisis) |
+
+## 使用
 
 ```bash
-# 1. 确保 backend 源码在正确位置
-cp -r backend/ tests/../backend/   # 如尚未就位
+# 放置到项目根目录
+cp -r tests/ /path/to/behaviros-v4/
 
-# 2. 一键运行全部测试
-bash tests/run_all_tests.sh
+# 运行全部测试
+cd /path/to/behaviros-v4
+python -m pytest tests/ -v
 
-# 3. 或者单独运行某层
-python tests/test_00_preflight.py                    # 预飞检查
-python -m pytest tests/test_01_models.py -v          # 模型定义
-python -m pytest tests/test_02_database.py -v        # 数据库
-python -m pytest tests/test_03_services.py -v        # 服务层
-python -m pytest tests/test_04_api.py -v             # API
-python -m pytest tests/test_05_e2e.py -v             # 端到端
+# 只运行特定模块
+python -m pytest tests/test_stage_engine.py -v
+python -m pytest tests/test_safety_pipeline.py -v
+
+# 按关键字筛选
+python -m pytest tests/ -k "dual_track" -v
+python -m pytest tests/ -k "anti_cheat and velocity" -v
+
+# 带覆盖率
+pip install pytest-cov
+python -m pytest tests/ --cov=core --cov-report=term-missing
+
+# 快速冒烟测试 (标记为 @pytest.mark.smoke 的用例)
+python -m pytest tests/ -m smoke
 ```
 
-### 测试分层策略
+## 设计原则
 
+1. **宽容导入**: 模型/引擎缺失时 `pytest.mark.skip`，不阻塞其他测试
+2. **事务回滚**: 每个测试独立DB会话，结束自动rollback
+3. **内存数据库**: SQLite `:memory:` 零依赖运行
+4. **工厂模式**: 7个Factory类封装所有测试数据创建
+5. **条件断言**: 对引擎返回值先判空再断言，适配不同实现
+
+## 对接后端
+
+conftest.py 假设项目结构：
 ```
-Layer 0: 预飞检查         ← 环境/依赖/数据库连接
-  ↓ 通过
-Layer 1: 模型定义         ← 枚举值/表名/列定义/数据类
-  ↓ 通过
-Layer 2: 数据库操作       ← CRUD/pgvector/scope过滤
-  ↓ 通过
-Layer 3: 服务层           ← 解析/分块/向量化/检索逻辑
-  ↓ 通过
-Layer 4: API端点          ← 路由/参数/响应格式
-  ↓ 通过
-Layer 5: 端到端           ← 文件→入库→检索→RAG增强→前端
-  ↓ 全部通过
-🎉 可以部署!
-```
-
-**原则: 每层只测试自己的职责，失败时立即定位问题层。**
-
-### 各层详解
-
-| 测试文件 | 测试数 | 依赖 | 耗时 | 作用 |
-|---------|--------|------|------|------|
-| `test_00_preflight.py` | ~15 | 无 | <1s | Python/依赖包/DB连接/pgvector/模型缓存 |
-| `test_01_models.py` | ~18 | 无DB | <2s | 枚举值、表名、列定义、Citation序列化、SCOPE_BOOST、Agent映射 |
-| `test_02_database.py` | ~10 | PostgreSQL | <5s | 连接、pgvector运算、CRUD、embedding插入、向量检索、scope加权SQL |
-| `test_03_services.py` | ~15 | 部分需模型 | 10-30s | 文档解析(md/txt)、分块、向量化质量、检索逻辑、入库逻辑 |
-| `test_04_api.py` | ~12 | 需完整app | <5s | 路由定义、请求参数、响应格式、错误处理 |
-| `test_05_e2e.py` | ~8 | 全部 | 30-60s | 完整入库流程、去重、向量检索、scope优先级、RAG回复解析、前端数据契约 |
-
-### RAG v2 关键测试点
-
-1. **scope 加权检索** (`test_02`, `test_05`)
-   - tenant +0.15 > domain +0.08 > platform +0.00
-   - SQL 层面验证 boosted_score 排序
-
-2. **Prompt 注入内容** (`test_01`)
-   - "本地知识优先"
-   - "[1][2]" 引用标记
-   - "【补充】" 模型标记
-   - "禁止编造"
-   - "以本地资料为准"
-
-3. **模型补充提取** (`test_01`, `test_05`)
-   - 【补充】、【模型补充】、【补充说明】
-   - 【以下为通用专业知识...】
-   - 正确提取段落内容
-
-4. **前端数据契约** (`test_05`)
-   - Citation.to_dict() 匹配 Vue props
-   - format_response() 包含所有 v2 新字段
-   - scope 标签格式正确
-
-### 环境准备 Checklist
-
-```
-□ Python >= 3.10
-□ pip install sqlalchemy asyncpg alembic pydantic fastapi uvicorn pyyaml
-□ pip install pgvector sentence-transformers
-□ pip install pytest httpx  (测试框架)
-□ PostgreSQL 运行中 + pgvector 扩展已安装
-□ 数据库表已通过 Alembic 迁移创建
-□ 环境变量 DATABASE_URL 已设置 (或使用默认值)
-□ Embedding 模型已下载 (首次约 400MB)
+behaviros-v4/
+├── core/
+│   ├── models.py           # ORM 模型
+│   ├── stage_engine.py     # StageEngine
+│   ├── dual_track_engine.py
+│   ├── anti_cheat_engine.py
+│   ├── agency_engine.py
+│   ├── trust_score_service.py
+│   ├── incentive_phase_engine.py
+│   ├── incentive_integration.py
+│   ├── rule_registry.py
+│   └── safety/
+│       ├── pipeline.py
+│       ├── input_filter.py
+│       └── output_filter.py
+├── api/
+│   ├── main.py
+│   └── dependencies.py
+└── tests/                  ← 本套件
 ```
 
-### 故障排查
-
-| 错误 | 原因 | 解决 |
-|------|------|------|
-| `pgvector 扩展未安装` | PostgreSQL 缺少扩展 | `CREATE EXTENSION vector;` |
-| `知识库表不存在` | 未运行迁移 | `alembic upgrade head` |
-| `embedding 列类型异常` | 迁移脚本问题 | 检查 `002_add_knowledge_tables.py` |
-| `Embedding 模型不可用` | 首次未下载 | `python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('shibing624/text2vec-base-chinese')"` |
-| `FastAPI app 未能导入` | 项目结构不匹配 | 检查 `main.py` 位置和 `PYTHONPATH` |
-| `向量检索无结果` | chunks 表为空 | 先运行入库脚本 |
+如果引擎方法签名不同，只需调整测试中的调用参数。

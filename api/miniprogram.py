@@ -11,6 +11,7 @@ Mini Program API for WeChat
 from typing import Optional, Dict, List, Any
 from datetime import datetime, date, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Header
+from api.dependencies import get_current_user
 from pydantic import BaseModel, Field
 from enum import Enum
 from loguru import logger
@@ -372,13 +373,12 @@ def assess_risk_level(user_state: Dict, feedback_data: Optional[Dict] = None) ->
 # 简化认证（小程序专用）
 # ============================================
 
+# DEPRECATED: 建议端点直接使用 Depends(get_current_user)
 async def get_mp_user(
-    x_user_id: int = Header(default=1, alias="X-User-ID"),
-    x_openid: Optional[str] = Header(default=None, alias="X-OpenID")
+    current_user=Depends(get_current_user),
 ) -> int:
-    """获取小程序用户ID"""
-    # 实际应验证openid并映射到用户ID
-    return x_user_id
+    """获取小程序用户ID (JWT认证)"""
+    return current_user.id
 
 
 # ============================================
@@ -525,6 +525,36 @@ async def agent_respond(
     stage = Stage(request.stage) if request.stage else get_stage_for_day(state["day_index"])
     user_input = request.user_input or ""
 
+    # ── SafetyPipeline L1: 输入过滤 ──
+    _safety_pipeline = None
+    _input_category = "normal"
+    try:
+        from core.safety.pipeline import get_safety_pipeline
+        _safety_pipeline = get_safety_pipeline()
+        if user_input:
+            _input_result = _safety_pipeline.process_input(user_input)
+            _input_category = _input_result.category
+            if not _input_result.safe:
+                try:
+                    from core.database import SessionLocal
+                    from core.models import SafetyLog
+                    _db = SessionLocal()
+                    _db.add(SafetyLog(
+                        user_id=user_id,
+                        event_type="input_blocked",
+                        severity=_input_result.severity,
+                        input_text=user_input[:500],
+                        filter_details={"category": _input_result.category, "terms": _input_result.blocked_terms, "source": "mp_agent_respond"},
+                    ))
+                    _db.commit()
+                    _db.close()
+                except Exception:
+                    logger.warning("SafetyLog write failed")
+                _safe_reply = _safety_pipeline.get_crisis_response() if _input_result.category == "crisis" else "抱歉，您的消息包含不适当的内容，无法处理。"
+                return AgentResponse(message=_safe_reply, suggestions=["查看任务", "聊聊心情"], emotion="supportive")
+    except Exception as e:
+        logger.warning(f"SafetyPipeline input filter degraded: {e}")
+
     # 默认建议列表
     default_suggestions = {
         "start": ["开始今日任务", "查看进度", "有问题想问"],
@@ -592,6 +622,34 @@ async def agent_respond(
         else:
             message = "有什么我可以帮助你的吗？"
             explain = "模板响应: 默认"
+
+    # ── SafetyPipeline L4: 输出过滤 ──
+    try:
+        if _safety_pipeline and message:
+            _output_result = _safety_pipeline.filter_output(message, _input_category)
+            if _output_result.grade == "blocked":
+                message = "抱歉，生成的内容未通过安全审核。如需专业建议请咨询医生。"
+            else:
+                message = _output_result.text
+            if _output_result.grade in ("blocked", "review_needed"):
+                try:
+                    from core.database import SessionLocal
+                    from core.models import SafetyLog
+                    _db = SessionLocal()
+                    _db.add(SafetyLog(
+                        user_id=user_id,
+                        event_type="output_blocked" if _output_result.grade == "blocked" else "output_review",
+                        severity="high" if _output_result.grade == "blocked" else "medium",
+                        input_text=(user_input or "")[:500],
+                        output_text=_output_result.original_text[:500] if _output_result.original_text else "",
+                        filter_details={"grade": _output_result.grade, "annotations": _output_result.annotations, "source": "mp_agent_respond"},
+                    ))
+                    _db.commit()
+                    _db.close()
+                except Exception:
+                    logger.warning("SafetyLog write failed (mp_agent output)")
+    except Exception as e:
+        logger.warning(f"SafetyPipeline output filter degraded: {e}")
 
     return AgentResponse(
         message=message,
@@ -795,6 +853,35 @@ async def chat_with_agent(
     session_id = request.session_id or f"chat_{user_id}_{int(time.time())}"
     model_name = ollama_service.model if ollama_service else "unknown"
 
+    # ── SafetyPipeline L1: 输入过滤 ──
+    _safety_pipeline = None
+    _input_category = "normal"
+    try:
+        from core.safety.pipeline import get_safety_pipeline
+        _safety_pipeline = get_safety_pipeline()
+        _input_result = _safety_pipeline.process_input(request.message)
+        _input_category = _input_result.category
+        if not _input_result.safe:
+            try:
+                from core.database import SessionLocal
+                from core.models import SafetyLog
+                _db = SessionLocal()
+                _db.add(SafetyLog(
+                    user_id=user_id,
+                    event_type="input_blocked",
+                    severity=_input_result.severity,
+                    input_text=request.message[:500],
+                    filter_details={"category": _input_result.category, "terms": _input_result.blocked_terms, "source": "mp_chat"},
+                ))
+                _db.commit()
+                _db.close()
+            except Exception:
+                logger.warning("SafetyLog write failed")
+            _safe_reply = _safety_pipeline.get_crisis_response() if _input_result.category == "crisis" else "抱歉，您的消息包含不适当的内容，无法处理。"
+            return ChatResponse(message=_safe_reply, session_id=session_id, model="safety", provider="safety")
+    except Exception as e:
+        logger.warning(f"SafetyPipeline input filter degraded: {e}")
+
     # 获取或创建会话，加载历史记录
     history = []
     if CHAT_HISTORY_AVAILABLE and chat_history:
@@ -820,6 +907,17 @@ async def chat_with_agent(
             )
             ai_response = result.get("answer", "") or "我在这里陪伴你，有什么问题都可以问我。"
             conv_id = result.get("conversation_id")
+
+            # ── SafetyPipeline L4 ──
+            try:
+                if _safety_pipeline:
+                    _output_result = _safety_pipeline.filter_output(ai_response, _input_category)
+                    if _output_result.grade == "blocked":
+                        ai_response = "抱歉，生成的内容未通过安全审核。如需专业建议请咨询医生。"
+                    else:
+                        ai_response = _output_result.text
+            except Exception as _e:
+                logger.warning(f"SafetyPipeline output filter degraded (dify): {_e}")
 
             if CHAT_HISTORY_AVAILABLE and chat_history:
                 try:
@@ -861,6 +959,17 @@ async def chat_with_agent(
         )
 
         ai_response = response or "我在这里陪伴你，有什么问题都可以问我。"
+
+        # ── SafetyPipeline L4 ──
+        try:
+            if _safety_pipeline:
+                _output_result = _safety_pipeline.filter_output(ai_response, _input_category)
+                if _output_result.grade == "blocked":
+                    ai_response = "抱歉，生成的内容未通过安全审核。如需专业建议请咨询医生。"
+                else:
+                    ai_response = _output_result.text
+        except Exception as _e:
+            logger.warning(f"SafetyPipeline output filter degraded (ollama): {_e}")
 
         if CHAT_HISTORY_AVAILABLE and chat_history:
             try:

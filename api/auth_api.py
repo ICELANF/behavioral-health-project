@@ -93,6 +93,15 @@ class UserResponse(BaseModel):
     created_at: datetime
 
 
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
+
+
+class RefreshTokenRequest(BaseModel):
+    refresh_token: str
+
+
 # ============================================
 # 依赖注入：获取当前用户
 # ============================================
@@ -218,18 +227,37 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+async def login(request: Request, db: Session = Depends(get_db)):
     """
     用户登录
 
-    使用用户名/邮箱和密码登录（OAuth2 Password Flow）
+    支持两种方式:
+    - JSON: {"username": "...", "password": "..."}
+    - FormData: OAuth2 Password Flow (x-www-form-urlencoded)
     """
     try:
         # 登录频率限制
         client_ip = request.client.host if request.client else "unknown"
         _check_login_rate(client_ip)
 
-        logger.info(f"[LOGIN] Received login request - username: {form_data.username}")
+        # 双模式解析: JSON 或 FormData
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            body = await request.json()
+            username = body.get("username", "")
+            password = body.get("password", "")
+        else:
+            form = await request.form()
+            username = form.get("username", "")
+            password = form.get("password", "")
+
+        if not username or not password:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="请提供用户名和密码"
+            )
+
+        logger.info(f"[LOGIN] Received login request - username: {username}")
 
         # 查询用户（支持用户名或邮箱登录）
         def get_user(identifier: str):
@@ -241,7 +269,7 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
 
         # 认证用户
         logger.info(f"[LOGIN] Starting authentication...")
-        user = authenticate_user(form_data.username, form_data.password, get_user)
+        user = authenticate_user(username, password, get_user)
         logger.info(f"[LOGIN] Authentication result: {'SUCCESS - ' + user.username if user else 'FAILED'}")
 
         if not user:
@@ -328,22 +356,16 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/refresh")
-def refresh_token(
-    refresh_token: str = None,
+def refresh_token_endpoint(
+    body: RefreshTokenRequest,
     db: Session = Depends(get_db)
 ):
     """
     刷新访问令牌
 
-    使用 refresh_token 获取新的 access_token
+    请求体: {"refresh_token": "..."}
     """
-    if not refresh_token:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="缺少 refresh_token"
-        )
-
-    payload = verify_token(refresh_token, "refresh")
+    payload = verify_token(body.refresh_token, "refresh")
     if payload is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -379,34 +401,29 @@ def refresh_token(
 
 @router.put("/password")
 async def change_password(
-    old_password: str = None,
-    new_password: str = None,
+    body: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
     修改密码
-    """
-    if not old_password or not new_password:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请提供旧密码和新密码"
-        )
 
+    请求体: {"old_password": "...", "new_password": "..."}
+    """
     from core.auth import verify_password
-    if not verify_password(old_password, current_user.password_hash):
+    if not verify_password(body.old_password, current_user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="旧密码错误"
         )
 
-    if len(new_password) < 6:
+    if len(body.new_password) < 6:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="新密码长度不能少于6位"
         )
 
-    current_user.password_hash = hash_password(new_password)
+    current_user.password_hash = hash_password(body.new_password)
     db.commit()
 
     logger.info(f"用户修改密码: {current_user.username}")

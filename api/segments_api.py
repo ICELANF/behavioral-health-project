@@ -10,6 +10,9 @@ from typing import List, Optional
 from pydantic import BaseModel
 from loguru import logger
 
+from api.dependencies import get_current_user, require_admin
+from core.models import User
+
 from core.user_segments import (
     UserSource,
     ServiceTier,
@@ -129,6 +132,7 @@ async def get_user_permissions(
     role: str = Query("observer", description="用户角色"),
     source: str = Query("organic", description="用户来源"),
     service_tier: str = Query("free", description="服务等级"),
+    current_user: User = Depends(get_current_user),
 ):
     """
     获取用户权限
@@ -192,6 +196,7 @@ async def check_feature_access(
     role: str = Query("observer", description="用户角色"),
     source: str = Query("organic", description="用户来源"),
     service_tier: str = Query("free", description="服务等级"),
+    current_user: User = Depends(get_current_user),
 ):
     """检查用户是否有某功能的权限"""
     try:
@@ -237,6 +242,7 @@ async def get_upgrade_suggestion_api(
     service_tier: str = Query("free", description="当前服务等级"),
     source: str = Query("organic", description="用户来源"),
     role: str = Query("observer", description="用户角色"),
+    current_user: User = Depends(get_current_user),
 ):
     """获取升级建议"""
     try:
@@ -290,6 +296,7 @@ async def get_upgrade_suggestion_api(
 @router.get("/list", response_model=List[SegmentInfo])
 async def list_segments(
     source: Optional[str] = Query(None, description="按来源过滤"),
+    current_user: User = Depends(get_current_user),
 ):
     """获取用户分群列表"""
     try:
@@ -324,7 +331,7 @@ async def list_segments(
 
 
 @router.get("/detail/{segment_id}", response_model=SegmentDetailResponse)
-async def get_segment_detail(segment_id: str):
+async def get_segment_detail(segment_id: str, current_user: User = Depends(get_current_user)):
     """获取用户分群详情"""
     try:
         segment = get_segment_by_id(segment_id)
@@ -356,7 +363,7 @@ async def get_segment_detail(segment_id: str):
 
 
 @router.get("/roles", response_model=List[RoleInfo])
-async def list_roles():
+async def list_roles(current_user: User = Depends(get_current_user)):
     """获取所有角色列表"""
     roles = []
     for role, level in sorted(ROLE_LEVELS.items(), key=lambda x: x[1]):
@@ -370,7 +377,7 @@ async def list_roles():
 
 
 @router.get("/tiers", response_model=List[TierInfo])
-async def list_service_tiers():
+async def list_service_tiers(current_user: User = Depends(get_current_user)):
     """获取所有服务等级列表"""
     tier_descriptions = {
         ServiceTier.FREE: "体验基础功能，了解平台价值",
@@ -391,7 +398,7 @@ async def list_service_tiers():
 
 
 @router.get("/sources", response_model=List[SourceInfo])
-async def list_user_sources():
+async def list_user_sources(current_user: User = Depends(get_current_user)):
     """获取所有用户来源列表"""
     source_descriptions = {
         UserSource.ORGANIC: "通过官网、社交媒体等渠道自主注册的用户",
@@ -411,7 +418,7 @@ async def list_user_sources():
 
 
 @router.get("/features", response_model=List[dict])
-async def list_features():
+async def list_features(current_user: User = Depends(get_current_user)):
     """获取所有功能模块列表"""
     return [
         {
@@ -431,6 +438,7 @@ async def list_features():
 async def check_role_permission_api(
     user_role: str = Query(..., description="用户角色"),
     required_role: str = Query(..., description="需要的角色"),
+    current_user: User = Depends(require_admin),
 ):
     """检查角色权限"""
     if user_role not in ROLE_LEVELS:

@@ -11,12 +11,14 @@ import sys
 import uvicorn
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from api.dependencies import get_current_user
+from core.models import User
 from agents.orchestrator import AgentOrchestrator
 from agents.octopus_engine import OctopusClampingEngine, get_clamping_engine
 
@@ -120,7 +122,7 @@ async def health_check():
 
 
 @app.get("/experts", response_model=List[ExpertInfo], tags=["专家"])
-async def list_experts():
+async def list_experts(current_user: User = Depends(get_current_user)):
     """获取可用专家列表"""
     if not orchestrator:
         raise HTTPException(status_code=503, detail="Agent 未初始化")
@@ -129,7 +131,7 @@ async def list_experts():
 
 
 @app.post("/chat", response_model=ChatResponse, tags=["咨询"])
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, current_user: User = Depends(get_current_user)):
     """
     健康咨询接口
 
@@ -165,7 +167,7 @@ async def chat(request: ChatRequest):
 
 
 @app.post("/clamping", response_model=ClampingResponse, tags=["八爪鱼引擎"])
-async def octopus_clamping(request: ClampingRequest):
+async def octopus_clamping(request: ClampingRequest, current_user: User = Depends(get_current_user)):
     """
     八爪鱼效能限幅接口
 
@@ -186,7 +188,7 @@ async def octopus_clamping(request: ClampingRequest):
 
 
 @app.post("/reset", tags=["管理"])
-async def reset_conversation():
+async def reset_conversation(current_user: User = Depends(get_current_user)):
     """重置所有对话历史"""
     if not orchestrator:
         raise HTTPException(status_code=503, detail="Agent 未初始化")
@@ -198,7 +200,7 @@ async def reset_conversation():
 # ============ Dify 工具 Schema (OpenAPI 3.0) ============
 
 @app.get("/openapi-tools.json", tags=["Dify集成"])
-async def get_dify_tools_schema():
+async def get_dify_tools_schema(current_user: User = Depends(get_current_user)):
     """
     获取 Dify 自定义工具 Schema
 

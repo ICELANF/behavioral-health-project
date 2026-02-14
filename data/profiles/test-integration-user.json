@@ -1,7 +1,7 @@
 {
   "user_id": "test-integration-user",
   "created_at": "2026-01-23T23:16:08.855338",
-  "updated_at": "2026-02-11T07:38:02.139792",
+  "updated_at": "2026-02-15T00:19:06.765577",
   "basic": {
     "age": null,
     "sex": null,
@@ -79,10 +79,10 @@
   },
   "risk_flags": [],
   "history": {
-    "total_sessions": 42,
+    "total_sessions": 46,
     "first_session": null,
-    "last_session": "2026-02-11T07:38:02.984980",
-    "total_tasks_assigned": 21,
+    "last_session": "2026-02-15T00:19:07.797944",
+    "total_tasks_assigned": 23,
     "total_tasks_completed": 0,
     "assessments_count": 0
   },
@@ -90,13 +90,13 @@
   "today": {
     "tasks": [
       {
-        "task_id": "task_8603e731-8722-4e03-abb7-93b1b29f8ac1_0",
+        "task_id": "task_271251b9-9f60-45be-9a33-c7640e201f1b_0",
         "title": "今日任务：15分钟轻度运动",
         "status": "pending"
       }
     ],
     "mood_log": [],
-    "device_sync_time": "2026-02-11T07:38:02.139792",
+    "device_sync_time": "2026-02-15T00:19:06.765577",
     "check_ins": 0
   },
   "session_history": [
@@ -225,9 +225,21 @@
       "timestamp": "2026-02-11T07:38:02.139792",
       "input_type": "text",
       "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "e1311775-3e70-4adb-a2e5-a00677329644",
+      "timestamp": "2026-02-15T00:16:33.920460",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
+    },
+    {
+      "session_id": "271251b9-9f60-45be-9a33-c7640e201f1b",
+      "timestamp": "2026-02-15T00:19:06.765577",
+      "input_type": "text",
+      "message_preview": "我最近睡眠不好，压力很大"
     }
   ],
-  "last_updated": "2026-02-11T07:38:02.984994",
+  "last_updated": "2026-02-15T00:19:07.797965",
   "tracking_points": [
     "今日任务完成情况 (1项)",
     "睡眠质量记录",

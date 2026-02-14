@@ -53,9 +53,10 @@ from core.database import get_db
 from core.models import (
     User, ChallengeTemplate, ChallengeDayPush, ChallengeEnrollment,
     ChallengeSurveyResponse, ChallengePushLog,
-    ChallengeStatus, EnrollmentStatus,
+    ChallengeStatus, EnrollmentStatus, UserActivityLog,
 )
 from core import challenge_service
+from loguru import logger
 
 router = APIRouter(prefix="/api/v1", tags=["challenges"])
 
@@ -250,6 +251,16 @@ async def create_challenge(
     """创建挑战模板（L3+）"""
     try:
         template = challenge_service.create_template(db, current_user, req.dict(exclude_none=True))
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="challenge.create",
+                detail={"title": req.title, "category": req.category, "duration_days": req.duration_days},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return _serialize_template(template)
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
@@ -267,6 +278,16 @@ async def update_challenge(
     """更新挑战模板"""
     try:
         template = challenge_service.update_template(db, challenge_id, current_user, req.dict(exclude_none=True))
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="challenge.update",
+                detail={"challenge_id": challenge_id, "fields": list(req.dict(exclude_none=True).keys())},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return _serialize_template(template)
     except (PermissionError,) as e:
         raise HTTPException(status_code=403, detail=str(e))
@@ -283,6 +304,16 @@ async def import_challenge(
     """从JSON配置导入挑战（admin）"""
     try:
         template = challenge_service.import_from_config(db, config_key, current_user)
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="challenge.import",
+                detail={"config_key": config_key},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return _serialize_template(template, include_pushes=False)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -310,6 +341,15 @@ async def delete_challenge(
         raise HTTPException(status_code=400, detail=f"还有 {active} 位用户正在参与，无法删除")
 
     db.delete(template)
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="challenge.delete",
+            detail={"challenge_id": challenge_id, "title": template.title},
+            created_at=datetime.utcnow(),
+        ))
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     return {"message": "已删除"}
 
@@ -351,6 +391,16 @@ async def add_push(
     """添加推送内容"""
     data = req.dict(exclude_none=True)
     push = challenge_service.add_day_push(db, challenge_id, data)
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="challenge.push_create",
+            detail={"challenge_id": challenge_id, "day_number": req.day_number},
+            created_at=datetime.utcnow(),
+        ))
+        db.commit()
+    except Exception:
+        logger.warning("审计日志写入失败")
     return _serialize_push(push)
 
 
@@ -364,6 +414,16 @@ async def update_push(
     """更新推送内容"""
     try:
         push = challenge_service.update_day_push(db, push_id, req.dict(exclude_none=True))
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="challenge.push_update",
+                detail={"push_id": push_id},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return _serialize_push(push)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -377,6 +437,16 @@ async def delete_push(
 ):
     """删除推送内容"""
     challenge_service.delete_day_push(db, push_id)
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="challenge.push_delete",
+            detail={"push_id": push_id},
+            created_at=datetime.utcnow(),
+        ))
+        db.commit()
+    except Exception:
+        logger.warning("审计日志写入失败")
     return {"message": "已删除"}
 
 
@@ -393,6 +463,16 @@ async def submit_review(
     """提交审核"""
     try:
         template = challenge_service.submit_for_review(db, challenge_id, current_user)
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="challenge.submit_review",
+                detail={"challenge_id": challenge_id},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return _serialize_template(template)
     except (PermissionError,) as e:
         raise HTTPException(status_code=403, detail=str(e))
@@ -413,6 +493,16 @@ async def review(
             db, challenge_id, current_user,
             approved=req.approved, note=req.note,
         )
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="challenge.review",
+                detail={"challenge_id": challenge_id, "approved": req.approved, "note": req.note},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return _serialize_template(template)
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
@@ -433,6 +523,16 @@ async def enroll_challenge(
     """报名挑战"""
     try:
         enrollment = challenge_service.enroll(db, current_user, challenge_id)
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="challenge.enroll",
+                detail={"challenge_id": challenge_id},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return _serialize_enrollment(enrollment)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -467,6 +567,25 @@ async def advance_challenge_day(
         raise HTTPException(status_code=404, detail="报名记录不存在")
     try:
         enrollment = challenge_service.advance_day(db, enrollment_id)
+        # challenge_complete 积分 (仅在完成时)
+        try:
+            from core.models import PointTransaction
+            is_completed = (
+                getattr(enrollment, 'completed_at', None)
+                or (hasattr(enrollment.status, 'value') and enrollment.status.value == 'completed')
+                or enrollment.status == 'completed'
+            )
+            if is_completed:
+                db.add(PointTransaction(
+                    user_id=current_user.id,
+                    action="challenge_complete",
+                    point_type="growth",
+                    amount=10,
+                ))
+                db.commit()
+        except Exception as e:
+            logger.warning(f"积分记录失败: {e}")
+
         return _serialize_enrollment(enrollment)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -509,6 +628,19 @@ async def mark_read(
     if not enrollment or enrollment.user_id != current_user.id:
         raise HTTPException(status_code=404, detail="报名记录不存在")
     challenge_service.mark_push_read(db, enrollment_id, push_id)
+    # challenge_checkin 积分
+    try:
+        from core.models import PointTransaction
+        db.add(PointTransaction(
+            user_id=current_user.id,
+            action="challenge_checkin",
+            point_type="growth",
+            amount=3,
+        ))
+        db.commit()
+    except Exception as e:
+        logger.warning(f"积分记录失败: {e}")
+
     return {"message": "已标记已读"}
 
 
@@ -576,6 +708,16 @@ async def coach_assign(
         enrollment = challenge_service.coach_assign_challenge(
             db, current_user, req.student_id, req.challenge_id,
         )
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="challenge.coach_assign",
+                detail={"student_id": req.student_id, "challenge_id": req.challenge_id},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return _serialize_enrollment(enrollment)
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))

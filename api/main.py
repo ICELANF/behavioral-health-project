@@ -6,57 +6,47 @@ import json
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 import logging
-from fastapi import BackgroundTasks, FastAPI, Body, Header, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, Body, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+
+from api.dependencies import get_current_user
+from core.models import User
 
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# 延迟导入 Master Agent (避免循环依赖)
-_master_agent = None      # v0 MasterAgent (orchestrator 9-step pipeline)
-_agent_master = None       # v6 MasterAgent (template-aware 12-agent router)
+# 延迟导入 Master Agent — 统一单例 (v0+v6 合并)
+_master_agent = None
 
-def get_master_agent():
-    """懒加载 v0 MasterAgent (orchestrator 用)"""
+def get_master_agent(db_session=None):
+    """获取统一 MasterAgent 单例 (v0+v6 合并)"""
     global _master_agent
     if _master_agent is None:
         try:
-            from core.master_agent import MasterAgent
-            _master_agent = MasterAgent()
-            print("[API] MasterAgent (v0) 初始化成功")
+            from core.master_agent_unified import UnifiedMasterAgent
+            if db_session is None:
+                try:
+                    from core.database import SessionLocal
+                    db_session = SessionLocal()
+                except Exception:
+                    pass
+            _master_agent = UnifiedMasterAgent(db_session=db_session)
+            print("[API] UnifiedMasterAgent (v0+v6) 初始化成功")
         except Exception as e:
-            print(f"[API] MasterAgent (v0) 初始化失败: {e}")
+            print(f"[API] UnifiedMasterAgent 初始化失败: {e}")
     return _master_agent
 
 
-def get_agent_master():
-    """懒加载 v6 MasterAgent (template-aware, 用于 agent routing)"""
-    global _agent_master
-    if _agent_master is None:
-        try:
-            from core.agents.master_agent import MasterAgent as AgentMaster
-            db_session = None
-            try:
-                from core.database import SessionLocal
-                db_session = SessionLocal()
-                _agent_master = AgentMaster(db_session=db_session)
-                print(f"[API] AgentMaster (v6) 从 DB 模板初始化成功")
-            except Exception as e:
-                print(f"[API] AgentMaster (v6) DB 加载失败, 使用硬编码: {e}")
-                _agent_master = AgentMaster()
-            finally:
-                if db_session:
-                    db_session.close()
-        except Exception as e:
-            print(f"[API] AgentMaster (v6) 初始化失败: {e}")
-    return _agent_master
+def get_agent_master(db_session=None):
+    """deprecated — 使用 get_master_agent()"""
+    return get_master_agent(db_session)
 
 
 def reset_agent_master():
-    """重置 v6 单例, 下次调用 get_agent_master() 时重建 (Agent 模板变更后调用)"""
-    global _agent_master
-    _agent_master = None
+    """重置统一单例, 下次调用时重建 (Agent 模板变更后调用)"""
+    global _master_agent
+    _master_agent = None
 
 
 def _resolve_tenant_ctx_by_user_id(user_id: str, db) -> Optional[Dict[str, Any]]:
@@ -590,6 +580,7 @@ async def dispatch_request(
     mode: str = Body("dify", embed=True),  # 可选 dify 或 ollama
     agent_id: str = Body("", embed=True),
     tenant_id: str = Body("", embed=True),
+    current_user: User = Depends(get_current_user),
 ):
     """行健行为教练分发中心：根据模式选择路由"""
 
@@ -672,7 +663,7 @@ async def comprehensive_health():
 
 # --- 专家列表接口 ---
 @app.get("/api/v1/experts")
-async def get_experts():
+async def get_experts(current_user: User = Depends(get_current_user)):
     """获取可用专家列表"""
     return [
         {"id": "mental_health", "name": "心理咨询师", "role": "情绪管理、压力调节、睡眠改善"},
@@ -684,7 +675,7 @@ async def get_experts():
 
 # --- 个人看板接口 ---
 @app.get("/api/v1/dashboard/{user_id}")
-async def get_dashboard(user_id: str):
+async def get_dashboard(user_id: str, current_user: User = Depends(get_current_user)):
     """获取用户个人看板数据"""
     # 模拟数据 (实际应从数据库/评估系统获取)
     import random
@@ -717,7 +708,8 @@ async def get_dashboard(user_id: str):
 @app.post("/api/v1/decompose")
 async def decompose_tasks(
     message: str = Body(..., embed=True),
-    efficacy_score: int = Body(50, embed=True)
+    efficacy_score: int = Body(50, embed=True),
+    current_user: User = Depends(get_current_user),
 ):
     """根据用户消息和效能感分解任务"""
     # 根据效能感限幅
@@ -751,7 +743,7 @@ async def decompose_tasks(
 # ============================================================================
 
 @app.post("/orchestrator/process", response_model=OrchestratorResponse)
-async def orchestrator_process(request: OrchestratorRequest):
+async def orchestrator_process(request: OrchestratorRequest, current_user: User = Depends(get_current_user)):
     """
     Master Agent 核心处理接口
 
@@ -819,7 +811,7 @@ async def orchestrator_process(request: OrchestratorRequest):
 
 
 @app.post("/orchestrator/briefing")
-async def get_daily_briefing(request: DailyBriefingRequest):
+async def get_daily_briefing(request: DailyBriefingRequest, current_user: User = Depends(get_current_user)):
     """
     获取每日简报
 
@@ -843,7 +835,7 @@ async def get_daily_briefing(request: DailyBriefingRequest):
 
 
 @app.get("/orchestrator/briefing/{user_id}/message")
-async def get_daily_message(user_id: str):
+async def get_daily_message(user_id: str, current_user: User = Depends(get_current_user)):
     """获取格式化的每日推送消息"""
     master_agent = get_master_agent()
     if not master_agent:
@@ -857,7 +849,7 @@ async def get_daily_message(user_id: str):
 
 
 @app.post("/orchestrator/agent-task")
-async def execute_agent_task(request: AgentTaskRequest):
+async def execute_agent_task(request: AgentTaskRequest, current_user: User = Depends(get_current_user)):
     """
     执行单个 Agent 任务
 
@@ -888,7 +880,7 @@ async def execute_agent_task(request: AgentTaskRequest):
 
 
 @app.post("/orchestrator/action-plan")
-async def create_action_plan(request: ActionPlanRequest):
+async def create_action_plan(request: ActionPlanRequest, current_user: User = Depends(get_current_user)):
     """
     创建行动计划
 
@@ -923,7 +915,7 @@ async def create_action_plan(request: ActionPlanRequest):
 
 
 @app.get("/orchestrator/action-plan/{user_id}/phased")
-async def get_phased_plan(user_id: str, goal: str = "健康管理", weeks: int = 4):
+async def get_phased_plan(user_id: str, goal: str = "健康管理", weeks: int = 4, current_user: User = Depends(get_current_user)):
     """获取多阶段行动计划"""
     master_agent = get_master_agent()
     if not master_agent:
@@ -943,7 +935,7 @@ async def get_phased_plan(user_id: str, goal: str = "健康管理", weeks: int =
 
 
 @app.get("/orchestrator/profile/{user_id}")
-async def get_user_profile(user_id: str):
+async def get_user_profile(user_id: str, current_user: User = Depends(get_current_user)):
     """获取用户画像"""
     master_agent = get_master_agent()
     if not master_agent:
@@ -959,7 +951,8 @@ async def get_user_profile(user_id: str):
 @app.post("/orchestrator/device-sync")
 async def sync_device_data(
     user_id: str = Body(...),
-    device_data: DeviceDataInput = Body(...)
+    device_data: DeviceDataInput = Body(...),
+    current_user: User = Depends(get_current_user),
 ):
     """同步穿戴设备数据"""
     master_agent = get_master_agent()
@@ -996,7 +989,7 @@ class RouteRequest(BaseModel):
 
 
 @app.post("/orchestrator/coordinate")
-async def coordinate_agents(request: CoordinateRequest):
+async def coordinate_agents(request: CoordinateRequest, current_user: User = Depends(get_current_user)):
     """
     协调多个 Agent 结果 - 冲突消解 + 权重融合
 
@@ -1029,7 +1022,7 @@ async def coordinate_agents(request: CoordinateRequest):
 
 
 @app.post("/orchestrator/route")
-async def route_agents(request: RouteRequest):
+async def route_agents(request: RouteRequest, current_user: User = Depends(get_current_user)):
     """
     Agent 路由 - 选择最合适的 Agent 组合
 
@@ -1073,7 +1066,7 @@ async def route_agents(request: RouteRequest):
 
 
 @app.post("/orchestrator/route/detailed")
-async def route_agents_detailed(request: RouteRequest):
+async def route_agents_detailed(request: RouteRequest, current_user: User = Depends(get_current_user)):
     """Agent 路由 (详细版) - 返回完整路由信息"""
     master_agent = get_master_agent()
     if not master_agent:
@@ -1111,7 +1104,7 @@ async def route_agents_detailed(request: RouteRequest):
 # ============================================================================
 
 @app.get("/orchestrator/status")
-async def orchestrator_status():
+async def orchestrator_status(current_user: User = Depends(get_current_user)):
     """获取 Orchestrator 状态"""
     master_agent = get_master_agent()
     return {
@@ -1198,6 +1191,7 @@ async def brain_evaluate(
     request: BrainEvaluateRequest,
     background_tasks: BackgroundTasks,
     x_source_ui: Optional[str] = Header(None, alias="X-Source-UI"),
+    current_user: User = Depends(get_current_user),
 ):
     """
     TTM 阶段跃迁判定入口
@@ -1475,6 +1469,34 @@ try:
     print("[API] V4.0 旅程状态路由已注册")
 except ImportError as e:
     print(f"[API] V4.0 旅程状态路由注册失败: {e}")
+
+# ========== V4.0 治理体系路由 ==========
+try:
+    from api.governance_api import router as governance_router
+    app.include_router(governance_router)
+    print("[API] V4.0 治理体系路由已注册")
+except ImportError as e:
+    print(f"[API] V4.0 治理体系路由注册失败: {e}")
+
+# ========== V4.0 Sprint 2: 价值重塑路由 ==========
+for _mod, _name in [
+    ("api.peer_matching_api", "同伴配对"),
+    ("api.agency_api", "主体性引擎"),
+    ("api.incentive_phase_api", "三阶激励"),
+    ("api.peer_support_api", "同伴支持"),
+    ("api.reflection_api", "反思日志"),
+    ("api.advanced_rights_api", "高级权益"),
+    ("api.script_library_api", "话术库"),
+    ("api.ecosystem_v4_api", "生态系统"),
+    ("api.ies_api", "IES效果评分"),
+    ("api.contract_api", "契约管理"),
+]:
+    try:
+        _m = __import__(_mod, fromlist=["router"])
+        app.include_router(_m.router)
+        print(f"[API] V4.0 {_name}路由已注册")
+    except ImportError as e:
+        print(f"[API] V4.0 {_name}路由注册失败: {e}")
 
 # 注册遗漏的 routes.py 路由（审计修复 #7）
 try:

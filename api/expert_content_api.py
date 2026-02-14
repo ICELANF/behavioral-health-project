@@ -11,7 +11,8 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 from core.database import get_db
-from core.models import ExpertTenant, User, ChallengeTemplate
+from loguru import logger
+from core.models import ExpertTenant, User, ChallengeTemplate, UserActivityLog
 from api.dependencies import get_current_user
 
 from core.knowledge.document_service import (
@@ -160,6 +161,16 @@ def api_create_document(
         published_date=pub_date,
         expires_at=exp_date,
     )
+    try:
+        db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="expert_content.create",
+            detail={"doc_id": doc.id, "title": data.title, "tenant_id": tenant_id},
+            created_at=datetime.utcnow(),
+        ))
+        db.commit()
+    except Exception:
+        logger.warning("审计日志写入失败")
     return {"success": True, "data": _doc_to_dict(doc, include_content=True)}
 
 
@@ -213,6 +224,16 @@ def api_update_document(
             published_date=pub_date,
             expires_at=exp_date,
         )
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="expert_content.update",
+                detail={"doc_id": doc_id, "tenant_id": tenant_id, "fields": list(data.dict(exclude_unset=True).keys())},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return {"success": True, "data": _doc_to_dict(doc, include_content=True)}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -229,6 +250,16 @@ def api_publish_document(
     _check_tenant_access(db, tenant_id, current_user)
     try:
         doc = publish_document(db, doc_id, tenant_id)
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="expert_content.publish",
+                detail={"doc_id": doc_id, "tenant_id": tenant_id, "chunks": doc.chunk_count},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return {
             "success": True,
             "data": _doc_to_dict(doc),
@@ -251,6 +282,16 @@ def api_unpublish_document(
     _check_tenant_access(db, tenant_id, current_user)
     try:
         doc = unpublish_document(db, doc_id, tenant_id)
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="expert_content.unpublish",
+                detail={"doc_id": doc_id, "tenant_id": tenant_id},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return {"success": True, "data": _doc_to_dict(doc)}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -267,6 +308,16 @@ def api_delete_document(
     _check_tenant_access(db, tenant_id, current_user)
     try:
         delete_document(db, doc_id, tenant_id)
+        try:
+            db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="expert_content.delete",
+                detail={"doc_id": doc_id, "tenant_id": tenant_id},
+                created_at=datetime.utcnow(),
+            ))
+            db.commit()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return {"success": True, "message": "文档已删除"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

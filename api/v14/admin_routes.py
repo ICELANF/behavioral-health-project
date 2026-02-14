@@ -16,7 +16,7 @@ Admin Behavior Configuration API
 - GET /sync/pending - 获取待审核事件
 - GET /sync/view/{event_id} - 获取事件视图
 """
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, HTTPException, Query, Body, Depends
 from pydantic import BaseModel
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -46,6 +46,10 @@ except ImportError:
     STATE_SYNC_AVAILABLE = False
     logger.warning("[AdminAPI] 状态同步未加载")
 
+
+from api.dependencies import require_admin
+from core.models import User, UserActivityLog
+from core.database import SessionLocal
 
 router = APIRouter(prefix="/admin/behavior", tags=["admin", "behavior"])
 
@@ -80,7 +84,7 @@ class ProcessEventRequest(BaseModel):
 # ============================================
 
 @router.get("/rules")
-async def get_behavior_rules():
+async def get_behavior_rules(current_user: User = Depends(require_admin)):
     """
     获取当前母库逻辑
     
@@ -108,7 +112,7 @@ async def get_behavior_rules():
 
 
 @router.put("/rules")
-async def update_behavior_rules(request: UpdateRulesRequest):
+async def update_behavior_rules(request: UpdateRulesRequest, current_user: User = Depends(require_admin)):
     """
     更新母库逻辑
     
@@ -142,20 +146,33 @@ async def update_behavior_rules(request: UpdateRulesRequest):
         
         # 重新加载
         engine.reload()
-        
+
+        try:
+            _audit_db = SessionLocal()
+            _audit_db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="admin.rules_update",
+                detail={"version": new_library.version, "author": request.author},
+                created_at=datetime.utcnow(),
+            ))
+            _audit_db.commit()
+            _audit_db.close()
+        except Exception:
+            logger.warning("审计日志写入失败")
+
         return {
             "success": True,
             "message": "母库配置已更新",
             "version": new_library.version
         }
-        
+
     except Exception as e:
         logger.error(f"[AdminAPI] 更新母库失败: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/rules/validate")
-async def validate_behavior_rules(request: ValidateConditionRequest):
+async def validate_behavior_rules(request: ValidateConditionRequest, current_user: User = Depends(require_admin)):
     """
     验证逻辑表达式是否合法
     
@@ -197,7 +214,7 @@ async def validate_behavior_rules(request: ValidateConditionRequest):
 
 
 @router.post("/rules/reload")
-async def reload_behavior_rules():
+async def reload_behavior_rules(current_user: User = Depends(require_admin)):
     """
     热重载配置
     
@@ -210,6 +227,18 @@ async def reload_behavior_rules():
     success = engine.reload()
     
     if success:
+        try:
+            _audit_db = SessionLocal()
+            _audit_db.add(UserActivityLog(
+                user_id=current_user.id,
+                activity_type="admin.rules_reload",
+                detail={"success": True},
+                created_at=datetime.utcnow(),
+            ))
+            _audit_db.commit()
+            _audit_db.close()
+        except Exception:
+            logger.warning("审计日志写入失败")
         return {
             "success": True,
             "message": "配置重载成功",
@@ -226,7 +255,7 @@ async def reload_behavior_rules():
 # ============================================
 
 @router.get("/actions")
-async def get_action_packages():
+async def get_action_packages(current_user: User = Depends(require_admin)):
     """
     获取动作包列表
     
@@ -244,7 +273,7 @@ async def get_action_packages():
 
 
 @router.get("/actions/{action_id}")
-async def get_action_by_id(action_id: str):
+async def get_action_by_id(action_id: str, current_user: User = Depends(require_admin)):
     """获取单个动作包"""
     if not LOGIC_ENGINE_AVAILABLE:
         raise HTTPException(status_code=503, detail="逻辑引擎未加载")
@@ -262,7 +291,7 @@ async def get_action_by_id(action_id: str):
 
 
 @router.get("/stages")
-async def get_stage_definitions():
+async def get_stage_definitions(current_user: User = Depends(require_admin)):
     """
     获取阶段定义
     
@@ -283,7 +312,7 @@ async def get_stage_definitions():
 
 
 @router.get("/stages/{stage_id}")
-async def get_stage_by_id(stage_id: str):
+async def get_stage_by_id(stage_id: str, current_user: User = Depends(require_admin)):
     """获取单个阶段定义"""
     if not LOGIC_ENGINE_AVAILABLE:
         raise HTTPException(status_code=503, detail="逻辑引擎未加载")
@@ -301,7 +330,7 @@ async def get_stage_by_id(stage_id: str):
 
 
 @router.get("/triggers")
-async def get_trigger_rules():
+async def get_trigger_rules(current_user: User = Depends(require_admin)):
     """
     获取触发规则列表
     
@@ -319,7 +348,7 @@ async def get_trigger_rules():
 
 
 @router.get("/triggers/for-stage/{stage_id}")
-async def get_triggers_for_stage(stage_id: str):
+async def get_triggers_for_stage(stage_id: str, current_user: User = Depends(require_admin)):
     """获取适用于指定阶段的触发规则"""
     if not LOGIC_ENGINE_AVAILABLE:
         raise HTTPException(status_code=503, detail="逻辑引擎未加载")
@@ -339,7 +368,7 @@ async def get_triggers_for_stage(stage_id: str):
 # ============================================
 
 @router.post("/sync/process")
-async def process_sync_event(request: ProcessEventRequest):
+async def process_sync_event(request: ProcessEventRequest, current_user: User = Depends(require_admin)):
     """
     处理同步事件
     
@@ -361,7 +390,20 @@ async def process_sync_event(request: ProcessEventRequest):
         trigger_id=request.trigger_id,
         action_id=request.action_id
     )
-    
+
+    try:
+        _audit_db = SessionLocal()
+        _audit_db.add(UserActivityLog(
+            user_id=current_user.id,
+            activity_type="admin.sync_process",
+            detail={"user_id": request.user_id, "event_type": request.event_type, "event_id": record.event_id},
+            created_at=datetime.utcnow(),
+        ))
+        _audit_db.commit()
+        _audit_db.close()
+    except Exception:
+        logger.warning("审计日志写入失败")
+
     return {
         "success": True,
         "event_id": record.event_id,
@@ -370,7 +412,7 @@ async def process_sync_event(request: ProcessEventRequest):
 
 
 @router.get("/sync/view/{event_id}")
-async def get_sync_view(event_id: str, role: str = "patient"):
+async def get_sync_view(event_id: str, role: str = "patient", current_user: User = Depends(require_admin)):
     """
     获取事件视图
     
@@ -402,7 +444,8 @@ async def get_sync_view(event_id: str, role: str = "patient"):
 async def get_user_sync_events(
     user_id: int,
     role: str = "patient",
-    limit: int = Query(10, ge=1, le=100)
+    limit: int = Query(10, ge=1, le=100),
+    current_user: User = Depends(require_admin),
 ):
     """
     获取用户的同步事件列表
@@ -429,7 +472,7 @@ async def get_user_sync_events(
 
 
 @router.get("/sync/pending")
-async def get_pending_reviews():
+async def get_pending_reviews(current_user: User = Depends(require_admin)):
     """
     获取待审核事件
     
@@ -453,7 +496,7 @@ async def get_pending_reviews():
 # ============================================
 
 @router.get("/stats")
-async def get_behavior_stats():
+async def get_behavior_stats(current_user: User = Depends(require_admin)):
     """
     获取行为系统统计
     

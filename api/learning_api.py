@@ -175,6 +175,24 @@ class RewardClaim(BaseModel):
     reward_id: str
 
 
+class GrowerTimeAddRequest(BaseModel):
+    """成长者学习时长记录 (轻量版, 前端直接调用)"""
+    minutes: int = Field(ge=1, description="学习分钟数")
+    content_id: Optional[str] = None
+    content_type: Optional[str] = None  # video/course/article
+    domain: Optional[str] = None  # 学习领域
+
+
+class GrowerQuizPointsRequest(BaseModel):
+    """成长者测试积分 (轻量版)"""
+    user_id: Optional[int] = None  # 可选, 默认当前用户
+    quiz_id: str
+    score: int = Field(ge=0, le=100)
+    correct_count: int = Field(ge=0)
+    total_count: int = Field(ge=1)
+    is_first_try: bool = True
+
+
 # ============================================================================
 # 教练积分 API
 # ============================================================================
@@ -186,6 +204,9 @@ def get_coach_points(
     current_user: User = Depends(get_current_user),
 ):
     """获取教练积分详情（三积分体系）"""
+    # 越权校验
+    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
+        raise HTTPException(status_code=403, detail="无权访问他人数据")
     stats = get_or_create_stats(db, user_id)
     growth_points = stats.growth_points
     contribution_points = stats.contribution_points
@@ -252,6 +273,9 @@ def get_coach_points_history(
     current_user: User = Depends(get_current_user),
 ):
     """获取教练积分历史"""
+    # 越权校验
+    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
+        raise HTTPException(status_code=403, detail="无权访问他人数据")
     query = db.query(LearningPointsLog).filter(LearningPointsLog.user_id == user_id)
     if category:
         query = query.filter(LearningPointsLog.category == category)
@@ -328,6 +352,9 @@ def get_grower_stats(
     current_user: User = Depends(get_current_user),
 ):
     """获取成长者学习统计（时长+积分分开）"""
+    # 越权校验
+    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
+        raise HTTPException(status_code=403, detail="无权访问他人数据")
     stats = get_or_create_stats(db, user_id)
 
     total_minutes = stats.total_minutes
@@ -398,6 +425,9 @@ def get_grower_time(
     current_user: User = Depends(get_current_user),
 ):
     """获取成长者学习时长（单独）"""
+    # 越权校验
+    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
+        raise HTTPException(status_code=403, detail="无权访问他人数据")
     stats = get_or_create_stats(db, user_id)
     total_minutes = stats.total_minutes
 
@@ -462,6 +492,9 @@ def get_grower_points(
     current_user: User = Depends(get_current_user),
 ):
     """获取成长者学习积分（测试积分，单独）"""
+    # 越权校验
+    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
+        raise HTTPException(status_code=403, detail="无权访问他人数据")
     stats = get_or_create_stats(db, user_id)
     total_points = stats.total_points
 
@@ -506,33 +539,32 @@ def get_grower_points(
 
 @router.post("/grower/points/add")
 def add_grower_quiz_points(
-    user_id: int,
-    quiz_id: str,
-    score: int,
-    correct_count: int,
-    total_count: int,
-    is_first_try: bool = True,
+    body: GrowerQuizPointsRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """添加成长者测试积分"""
-    passed = score >= 60
-    is_perfect = score == 100
+    """添加成长者测试积分
+
+    请求体: {"quiz_id": "q1", "score": 85, "correct_count": 8, "total_count": 10}
+    """
+    user_id = body.user_id or current_user.id
+    passed = body.score >= 60
+    is_perfect = body.score == 100
 
     points_earned = 0
     if passed:
         points_earned += GROWER_QUIZ_POINTS["pass_base"]
-        points_earned += correct_count * GROWER_QUIZ_POINTS["per_correct"]
+        points_earned += body.correct_count * GROWER_QUIZ_POINTS["per_correct"]
         if is_perfect:
             points_earned += GROWER_QUIZ_POINTS["perfect_bonus"]
-        if is_first_try:
+        if body.is_first_try:
             points_earned += GROWER_QUIZ_POINTS["first_try_bonus"]
 
     old_stats = get_or_create_stats(db, user_id)
     current_total = old_stats.total_points
 
     if points_earned > 0:
-        record_learning_points(db, user_id, points_earned, "quiz", "growth", quiz_id)
+        record_learning_points(db, user_id, points_earned, "quiz", "growth", body.quiz_id)
 
     record_quiz_result(db, user_id, passed)
 
@@ -549,9 +581,9 @@ def add_grower_quiz_points(
         "points_earned": points_earned,
         "breakdown": {
             "pass_base": GROWER_QUIZ_POINTS["pass_base"] if passed else 0,
-            "correct_bonus": correct_count * GROWER_QUIZ_POINTS["per_correct"] if passed else 0,
+            "correct_bonus": body.correct_count * GROWER_QUIZ_POINTS["per_correct"] if passed else 0,
             "perfect_bonus": GROWER_QUIZ_POINTS["perfect_bonus"] if is_perfect else 0,
-            "first_try_bonus": GROWER_QUIZ_POINTS["first_try_bonus"] if passed and is_first_try else 0,
+            "first_try_bonus": GROWER_QUIZ_POINTS["first_try_bonus"] if passed and body.is_first_try else 0,
         },
         "new_total": new_total,
         "new_milestones": new_milestones,
@@ -570,6 +602,9 @@ def get_grower_time_history(
     current_user: User = Depends(get_current_user),
 ):
     """获取成长者学习时长历史"""
+    # 越权校验
+    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
+        raise HTTPException(status_code=403, detail="无权访问他人数据")
     query = db.query(LearningTimeLog).filter(LearningTimeLog.user_id == user_id)
     if domain:
         query = query.filter(LearningTimeLog.domain == domain)
@@ -615,22 +650,22 @@ def get_grower_time_history(
 
 @router.post("/grower/time/add")
 def add_grower_time(
-    event: LearningEvent,
+    body: GrowerTimeAddRequest,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """添加成长者学习时长"""
-    if event.user_type != "grower":
-        raise HTTPException(status_code=400, detail="仅限成长者用户")
+    """添加成长者学习时长 (轻量版)
 
-    minutes = event.duration_seconds // 60
+    请求体: {"minutes": 30, "domain": "nutrition"}
+    """
+    minutes = body.minutes
     if minutes <= 0:
         return {"success": True, "minutes_earned": 0, "new_total": 0, "new_milestones": []}
 
     old_stats = get_or_create_stats(db, current_user.id)
     current_total = old_stats.total_minutes
 
-    record_learning_time(db, current_user.id, minutes, domain=event.content_category)
+    record_learning_time(db, current_user.id, minutes, domain=body.domain)
 
     new_stats = get_or_create_stats(db, current_user.id)
     new_total = new_stats.total_minutes
@@ -655,6 +690,9 @@ def get_grower_streak(
     current_user: User = Depends(get_current_user),
 ):
     """获取成长者连续学习记录"""
+    # 越权校验
+    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
+        raise HTTPException(status_code=403, detail="无权访问他人数据")
     stats = get_or_create_stats(db, user_id)
     current_streak = stats.current_streak
     longest_streak = stats.longest_streak
@@ -691,6 +729,9 @@ def get_user_rewards(
     current_user: User = Depends(get_current_user),
 ):
     """获取用户奖励列表"""
+    # 越权校验
+    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
+        raise HTTPException(status_code=403, detail="无权访问他人数据")
     stats = get_or_create_stats(db, user_id)
 
     if user_type == "grower":

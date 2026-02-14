@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from core.database import get_db
-from core.models import AgentTemplate
+from core.models import AgentTemplate, UserActivityLog
 from api.dependencies import require_admin
 from core.agents.base import AgentDomain
 
@@ -172,6 +172,16 @@ def create_template(
         created_by=admin.id,
     )
     db.add(t)
+    try:
+        db.add(UserActivityLog(
+            user_id=admin.id,
+            activity_type="agent_tpl.create",
+            detail={"agent_id": data.agent_id, "display_name": data.display_name},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     db.refresh(t)
     _invalidate()
@@ -195,6 +205,16 @@ def update_template(
         setattr(t, key, value)
     t.updated_at = datetime.utcnow()
 
+    try:
+        db.add(UserActivityLog(
+            user_id=_admin.id,
+            activity_type="agent_tpl.update",
+            detail={"agent_id": agent_id, "fields": list(update_data.keys())},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     db.refresh(t)
     _invalidate()
@@ -215,6 +235,16 @@ def delete_template(
         raise HTTPException(403, "预置模板不可删除")
 
     db.delete(t)
+    try:
+        db.add(UserActivityLog(
+            user_id=_admin.id,
+            activity_type="agent_tpl.delete",
+            detail={"agent_id": agent_id},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     _invalidate()
     return {"ok": True, "deleted": agent_id}
@@ -232,6 +262,16 @@ def toggle_template(
         raise HTTPException(404, f"Agent 模板 '{agent_id}' 不存在")
     t.is_enabled = not t.is_enabled
     t.updated_at = datetime.utcnow()
+    try:
+        db.add(UserActivityLog(
+            user_id=_admin.id,
+            activity_type="agent_tpl.toggle",
+            detail={"agent_id": agent_id, "is_enabled": t.is_enabled},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     db.refresh(t)
     _invalidate()
@@ -276,6 +316,16 @@ def clone_template(
         created_by=admin.id,
     )
     db.add(clone)
+    try:
+        db.add(UserActivityLog(
+            user_id=admin.id,
+            activity_type="agent_tpl.clone",
+            detail={"source": agent_id, "new_id": new_agent_id},
+            created_at=datetime.utcnow(),
+        ))
+        db.flush()
+    except Exception:
+        logger.warning("审计日志写入失败")
     db.commit()
     db.refresh(clone)
     _invalidate()

@@ -177,6 +177,19 @@ async def recognize_food(
     db.commit()
     db.refresh(record)
 
+    # 6.5 积分记录
+    try:
+        from core.models import PointTransaction
+        db.add(PointTransaction(
+            user_id=current_user.id,
+            action="food_recognize",
+            point_type="growth",
+            amount=2,
+        ))
+        db.commit()
+    except Exception as e:
+        logger.warning(f"积分记录失败: {e}")
+
     # 7. 返回结果
     return {
         "id": record.id,
