@@ -342,8 +342,82 @@ async def run_agent(
     req: AgentRunRequest,
     current_user=Depends(get_current_user),
     tenant_ctx: Optional[Dict] = Depends(resolve_tenant_ctx),
+    db: Session = Depends(get_db),
 ):
-    """运行Agent任务 (v6 + tenant_ctx 优先, v0 降级)"""
+    """运行Agent任务 (v6 + tenant_ctx 优先, v0 降级)
+
+    V4.0: Observer 白名单 — Observer 只能使用 TrustGuide Agent，每天限 3 轮。
+    """
+    # ── V4.0 Observer Trust Mode 白名单 ──────────────────
+    if current_user.role.value == "observer":
+        from core.models import JourneyState
+        from core.agents.trust_guide_agent import TrustGuideAgent
+        from datetime import date as date_type
+
+        journey = db.query(JourneyState).filter(
+            JourneyState.user_id == current_user.id
+        ).first()
+        if not journey:
+            journey = JourneyState(user_id=current_user.id)
+            db.add(journey)
+            db.flush()
+
+        # Enforce daily 3-turn limit
+        today = date_type.today()
+        if journey.observer_last_dialog_date == today:
+            if journey.observer_dialog_count >= 3:
+                return {
+                    "success": False,
+                    "error": "observer_daily_limit",
+                    "message": "今天的对话次数已达上限（3次），明天再来聊吧。"
+                              "记住——你来，我在。",
+                }
+        else:
+            journey.observer_dialog_count = 0
+            journey.observer_last_dialog_date = today
+
+        # Run TrustGuide agent
+        agent = TrustGuideAgent()
+        from core.agents.base import AgentInput
+        agent_input = AgentInput(
+            user_id=current_user.id,
+            message=req.expected_output,
+            context={
+                **req.context,
+                "observer_dialog_count": journey.observer_dialog_count,
+            },
+        )
+        result = agent.process(agent_input)
+
+        # Update dialog count
+        journey.observer_dialog_count += 1
+        db.commit()
+
+        return {
+            "success": True,
+            "data": {
+                "task_id": str(uuid.uuid4())[:8],
+                "agent_id": "trust_guide",
+                "agent_type": "trust_guide",
+                "output_type": "trust_building",
+                "confidence": result.confidence,
+                "suggestions": [
+                    {"id": "tg-1", "type": "trust", "priority": 10, "text": r}
+                    for r in result.recommendations
+                ],
+                "risk_flags": [],
+                "need_human_review": False,
+                "observer_trust_mode": True,
+                "dialog_remaining": max(0, 3 - journey.observer_dialog_count),
+                "metadata": {
+                    **result.metadata,
+                    "model_version": "trust-guide-v4",
+                },
+                "created_at": datetime.now().isoformat(),
+            },
+        }
+    # ── End Observer white-list ──────────────────────────
+
     output = _run_agent_task(req, tenant_ctx=tenant_ctx)
     return {"success": True, "data": output}
 

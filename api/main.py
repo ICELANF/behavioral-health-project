@@ -1468,6 +1468,14 @@ try:
 except ImportError as e:
     print(f"[API] 行为处方路由注册失败: {e}")
 
+# ========== V4.0 旅程状态路由 ==========
+try:
+    from api.journey_api import router as journey_router
+    app.include_router(journey_router)
+    print("[API] V4.0 旅程状态路由已注册")
+except ImportError as e:
+    print(f"[API] V4.0 旅程状态路由注册失败: {e}")
+
 # 注册遗漏的 routes.py 路由（审计修复 #7）
 try:
     from api.routes import router as legacy_v1_router

@@ -100,3 +100,10 @@ AGENT_CLASS_REGISTRY.update({
     "weight": WeightAgent,
     "cardiac_rehab": CardiacRehabAgent,
 })
+
+# ── V4.0 新增 Agent 注册 ──
+try:
+    from .trust_guide_agent import TrustGuideAgent
+    AGENT_CLASS_REGISTRY["trust_guide"] = TrustGuideAgent
+except ImportError:
+    pass

@@ -80,6 +80,23 @@ ROLE_LEVEL_STR = {r.value: lv for r, lv in ROLE_LEVEL.items()}
 ROLE_DISPLAY = {r: f"L{lv - 1}" for r, lv in ROLE_LEVEL.items() if lv < 90}
 
 
+class AgencyMode(str, enum.Enum):
+    """V4.0 主体性三态模型 — agency_mode"""
+    PASSIVE = "passive"            # 被动: <0.3, Agent=照料者
+    TRANSITIONAL = "transitional"  # 过渡: 0.3-0.6, Agent=同行者
+    ACTIVE = "active"              # 主动: >0.6, Agent=镜子/临在者
+
+
+class JourneyStageV4(str, enum.Enum):
+    """V4.0 成长者S0-S5阶段化执行结构"""
+    S0_AUTHORIZATION = "s0_authorization"    # 授权进入
+    S1_AWARENESS = "s1_awareness"            # 觉察与稳定期
+    S2_TRIAL = "s2_trial"                    # 尝试与波动期
+    S3_PATHWAY = "s3_pathway"                # 形成路径期
+    S4_INTERNALIZATION = "s4_internalization" # 内化期
+    S5_GRADUATION = "s5_graduation"          # 转出期(毕业)
+
+
 class RiskLevel(str, enum.Enum):
     """风险等级"""
     R0 = "R0"  # 正常
@@ -170,6 +187,14 @@ class User(Base):
     health_competency_level = Column(String(4), nullable=True, default="Lv0")
     current_stage = Column(String(4), nullable=True, default="S0")
     growth_level = Column(String(4), nullable=True, default="G0")
+
+    # V4.0 主体性 & 信任
+    agency_mode = Column(String(20), default="passive")        # passive/transitional/active
+    agency_score = Column(Float, default=0.0)                  # 0.0-1.0
+    trust_score = Column(Float, default=0.0)                   # 0.0-1.0
+    coach_intent = Column(Boolean, default=False)              # 教练意向标记
+    conversion_type = Column(String(30), nullable=True)        # curiosity/time/coach_referred
+    conversion_source = Column(String(30), nullable=True)      # self/community/institution/paid
 
     # 健康指标
     adherence_rate = Column(Float, default=0.0)  # 依从性百分比
@@ -996,6 +1021,11 @@ class BehavioralProfile(Base):
     primary_domains = Column(JSON, nullable=True)
     # 领域详情: {"nutrition": {"priority": 1, "stage_strategy": "preparation"}, ...}
     domain_details = Column(JSON, nullable=True)
+
+    # ====== V4.0 主体性 & 信任 ======
+    agency_mode = Column(String(20), default="passive")   # passive/transitional/active
+    agency_score = Column(Float, default=0.0)             # 0.0-1.0
+    trust_score = Column(Float, default=0.0)              # 0.0-1.0
 
     # ====== 干预配置 ======
     interaction_mode = Column(SQLEnum(InteractionMode), nullable=True)
@@ -3948,6 +3978,119 @@ class PolicyStageTransitionLog(Base):
     )
 
 
+# ============================================
+# V4.0 Foundation Models
+# ============================================
+
+class JourneyState(Base):
+    """
+    V4.0 用户旅程状态表
+
+    追踪用户在 S0-S5 阶段的生命周期，以及
+    agency_mode 三态模型和 trust_score 信任评分。
+    每用户唯一记录。
+    """
+    __tablename__ = "journey_states"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
+
+    # S0-S5 阶段
+    journey_stage = Column(String(30), nullable=False, default="s0_authorization")
+
+    # Agency mode 三态
+    agency_mode = Column(String(20), nullable=False, default="passive")
+    agency_score = Column(Float, nullable=False, default=0.0)
+    agency_signals = Column(JSON, default={})
+    coach_override_agency = Column(String(20), nullable=True)
+
+    # Trust score
+    trust_score = Column(Float, nullable=False, default=0.0)
+    trust_signals = Column(JSON, default={})
+
+    # Conversion tracking
+    conversion_type = Column(String(30), nullable=True)    # curiosity/time/coach_referred
+    conversion_source = Column(String(30), nullable=True)  # self/community/institution/paid
+
+    # Lifecycle timestamps
+    activated_at = Column(DateTime, nullable=True)   # Observer→Grower moment
+    graduated_at = Column(DateTime, nullable=True)   # S5 graduation moment
+
+    # Observer trial tracking
+    observer_dialog_count = Column(Integer, nullable=False, default=0)
+    observer_last_dialog_date = Column(Date, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        Index('idx_journey_stage', 'journey_stage'),
+        Index('idx_journey_agency', 'agency_mode'),
+    )
+
+    def __repr__(self):
+        return f"<JourneyState(user={self.user_id}, stage={self.journey_stage}, agency={self.agency_mode})>"
+
+
+class TrustScoreLog(Base):
+    """
+    V4.0 信任评分信号日志
+
+    记录每次信任评分计算的六信号细节：
+    dialog_depth(25%), proactive_return_rate(20%),
+    topic_openness(15%), emotion_expression(15%),
+    autonomous_info_sharing(15%), curiosity_expression(10%)
+    """
+    __tablename__ = "trust_score_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    signal_name = Column(String(50), nullable=False)
+    signal_value = Column(Float, nullable=False, default=0.0)
+    weight = Column(Float, nullable=False, default=0.0)
+    computed_score = Column(Float, nullable=False, default=0.0)
+    source = Column(String(50), default="system")
+    context = Column(JSON, default={})
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_trust_log_user', 'user_id', 'created_at'),
+    )
+
+    def __repr__(self):
+        return f"<TrustScoreLog(user={self.user_id}, signal={self.signal_name}, value={self.signal_value})>"
+
+
+class AgencyScoreLog(Base):
+    """
+    V4.0 主体性评分信号日志
+
+    记录每次 agency_score 计算的六信号细节：
+    S1 主动发起率(25%), S2 自主修改率(20%),
+    S3 主动表达词频(20%), S4 觉察深度(15%),
+    S5 教练依赖度(10%, 反向), S6 教练标注(10%)
+    """
+    __tablename__ = "agency_score_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    signal_name = Column(String(50), nullable=False)
+    signal_value = Column(Float, nullable=False, default=0.0)
+    weight = Column(Float, nullable=False, default=0.0)
+    computed_score = Column(Float, nullable=False, default=0.0)
+    source = Column(String(50), default="system")
+    context = Column(JSON, default={})
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index('idx_agency_log_user', 'user_id', 'created_at'),
+    )
+
+    def __repr__(self):
+        return f"<AgencyScoreLog(user={self.user_id}, signal={self.signal_name}, value={self.signal_value})>"
+
+
 def get_table_names():
     """获取所有表名"""
     return [
@@ -4086,6 +4229,10 @@ def get_table_names():
         "agent_skill_graph",
         "policy_intervention_outcome",
         "policy_stage_transition_log",
+        # V4.0 Foundation
+        "journey_states",
+        "trust_score_logs",
+        "agency_score_logs",
     ]
 
 
@@ -4234,5 +4381,9 @@ def get_model_by_name(name: str):
         "AgentSkillGraph": AgentSkillGraph,
         "PolicyInterventionOutcome": PolicyInterventionOutcome,
         "PolicyStageTransitionLog": PolicyStageTransitionLog,
+        # V4.0 Foundation
+        "JourneyState": JourneyState,
+        "TrustScoreLog": TrustScoreLog,
+        "AgencyScoreLog": AgencyScoreLog,
     }
     return models.get(name)
