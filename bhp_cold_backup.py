@@ -51,12 +51,12 @@ def main():
     project = Path(args.project_dir)
     backup_root = Path(args.backup_dir)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    backup_name = f"bhp_v3_backup_{timestamp}"
+    backup_name = f"bhp_v8_backup_{timestamp}"
     backup_path = backup_root / backup_name
 
     print()
     print("=" * 50)
-    print("  BHP v3 冷备份")
+    print("  BHP v8 冷备份")
     print(f"  时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     print("=" * 50)
 
@@ -140,7 +140,7 @@ def main():
     # ══════════════════════════════════════
     print(f"\n[3/3] 打包项目文件 ...")
 
-    zip_file = backup_path / f"bhp_v3_code_{timestamp}.zip"
+    zip_file = backup_path / f"bhp_v8_code_{timestamp}.zip"
     file_count = 0
 
     print("  正在压缩项目 (排除缓存) ...")
@@ -186,7 +186,7 @@ def main():
     }
 
     manifest = f"""========================================
-BHP v3 冷备份清单
+BHP v8 冷备份清单
 ========================================
 备份时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 项目目录: {project}
@@ -195,7 +195,7 @@ BHP v3 冷备份清单
 文件清单:
 ---------
 1. bhp_db_full_{timestamp}.sql    - PostgreSQL 完整数据库导出
-2. bhp_v3_code_{timestamp}.zip    - 项目代码 + 配置文件 ({file_count} 文件)
+2. bhp_v8_code_{timestamp}.zip    - 项目代码 + 配置文件 ({file_count} 文件)
 3. container_status_before.txt    - 备份前容器状态
 4. RESTORE_GUIDE.md               - 恢复指南
 
@@ -213,7 +213,7 @@ BHP v3 冷备份清单
     (backup_path / "MANIFEST.txt").write_text(manifest, encoding="utf-8")
 
     # 恢复指南
-    restore_guide = f"""# BHP v3 恢复指南
+    restore_guide = f"""# BHP v8 恢复指南
 
 ## 快速恢复 (新电脑)
 
@@ -225,7 +225,7 @@ BHP v3 冷备份清单
 
 ```powershell
 # 1. 解压代码包
-Expand-Archive -Path "bhp_v3_code_{timestamp}.zip" -DestinationPath "D:\\behavioral-health-project"
+Expand-Archive -Path "bhp_v8_code_{timestamp}.zip" -DestinationPath "D:\\behavioral-health-project"
 
 # 2. 进入项目目录
 cd D:\\behavioral-health-project
