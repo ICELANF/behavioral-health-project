@@ -1,247 +1,518 @@
 {
   "summary": {
-    "total": 39,
-    "passed": 37,
-    "failed": 0,
-    "skipped": 2,
-    "pass_rate": "94.9%",
-    "duration": "0:00:03.672538",
-    "blockers": []
+    "total": 83,
+    "passed": 70,
+    "failed": 1,
+    "skipped": 12,
+    "pass_rate": "84.3%",
+    "duration": "0:00:25.622132",
+    "blockers": [
+      {
+        "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB2_AdminGovernance::test_governance_dashboard",
+        "status": "FAIL",
+        "detail": "smoke_tests\\test_day3_safety_governance_rbac.py:201: in test_governance_dashboard\n    assert r.status_code == 200\nE   assert 500 == 200\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+        "time": "2026-02-15T20:34:45.627694"
+      }
+    ]
   },
   "details": [
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS1_VisitorBrowse::test_health_endpoint_accessible",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:21.805694"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS1_VisitorBrowse::test_protected_endpoint_blocked",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:22.008969"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS1_VisitorBrowse::test_assessment_blocked_without_auth",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:22.013025"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS1_VisitorBrowse::test_chat_blocked_without_auth",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:22.020226"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS2_Registration::test_register_new_user",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:22.322895"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS2_Registration::test_duplicate_register_rejected",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:23.342003"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS2_Registration::test_login_returns_token",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:24.108058"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS2_Registration::test_observer_role_after_register",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:32.404741"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS3_ObserverPermissions::test_observer_can_view_profile",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:32.416234"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS3_ObserverPermissions::test_observer_blocked_from_coach",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:32.431182"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS3_ObserverPermissions::test_observer_blocked_from_admin",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:32.445635"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS3_ObserverPermissions::test_observer_blocked_from_safety",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:32.459539"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS4_HF20Assessment::test_hf20_submit",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:40.357253"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS4_HF20Assessment::test_hf20_has_result",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:40.462883"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS5_AIChat::test_create_session",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:41.071630"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS5_AIChat::test_send_message",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day1_golden_path_entry.py', 252, 'Skipped: Cannot create chat session')",
+      "time": "2026-02-15T20:34:41.122524"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS6_GrowerCapabilities::test_grower_can_view_content",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:41.173139"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS6_GrowerCapabilities::test_grower_can_view_journey",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:41.198757"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS6_GrowerCapabilities::test_grower_can_view_learning_stats",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day1_golden_path_entry.py', 289, 'Skipped: Learning stats endpoint not found')",
+      "time": "2026-02-15T20:34:41.205631"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS7_DataConsistency::test_user_id_stable",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:41.230403"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS7_DataConsistency::test_no_500_on_key_endpoints",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:41.273641"
+    },
+    {
+      "test": "smoke_tests/test_day1_golden_path_entry.py::TestS7_DataConsistency::test_coach_dashboard_accessible",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:41.913761"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS1_PointsAccumulation::test_credits_endpoint",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:42.411702"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS1_PointsAccumulation::test_learning_stats",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day2_golden_path_progression.py', 93, 'Skipped: Learning stats endpoint not found')",
+      "time": "2026-02-15T20:34:42.423743"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS1_PointsAccumulation::test_learning_time_add",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day2_golden_path_progression.py', 103, 'Skipped: Learning time add endpoint not found')",
+      "time": "2026-02-15T20:34:42.430442"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS1_PointsAccumulation::test_points_history",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day2_golden_path_progression.py', 115, 'Skipped: No points history endpoint found')",
+      "time": "2026-02-15T20:34:42.447509"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS2_StageProgression::test_current_stage_queryable",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:42.464468"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS2_StageProgression::test_journey_has_stage_field",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:42.479675"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS2_StageProgression::test_stage_advance_endpoint",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day2_golden_path_progression.py', 157, 'Skipped: Stage advance endpoint not found')",
+      "time": "2026-02-15T20:34:42.491487"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS2_StageProgression::test_stage_skip_blocked",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day2_golden_path_progression.py', 167, 'Skipped: Stage advance endpoint not found')",
+      "time": "2026-02-15T20:34:42.498766"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS3_DualTrackPromotion::test_promotion_progress",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day2_golden_path_progression.py', 186, 'Skipped: Promotion endpoint not found')",
+      "time": "2026-02-15T20:34:42.511302"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS3_DualTrackPromotion::test_promotion_rules",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day2_golden_path_progression.py', 193, 'Skipped: Promotion rules not found')",
+      "time": "2026-02-15T20:34:42.519741"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS3_DualTrackPromotion::test_promotion_apply",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day2_golden_path_progression.py', 202, 'Skipped: Promotion apply endpoint not found')",
+      "time": "2026-02-15T20:34:42.529138"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS4_ChallengesAndActions::test_challenges_list",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:42.545178"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS4_ChallengesAndActions::test_my_enrollments",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:42.560747"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS4_ChallengesAndActions::test_micro_actions",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:42.579189"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS4_ChallengesAndActions::test_incentive_dashboard",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:42.600454"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS5_CoachEndpoints::test_coach_dashboard",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:43.198078"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS5_CoachEndpoints::test_coach_students",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:43.214260"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS5_CoachEndpoints::test_coach_performance",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:43.229618"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS6_DataConsistency::test_auth_me_consistent",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:43.250545"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS6_DataConsistency::test_grower_role_correct",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:43.260327"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS6_DataConsistency::test_coach_role_correct",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:43.273691"
+    },
+    {
+      "test": "smoke_tests/test_day2_golden_path_progression.py::TestS6_DataConsistency::test_no_500_errors",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T20:34:43.359646"
+    },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA1_SafetyPipelineNormal::test_agent_run_normal",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:17.464408"
+      "time": "2026-02-15T20:34:44.143334"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA1_SafetyPipelineNormal::test_agent_unauthenticated_blocked",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:17.471645"
+      "time": "2026-02-15T20:34:44.151280"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA2_SafetyDashboard::test_safety_dashboard",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:18.067462"
+      "time": "2026-02-15T20:34:44.771696"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA2_SafetyDashboard::test_safety_logs",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:18.084864"
+      "time": "2026-02-15T20:34:44.798018"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA2_SafetyDashboard::test_safety_config",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:18.100010"
+      "time": "2026-02-15T20:34:44.813985"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB1_CoachDashboard::test_coach_dashboard",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:18.682125"
+      "time": "2026-02-15T20:34:45.396169"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB1_CoachDashboard::test_coach_students",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:18.700343"
+      "time": "2026-02-15T20:34:45.408983"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB1_CoachDashboard::test_coach_performance",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:18.718442"
+      "time": "2026-02-15T20:34:45.421868"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB2_AdminGovernance::test_admin_stats",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:18.755272"
+      "time": "2026-02-15T20:34:45.452026"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB2_AdminGovernance::test_admin_users",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:18.771688"
+      "time": "2026-02-15T20:34:45.471398"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB2_AdminGovernance::test_governance_dashboard",
-      "status": "PASS",
-      "detail": "",
-      "time": "2026-02-15T19:01:18.791937"
+      "status": "FAIL",
+      "detail": "smoke_tests\\test_day3_safety_governance_rbac.py:201: in test_governance_dashboard\n    assert r.status_code == 200\nE   assert 500 == 200\nE    +  where 500 = <Response [500 Internal Server Error]>.status_code",
+      "time": "2026-02-15T20:34:45.627694"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB2_AdminGovernance::test_analytics_admin_overview",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:18.810167"
+      "time": "2026-02-15T20:34:45.661563"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_coach_dashboard",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.084959"
+      "time": "2026-02-15T20:34:45.961150"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_coach_students",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.100415"
+      "time": "2026-02-15T20:34:45.975896"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_admin_users",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.114668"
+      "time": "2026-02-15T20:34:45.988370"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_safety",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.130179"
+      "time": "2026-02-15T20:34:46.006040"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_agent_templates",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.138314"
+      "time": "2026-02-15T20:34:46.012930"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC2_GrowerRBAC::test_grower_blocked_from_admin",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.152556"
+      "time": "2026-02-15T20:34:46.027634"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC2_GrowerRBAC::test_grower_blocked_from_coach_dashboard",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.168059"
+      "time": "2026-02-15T20:34:46.041577"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC2_GrowerRBAC::test_grower_blocked_from_safety_config",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.184485"
+      "time": "2026-02-15T20:34:46.055783"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC3_CoachRBAC::test_coach_blocked_from_admin_users",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.200002"
+      "time": "2026-02-15T20:34:46.068989"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC3_CoachRBAC::test_coach_blocked_from_admin_stats",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.214488"
+      "time": "2026-02-15T20:34:46.081541"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC3_CoachRBAC::test_coach_blocked_from_safety_config",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.229950"
+      "time": "2026-02-15T20:34:46.096921"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC4_SharerRBAC::test_sharer_blocked_from_admin",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.797934"
+      "time": "2026-02-15T20:34:46.683633"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC4_SharerRBAC::test_sharer_can_view_content",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.812517"
+      "time": "2026-02-15T20:34:46.708924"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/auth/me]",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.816795"
+      "time": "2026-02-15T20:34:46.714819"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/content]",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.821950"
+      "time": "2026-02-15T20:34:46.722329"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/coach/dashboard]",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.827030"
+      "time": "2026-02-15T20:34:46.727958"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/admin/users]",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.831913"
+      "time": "2026-02-15T20:34:46.734348"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/safety/dashboard]",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.838396"
+      "time": "2026-02-15T20:34:46.741958"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC6_AdminFullAccess::test_admin_can_access_users",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.854373"
+      "time": "2026-02-15T20:34:46.760720"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC6_AdminFullAccess::test_admin_can_access_safety",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.882783"
+      "time": "2026-02-15T20:34:46.798458"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC6_AdminFullAccess::test_admin_can_view_agent_templates",
       "status": "SKIP",
       "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day3_safety_governance_rbac.py', 317, 'Skipped: Agent templates not found')",
-      "time": "2026-02-15T19:01:19.889536"
+      "time": "2026-02-15T20:34:46.807840"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestD1_BehaviorRxSmoke::test_ecosystem_rx_endpoint",
       "status": "SKIP",
       "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day3_safety_governance_rbac.py', 334, 'Skipped: Rx endpoint not found')",
-      "time": "2026-02-15T19:01:19.901288"
+      "time": "2026-02-15T20:34:46.823462"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_observer_role",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.913472"
+      "time": "2026-02-15T20:34:46.838658"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_grower_role",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.924321"
+      "time": "2026-02-15T20:34:46.849948"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_coach_role",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.934992"
+      "time": "2026-02-15T20:34:46.862705"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_sharer_role",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.945008"
+      "time": "2026-02-15T20:34:46.875147"
     },
     {
       "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_admin_role",
       "status": "PASS",
       "detail": "",
-      "time": "2026-02-15T19:01:19.955435"
+      "time": "2026-02-15T20:34:46.888238"
     }
   ]
 }
