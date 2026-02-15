@@ -228,7 +228,7 @@ class BehaviorEngine:
                 raw_data = f.read()
                 
             # 检查是否有变化
-            new_hash = hashlib.md5(raw_data.encode()).hexdigest()
+            new_hash = hashlib.sha256(raw_data.encode()).hexdigest()
             if new_hash == self._config_hash:
                 return True  # 无变化
             

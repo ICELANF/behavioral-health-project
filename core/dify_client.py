@@ -50,7 +50,7 @@ class DifyClient:
         """按 trigger 标签 + 血糖区间（取整）生成缓存 key"""
         bucket = round(glucose_value)  # 12.1 和 12.8 落入同一桶
         raw = f"{trigger_tags}|{bucket}"
-        return hashlib.md5(raw.encode()).hexdigest()
+        return hashlib.sha256(raw.encode()).hexdigest()
 
     def _get_cached(self, key: str) -> Optional[Dict]:
         if key in self._cache:

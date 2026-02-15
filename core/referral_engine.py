@@ -69,7 +69,7 @@ class ReferralEngine:
 
         # Deterministic code based on user_id
         raw = f"bhp-referral-{user_id}-{user.username}"
-        code = hashlib.md5(raw.encode()).hexdigest()[:8].upper()
+        code = hashlib.sha256(raw.encode()).hexdigest()[:8].upper()
 
         return {
             "user_id": user_id,

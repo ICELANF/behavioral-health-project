@@ -69,7 +69,7 @@ class AudioService:
             import edge_tts
 
             # 生成文件名 (基于内容hash, 避免重复)
-            text_hash = hashlib.md5(f"{text}:{voice}".encode()).hexdigest()[:12]
+            text_hash = hashlib.sha256(f"{text}:{voice}".encode()).hexdigest()[:12]
             filename = f"tts_{text_hash}.mp3"
             filepath = os.path.join(_AUDIO_DIR, filename)
 
