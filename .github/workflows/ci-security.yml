@@ -49,6 +49,7 @@ jobs:
 
       - name: Bandit — Python security linter
         run: |
+          mkdir -p reports
           bandit -r api/ core/ -f json -o reports/bandit.json \
             --severity-level medium \
             --confidence-level medium \
