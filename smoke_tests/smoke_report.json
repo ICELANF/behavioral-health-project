@@ -1,0 +1,247 @@
+{
+  "summary": {
+    "total": 39,
+    "passed": 37,
+    "failed": 0,
+    "skipped": 2,
+    "pass_rate": "94.9%",
+    "duration": "0:00:03.672538",
+    "blockers": []
+  },
+  "details": [
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA1_SafetyPipelineNormal::test_agent_run_normal",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:17.464408"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA1_SafetyPipelineNormal::test_agent_unauthenticated_blocked",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:17.471645"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA2_SafetyDashboard::test_safety_dashboard",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.067462"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA2_SafetyDashboard::test_safety_logs",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.084864"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestA2_SafetyDashboard::test_safety_config",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.100010"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB1_CoachDashboard::test_coach_dashboard",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.682125"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB1_CoachDashboard::test_coach_students",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.700343"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB1_CoachDashboard::test_coach_performance",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.718442"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB2_AdminGovernance::test_admin_stats",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.755272"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB2_AdminGovernance::test_admin_users",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.771688"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB2_AdminGovernance::test_governance_dashboard",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.791937"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestB2_AdminGovernance::test_analytics_admin_overview",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:18.810167"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_coach_dashboard",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.084959"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_coach_students",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.100415"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_admin_users",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.114668"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_safety",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.130179"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC1_ObserverRBAC::test_observer_blocked_from_agent_templates",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.138314"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC2_GrowerRBAC::test_grower_blocked_from_admin",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.152556"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC2_GrowerRBAC::test_grower_blocked_from_coach_dashboard",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.168059"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC2_GrowerRBAC::test_grower_blocked_from_safety_config",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.184485"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC3_CoachRBAC::test_coach_blocked_from_admin_users",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.200002"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC3_CoachRBAC::test_coach_blocked_from_admin_stats",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.214488"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC3_CoachRBAC::test_coach_blocked_from_safety_config",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.229950"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC4_SharerRBAC::test_sharer_blocked_from_admin",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.797934"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC4_SharerRBAC::test_sharer_can_view_content",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.812517"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/auth/me]",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.816795"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/content]",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.821950"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/coach/dashboard]",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.827030"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/admin/users]",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.831913"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC5_UnauthenticatedRBAC::test_no_token_blocked[/safety/dashboard]",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.838396"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC6_AdminFullAccess::test_admin_can_access_users",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.854373"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC6_AdminFullAccess::test_admin_can_access_safety",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.882783"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestC6_AdminFullAccess::test_admin_can_view_agent_templates",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day3_safety_governance_rbac.py', 317, 'Skipped: Agent templates not found')",
+      "time": "2026-02-15T19:01:19.889536"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestD1_BehaviorRxSmoke::test_ecosystem_rx_endpoint",
+      "status": "SKIP",
+      "detail": "('D:\\\\behavioral-health-project\\\\smoke_tests\\\\test_day3_safety_governance_rbac.py', 334, 'Skipped: Rx endpoint not found')",
+      "time": "2026-02-15T19:01:19.901288"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_observer_role",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.913472"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_grower_role",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.924321"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_coach_role",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.934992"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_sharer_role",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.945008"
+    },
+    {
+      "test": "smoke_tests/test_day3_safety_governance_rbac.py::TestE1_RoleVerification::test_admin_role",
+      "status": "PASS",
+      "detail": "",
+      "time": "2026-02-15T19:01:19.955435"
+    }
+  ]
+}
