@@ -11,7 +11,7 @@ from sqlalchemy.orm import relationship
 import enum
 import uuid
 
-# 🔥 新增：确保 pgvector 支持
+# 🔥 新�：�� pgvector ��
 try:
     from pgvector.sqlalchemy import Vector
 except ImportError:
@@ -28,36 +28,36 @@ class UserRole(str, enum.Enum):
     """
     用户角色 - v18统一角色层级
 
-    行为健康晋级序列（从低到高）：
-    L0: 观察员 (observer)
-    L1: 成长者 (grower) - 原患者
-    L2: 分享者 (sharer)
+    行为健康晋级序列（从低到高）�
+    L0: 观察� (observer)
+    L1: 成长� (grower) - 原患�
+    L2: 分享� (sharer)
     L3: 健康教练 (coach)
-    L4: 促进师 (promoter) / 督导 (supervisor) - 平级平权
+    L4: 促进� (promoter) / 督� (supervisor) - 平级平权
     L5: 大师 (master)
-    L99: 管理员 (admin)
+    L99: 管理� (admin)
     """
     # 行为健康晋级序列
-    OBSERVER = "observer"        # L0 行为健康观察员
+    OBSERVER = "observer"        # L0 行为健康观察�
     GROWER = "grower"            # L1 成长者（原患者）
-    SHARER = "sharer"            # L2 分享者
+    SHARER = "sharer"            # L2 分享�
     COACH = "coach"              # L3 健康教练
-    PROMOTER = "promoter"        # L4 行为健康促进师
-    SUPERVISOR = "supervisor"    # L4 督导专家（与促进师平级）
+    PROMOTER = "promoter"        # L4 行为健康促进�
+    SUPERVISOR = "supervisor"    # L4 督�专家（与促进师平级�
     MASTER = "master"            # L5 行为健康促进大师
 
     # 系统角色
-    ADMIN = "admin"              # L99 系统管理员
+    ADMIN = "admin"              # L99 系统管理�
     SYSTEM = "system"            # 系统账号
 
-    # 旧角色（向后兼容，映射到新角色）
-    PATIENT = "patient"          # 已废弃 → 映射到 grower
+    # 旧�色（向后兼容，映射到新角色�
+    PATIENT = "patient"          # 已废� � 映射� grower
 
 
 # ============================================
-# 权威角色等级映射（1-indexed，全局唯一定义）
-# 所有后端代码统一引用此表，不得自行定义
-# 显示标签: L0-L5 = ROLE_LEVEL值 - 1
+# 权威角色等级映射�1-indexed，全���定义�
+# �有后�代码统一引用此表，不得自行定�
+# 显示标�: L0-L5 = ROLE_LEVEL� - 1
 # ============================================
 ROLE_LEVEL = {
     UserRole.OBSERVER: 1,
@@ -69,39 +69,39 @@ ROLE_LEVEL = {
     UserRole.MASTER: 6,
     UserRole.ADMIN: 99,
     UserRole.SYSTEM: 100,
-    # 向后兼容
+    # 向后兼�
     UserRole.PATIENT: 2,       # 等同 grower
 }
 
-# 字符串版本（供 auth.py 等使用字符串 key 的模块引用）
+# 字�串版本（供 auth.py 等使用字符串 key 的模块引��
 ROLE_LEVEL_STR = {r.value: lv for r, lv in ROLE_LEVEL.items()}
 
-# 显示标签: L0 观察员 ... L5 大师
+# 显示标�: L0 观察� ... L5 大师
 ROLE_DISPLAY = {r: f"L{lv - 1}" for r, lv in ROLE_LEVEL.items() if lv < 90}
 
 
 class AgencyMode(str, enum.Enum):
-    """V4.0 主体性三态模型 — agency_mode"""
-    PASSIVE = "passive"            # 被动: <0.3, Agent=照料者
-    TRANSITIONAL = "transitional"  # 过渡: 0.3-0.6, Agent=同行者
-    ACTIVE = "active"              # 主动: >0.6, Agent=镜子/临在者
+    """V4.0 主体性三态模� � agency_mode"""
+    PASSIVE = "passive"            # ��: <0.3, Agent=照料�
+    TRANSITIONAL = "transitional"  # 过渡: 0.3-0.6, Agent=同��
+    ACTIVE = "active"              # 主动: >0.6, Agent=镜子/临在�
 
 
 class JourneyStageV4(str, enum.Enum):
-    """V4.0 成长者S0-S5阶段化执行结构"""
+    """V4.0 成长者S0-S5阶�化执�结�"""
     S0_AUTHORIZATION = "s0_authorization"    # 授权进入
     S1_AWARENESS = "s1_awareness"            # 觉察与稳定期
     S2_TRIAL = "s2_trial"                    # 尝试与波动期
-    S3_PATHWAY = "s3_pathway"                # 形成路径期
-    S4_INTERNALIZATION = "s4_internalization" # 内化期
-    S5_GRADUATION = "s5_graduation"          # 转出期(毕业)
+    S3_PATHWAY = "s3_pathway"                # 形成�径期
+    S4_INTERNALIZATION = "s4_internalization" # 内化�
+    S5_GRADUATION = "s5_graduation"          # �出期(毕业)
 
 
 class RiskLevel(str, enum.Enum):
     """风险等级"""
     R0 = "R0"  # 正常
     R1 = "R1"  # 轻度
-    R2 = "R2"  # 中度
+    R2 = "R2"  # ��
     R3 = "R3"  # 高度
     R4 = "R4"  # 危机
 
@@ -116,10 +116,10 @@ class TriggerSeverity(str, enum.Enum):
 
 class TriggerCategory(str, enum.Enum):
     """Trigger类别"""
-    PHYSIOLOGICAL = "physiological"  # 生理类
-    PSYCHOLOGICAL = "psychological"  # 心理类
-    BEHAVIORAL = "behavioral"        # 行为类
-    ENVIRONMENTAL = "environmental"  # 环境类
+    PHYSIOLOGICAL = "physiological"  # 生理�
+    PSYCHOLOGICAL = "psychological"  # 心理�
+    BEHAVIORAL = "behavioral"        # 行为�
+    ENVIRONMENTAL = "environmental"  # �境类
 
 
 class AgentType(str, enum.Enum):
@@ -143,15 +143,15 @@ class AgentType(str, enum.Enum):
 
 class User(Base):
     """
-    用户表
+    用户�
 
-    存储用户基本信息、认证凭据、用户画像
+    存储用户基本信息、�证��、用户画�
     """
     __tablename__ = "users"
 
     # 主键
     id = Column(Integer, primary_key=True, index=True)
-    # FIX-17: 对外暴露的 UUID (防止 ID 枚举)
+    # FIX-17: 对�暴露的 UUID (防� ID 枚举)
     public_id = Column(PG_UUID(as_uuid=True), server_default=sa_text("gen_random_uuid()"), unique=True, index=True)
 
     # 基本信息
@@ -164,17 +164,17 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
 
-    # 角色与权限
+    # 角色与权�
     role = Column(SQLEnum(UserRole), default=UserRole.OBSERVER, nullable=False)
 
-    # 个人信息
+    # �人信�
     full_name = Column(String(100), nullable=True)
     date_of_birth = Column(DateTime, nullable=True)
     gender = Column(String(10), nullable=True)
 
-    # 用户画像（JSON存储）
+    # 用户画像（JSON存储�
     profile = Column(JSON, nullable=True, default={})
-    # 示例结构：
+    # 示例结构�
     # {
     #   "age": 45,
     #   "chronic_conditions": ["diabetes", "hypertension"],
@@ -183,19 +183,19 @@ class User(Base):
     #   "preferences": {"notification_time": "09:00"}
     # }
 
-    # v3 扩展字段
+    # v3 扩展字�
     nickname = Column(String(64), nullable=True, default="")
     avatar_url = Column(String(256), nullable=True, default="")
     health_competency_level = Column(String(4), nullable=True, default="Lv0")
-    # DEPRECATED: 使用 JourneyState.journey_stage 或 BehavioralProfile.current_stage
+    # DEPRECATED: 使用 JourneyState.journey_stage � BehavioralProfile.current_stage
     current_stage = Column(String(4), nullable=True, default="S0")
     growth_level = Column(String(4), nullable=True, default="G0")
 
-    # V4.0 主体性 & 信任
+    # V4.0 主体� & 信任
     agency_mode = Column(String(20), default="passive")        # passive/transitional/active
     agency_score = Column(Float, default=0.0)                  # 0.0-1.0
     trust_score = Column(Float, default=0.0)                   # 0.0-1.0
-    coach_intent = Column(Boolean, default=False)              # 教练意向标记
+    coach_intent = Column(Boolean, default=False)              # 教练意向标�
     conversion_type = Column(String(30), nullable=True)        # curiosity/time/coach_referred
     conversion_source = Column(String(30), nullable=True)      # self/community/institution/paid
 
@@ -203,7 +203,7 @@ class User(Base):
     adherence_rate = Column(Float, default=0.0)  # 依从性百分比
     last_assessment_date = Column(DateTime, nullable=True)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
     last_login_at = Column(DateTime, nullable=True)
@@ -225,9 +225,9 @@ class User(Base):
 
 class Assessment(Base):
     """
-    评估记录表
+    评估记录�
 
-    存储每次L2评估的完整结果
+    存储每�L2评估的完整结�
     """
     __tablename__ = "assessments"
 
@@ -245,7 +245,7 @@ class Assessment(Base):
     activity_data = Column(JSON, nullable=True)   # {"steps": 3000, "distance": 2.5}
     sleep_data = Column(JSON, nullable=True)      # {"duration": 6.5, "quality": 0.7}
 
-    # 用户画像快照（评估时的状态）
+    # 用户画像�照（评估时的状�）
     user_profile_snapshot = Column(JSON, nullable=True)
 
     # 风险评估结果
@@ -256,23 +256,23 @@ class Assessment(Base):
     severity_distribution = Column(JSON, nullable=True)  # {"critical": 1, "high": 2, ...}
     reasoning = Column(Text, nullable=True)
 
-    # 路由决策
+    # �由决�
     primary_agent = Column(SQLEnum(AgentType), nullable=False)
     secondary_agents = Column(JSON, nullable=True)  # ["StressAgent", "SleepAgent"]
     priority = Column(Integer, nullable=False)  # 1-4
-    response_time = Column(String(50), nullable=True)  # "立即", "1小时内"
+    response_time = Column(String(50), nullable=True)  # "立即", "1小时�"
     routing_reasoning = Column(Text, nullable=True)
     recommended_actions = Column(JSON, nullable=True)  # ["行动1", "行动2"]
 
-    # 执行状态
+    # 执�状�
     status = Column(String(20), default="pending")  # pending/processing/completed/failed
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
     completed_at = Column(DateTime, nullable=True)
 
-    # 元数据
-    context = Column(JSON, nullable=True)  # 额外上下文信息
+    # 元数�
+    context = Column(JSON, nullable=True)  # 额�上下文信息
 
     # 关系
     user = relationship("User", back_populates="assessments")
@@ -292,9 +292,9 @@ class Assessment(Base):
 
 class TriggerRecord(Base):
     """
-    Trigger记录表
+    Trigger记录�
 
-    存储每次评估识别出的Trigger
+    存储每�评估识�出的Trigger
     """
     __tablename__ = "trigger_records"
 
@@ -306,16 +306,16 @@ class TriggerRecord(Base):
 
     # Trigger信息
     tag_id = Column(String(50), nullable=False, index=True)  # high_glucose
-    name = Column(String(100), nullable=False)  # 高血糖
+    name = Column(String(100), nullable=False)  # 高��
     category = Column(SQLEnum(TriggerCategory), nullable=False)
     severity = Column(SQLEnum(TriggerSeverity), nullable=False, index=True)
     confidence = Column(Float, nullable=False)  # 0.0-1.0
 
-    # 元数据（使用trigger_metadata避免与SQLAlchemy的metadata冲突）
+    # 元数�（使用trigger_metadata避免与SQLAlchemy的metadata冲突�
     trigger_metadata = Column("metadata", JSON, nullable=True)
     # 示例：{"max_glucose": 13.5, "threshold": 10.0, "detection_method": "signal"}
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     # 关系
@@ -333,9 +333,9 @@ class TriggerRecord(Base):
 
 class Intervention(Base):
     """
-    干预记录表
+    干��录�
 
-    存储针对评估结果的干预措施和执行情况
+    存储针�评估结果的干�措施和执�情�
     """
     __tablename__ = "interventions"
 
@@ -345,24 +345,24 @@ class Intervention(Base):
     # 外键
     assessment_id = Column(Integer, ForeignKey("assessments.id"), nullable=False, index=True)
 
-    # 干预信息
+    # 干�信�
     agent_type = Column(SQLEnum(AgentType), nullable=False)
     intervention_type = Column(String(50), nullable=True)  # education/medication_review/counseling
 
-    # 干预内容
+    # 干�内�
     title = Column(String(200), nullable=False)
     description = Column(Text, nullable=True)
-    actions = Column(JSON, nullable=True)  # 具体行动步骤
+    actions = Column(JSON, nullable=True)  # 具体行动步�
 
-    # 执行状态
+    # 执�状�
     status = Column(String(20), default="pending")  # pending/sent/acknowledged/completed/skipped
 
-    # 用户反馈
+    # 用户反�
     user_feedback = Column(Text, nullable=True)
     feedback_score = Column(Integer, nullable=True)  # 1-5
     completed = Column(Boolean, default=False)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     sent_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
@@ -382,7 +382,7 @@ class Intervention(Base):
 
 class UserSession(Base):
     """
-    用户会话表
+    用户会话�
 
     存储用户登录会话信息
     """
@@ -399,15 +399,15 @@ class UserSession(Base):
     token = Column(String(500), nullable=True)  # JWT token
     refresh_token = Column(String(500), nullable=True)
 
-    # 客户端信息
+    # 客户�信息
     ip_address = Column(String(50), nullable=True)
     user_agent = Column(String(500), nullable=True)
     device_info = Column(JSON, nullable=True)
 
-    # 会话状态
+    # 会话状�
     is_active = Column(Boolean, default=True, index=True)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     expires_at = Column(DateTime, nullable=False, index=True)
     last_activity_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -427,9 +427,9 @@ class UserSession(Base):
 
 class HealthData(Base):
     """
-    健康数据表
+    健康数据�
 
-    存储用户的连续健康监测数据
+    存储用户的连�健康监测数据
     """
     __tablename__ = "health_data"
 
@@ -442,9 +442,9 @@ class HealthData(Base):
     # 数据类型
     data_type = Column(String(50), nullable=False, index=True)  # glucose/hrv/activity/sleep
 
-    # 数据值
+    # 数据�
     value = Column(Float, nullable=True)
-    values = Column(JSON, nullable=True)  # 用于存储数组或复杂数据
+    values = Column(JSON, nullable=True)  # 用于存储数组或�杂数据
 
     # 单位和元数据
     unit = Column(String(20), nullable=True)  # mmol/L, ms, steps
@@ -454,7 +454,7 @@ class HealthData(Base):
     source = Column(String(50), nullable=True)  # manual/device/api
     device_id = Column(String(100), nullable=True)
 
-    # 时间戳
+    # 时间�
     recorded_at = Column(DateTime, nullable=False, index=True)  # 数据记录时间
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
@@ -474,9 +474,9 @@ class HealthData(Base):
 
 class ChatSession(Base):
     """
-    AI聊天会话表
+    AI聊天会话�
 
-    存储用户与AI健康助手的对话会话
+    存储用户与AI健康助手的�话会话
     """
     __tablename__ = "chat_sessions"
 
@@ -488,14 +488,14 @@ class ChatSession(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # 会话信息
-    title = Column(String(200), nullable=True)  # 会话标题（可选）
-    model = Column(String(50), default="qwen2.5:0.5b")  # 使用的模型
+    title = Column(String(200), nullable=True)  # 会话标�（�选）
+    model = Column(String(50), default="qwen2.5:0.5b")  # 使用的模�
 
-    # 会话状态
+    # 会话状�
     is_active = Column(Boolean, default=True, index=True)
     message_count = Column(Integer, default=0)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
@@ -515,7 +515,7 @@ class ChatSession(Base):
 
 class ChatMessage(Base):
     """
-    AI聊天消息表
+    AI聊天消息�
 
     存储每条对话消息
     """
@@ -527,16 +527,16 @@ class ChatMessage(Base):
     # 外键
     session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False, index=True)
 
-    # 消息内容
+    # 消息内�
     role = Column(String(20), nullable=False)  # user / assistant
     content = Column(Text, nullable=False)
 
-    # 元数据
-    model = Column(String(50), nullable=True)  # 生成此消息的模型
-    tokens_used = Column(Integer, nullable=True)  # token消耗（可选）
-    msg_metadata = Column("metadata", JSON, nullable=True)  # 其他元数据
+    # 元数�
+    model = Column(String(50), nullable=True)  # 生成此消�的模�
+    tokens_used = Column(Integer, nullable=True)  # token消�（�选）
+    msg_metadata = Column("metadata", JSON, nullable=True)  # 其他元数�
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     # 关系
@@ -552,21 +552,21 @@ class ChatMessage(Base):
 
 
 # ============================================
-# 设备数据模型
+# 设�数�模型
 # ============================================
 
 class DeviceType(str, enum.Enum):
-    """设备类型"""
-    CGM = "cgm"                  # 连续血糖监测
-    GLUCOMETER = "glucometer"    # 指尖血糖仪
+    """设�类�"""
+    CGM = "cgm"                  # 连续�糖监�
+    GLUCOMETER = "glucometer"    # 指尖�糖仪
     SMARTWATCH = "smartwatch"    # 智能手表
     SMARTBAND = "smartband"      # 智能手环
-    SCALE = "scale"              # 体重秤
-    BP_MONITOR = "bp_monitor"    # 血压计
+    SCALE = "scale"              # 体重�
+    BP_MONITOR = "bp_monitor"    # �压�
 
 
 class DeviceStatus(str, enum.Enum):
-    """设备状态"""
+    """设�状�"""
     CONNECTED = "connected"
     DISCONNECTED = "disconnected"
     EXPIRED = "expired"
@@ -575,9 +575,9 @@ class DeviceStatus(str, enum.Enum):
 
 class UserDevice(Base):
     """
-    用户设备绑定表
+    用户设�绑定表
 
-    记录用户绑定的健康设备
+    记录用户绑定的健康��
     """
     __tablename__ = "user_devices"
 
@@ -585,14 +585,14 @@ class UserDevice(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     device_id = Column(String(100), unique=True, nullable=False, index=True)
 
-    # 设备信息
+    # 设�信�
     device_type = Column(SQLEnum(DeviceType), nullable=False)
     manufacturer = Column(String(50), nullable=True)  # abbott/dexcom/huawei/xiaomi/apple
     model = Column(String(100), nullable=True)
     firmware_version = Column(String(50), nullable=True)
     serial_number = Column(String(100), nullable=True)
 
-    # 状态
+    # 状�
     status = Column(SQLEnum(DeviceStatus), default=DeviceStatus.CONNECTED)
     battery_level = Column(Integer, nullable=True)
 
@@ -600,11 +600,11 @@ class UserDevice(Base):
     auth_token = Column(Text, nullable=True)
     auth_expires_at = Column(DateTime, nullable=True)
 
-    # 同步信息
+    # 同�信�
     last_sync_at = Column(DateTime, nullable=True)
     sync_cursor = Column(String(200), nullable=True)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
@@ -619,9 +619,9 @@ class UserDevice(Base):
 
 class GlucoseReading(Base):
     """
-    血糖数据表
+    �糖数��
 
-    存储 CGM 和手动录入的血糖数据
+    存储 CGM 和手动录入的�糖数�
     """
     __tablename__ = "glucose_readings"
 
@@ -629,15 +629,15 @@ class GlucoseReading(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     device_id = Column(String(100), nullable=True, index=True)
 
-    # 血糖值
+    # �糖�
     value = Column(Float, nullable=False)  # mmol/L
     unit = Column(String(10), default="mmol/L")
 
     # CGM 趋势
     trend = Column(String(20), nullable=True)  # rising_fast/rising/stable/falling/falling_fast
-    trend_rate = Column(Float, nullable=True)  # 变化率 mmol/L/min
+    trend_rate = Column(Float, nullable=True)  # 变化� mmol/L/min
 
-    # 来源和标签
+    # 来源和标�
     source = Column(String(20), default="manual")  # cgm/finger/manual
     meal_tag = Column(String(20), nullable=True)  # fasting/before_meal/after_meal/bedtime
     notes = Column(Text, nullable=True)
@@ -657,7 +657,7 @@ class GlucoseReading(Base):
 
 class HeartRateReading(Base):
     """
-    心率数据表
+    心率数据�
     """
     __tablename__ = "heart_rate_readings"
 
@@ -678,7 +678,7 @@ class HeartRateReading(Base):
 
 class HRVReading(Base):
     """
-    HRV 数据表
+    HRV 数据�
     """
     __tablename__ = "hrv_readings"
 
@@ -705,7 +705,7 @@ class HRVReading(Base):
 
 class SleepRecord(Base):
     """
-    睡眠数据表
+    睡眠数据�
     """
     __tablename__ = "sleep_records"
 
@@ -719,7 +719,7 @@ class SleepRecord(Base):
     sleep_end = Column(DateTime, nullable=True)
     total_duration_min = Column(Integer, nullable=True)
 
-    # 睡眠阶段 (分钟)
+    # 睡眠阶� (分钟)
     awake_min = Column(Integer, default=0)
     light_min = Column(Integer, default=0)
     deep_min = Column(Integer, default=0)
@@ -727,11 +727,11 @@ class SleepRecord(Base):
 
     # 质量指标
     sleep_score = Column(Integer, nullable=True)  # 0-100
-    efficiency = Column(Float, nullable=True)  # 百分比
+    efficiency = Column(Float, nullable=True)  # 百分�
     awakenings = Column(Integer, default=0)
     onset_latency_min = Column(Integer, nullable=True)
 
-    # 血氧
+    # ��
     avg_spo2 = Column(Float, nullable=True)
     min_spo2 = Column(Float, nullable=True)
 
@@ -748,7 +748,7 @@ class SleepRecord(Base):
 
 class ActivityRecord(Base):
     """
-    每日活动数据表
+    每日活动数据�
     """
     __tablename__ = "activity_records"
 
@@ -757,7 +757,7 @@ class ActivityRecord(Base):
 
     activity_date = Column(String(10), nullable=False, index=True)  # YYYY-MM-DD
 
-    # 基础指标
+    # 基�指标
     steps = Column(Integer, default=0)
     distance_m = Column(Integer, default=0)
     floors_climbed = Column(Integer, default=0)
@@ -770,7 +770,7 @@ class ActivityRecord(Base):
     moderate_active_min = Column(Integer, default=0)
     vigorous_active_min = Column(Integer, default=0)
 
-    # 每小时数据 (JSON)
+    # 每小时数� (JSON)
     hourly_data = Column(JSON, nullable=True)
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -783,7 +783,7 @@ class ActivityRecord(Base):
 
 class WorkoutRecord(Base):
     """
-    运动记录表
+    运动记录�
     """
     __tablename__ = "workout_records"
 
@@ -814,7 +814,7 @@ class WorkoutRecord(Base):
 
 class VitalSign(Base):
     """
-    体征数据表 (体重/血压/体温/血氧)
+    体征数据� (体重/��/体温/��)
     """
     __tablename__ = "vital_signs"
 
@@ -824,7 +824,7 @@ class VitalSign(Base):
 
     data_type = Column(String(20), nullable=False)  # weight/blood_pressure/temperature/spo2
 
-    # 体重/体成分
+    # 体重/体成�
     weight_kg = Column(Float, nullable=True)
     bmi = Column(Float, nullable=True)
     body_fat_percent = Column(Float, nullable=True)
@@ -832,7 +832,7 @@ class VitalSign(Base):
     water_percent = Column(Float, nullable=True)
     visceral_fat = Column(Integer, nullable=True)
 
-    # 血压
+    # ��
     systolic = Column(Integer, nullable=True)
     diastolic = Column(Integer, nullable=True)
     pulse = Column(Integer, nullable=True)
@@ -840,7 +840,7 @@ class VitalSign(Base):
     # 体温
     temperature = Column(Float, nullable=True)
 
-    # 血氧
+    # ��
     spo2 = Column(Float, nullable=True)
 
     recorded_at = Column(DateTime, nullable=False, index=True)
@@ -852,18 +852,18 @@ class VitalSign(Base):
 
 
 class BehavioralStage(str, enum.Enum):
-    """行为改变七阶段"""
-    S0 = "S0"  # 无知无觉
+    """行为改变七阶�"""
+    S0 = "S0"  # 无知无�
     S1 = "S1"  # 强烈抗拒
-    S2 = "S2"  # 被动承受
+    S2 = "S2"  # �动承�
     S3 = "S3"  # 勉强接受
     S4 = "S4"  # 主动尝试
-    S5 = "S5"  # 规律践行
+    S5 = "S5"  # 规律践�
     S6 = "S6"  # 内化为常
 
 
 class StageStability(str, enum.Enum):
-    """阶段稳定性"""
+    """阶�稳定�"""
     STABLE = "stable"
     SEMI_STABLE = "semi_stable"
     UNSTABLE = "unstable"
@@ -872,23 +872,23 @@ class StageStability(str, enum.Enum):
 class InteractionMode(str, enum.Enum):
     """交互模式"""
     EMPATHY = "empathy"         # 共情模式 (S0-S1)
-    CHALLENGE = "challenge"     # 挑战模式 (S2-S3 行动型)
-    EXECUTION = "execution"     # 执行模式 (S4-S6)
+    CHALLENGE = "challenge"     # 挑战模式 (S2-S3 行动�)
+    EXECUTION = "execution"     # 执�模� (S4-S6)
 
 
 class PsychologicalLevel(str, enum.Enum):
     """心理层级 (SPI-based)"""
-    L1 = "L1"  # 需大量支持
-    L2 = "L2"  # 需中度支持
+    L1 = "L1"  # �大量��
+    L2 = "L2"  # ��度支�
     L3 = "L3"  # 基本就绪
     L4 = "L4"  # 高度就绪
-    L5 = "L5"  # 自驱型
+    L5 = "L5"  # �驱型
 
 
-# ── v3.1 新增枚举 ──────────────────────────────
+# �� v3.1 新�枚� ������������������������������
 
 class ChangeCauseCategory(str, enum.Enum):
-    """改变动因类别 (24动因 × 6类)"""
+    """改变动因类别 (24动因 × 6�)"""
     INTRINSIC = "intrinsic"
     EXTERNAL_EVENT = "external_event"
     EMOTIONAL = "emotional"
@@ -899,16 +899,16 @@ class ChangeCauseCategory(str, enum.Enum):
 
 class HealthCompetencyLevel(str, enum.Enum):
     """健康能力等级 (Lv0-Lv5)"""
-    LV0 = "Lv0"  # 完全无知者
-    LV1 = "Lv1"  # 问题觉察者
-    LV2 = "Lv2"  # 方法学习者
-    LV3 = "Lv3"  # 情境适配者
-    LV4 = "Lv4"  # 自我驱动者
-    LV5 = "Lv5"  # 使命实践者
+    LV0 = "Lv0"  # 完全无知�
+    LV1 = "Lv1"  # �题�察�
+    LV2 = "Lv2"  # 方法学习�
+    LV3 = "Lv3"  # 情��配�
+    LV4 = "Lv4"  # �我驱动�
+    LV5 = "Lv5"  # 使命实践�
 
 
 class GrowthLevel(str, enum.Enum):
-    """成长等级 (G0-G5, 与 HealthCompetencyLevel 对应)"""
+    """成长等级 (G0-G5, � HealthCompetencyLevel 对应)"""
     G0 = "G0"
     G1 = "G1"
     G2 = "G2"
@@ -918,7 +918,7 @@ class GrowthLevel(str, enum.Enum):
 
 
 class SPILevel(str, enum.Enum):
-    """SPI 成功可能性等级"""
+    """SPI 成功�能�等�"""
     VERY_HIGH = "very_high"
     HIGH = "high"
     MEDIUM = "medium"
@@ -927,7 +927,7 @@ class SPILevel(str, enum.Enum):
 
 
 class ObstacleCategory(str, enum.Enum):
-    """障碍类别 (10类)"""
+    """障�类� (10�)"""
     TIME = "time"
     ENERGY = "energy"
     KNOWLEDGE = "knowledge"
@@ -959,14 +959,14 @@ class AttributionType(str, enum.Enum):
 
 
 class TimeOrientation(str, enum.Enum):
-    """时间视角"""
+    """时间视�"""
     PAST = "past"
     PRESENT = "present"
     FUTURE = "future"
 
 
 class SupportLayer(str, enum.Enum):
-    """支持系统层级"""
+    """�持系统层�"""
     CORE = "core"
     INTIMATE = "intimate"
     DAILY = "daily"
@@ -983,20 +983,20 @@ class MonitoringLevel(str, enum.Enum):
 
 class BehavioralProfile(Base):
     """
-    统一行为画像表
+    统一行为画像�
 
-    系统唯一真相源：存储用户的行为改变阶段、行为类型、心理层级、
-    领域需求等核心画像数据，由 BehavioralProfileService 写入，
-    StageRuntimeBuilder 负责阶段更新。
+    系统��真相源：存储用户的�为改变阶���为类型、心理层级�
+    领域�求等核心画像数据，由 BehavioralProfileService 写入�
+    StageRuntimeBuilder 负责阶�更新�
 
-    所有干预决策必须基于此画像。
+    �有干预决策必须基于�画像�
     """
     __tablename__ = "behavioral_profiles"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
 
-    # ====== 阶段运行态 (只有 StageRuntimeBuilder 可写) ======
+    # ====== 阶�运行� (�� StageRuntimeBuilder ��) ======
     current_stage = Column(SQLEnum(BehavioralStage), nullable=False, default=BehavioralStage.S0)
     stage_confidence = Column(Float, default=0.0)  # 0.0-1.0
     stage_stability = Column(SQLEnum(StageStability), default=StageStability.UNSTABLE)
@@ -1007,43 +1007,43 @@ class BehavioralProfile(Base):
     big5_scores = Column(JSON, nullable=True)
     # BPT-6 行为类型: "action" / "knowledge" / "emotion" / "relation" / "environment" / "mixed"
     bpt6_type = Column(String(30), nullable=True)
-    bpt6_scores = Column(JSON, nullable=True)  # 六维度原始分
+    bpt6_scores = Column(JSON, nullable=True)  # �维度原�分
     # CAPACITY 改变潜力
     capacity_total = Column(Integer, nullable=True)
     capacity_weak = Column(JSON, nullable=True)  # ["A2_资源", "T_时间"]
     capacity_strong = Column(JSON, nullable=True)  # ["M_动机", "C_信心"]
-    # SPI 成功可能性
+    # SPI 成功�能�
     spi_score = Column(Float, nullable=True)  # 0-100
     spi_level = Column(String(10), nullable=True)  # very_high/high/medium/low/very_low
-    # TTM7 阶段评估原始数据
+    # TTM7 阶�评估原始数�
     ttm7_stage_scores = Column(JSON, nullable=True)  # {S0: 12, S1: 6, ...}
     ttm7_sub_scores = Column(JSON, nullable=True)  # {AW: 25, WI: 22, AC: 18}
 
-    # ====== 领域需求 ======
-    # 主要需干预领域: ["nutrition", "exercise", "sleep", "emotion", ...]
+    # ====== 领域�� ======
+    # 主�需干��域: ["nutrition", "exercise", "sleep", "emotion", ...]
     primary_domains = Column(JSON, nullable=True)
     # 领域详情: {"nutrition": {"priority": 1, "stage_strategy": "preparation"}, ...}
     domain_details = Column(JSON, nullable=True)
 
-    # ====== V4.0 主体性 & 信任 ======
+    # ====== V4.0 主体� & 信任 ======
     agency_mode = Column(String(20), default="passive")   # passive/transitional/active
     agency_score = Column(Float, default=0.0)             # 0.0-1.0
     trust_score = Column(Float, default=0.0)              # 0.0-1.0
 
-    # ====== 干预配置 ======
+    # ====== 干�配� ======
     interaction_mode = Column(SQLEnum(InteractionMode), nullable=True)
     psychological_level = Column(SQLEnum(PsychologicalLevel), nullable=True)
-    # 风险标记: ["dropout_risk", "relapse_risk"]
+    # 风险标�: ["dropout_risk", "relapse_risk"]
     risk_flags = Column(JSON, nullable=True)
 
-    # ====== 去诊断化展示 ======
-    friendly_stage_name = Column(String(50), nullable=True)  # "探索期"
-    friendly_stage_desc = Column(Text, nullable=True)  # 面向用户的阶段描述
+    # ====== 去诊�化展� ======
+    friendly_stage_name = Column(String(50), nullable=True)  # "探索�"
+    friendly_stage_desc = Column(Text, nullable=True)  # 面向用户的阶段描�
 
-    # ====== 最近评估ID (用于溯源) ======
+    # ====== �近评估ID (用于��) ======
     last_assessment_id = Column(String(50), nullable=True)
 
-    # ====== 时间戳 ======
+    # ====== 时间� ======
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
@@ -1062,9 +1062,9 @@ class BehavioralProfile(Base):
 
 class BehaviorAuditLog(Base):
     """
-    行为跃迁审计日志表
+    行为跃迁审�日志表
 
-    记录每次 TTM 阶段跃迁事件，用于审计追踪和数据分析
+    记录每� TTM 阶�跃迁事件，用于审�追�和数�分析
     """
     __tablename__ = "behavior_audit_logs"
 
@@ -1077,7 +1077,7 @@ class BehaviorAuditLog(Base):
     narrative = Column(Text, nullable=True)
     source_ui = Column(String(20), nullable=True)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
@@ -1091,10 +1091,10 @@ class BehaviorAuditLog(Base):
 
 class BehaviorHistory(Base):
     """
-    行为评估全量历史表
+    行为评估全量历史�
 
-    记录每次 TTM 评估结果（无论是否发生跃迁），
-    用于趋势分析、信念变化曲线和叙事回溯。
+    记录每� TTM 评估结果（无论是否发生跃迁）�
+    用于趋势分析、信念变化曲线和叙事回溯�
     """
     __tablename__ = "behavior_history"
 
@@ -1102,12 +1102,12 @@ class BehaviorHistory(Base):
     user_id = Column(String(50), nullable=False, index=True)
     timestamp = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
-    # 阶段
+    # 阶�
     from_stage = Column(String(10), nullable=False)
     to_stage = Column(String(10), nullable=False)
     is_transition = Column(Boolean, default=False, nullable=False)
 
-    # 快照指标
+    # �照指�
     belief_score = Column(Float, nullable=True)
     narrative_sent = Column(Text, nullable=True)
 
@@ -1117,16 +1117,16 @@ class BehaviorHistory(Base):
     )
 
     def __repr__(self):
-        arrow = "→" if self.is_transition else "="
+        arrow = "�" if self.is_transition else "="
         return f"<BehaviorHistory(user={self.user_id}, {self.from_stage}{arrow}{self.to_stage}, belief={self.belief_score})>"
 
 
 class BehaviorTrace(Base):
     """
-    行为长期记忆表
+    行为长期记忆�
 
-    每次 TTM 判定的完整快照，作为系统的"长期记忆"，
-    供周报生成 (analyze_weekly_trend) 和信念变化回溯使用。
+    每� TTM 判定的完整快照，作为系统�"长期记忆"�
+    供周报生� (analyze_weekly_trend) 和信念变化回�使用�
     """
     __tablename__ = "behavior_traces"
 
@@ -1134,12 +1134,12 @@ class BehaviorTrace(Base):
     user_id = Column(String(50), nullable=False, index=True)
     timestamp = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
-    # 阶段跃迁
+    # 阶�跃�
     from_stage = Column(String(10), nullable=False)
     to_stage = Column(String(10), nullable=False)
     is_transition = Column(Boolean, default=False, nullable=False)
 
-    # 判定时刻的指标快照
+    # 判定时刻的指标快�
     belief_score = Column(Float, nullable=True)
     action_count = Column(Integer, nullable=True)
 
@@ -1153,19 +1153,19 @@ class BehaviorTrace(Base):
     )
 
     def __repr__(self):
-        arrow = "→" if self.is_transition else "="
+        arrow = "�" if self.is_transition else "="
         return f"<BehaviorTrace(user={self.user_id}, {self.from_stage}{arrow}{self.to_stage}, belief={self.belief_score})>"
 
 
 # ============================================
-# 微行动跟踪模型
+# �行动跟踪模型
 # ============================================
 
 class MicroActionTask(Base):
     """
-    微行动任务表
+    �行动任务�
 
-    存储从干预计划生成的每日微行动任务
+    存储从干预�划生成的每日微行动任务
     """
     __tablename__ = "micro_action_tasks"
 
@@ -1180,12 +1180,12 @@ class MicroActionTask(Base):
     source = Column(String(30), default="intervention_plan")  # intervention_plan/coach/system
     source_id = Column(String(50), nullable=True)  # intervention_plan rx_id or coach user_id
 
-    # 状态
+    # 状�
     status = Column(String(20), default="pending")  # pending/completed/skipped/expired
     scheduled_date = Column(String(10), nullable=False, index=True)  # YYYY-MM-DD
     completed_at = Column(DateTime, nullable=True)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
@@ -1204,9 +1204,9 @@ class MicroActionTask(Base):
 
 class MicroActionLog(Base):
     """
-    微行动完成日志表
+    �行动完成日志�
 
-    记录每次任务完成/跳过的详细信息
+    记录每�任务完�/跳过的�细信息
     """
     __tablename__ = "micro_action_logs"
 
@@ -1217,9 +1217,9 @@ class MicroActionLog(Base):
     # 操作
     action = Column(String(20), nullable=False)  # completed/skipped/partial
     note = Column(Text, nullable=True)  # 用户备注
-    mood_score = Column(Integer, nullable=True)  # 1-5 完成后心情
+    mood_score = Column(Integer, nullable=True)  # 1-5 完成后心�
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     # 关系
@@ -1234,14 +1234,14 @@ class MicroActionLog(Base):
 
 
 # ============================================
-# 提醒与教练消息模型
+# 提醒与教练消�模型
 # ============================================
 
 class Reminder(Base):
     """
-    提醒表
+    提醒�
 
-    存储用户的定时提醒（药物、随访、行为、评估等）
+    存储用户的定时提醒（�物�随访��为、评估等�
     """
     __tablename__ = "reminders"
 
@@ -1260,7 +1260,7 @@ class Reminder(Base):
     source = Column(String(20), default="self")  # system/coach/self
     created_by = Column(Integer, nullable=True)  # coach user_id or null
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
@@ -1275,12 +1275,12 @@ class Reminder(Base):
 
 class AssessmentAssignment(Base):
     """
-    评估任务表
+    评估任务�
 
-    教练推送评估量表给学员，学员完成后自动生成管理处方，
-    教练审核修改后推送给学员。
+    教练推�评估量表给学员，�员完成后自动生成�理处方�
+    教练审核�改后推�给学员�
 
-    状态流转: pending → completed → reviewed → pushed
+    状�流�: pending � completed � reviewed � pushed
     """
     __tablename__ = "assessment_assignments"
 
@@ -1291,14 +1291,14 @@ class AssessmentAssignment(Base):
     # 选定量表
     scales = Column(JSON, nullable=False)  # ["ttm7", "big5", "bpt6", "capacity", "spi"]
 
-    # 状态
+    # 状�
     status = Column(String(20), default="pending", nullable=False)  # pending/completed/reviewed/pushed
     note = Column(Text, nullable=True)  # 教练备注
 
     # 管道输出
     pipeline_result = Column(JSON, nullable=True)  # 评估管道完整输出
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     completed_at = Column(DateTime, nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
@@ -1319,10 +1319,10 @@ class AssessmentAssignment(Base):
 
 class CoachReviewItem(Base):
     """
-    教练审核条目表
+    教练审核条目�
 
-    评估管道自动生成的目标/处方/建议拆解为单条审核条目，
-    教练逐条审核（采纳/修改/拒绝）后推送给学员。
+    评估管道�动生成的��/处方/建�拆解为单条�核条目�
+    教练逐条审核（采�/��/拒绝）后推�给学员�
     """
     __tablename__ = "coach_review_items"
 
@@ -1333,13 +1333,13 @@ class CoachReviewItem(Base):
     category = Column(String(20), nullable=False)  # goal / prescription / suggestion
     domain = Column(String(30), nullable=False)  # nutrition / exercise / sleep / emotion / stress / cognitive / social
 
-    # 内容
-    original_content = Column(JSON, nullable=False)  # 系统生成的原始内容
-    coach_content = Column(JSON, nullable=True)  # 教练修改后内容（null=采用原始）
+    # 内�
+    original_content = Column(JSON, nullable=False)  # 系统生成的原始内�
+    coach_content = Column(JSON, nullable=True)  # 教练�改后内�（null=采用原�）
     status = Column(String(20), default="pending", nullable=False)  # pending/approved/modified/rejected
     coach_note = Column(Text, nullable=True)  # 教练批注
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
@@ -1349,6 +1349,7 @@ class CoachReviewItem(Base):
     __table_args__ = (
         Index('idx_cri_assignment', 'assignment_id'),
         Index('idx_cri_category', 'category'),
+        {"schema": "coach_schema"},
     )
 
     def __repr__(self):
@@ -1357,10 +1358,10 @@ class CoachReviewItem(Base):
 
 class DeviceAlert(Base):
     """
-    设备预警表
+    设���表
 
-    当穿戴设备数据达到预警阈值时创建，
-    同时向教练和服务对象发送通知。
+    当穿戴��数�达到预�阈值时创建�
+    同时向教练和服务对象发��知�
     """
     __tablename__ = "device_alerts"
 
@@ -1368,15 +1369,15 @@ class DeviceAlert(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     coach_id = Column(Integer, nullable=True, index=True)
 
-    # 预警信息
+    # 预�信�
     alert_type = Column(String(50), nullable=False)  # glucose_danger_high, hr_warning_low, etc.
     severity = Column(String(20), nullable=False)  # warning / danger
     message = Column(String(500), nullable=False)
     data_value = Column(Float, nullable=False)  # 实际读数
-    threshold_value = Column(Float, nullable=False)  # 阈值
+    threshold_value = Column(Float, nullable=False)  # 阈�
     data_type = Column(String(30), nullable=False)  # glucose / heart_rate / exercise / sleep
 
-    # 状态
+    # 状�
     user_read = Column(Boolean, default=False)
     coach_read = Column(Boolean, default=False)
     resolved = Column(Boolean, default=False)
@@ -1384,7 +1385,7 @@ class DeviceAlert(Base):
     # 去重
     dedup_key = Column(String(100), nullable=False, index=True)  # user_id:type:YYYY-MM-DD-HH
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
@@ -1399,9 +1400,9 @@ class DeviceAlert(Base):
 
 class CoachMessage(Base):
     """
-    教练消息表
+    教练消息�
 
-    教练与学员之间的单向消息（教练→学员）
+    教练与�员之间的单向消�（教练→学员�
     """
     __tablename__ = "coach_messages"
 
@@ -1409,19 +1410,20 @@ class CoachMessage(Base):
     coach_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     student_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    # 消息内容
+    # 消息内�
     content = Column(Text, nullable=False)
     message_type = Column(String(20), default="text")  # text/encouragement/reminder/advice
 
-    # 状态
+    # 状�
     is_read = Column(Boolean, default=False)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
 
     __table_args__ = (
         Index('idx_coach_msg_student_read', 'student_id', 'is_read'),
         Index('idx_coach_msg_coach_student', 'coach_id', 'student_id'),
+        {"schema": "coach_schema"},
     )
 
     def __repr__(self):
@@ -1433,7 +1435,7 @@ class CoachMessage(Base):
 # ============================================
 
 class PushSourceType(str, enum.Enum):
-    """推送来源类型"""
+    """推�来源类�"""
     CHALLENGE = "challenge"
     DEVICE_ALERT = "device_alert"
     MICRO_ACTION = "micro_action"
@@ -1442,14 +1444,14 @@ class PushSourceType(str, enum.Enum):
 
 
 class PushPriority(str, enum.Enum):
-    """推送优先级"""
+    """推�优先级"""
     HIGH = "high"
     NORMAL = "normal"
     LOW = "low"
 
 
 class PushQueueStatus(str, enum.Enum):
-    """推送队列状态"""
+    """推�队列状�"""
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
@@ -1458,23 +1460,23 @@ class PushQueueStatus(str, enum.Enum):
 
 
 class ChallengeStatus(str, enum.Enum):
-    """挑战模板状态"""
-    DRAFT = "draft"                    # 草稿
-    PENDING_REVIEW = "pending_review"  # 待双专家审核
-    REVIEW_PARTIAL = "review_partial"  # 一位专家已审核
-    PUBLISHED = "published"            # 已发布
-    ARCHIVED = "archived"              # 已归档
+    """挑战模板状�"""
+    DRAFT = "draft"                    # 草�
+    PENDING_REVIEW = "pending_review"  # 待双专��核
+    REVIEW_PARTIAL = "review_partial"  # �位专家已审核
+    PUBLISHED = "published"            # 已发�
+    ARCHIVED = "archived"              # 已归�
 
 
 class ChallengeTemplate(Base):
     """
-    挑战模板表
+    挑战模板�
 
-    定义一个挑战活动（如14天血糖打卡、21天正念训练），
-    包含基本信息、持续天数、审核状态等。
+    定义��挑战活动（�14天�糖打卡�21天�念�练）�
+    包含基本信息、持�天数、�核状�等�
 
-    创建权限: 教练(L3)及以上
-    发布权限: 需双专家审核通过
+    创建权限: 教练(L3)及以�
+    发布权限: �双专家�核通过
     """
     __tablename__ = "challenge_templates"
 
@@ -1488,14 +1490,14 @@ class ChallengeTemplate(Base):
     duration_days = Column(Integer, nullable=False)
 
     # 配置
-    config_key = Column(String(100), nullable=True, unique=True)  # glucose_14day → 关联configs/challenges/*.json
+    config_key = Column(String(100), nullable=True, unique=True)  # glucose_14day � 关联configs/challenges/*.json
     daily_push_times = Column(JSON, nullable=True)  # ["9:00", "11:30", "17:30"]
-    day_topics = Column(JSON, nullable=True)  # {0: "欢迎", 1: "主题1", ...}
+    day_topics = Column(JSON, nullable=True)  # {0: "欢迎", 1: "主�1", ...}
 
-    # 创建者
+    # 创建�
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
 
-    # 审核流程（双专家审核）
+    # 审核流程（双专��核�
     status = Column(SQLEnum(ChallengeStatus), default=ChallengeStatus.DRAFT, nullable=False)
     reviewer1_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     reviewer1_status = Column(String(20), nullable=True)  # approved / rejected
@@ -1507,10 +1509,10 @@ class ChallengeTemplate(Base):
     reviewer2_at = Column(DateTime, nullable=True)
     published_at = Column(DateTime, nullable=True)
 
-    # 统计
+    # 统�
     enrollment_count = Column(Integer, default=0)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
@@ -1531,34 +1533,34 @@ class ChallengeTemplate(Base):
 
 class ChallengeDayPush(Base):
     """
-    挑战每日推送内容表
+    挑战每日推�内容表
 
-    每天可有多条推送（如 9:00/11:30/17:30），
-    每条包含管理内容、行为健康指导、互动评估（问卷JSON）。
+    每天�有�条推�（� 9:00/11:30/17:30），
+    每条包含管理内���为健康指��互动评估（�卷JSON）�
     """
     __tablename__ = "challenge_day_pushes"
 
     id = Column(Integer, primary_key=True, index=True)
     challenge_id = Column(Integer, ForeignKey("challenge_templates.id"), nullable=False, index=True)
 
-    # 推送时间
+    # 推�时�
     day_number = Column(Integer, nullable=False)  # 0-based day
-    push_time = Column(String(20), nullable=False)  # "9:00" / "11:30" / "17:30" / "立即发送"
+    push_time = Column(String(20), nullable=False)  # "9:00" / "11:30" / "17:30" / "立即发�"
     sort_order = Column(Integer, default=0)
 
-    # 属性
+    # 属�
     is_core = Column(Boolean, default=True)
     tag = Column(String(20), default="core")  # core / optional / assessment / info
 
-    # 内容
-    management_content = Column(Text, nullable=True)  # 管理内容
-    behavior_guidance = Column(Text, nullable=True)  # 行为健康指导
+    # 内�
+    management_content = Column(Text, nullable=True)  # 管理内�
+    behavior_guidance = Column(Text, nullable=True)  # 行为健康指�
 
-    # 互动评估（结构化JSON）
+    # 互动评估（结构化JSON�
     # {"title": "...", "questions": [{"type": "rating/text/single_choice/multi_choice", "label": "...", ...}]}
     survey = Column(JSON, nullable=True)
 
-    # 时间戳
+    # 时间�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
@@ -1575,38 +1577,38 @@ class ChallengeDayPush(Base):
 
 
 class EnrollmentStatus(str, enum.Enum):
-    """报名状态"""
-    ENROLLED = "enrolled"      # 已报名，未开始
-    ACTIVE = "active"          # 进行中
-    COMPLETED = "completed"    # 已完成
-    DROPPED = "dropped"        # 中途退出
+    """报名状�"""
+    ENROLLED = "enrolled"      # 已报名，���
+    ACTIVE = "active"          # 进�中
+    COMPLETED = "completed"    # 已完�
+    DROPPED = "dropped"        # �途��
 
 
 class ChallengeEnrollment(Base):
     """
-    挑战报名表
+    挑战报名�
 
-    记录用户参加的挑战，跟踪进度。
+    记录用户参加的挑战，跟踪进度�
     """
     __tablename__ = "challenge_enrollments"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     challenge_id = Column(Integer, ForeignKey("challenge_templates.id"), nullable=False, index=True)
-    coach_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 推荐的教练
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=True)  # 推荐的教�
 
     # 进度
     status = Column(SQLEnum(EnrollmentStatus), default=EnrollmentStatus.ENROLLED, nullable=False)
-    current_day = Column(Integer, default=0)  # 当前进行到第几天
+    current_day = Column(Integer, default=0)  # 当前进�到�几天
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
 
-    # 统计
+    # 统�
     completed_pushes = Column(Integer, default=0)  # 已完成推送数
     completed_surveys = Column(Integer, default=0)  # 已完成问卷数
     streak_days = Column(Integer, default=0)  # 连续打卡天数
 
-    # 时间戳
+    # 时间�
     enrolled_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
 
@@ -1627,9 +1629,9 @@ class ChallengeEnrollment(Base):
 
 class ChallengeSurveyResponse(Base):
     """
-    挑战问卷回答表
+    挑战�卷回答表
 
-    记录用户对每条推送中互动评估的回答。
+    记录用户对每条推送中互动评估的回答�
     """
     __tablename__ = "challenge_survey_responses"
 
@@ -1638,11 +1640,11 @@ class ChallengeSurveyResponse(Base):
     push_id = Column(Integer, ForeignKey("challenge_day_pushes.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
-    # 回答内容 (JSON)
+    # 回答内� (JSON)
     # {"q1": "answer", "q2": 8, "q3": ["option1", "option2"]}
     responses = Column(JSON, nullable=False)
 
-    # 时间戳
+    # 时间�
     submitted_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     # 关系
@@ -1660,9 +1662,9 @@ class ChallengeSurveyResponse(Base):
 
 class ChallengePushLog(Base):
     """
-    挑战推送日志表
+    挑战推�日志表
 
-    记录每条推送的发送和阅读状态。
+    记录每条推�的发�和阅�状态�
     """
     __tablename__ = "challenge_push_logs"
 
@@ -1670,7 +1672,7 @@ class ChallengePushLog(Base):
     enrollment_id = Column(Integer, ForeignKey("challenge_enrollments.id"), nullable=False, index=True)
     push_id = Column(Integer, ForeignKey("challenge_day_pushes.id"), nullable=False, index=True)
 
-    # 状态
+    # 状�
     status = Column(String(20), default="pending")  # pending / sent / read
     sent_at = Column(DateTime, nullable=True)
     read_at = Column(DateTime, nullable=True)
@@ -1690,12 +1692,12 @@ class ChallengePushLog(Base):
 
 class CoachPushQueue(Base):
     """
-    教练推送审批队列
+    教练推��批队列
 
-    所有 AI 触发的推送（挑战打卡、设备预警、微行动等）统一进入此队列，
-    教练审批后才投递给学员。教练可调整推送的时间、频率、内容。
+    �� AI 触发的推送（挑战打卡、�����微行动等）统一进入此队列，
+    教练审批后才投�给学员。教练可调整推�的时间、�率、内容�
 
-    流转: pending → approved → sent  或  pending → rejected  或  pending → expired
+    流转: pending � approved � sent  �  pending � rejected  �  pending � expired
     """
     __tablename__ = "coach_push_queue"
 
@@ -1707,21 +1709,21 @@ class CoachPushQueue(Base):
     source_type = Column(String(30), nullable=False)  # challenge | device_alert | micro_action | ai_recommendation | system
     source_id = Column(String(50), nullable=True)  # 来源记录 ID
 
-    # 内容
+    # 内�
     title = Column(String(200), nullable=False)
     content = Column(Text, nullable=True)
-    content_extra = Column(JSON, nullable=True)  # 附加结构化数据
+    content_extra = Column(JSON, nullable=True)  # 附加结构化数�
 
     # 时间
-    suggested_time = Column(DateTime, nullable=True)  # AI 建议发送时间
-    scheduled_time = Column(DateTime, nullable=True)  # 教练设定时间（null=立即投递）
+    suggested_time = Column(DateTime, nullable=True)  # AI 建�发�时�
+    scheduled_time = Column(DateTime, nullable=True)  # 教练设定时间（null=立即投�）
 
-    # 优先级与状态
+    # 优先级与状�
     priority = Column(String(10), default="normal")  # high | normal | low
     status = Column(String(10), default="pending", nullable=False)  # pending | approved | rejected | sent | expired
     coach_note = Column(String(500), nullable=True)
 
-    # 时间戳
+    # 时间�
     reviewed_at = Column(DateTime, nullable=True)
     sent_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -1731,6 +1733,7 @@ class CoachPushQueue(Base):
         Index('idx_cpq_student', 'student_id'),
         Index('idx_cpq_source', 'source_type'),
         Index('idx_cpq_scheduled', 'status', 'scheduled_time'),
+        {"schema": "coach_schema"},
     )
 
     def __repr__(self):
@@ -1760,48 +1763,48 @@ class FoodAnalysis(Base):
 
 
 # ============================================
-# 专家白标租户枚举
+# 专�白标�户枚举
 # ============================================
 
 # ============================================
-# 知识库 RAG 枚举
+# 知识� RAG 枚举
 # ============================================
 
 class EvidenceTier(str, enum.Enum):
     """证据分层"""
     T1 = "T1"  # 临床指南
     T2 = "T2"  # RCT/系统综述
-    T3 = "T3"  # 专家共识/意见
-    T4 = "T4"  # 个人经验分享
+    T3 = "T3"  # 专�共�/意�
+    T4 = "T4"  # �人经验分�
 
 class ContentType(str, enum.Enum):
-    """内容类型"""
+    """内�类�"""
     GUIDELINE = "guideline"                  # 临床指南
-    CONSENSUS = "consensus"                  # 专家共识
+    CONSENSUS = "consensus"                  # 专�共�
     RCT = "rct"                              # 随机对照试验
     REVIEW = "review"                        # 综述/荟萃分析
-    EXPERT_OPINION = "expert_opinion"        # 专家意见
+    EXPERT_OPINION = "expert_opinion"        # 专�意�
     CASE_REPORT = "case_report"              # 病例报告
-    EXPERIENCE_SHARING = "experience_sharing" # 个人经验分享
+    EXPERIENCE_SHARING = "experience_sharing" # �人经验分�
 
 class ReviewStatus(str, enum.Enum):
-    """审核状态"""
+    """审核状�"""
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
     NOT_REQUIRED = "not_required"
 
-# 证据分层 → priority 映射
+# 证据分层 � priority 映射
 TIER_PRIORITY_MAP = {"T1": 9, "T2": 7, "T3": 5, "T4": 3}
 
 class KnowledgeScope(str, enum.Enum):
-    """知识库范围"""
-    TENANT = "tenant"        # 专家私有
+    """知识库范�"""
+    TENANT = "tenant"        # 专��有
     DOMAIN = "domain"        # 领域知识
-    PLATFORM = "platform"    # 平台公共
+    PLATFORM = "platform"    # 平台��
 
 class DocumentStatus(str, enum.Enum):
-    """文档状态"""
+    """文档状�"""
     DRAFT = "draft"
     PROCESSING = "processing"
     READY = "ready"
@@ -1809,16 +1812,16 @@ class DocumentStatus(str, enum.Enum):
 
 
 # ============================================
-# 知识库 RAG 模型
+# 知识� RAG 模型
 # ============================================
 
 # ============================================
-# 知识库模型 (V3.1 核心修复版)
+# 知识库模� (V3.1 核心�复版)
 # ============================================
 
 class KnowledgeDocument(Base):
     """
-    知识库文档主表
+    知识库文档主�
     """
     __tablename__ = "knowledge_documents"
 
@@ -1838,7 +1841,7 @@ class KnowledgeDocument(Base):
     priority = Column(Integer, default=5)
     is_active = Column(Boolean, default=True)
 
-    # 内容治理 (migration 012/013)
+    # 内�治� (migration 012/013)
     raw_content = Column(Text, nullable=True)
     file_path = Column(String(500), nullable=True)
     evidence_tier = Column(String(2), server_default="T3", nullable=False)
@@ -1857,7 +1860,7 @@ class KnowledgeDocument(Base):
 
 
 class KnowledgeDomain(Base):
-    """知识领域元数据"""
+    """知识领域元数�"""
     __tablename__ = "knowledge_domains"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1870,7 +1873,7 @@ class KnowledgeDomain(Base):
 
 class KnowledgeChunk(Base):
     """
-    知识库分片表 (带向量存储)
+    知识库分片表 (带向量存�)
     """
     __tablename__ = "knowledge_chunks"
 
@@ -1889,7 +1892,7 @@ class KnowledgeChunk(Base):
     content = Column(Text, nullable=False)
     chunk_index = Column(Integer, nullable=False)
 
-    # 🔥 检查点 2：必须改为 768，否则报错 dim mismatch (expected 1536, got 768)
+    # 🔥 �查点 2：必须改� 768，否则报� dim mismatch (expected 1536, got 768)
     if Vector is not None:
         embedding = Column(Vector(768), nullable=True)
     else:
@@ -1903,10 +1906,10 @@ class KnowledgeChunk(Base):
 
 class KnowledgeCitation(Base):
     """
-    知识库引用审计表
+    知识库引用��表
 
-    记录每次 LLM 回复中实际引用了哪些知识块，
-    用于审计追踪和统计文档使用频率。
+    记录每� LLM 回�中实际引用了哪些知识块�
+    用于审�追�和统计文档使用�率�
     """
     __tablename__ = "knowledge_citations"
 
@@ -1939,29 +1942,29 @@ class KnowledgeCitation(Base):
 
 class KnowledgeContribution(Base):
     """
-    知识共享贡献表 — 专家将私有知识贡献到领域共享池的请求记录
+    知识共享贡献� � 专�将私有知识贡献到�域共享池的请求记录
 
-    工作流: pending → approved/rejected
-    approved 后, document.scope 从 'tenant' 改为 'domain', chunks 同步更新
+    工作�: pending � approved/rejected
+    approved �, document.scope � 'tenant' 改为 'domain', chunks 同�更�
     """
     __tablename__ = "knowledge_contributions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     document_id = Column(Integer, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False)
-    tenant_id = Column(String(64), nullable=False, index=True, comment="贡献者租户ID")
+    tenant_id = Column(String(64), nullable=False, index=True, comment="贡献者�户ID")
     contributor_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="贡献者用户ID")
-    domain_id = Column(String(50), nullable=False, comment="目标领域")
+    domain_id = Column(String(50), nullable=False, comment="�标�域")
 
     # 贡献说明
     reason = Column(Text, nullable=True, comment="贡献理由/说明")
 
-    # 审核状态
+    # 审核状�
     status = Column(String(20), nullable=False, server_default="pending", comment="pending/approved/rejected")
     reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="审核者用户ID")
-    review_comment = Column(Text, nullable=True, comment="审核意见")
+    review_comment = Column(Text, nullable=True, comment="审核意�")
     reviewed_at = Column(DateTime, nullable=True)
 
-    # 审计
+    # 审�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
@@ -1975,17 +1978,17 @@ class KnowledgeContribution(Base):
 
 
 # ============================================
-# 内容交互枚举
+# 内�交互枚�
 # ============================================
 
 class ContentItemStatus(str, enum.Enum):
-    """内容条目状态"""
+    """内�条�状�"""
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"
 
 class CommentStatus(str, enum.Enum):
-    """评论状态"""
+    """评�状�"""
     ACTIVE = "active"
     HIDDEN = "hidden"
     DELETED = "deleted"
@@ -1995,13 +1998,13 @@ class CommentStatus(str, enum.Enum):
 # ============================================
 
 class LearningStatus(str, enum.Enum):
-    """学习进度状态"""
+    """学习进度状�"""
     NOT_STARTED = "not_started"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
 
 class PointsCategory(str, enum.Enum):
-    """积分类别"""
+    """�分类�"""
     GROWTH = "growth"
     CONTRIBUTION = "contribution"
     INFLUENCE = "influence"
@@ -2011,18 +2014,18 @@ class PointsCategory(str, enum.Enum):
 # ============================================
 
 class ExamStatus(str, enum.Enum):
-    """考试状态"""
+    """考试状�"""
     DRAFT = "draft"
     PUBLISHED = "published"
     ARCHIVED = "archived"
 
 class ExamResultStatus(str, enum.Enum):
-    """考试结果状态"""
+    """考试结果状�"""
     PASSED = "passed"
     FAILED = "failed"
 
 class ExamQuestionType(str, enum.Enum):
-    """考试题目类型（区别于问卷 QuestionType）"""
+    """考试题目类型（区�于问� QuestionType�"""
     SINGLE = "single"
     MULTIPLE = "multiple"
     TRUEFALSE = "truefalse"
@@ -2033,18 +2036,18 @@ class ExamQuestionType(str, enum.Enum):
 # ============================================
 
 class IngestionStatus(str, enum.Enum):
-    """灌注任务状态"""
+    """灌注任务状�"""
     PENDING = "pending"
     PROCESSING = "processing"
     COMPLETED = "completed"
     FAILED = "failed"
 
 # ============================================
-# 内容交互模型
+# 内�交互模�
 # ============================================
 
 class ContentItem(Base):
-    """统一内容条目表"""
+    """统一内�条��"""
     __tablename__ = "content_items"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -2059,13 +2062,13 @@ class ContentItem(Base):
     tenant_id = Column(String(64), nullable=True, index=True)
     status = Column(String(20), default="draft", nullable=False, index=True)  # draft/published/archived
 
-    # 统计计数 (反范式，高效读取)
+    # 统��数 (反范式，高效读取)
     view_count = Column(Integer, default=0)
     like_count = Column(Integer, default=0)
     comment_count = Column(Integer, default=0)
     collect_count = Column(Integer, default=0)
 
-    # 是否含测试
+    # �否含测试
     has_quiz = Column(Boolean, default=False)
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -2082,7 +2085,7 @@ class ContentItem(Base):
 
 
 class ContentLike(Base):
-    """内容点赞表"""
+    """内�点赞表"""
     __tablename__ = "content_likes"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -2096,7 +2099,7 @@ class ContentLike(Base):
 
 
 class ContentBookmark(Base):
-    """内容收藏表"""
+    """内�收藏表"""
     __tablename__ = "content_bookmarks"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -2110,13 +2113,13 @@ class ContentBookmark(Base):
 
 
 class ContentComment(Base):
-    """内容评论表"""
+    """内�评论表"""
     __tablename__ = "content_comments"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     content_id = Column(Integer, ForeignKey("content_items.id"), nullable=False, index=True)
-    parent_id = Column(Integer, ForeignKey("content_comments.id"), nullable=True)  # 自引用回复
+    parent_id = Column(Integer, ForeignKey("content_comments.id"), nullable=True)  # �引用回�
     content = Column(Text, nullable=False)
     rating = Column(Integer, nullable=True)  # 1-5 评分
     like_count = Column(Integer, default=0)
@@ -2133,18 +2136,18 @@ class ContentComment(Base):
 
 
 # ============================================
-# 学习持久化模型
+# 学习持久化模�
 # ============================================
 
 class LearningProgress(Base):
-    """学习进度表"""
+    """学习进度�"""
     __tablename__ = "learning_progress"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     content_id = Column(Integer, ForeignKey("content_items.id"), nullable=False, index=True)
     progress_percent = Column(Float, default=0.0)  # 0-100
-    last_position = Column(String(50), nullable=True)  # 视频时间点或章节位置
+    last_position = Column(String(50), nullable=True)  # 视�时间点或章节位�
     time_spent_seconds = Column(Integer, default=0)
     status = Column(String(20), default="not_started")  # not_started/in_progress/completed
 
@@ -2174,13 +2177,13 @@ class LearningTimeLog(Base):
 
 
 class LearningPointsLog(Base):
-    """学习积分日志"""
+    """学习�分日�"""
     __tablename__ = "learning_points_logs"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     source_type = Column(String(50), nullable=False)  # quiz/complete/share/comment/daily_login/streak
-    source_id = Column(String(50), nullable=True)  # 关联的内容/考试ID
+    source_id = Column(String(50), nullable=True)  # 关联的内�/考试ID
     points = Column(Integer, nullable=False)
     category = Column(String(20), nullable=False)  # growth/contribution/influence
     earned_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
@@ -2192,7 +2195,7 @@ class LearningPointsLog(Base):
 
 
 class UserLearningStats(Base):
-    """用户学习统计汇总(反范式)"""
+    """用户学习统�汇�(反范�)"""
     __tablename__ = "user_learning_stats"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -2201,7 +2204,7 @@ class UserLearningStats(Base):
     # 时长
     total_minutes = Column(Integer, default=0)
 
-    # 积分
+    # ��
     total_points = Column(Integer, default=0)
     growth_points = Column(Integer, default=0)
     contribution_points = Column(Integer, default=0)
@@ -2231,7 +2234,7 @@ class UserLearningStats(Base):
 # ============================================
 
 class ExamDefinition(Base):
-    """考试定义表"""
+    """考试定义�"""
     __tablename__ = "exam_definitions"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -2260,15 +2263,15 @@ class ExamDefinition(Base):
 
 
 class QuestionBank(Base):
-    """题库表"""
+    """题库�"""
     __tablename__ = "question_bank"
 
     id = Column(Integer, primary_key=True, index=True)
     question_id = Column(String(50), unique=True, nullable=False, index=True)
-    content = Column(Text, nullable=False)  # 题目内容
+    content = Column(Text, nullable=False)  # 题目内�
     question_type = Column(String(20), nullable=False)  # single/multiple/truefalse/short_answer
     options = Column(JSON, nullable=True)  # [{"key": "A", "text": "..."}, ...]
-    answer = Column(JSON, nullable=False)  # ["A"] or ["A","C"] or "true" or "简答内容"
+    answer = Column(JSON, nullable=False)  # ["A"] or ["A","C"] or "true" or "�答内�"
     explanation = Column(Text, nullable=True)  # 解析
     domain = Column(String(50), nullable=True)
     difficulty = Column(String(20), default="medium")  # easy/medium/hard
@@ -2288,7 +2291,7 @@ class QuestionBank(Base):
 
 
 class ExamResult(Base):
-    """考试结果表"""
+    """考试结果�"""
     __tablename__ = "exam_results"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -2316,7 +2319,7 @@ class ExamResult(Base):
 # ============================================
 
 class UserActivityLog(Base):
-    """用户活动日志表"""
+    """用户活动日志�"""
     __tablename__ = "user_activity_logs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -2339,7 +2342,7 @@ class UserActivityLog(Base):
 # ============================================
 
 class BatchIngestionJob(Base):
-    """批量灌注任务表"""
+    """批量灌注任务�"""
     __tablename__ = "batch_ingestion_jobs"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -2351,7 +2354,7 @@ class BatchIngestionJob(Base):
     processed_files = Column(Integer, default=0)
     total_chunks = Column(Integer, default=0)
     error_message = Column(Text, nullable=True)
-    result_doc_ids = Column(JSON, nullable=True)  # 创建的 KnowledgeDocument IDs
+    result_doc_ids = Column(JSON, nullable=True)  # 创建� KnowledgeDocument IDs
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
@@ -2366,8 +2369,8 @@ class BatchIngestionJob(Base):
 
 
 class TenantStatus(str, enum.Enum):
-    """租户状态"""
-    pending_review = "pending_review"  # 专家自助注册待审核
+    """租户状�"""
+    pending_review = "pending_review"  # 专�自助注册待审核
     trial = "trial"
     active = "active"
     suspended = "suspended"
@@ -2380,7 +2383,7 @@ class TenantTier(str, enum.Enum):
     strategic = "strategic_partner"
 
 class ClientStatus(str, enum.Enum):
-    """客户状态"""
+    """客户状�"""
     active = "active"
     graduated = "graduated"
     paused = "paused"
@@ -2388,70 +2391,70 @@ class ClientStatus(str, enum.Enum):
 
 
 # ============================================
-# 专家白标租户模型
+# 专�白标�户模型
 # ============================================
 
 class ExpertTenant(Base):
     """
-    每个入驻专家 = 一个租户
-    一个专家对应一套独立品牌、Agent配置、客户群
+    每个入驻专� = ��租户
+    ��专��应�套独立品牌�Agent配置、�户�
     """
     __tablename__ = "expert_tenants"
 
-    id = Column(String(64), primary_key=True, comment="租户ID, 如 dr-chen-endo")
+    id = Column(String(64), primary_key=True, comment="租户ID, � dr-chen-endo")
     expert_user_id = Column(
         Integer, ForeignKey("users.id"),
         nullable=False, index=True,
-        comment="专家在平台的用户ID"
+        comment="专�在平台的用户ID"
     )
 
     # 品牌配置
-    brand_name = Column(String(128), nullable=False, comment="工作室名称")
-    brand_tagline = Column(String(256), default="", comment="品牌标语")
+    brand_name = Column(String(128), nullable=False, comment="工作室名�")
+    brand_tagline = Column(String(256), default="", comment="品牌标�")
     brand_avatar = Column(String(16), default="🏥", comment="Emoji头像")
     brand_logo_url = Column(String(512), default="", comment="Logo图片URL")
     brand_colors = Column(JSON, nullable=False, default=dict, comment='{"primary":"#hex","accent":"#hex","bg":"#hex"}')
-    brand_theme_id = Column(String(32), default="default", comment="主题模板ID")
-    custom_domain = Column(String(256), default="", comment="自定义域名")
+    brand_theme_id = Column(String(32), default="default", comment="主�模板ID")
+    custom_domain = Column(String(256), default="", comment="�定义域名")
 
-    # 专家人设
-    expert_title = Column(String(64), default="", comment="专家头衔")
-    expert_self_intro = Column(Text, default="", comment="专家自我介绍")
-    expert_specialties = Column(JSON, default=list, comment='["内分泌","代谢管理"]')
-    expert_credentials = Column(JSON, default=list, comment='["主任医师","博士生导师"]')
+    # 专�人�
+    expert_title = Column(String(64), default="", comment="专�头�")
+    expert_self_intro = Column(Text, default="", comment="专�自我介�")
+    expert_specialties = Column(JSON, default=list, comment='["内分�","代谢管理"]')
+    expert_credentials = Column(JSON, default=list, comment='["主任医师","博士生�师"]')
 
     # Agent 配置
-    enabled_agents = Column(JSON, nullable=False, default=list, comment="启用的Agent ID列表")
+    enabled_agents = Column(JSON, nullable=False, default=list, comment="�用的Agent ID列表")
     agent_persona_overrides = Column(JSON, default=dict, comment="Agent话术覆盖")
 
-    # 路由配置 (Phase 2)
+    # �由配� (Phase 2)
     routing_correlations = Column(JSON, nullable=False, server_default='{}', default=dict,
-                                  comment='专家自定义关联网络 {"sleep":["glucose","stress"]}')
+                                  comment='专�自定义关联网络 {"sleep":["glucose","stress"]}')
     routing_conflicts = Column(JSON, nullable=False, server_default='{}', default=dict,
-                               comment='专家自定义冲突规则 {"sleep|exercise":"sleep"}')
+                               comment='专�自定义冲突规则 {"sleep|exercise":"sleep"}')
     default_fallback_agent = Column(String(32), nullable=False, server_default='behavior_rx',
-                                    default='behavior_rx', comment='默认回退Agent')
+                                    default='behavior_rx', comment='默�回�Agent')
 
     # 业务配置
-    enabled_paths = Column(JSON, default=list, comment="启用的学习路径ID")
-    service_packages = Column(JSON, default=list, comment="服务包配置")
-    questionnaire_overrides = Column(JSON, default=dict, comment="问卷增删题配置")
-    welcome_message = Column(Text, default="", comment="客户首次进入的欢迎语")
+    enabled_paths = Column(JSON, default=list, comment="�用的学习�径ID")
+    service_packages = Column(JSON, default=list, comment="服务包配�")
+    questionnaire_overrides = Column(JSON, default=dict, comment="�卷�删题配�")
+    welcome_message = Column(Text, default="", comment="客户首�进入的欢迎�")
 
     # 控制
     status = Column(SQLEnum(TenantStatus), default=TenantStatus.trial, nullable=False, index=True)
     tier = Column(SQLEnum(TenantTier), default=TenantTier.basic, nullable=False)
-    max_clients = Column(Integer, default=50, comment="客户数上限")
-    revenue_share_expert = Column(Float, default=0.80, comment="专家分成比例")
+    max_clients = Column(Integer, default=50, comment="客户数上�")
+    revenue_share_expert = Column(Float, default=0.80, comment="专�分成比�")
     trial_expires_at = Column(DateTime, nullable=True, comment="试用到期时间")
 
-    # 自助注册申请字段
+    # �助注册申请字�
     application_status = Column(String(20), nullable=True, index=True,
-        comment="pending_review/approved/rejected/NULL(旧数据)")
+        comment="pending_review/approved/rejected/NULL(旧数�)")
     application_data = Column(JSON, default=dict,
-        comment="申请表单原始数据")
+        comment="申�表单原始数�")
     applied_at = Column(DateTime, nullable=True,
-        comment="申请提交时间")
+        comment="申�提交时�")
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
@@ -2474,7 +2477,7 @@ class ExpertTenant(Base):
 
 
 class TenantClient(Base):
-    """专家的客户 — 关联平台用户 + 租户归属"""
+    """专�的客户 � 关联平台用户 + 租户归属"""
     __tablename__ = "tenant_clients"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -2482,15 +2485,15 @@ class TenantClient(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True, comment="平台统一用户ID")
 
     source = Column(String(32), default="expert_referred", comment="来源")
-    service_package = Column(String(64), default="trial", comment="购买的服务包ID")
+    service_package = Column(String(64), default="trial", comment="�买的服务包ID")
 
     status = Column(SQLEnum(ClientStatus), default=ClientStatus.active, nullable=False, index=True)
     enrolled_at = Column(DateTime, server_default=func.now(), nullable=False)
     graduated_at = Column(DateTime, nullable=True)
 
-    total_sessions = Column(Integer, default=0, comment="累计会话次数")
+    total_sessions = Column(Integer, default=0, comment="�计会话�数")
     last_active_at = Column(DateTime, nullable=True)
-    notes = Column(Text, default="", comment="专家备注")
+    notes = Column(Text, default="", comment="专��注")
 
     tenant = relationship("ExpertTenant", back_populates="clients")
 
@@ -2503,28 +2506,28 @@ class TenantClient(Base):
 
 
 class TenantAgentMapping(Base):
-    """租户 x Agent 的详细配置"""
+    """租户 x Agent 的�细配置"""
     __tablename__ = "tenant_agent_mappings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     tenant_id = Column(String(64), ForeignKey("expert_tenants.id", ondelete="CASCADE"), nullable=False, index=True)
     agent_id = Column(String(32), nullable=False, comment="Agent标识: sleep/glucose/stress/...")
 
-    display_name = Column(String(64), default="", comment="自定义显示名")
-    display_avatar = Column(String(16), default="", comment="自定义Emoji头像")
-    greeting = Column(Text, default="", comment="自定义开场白")
-    tone = Column(String(128), default="", comment="语气风格描述")
-    bio = Column(String(256), default="", comment="Agent简介")
+    display_name = Column(String(64), default="", comment="�定义显示�")
+    display_avatar = Column(String(16), default="", comment="�定义Emoji头像")
+    greeting = Column(Text, default="", comment="�定义�场白")
+    tone = Column(String(128), default="", comment="�气�格描述")
+    bio = Column(String(256), default="", comment="Agent��")
 
     is_enabled = Column(Boolean, default=True, nullable=False)
-    is_primary = Column(Boolean, default=False, comment="是否为主力Agent")
+    is_primary = Column(Boolean, default=False, comment="�否为主力Agent")
     sort_order = Column(Integer, default=0, comment="排序权重")
 
-    # 路由配置 (Phase 2)
+    # �由配� (Phase 2)
     custom_keywords = Column(JSON, nullable=False, server_default='[]', default=list,
-                             comment='专家自定义路由关键词')
+                             comment='专�自定义�由关��')
     keyword_boost = Column(Float, nullable=False, server_default='1.5', default=1.5,
-                           comment='专家关键词得分加权倍数')
+                           comment='专�关�词得分加权�数')
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
@@ -2539,7 +2542,7 @@ class TenantAgentMapping(Base):
 
 
 class TenantAuditLog(Base):
-    """租户操作审计日志"""
+    """租户操作审�日�"""
     __tablename__ = "tenant_audit_logs"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -2555,18 +2558,18 @@ class TenantAuditLog(Base):
 
 
 # ============================================
-# 通用问卷引擎模型 (v22)
+# 通用�卷引擎模� (v22)
 # ============================================
 
 class SurveyStatus(str, enum.Enum):
-    """问卷状态"""
+    """�卷状�"""
     draft = "draft"
     published = "published"
     closed = "closed"
     archived = "archived"
 
 class SurveyType(str, enum.Enum):
-    """问卷类型"""
+    """�卷类�"""
     general = "general"
     health = "health"
     satisfaction = "satisfaction"
@@ -2602,25 +2605,25 @@ class DistributionChannel(str, enum.Enum):
 
 
 class Survey(Base):
-    """问卷主表"""
+    """�卷主�"""
     __tablename__ = "surveys"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String(200), nullable=False, comment="问卷标题")
-    description = Column(Text, default="", comment="问卷说明")
+    title = Column(String(200), nullable=False, comment="�卷标�")
+    description = Column(Text, default="", comment="�卷�明")
     survey_type = Column(SQLEnum(SurveyType), default=SurveyType.general)
     status = Column(SQLEnum(SurveyStatus), default=SurveyStatus.draft)
 
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     tenant_id = Column(String(64), ForeignKey("expert_tenants.id"), nullable=True)
 
-    settings = Column(JSON, default=dict, comment="问卷设置 JSON")
+    settings = Column(JSON, default=dict, comment="�卷�置 JSON")
     baps_mapping = Column(JSON, nullable=True, comment="BAPS回流映射")
 
     response_count = Column(Integer, default=0)
-    avg_duration = Column(Integer, default=0, comment="平均填写秒数")
+    avg_duration = Column(Integer, default=0, comment="平均�写�数")
 
-    short_code = Column(String(8), unique=True, index=True, comment="短链码")
+    short_code = Column(String(8), unique=True, index=True, comment="�链码")
 
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow)
@@ -2640,7 +2643,7 @@ class Survey(Base):
 
 
 class SurveyQuestion(Base):
-    """问卷题目表"""
+    """�卷�目�"""
     __tablename__ = "survey_questions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -2653,7 +2656,7 @@ class SurveyQuestion(Base):
     is_required = Column(Boolean, default=False)
 
     config = Column(JSON, default=dict, comment="题目配置 JSON")
-    skip_logic = Column(JSON, nullable=True, comment="跳题逻辑 JSON")
+    skip_logic = Column(JSON, nullable=True, comment="跳��辑 JSON")
 
     created_at = Column(DateTime, server_default=func.now())
 
@@ -2666,7 +2669,7 @@ class SurveyQuestion(Base):
 
 
 class SurveyResponse(Base):
-    """问卷回收表"""
+    """�卷回收表"""
     __tablename__ = "survey_responses"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -2679,10 +2682,10 @@ class SurveyResponse(Base):
 
     started_at = Column(DateTime, server_default=func.now())
     completed_at = Column(DateTime, nullable=True)
-    duration_sec = Column(Integer, nullable=True, comment="填写耗时秒")
+    duration_sec = Column(Integer, nullable=True, comment="�写�时�")
 
     is_complete = Column(Boolean, default=False)
-    current_page = Column(Integer, default=0, comment="断点续填页码")
+    current_page = Column(Integer, default=0, comment="�点续�页码")
 
     baps_synced = Column(Boolean, default=False)
     baps_synced_at = Column(DateTime, nullable=True)
@@ -2700,15 +2703,15 @@ class SurveyResponse(Base):
 
 
 class SurveyResponseAnswer(Base):
-    """问卷逐题答案"""
+    """�卷��答�"""
     __tablename__ = "survey_response_answers"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     response_id = Column(Integer, ForeignKey("survey_responses.id", ondelete="CASCADE"), nullable=False)
     question_id = Column(Integer, ForeignKey("survey_questions.id", ondelete="CASCADE"), nullable=False)
 
-    answer_value = Column(JSON, nullable=False, comment="答案 JSON")
-    score = Column(Float, nullable=True, comment="自动评分")
+    answer_value = Column(JSON, nullable=False, comment="答� JSON")
+    score = Column(Float, nullable=True, comment="�动评�")
 
     created_at = Column(DateTime, server_default=func.now())
 
@@ -2723,7 +2726,7 @@ class SurveyResponseAnswer(Base):
 
 
 class SurveyDistribution(Base):
-    """问卷分发渠道"""
+    """�卷分发渠�"""
     __tablename__ = "survey_distributions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -2731,7 +2734,7 @@ class SurveyDistribution(Base):
     channel = Column(SQLEnum(DistributionChannel), nullable=False)
 
     channel_config = Column(JSON, default=dict, comment="渠道配置 JSON")
-    tracking_code = Column(String(20), unique=True, comment="渠道追踪码")
+    tracking_code = Column(String(20), unique=True, comment="渠道追踪�")
 
     click_count = Column(Integer, default=0)
     submit_count = Column(Integer, default=0)
@@ -2749,52 +2752,52 @@ class SurveyDistribution(Base):
 class CourseModuleType(str, enum.Enum):
     """课程模块类型"""
     M1_KNOWLEDGE = "M1"       # 知识学习
-    M2_SKILL = "M2"           # 技能训练
+    M2_SKILL = "M2"           # �能��
     M3_PRACTICE = "M3"        # 实践应用
     M4_ASSESSMENT = "M4"      # 考核评估
     ELECTIVE = "ELECTIVE"     # 选修
 
 class ElectiveCategory(str, enum.Enum):
-    """选修课分类"""
-    BEHAVIOR = "behavior"             # 行为科学
-    NUTRITION = "nutrition"           # 营养学
-    EXERCISE = "exercise"             # 运动科学
-    PSYCHOLOGY = "psychology"         # 心理学
-    TCM = "tcm"                       # 中医养生
-    COMMUNICATION = "communication"   # 沟通技巧
+    """选修课分�"""
+    BEHAVIOR = "behavior"             # 行为科�
+    NUTRITION = "nutrition"           # 营养�
+    EXERCISE = "exercise"             # 运动科�
+    PSYCHOLOGY = "psychology"         # 心理�
+    TCM = "tcm"                       # �医养�
+    COMMUNICATION = "communication"   # 沟�技�
     DATA_LITERACY = "data_literacy"   # 数据素养
     ETHICS = "ethics"                 # 伦理规范
 
 class InterventionTier(str, enum.Enum):
-    """干预层级"""
-    T1 = "T1"  # 基础科普
-    T2 = "T2"  # 循证指导
-    T3 = "T3"  # 专业干预
-    T4 = "T4"  # 专家督导
+    """干�层�"""
+    T1 = "T1"  # 基�科普
+    T2 = "T2"  # �证指�
+    T3 = "T3"  # 专业干�
+    T4 = "T4"  # 专�督�
 
 class AssessmentEvidenceType(str, enum.Enum):
     """评估证据类型"""
     QUIZ = "quiz"               # 在线测验
     CASE_REPORT = "case_report" # 案例报告
-    PEER_REVIEW = "peer_review" # 同伴评审
-    SUPERVISOR = "supervisor"   # 督导评估
+    PEER_REVIEW = "peer_review" # 同伴评�
+    SUPERVISOR = "supervisor"   # 督�评�
     EXAM = "exam"               # 正式考试
 
 class CompanionStatus(str, enum.Enum):
-    """同道者关系状态"""
+    """同道者关系状�"""
     ACTIVE = "active"
     GRADUATED = "graduated"
     DROPPED = "dropped"
 
 class PromotionStatus(str, enum.Enum):
-    """晋级申请状态"""
+    """晋级申�状�"""
     PENDING = "pending"
     APPROVED = "approved"
     REJECTED = "rejected"
 
 
 class CourseModule(Base):
-    """课程模块 — V002学分体系核心表"""
+    """课程模块 � V002学分体系核心�"""
     __tablename__ = "course_modules"
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
@@ -2804,15 +2807,15 @@ class CourseModule(Base):
     description = Column(Text, nullable=True)
 
     module_type = Column(String(20), nullable=False, comment="M1/M2/M3/M4/ELECTIVE")
-    elective_cat = Column(String(30), nullable=True, comment="选修课分类")
+    elective_cat = Column(String(30), nullable=True, comment="选修课分�")
     tier = Column(String(15), nullable=True, comment="T1-T4证据层级")
     target_role = Column(SQLEnum(UserRole, create_type=False), nullable=False,
-                         comment="目标角色等级")
+                         comment="�标�色等级")
 
-    credit_value = Column(Float, nullable=False, default=1.0, comment="学分值")
-    theory_ratio = Column(String(10), nullable=True, comment="理论实践比例")
+    credit_value = Column(Float, nullable=False, default=1.0, comment="学分�")
+    theory_ratio = Column(String(10), nullable=True, comment="理�实践比�")
     prereq_modules = Column(JSON, nullable=True, default=list, comment="前置模块code列表")
-    content_ref = Column(String(500), nullable=True, comment="内容引用")
+    content_ref = Column(String(500), nullable=True, comment="内�引�")
 
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)
@@ -2844,7 +2847,7 @@ class UserCredit(Base):
     completed_at = Column(DateTime, server_default=func.now())
     evidence_type = Column(String(30), nullable=True, comment="评估证据类型")
     evidence_ref = Column(String(500), nullable=True, comment="证据材料URL")
-    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="审核人")
+    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="审核�")
     created_at = Column(DateTime, server_default=func.now())
 
     # 关系
@@ -2858,7 +2861,7 @@ class UserCredit(Base):
 
 
 class CompanionRelation(Base):
-    """同道者带教关系"""
+    """同道者带教关�"""
     __tablename__ = "companion_relations"
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
@@ -2866,8 +2869,8 @@ class CompanionRelation(Base):
     mentor_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     mentee_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
-    mentor_role = Column(String(20), nullable=False, comment="带教时导师角色")
-    mentee_role = Column(String(20), nullable=False, comment="带教时学员角色")
+    mentor_role = Column(String(20), nullable=False, comment="带教时�师角色")
+    mentee_role = Column(String(20), nullable=False, comment="带教时�员角色")
     status = Column(String(20), default="active", comment="active/graduated/dropped")
 
     quality_score = Column(Float, nullable=True, comment="带教质量评分 1-5")
@@ -2884,7 +2887,7 @@ class CompanionRelation(Base):
 
 
 class PromotionApplication(Base):
-    """晋级申请"""
+    """晋级申�"""
     __tablename__ = "promotion_applications"
 
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4,
@@ -2895,7 +2898,7 @@ class PromotionApplication(Base):
     to_role = Column(String(20), nullable=False)
     status = Column(String(20), default="pending", comment="pending/approved/rejected")
 
-    # 四维快照
+    # 四维��
     credit_snapshot = Column(JSON, nullable=True)
     point_snapshot = Column(JSON, nullable=True)
     companion_snapshot = Column(JSON, nullable=True)
@@ -2915,10 +2918,10 @@ class PromotionApplication(Base):
     )
 
 
-# ── v3.1 诊断评估持久化模型 ──────────────────────────
+# �� v3.1 诊断评估持久化模� ��������������������������
 
 class ChangeCause(Base):
-    """24动因 × 6类 — 改变动因字典"""
+    """24动因 × 6� � 改变动因字典"""
     __tablename__ = "change_causes"
 
     id = Column(String(4), primary_key=True)
@@ -2947,7 +2950,7 @@ class UserChangeCauseScore(Base):
 
 
 class InterventionStrategy(Base):
-    """阶段 × 动因 → 干预策略 ORM"""
+    """阶� × 动因 � 干�策� ORM"""
     __tablename__ = "intervention_strategies"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -2995,7 +2998,7 @@ class COMBAssessment(Base):
 
 
 class SelfEfficacyAssessment(Base):
-    """自我效能评估"""
+    """�我效能评�"""
     __tablename__ = "self_efficacy_assessments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3008,7 +3011,7 @@ class SelfEfficacyAssessment(Base):
 
 
 class ObstacleAssessment(Base):
-    """障碍评估"""
+    """障�评�"""
     __tablename__ = "obstacle_assessments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3022,7 +3025,7 @@ class ObstacleAssessment(Base):
 
 
 class SupportAssessment(Base):
-    """支持系统评估"""
+    """�持系统评�"""
     __tablename__ = "support_assessments"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3036,7 +3039,7 @@ class SupportAssessment(Base):
 
 
 # ============================================
-# V003 激励体系 — 9 tables
+# V003 �励体� � 9 tables
 # ============================================
 
 class Badge(Base):
@@ -3060,7 +3063,7 @@ class Badge(Base):
 
 
 class UserBadge(Base):
-    """用户已获得徽章"""
+    """用户已获得徽�"""
     __tablename__ = "user_badges"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -3076,7 +3079,7 @@ class UserBadge(Base):
 
 
 class UserMilestone(Base):
-    """用户里程碑"""
+    """用户里程�"""
     __tablename__ = "user_milestones"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -3120,7 +3123,7 @@ class FlipCardRecord(Base):
 
 
 class NudgeRecord(Base):
-    """推送/提醒记录"""
+    """推�/提醒记录"""
     __tablename__ = "nudge_records"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -3137,7 +3140,7 @@ class NudgeRecord(Base):
 
 
 class UserMemorial(Base):
-    """用户纪念卡/成就记录"""
+    """用户�念卡/成就记录"""
     __tablename__ = "user_memorials"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -3153,7 +3156,7 @@ class UserMemorial(Base):
 
 
 class PointTransaction(Base):
-    """积分流水"""
+    """�分流�"""
     __tablename__ = "point_transactions"
     id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -3168,7 +3171,7 @@ class PointTransaction(Base):
 
 
 class UserPoint(Base):
-    """用户积分汇总 (复合PK: user_id + point_type)"""
+    """用户�分汇� (复合PK: user_id + point_type)"""
     __tablename__ = "user_points"
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     point_type = Column(String(32), primary_key=True)
@@ -3176,11 +3179,11 @@ class UserPoint(Base):
 
 
 # ============================================
-# m019 诊断管线补充 — 10 tables (migration 019 已建表)
+# m019 诊断管线补充 � 10 tables (migration 019 已建�)
 # ============================================
 
 class InterventionOutcome(Base):
-    """干预效果追踪记录"""
+    """干�效果追�记录"""
     __tablename__ = "intervention_outcomes"
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -3214,7 +3217,7 @@ class InterventionOutcome(Base):
 
 
 class StageTransitionLog(Base):
-    """阶段转换历史"""
+    """阶�转换历�"""
     __tablename__ = "stage_transition_logs"
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -3230,7 +3233,7 @@ class StageTransitionLog(Base):
 
 
 class PointEvent(Base):
-    """积分事件流水 (三维积分)"""
+    """�分事件流� (三维��)"""
     __tablename__ = "point_events"
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -3248,7 +3251,7 @@ class PointEvent(Base):
 
 
 class UserPointBalance(Base):
-    """用户积分余额 (三维)"""
+    """用户�分余� (三维)"""
     __tablename__ = "user_point_balances"
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
     growth = Column(Integer, server_default=sa_text("0"))
@@ -3264,7 +3267,7 @@ class UserPointBalance(Base):
 
 
 class IncentiveReward(Base):
-    """激励奖励定义"""
+    """�励�励定义"""
     __tablename__ = "incentive_rewards"
     id = Column(Integer, primary_key=True, autoincrement=True)
     reward_type = Column(String(30), nullable=False)
@@ -3291,7 +3294,7 @@ class UserReward(Base):
 
 
 class AssessmentSession(Base):
-    """渐进式评估会话"""
+    """渐进式评估会�"""
     __tablename__ = "assessment_sessions"
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -3311,7 +3314,7 @@ class AssessmentSession(Base):
 
 
 class BatchAnswer(Base):
-    """单批次答题记录"""
+    """单批次答题�录"""
     __tablename__ = "batch_answers"
     id = Column(Integer, primary_key=True, autoincrement=True)
     session_id = Column(Integer, ForeignKey("assessment_sessions.id"), nullable=False)
@@ -3354,7 +3357,7 @@ class LLMCallLog(Base):
 
 
 class RAGQueryLog(Base):
-    """RAG 查询日志"""
+    """RAG 查�日�"""
     __tablename__ = "rag_query_logs"
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer)
@@ -3372,7 +3375,7 @@ class RAGQueryLog(Base):
 
 
 # ============================================
-# V005 安全日志 + 内容音频
+# V005 安全日志 + 内�音�
 # ============================================
 
 class SafetyLog(Base):
@@ -3395,7 +3398,7 @@ class SafetyLog(Base):
 
 
 class ContentAudio(Base):
-    """内容音频附件"""
+    """内�音频附�"""
     __tablename__ = "content_audio"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3409,7 +3412,7 @@ class ContentAudio(Base):
 
 
 class AgentTemplate(Base):
-    """Agent 模板 — 将 Agent 定义从代码搬到数据库"""
+    """Agent 模板 � � Agent 定义从代码搬到数��"""
     __tablename__ = "agent_templates"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3435,18 +3438,19 @@ class AgentTemplate(Base):
 
     __table_args__ = (
         Index('idx_at_type_enabled', 'agent_type', 'is_enabled'),
+        {"schema": "coach_schema"},
     )
 
 
 # ============================================
-# Phase 4: 反馈学习闭环
+# Phase 4: 反��习��
 # ============================================
 
 class AgentFeedback(Base):
     """
-    Agent 反馈记录 — 用户/教练对 Agent 回复的评价
+    Agent 反��录 � 用户/教练� Agent 回�的评价
 
-    persist 版本, 替代 agent_api.py 的内存存储
+    persist 版本, 替代 agent_api.py 的内存存�
     """
     __tablename__ = "agent_feedbacks"
 
@@ -3455,23 +3459,23 @@ class AgentFeedback(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="用户ID")
     session_id = Column(String(100), nullable=True, comment="会话ID")
 
-    # 反馈内容
+    # 反�内�
     feedback_type = Column(String(20), nullable=False, comment="accept/reject/modify/rate")
     rating = Column(Integer, nullable=True, comment="1-5 评分")
-    comment = Column(Text, nullable=True, comment="文字反馈")
-    modifications = Column(JSON, nullable=True, comment="修改建议")
+    comment = Column(Text, nullable=True, comment="文字反�")
+    modifications = Column(JSON, nullable=True, comment="�改建�")
 
-    # 上下文快照
-    user_message = Column(Text, nullable=True, comment="用户原始消息")
-    agent_response = Column(Text, nullable=True, comment="Agent 回复")
-    agents_used = Column(JSON, nullable=True, comment="激活的 Agent 列表")
-    confidence = Column(Float, nullable=True, comment="Agent 置信度")
+    # 上下文快�
+    user_message = Column(Text, nullable=True, comment="用户原�消�")
+    agent_response = Column(Text, nullable=True, comment="Agent 回�")
+    agents_used = Column(JSON, nullable=True, comment="�活的 Agent 列表")
+    confidence = Column(Float, nullable=True, comment="Agent �信度")
     processing_time_ms = Column(Integer, nullable=True)
 
     # 租户
     tenant_id = Column(String(64), nullable=True, index=True)
 
-    # 审计
+    # 审�
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
@@ -3482,9 +3486,9 @@ class AgentFeedback(Base):
 
 class AgentMetricsDaily(Base):
     """
-    Agent 日维度质量指标 — 由定时任务聚合
+    Agent 日维度质量指� � 由定时任务聚�
 
-    指标: 满意度(avg_rating), 采纳率(acceptance_rate), 平均耗时, 调用量
+    指标: 满意�(avg_rating), 采纳�(acceptance_rate), 平均耗时, 调用�
     """
     __tablename__ = "agent_metrics_daily"
 
@@ -3492,52 +3496,53 @@ class AgentMetricsDaily(Base):
     agent_id = Column(String(32), nullable=False, comment="Agent 标识")
     metric_date = Column(Date, nullable=False, comment="指标日期")
 
-    # 调用量
+    # 调用�
     total_calls = Column(Integer, default=0)
     llm_calls = Column(Integer, default=0)
 
-    # 反馈统计
+    # 反�统�
     feedback_count = Column(Integer, default=0)
     accept_count = Column(Integer, default=0)
     reject_count = Column(Integer, default=0)
     modify_count = Column(Integer, default=0)
     rate_count = Column(Integer, default=0)
-    total_rating = Column(Integer, default=0, comment="评分总和 (用于算均值)")
+    total_rating = Column(Integer, default=0, comment="评分总和 (用于算均�)")
 
     # 性能指标
     avg_processing_ms = Column(Float, default=0)
     avg_confidence = Column(Float, default=0)
 
-    # 计算字段 (冗余存储, 便于查询)
-    acceptance_rate = Column(Float, default=0, comment="采纳率 = accept / feedback_count")
+    # 计算字� (冗余存储, 便于查�)
+    acceptance_rate = Column(Float, default=0, comment="采纳� = accept / feedback_count")
     avg_rating = Column(Float, default=0, comment="平均评分 = total_rating / rate_count")
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     __table_args__ = (
         Index("idx_amd_agent_date", "agent_id", "metric_date", unique=True),
+        {"schema": "coach_schema"},
     )
 
 
 class AgentPromptVersion(Base):
     """
-    Agent Prompt 版本记录 — 追踪 system_prompt 变更, 支持 A/B 测试
+    Agent Prompt 版本记录 � 追踪 system_prompt 变更, �� A/B 测试
 
-    每次 AgentTemplate.system_prompt 变更时创建新版本
+    每� AgentTemplate.system_prompt 变更时创建新版本
     """
     __tablename__ = "agent_prompt_versions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     agent_id = Column(String(32), nullable=False, index=True)
-    version = Column(Integer, nullable=False, comment="版本号 (递增)")
-    system_prompt = Column(Text, nullable=False, comment="该版本的 system_prompt")
+    version = Column(Integer, nullable=False, comment="版本� (递�)")
+    system_prompt = Column(Text, nullable=False, comment="该版�� system_prompt")
     change_reason = Column(Text, nullable=True, comment="变更原因")
 
     # A/B 测试
-    is_active = Column(Boolean, server_default=sa_text("false"), comment="是否为当前激活版本")
-    traffic_pct = Column(Integer, server_default="100", comment="流量百分比 (0-100)")
+    is_active = Column(Boolean, server_default=sa_text("false"), comment="�否为当前�活版�")
+    traffic_pct = Column(Integer, server_default="100", comment="流量百分� (0-100)")
 
-    # 指标快照 (变更时记录前一版本的指标)
+    # 指标�� (变更时�录前一版本的指�)
     prev_avg_rating = Column(Float, nullable=True)
     prev_acceptance_rate = Column(Float, nullable=True)
 
@@ -3546,43 +3551,44 @@ class AgentPromptVersion(Base):
 
     __table_args__ = (
         Index("idx_apv_agent_version", "agent_id", "version", unique=True),
+        {"schema": "coach_schema"},
     )
 
 
 # ============================================
-# Phase 5: Agent 生态
+# Phase 5: Agent 生�
 # ============================================
 
 class AgentMarketplaceListing(Base):
     """
-    Agent 模板市场 — 专家发布的可复用 Agent 模板
+    Agent 模板市场 � 专�发布的�复用 Agent 模板
 
-    工作流: draft → submitted → approved/rejected → published
-    其他专家可 install (克隆到自己的租户)
+    工作�: draft � submitted � approved/rejected � published
+    其他专�可 install (克隆到自己的租户)
     """
     __tablename__ = "agent_marketplace_listings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    template_id = Column(Integer, ForeignKey("agent_templates.id"), nullable=False, comment="源模板")
-    publisher_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="发布者")
+    template_id = Column(Integer, ForeignKey("agent_templates.id"), nullable=False, comment="源模�")
+    publisher_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="发布�")
     tenant_id = Column(String(64), nullable=False, comment="来源租户")
 
     # 展示信息
-    title = Column(String(128), nullable=False, comment="市场标题")
+    title = Column(String(128), nullable=False, comment="市场标�")
     description = Column(Text, nullable=True, comment="详细描述")
     category = Column(String(50), nullable=True, comment="分类: health/nutrition/mental/etc")
-    tags = Column(JSON, server_default="[]", comment="标签列表")
-    cover_url = Column(String(500), nullable=True, comment="封面图 URL")
+    tags = Column(JSON, server_default="[]", comment="标�列�")
+    cover_url = Column(String(500), nullable=True, comment="封面� URL")
 
-    # 状态
+    # 状�
     status = Column(String(20), nullable=False, server_default="draft",
                     comment="draft/submitted/approved/rejected/published/archived")
     reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     review_comment = Column(Text, nullable=True)
     reviewed_at = Column(DateTime, nullable=True)
 
-    # 统计
-    install_count = Column(Integer, server_default="0", comment="安装次数")
+    # 统�
+    install_count = Column(Integer, server_default="0", comment="安��数")
     avg_rating = Column(Float, server_default="0", comment="平均评分")
     rating_count = Column(Integer, server_default="0", comment="评分人数")
 
@@ -3601,30 +3607,30 @@ class AgentMarketplaceListing(Base):
 
 class AgentComposition(Base):
     """
-    Agent 组合编排 — 多个 Agent 协作的预定义流水线
+    Agent 组合编排 � 多个 Agent 协作的�定义流水线
 
-    定义 Agent 调用顺序、条件触发、结果合并策略
+    定义 Agent 调用顺序、条件触发�结果合并策�
     """
     __tablename__ = "agent_compositions"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), nullable=False, comment="组合名称")
     description = Column(Text, nullable=True)
-    tenant_id = Column(String(64), nullable=True, comment="所属租户 (NULL=平台级)")
+    tenant_id = Column(String(64), nullable=True, comment="�属�户 (NULL=平台�)")
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     # 编排定义 (JSON)
     # [{"agent_id": "glucose", "order": 1, "condition": "always"},
     #  {"agent_id": "nutrition", "order": 2, "condition": "if:glucose.risk_level>low"},
     #  {"agent_id": "exercise", "order": 3, "condition": "optional"}]
-    pipeline = Column(JSON, nullable=False, server_default="[]", comment="编排流水线定义")
+    pipeline = Column(JSON, nullable=False, server_default="[]", comment="编排流水线定�")
 
     # 合并策略
     merge_strategy = Column(String(30), server_default="weighted_average",
                             comment="weighted_average/priority_first/consensus")
 
     is_enabled = Column(Boolean, server_default=sa_text("true"))
-    is_default = Column(Boolean, server_default=sa_text("false"), comment="是否为租户默认编排")
+    is_default = Column(Boolean, server_default=sa_text("false"), comment="�否为租户默�编�")
 
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -3636,9 +3642,9 @@ class AgentComposition(Base):
 
 class AgentGrowthPoints(Base):
     """
-    Agent 成长积分 — 与六级体系打通
+    Agent 成长�� � 与六级体系打�
 
-    记录专家通过 Agent 获得的成长积分 (创建、优化、共享、被安装等)
+    记录专��过 Agent 获得的成长积� (创建、优化�共�、�安�等)
     """
     __tablename__ = "agent_growth_points"
 
@@ -3646,10 +3652,10 @@ class AgentGrowthPoints(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     agent_id = Column(String(32), nullable=True, comment="关联 Agent")
 
-    # 积分事件
+    # �分事�
     event_type = Column(String(50), nullable=False,
                         comment="create_agent/optimize_prompt/share_knowledge/template_installed/feedback_positive")
-    points = Column(Integer, nullable=False, comment="积分值")
+    points = Column(Integer, nullable=False, comment="�分�")
     description = Column(String(255), nullable=True, comment="事件描述")
 
     # 关联
@@ -3669,7 +3675,7 @@ class AgentGrowthPoints(Base):
 # ============================================
 
 class PolicyRule(Base):
-    """策略规则定义 — V007 Policy OS"""
+    """策略规则定义 � V007 Policy OS"""
     __tablename__ = 'policy_rules'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3714,7 +3720,7 @@ class RulePriority(Base):
 
 
 class AgentApplicabilityMatrix(Base):
-    """Agent适用性矩阵"""
+    """Agent适用性矩�"""
     __tablename__ = 'agent_applicability_matrix'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3793,6 +3799,7 @@ class DecisionTrace(Base):
 
     __table_args__ = (
         Index('idx_trace_event', 'event_id'),
+        {"schema": "coach_schema"},
     )
 
 
@@ -3849,7 +3856,7 @@ class ExpertDomain(Base):
 
 
 class InterventionProtocol(Base):
-    """结构化干预协议"""
+    """结构化干预协�"""
     __tablename__ = 'intervention_protocol'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3866,7 +3873,7 @@ class InterventionProtocol(Base):
 
 
 class RiskBoundary(Base):
-    """风险边界与自动退出"""
+    """风险边界与自动��"""
     __tablename__ = 'risk_boundary'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3881,7 +3888,7 @@ class RiskBoundary(Base):
 
 
 class StageApplicability(Base):
-    """阶段适用性"""
+    """阶��用�"""
     __tablename__ = 'stage_applicability'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3900,7 +3907,7 @@ class StageApplicability(Base):
 
 
 class Contraindication(Base):
-    """禁忌症"""
+    """禁忌�"""
     __tablename__ = 'contraindications'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3927,7 +3934,7 @@ class EvidenceTierBinding(Base):
 
 
 class AgentSkillGraph(Base):
-    """Agent技能图谱"""
+    """Agent�能图�"""
     __tablename__ = 'agent_skill_graph'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3941,7 +3948,7 @@ class AgentSkillGraph(Base):
 
 
 class PolicyInterventionOutcome(Base):
-    """V007干预效果 (distinct from m019 intervention_outcomes)"""
+    """V007干�效� (distinct from m019 intervention_outcomes)"""
     __tablename__ = 'policy_intervention_outcome'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3964,7 +3971,7 @@ class PolicyInterventionOutcome(Base):
 
 
 class PolicyStageTransitionLog(Base):
-    """V007阶段跃迁日志 (distinct from m019 stage_transition_logs)"""
+    """V007阶�跃迁日� (distinct from m019 stage_transition_logs)"""
     __tablename__ = 'policy_stage_transition_log'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -3987,21 +3994,21 @@ class PolicyStageTransitionLog(Base):
 
 class JourneyState(Base):
     """
-    V4.0 用户旅程状态表
+    V4.0 用户旅程状�表
 
-    追踪用户在 S0-S5 阶段的生命周期，以及
-    agency_mode 三态模型和 trust_score 信任评分。
-    每用户唯一记录。
+    追踪用户� S0-S5 阶�的生命周期，以�
+    agency_mode 三�模型和 trust_score 信任评分�
+    每用户唯�记录�
     """
     __tablename__ = "journey_states"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), unique=True, nullable=False, index=True)
 
-    # S0-S5 阶段
+    # S0-S5 阶�
     journey_stage = Column(String(30), nullable=False, default="s0_authorization")
 
-    # Agency mode 三态
+    # Agency mode 三�
     agency_mode = Column(String(20), nullable=False, default="passive")
     agency_score = Column(Float, nullable=False, default=0.0)
     agency_signals = Column(JSON, default={})
@@ -4048,7 +4055,7 @@ class TrustScoreLog(Base):
     """
     V4.0 信任评分信号日志
 
-    记录每次信任评分计算的六信号细节：
+    记录每�信任评分�算的六信号细节�
     dialog_depth(25%), proactive_return_rate(20%),
     topic_openness(15%), emotion_expression(15%),
     autonomous_info_sharing(15%), curiosity_expression(10%)
@@ -4075,12 +4082,12 @@ class TrustScoreLog(Base):
 
 class AgencyScoreLog(Base):
     """
-    V4.0 主体性评分信号日志
+    V4.0 主体性评分信号日�
 
-    记录每次 agency_score 计算的六信号细节：
-    S1 主动发起率(25%), S2 自主修改率(20%),
-    S3 主动表达词频(20%), S4 觉察深度(15%),
-    S5 教练依赖度(10%, 反向), S6 教练标注(10%)
+    记录每� agency_score 计算的六信号细节�
+    S1 主动发起�(25%), S2 �主修改率(20%),
+    S3 主动表达词�(20%), S4 觉察深度(15%),
+    S5 教练依赖�(10%, 反向), S6 教练标注(10%)
     """
     __tablename__ = "agency_score_logs"
 
@@ -4103,13 +4110,13 @@ class AgencyScoreLog(Base):
 
 
 # ============================================
-# V4.0 Phase 2 — Stage Engine + Governance (migration 033)
+# V4.0 Phase 2 � Stage Engine + Governance (migration 033)
 # ============================================
 
 class StageTransitionLogV4(Base):
-    """V4.0 阶段跃迁日志 — 复用 m019 stage_transition_logs 表结构"""
+    """V4.0 阶�跃迁日� � 复用 m019 stage_transition_logs 表结�"""
     __tablename__ = "stage_transition_logs"
-    __table_args__ = {"extend_existing": True}
+    __table_args__ = {"schema": "coach_schema", "extend_existing": True}
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
@@ -4120,7 +4127,7 @@ class StageTransitionLogV4(Base):
     evidence = Column(JSON, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
-    # ── 便捷别名 (仅 Python 层, 不产生额外 SQL 列) ──
+    # �� 便捷�� (� Python �, 不产生�� SQL �) ��
     @property
     def from_stage(self):
         return self.from_value
@@ -4176,7 +4183,7 @@ class AntiCheatEvent(Base):
 
 
 class GovernanceViolation(Base):
-    """治理违规记录"""
+    """治理违��录"""
     __tablename__ = "governance_violations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4195,7 +4202,7 @@ class GovernanceViolation(Base):
 
 
 class DualTrackStatus(Base):
-    """双轨晋级状态机"""
+    """双轨晋级状�机"""
     __tablename__ = "dual_track_status"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4213,11 +4220,11 @@ class DualTrackStatus(Base):
 
 
 # ============================================
-# Migration 035 — Contract Registry Sync
+# Migration 035 � Contract Registry Sync
 # ============================================
 
 class IESScore(Base):
-    """IES 干预效果评分 (4分量公式: 0.4×完成 + 0.2×活跃 + 0.25×进展 - 0.15×抗阻)"""
+    """IES 干�效果评� (4分量��: 0.4×完成 + 0.2×活跃 + 0.25×进展 - 0.15×抗阻)"""
     __tablename__ = "ies_scores"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4241,7 +4248,7 @@ class IESScore(Base):
 
 
 class IESDecisionLog(Base):
-    """IES 决策追踪日志 — Rx自动调整记录"""
+    """IES 决策追踪日志 � Rx�动调整�录"""
     __tablename__ = "ies_decision_log"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4260,7 +4267,7 @@ class IESDecisionLog(Base):
 
 
 class UserContract(Base):
-    """用户契约生命周期 — 从访客到大师的契约追踪"""
+    """用户契约生命周期 � 从��到大师的�约追踪"""
     __tablename__ = "user_contracts"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4282,7 +4289,7 @@ class UserContract(Base):
 
 
 class EthicalDeclaration(Base):
-    """伦理声明 — Coach 5条 / Promoter 7条 签署记录"""
+    """伦理声明 � Coach 5� / Promoter 7� 签署记录"""
     __tablename__ = "ethical_declarations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4303,7 +4310,7 @@ class EthicalDeclaration(Base):
 
 
 # ============================================
-# Migration 036 — 400分制考核 + 收益分配 + 沙箱测试
+# Migration 036 � 400分制考核 + 收益分配 + 沙�测�
 # ============================================
 
 class CoachExamRecord(Base):
@@ -4331,6 +4338,7 @@ class CoachExamRecord(Base):
 
     __table_args__ = (
         Index('idx_coach_exam_coach_level', 'coach_id', 'target_level'),
+        {"schema": "coach_schema"},
     )
 
 
@@ -4358,7 +4366,7 @@ class RevenueShare(Base):
 
 
 class SandboxTestResult(Base):
-    """沙箱自动化测试结果"""
+    """沙�自动化测试结果"""
     __tablename__ = "sandbox_test_results"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4381,7 +4389,7 @@ class SandboxTestResult(Base):
 
 
 class CoachSupervisionRecord(Base):
-    """教练督导记录"""
+    """教练督��录"""
     __tablename__ = "coach_supervision_records"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4401,11 +4409,12 @@ class CoachSupervisionRecord(Base):
     __table_args__ = (
         Index('idx_supervision_coach', 'coach_id', 'status'),
         Index('idx_supervision_supervisor', 'supervisor_id', 'status'),
+        {"schema": "coach_schema"},
     )
 
 
 class CoachKpiMetric(Base):
-    """教练KPI红绿灯仪表盘"""
+    """教练KPI红绿��表盘"""
     __tablename__ = "coach_kpi_metrics"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4434,11 +4443,12 @@ class CoachKpiMetric(Base):
         UniqueConstraint('coach_id', 'period_type', 'period_start', name='uq_kpi_coach_period'),
         Index('idx_kpi_coach_period', 'coach_id', 'period_type', 'period_start'),
         Index('idx_kpi_overall_status', 'overall_status'),
+        {"schema": "coach_schema"},
     )
 
 
 class PeerTracking(Base):
-    """四同道者追踪记录"""
+    """四同道�追�记录"""
     __tablename__ = "peer_tracking"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -4466,7 +4476,7 @@ class PeerTracking(Base):
 
 
 def get_table_names():
-    """获取所有表名"""
+    """获取�有表�"""
     return [
         "users",
         "assessments",
@@ -4476,7 +4486,7 @@ def get_table_names():
         "health_data",
         "chat_sessions",
         "chat_messages",
-        # 设备数据表
+        # 设�数��
         "user_devices",
         "glucose_readings",
         "heart_rate_readings",
@@ -4487,19 +4497,19 @@ def get_table_names():
         "vital_signs",
         # 行为画像
         "behavioral_profiles",
-        # 行为审计 + 历史 + 长期记忆
+        # 行为审� + 历史 + 长期记忆
         "behavior_audit_logs",
         "behavior_history",
         "behavior_traces",
-        # 微行动跟踪
+        # �行动跟踪
         "micro_action_tasks",
         "micro_action_logs",
-        # 设备预警
+        # 设���
         "device_alerts",
-        # 提醒与教练消息
+        # 提醒与教练消�
         "reminders",
         "coach_messages",
-        # 评估任务与审核
+        # 评估任务与�核
         "assessment_assignments",
         "coach_review_items",
         # 挑战/打卡活动
@@ -4508,25 +4518,25 @@ def get_table_names():
         "challenge_enrollments",
         "challenge_survey_responses",
         "challenge_push_logs",
-        # 教练推送审批队列
+        # 教练推��批队列
         "coach_push_queue",
         # 食物识别
         "food_analyses",
-        # 知识库 RAG
+        # 知识� RAG
         "knowledge_documents",
         "knowledge_chunks",
         "knowledge_citations",
-        # 专家白标租户
+        # 专�白标�户
         "expert_tenants",
         "tenant_clients",
         "tenant_agent_mappings",
         "tenant_audit_logs",
-        # 内容交互
+        # 内�交�
         "content_items",
         "content_likes",
         "content_bookmarks",
         "content_comments",
-        # 学习持久化
+        # 学习持久�
         "learning_progress",
         "learning_time_logs",
         "learning_points_logs",
@@ -4539,7 +4549,7 @@ def get_table_names():
         "user_activity_logs",
         # 批量灌注
         "batch_ingestion_jobs",
-        # 问卷引擎
+        # �卷引�
         "surveys",
         "survey_questions",
         "survey_responses",
@@ -4550,7 +4560,7 @@ def get_table_names():
         "user_credits",
         "companion_relations",
         "promotion_applications",
-        # V003 激励体系
+        # V003 �励体�
         "badges",
         "user_badges",
         "user_milestones",
@@ -4558,7 +4568,7 @@ def get_table_names():
         "flip_card_records",
         "nudge_records",
         "user_memorials",
-        # 积分系统
+        # �分系�
         "point_transactions",
         "user_points",
         # m019 诊断管线补充
@@ -4581,7 +4591,7 @@ def get_table_names():
         "self_efficacy_assessments",
         "obstacle_assessments",
         "support_assessments",
-        # V005 安全+音频
+        # V005 安全+音�
         "safety_logs",
         "content_audio",
         # V006 Agent 模板
@@ -4613,12 +4623,12 @@ def get_table_names():
         "anti_cheat_events",
         "governance_violations",
         "dual_track_status",
-        # Migration 035 — Contract Registry Sync
+        # Migration 035 � Contract Registry Sync
         "ies_scores",
         "ies_decision_log",
         "user_contracts",
         "ethical_declarations",
-        # Migration 036 — 400分制考核 + 收益分配 + 沙箱测试
+        # Migration 036 � 400分制考核 + 收益分配 + 沙�测�
         "coach_exam_records",
         "revenue_shares",
         "sandbox_test_results",
@@ -4629,7 +4639,7 @@ def get_table_names():
 
 
 def get_model_by_name(name: str):
-    """根据名称获取模型类"""
+    """根据名称获取模型�"""
     models = {
         "User": User,
         "Assessment": Assessment,
@@ -4639,7 +4649,7 @@ def get_model_by_name(name: str):
         "HealthData": HealthData,
         "ChatSession": ChatSession,
         "ChatMessage": ChatMessage,
-        # 设备数据模型
+        # 设�数�模型
         "UserDevice": UserDevice,
         "GlucoseReading": GlucoseReading,
         "HeartRateReading": HeartRateReading,
@@ -4652,15 +4662,15 @@ def get_model_by_name(name: str):
         "BehaviorAuditLog": BehaviorAuditLog,
         "BehaviorHistory": BehaviorHistory,
         "BehaviorTrace": BehaviorTrace,
-        # 微行动跟踪
+        # �行动跟踪
         "MicroActionTask": MicroActionTask,
         "MicroActionLog": MicroActionLog,
-        # 设备预警
+        # 设���
         "DeviceAlert": DeviceAlert,
-        # 提醒与教练消息
+        # 提醒与教练消�
         "Reminder": Reminder,
         "CoachMessage": CoachMessage,
-        # 评估任务与审核
+        # 评估任务与�核
         "AssessmentAssignment": AssessmentAssignment,
         "CoachReviewItem": CoachReviewItem,
         # 挑战/打卡活动
@@ -4669,25 +4679,25 @@ def get_model_by_name(name: str):
         "ChallengeEnrollment": ChallengeEnrollment,
         "ChallengeSurveyResponse": ChallengeSurveyResponse,
         "ChallengePushLog": ChallengePushLog,
-        # 教练推送审批队列
+        # 教练推��批队列
         "CoachPushQueue": CoachPushQueue,
         # 食物识别
         "FoodAnalysis": FoodAnalysis,
-        # 知识库 RAG
+        # 知识� RAG
         "KnowledgeDocument": KnowledgeDocument,
         "KnowledgeChunk": KnowledgeChunk,
         "KnowledgeCitation": KnowledgeCitation,
-        # 专家白标租户
+        # 专�白标�户
         "ExpertTenant": ExpertTenant,
         "TenantClient": TenantClient,
         "TenantAgentMapping": TenantAgentMapping,
         "TenantAuditLog": TenantAuditLog,
-        # 内容交互
+        # 内�交�
         "ContentItem": ContentItem,
         "ContentLike": ContentLike,
         "ContentBookmark": ContentBookmark,
         "ContentComment": ContentComment,
-        # 学习持久化
+        # 学习持久�
         "LearningProgress": LearningProgress,
         "LearningTimeLog": LearningTimeLog,
         "LearningPointsLog": LearningPointsLog,
@@ -4700,7 +4710,7 @@ def get_model_by_name(name: str):
         "UserActivityLog": UserActivityLog,
         # 批量灌注
         "BatchIngestionJob": BatchIngestionJob,
-        # 问卷引擎
+        # �卷引�
         "Survey": Survey,
         "SurveyQuestion": SurveyQuestion,
         "SurveyResponse": SurveyResponse,
@@ -4720,7 +4730,7 @@ def get_model_by_name(name: str):
         "SelfEfficacyAssessment": SelfEfficacyAssessment,
         "ObstacleAssessment": ObstacleAssessment,
         "SupportAssessment": SupportAssessment,
-        # V003 激励体系
+        # V003 �励体�
         "Badge": Badge,
         "UserBadge": UserBadge,
         "UserMilestone": UserMilestone,
@@ -4741,18 +4751,18 @@ def get_model_by_name(name: str):
         "BatchAnswer": BatchAnswer,
         "LLMCallLog": LLMCallLog,
         "RAGQueryLog": RAGQueryLog,
-        # V005 安全+音频
+        # V005 安全+音�
         "SafetyLog": SafetyLog,
         "ContentAudio": ContentAudio,
         # V006 Agent 模板
         "AgentTemplate": AgentTemplate,
         # Phase 3 知识共享
         "KnowledgeContribution": KnowledgeContribution,
-        # Phase 4 反馈闭环
+        # Phase 4 反�闭�
         "AgentFeedback": AgentFeedback,
         "AgentMetricsDaily": AgentMetricsDaily,
         "AgentPromptVersion": AgentPromptVersion,
-        # Phase 5 Agent 生态
+        # Phase 5 Agent 生�
         "AgentMarketplaceListing": AgentMarketplaceListing,
         "AgentComposition": AgentComposition,
         "AgentGrowthPoints": AgentGrowthPoints,
@@ -4782,12 +4792,12 @@ def get_model_by_name(name: str):
         "AntiCheatEvent": AntiCheatEvent,
         "GovernanceViolation": GovernanceViolation,
         "DualTrackStatus": DualTrackStatus,
-        # Migration 035 — Contract Registry Sync
+        # Migration 035 � Contract Registry Sync
         "IESScore": IESScore,
         "IESDecisionLog": IESDecisionLog,
         "UserContract": UserContract,
         "EthicalDeclaration": EthicalDeclaration,
-        # Migration 036 — 400分制考核 + 收益分配 + 沙箱测试
+        # Migration 036 � 400分制考核 + 收益分配 + 沙�测�
         "CoachExamRecord": CoachExamRecord,
         "RevenueShare": RevenueShare,
         "SandboxTestResult": SandboxTestResult,

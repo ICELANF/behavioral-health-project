@@ -125,6 +125,7 @@ class RxPrescription(Base):
     记录三维计算 (TTM阶段 × BigFive人格 × CAPACITY能力) 的完整结果。
     """
     __tablename__ = "rx_prescriptions"
+    __table_args__ = {"schema": "coach_schema"}
 
     id = Column(UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()"))
 
