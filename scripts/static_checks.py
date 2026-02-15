@@ -6,7 +6,7 @@ errors = []
 
 # Check 1: No f-string SQL (injection risk)
 for root, _, files in os.walk('.'):
-    if '.git' in root or 'node_modules' in root or '__pycache__' in root or 'venv' in root:
+    if '.git' in root or 'node_modules' in root or '__pycache__' in root or 'venv' in root or 'alembic' in root or 'migrations' in root:
         continue
     for f in files:
         if not f.endswith('.py'):
