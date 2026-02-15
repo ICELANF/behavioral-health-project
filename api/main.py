@@ -1538,6 +1538,35 @@ try:
 except ImportError as e:
     print(f"[API] v1 通用路由注册失败: {e}")
 
+# ========== V4.1 Agent双层分离路由 ==========
+try:
+    from assistant_agents.router import router as assistant_router
+    app.include_router(assistant_router)
+    print("[API] V4.1 用户层Agent路由已注册 (/v1/assistant)")
+except ImportError as e:
+    print(f"[API] V4.1 用户层Agent路由注册失败: {e}")
+
+try:
+    from professional_agents.router import router as professional_router
+    app.include_router(professional_router)
+    print("[API] V4.1 教练层Agent路由已注册 (/v1/professional)")
+except ImportError as e:
+    print(f"[API] V4.1 教练层Agent路由注册失败: {e}")
+
+try:
+    from gateway.router import router as gateway_router
+    app.include_router(gateway_router)
+    print("[API] V4.1 跨层网关路由已注册 (/v1/gateway)")
+except ImportError as e:
+    print(f"[API] V4.1 跨层网关路由注册失败: {e}")
+
+try:
+    from gateway.bridge import bridge_router
+    app.include_router(bridge_router)
+    print("[API] V4.1 兼容桥接路由已注册 (旧路径→新路径)")
+except ImportError as e:
+    print(f"[API] V4.1 兼容桥接路由注册失败: {e}")
+
 
 if __name__ == "__main__":
     import uvicorn

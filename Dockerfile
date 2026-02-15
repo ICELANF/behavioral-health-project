@@ -55,6 +55,9 @@ COPY backend/ ./backend/
 COPY baps/ ./baps/
 COPY behavior_rx/ ./behavior_rx/
 COPY schemas/ ./schemas/
+COPY assistant_agents/ ./assistant_agents/
+COPY professional_agents/ ./professional_agents/
+COPY gateway/ ./gateway/
 COPY v3/ ./v3/
 COPY migrations/ ./migrations/
 COPY data/ ./data/
@@ -62,6 +65,8 @@ COPY config.yaml ./
 COPY alembic.ini ./
 COPY main.py ./
 COPY cli.py ./
+COPY migrate_map.py ./
+COPY scaffold.py ./
 
 # Create directories for runtime data
 RUN mkdir -p /app/logs /app/data && \
