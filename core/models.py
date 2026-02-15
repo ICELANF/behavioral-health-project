@@ -3481,6 +3481,7 @@ class AgentFeedback(Base):
     __table_args__ = (
         Index("idx_af_agent_time", "agent_id", "created_at"),
         Index("idx_af_user", "user_id", "created_at"),
+        {"schema": "coach_schema"},
     )
 
 

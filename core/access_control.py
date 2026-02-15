@@ -109,7 +109,7 @@ def _check_coach_student_relation(
 
         # 补充查: coach_messages (覆盖仅通过消息建立关系的情况)
         sql_msg = text("""
-            SELECT 1 FROM coach_messages
+            SELECT 1 FROM coach_schema.coach_messages
             WHERE coach_id = :coach_id
               AND student_id = :student_id
             LIMIT 1
