@@ -1,0 +1,335 @@
+# ═══════════════════════════════════════════════════════════════
+#  行健平台 V4.0 — CD 部署流水线
+# ═══════════════════════════════════════════════════════════════
+#  触发: main 推送 (CI 通过后自动), 或手动部署
+#  流程: CI 通过 → 部署 staging → 线上验收 → 部署 production
+# ═══════════════════════════════════════════════════════════════
+
+name: CD — Deploy & Verify
+
+on:
+  workflow_run:
+    workflows: ["CI — Security & Acceptance"]
+    types: [completed]
+    branches: [main]
+
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deploy target"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      skip_pentest:
+        description: "Skip pentest (emergency deploy)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-${{ github.event.inputs.target || 'staging' }}
+  cancel-in-progress: false  # 部署不取消
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  #  Gate: 确认 CI 通过
+  # ──────────────────────────────────────────────────────────
+  gate:
+    name: 🚦 Deployment Gate
+    runs-on: ubuntu-latest
+    outputs:
+      target: ${{ steps.decide.outputs.target }}
+
+    steps:
+      - name: Check CI status
+        if: github.event_name == 'workflow_run'
+        run: |
+          if [ "${{ github.event.workflow_run.conclusion }}" != "success" ]; then
+            echo "❌ CI failed, blocking deploy"
+            exit 1
+          fi
+          echo "✅ CI passed"
+
+      - name: Decide target
+        id: decide
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target=${{ github.event.inputs.target }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "target=staging" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ──────────────────────────────────────────────────────────
+  #  Stage 1: 部署到 Staging
+  # ──────────────────────────────────────────────────────────
+  deploy-staging:
+    name: 🚀 Deploy Staging
+    runs-on: ubuntu-latest
+    needs: gate
+    if: needs.gate.outputs.target == 'staging' || needs.gate.outputs.target == 'production'
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to staging server
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          STAGING_USER: ${{ secrets.STAGING_USER }}
+          STAGING_KEY: ${{ secrets.STAGING_SSH_KEY }}
+          STAGING_PATH: ${{ secrets.STAGING_PATH || '/opt/behaviros' }}
+        run: |
+          # 写入 SSH key
+          mkdir -p ~/.ssh
+          echo "$STAGING_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$STAGING_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          SSH_CMD="ssh -i ~/.ssh/deploy_key ${STAGING_USER}@${STAGING_HOST}"
+
+          # 同步代码
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            --exclude='.git' \
+            --exclude='__pycache__' \
+            --exclude='.env' \
+            --exclude='reports/' \
+            ./ ${STAGING_USER}@${STAGING_HOST}:${STAGING_PATH}/
+
+          # 远程执行部署
+          $SSH_CMD << 'DEPLOY'
+            set -e
+            cd $STAGING_PATH
+
+            # 激活虚拟环境
+            source venv/bin/activate
+
+            # 安装依赖
+            pip install -r requirements.txt -q
+
+            # 数据库迁移
+            alembic upgrade head
+
+            # 重启服务
+            sudo systemctl restart behaviros-api
+
+            # 等待健康检查
+            for i in $(seq 1 15); do
+              curl -sf http://localhost:8000/health && break
+              sleep 2
+            done
+            curl -sf http://localhost:8000/health || exit 1
+            echo "✅ Staging deploy complete"
+          DEPLOY
+
+  # ──────────────────────────────────────────────────────────
+  #  Stage 2: Staging 线上验收
+  # ──────────────────────────────────────────────────────────
+  verify-staging:
+    name: 🛡️ Verify Staging
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install test dependencies
+        run: pip install requests httpx
+
+      - name: Run acceptance on staging
+        env:
+          STAGING_URL: ${{ secrets.STAGING_URL || 'http://staging.xingjian.com' }}
+        run: |
+          python scripts/e2e_acceptance.py \
+            --base $STAGING_URL \
+            --project . \
+            --json reports/staging-acceptance.json
+
+          # 验证结果
+          python -c "
+          import json, sys
+          with open('reports/staging-acceptance.json') as f:
+              data = json.load(f)
+          failed = data.get('summary', {}).get('failed', 0)
+          risk = data.get('summary', {}).get('risk_level', 'UNKNOWN')
+          if failed > 0 or risk != 'LOW':
+              print(f'❌ Staging verification failed: {failed} failures, risk={risk}')
+              sys.exit(1)
+          print(f'✅ Staging verified: risk={risk}')
+          "
+
+      - name: Run pentest on staging
+        if: github.event.inputs.skip_pentest != 'true'
+        env:
+          STAGING_URL: ${{ secrets.STAGING_URL || 'http://staging.xingjian.com' }}
+        run: |
+          python scripts/pentest_bhp.py \
+            --base $STAGING_URL/api/v1 \
+            --json reports/staging-pentest.json
+
+          python -c "
+          import json, sys
+          with open('reports/staging-pentest.json') as f:
+              data = json.load(f)
+          critical = [f for f in data.get('findings', []) if f.get('severity') in ('CRITICAL', 'HIGH')]
+          if critical:
+              print(f'❌ Staging pentest: {len(critical)} CRITICAL/HIGH')
+              sys.exit(1)
+          print('✅ Staging pentest passed')
+          "
+
+      - name: Upload staging reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-reports
+          path: reports/staging-*.json
+          retention-days: 90
+
+  # ──────────────────────────────────────────────────────────
+  #  Stage 3: 部署到 Production (需手动审批)
+  # ──────────────────────────────────────────────────────────
+  deploy-production:
+    name: 🏭 Deploy Production
+    runs-on: ubuntu-latest
+    needs: verify-staging
+    if: needs.gate.outputs.target == 'production'
+    environment:
+      name: production
+      # GitHub Environment Protection Rules 会在此处要求审批
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production
+        env:
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          PROD_USER: ${{ secrets.PROD_USER }}
+          PROD_KEY: ${{ secrets.PROD_SSH_KEY }}
+          PROD_PATH: ${{ secrets.PROD_PATH || '/opt/behaviros' }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$PROD_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$PROD_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          SSH_CMD="ssh -i ~/.ssh/deploy_key ${PROD_USER}@${PROD_HOST}"
+
+          # 生产部署前备份
+          $SSH_CMD << 'BACKUP'
+            set -e
+            cd /opt/behaviros
+            TS=$(date +%Y%m%d_%H%M%S)
+            mkdir -p /opt/behaviros/backups
+            tar czf /opt/behaviros/backups/pre-deploy-${TS}.tar.gz \
+              --exclude='venv' --exclude='__pycache__' --exclude='.git' .
+            echo "✅ Backup: pre-deploy-${TS}.tar.gz"
+          BACKUP
+
+          # 同步代码
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            --exclude='.git' \
+            --exclude='__pycache__' \
+            --exclude='.env' \
+            --exclude='reports/' \
+            --exclude='backups/' \
+            ./ ${PROD_USER}@${PROD_HOST}:${PROD_PATH}/
+
+          # 远程部署
+          $SSH_CMD << 'DEPLOY'
+            set -e
+            cd /opt/behaviros
+            source venv/bin/activate
+            pip install -r requirements.txt -q
+            alembic upgrade head
+            sudo systemctl restart behaviros-api
+            for i in $(seq 1 20); do
+              curl -sf http://localhost:8000/health && break
+              sleep 3
+            done
+            curl -sf http://localhost:8000/health || {
+              echo "❌ Health check failed, rolling back"
+              sudo systemctl restart behaviros-api
+              exit 1
+            }
+            echo "✅ Production deploy complete"
+          DEPLOY
+
+  # ──────────────────────────────────────────────────────────
+  #  Stage 4: 生产验收
+  # ──────────────────────────────────────────────────────────
+  verify-production:
+    name: ✅ Verify Production
+    runs-on: ubuntu-latest
+    needs: deploy-production
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install test dependencies
+        run: pip install requests httpx
+
+      - name: Production acceptance
+        env:
+          PROD_URL: ${{ secrets.PROD_URL || 'https://app.xingjian.com' }}
+        run: |
+          python scripts/e2e_acceptance.py \
+            --base $PROD_URL \
+            --project . \
+            --json reports/prod-acceptance.json
+
+          python -c "
+          import json, sys
+          with open('reports/prod-acceptance.json') as f:
+              data = json.load(f)
+          summary = data.get('summary', {})
+          failed = summary.get('failed', 0)
+          risk = summary.get('risk_level', 'UNKNOWN')
+          passed = summary.get('passed', 0)
+          total = summary.get('total', 0)
+          if failed > 0 or risk != 'LOW':
+              print(f'🚨 PRODUCTION VERIFICATION FAILED: {failed} failures, risk={risk}')
+              print('→ Consider immediate rollback')
+              sys.exit(1)
+          print(f'✅ Production verified: {passed}/{total} PASS, risk={risk}')
+          "
+
+      - name: Upload production report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-reports
+          path: reports/prod-*.json
+          retention-days: 180
+
+      - name: Notify success
+        if: success()
+        run: |
+          echo "🎉 Production deployment verified successfully"
+          echo "  Commit: ${{ github.sha }}"
+          echo "  Time: $(date -u)"
+          # TODO: 接入钉钉/飞书/企业微信通知
+          # curl -X POST "${{ secrets.WEBHOOK_URL }}" \
+          #   -H "Content-Type: application/json" \
+          #   -d '{"msg_type":"text","content":{"text":"✅ 行健平台 V4.0 生产部署验证通过"}}'
+
+      - name: Notify failure
+        if: failure()
+        run: |
+          echo "🚨 Production verification FAILED"
+          # TODO: 接入告警通知

@@ -1,0 +1,150 @@
+# ═══════════════════════════════════════════════════════════════
+#  行健平台 V4.0 — 季度安全扫描
+# ═══════════════════════════════════════════════════════════════
+#  触发: 每季度第一个周一 09:00 CST, 或手动
+#  职责: 完整渗透测试 + 依赖审计 + 报告归档
+# ═══════════════════════════════════════════════════════════════
+
+name: Quarterly Security Scan
+
+on:
+  schedule:
+    # 每季度: 1月/4月/7月/10月 第一个周一 01:00 UTC (09:00 CST)
+    - cron: "0 1 1-7 1,4,7,10 1"
+
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "Target URL (default: production)"
+        type: string
+        default: ""
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  quarterly-scan:
+    name: 🔒 Quarterly Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install requests httpx bandit pip-audit safety
+
+      - name: Determine target
+        id: target
+        run: |
+          URL="${{ github.event.inputs.target_url }}"
+          if [ -z "$URL" ]; then
+            URL="${{ secrets.PROD_URL }}"
+          fi
+          if [ -z "$URL" ]; then
+            URL="https://app.xingjian.com"
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Target: $URL"
+
+      - name: Dependency audit
+        run: |
+          mkdir -p reports/quarterly
+          echo "=== pip-audit ===" > reports/quarterly/dependencies.txt
+          pip-audit >> reports/quarterly/dependencies.txt 2>&1 || true
+          echo "" >> reports/quarterly/dependencies.txt
+          echo "=== safety ===" >> reports/quarterly/dependencies.txt
+          safety check >> reports/quarterly/dependencies.txt 2>&1 || true
+
+      - name: Static analysis (Bandit)
+        run: |
+          bandit -r api/ core/ -f json -o reports/quarterly/bandit.json \
+            --severity-level low || true
+
+      - name: Full penetration test
+        run: |
+          python scripts/pentest_bhp.py \
+            --base ${{ steps.target.outputs.url }}/api/v1 \
+            --json reports/quarterly/pentest.json
+
+      - name: Full acceptance test
+        run: |
+          python scripts/e2e_acceptance.py \
+            --base ${{ steps.target.outputs.url }} \
+            --project . \
+            --json reports/quarterly/acceptance.json
+
+      - name: Generate summary
+        run: |
+          python -c "
+          import json, datetime
+
+          date = datetime.datetime.now().strftime('%Y-%m-%d')
+          report = {'date': date, 'target': '${{ steps.target.outputs.url }}'}
+
+          # Acceptance
+          try:
+              with open('reports/quarterly/acceptance.json') as f:
+                  acc = json.load(f)
+              report['acceptance'] = acc.get('summary', {})
+          except: pass
+
+          # Pentest
+          try:
+              with open('reports/quarterly/pentest.json') as f:
+                  pen = json.load(f)
+              findings = pen.get('findings', [])
+              report['pentest'] = {
+                  'total_findings': len(findings),
+                  'critical': len([f for f in findings if f.get('severity') == 'CRITICAL']),
+                  'high': len([f for f in findings if f.get('severity') == 'HIGH']),
+                  'medium': len([f for f in findings if f.get('severity') == 'MEDIUM']),
+                  'low': len([f for f in findings if f.get('severity') == 'LOW']),
+              }
+          except: pass
+
+          # Bandit
+          try:
+              with open('reports/quarterly/bandit.json') as f:
+                  ban = json.load(f)
+              report['bandit'] = {'total_issues': len(ban.get('results', []))}
+          except: pass
+
+          with open('reports/quarterly/summary.json', 'w') as f:
+              json.dump(report, f, indent=2, ensure_ascii=False)
+
+          print('═' * 55)
+          print(f'  季度安全扫描报告 — {date}')
+          print('═' * 55)
+          print(json.dumps(report, indent=2, ensure_ascii=False))
+          print('═' * 55)
+          "
+
+      - name: Upload quarterly reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: quarterly-scan-${{ github.run_number }}
+          path: reports/quarterly/
+          retention-days: 365
+
+      - name: Fail on critical findings
+        run: |
+          python -c "
+          import json, sys
+          try:
+              with open('reports/quarterly/pentest.json') as f:
+                  data = json.load(f)
+              critical = [f for f in data.get('findings', []) if f.get('severity') in ('CRITICAL', 'HIGH')]
+              if critical:
+                  print(f'🚨 {len(critical)} CRITICAL/HIGH findings — action required')
+                  sys.exit(1)
+          except FileNotFoundError:
+              print('⚠ Pentest report not found')
+          print('✅ No critical findings')
+          "

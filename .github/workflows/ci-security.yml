@@ -1,0 +1,357 @@
+# ═══════════════════════════════════════════════════════════════
+#  行健平台 V4.0 — CI 安全验收流水线
+# ═══════════════════════════════════════════════════════════════
+#  触发: PR → main/develop, 或 push 到 main/develop
+#  职责: 静态审计 + 单元测试 + 安全验收 (不部署)
+# ═══════════════════════════════════════════════════════════════
+
+name: CI — Security & Acceptance
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+  ENVIRONMENT: "test"
+  DATABASE_URL: "postgresql://bhp:bhp_test@localhost:5432/bhp_test"
+  REDIS_URL: "redis://localhost:6379/0"
+  CORS_ORIGINS: "http://localhost:3000"
+  JWT_SECRET: "ci-test-secret-do-not-use-in-prod"
+  JWT_ALGORITHM: "HS256"
+
+jobs:
+  # ──────────────────────────────────────────────────────────
+  #  Stage 1: 静态安全审计 (无需服务, 最快)
+  # ──────────────────────────────────────────────────────────
+  static-audit:
+    name: 🔍 Static Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install audit tools
+        run: |
+          pip install bandit safety pip-audit
+
+      - name: Bandit — Python security linter
+        run: |
+          bandit -r api/ core/ -f json -o reports/bandit.json \
+            --severity-level medium \
+            --confidence-level medium \
+            -x "**/test_*,**/tests/*" || true
+          # 解析结果
+          python -c "
+          import json, sys
+          with open('reports/bandit.json') as f:
+              data = json.load(f)
+          highs = [r for r in data.get('results', []) if r['issue_severity'] == 'HIGH']
+          if highs:
+              print(f'❌ {len(highs)} HIGH severity issues found')
+              for h in highs:
+                  print(f\"  {h['filename']}:{h['line_number']} — {h['issue_text']}\")
+              sys.exit(1)
+          print(f\"✅ Bandit: {len(data.get('results', []))} findings (0 HIGH)\")
+          "
+        continue-on-error: false
+
+      - name: pip-audit — Dependency vulnerabilities
+        run: |
+          pip install -r requirements.txt
+          pip-audit --format json --output reports/pip-audit.json || true
+          python -c "
+          import json, sys
+          with open('reports/pip-audit.json') as f:
+              data = json.load(f)
+          vulns = data.get('dependencies', [])
+          critical = [v for v in vulns if any(
+              a.get('severity', '') in ('CRITICAL', 'HIGH') for a in v.get('vulns', [])
+          )]
+          if critical:
+              print(f'❌ {len(critical)} critical/high dependency vulnerabilities')
+              sys.exit(1)
+          print('✅ pip-audit: No critical vulnerabilities')
+          "
+
+      - name: Custom static checks
+        run: |
+          python -c "
+          import sys, re, os
+
+          errors = []
+
+          # Check 1: No hardcoded secrets
+          secret_patterns = [
+              r'SECRET_KEY\s*=\s*[\"'\''][^\"'\'']{8,}',
+              r'password\s*=\s*[\"'\''][^\"'\'']+[\"'\'']',
+          ]
+          for root, _, files in os.walk('.'):
+              if '.git' in root or 'node_modules' in root or '__pycache__' in root:
+                  continue
+              for f in files:
+                  if not f.endswith(('.py', '.ts', '.js', '.env')):
+                      continue
+                  if f in ('ci-security.yml', 'cd-deploy.yml', 'seed_demo_accounts.py'):
+                      continue
+                  path = os.path.join(root, f)
+                  try:
+                      content = open(path, encoding='utf-8', errors='ignore').read()
+                      for pat in secret_patterns:
+                          matches = re.findall(pat, content)
+                          for m in matches:
+                              if 'environ' not in m and 'getenv' not in m and 'os.environ' not in m:
+                                  errors.append(f'  {path}: possible hardcoded secret')
+                  except:
+                      pass
+
+          # Check 2: No raw SQL with f-strings (injection risk)
+          for root, _, files in os.walk('.'):
+              if '.git' in root:
+                  continue
+              for f in files:
+                  if not f.endswith('.py'):
+                      continue
+                  path = os.path.join(root, f)
+                  try:
+                      for i, line in enumerate(open(path, encoding='utf-8', errors='ignore'), 1):
+                          if re.search(r'\.execute\(f[\"'\'']', line):
+                              errors.append(f'  {path}:{i}: f-string SQL (use parameterized queries)')
+                  except:
+                      pass
+
+          # Check 3: CORS wildcard
+          for f in ['api/main.py', 'main.py']:
+              if os.path.exists(f):
+                  content = open(f, encoding='utf-8', errors='ignore').read()
+                  if 'allow_origins=[\"*\"]' in content or \"allow_origins=['*']\" in content:
+                      errors.append(f'  {f}: CORS allow_origins=[\"*\"] detected')
+
+          if errors:
+              print(f'❌ Static check failures:')
+              for e in errors:
+                  print(e)
+              sys.exit(1)
+          print('✅ Custom static checks passed')
+          "
+
+      - name: Upload audit reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-audit-reports
+          path: reports/
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────
+  #  Stage 2: 单元测试 + 安全验收
+  # ──────────────────────────────────────────────────────────
+  acceptance:
+    name: 🛡️ Security Acceptance (E2E)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: static-audit
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: bhp
+          POSTGRES_PASSWORD: bhp_test
+          POSTGRES_DB: bhp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install requests httpx
+
+      - name: Database setup
+        run: |
+          alembic upgrade head
+
+      - name: Seed demo accounts
+        run: |
+          python scripts/seed_demo_accounts.py --db $DATABASE_URL
+
+      - name: Start application
+        run: |
+          ENVIRONMENT=test \
+          uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          # 等待启动
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/health && break
+            echo "  Waiting for app... ($i/30)"
+            sleep 2
+          done
+          curl -sf http://localhost:8000/health || { echo "❌ App failed to start"; exit 1; }
+          echo "✅ App started"
+
+      - name: Run E2E acceptance tests
+        run: |
+          python scripts/e2e_acceptance.py \
+            --base http://localhost:8000 \
+            --project . \
+            --json reports/acceptance.json
+
+      - name: Validate acceptance results
+        run: |
+          python -c "
+          import json, sys
+          with open('reports/acceptance.json') as f:
+              data = json.load(f)
+
+          summary = data.get('summary', {})
+          total = summary.get('total', 0)
+          passed = summary.get('passed', 0)
+          failed = summary.get('failed', 0)
+          risk = summary.get('risk_level', 'UNKNOWN')
+
+          print(f'  Total:  {total}')
+          print(f'  Passed: {passed}')
+          print(f'  Failed: {failed}')
+          print(f'  Risk:   {risk}')
+          print()
+
+          if failed > 0:
+              print(f'❌ {failed} tests FAILED')
+              for t in data.get('tests', []):
+                  if t.get('status') == 'FAIL':
+                      print(f\"  FAIL: {t.get('name')} — {t.get('detail', '')[:80]}\")
+              sys.exit(1)
+
+          if risk not in ('LOW',):
+              print(f'❌ Risk level is {risk}, expected LOW')
+              sys.exit(1)
+
+          print(f'✅ Acceptance PASS — {passed}/{total}, risk={risk}')
+          "
+
+      - name: Upload acceptance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acceptance-report
+          path: reports/acceptance.json
+          retention-days: 90
+
+  # ──────────────────────────────────────────────────────────
+  #  Stage 3: 渗透测试 (仅 main 分支, 或手动触发)
+  # ──────────────────────────────────────────────────────────
+  pentest:
+    name: 🔓 Penetration Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: acceptance
+    if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: bhp
+          POSTGRES_PASSWORD: bhp_test
+          POSTGRES_DB: bhp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install & start
+        run: |
+          pip install -r requirements.txt
+          pip install requests httpx
+          alembic upgrade head
+          python scripts/seed_demo_accounts.py --db $DATABASE_URL
+          ENVIRONMENT=test uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/health && break
+            sleep 2
+          done
+
+      - name: Run penetration test
+        run: |
+          python scripts/pentest_bhp.py \
+            --base http://localhost:8000/api/v1 \
+            --json reports/pentest.json
+
+      - name: Validate pentest results
+        run: |
+          python -c "
+          import json, sys
+          with open('reports/pentest.json') as f:
+              data = json.load(f)
+          findings = data.get('findings', [])
+          critical = [f for f in findings if f.get('severity') in ('CRITICAL', 'HIGH')]
+          if critical:
+              print(f'❌ {len(critical)} CRITICAL/HIGH findings:')
+              for f in critical:
+                  print(f\"  [{f['severity']}] {f['title']}\")
+              sys.exit(1)
+          print(f'✅ Pentest: {len(findings)} findings (0 CRITICAL/HIGH)')
+          "
+
+      - name: Upload pentest report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pentest-report
+          path: reports/pentest.json
+          retention-days: 90
