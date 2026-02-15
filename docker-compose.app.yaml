@@ -23,6 +23,7 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
+      - ENVIRONMENT=${ENVIRONMENT:-development}
       - OLLAMA_API_URL=http://host.docker.internal:11434
       - DATABASE_URL=postgresql://bhp_user:bhp_password@host.docker.internal:5432/bhp_db
       # V005 云 LLM 配置

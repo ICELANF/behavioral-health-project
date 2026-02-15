@@ -1,0 +1,12 @@
+apiVersion: v2
+name: bhp
+description: BehaviorOS Behavioral Health Platform
+type: application
+version: 0.7.0
+appVersion: "V007"
+maintainers:
+  - name: BHP Team
+keywords:
+  - behavioral-health
+  - multi-agent
+  - fastapi

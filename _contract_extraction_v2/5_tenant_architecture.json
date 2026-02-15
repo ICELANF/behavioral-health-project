@@ -1,0 +1,1574 @@
+{
+  "tenant_models": [
+    {
+      "schema_name": "TenantUpdateRequest",
+      "base_classes": [
+        "BaseModel"
+      ],
+      "file": "api/tenant_api.py",
+      "line": 28,
+      "docstring": "",
+      "fields": [
+        {
+          "name": "brand_name",
+          "type": "Optional[str]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "brand_tagline",
+          "type": "Optional[str]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "brand_avatar",
+          "type": "Optional[str]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "brand_logo_url",
+          "type": "Optional[str]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "brand_colors",
+          "type": "Optional[dict]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "brand_theme_id",
+          "type": "Optional[str]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "expert_title",
+          "type": "Optional[str]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "expert_self_intro",
+          "type": "Optional[str]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "expert_specialties",
+          "type": "Optional[list]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "expert_credentials",
+          "type": "Optional[list]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "enabled_agents",
+          "type": "Optional[list]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "agent_persona_overrides",
+          "type": "Optional[dict]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "service_packages",
+          "type": "Optional[list]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        },
+        {
+          "name": "welcome_message",
+          "type": "Optional[str]",
+          "has_default": true,
+          "default": null,
+          "required": false
+        }
+      ],
+      "config": {},
+      "field_count": 14
+    },
+    {
+      "model_name": "ExpertTenant",
+      "table_name": "expert_tenants",
+      "has_explicit_tablename": true,
+      "base_classes": [
+        "Base"
+      ],
+      "file": "core/models.py",
+      "line": 2361,
+      "docstring": "每个入驻专家 = 一个租户\n一个专家对应一套独立品牌、Agent配置、客户群",
+      "columns": [
+        {
+          "kind": "column",
+          "name": "id",
+          "type": "String(64)",
+          "nullable": true,
+          "primary_key": true,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "租户ID, 如 dr-chen-endo"
+        },
+        {
+          "kind": "column",
+          "name": "expert_user_id",
+          "type": "Integer",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": true,
+          "default": null,
+          "server_default": null,
+          "foreign_key": "users.id",
+          "comment": "专家在平台的用户ID"
+        },
+        {
+          "kind": "column",
+          "name": "brand_name",
+          "type": "String(128)",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "工作室名称"
+        },
+        {
+          "kind": "column",
+          "name": "brand_tagline",
+          "type": "String(256)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "品牌标语"
+        },
+        {
+          "kind": "column",
+          "name": "brand_avatar",
+          "type": "String(16)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "🏥",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "Emoji头像"
+        },
+        {
+          "kind": "column",
+          "name": "brand_logo_url",
+          "type": "String(512)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "Logo图片URL"
+        },
+        {
+          "kind": "column",
+          "name": "brand_colors",
+          "type": "JSON",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "dict",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "{\"primary\":\"#hex\",\"accent\":\"#hex\",\"bg\":\"#hex\"}"
+        },
+        {
+          "kind": "column",
+          "name": "brand_theme_id",
+          "type": "String(32)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "default",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "主题模板ID"
+        },
+        {
+          "kind": "column",
+          "name": "custom_domain",
+          "type": "String(256)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "自定义域名"
+        },
+        {
+          "kind": "column",
+          "name": "expert_title",
+          "type": "String(64)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "专家头衔"
+        },
+        {
+          "kind": "column",
+          "name": "expert_self_intro",
+          "type": "Text",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "专家自我介绍"
+        },
+        {
+          "kind": "column",
+          "name": "expert_specialties",
+          "type": "JSON",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "list",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "[\"内分泌\",\"代谢管理\"]"
+        },
+        {
+          "kind": "column",
+          "name": "expert_credentials",
+          "type": "JSON",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "list",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "[\"主任医师\",\"博士生导师\"]"
+        },
+        {
+          "kind": "column",
+          "name": "enabled_agents",
+          "type": "JSON",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "list",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "启用的Agent ID列表"
+        },
+        {
+          "kind": "column",
+          "name": "agent_persona_overrides",
+          "type": "JSON",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "dict",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "Agent话术覆盖"
+        },
+        {
+          "kind": "column",
+          "name": "routing_correlations",
+          "type": "JSON",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "dict",
+          "server_default": "{}",
+          "foreign_key": null,
+          "comment": "专家自定义关联网络 {\"sleep\":[\"glucose\",\"stress\"]}"
+        },
+        {
+          "kind": "column",
+          "name": "routing_conflicts",
+          "type": "JSON",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "dict",
+          "server_default": "{}",
+          "foreign_key": null,
+          "comment": "专家自定义冲突规则 {\"sleep|exercise\":\"sleep\"}"
+        },
+        {
+          "kind": "column",
+          "name": "default_fallback_agent",
+          "type": "String(32)",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "behavior_rx",
+          "server_default": "behavior_rx",
+          "foreign_key": null,
+          "comment": "默认回退Agent"
+        },
+        {
+          "kind": "column",
+          "name": "enabled_paths",
+          "type": "JSON",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "list",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "启用的学习路径ID"
+        },
+        {
+          "kind": "column",
+          "name": "service_packages",
+          "type": "JSON",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "list",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "服务包配置"
+        },
+        {
+          "kind": "column",
+          "name": "questionnaire_overrides",
+          "type": "JSON",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "dict",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "问卷增删题配置"
+        },
+        {
+          "kind": "column",
+          "name": "welcome_message",
+          "type": "Text",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "客户首次进入的欢迎语"
+        },
+        {
+          "kind": "column",
+          "name": "status",
+          "type": "SQLEnum",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": true,
+          "default": "TenantStatus.trial",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "tier",
+          "type": "SQLEnum",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "TenantTier.basic",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "max_clients",
+          "type": "Integer",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": 50,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "客户数上限"
+        },
+        {
+          "kind": "column",
+          "name": "revenue_share_expert",
+          "type": "Float",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": 0.8,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "专家分成比例"
+        },
+        {
+          "kind": "column",
+          "name": "trial_expires_at",
+          "type": "DateTime",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "试用到期时间"
+        },
+        {
+          "kind": "column",
+          "name": "application_status",
+          "type": "String(20)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": true,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "pending_review/approved/rejected/NULL(旧数据)"
+        },
+        {
+          "kind": "column",
+          "name": "application_data",
+          "type": "JSON",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "dict",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "申请表单原始数据"
+        },
+        {
+          "kind": "column",
+          "name": "applied_at",
+          "type": "DateTime",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "申请提交时间"
+        },
+        {
+          "kind": "column",
+          "name": "created_at",
+          "type": "DateTime",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": "now(...)",
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "updated_at",
+          "type": "DateTime",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": "now(...)",
+          "foreign_key": null,
+          "comment": null
+        }
+      ],
+      "relationships": [
+        {
+          "kind": "relationship",
+          "name": "clients",
+          "target": "TenantClient",
+          "back_populates": "tenant",
+          "backref": null,
+          "lazy": "dynamic",
+          "uselist": null,
+          "cascade": null,
+          "foreign_keys": null
+        },
+        {
+          "kind": "relationship",
+          "name": "agent_mappings",
+          "target": "TenantAgentMapping",
+          "back_populates": "tenant",
+          "backref": null,
+          "lazy": "selectin",
+          "uselist": null,
+          "cascade": null,
+          "foreign_keys": null
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "expert_user_id",
+          "references": "users.id"
+        }
+      ],
+      "indexes": [],
+      "constraints": [
+        {
+          "type": "Index",
+          "args": [
+            "idx_tenant_status",
+            "status"
+          ]
+        },
+        {
+          "type": "Index",
+          "args": [
+            "idx_tenant_expert_user",
+            "expert_user_id"
+          ]
+        }
+      ],
+      "column_count": 32
+    },
+    {
+      "model_name": "TenantClient",
+      "table_name": "tenant_clients",
+      "has_explicit_tablename": true,
+      "base_classes": [
+        "Base"
+      ],
+      "file": "core/models.py",
+      "line": 2443,
+      "docstring": "专家的客户 — 关联平台用户 + 租户归属",
+      "columns": [
+        {
+          "kind": "column",
+          "name": "id",
+          "type": "Integer",
+          "nullable": true,
+          "primary_key": true,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "tenant_id",
+          "type": "String(64)",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": true,
+          "default": null,
+          "server_default": null,
+          "foreign_key": "expert_tenants.id",
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "user_id",
+          "type": "Integer",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": true,
+          "default": null,
+          "server_default": null,
+          "foreign_key": "users.id",
+          "comment": "平台统一用户ID"
+        },
+        {
+          "kind": "column",
+          "name": "source",
+          "type": "String(32)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "expert_referred",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "来源"
+        },
+        {
+          "kind": "column",
+          "name": "service_package",
+          "type": "String(64)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "trial",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "购买的服务包ID"
+        },
+        {
+          "kind": "column",
+          "name": "status",
+          "type": "SQLEnum",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": true,
+          "default": "ClientStatus.active",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "enrolled_at",
+          "type": "DateTime",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": "now(...)",
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "graduated_at",
+          "type": "DateTime",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "total_sessions",
+          "type": "Integer",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": 0,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "累计会话次数"
+        },
+        {
+          "kind": "column",
+          "name": "last_active_at",
+          "type": "DateTime",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "notes",
+          "type": "Text",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "专家备注"
+        }
+      ],
+      "relationships": [
+        {
+          "kind": "relationship",
+          "name": "tenant",
+          "target": "ExpertTenant",
+          "back_populates": "clients",
+          "backref": null,
+          "lazy": null,
+          "uselist": null,
+          "cascade": null,
+          "foreign_keys": null
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "tenant_id",
+          "references": "expert_tenants.id"
+        },
+        {
+          "column": "user_id",
+          "references": "users.id"
+        }
+      ],
+      "indexes": [],
+      "constraints": [
+        {
+          "type": "Index",
+          "args": [
+            "idx_tc_tenant_status",
+            "tenant_id",
+            "status"
+          ]
+        }
+      ],
+      "column_count": 11
+    },
+    {
+      "model_name": "TenantAgentMapping",
+      "table_name": "tenant_agent_mappings",
+      "has_explicit_tablename": true,
+      "base_classes": [
+        "Base"
+      ],
+      "file": "core/models.py",
+      "line": 2472,
+      "docstring": "租户 x Agent 的详细配置",
+      "columns": [
+        {
+          "kind": "column",
+          "name": "id",
+          "type": "Integer",
+          "nullable": true,
+          "primary_key": true,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "tenant_id",
+          "type": "String(64)",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": true,
+          "default": null,
+          "server_default": null,
+          "foreign_key": "expert_tenants.id",
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "agent_id",
+          "type": "String(32)",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "Agent标识: sleep/glucose/stress/..."
+        },
+        {
+          "kind": "column",
+          "name": "display_name",
+          "type": "String(64)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "自定义显示名"
+        },
+        {
+          "kind": "column",
+          "name": "display_avatar",
+          "type": "String(16)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "自定义Emoji头像"
+        },
+        {
+          "kind": "column",
+          "name": "greeting",
+          "type": "Text",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "自定义开场白"
+        },
+        {
+          "kind": "column",
+          "name": "tone",
+          "type": "String(128)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "语气风格描述"
+        },
+        {
+          "kind": "column",
+          "name": "bio",
+          "type": "String(256)",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "Agent简介"
+        },
+        {
+          "kind": "column",
+          "name": "is_enabled",
+          "type": "Boolean",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": true,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "is_primary",
+          "type": "Boolean",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": false,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "是否为主力Agent"
+        },
+        {
+          "kind": "column",
+          "name": "sort_order",
+          "type": "Integer",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": 0,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "排序权重"
+        },
+        {
+          "kind": "column",
+          "name": "custom_keywords",
+          "type": "JSON",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "list",
+          "server_default": "[]",
+          "foreign_key": null,
+          "comment": "专家自定义路由关键词"
+        },
+        {
+          "kind": "column",
+          "name": "keyword_boost",
+          "type": "Float",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": 1.5,
+          "server_default": "1.5",
+          "foreign_key": null,
+          "comment": "专家关键词得分加权倍数"
+        },
+        {
+          "kind": "column",
+          "name": "created_at",
+          "type": "DateTime",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": "now(...)",
+          "foreign_key": null,
+          "comment": null
+        }
+      ],
+      "relationships": [
+        {
+          "kind": "relationship",
+          "name": "tenant",
+          "target": "ExpertTenant",
+          "back_populates": "agent_mappings",
+          "backref": null,
+          "lazy": null,
+          "uselist": null,
+          "cascade": null,
+          "foreign_keys": null
+        }
+      ],
+      "foreign_keys": [
+        {
+          "column": "tenant_id",
+          "references": "expert_tenants.id"
+        }
+      ],
+      "indexes": [],
+      "constraints": [
+        {
+          "type": "Index",
+          "args": [
+            "idx_tam_tenant_enabled",
+            "tenant_id",
+            "is_enabled"
+          ]
+        }
+      ],
+      "column_count": 14
+    },
+    {
+      "model_name": "TenantAuditLog",
+      "table_name": "tenant_audit_logs",
+      "has_explicit_tablename": true,
+      "base_classes": [
+        "Base"
+      ],
+      "file": "core/models.py",
+      "line": 2508,
+      "docstring": "租户操作审计日志",
+      "columns": [
+        {
+          "kind": "column",
+          "name": "id",
+          "type": "Integer",
+          "nullable": true,
+          "primary_key": true,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "tenant_id",
+          "type": "String(64)",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": true,
+          "default": null,
+          "server_default": null,
+          "foreign_key": "expert_tenants.id",
+          "comment": null
+        },
+        {
+          "kind": "column",
+          "name": "actor_id",
+          "type": "Integer",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "操作者用户ID"
+        },
+        {
+          "kind": "column",
+          "name": "action",
+          "type": "String(64)",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "操作类型"
+        },
+        {
+          "kind": "column",
+          "name": "detail",
+          "type": "JSON",
+          "nullable": true,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": "dict",
+          "server_default": null,
+          "foreign_key": null,
+          "comment": "操作详情"
+        },
+        {
+          "kind": "column",
+          "name": "created_at",
+          "type": "DateTime",
+          "nullable": false,
+          "primary_key": false,
+          "unique": false,
+          "index": false,
+          "default": null,
+          "server_default": "now(...)",
+          "foreign_key": null,
+          "comment": null
+        }
+      ],
+      "relationships": [],
+      "foreign_keys": [
+        {
+          "column": "tenant_id",
+          "references": "expert_tenants.id"
+        }
+      ],
+      "indexes": [],
+      "constraints": [
+        {
+          "type": "Index",
+          "args": [
+            "idx_audit_tenant_time",
+            "tenant_id",
+            "created_at"
+          ]
+        }
+      ],
+      "column_count": 6
+    }
+  ],
+  "isolation_patterns": [
+    {
+      "file": "api/coach_api.py",
+      "pattern_type": "coach_id_filter",
+      "count": 1
+    },
+    {
+      "file": "api/coach_api.py",
+      "pattern_type": "user_id_filter",
+      "count": 3
+    },
+    {
+      "file": "api/coach_message_api.py",
+      "pattern_type": "coach_id_filter",
+      "count": 1
+    },
+    {
+      "file": "api/content_api.py",
+      "pattern_type": "user_id_filter",
+      "count": 1
+    },
+    {
+      "file": "api/context_builder.py",
+      "pattern_type": "user_id_filter",
+      "count": 3
+    },
+    {
+      "file": "api/device_rest_api.py",
+      "pattern_type": "user_id_filter",
+      "count": 3
+    },
+    {
+      "file": "api/food_recognition_api.py",
+      "pattern_type": "user_id_filter",
+      "count": 1
+    },
+    {
+      "file": "api/learning_api.py",
+      "pattern_type": "user_id_filter",
+      "count": 2
+    },
+    {
+      "file": "api/policy_api.py",
+      "pattern_type": "tenant_id_filter",
+      "count": 1
+    },
+    {
+      "file": "api/reminder_api.py",
+      "pattern_type": "user_id_filter",
+      "count": 3
+    },
+    {
+      "file": "api/tenant_api.py",
+      "pattern_type": "tenant_id_filter",
+      "count": 1
+    },
+    {
+      "file": "api/user_stats_api.py",
+      "pattern_type": "user_id_filter",
+      "count": 2
+    },
+    {
+      "file": "behavior_rx/rx_routes.py",
+      "pattern_type": "user_id_filter",
+      "count": 2
+    },
+    {
+      "file": "core/coach_push_queue_service.py",
+      "pattern_type": "coach_id_filter",
+      "count": 2
+    },
+    {
+      "file": "core/cost_controller.py",
+      "pattern_type": "user_id_filter",
+      "count": 3
+    },
+    {
+      "file": "core/decision_trace.py",
+      "pattern_type": "tenant_id_filter",
+      "count": 1
+    },
+    {
+      "file": "core/effectiveness_metrics.py",
+      "pattern_type": "tenant_id_filter",
+      "count": 2
+    },
+    {
+      "file": "core/effectiveness_metrics.py",
+      "pattern_type": "user_id_filter",
+      "count": 1
+    },
+    {
+      "file": "core/feedback_service.py",
+      "pattern_type": "tenant_id_filter",
+      "count": 1
+    },
+    {
+      "file": "core/micro_action_service.py",
+      "pattern_type": "user_id_filter",
+      "count": 2
+    },
+    {
+      "file": "core/push_recommendation_service.py",
+      "pattern_type": "coach_id_filter",
+      "count": 1
+    },
+    {
+      "file": "core/knowledge/document_service.py",
+      "pattern_type": "tenant_id_filter",
+      "count": 2
+    },
+    {
+      "file": "core/knowledge/sharing_service.py",
+      "pattern_type": "tenant_id_filter",
+      "count": 1
+    },
+    {
+      "file": "scripts/create_mock_cases.py",
+      "pattern_type": "user_id_filter",
+      "count": 1
+    },
+    {
+      "file": "tests/final_api_check.py",
+      "pattern_type": "user_id_filter",
+      "count": 1
+    }
+  ],
+  "auth_chain": [
+    {
+      "function": "get_current_user",
+      "file": "api/auth.py",
+      "body_preview": ""
+    },
+    {
+      "function": "require_role",
+      "file": "api/auth.py",
+      "body_preview": "async def _check(user: User = Depends(get_current_user)) -> User:\n        user_role = (user.role.value if hasattr(user.role, \"value\") else str(user.role)).lower()\n        if user_role not in {r.lower() for r in roles}:\n            raise HTTPException(\n                status_code=status.HTTP_403"
+    },
+    {
+      "function": "get_current_user",
+      "file": "api/auth_api.py",
+      "body_preview": ""
+    },
+    {
+      "function": "get_current_user_info",
+      "file": "api/auth_api.py",
+      "body_preview": ""
+    },
+    {
+      "function": "get_current_user",
+      "file": "api/dependencies.py",
+      "body_preview": ""
+    },
+    {
+      "function": "require_admin",
+      "file": "api/dependencies.py",
+      "body_preview": ""
+    },
+    {
+      "function": "require_coach_or_admin",
+      "file": "api/dependencies.py",
+      "body_preview": ""
+    },
+    {
+      "function": "get_current_user_id",
+      "file": "api/device_data.py",
+      "body_preview": ""
+    },
+    {
+      "function": "get_current_glucose",
+      "file": "api/device_data.py",
+      "body_preview": ""
+    },
+    {
+      "function": "get_current_user",
+      "file": "v3/auth.py",
+      "body_preview": ""
+    },
+    {
+      "function": "require_role",
+      "file": "v3/auth.py",
+      "body_preview": "\"\"\"\n    角色权限装饰器工厂 — 兼容 V1 + V3 角色体系\n\n    用法:\n        @router.get(\"/admin/stats\")\n        def admin_stats(user: User = Depends(require_role(\"admin\", \"bhp_master\"))):\n            ...\n    \"\"\"\n    async def _check(user: User = Depends(get_current_user)) -> User:\n        user_role_lower = (user.role"
+    }
+  ],
+  "rbac_definitions": [
+    {
+      "file": "api/learning_api.py",
+      "type": "role_constant",
+      "value": "str",
+      "context": "et_user_rewards(\n    user_id: int,\n    user_type: str = \"grower\",\n    db: Session = Depends(get_db),\n    current_u"
+    },
+    {
+      "file": "api/reminder_api.py",
+      "type": "role_constant",
+      "value": "source",
+      "context": "ron_expr,\n        next_fire_at=next_fire,\n        source=\"coach\",\n        created_by=current_user.id,\n    )\n    db"
+    },
+    {
+      "file": "api/segments_api.py",
+      "type": "class",
+      "value": "UserPermissionsResponse",
+      "context": ": bool\n    min_tier: str\n    min_tier_name: str\n\n\nclass UserPermissionsResponse(BaseModel):\n    \"\"\"用户权限响应\"\"\"\n    role: str\n    ro"
+    },
+    {
+      "file": "api/segments_api.py",
+      "type": "class",
+      "value": "RoleInfo",
+      "context": ": str\n    upgrade_needed: bool\n    message: str\n\n\nclass RoleInfo(BaseModel):\n    \"\"\"角色信息\"\"\"\n    id: str\n    name:"
+    },
+    {
+      "file": "api/user_api.py",
+      "type": "role_constant",
+      "value": "str",
+      "context": "str\n    full_name: Optional[str] = None\n    role: str = \"grower\"\n    email: Optional[str] = None\n    phone: Option"
+    },
+    {
+      "file": "core/coach_push_queue_service.py",
+      "type": "role_constant",
+      "value": "source",
+      "context": "\"push\",\n    )\n    db.add(msg)\n\n    # 创建 Reminder (source=\"coach\")\n    reminder = Reminder(\n        user_id=item.st"
+    },
+    {
+      "file": "core/coach_push_queue_service.py",
+      "type": "role_constant",
+      "value": "source",
+      "context": "itle,\n        content=item.content or \"\",\n        source=\"coach\",\n        created_by=item.coach_id,\n        is_act"
+    },
+    {
+      "file": "core/micro_action_service.py",
+      "type": "role_constant",
+      "value": "source",
+      "context": "n,\n            difficulty=difficulty,\n            source=\"coach\",\n            source_id=str(coach_id),"
+    },
+    {
+      "file": "core/models.py",
+      "type": "class",
+      "value": "UserRole",
+      "context": "义\n# ============================================\n\nclass UserRole(str, enum.Enum):\n    \"\"\"\n    用户角色 - v18统一角色层级"
+    },
+    {
+      "file": "core/models.py",
+      "type": "role_constant",
+      "value": "OBSERVER",
+      "context": ")\n    L99: 管理员 (admin)\n    \"\"\"\n    # 行为健康晋级序列\n    OBSERVER = \"observer\"        # L0 行为健康观察员\n    GROWER = \"grower\""
+    },
+    {
+      "file": "core/models.py",
+      "type": "role_constant",
+      "value": "GROWER",
+      "context": "OBSERVER = \"observer\"        # L0 行为健康观察员\n    GROWER = \"grower\"            # L1 成长者（原患者）\n    SHARER = \"sharer\""
+    },
+    {
+      "file": "core/models.py",
+      "type": "role_constant",
+      "value": "SHARER",
+      "context": "GROWER = \"grower\"            # L1 成长者（原患者）\n    SHARER = \"sharer\"            # L2 分享者\n    COACH = \"coach\""
+    },
+    {
+      "file": "core/models.py",
+      "type": "role_constant",
+      "value": "COACH",
+      "context": "患者）\n    SHARER = \"sharer\"            # L2 分享者\n    COACH = \"coach\"              # L3 健康教练\n    PROMOTER = \"promoter\""
+    },
+    {
+      "file": "core/models.py",
+      "type": "role_constant",
+      "value": "MASTER",
+      "context": "UPERVISOR = \"supervisor\"    # L4 督导专家（与促进师平级）\n    MASTER = \"master\"            # L5 行为健康促进大师\n\n    # 系统角色\n    ADMIN ="
+    },
+    {
+      "file": "core/models.py",
+      "type": "role_constant",
+      "value": "ADMIN",
+      "context": "\"master\"            # L5 行为健康促进大师\n\n    # 系统角色\n    ADMIN = \"admin\"              # L99 系统管理员\n    SYSTEM = \"system\""
+    },
+    {
+      "file": "core/models.py",
+      "type": "role_constant",
+      "value": "coach",
+      "context": "\"sms\"\n    email = \"email\"\n    embed = \"embed\"\n    coach = \"coach\"\n\n\nclass Survey(Base):\n    \"\"\"问卷主表\"\"\"\n    __tablen"
+    },
+    {
+      "file": "core/user_segments.py",
+      "type": "class",
+      "value": "PermissionConfig",
+      "context": "=====================================\n\n@dataclass\nclass PermissionConfig:\n    \"\"\"权限配置\"\"\"\n    features: List[FeatureModule]"
+    },
+    {
+      "file": "core/user_segments.py",
+      "type": "class",
+      "value": "UserPermissionContext",
+      "context": "=====================================\n\n@dataclass\nclass UserPermissionContext:\n    \"\"\"用户权限上下文\"\"\"\n    role: str\n    source: User"
+    },
+    {
+      "file": "core/brain/policy_gate.py",
+      "type": "role_constant",
+      "value": "escalation_target",
+      "context": "intervention_allowed=True,\n                escalation_target=\"coach\",\n                allowed_modes=[\"empathy\", \"chall"
+    },
+    {
+      "file": "disclosure/controller.py",
+      "type": "class",
+      "value": "ViewerRole",
+      "context": "小披露\n    NONE = \"none\"                    # 暂不披露\n\n\nclass ViewerRole(str, Enum):\n    \"\"\"查看者角色（四级权限）\"\"\"\n    PATIENT = \""
+    },
+    {
+      "file": "disclosure/controller.py",
+      "type": "role_constant",
+      "value": "COACH",
+      "context": "权限）\"\"\"\n    PATIENT = \"patient\"      # 患者端（C端）\n    COACH = \"coach\"          # 教练端（B端）\n    EXPERT = \"expert\"        #"
+    },
+    {
+      "file": "disclosure/controller.py",
+      "type": "role_constant",
+      "value": "EXPERT",
+      "context": "者端（C端）\n    COACH = \"coach\"          # 教练端（B端）\n    EXPERT = \"expert\"        # 专家/督导端\n    ADMIN = \"admin\"          # 管理"
+    },
+    {
+      "file": "disclosure/controller.py",
+      "type": "role_constant",
+      "value": "ADMIN",
+      "context": "教练端（B端）\n    EXPERT = \"expert\"        # 专家/督导端\n    ADMIN = \"admin\"          # 管理端\n\n\n# =============================="
+    },
+    {
+      "file": "disclosure/permissions.py",
+      "type": "class",
+      "value": "PermissionLevel",
+      "context": "etime import datetime\nfrom loguru import logger\n\n\nclass PermissionLevel(int, Enum):\n    \"\"\"权限等级\"\"\"\n    PATIENT = 1      #"
+    },
+    {
+      "file": "disclosure/permissions.py",
+      "type": "class",
+      "value": "UserPermission",
+      "context": ": {PermissionLevel.EXPERT},\n    },\n}\n\n\n@dataclass\nclass UserPermission:\n    \"\"\"用户权限\"\"\"\n    user_id: int\n    level: Permi"
+    },
+    {
+      "file": "disclosure/permissions.py",
+      "type": "class",
+      "value": "PermissionManager",
+      "context": "())\n        return self.level in allowed_levels\n\n\nclass PermissionManager:\n    \"\"\"\n    权限管理器\n    \n    管理四级权限的检查和授权\n    \"\"\""
+    },
+    {
+      "file": "disclosure/signature.py",
+      "type": "class",
+      "value": "SignatureRole",
+      "context": "loguru import logger\nimport hashlib\nimport json\n\n\nclass SignatureRole(str, Enum):\n    \"\"\"签名角色\"\"\"\n    PRIMARY = \"primary"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "type": "role_constant",
+      "value": "username",
+      "context": "isting\n\n            admin = User(\n                username=\"admin\",\n                email=\"admin@behavioral-health.c"
+    },
+    {
+      "file": "scripts/seed_experts.py",
+      "type": "role_constant",
+      "value": "username",
+      "context": ")\n                user = db.query(User).filter_by(username=\"admin\").first()\n            if not user:"
+    },
+    {
+      "file": "services/state_sync/manager.py",
+      "type": "class",
+      "value": "ViewRole",
+      "context": "er.warning(\"[StateSync] SQLAlchemy 未安装，使用内存存储\")\n\n\nclass ViewRole(str, Enum):\n    \"\"\"视图角色\"\"\"\n    PATIENT = \"patient"
+    },
+    {
+      "file": "services/state_sync/manager.py",
+      "type": "role_constant",
+      "value": "COACH",
+      "context": "\"\"\"视图角色\"\"\"\n    PATIENT = \"patient\"   # 患者端视图\n    COACH = \"coach\"       # 教练端视图\n    EXPERT = \"expert\"     # 专家端视图"
+    },
+    {
+      "file": "services/state_sync/manager.py",
+      "type": "role_constant",
+      "value": "EXPERT",
+      "context": "\"   # 患者端视图\n    COACH = \"coach\"       # 教练端视图\n    EXPERT = \"expert\"     # 专家端视图\n    ADMIN = \"admin\"       # 管理端视图\n\n\nc"
+    },
+    {
+      "file": "services/state_sync/manager.py",
+      "type": "role_constant",
+      "value": "ADMIN",
+      "context": "# 教练端视图\n    EXPERT = \"expert\"     # 专家端视图\n    ADMIN = \"admin\"       # 管理端视图\n\n\nclass EventType(str, Enum):\n    \""
+    },
+    {
+      "file": "tests/test_auth.py",
+      "type": "class",
+      "value": "TestCreateAccessToken",
+      "context": "-----------------------------------------------\n\nclass TestCreateAccessToken:\n    def test_create_access_token(self):"
+    },
+    {
+      "file": "tests/test_auth.py",
+      "type": "class",
+      "value": "TestCheckPermission",
+      "context": "-----------------------------------------------\n\nclass TestCheckPermission:\n    def test_check_permission(self):\n        \"\"\""
+    },
+    {
+      "file": "tests/test_state_sync.py",
+      "type": "class",
+      "value": "TestGetViewByRole",
+      "context": "-----------------------------------------------\n\nclass TestGetViewByRole:\n    def test_get_view_by_role(self, manager):"
+    },
+    {
+      "file": "tests/test_v3_auth.py",
+      "type": "role_constant",
+      "value": "role",
+      "context": "h token\n    rt = create_refresh_token(user_id=42, role=\"admin\")\n    payload_r = decode_token(rt)\n    check(\"refr"
+    },
+    {
+      "file": "tests/test_v3_auth.py",
+      "type": "role_constant",
+      "value": "role",
+      "context": "password_hash=hash_password(\"user\"), role=\"grower\")\n    admin_user = User(phone=\"13900000001\", usern"
+    },
+    {
+      "file": "tests/test_v3_auth.py",
+      "type": "role_constant",
+      "value": "role",
+      "context": "password_hash=hash_password(\"admin\"), role=\"admin\")\n    master_user = User(phone=\"13900000002\", user"
+    },
+    {
+      "file": "tests/test_v3_auth.py",
+      "type": "role_constant",
+      "value": "role",
+      "context": "password_hash=hash_password(\"master\"), role=\"master\")\n    db.add_all([regular_user, admin_user, master"
+    },
+    {
+      "file": "tests/test_v3_auth.py",
+      "type": "role_constant",
+      "value": "role",
+      "context": "en = create_access_token(user_id=regular_user.id, role=\"grower\")\n    user_headers = {\"Authorization\": f\"Bearer {u"
+    },
+    {
+      "file": "tests/test_v3_auth.py",
+      "type": "role_constant",
+      "value": "role",
+      "context": "oken = create_access_token(user_id=admin_user.id, role=\"admin\")\n    admin_headers = {\"Authorization\": f\"Bearer {"
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "type": "role_constant",
+      "value": "value",
+      "context": "rm\"):\n            username = st.text_input(\"用户名\", value=\"admin\")\n            password = st.text_input(\"密码\", type="
+    }
+  ],
+  "tenant_endpoints": [],
+  "summary": {
+    "total_tenant_models": 5,
+    "total_isolation_patterns": 25,
+    "total_auth_functions": 11,
+    "isolation_types": [
+      "tenant_id_filter",
+      "user_id_filter",
+      "coach_id_filter"
+    ]
+  }
+}

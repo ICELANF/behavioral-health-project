@@ -1,0 +1,6930 @@
+{
+  "migrations": [
+    {
+      "file": "alembic/versions/001_initial_schema.py",
+      "filename": "001_initial_schema.py",
+      "revision": null,
+      "down_revision": null,
+      "message": "Initial schema - create all tables from models.py\n\nRevision ID: 001\nRevises: None\nCreate Date: 2026-02-02",
+      "operations": {
+        "create_table": [],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": false
+    },
+    {
+      "file": "alembic/versions/002_full_schema.py",
+      "filename": "002_full_schema.py",
+      "revision": null,
+      "down_revision": null,
+      "message": "Full schema - explicit table definitions for all models\n\nRevision ID: 002\nRevises: 001\nCreate Date: 2026-02-06\n\nThis migration creates all tables explicitly instead of using create_all,\nmaking it prod",
+      "operations": {
+        "create_table": [
+          {
+            "table": "users",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "username",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "email",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "phone",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "password_hash",
+                "type": "sa.String(255)"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "is_verified",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "role",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "full_name",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "date_of_birth",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "gender",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "profile",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "adherence_rate",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "last_assessment_date",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "last_login_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "assessments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "assessment_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "text_content",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "glucose_values",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "hrv_values",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "activity_data",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "sleep_data",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "user_profile_snapshot",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "risk_level",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "risk_score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "primary_concern",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "urgency",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "severity_distribution",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "reasoning",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "primary_agent",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "secondary_agents",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "priority",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "response_time",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "routing_reasoning",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "recommended_actions",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "completed_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "context",
+                "type": "sa.JSON()"
+              }
+            ]
+          },
+          {
+            "table": "trigger_records",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "assessment_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tag_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "name",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "category",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "severity",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "confidence",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "metadata",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "interventions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "assessment_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_type",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "intervention_type",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "actions",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "user_feedback",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "feedback_score",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "completed",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "sent_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "completed_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "user_sessions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "session_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "token",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "refresh_token",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "ip_address",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "user_agent",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "device_info",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "expires_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "last_activity_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "health_data",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "data_type",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "value",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "values",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "unit",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "metadata",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "source",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "device_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "recorded_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "chat_sessions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "session_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "model",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "message_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "chat_messages",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "session_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "role",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "content",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "model",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "tokens_used",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "metadata",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "user_devices",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "device_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "device_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "manufacturer",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "model",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "firmware_version",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "serial_number",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "battery_level",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "auth_token",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "auth_expires_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "last_sync_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "sync_cursor",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "glucose_readings",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "device_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "value",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "unit",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "trend",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "trend_rate",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "source",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "meal_tag",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "notes",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "recorded_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "heart_rate_readings",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "device_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "hr",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "activity_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "recorded_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "hrv_readings",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "device_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "sdnn",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "rmssd",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "lf",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "hf",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "lf_hf_ratio",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "stress_score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "recovery_score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "recorded_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "sleep_records",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "device_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "sleep_date",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "sleep_start",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "sleep_end",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "total_duration_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "awake_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "light_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "deep_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "rem_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "sleep_score",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "efficiency",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "awakenings",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "onset_latency_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "avg_spo2",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "min_spo2",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "stages_data",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "activity_records",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "activity_date",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "steps",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "distance_m",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "floors_climbed",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "calories_total",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "calories_active",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "sedentary_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "light_active_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "moderate_active_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "vigorous_active_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "hourly_data",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "workout_records",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "device_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "workout_type",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "start_time",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "end_time",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "duration_min",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "distance_m",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "calories",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "avg_hr",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "max_hr",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "avg_pace",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "notes",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "gps_data",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "vital_signs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "device_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "data_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "weight_kg",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "bmi",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "body_fat_percent",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "muscle_mass_kg",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "water_percent",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "visceral_fat",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "systolic",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "diastolic",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "pulse",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "temperature",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "spo2",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "recorded_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "behavior_audit_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "from_stage",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "to_stage",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "narrative",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "source_ui",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "behavior_history",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "timestamp",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "from_stage",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "to_stage",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "is_transition",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "belief_score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "narrative_sent",
+                "type": "sa.Text()"
+              }
+            ]
+          },
+          {
+            "table": "behavior_traces",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "timestamp",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "from_stage",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "to_stage",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "is_transition",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "belief_score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "action_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "narrative_sent",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "source_ui",
+                "type": "sa.String(20)"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/003_add_behavioral_profiles.py",
+      "filename": "003_add_behavioral_profiles.py",
+      "revision": null,
+      "down_revision": null,
+      "message": "Add behavioral_profiles table\n\nRevision ID: 003\nRevises: 002\nCreate Date: 2026-02-06\n\nAdds the unified BehavioralProfile table that serves as the system's\nsingle source of truth for each user's behavi",
+      "operations": {
+        "create_table": [
+          {
+            "table": "behavioral_profiles",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "current_stage",
+                "type": "sa.String(5)"
+              },
+              {
+                "name": "stage_confidence",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "stage_stability",
+                "type": "sa.String(15)"
+              },
+              {
+                "name": "stage_updated_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "big5_scores",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "bpt6_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "bpt6_scores",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "capacity_total",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "capacity_weak",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "capacity_strong",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "spi_score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "spi_level",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "ttm7_stage_scores",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "ttm7_sub_scores",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "primary_domains",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "domain_details",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "interaction_mode",
+                "type": "sa.String(15)"
+              },
+              {
+                "name": "psychological_level",
+                "type": "sa.String(5)"
+              },
+              {
+                "name": "risk_flags",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "friendly_stage_name",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "friendly_stage_desc",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "last_assessment_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [
+          "behavioral_profiles"
+        ],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_bp_user",
+            "table": "behavioral_profiles"
+          },
+          {
+            "index": "idx_bp_stage",
+            "table": "behavioral_profiles"
+          },
+          {
+            "index": "idx_bp_updated",
+            "table": "behavioral_profiles"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/004_add_micro_actions_and_messaging.py",
+      "filename": "004_add_micro_actions_and_messaging.py",
+      "revision": null,
+      "down_revision": null,
+      "message": "Add micro_action_tasks, micro_action_logs, reminders, coach_messages tables\n\nRevision ID: 004\nRevises: 003\nCreate Date: 2026-02-06\n\nAdds tables for:\n- micro_action_tasks: 微行动任务\n- micro_action_logs: 微行",
+      "operations": {
+        "create_table": [
+          {
+            "table": "micro_action_tasks",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "domain",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "difficulty",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "source",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "source_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "scheduled_date",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "completed_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "micro_action_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "task_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "action",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "note",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "mood_score",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "reminders",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "content",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "cron_expr",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "next_fire_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "source",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "coach_messages",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "coach_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "student_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "content",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "message_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "is_read",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_micro_task_user_date",
+            "table": "micro_action_tasks"
+          },
+          {
+            "index": "idx_micro_task_status",
+            "table": "micro_action_tasks"
+          },
+          {
+            "index": "idx_micro_task_domain",
+            "table": "micro_action_tasks"
+          },
+          {
+            "index": "idx_micro_log_user_created",
+            "table": "micro_action_logs"
+          },
+          {
+            "index": "idx_micro_log_task",
+            "table": "micro_action_logs"
+          },
+          {
+            "index": "idx_reminder_user_active",
+            "table": "reminders"
+          },
+          {
+            "index": "idx_reminder_next_fire",
+            "table": "reminders"
+          },
+          {
+            "index": "idx_coach_msg_student_read",
+            "table": "coach_messages"
+          },
+          {
+            "index": "idx_coach_msg_coach_student",
+            "table": "coach_messages"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/005_add_assessment_assignments.py",
+      "filename": "005_add_assessment_assignments.py",
+      "revision": null,
+      "down_revision": null,
+      "message": "Add assessment_assignments and coach_review_items tables\n\nRevision ID: 005\nRevises: 004\nCreate Date: 2026-02-06\n\nAdds tables for:\n- assessment_assignments: 教练评估推送任务\n- coach_review_items: 教练审核条目",
+      "operations": {
+        "create_table": [
+          {
+            "table": "assessment_assignments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "coach_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "student_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "scales",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "note",
+                "type": "sa.Text"
+              },
+              {
+                "name": "pipeline_result",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "completed_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "reviewed_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "pushed_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "coach_review_items",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "assignment_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "category",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "domain",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "original_content",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "coach_content",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "coach_note",
+                "type": "sa.Text"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          }
+        ],
+        "drop_table": [
+          "coach_review_items",
+          "assessment_assignments"
+        ],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_aa_coach_student",
+            "table": "assessment_assignments"
+          },
+          {
+            "index": "idx_aa_student_status",
+            "table": "assessment_assignments"
+          },
+          {
+            "index": "idx_aa_status",
+            "table": "assessment_assignments"
+          },
+          {
+            "index": "idx_cri_assignment",
+            "table": "coach_review_items"
+          },
+          {
+            "index": "idx_cri_category",
+            "table": "coach_review_items"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/006_add_device_alerts.py",
+      "filename": "006_add_device_alerts.py",
+      "revision": null,
+      "down_revision": null,
+      "message": "Add device_alerts table\n\nRevision ID: 006\nRevises: 005\nCreate Date: 2026-02-07\n\nAdds table for:\n- device_alerts: 设备预警记录",
+      "operations": {
+        "create_table": [
+          {
+            "table": "device_alerts",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "coach_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "alert_type",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "severity",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "message",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "data_value",
+                "type": "sa.Float"
+              },
+              {
+                "name": "threshold_value",
+                "type": "sa.Float"
+              },
+              {
+                "name": "data_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "user_read",
+                "type": "sa.Boolean"
+              },
+              {
+                "name": "coach_read",
+                "type": "sa.Boolean"
+              },
+              {
+                "name": "resolved",
+                "type": "sa.Boolean"
+              },
+              {
+                "name": "dedup_key",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          }
+        ],
+        "drop_table": [
+          "device_alerts"
+        ],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_device_alert_user",
+            "table": "device_alerts"
+          },
+          {
+            "index": "idx_device_alert_coach",
+            "table": "device_alerts"
+          },
+          {
+            "index": "idx_device_alert_dedup",
+            "table": "device_alerts"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/007_add_challenge_tables.py",
+      "filename": "007_add_challenge_tables.py",
+      "revision": "007",
+      "down_revision": "006",
+      "message": "add challenge tables\n\nRevision ID: 007\nRevises: 006\nCreate Date: 2026-02-07",
+      "operations": {
+        "create_table": [
+          {
+            "table": "challenge_templates",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "category",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "cover_image",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "duration_days",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "config_key",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "daily_push_times",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "day_topics",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "reviewer1_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "reviewer1_status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "reviewer1_note",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "reviewer1_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "reviewer2_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "reviewer2_status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "reviewer2_note",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "reviewer2_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "published_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "enrollment_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "challenge_day_pushes",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "challenge_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "day_number",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "push_time",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "sort_order",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "is_core",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "tag",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "management_content",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "behavior_guidance",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "survey",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "challenge_enrollments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "challenge_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "coach_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "current_day",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "started_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "completed_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "completed_pushes",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "completed_surveys",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "streak_days",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "enrolled_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "challenge_survey_responses",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "enrollment_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "push_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "responses",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "submitted_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "challenge_push_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "enrollment_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "push_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "sent_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "read_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_challenge_status",
+            "table": "challenge_templates"
+          },
+          {
+            "index": "idx_challenge_category",
+            "table": "challenge_templates"
+          },
+          {
+            "index": "idx_challenge_created_by",
+            "table": "challenge_templates"
+          },
+          {
+            "index": "idx_cdp_challenge_day",
+            "table": "challenge_day_pushes"
+          },
+          {
+            "index": "idx_cdp_day_time",
+            "table": "challenge_day_pushes"
+          },
+          {
+            "index": "idx_ce_user_challenge",
+            "table": "challenge_enrollments"
+          },
+          {
+            "index": "idx_ce_status",
+            "table": "challenge_enrollments"
+          },
+          {
+            "index": "idx_ce_coach",
+            "table": "challenge_enrollments"
+          },
+          {
+            "index": "idx_csr_enrollment",
+            "table": "challenge_survey_responses"
+          },
+          {
+            "index": "idx_csr_push",
+            "table": "challenge_survey_responses"
+          },
+          {
+            "index": "idx_csr_user",
+            "table": "challenge_survey_responses"
+          },
+          {
+            "index": "idx_cpl_enrollment",
+            "table": "challenge_push_logs"
+          },
+          {
+            "index": "idx_cpl_push",
+            "table": "challenge_push_logs"
+          },
+          {
+            "index": "idx_cpl_status",
+            "table": "challenge_push_logs"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/008_add_coach_push_queue.py",
+      "filename": "008_add_coach_push_queue.py",
+      "revision": "008",
+      "down_revision": "007",
+      "message": "add coach push queue\n\nRevision ID: 008\nRevises: 007\nCreate Date: 2026-02-07",
+      "operations": {
+        "create_table": [
+          {
+            "table": "coach_push_queue",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "coach_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "student_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "source_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "source_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "content",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "content_extra",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "suggested_time",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "scheduled_time",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "priority",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "coach_note",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "reviewed_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "sent_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_cpq_coach_status",
+            "table": "coach_push_queue"
+          },
+          {
+            "index": "idx_cpq_student",
+            "table": "coach_push_queue"
+          },
+          {
+            "index": "idx_cpq_source",
+            "table": "coach_push_queue"
+          },
+          {
+            "index": "idx_cpq_scheduled",
+            "table": "coach_push_queue"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/009_add_food_analyses.py",
+      "filename": "009_add_food_analyses.py",
+      "revision": "009",
+      "down_revision": "008",
+      "message": "add food analyses table\n\nRevision ID: 009\nRevises: 008\nCreate Date: 2026-02-07",
+      "operations": {
+        "create_table": [
+          {
+            "table": "food_analyses",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "image_url",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "food_name",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "calories",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "protein",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "fat",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "carbs",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "fiber",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "advice",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "raw_response",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "meal_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_food_analyses_user_id",
+            "table": "food_analyses"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/010_add_tenant_tables.py",
+      "filename": "010_add_tenant_tables.py",
+      "revision": "010",
+      "down_revision": "009",
+      "message": "add expert tenant tables\n\nRevision ID: 010\nRevises: 009\nCreate Date: 2026-02-07",
+      "operations": {
+        "create_table": [
+          {
+            "table": "expert_tenants",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "expert_user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "brand_name",
+                "type": "sa.String(128)"
+              },
+              {
+                "name": "brand_tagline",
+                "type": "sa.String(256)"
+              },
+              {
+                "name": "brand_avatar",
+                "type": "sa.String(16)"
+              },
+              {
+                "name": "brand_logo_url",
+                "type": "sa.String(512)"
+              },
+              {
+                "name": "brand_colors",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "brand_theme_id",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "custom_domain",
+                "type": "sa.String(256)"
+              },
+              {
+                "name": "expert_title",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "expert_self_intro",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "expert_specialties",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "expert_credentials",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "enabled_agents",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "agent_persona_overrides",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "enabled_paths",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "service_packages",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "questionnaire_overrides",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "welcome_message",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "status",
+                "type": "sa.Enum('trial', 'active', 'suspended', 'archived', name='tenantstatus')"
+              },
+              {
+                "name": "tier",
+                "type": "sa.Enum('basic_partner', 'premium_partner', 'strategic_partner', name='tenanttier')"
+              },
+              {
+                "name": "max_clients",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "revenue_share_expert",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "trial_expires_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "tenant_clients",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "source",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "service_package",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "status",
+                "type": "sa.Enum('active', 'graduated', 'paused', 'exited', name='clientstatus')"
+              },
+              {
+                "name": "enrolled_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "graduated_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "total_sessions",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "last_active_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "notes",
+                "type": "sa.Text()"
+              }
+            ]
+          },
+          {
+            "table": "tenant_agent_mappings",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "display_name",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "display_avatar",
+                "type": "sa.String(16)"
+              },
+              {
+                "name": "greeting",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "tone",
+                "type": "sa.String(128)"
+              },
+              {
+                "name": "bio",
+                "type": "sa.String(256)"
+              },
+              {
+                "name": "is_enabled",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "is_primary",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "sort_order",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "tenant_audit_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "actor_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "action",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "detail",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_tenant_status",
+            "table": "expert_tenants"
+          },
+          {
+            "index": "idx_tenant_expert_user",
+            "table": "expert_tenants"
+          },
+          {
+            "index": "idx_tc_tenant_id",
+            "table": "tenant_clients"
+          },
+          {
+            "index": "idx_tc_user_id",
+            "table": "tenant_clients"
+          },
+          {
+            "index": "idx_tc_tenant_status",
+            "table": "tenant_clients"
+          },
+          {
+            "index": "idx_tam_tenant_id",
+            "table": "tenant_agent_mappings"
+          },
+          {
+            "index": "idx_tam_tenant_enabled",
+            "table": "tenant_agent_mappings"
+          },
+          {
+            "index": "idx_audit_tenant_time",
+            "table": "tenant_audit_logs"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/011_add_knowledge_tables.py",
+      "filename": "011_add_knowledge_tables.py",
+      "revision": "011",
+      "down_revision": "010",
+      "message": "add knowledge base RAG tables\n\nRevision ID: 011\nRevises: 010\nCreate Date: 2026-02-07",
+      "operations": {
+        "create_table": [
+          {
+            "table": "knowledge_documents",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(300)"
+              },
+              {
+                "name": "author",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "source",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "domain_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "scope",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "priority",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "file_path",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "chunk_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "knowledge_chunks",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "document_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "content",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "heading",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "page_number",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "chunk_index",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "doc_title",
+                "type": "sa.String(300)"
+              },
+              {
+                "name": "doc_author",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "doc_source",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "scope",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "domain_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "embedding",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "knowledge_citations",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "session_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "message_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "chunk_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "document_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "query_text",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "relevance_score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "rank_position",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "citation_text",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "citation_label",
+                "type": "sa.String(300)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_kdoc_scope_domain",
+            "table": "knowledge_documents"
+          },
+          {
+            "index": "idx_kdoc_scope_tenant",
+            "table": "knowledge_documents"
+          },
+          {
+            "index": "idx_kdoc_status",
+            "table": "knowledge_documents"
+          },
+          {
+            "index": "idx_kchunk_doc",
+            "table": "knowledge_chunks"
+          },
+          {
+            "index": "idx_kchunk_scope_domain",
+            "table": "knowledge_chunks"
+          },
+          {
+            "index": "idx_kchunk_scope_tenant",
+            "table": "knowledge_chunks"
+          },
+          {
+            "index": "idx_kcite_session",
+            "table": "knowledge_citations"
+          },
+          {
+            "index": "idx_kcite_doc",
+            "table": "knowledge_citations"
+          },
+          {
+            "index": "idx_kcite_chunk",
+            "table": "knowledge_citations"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/012_add_raw_content_to_knowledge_doc.py",
+      "filename": "012_add_raw_content_to_knowledge_doc.py",
+      "revision": "012",
+      "down_revision": "011",
+      "message": "add raw_content and updated_at to knowledge_documents\n\nRevision ID: 012\nRevises: 011\nCreate Date: 2026-02-07",
+      "operations": {
+        "create_table": [],
+        "drop_table": [],
+        "add_column": [
+          {
+            "table": "knowledge_documents",
+            "column": "raw_content",
+            "type": "sa.Text()"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "updated_at",
+            "type": "sa.DateTime()"
+          }
+        ],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/013_add_content_governance.py",
+      "filename": "013_add_content_governance.py",
+      "revision": "013",
+      "down_revision": "012",
+      "message": "add content governance columns to knowledge_documents\n\nRevision ID: 013\nRevises: 012\nCreate Date: 2026-02-08",
+      "operations": {
+        "create_table": [],
+        "drop_table": [],
+        "add_column": [
+          {
+            "table": "knowledge_documents",
+            "column": "evidence_tier",
+            "type": "sa.String(2)"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "content_type",
+            "type": "sa.String(30)"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "published_date",
+            "type": "sa.DateTime()"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "review_status",
+            "type": "sa.String(20)"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "reviewer_id",
+            "type": "sa.Integer()"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "reviewed_at",
+            "type": "sa.DateTime()"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "contributor_id",
+            "type": "sa.Integer()"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "expires_at",
+            "type": "sa.DateTime()"
+          }
+        ],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_kdoc_review_status",
+            "table": "knowledge_documents"
+          },
+          {
+            "index": "idx_kdoc_evidence_tier",
+            "table": "knowledge_documents"
+          },
+          {
+            "index": "idx_kdoc_contributor",
+            "table": "knowledge_documents"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/014_add_content_interaction_models.py",
+      "filename": "014_add_content_interaction_models.py",
+      "revision": "014",
+      "down_revision": "013",
+      "message": "add content interaction models (content_items, content_likes, content_bookmarks, content_comments)\n\nRevision ID: 014\nRevises: 013\nCreate Date: 2026-02-08",
+      "operations": {
+        "create_table": [
+          {
+            "table": "content_items",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "content_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(300)"
+              },
+              {
+                "name": "body",
+                "type": "sa.Text"
+              },
+              {
+                "name": "cover_url",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "media_url",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "domain",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "level",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "author_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "view_count",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "like_count",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "comment_count",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "collect_count",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "has_quiz",
+                "type": "sa.Boolean"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "content_likes",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "content_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "content_bookmarks",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "content_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "content_comments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "content_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "parent_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "content",
+                "type": "sa.Text"
+              },
+              {
+                "name": "rating",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "like_count",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_ci_type_status",
+            "table": "content_items"
+          },
+          {
+            "index": "idx_ci_domain_level",
+            "table": "content_items"
+          },
+          {
+            "index": "idx_ci_author",
+            "table": "content_items"
+          },
+          {
+            "index": "idx_ci_tenant",
+            "table": "content_items"
+          },
+          {
+            "index": "idx_cl_user_content",
+            "table": "content_likes"
+          },
+          {
+            "index": "idx_cb_user_content",
+            "table": "content_bookmarks"
+          },
+          {
+            "index": "idx_cc_content_status",
+            "table": "content_comments"
+          },
+          {
+            "index": "idx_cc_user",
+            "table": "content_comments"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/015_add_learning_persistence_models.py",
+      "filename": "015_add_learning_persistence_models.py",
+      "revision": "015",
+      "down_revision": "014",
+      "message": "add learning persistence models (learning_progress, learning_time_logs, learning_points_logs, user_learning_stats)\n\nRevision ID: 015\nRevises: 014\nCreate Date: 2026-02-08",
+      "operations": {
+        "create_table": [
+          {
+            "table": "learning_progress",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "content_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "progress_percent",
+                "type": "sa.Float"
+              },
+              {
+                "name": "last_position",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "time_spent_seconds",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "learning_time_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "content_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "domain",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "minutes",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "earned_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "learning_points_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "source_type",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "source_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "points",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "category",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "earned_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "user_learning_stats",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "total_minutes",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "total_points",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "growth_points",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "contribution_points",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "influence_points",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "current_streak",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "longest_streak",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "last_learn_date",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "quiz_total",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "quiz_passed",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_lp_user_content",
+            "table": "learning_progress"
+          },
+          {
+            "index": "idx_lp_status",
+            "table": "learning_progress"
+          },
+          {
+            "index": "idx_ltl_user_date",
+            "table": "learning_time_logs"
+          },
+          {
+            "index": "idx_lpl_user_cat",
+            "table": "learning_points_logs"
+          },
+          {
+            "index": "idx_lpl_user_date",
+            "table": "learning_points_logs"
+          },
+          {
+            "index": "idx_uls_points",
+            "table": "user_learning_stats"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/016_add_exam_activity_ingestion_models.py",
+      "filename": "016_add_exam_activity_ingestion_models.py",
+      "revision": "016",
+      "down_revision": "015",
+      "message": "add exam, activity log, batch ingestion models\n\nRevision ID: 016\nRevises: 015\nCreate Date: 2026-02-08",
+      "operations": {
+        "create_table": [
+          {
+            "table": "exam_definitions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "exam_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "exam_name",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text"
+              },
+              {
+                "name": "level",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "exam_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "passing_score",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "duration_minutes",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "max_attempts",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "question_ids",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "question_bank",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "question_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "content",
+                "type": "sa.Text"
+              },
+              {
+                "name": "question_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "options",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "answer",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "explanation",
+                "type": "sa.Text"
+              },
+              {
+                "name": "domain",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "difficulty",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "tags",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "exam_results",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "exam_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "attempt_number",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "score",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "answers",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "duration_seconds",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "user_activity_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "activity_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "detail",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "batch_ingestion_jobs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "filename",
+                "type": "sa.String(300)"
+              },
+              {
+                "name": "file_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "total_files",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "processed_files",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "total_chunks",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "error_message",
+                "type": "sa.Text"
+              },
+              {
+                "name": "result_doc_ids",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_exam_status",
+            "table": "exam_definitions"
+          },
+          {
+            "index": "idx_exam_level",
+            "table": "exam_definitions"
+          },
+          {
+            "index": "idx_qb_type",
+            "table": "question_bank"
+          },
+          {
+            "index": "idx_qb_domain",
+            "table": "question_bank"
+          },
+          {
+            "index": "idx_er_user_exam",
+            "table": "exam_results"
+          },
+          {
+            "index": "idx_er_status",
+            "table": "exam_results"
+          },
+          {
+            "index": "idx_ual_user_type",
+            "table": "user_activity_logs"
+          },
+          {
+            "index": "idx_ual_user_date",
+            "table": "user_activity_logs"
+          },
+          {
+            "index": "idx_bij_status",
+            "table": "batch_ingestion_jobs"
+          },
+          {
+            "index": "idx_bij_user",
+            "table": "batch_ingestion_jobs"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/017_add_knowledge_domains_and_file_columns.py",
+      "filename": "017_add_knowledge_domains_and_file_columns.py",
+      "revision": "017",
+      "down_revision": "016",
+      "message": "add knowledge_domains table and file_type/file_hash columns\n\nRevision ID: 017\nRevises: 016\nCreate Date: 2026-02-08",
+      "operations": {
+        "create_table": [
+          {
+            "table": "knowledge_domains",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "domain_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "label",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [
+          {
+            "table": "knowledge_documents",
+            "column": "file_type",
+            "type": "sa.String(10)"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "file_hash",
+            "type": "sa.String(128)"
+          }
+        ],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_kdoc_file_hash",
+            "table": "knowledge_documents"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/018_survey_engine.py",
+      "filename": "018_survey_engine.py",
+      "revision": "018",
+      "down_revision": "017",
+      "message": "018: 通用问卷引擎 5张表\n\n- surveys (问卷主表)\n- survey_questions (题目表)\n- survey_responses (回收表)\n- survey_response_answers (逐题答案)\n- survey_distributions (分发渠道)\n\nRevision ID: 018\nRevises: 017\nCreate Date: 2026-02-0",
+      "operations": {
+        "create_table": [
+          {
+            "table": "surveys",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "survey_type",
+                "type": "sa.Enum('general', 'health', 'satisfaction', 'screening', 'feedback', 'registration', name='surveytype')"
+              },
+              {
+                "name": "status",
+                "type": "sa.Enum('draft', 'published', 'closed', 'archived', name='surveystatus')"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "settings",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "baps_mapping",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "response_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "avg_duration",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "short_code",
+                "type": "sa.String(8)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "published_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "closed_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "survey_questions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "survey_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "question_type",
+                "type": "sa.Enum(\n            'single_choice', 'multiple_choice', 'text_short', 'text_long',\n            'rating', 'nps', 'slider', 'matrix_single', 'matrix_multiple',\n            'date', 'file_upload', 'section_break', 'description',\n            name='questiontype')"
+              },
+              {
+                "name": "sort_order",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "title",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "is_required",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "config",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "skip_logic",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "survey_responses",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "survey_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "respondent_ip",
+                "type": "sa.String(45)"
+              },
+              {
+                "name": "respondent_ua",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "device_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "started_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "completed_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "duration_sec",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "is_complete",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "current_page",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "baps_synced",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "baps_synced_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "survey_response_answers",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "response_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "question_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "answer_value",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "survey_distributions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "survey_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "channel",
+                "type": "sa.Enum('link', 'qrcode', 'wechat', 'sms', 'email', 'embed', 'coach', name='distributionchannel')"
+              },
+              {
+                "name": "channel_config",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "tracking_code",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "click_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "submit_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.Integer()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_surveys_status",
+            "table": "surveys"
+          },
+          {
+            "index": "idx_surveys_created_by",
+            "table": "surveys"
+          },
+          {
+            "index": "idx_surveys_tenant",
+            "table": "surveys"
+          },
+          {
+            "index": "idx_sq_survey",
+            "table": "survey_questions"
+          },
+          {
+            "index": "idx_sr_survey",
+            "table": "survey_responses"
+          },
+          {
+            "index": "idx_sr_user",
+            "table": "survey_responses"
+          },
+          {
+            "index": "idx_sr_complete",
+            "table": "survey_responses"
+          },
+          {
+            "index": "idx_sra_response",
+            "table": "survey_response_answers"
+          },
+          {
+            "index": "idx_sra_question",
+            "table": "survey_response_answers"
+          },
+          {
+            "index": "idx_sra_unique",
+            "table": "survey_response_answers"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/019_v3_diagnostic_pipeline.py",
+      "filename": "019_v3_diagnostic_pipeline.py",
+      "revision": null,
+      "down_revision": null,
+      "message": null,
+      "operations": {
+        "create_table": [
+          {
+            "table": "change_causes",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "category",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "name_zh",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "name_en",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text"
+              },
+              {
+                "name": "assessment_question",
+                "type": "sa.Text"
+              },
+              {
+                "name": "weight",
+                "type": "sa.Float"
+              }
+            ]
+          },
+          {
+            "table": "user_change_cause_scores",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "assessment_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "cause_id",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "score",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "intervention_strategies",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "stage_code",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "readiness_level",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "stage_name",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "cause_code",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "cause_category",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "cause_name",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "strategy_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "coach_script",
+                "type": "sa.Text"
+              }
+            ]
+          },
+          {
+            "table": "health_competency_assessments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "answers",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "level_scores",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "current_level",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "recommended_content_stage",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "comb_assessments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "answers",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "dimension_scores",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "bottleneck",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "total_score",
+                "type": "sa.Float"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "self_efficacy_assessments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "answers",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "avg_score",
+                "type": "sa.Float"
+              },
+              {
+                "name": "level",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "obstacle_assessments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "answers",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "category_scores",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "top_obstacles",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "rx_adjustments",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "support_assessments",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "answers",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "layer_scores",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "total_score",
+                "type": "sa.Float"
+              },
+              {
+                "name": "support_level",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "weakest_layer",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "intervention_outcomes",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "outcome_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "period_start",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "period_end",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "completion_rate",
+                "type": "sa.Float"
+              },
+              {
+                "name": "streak_days",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "tasks_assigned",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "tasks_completed",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "tasks_skipped",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "spi_before",
+                "type": "sa.Float"
+              },
+              {
+                "name": "spi_after",
+                "type": "sa.Float"
+              },
+              {
+                "name": "spi_delta",
+                "type": "sa.Float"
+              },
+              {
+                "name": "stage_before",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "stage_after",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "readiness_before",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "readiness_after",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "cultivation_stage",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "user_mood",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_difficulty",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_notes",
+                "type": "sa.Text"
+              },
+              {
+                "name": "effectiveness_score",
+                "type": "sa.Float"
+              },
+              {
+                "name": "adjustment_action",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "adjustment_detail",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "stage_transition_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "transition_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "from_value",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "to_value",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "trigger",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "evidence",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "point_events",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "event_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "dimension",
+                "type": "sa.String(15)"
+              },
+              {
+                "name": "points",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "source_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "source_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "description",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "user_point_balances",
+            "columns": [
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "growth",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "contribution",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "influence",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "total",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "streak_days",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "longest_streak",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "last_checkin_date",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "tasks_completed_total",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "assessments_completed",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "incentive_rewards",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "reward_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "name",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text"
+              },
+              {
+                "name": "icon",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "unlock_dimension",
+                "type": "sa.String(15)"
+              },
+              {
+                "name": "unlock_threshold",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "unlock_growth_level",
+                "type": "sa.String(4)"
+              },
+              {
+                "name": "rx_effect",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean"
+              }
+            ]
+          },
+          {
+            "table": "user_rewards",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "reward_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "earned_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "assessment_sessions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(15)"
+              },
+              {
+                "name": "completed_batches",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "pending_batches",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "total_questions_answered",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "total_questions",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "partial_results",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "started_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "last_activity",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "completed_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "expires_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "batch_answers",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "session_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "batch_id",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "questionnaire",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "answers",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "scores",
+                "type": "sa.JSON"
+              },
+              {
+                "name": "duration_seconds",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "llm_call_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "session_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "intent",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "complexity",
+                "type": "sa.String(16)"
+              },
+              {
+                "name": "model_requested",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "model_actual",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "provider",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "fell_back",
+                "type": "sa.Boolean"
+              },
+              {
+                "name": "input_tokens",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "output_tokens",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "cost_yuan",
+                "type": "sa.Float"
+              },
+              {
+                "name": "latency_ms",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "finish_reason",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "user_message_preview",
+                "type": "sa.Text"
+              },
+              {
+                "name": "assistant_message_preview",
+                "type": "sa.Text"
+              },
+              {
+                "name": "error_message",
+                "type": "sa.Text"
+              }
+            ]
+          },
+          {
+            "table": "rag_query_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "query_text",
+                "type": "sa.Text"
+              },
+              {
+                "name": "query_type",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "doc_type_filter",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "top_k",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "results_count",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "top_score",
+                "type": "sa.Float"
+              },
+              {
+                "name": "avg_score",
+                "type": "sa.Float"
+              },
+              {
+                "name": "sources_json",
+                "type": "sa.Text"
+              },
+              {
+                "name": "total_latency_ms",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "llm_call_log_id",
+                "type": "sa.Integer"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [
+          {
+            "table": "users",
+            "column": "health_competency_level",
+            "type": "sa.String(4)"
+          },
+          {
+            "table": "users",
+            "column": "current_stage",
+            "type": "sa.String(4)"
+          },
+          {
+            "table": "users",
+            "column": "growth_level",
+            "type": "sa.String(4)"
+          },
+          {
+            "table": "users",
+            "column": "nickname",
+            "type": "sa.String(64)"
+          },
+          {
+            "table": "users",
+            "column": "avatar_url",
+            "type": "sa.String(256)"
+          }
+        ],
+        "drop_column": [
+          {
+            "table": "users",
+            "column": "avatar_url"
+          },
+          {
+            "table": "users",
+            "column": "nickname"
+          },
+          {
+            "table": "users",
+            "column": "growth_level"
+          },
+          {
+            "table": "users",
+            "column": "current_stage"
+          },
+          {
+            "table": "users",
+            "column": "health_competency_level"
+          }
+        ],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "ix_user_cause_ua",
+            "table": "user_change_cause_scores"
+          },
+          {
+            "index": "ix_strat_rc",
+            "table": "intervention_strategies"
+          },
+          {
+            "index": "ix_outcome_user_type",
+            "table": "intervention_outcomes"
+          },
+          {
+            "index": "ix_outcome_user_period",
+            "table": "intervention_outcomes"
+          },
+          {
+            "index": "ix_stage_trans_user",
+            "table": "stage_transition_logs"
+          },
+          {
+            "index": "ix_point_user_dim",
+            "table": "point_events"
+          },
+          {
+            "index": "ix_point_user_date",
+            "table": "point_events"
+          },
+          {
+            "index": "ix_assess_session_user",
+            "table": "assessment_sessions"
+          },
+          {
+            "index": "ix_batch_session",
+            "table": "batch_answers"
+          },
+          {
+            "index": "ix_llm_logs_user_date",
+            "table": "llm_call_logs"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/020_fix_orm_db_drift.py",
+      "filename": "020_fix_orm_db_drift.py",
+      "revision": null,
+      "down_revision": null,
+      "message": null,
+      "operations": {
+        "create_table": [],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [
+          {
+            "table": "knowledge_documents",
+            "column": "is_active"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "priority"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "file_size"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "chunk_count"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "description"
+          },
+          {
+            "table": "knowledge_chunks",
+            "column": "metadata"
+          }
+        ],
+        "alter_column": [
+          {
+            "table": "knowledge_chunks",
+            "column": "chunk_index"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "file_hash"
+          },
+          {
+            "table": "course_modules",
+            "column": "tier"
+          },
+          {
+            "table": "knowledge_chunks",
+            "column": "scope"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "scope"
+          },
+          {
+            "table": "promotion_applications",
+            "column": "companion_snapshot"
+          },
+          {
+            "table": "promotion_applications",
+            "column": "credit_snapshot"
+          },
+          {
+            "table": "promotion_applications",
+            "column": "point_snapshot"
+          },
+          {
+            "table": "user_credits",
+            "column": "completed_at"
+          },
+          {
+            "table": "user_credits",
+            "column": "completed_at"
+          },
+          {
+            "table": "promotion_applications",
+            "column": "point_snapshot"
+          },
+          {
+            "table": "promotion_applications",
+            "column": "credit_snapshot"
+          },
+          {
+            "table": "promotion_applications",
+            "column": "companion_snapshot"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "scope"
+          },
+          {
+            "table": "knowledge_chunks",
+            "column": "scope"
+          },
+          {
+            "table": "course_modules",
+            "column": "tier"
+          },
+          {
+            "table": "knowledge_documents",
+            "column": "file_hash"
+          },
+          {
+            "table": "knowledge_chunks",
+            "column": "chunk_index"
+          }
+        ],
+        "create_index": [],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/021_safety_and_audio.py",
+      "filename": "021_safety_and_audio.py",
+      "revision": "021",
+      "down_revision": "020",
+      "message": "add safety_logs and content_audio tables\n\nRevision ID: 021\nRevises: 020\nCreate Date: 2026-02-11\n\nSummary:\n  V005 多模态互动 — 安全日志表 + 内容音频附件表",
+      "operations": {
+        "create_table": [
+          {
+            "table": "safety_logs",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "event_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "severity",
+                "type": "sa.String(15)"
+              },
+              {
+                "name": "input_text",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "output_text",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "filter_details",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "resolved",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "resolved_by",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "resolved_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "content_audio",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "content_item_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "audio_url",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "duration_seconds",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "voice_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "transcript",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [
+          "content_audio",
+          "safety_logs"
+        ],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/022_agent_templates.py",
+      "filename": "022_agent_templates.py",
+      "revision": "022",
+      "down_revision": "021",
+      "message": "add agent_templates table with 12 preset seeds\n\nRevision ID: 022\nRevises: 021\nCreate Date: 2026-02-12\n\nSummary:\n  V006 Agent 模板化 — agent_templates 表 + 12 个预置模板种子数据",
+      "operations": {
+        "create_table": [
+          {
+            "table": "agent_templates",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "display_name",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "agent_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "domain_enum",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "keywords",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "data_fields",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "correlations",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "priority",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "base_weight",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "enable_llm",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "system_prompt",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "conflict_wins_over",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "is_preset",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "is_enabled",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [
+          "agent_templates"
+        ],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_at_type_enabled",
+            "table": "agent_templates"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/023_routing_config.py",
+      "filename": "023_routing_config.py",
+      "revision": "023",
+      "down_revision": "022",
+      "message": "add routing config columns to tenant tables\n\nRevision ID: 023\nRevises: 022\nCreate Date: 2026-02-12\n\nSummary:\n  Phase 2 路由可配化 — ExpertTenant + TenantAgentMapping 新增路由配置列\n  - ExpertTenant: routing_corre",
+      "operations": {
+        "create_table": [],
+        "drop_table": [],
+        "add_column": [
+          {
+            "table": "expert_tenants",
+            "column": "routing_correlations",
+            "type": "sa.JSON()"
+          },
+          {
+            "table": "expert_tenants",
+            "column": "routing_conflicts",
+            "type": "sa.JSON()"
+          },
+          {
+            "table": "expert_tenants",
+            "column": "default_fallback_agent",
+            "type": "sa.String(32)"
+          },
+          {
+            "table": "tenant_agent_mappings",
+            "column": "custom_keywords",
+            "type": "sa.JSON()"
+          },
+          {
+            "table": "tenant_agent_mappings",
+            "column": "keyword_boost",
+            "type": "sa.Float()"
+          }
+        ],
+        "drop_column": [
+          {
+            "table": "tenant_agent_mappings",
+            "column": "keyword_boost"
+          },
+          {
+            "table": "tenant_agent_mappings",
+            "column": "custom_keywords"
+          },
+          {
+            "table": "expert_tenants",
+            "column": "default_fallback_agent"
+          },
+          {
+            "table": "expert_tenants",
+            "column": "routing_conflicts"
+          },
+          {
+            "table": "expert_tenants",
+            "column": "routing_correlations"
+          }
+        ],
+        "alter_column": [],
+        "create_index": [],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/024_knowledge_sharing.py",
+      "filename": "024_knowledge_sharing.py",
+      "revision": "024",
+      "down_revision": "023",
+      "message": "Phase 3: 知识共享层 — knowledge_contributions 表 + scope 归一化\n\nRevision ID: 024\nRevises: 023\nCreate Date: 2026-02-12",
+      "operations": {
+        "create_table": [
+          {
+            "table": "knowledge_contributions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "document_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "contributor_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "domain_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "reason",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "reviewer_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "review_comment",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "reviewed_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [
+          "knowledge_contributions"
+        ],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_kcontrib_status",
+            "table": "knowledge_contributions"
+          },
+          {
+            "index": "idx_kcontrib_tenant",
+            "table": "knowledge_contributions"
+          },
+          {
+            "index": "idx_kcontrib_domain",
+            "table": "knowledge_contributions"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/025_feedback_learning.py",
+      "filename": "025_feedback_learning.py",
+      "revision": "025",
+      "down_revision": "024",
+      "message": "Phase 4: 反馈学习闭环 — agent_feedbacks + agent_metrics_daily + agent_prompt_versions\n\nRevision ID: 025\nRevises: 024\nCreate Date: 2026-02-12",
+      "operations": {
+        "create_table": [
+          {
+            "table": "agent_feedbacks",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "session_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "feedback_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "rating",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "comment",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "modifications",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "user_message",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "agent_response",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "agents_used",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "confidence",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "processing_time_ms",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "agent_metrics_daily",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "metric_date",
+                "type": "sa.Date()"
+              },
+              {
+                "name": "total_calls",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "llm_calls",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "feedback_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "accept_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "reject_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "modify_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "rate_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "total_rating",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "avg_processing_ms",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "avg_confidence",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "acceptance_rate",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "avg_rating",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "agent_prompt_versions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "version",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "system_prompt",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "change_reason",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "traffic_pct",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "prev_avg_rating",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "prev_acceptance_rate",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [
+          "agent_prompt_versions",
+          "agent_metrics_daily",
+          "agent_feedbacks"
+        ],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_af_agent_time",
+            "table": "agent_feedbacks"
+          },
+          {
+            "index": "idx_af_user",
+            "table": "agent_feedbacks"
+          },
+          {
+            "index": "idx_af_tenant",
+            "table": "agent_feedbacks"
+          },
+          {
+            "index": "idx_amd_agent_date",
+            "table": "agent_metrics_daily"
+          },
+          {
+            "index": "idx_apv_agent_version",
+            "table": "agent_prompt_versions"
+          },
+          {
+            "index": "idx_apv_agent_active",
+            "table": "agent_prompt_versions"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/026_agent_ecosystem.py",
+      "filename": "026_agent_ecosystem.py",
+      "revision": "026",
+      "down_revision": "025",
+      "message": "Phase 5: Agent 生态 — marketplace + compositions + growth_points\n\nRevision ID: 026\nRevises: 025\nCreate Date: 2026-02-12",
+      "operations": {
+        "create_table": [
+          {
+            "table": "agent_marketplace_listings",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "template_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "publisher_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "title",
+                "type": "sa.String(128)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "category",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "tags",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "cover_url",
+                "type": "sa.String(500)"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "reviewer_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "review_comment",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "reviewed_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "install_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "avg_rating",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "rating_count",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "version",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "agent_compositions",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "name",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "pipeline",
+                "type": "sa.JSON()"
+              },
+              {
+                "name": "merge_strategy",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "is_enabled",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "is_default",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "agent_growth_points",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "event_type",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "points",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "description",
+                "type": "sa.String(255)"
+              },
+              {
+                "name": "reference_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "reference_type",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [
+          "agent_growth_points",
+          "agent_compositions",
+          "agent_marketplace_listings"
+        ],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_aml_status",
+            "table": "agent_marketplace_listings"
+          },
+          {
+            "index": "idx_aml_category",
+            "table": "agent_marketplace_listings"
+          },
+          {
+            "index": "idx_aml_publisher",
+            "table": "agent_marketplace_listings"
+          },
+          {
+            "index": "idx_ac_tenant",
+            "table": "agent_compositions"
+          },
+          {
+            "index": "idx_agp_user",
+            "table": "agent_growth_points"
+          },
+          {
+            "index": "idx_agp_event",
+            "table": "agent_growth_points"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/027_v002_v003_catchup.py",
+      "filename": "027_v002_v003_catchup.py",
+      "revision": null,
+      "down_revision": null,
+      "message": null,
+      "operations": {
+        "create_table": [],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": false
+    },
+    {
+      "file": "alembic/versions/028_policy_engine.py",
+      "filename": "028_policy_engine.py",
+      "revision": "028",
+      "down_revision": "027",
+      "message": "V007 Phase A: Policy Engine tables\n\nRevision ID: 028\nRevises: 027\nCreate Date: 2026-02-12\n\nCreates 6 tables:\n  policy_rules, rule_priority, agent_applicability_matrix,\n  conflict_matrix, decision_trac",
+      "operations": {
+        "create_table": [
+          {
+            "table": "policy_rules",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "rule_name",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "rule_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "action_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "priority",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "is_enabled",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "evidence_tier",
+                "type": "sa.String(5)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "created_by",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "rule_priority",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "rule_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "parent_rule_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "level",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "override_mode",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "effective_from",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "effective_until",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "agent_applicability_matrix",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "stage_range",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "risk_level",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "intensity_level",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "max_daily_calls",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "cooldown_hours",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "is_enabled",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "conflict_matrix",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_a_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "agent_b_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "conflict_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "resolution_strategy",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "is_enabled",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "decision_trace",
+            "columns": [
+              {
+                "name": "event_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "session_id",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "final_output",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "llm_model",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "token_cost",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "latency_ms",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "cost_budget_ledger",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "budget_type",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "max_tokens",
+                "type": "sa.BigInteger()"
+              },
+              {
+                "name": "used_tokens",
+                "type": "sa.BigInteger()"
+              },
+              {
+                "name": "max_cost_cny",
+                "type": "sa.Numeric(10, 4)"
+              },
+              {
+                "name": "used_cost_cny",
+                "type": "sa.Numeric(10, 4)"
+              },
+              {
+                "name": "period_start",
+                "type": "sa.Date()"
+              },
+              {
+                "name": "period_end",
+                "type": "sa.Date()"
+              },
+              {
+                "name": "overflow_action",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_policy_rules_type",
+            "table": "policy_rules"
+          },
+          {
+            "index": "idx_policy_rules_tenant",
+            "table": "policy_rules"
+          },
+          {
+            "index": "idx_rule_priority_rule",
+            "table": "rule_priority"
+          },
+          {
+            "index": "idx_aam_agent",
+            "table": "agent_applicability_matrix"
+          },
+          {
+            "index": "idx_aam_stage",
+            "table": "agent_applicability_matrix"
+          },
+          {
+            "index": "idx_conflict_agents",
+            "table": "conflict_matrix"
+          },
+          {
+            "index": "idx_trace_user",
+            "table": "decision_trace"
+          },
+          {
+            "index": "idx_trace_tenant",
+            "table": "decision_trace"
+          },
+          {
+            "index": "idx_trace_event",
+            "table": "decision_trace"
+          },
+          {
+            "index": "idx_budget_tenant",
+            "table": "cost_budget_ledger"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/029_skill_graph.py",
+      "filename": "029_skill_graph.py",
+      "revision": "029",
+      "down_revision": "028",
+      "message": "V007 Phase B: Skill Graph + Effectiveness tables\n\nRevision ID: 029\nRevises: 028\nCreate Date: 2026-02-12\n\nCreates 9 tables:\n  expert_domain, intervention_protocol, risk_boundary,\n  stage_applicability,",
+      "operations": {
+        "create_table": [
+          {
+            "table": "expert_domain",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "domain_name",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "domain_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "authority_level",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "tenant_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "intervention_protocol",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "protocol_name",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "response_template",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "intensity_range",
+                "type": "sa.String(10)"
+              },
+              {
+                "name": "duration_days",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "escalation_protocol",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "is_enabled",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "risk_boundary",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "risk_type",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "max_risk_level",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "escalation_target",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "alert_message",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "is_enabled",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "stage_applicability",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "stage_code",
+                "type": "sa.String(5)"
+              },
+              {
+                "name": "effectiveness_score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "recommended_intensity",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "is_primary",
+                "type": "sa.Boolean()"
+              },
+              {
+                "name": "notes",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "contraindications",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "condition_type",
+                "type": "sa.String(30)"
+              },
+              {
+                "name": "condition_value",
+                "type": "sa.String(200)"
+              },
+              {
+                "name": "severity",
+                "type": "sa.String(20)"
+              },
+              {
+                "name": "alternative_agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "reason",
+                "type": "sa.Text()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "evidence_tier_binding",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "evidence_tier",
+                "type": "sa.String(5)"
+              },
+              {
+                "name": "last_reviewed_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "reviewer",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "agent_skill_graph",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "capability_fingerprint",
+                "type": "sa.String(64)"
+              },
+              {
+                "name": "last_calibrated_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "calibration_source",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "policy_intervention_outcome",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "intervention_start",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "intervention_end",
+                "type": "sa.DateTime()"
+              },
+              {
+                "name": "ies_score",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "stage_before",
+                "type": "sa.String(5)"
+              },
+              {
+                "name": "stage_after",
+                "type": "sa.String(5)"
+              },
+              {
+                "name": "adherence_index",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "risk_delta",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "token_cost_total",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          },
+          {
+            "table": "policy_stage_transition_log",
+            "columns": [
+              {
+                "name": "id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "user_id",
+                "type": "sa.Integer()"
+              },
+              {
+                "name": "from_stage",
+                "type": "sa.String(5)"
+              },
+              {
+                "name": "to_stage",
+                "type": "sa.String(5)"
+              },
+              {
+                "name": "trigger_agent_id",
+                "type": "sa.String(50)"
+              },
+              {
+                "name": "trigger_event",
+                "type": "sa.String(100)"
+              },
+              {
+                "name": "confidence",
+                "type": "sa.Float()"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime()"
+              }
+            ]
+          }
+        ],
+        "drop_table": [],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_expert_domain_agent",
+            "table": "expert_domain"
+          },
+          {
+            "index": "idx_intv_protocol_agent",
+            "table": "intervention_protocol"
+          },
+          {
+            "index": "idx_risk_boundary_agent",
+            "table": "risk_boundary"
+          },
+          {
+            "index": "idx_stage_app_agent",
+            "table": "stage_applicability"
+          },
+          {
+            "index": "idx_stage_app_primary",
+            "table": "stage_applicability"
+          },
+          {
+            "index": "idx_contra_agent",
+            "table": "contraindications"
+          },
+          {
+            "index": "idx_evidence_agent",
+            "table": "evidence_tier_binding"
+          },
+          {
+            "index": "idx_policy_outcome_user",
+            "table": "policy_intervention_outcome"
+          },
+          {
+            "index": "idx_policy_stage_trans_user",
+            "table": "policy_stage_transition_log"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/030_behavior_rx_foundation.py",
+      "filename": "030_behavior_rx_foundation.py",
+      "revision": "030",
+      "down_revision": "029",
+      "message": "migration_030_behavior_rx_foundation\n\n行为处方基座 — 3 张新表\n  1. rx_prescriptions       — 行为处方记录\n  2. rx_strategy_templates  — 行为策略模板库\n  3. agent_handoff_log      — Agent 交接日志\n\nRevision ID: 030\nRevises: 029 ",
+      "operations": {
+        "create_table": [
+          {
+            "table": "rx_prescriptions",
+            "columns": [
+              {
+                "name": "agent_type",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "ttm_stage",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "capacity_score",
+                "type": "sa.Float"
+              },
+              {
+                "name": "goal_behavior",
+                "type": "sa.Text"
+              },
+              {
+                "name": "strategy_type",
+                "type": "sa.String(48)"
+              },
+              {
+                "name": "intensity",
+                "type": "sa.String(16)"
+              },
+              {
+                "name": "pace",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "communication_style",
+                "type": "sa.String(24)"
+              },
+              {
+                "name": "resistance_threshold",
+                "type": "sa.Float"
+              },
+              {
+                "name": "effectiveness_score",
+                "type": "sa.Float"
+              },
+              {
+                "name": "adherence_index",
+                "type": "sa.Float"
+              },
+              {
+                "name": "outcome_label",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "is_active",
+                "type": "sa.Boolean"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "rx_strategy_templates",
+            "columns": [
+              {
+                "name": "strategy_type",
+                "type": "sa.String(48)"
+              },
+              {
+                "name": "domain",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "ttm_stage_min",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "ttm_stage_max",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "name",
+                "type": "sa.String(128)"
+              },
+              {
+                "name": "name_zh",
+                "type": "sa.String(128)"
+              },
+              {
+                "name": "description",
+                "type": "sa.Text"
+              },
+              {
+                "name": "core_mechanism",
+                "type": "sa.Text"
+              },
+              {
+                "name": "default_intensity",
+                "type": "sa.String(16)"
+              },
+              {
+                "name": "default_pace",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "default_resistance_threshold",
+                "type": "sa.Float"
+              },
+              {
+                "name": "evidence_tier",
+                "type": "sa.String(8)"
+              },
+              {
+                "name": "is_enabled",
+                "type": "sa.Boolean"
+              },
+              {
+                "name": "version",
+                "type": "sa.Integer"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "updated_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          },
+          {
+            "table": "agent_handoff_log",
+            "columns": [
+              {
+                "name": "from_agent",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "to_agent",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "handoff_type",
+                "type": "sa.String(32)"
+              },
+              {
+                "name": "status",
+                "type": "sa.String(16)"
+              },
+              {
+                "name": "trigger_reason",
+                "type": "sa.Text"
+              },
+              {
+                "name": "resolution_notes",
+                "type": "sa.Text"
+              },
+              {
+                "name": "initiated_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "completed_at",
+                "type": "sa.DateTime"
+              },
+              {
+                "name": "created_at",
+                "type": "sa.DateTime"
+              }
+            ]
+          }
+        ],
+        "drop_table": [
+          "agent_handoff_log",
+          "rx_strategy_templates",
+          "rx_prescriptions"
+        ],
+        "add_column": [],
+        "drop_column": [],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "ix_rx_prescriptions_user_id",
+            "table": "rx_prescriptions"
+          },
+          {
+            "index": "ix_rx_prescriptions_session_id",
+            "table": "rx_prescriptions"
+          },
+          {
+            "index": "ix_rx_prescriptions_agent_type",
+            "table": "rx_prescriptions"
+          },
+          {
+            "index": "ix_rx_prescriptions_created_at",
+            "table": "rx_prescriptions"
+          },
+          {
+            "index": "ix_rx_prescriptions_user_active",
+            "table": "rx_prescriptions"
+          },
+          {
+            "index": "ix_rx_strategy_templates_type_domain",
+            "table": "rx_strategy_templates"
+          },
+          {
+            "index": "ix_rx_strategy_templates_enabled",
+            "table": "rx_strategy_templates"
+          },
+          {
+            "index": "ix_agent_handoff_log_user_id",
+            "table": "agent_handoff_log"
+          },
+          {
+            "index": "ix_agent_handoff_log_from_agent",
+            "table": "agent_handoff_log"
+          },
+          {
+            "index": "ix_agent_handoff_log_to_agent",
+            "table": "agent_handoff_log"
+          },
+          {
+            "index": "ix_agent_handoff_log_status",
+            "table": "agent_handoff_log"
+          },
+          {
+            "index": "ix_agent_handoff_log_initiated_at",
+            "table": "agent_handoff_log"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    },
+    {
+      "file": "alembic/versions/031_expert_self_registration.py",
+      "filename": "031_expert_self_registration.py",
+      "revision": "031",
+      "down_revision": "030",
+      "message": "migration_031_expert_self_registration\n\n专家自助注册入驻 — expert_tenants 追加 3 列\n  1. application_status  — 申请状态 (pending_review/approved/rejected)\n  2. application_data    — 申请表单原始数据 (JSON)\n  3. applied_at  ",
+      "operations": {
+        "create_table": [],
+        "drop_table": [],
+        "add_column": [
+          {
+            "table": "expert_tenants",
+            "column": "application_status",
+            "type": "sa.String(20)"
+          },
+          {
+            "table": "expert_tenants",
+            "column": "application_data",
+            "type": "sa.JSON"
+          },
+          {
+            "table": "expert_tenants",
+            "column": "applied_at",
+            "type": "sa.DateTime"
+          }
+        ],
+        "drop_column": [
+          {
+            "table": "expert_tenants",
+            "column": "applied_at"
+          },
+          {
+            "table": "expert_tenants",
+            "column": "application_data"
+          },
+          {
+            "table": "expert_tenants",
+            "column": "application_status"
+          }
+        ],
+        "alter_column": [],
+        "create_index": [
+          {
+            "index": "idx_tenant_app_status",
+            "table": "expert_tenants"
+          }
+        ],
+        "create_foreign_key": [],
+        "other": []
+      },
+      "has_operations": true
+    }
+  ],
+  "migration_chain": [],
+  "tables_created": [
+    "activity_records",
+    "agent_applicability_matrix",
+    "agent_skill_graph",
+    "assessment_sessions",
+    "assessments",
+    "batch_answers",
+    "batch_ingestion_jobs",
+    "behavior_audit_logs",
+    "behavior_history",
+    "behavior_traces",
+    "challenge_day_pushes",
+    "challenge_enrollments",
+    "challenge_push_logs",
+    "challenge_survey_responses",
+    "challenge_templates",
+    "change_causes",
+    "chat_messages",
+    "chat_sessions",
+    "coach_messages",
+    "coach_push_queue",
+    "comb_assessments",
+    "conflict_matrix",
+    "content_bookmarks",
+    "content_comments",
+    "content_items",
+    "content_likes",
+    "contraindications",
+    "cost_budget_ledger",
+    "decision_trace",
+    "evidence_tier_binding",
+    "exam_definitions",
+    "exam_results",
+    "expert_domain",
+    "expert_tenants",
+    "food_analyses",
+    "glucose_readings",
+    "health_competency_assessments",
+    "health_data",
+    "heart_rate_readings",
+    "hrv_readings",
+    "incentive_rewards",
+    "intervention_outcomes",
+    "intervention_protocol",
+    "intervention_strategies",
+    "interventions",
+    "knowledge_chunks",
+    "knowledge_citations",
+    "knowledge_documents",
+    "knowledge_domains",
+    "learning_points_logs",
+    "learning_progress",
+    "learning_time_logs",
+    "llm_call_logs",
+    "micro_action_logs",
+    "micro_action_tasks",
+    "obstacle_assessments",
+    "point_events",
+    "policy_intervention_outcome",
+    "policy_rules",
+    "policy_stage_transition_log",
+    "question_bank",
+    "rag_query_logs",
+    "reminders",
+    "risk_boundary",
+    "rule_priority",
+    "self_efficacy_assessments",
+    "sleep_records",
+    "stage_applicability",
+    "stage_transition_logs",
+    "support_assessments",
+    "survey_distributions",
+    "survey_questions",
+    "survey_response_answers",
+    "survey_responses",
+    "surveys",
+    "tenant_agent_mappings",
+    "tenant_audit_logs",
+    "tenant_clients",
+    "trigger_records",
+    "user_activity_logs",
+    "user_change_cause_scores",
+    "user_devices",
+    "user_learning_stats",
+    "user_point_balances",
+    "user_rewards",
+    "user_sessions",
+    "users",
+    "vital_signs",
+    "workout_records"
+  ],
+  "summary": {
+    "total_migrations": 31,
+    "total_tables": 89,
+    "chain_length": 0,
+    "migration_dirs_found": [
+      "alembic/versions"
+    ]
+  }
+}

@@ -22,6 +22,7 @@ from core.models import (
     ExamResult, UserActivityLog
 )
 from api.dependencies import get_current_user
+from core.access_control import check_user_data_access
 from core.learning_service import (
     get_or_create_stats, record_learning_time, record_learning_points,
     record_quiz_result
@@ -205,8 +206,8 @@ def get_coach_points(
 ):
     """获取教练积分详情（三积分体系）"""
     # 越权校验
-    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
-        raise HTTPException(status_code=403, detail="无权访问他人数据")
+    # FIX-09: 细粒度访问控制 (教练仅限自己学员)
+    check_user_data_access(current_user, user_id, db)
     stats = get_or_create_stats(db, user_id)
     growth_points = stats.growth_points
     contribution_points = stats.contribution_points
@@ -274,8 +275,8 @@ def get_coach_points_history(
 ):
     """获取教练积分历史"""
     # 越权校验
-    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
-        raise HTTPException(status_code=403, detail="无权访问他人数据")
+    # FIX-09: 细粒度访问控制 (教练仅限自己学员)
+    check_user_data_access(current_user, user_id, db)
     query = db.query(LearningPointsLog).filter(LearningPointsLog.user_id == user_id)
     if category:
         query = query.filter(LearningPointsLog.category == category)
@@ -353,8 +354,8 @@ def get_grower_stats(
 ):
     """获取成长者学习统计（时长+积分分开）"""
     # 越权校验
-    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
-        raise HTTPException(status_code=403, detail="无权访问他人数据")
+    # FIX-09: 细粒度访问控制 (教练仅限自己学员)
+    check_user_data_access(current_user, user_id, db)
     stats = get_or_create_stats(db, user_id)
 
     total_minutes = stats.total_minutes
@@ -426,8 +427,8 @@ def get_grower_time(
 ):
     """获取成长者学习时长（单独）"""
     # 越权校验
-    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
-        raise HTTPException(status_code=403, detail="无权访问他人数据")
+    # FIX-09: 细粒度访问控制 (教练仅限自己学员)
+    check_user_data_access(current_user, user_id, db)
     stats = get_or_create_stats(db, user_id)
     total_minutes = stats.total_minutes
 
@@ -493,8 +494,8 @@ def get_grower_points(
 ):
     """获取成长者学习积分（测试积分，单独）"""
     # 越权校验
-    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
-        raise HTTPException(status_code=403, detail="无权访问他人数据")
+    # FIX-09: 细粒度访问控制 (教练仅限自己学员)
+    check_user_data_access(current_user, user_id, db)
     stats = get_or_create_stats(db, user_id)
     total_points = stats.total_points
 
@@ -603,8 +604,8 @@ def get_grower_time_history(
 ):
     """获取成长者学习时长历史"""
     # 越权校验
-    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
-        raise HTTPException(status_code=403, detail="无权访问他人数据")
+    # FIX-09: 细粒度访问控制 (教练仅限自己学员)
+    check_user_data_access(current_user, user_id, db)
     query = db.query(LearningTimeLog).filter(LearningTimeLog.user_id == user_id)
     if domain:
         query = query.filter(LearningTimeLog.domain == domain)
@@ -660,7 +661,10 @@ def add_grower_time(
     """
     minutes = body.minutes
     if minutes <= 0:
-        return {"success": True, "minutes_earned": 0, "new_total": 0, "new_milestones": []}
+        raise HTTPException(status_code=400, detail="学习时长必须大于 0")
+    # FIX-06: 学习时长上限 (单次最多480分钟 = 8小时)
+    if minutes > 480:
+        raise HTTPException(status_code=400, detail="单次学习时长不能超过 480 分钟")
 
     old_stats = get_or_create_stats(db, current_user.id)
     current_total = old_stats.total_minutes
@@ -691,8 +695,8 @@ def get_grower_streak(
 ):
     """获取成长者连续学习记录"""
     # 越权校验
-    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
-        raise HTTPException(status_code=403, detail="无权访问他人数据")
+    # FIX-09: 细粒度访问控制 (教练仅限自己学员)
+    check_user_data_access(current_user, user_id, db)
     stats = get_or_create_stats(db, user_id)
     current_streak = stats.current_streak
     longest_streak = stats.longest_streak
@@ -730,8 +734,8 @@ def get_user_rewards(
 ):
     """获取用户奖励列表"""
     # 越权校验
-    if user_id != current_user.id and current_user.role.value not in ("admin", "coach", "supervisor", "promoter", "master"):
-        raise HTTPException(status_code=403, detail="无权访问他人数据")
+    # FIX-09: 细粒度访问控制 (教练仅限自己学员)
+    check_user_data_access(current_user, user_id, db)
     stats = get_or_create_stats(db, user_id)
 
     if user_type == "grower":
@@ -897,6 +901,10 @@ def handle_learning_event(
     """处理学习事件（统一入口）— 写入真实 DB"""
     user_id = current_user.id
     minutes = event.duration_seconds // 60
+
+    # FIX-06: 学习时长上限 (单次最多480分钟 = 8小时)
+    if minutes > 480:
+        raise HTTPException(status_code=400, detail=f"单次学习时长不能超过 480 分钟")
 
     if minutes > 0:
         record_learning_time(db, user_id, minutes, domain=event.content_category)

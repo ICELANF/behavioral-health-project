@@ -1,0 +1,53 @@
+{
+  "_comment": "R0-R4 设备风险等级阈值配置 (契约注册表 ⑧ Sheet)",
+  "glucose": {
+    "unit": "mmol/L",
+    "R0": {"min": 3.9, "max": 7.0},
+    "R1": {"min": 3.5, "max": 10.0},
+    "R2": {"min": 3.0, "max": 13.9},
+    "R3": {"min": 2.5, "max": 16.6},
+    "R4_high": 16.7,
+    "R4_low": 2.5
+  },
+  "heart_rate": {
+    "unit": "bpm",
+    "R0": {"min": 55, "max": 100},
+    "R1": {"min": 50, "max": 110},
+    "R2": {"min": 45, "max": 130},
+    "R3": {"min": 40, "max": 150},
+    "R4_high": 150,
+    "R4_low": 40
+  },
+  "blood_pressure_systolic": {
+    "unit": "mmHg",
+    "R0": {"min": 100, "max": 139},
+    "R1": {"min": 90, "max": 159},
+    "R2": {"min": 80, "max": 179},
+    "R3": {"min": 70, "max": 199},
+    "R4_high": 200,
+    "R4_low": 70
+  },
+  "blood_pressure_diastolic": {
+    "unit": "mmHg",
+    "R0": {"min": 60, "max": 89},
+    "R1": {"max": 99},
+    "R2": {"max": 109},
+    "R3": {"max": 119},
+    "R4_high": 120
+  },
+  "spo2": {
+    "unit": "%",
+    "R0": {"min": 96},
+    "R1": {"min": 93},
+    "R2": {"min": 90},
+    "R3": {"min": 85},
+    "R4_low": 85
+  },
+  "escalation": {
+    "R0": {"response_hours": null, "actions": ["log_only"]},
+    "R1": {"response_hours": 24, "actions": ["log", "notify_user"]},
+    "R2": {"response_hours": 4, "actions": ["notify_user", "notify_coach"]},
+    "R3": {"response_hours": 1, "actions": ["force_coach", "supervisor_notify"]},
+    "R4": {"response_hours": 1, "actions": ["crisis_takeover", "emergency_contact"]}
+  }
+}

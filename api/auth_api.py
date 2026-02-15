@@ -27,24 +27,17 @@ from loguru import logger
 router = APIRouter(prefix="/api/v1/auth", tags=["认证"])
 security = HTTPBearer()
 
-# 登录限流：每个IP每分钟最多10次登录尝试
-_login_attempts: dict = {}  # ip -> [timestamp, ...]
+# 登录限流: Redis 分布式 (FIX-03)
+from core.rate_limiter import rate_limit_or_429
 
 def _check_login_rate(client_ip: str, max_attempts: int = 10, window: int = 60):
-    """检查登录频率限制"""
-    import time
-    now = time.time()
-    window_start = now - window
-    if client_ip in _login_attempts:
-        _login_attempts[client_ip] = [t for t in _login_attempts[client_ip] if t > window_start]
-    else:
-        _login_attempts[client_ip] = []
-    if len(_login_attempts[client_ip]) >= max_attempts:
-        raise HTTPException(
-            status_code=429,
-            detail="登录尝试过于频繁，请稍后再试"
-        )
-    _login_attempts[client_ip].append(now)
+    """检查登录频率限制 — Redis 分布式"""
+    rate_limit_or_429(
+        key=f"login:{client_ip}",
+        max_attempts=max_attempts,
+        window=window,
+        msg="登录尝试过于频繁，请稍后再试"
+    )
 
 # 角色名称规范化映射（旧角色 → 新角色）
 ROLE_MIGRATION_MAP = {
@@ -57,6 +50,29 @@ def normalize_role(role: str) -> str:
     """规范化角色名称，将旧角色映射到新角色"""
     role_value = role.value if hasattr(role, 'value') else str(role)
     return ROLE_MIGRATION_MAP.get(role_value.lower(), role_value.lower())
+
+
+# ============================================
+# 密码强度验证 (FIX-05)
+# ============================================
+import re as _re
+
+def _validate_password_strength(password: str):
+    """密码强度验证"""
+    errors = []
+    if len(password) < 8:
+        errors.append("至少8位")
+    if not _re.search(r'[a-z]', password):
+        errors.append("包含小写字母")
+    if not _re.search(r'[A-Z]', password):
+        errors.append("包含大写字母")
+    if not _re.search(r'[0-9]', password):
+        errors.append("包含数字")
+    if errors:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"密码要求: {', '.join(errors)}"
+        )
 
 
 # ============================================
@@ -157,12 +173,21 @@ async def get_current_user(
 # ============================================
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(request: RegisterRequest, db: Session = Depends(get_db)):
+def register(request: RegisterRequest, req: Request = None, db: Session = Depends(get_db)):
     """
     用户注册
 
     创建新用户并返回认证token
     """
+    # FIX-04: 注册限流 (每IP每小时5次)
+    client_ip = req.client.host if req and req.client else "unknown"
+    rate_limit_or_429(
+        key=f"register:{client_ip}",
+        max_attempts=5,
+        window=3600,
+        msg="注册请求过于频繁，请稍后再试"
+    )
+
     # 检查用户名是否存在
     existing_user = db.query(User).filter(User.username == request.username).first()
     if existing_user:
@@ -179,12 +204,8 @@ def register(request: RegisterRequest, db: Session = Depends(get_db)):
             detail="邮箱已被注册"
         )
 
-    # 密码强度验证
-    if len(request.password) < 6:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="密码长度不能少于6位"
-        )
+    # 密码强度验证 (FIX-05: 增强策略)
+    _validate_password_strength(request.password)
 
     # 创建新用户（默认角色为观察员）
     new_user = User(
@@ -257,20 +278,20 @@ async def login(request: Request, db: Session = Depends(get_db)):
                 detail="请提供用户名和密码"
             )
 
-        logger.info(f"[LOGIN] Received login request - username: {username}")
+        logger.info(f"[LOGIN] Received login request - username: {username[:2]}***")  # FIX-15
 
         # 查询用户（支持用户名或邮箱登录）
         def get_user(identifier: str):
             user = db.query(User).filter(
                 (User.username == identifier) | (User.email == identifier)
             ).first()
-            logger.info(f"[LOGIN] Database query - found user: {user.username if user else 'None'}")
+            logger.info(f"[LOGIN] Database query - found user: {user.username[:2]+'***' if user else 'None'}")  # FIX-15
             return user
 
         # 认证用户
         logger.info(f"[LOGIN] Starting authentication...")
         user = authenticate_user(username, password, get_user)
-        logger.info(f"[LOGIN] Authentication result: {'SUCCESS - ' + user.username if user else 'FAILED'}")
+        logger.info(f"[LOGIN] Authentication result: {'SUCCESS' if user else 'FAILED'}")  # FIX-15
 
         if not user:
             logger.warning(f"[LOGIN] Authentication failed - invalid credentials")
@@ -288,7 +309,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
             activity = UserActivityLog(
                 user_id=user.id,
                 activity_type="login",
-                detail={"ip": client_ip, "username": user.username},
+                detail={"ip": client_ip, "user_id": user.id},  # FIX-15: no plaintext username
                 created_at=datetime.utcnow(),
             )
             db.add(activity)
@@ -297,7 +318,7 @@ async def login(request: Request, db: Session = Depends(get_db)):
 
         db.commit()
 
-        logger.info(f"[LOGIN] User logged in successfully: {user.username} (ID: {user.id})")
+        logger.info(f"[LOGIN] User logged in successfully: ID={user.id}")  # FIX-15
 
         # 生成token
         logger.info(f"[LOGIN] Generating tokens...")
@@ -417,11 +438,8 @@ async def change_password(
             detail="旧密码错误"
         )
 
-    if len(body.new_password) < 6:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="新密码长度不能少于6位"
-        )
+    # FIX-05
+    _validate_password_strength(body.new_password)
 
     current_user.password_hash = hash_password(body.new_password)
     db.commit()
@@ -440,9 +458,9 @@ async def logout(
 
     将token加入黑名单
     """
-    from core.auth import token_blacklist
+    from core.auth import token_blacklist  # FIX-10: 使用与 verify 同一实例
     token_blacklist.revoke(credentials.credentials)
-    logger.info(f"用户登出: {current_user.username} (ID: {current_user.id})")
+    logger.info(f"用户登出: ID={current_user.id}")
     return {"message": "登出成功"}
 
 

@@ -1,0 +1,2161 @@
+{
+  "root": "D:\\behavioral-health-project",
+  "top_level_dirs": [
+    {
+      "name": "admin-portal",
+      "is_dify": false,
+      "file_count": 237
+    },
+    {
+      "name": "agents",
+      "is_dify": false,
+      "file_count": 17
+    },
+    {
+      "name": "alembic",
+      "is_dify": false,
+      "file_count": 36
+    },
+    {
+      "name": "api",
+      "is_dify": false,
+      "file_count": 88
+    },
+    {
+      "name": "backend",
+      "is_dify": false,
+      "file_count": 11
+    },
+    {
+      "name": "baps",
+      "is_dify": false,
+      "file_count": 7
+    },
+    {
+      "name": "behavior_rx",
+      "is_dify": false,
+      "file_count": 35
+    },
+    {
+      "name": "behavior_rx_v32_complete",
+      "is_dify": false,
+      "file_count": 30
+    },
+    {
+      "name": "configs",
+      "is_dify": false,
+      "file_count": 31
+    },
+    {
+      "name": "core",
+      "is_dify": false,
+      "file_count": 137
+    },
+    {
+      "name": "data",
+      "is_dify": false,
+      "file_count": 20
+    },
+    {
+      "name": "dify",
+      "is_dify": true,
+      "file_count": 8241
+    },
+    {
+      "name": "dify-setup",
+      "is_dify": true,
+      "file_count": 8
+    },
+    {
+      "name": "dify_workflows",
+      "is_dify": true,
+      "file_count": 1
+    },
+    {
+      "name": "disclosure",
+      "is_dify": false,
+      "file_count": 7
+    },
+    {
+      "name": "docs",
+      "is_dify": false,
+      "file_count": 47
+    },
+    {
+      "name": "e2e",
+      "is_dify": false,
+      "file_count": 13
+    },
+    {
+      "name": "frontend",
+      "is_dify": false,
+      "file_count": 1
+    },
+    {
+      "name": "h5",
+      "is_dify": false,
+      "file_count": 90
+    },
+    {
+      "name": "h5-patient-app",
+      "is_dify": false,
+      "file_count": 46
+    },
+    {
+      "name": "helm",
+      "is_dify": false,
+      "file_count": 6
+    },
+    {
+      "name": "integrations",
+      "is_dify": false,
+      "file_count": 1
+    },
+    {
+      "name": "knowledge",
+      "is_dify": false,
+      "file_count": 9
+    },
+    {
+      "name": "metabolic-core",
+      "is_dify": false,
+      "file_count": 71
+    },
+    {
+      "name": "migrations",
+      "is_dify": false,
+      "file_count": 4
+    },
+    {
+      "name": "models",
+      "is_dify": false,
+      "file_count": 3
+    },
+    {
+      "name": "nginx",
+      "is_dify": false,
+      "file_count": 1
+    },
+    {
+      "name": "notes",
+      "is_dify": false,
+      "file_count": 0
+    },
+    {
+      "name": "protocols",
+      "is_dify": false,
+      "file_count": 2
+    },
+    {
+      "name": "quality",
+      "is_dify": false,
+      "file_count": 4
+    },
+    {
+      "name": "schemas",
+      "is_dify": false,
+      "file_count": 0
+    },
+    {
+      "name": "scripts",
+      "is_dify": false,
+      "file_count": 33
+    },
+    {
+      "name": "services",
+      "is_dify": false,
+      "file_count": 17
+    },
+    {
+      "name": "tests",
+      "is_dify": false,
+      "file_count": 27
+    },
+    {
+      "name": "v3",
+      "is_dify": false,
+      "file_count": 16
+    },
+    {
+      "name": "workbench",
+      "is_dify": false,
+      "file_count": 5
+    },
+    {
+      "name": "xingjian-agent",
+      "is_dify": false,
+      "file_count": 48
+    }
+  ],
+  "file_counts": {
+    "py": 2788,
+    "ts": 1022,
+    "js": 262,
+    "vue": 204,
+    "json": 1231,
+    "yaml": 47,
+    "yml": 65,
+    "other": 4446
+  },
+  "core_platform_files": 1815,
+  "dify_files": 8250,
+  "directory_tree": [
+    {
+      "path": ".",
+      "depth": 0,
+      "subdirs": [
+        "admin-portal",
+        "agents",
+        "alembic",
+        "api",
+        "backend",
+        "baps",
+        "behavior_rx",
+        "behavior_rx_v32_complete",
+        "configs",
+        "core",
+        "data",
+        "dify",
+        "dify-setup",
+        "dify_workflows",
+        "disclosure",
+        "docs",
+        "e2e",
+        "frontend",
+        "h5",
+        "h5-patient-app",
+        "helm",
+        "integrations",
+        "knowledge",
+        "metabolic-core",
+        "migrations",
+        "models",
+        "nginx",
+        "notes",
+        "protocols",
+        "quality",
+        "schemas",
+        "scripts",
+        "services",
+        "tests",
+        "v3",
+        "workbench",
+        "xingjian-agent"
+      ],
+      "py_files": 32,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 7,
+      "total_files": 120
+    },
+    {
+      "path": "admin-portal",
+      "depth": 0,
+      "subdirs": [
+        "examples",
+        "public",
+        "src"
+      ],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 5,
+      "total_files": 16
+    },
+    {
+      "path": "admin-portal/examples",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 2,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "admin-portal/public",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "admin-portal/src",
+      "depth": 1,
+      "subdirs": [
+        "api",
+        "assets",
+        "components",
+        "composables",
+        "constants",
+        "contexts",
+        "hooks",
+        "layouts",
+        "lib",
+        "modules",
+        "router",
+        "stores",
+        "styles",
+        "types",
+        "utils",
+        "views"
+      ],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 1,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "admin-portal/src/api",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 22,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 22
+    },
+    {
+      "path": "admin-portal/src/assets",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "admin-portal/src/components",
+      "depth": 2,
+      "subdirs": [
+        "agent",
+        "exam",
+        "expert",
+        "health",
+        "landing",
+        "react",
+        "vue-wrappers"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 7,
+      "json_files": 0,
+      "total_files": 7
+    },
+    {
+      "path": "admin-portal/src/composables",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 9,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 9
+    },
+    {
+      "path": "admin-portal/src/constants",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "admin-portal/src/contexts",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "admin-portal/src/hooks",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "admin-portal/src/layouts",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 1,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "admin-portal/src/lib",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "admin-portal/src/modules",
+      "depth": 2,
+      "subdirs": [
+        "rx"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "admin-portal/src/router",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "admin-portal/src/stores",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 6,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 6
+    },
+    {
+      "path": "admin-portal/src/styles",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "admin-portal/src/types",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 5,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "admin-portal/src/utils",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "admin-portal/src/views",
+      "depth": 2,
+      "subdirs": [
+        "admin",
+        "client",
+        "coach",
+        "content",
+        "course",
+        "dashboard",
+        "exam",
+        "expert",
+        "live",
+        "portals",
+        "react",
+        "safety"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 5,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "agents",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 12,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 17
+    },
+    {
+      "path": "alembic",
+      "depth": 0,
+      "subdirs": [
+        "versions"
+      ],
+      "py_files": 1,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "alembic/versions",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 31,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 33
+    },
+    {
+      "path": "api",
+      "depth": 0,
+      "subdirs": [
+        "routers",
+        "routes",
+        "v14"
+      ],
+      "py_files": 73,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 73
+    },
+    {
+      "path": "api/routers",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 9,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 9
+    },
+    {
+      "path": "api/routes",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "api/v14",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 6,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 6
+    },
+    {
+      "path": "backend",
+      "depth": 0,
+      "subdirs": [
+        "api",
+        "models",
+        "services"
+      ],
+      "py_files": 1,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "backend/api",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "backend/models",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 3,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "backend/services",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 5,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "baps",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 7,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 7
+    },
+    {
+      "path": "behavior_rx",
+      "depth": 0,
+      "subdirs": [
+        "agents",
+        "api",
+        "configs",
+        "core",
+        "migrations",
+        "patches",
+        "tests"
+      ],
+      "py_files": 4,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "behavior_rx/agents",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 6,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 6
+    },
+    {
+      "path": "behavior_rx/api",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 4,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 5
+    },
+    {
+      "path": "behavior_rx/configs",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 1,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 2
+    },
+    {
+      "path": "behavior_rx/core",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 7,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 7
+    },
+    {
+      "path": "behavior_rx/migrations",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "behavior_rx/patches",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "behavior_rx/tests",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 6,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 6
+    },
+    {
+      "path": "behavior_rx_v32_complete",
+      "depth": 0,
+      "subdirs": [
+        "behavior_rx",
+        "tests"
+      ],
+      "py_files": 1,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "behavior_rx_v32_complete/behavior_rx",
+      "depth": 1,
+      "subdirs": [
+        "agents",
+        "api",
+        "configs",
+        "core",
+        "migrations",
+        "patches",
+        "tests"
+      ],
+      "py_files": 1,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "behavior_rx_v32_complete/behavior_rx/agents",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 6,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 6
+    },
+    {
+      "path": "behavior_rx_v32_complete/behavior_rx/api",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "behavior_rx_v32_complete/behavior_rx/configs",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 1,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 2
+    },
+    {
+      "path": "behavior_rx_v32_complete/behavior_rx/core",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 7,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 7
+    },
+    {
+      "path": "behavior_rx_v32_complete/behavior_rx/migrations",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "behavior_rx_v32_complete/behavior_rx/patches",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "behavior_rx_v32_complete/behavior_rx/tests",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "behavior_rx_v32_complete/tests",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 5,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "configs",
+      "depth": 0,
+      "subdirs": [
+        "assessment",
+        "behavior",
+        "challenges",
+        "nginx"
+      ],
+      "py_files": 1,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 20,
+      "total_files": 23
+    },
+    {
+      "path": "configs/assessment",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 4,
+      "total_files": 4
+    },
+    {
+      "path": "configs/behavior",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 1
+    },
+    {
+      "path": "configs/challenges",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 1
+    },
+    {
+      "path": "configs/nginx",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "core",
+      "depth": 0,
+      "subdirs": [
+        "agents",
+        "baps",
+        "brain",
+        "diagnostics",
+        "gatekeeper",
+        "knowledge",
+        "llm",
+        "mother_library",
+        "rag",
+        "safety",
+        "schemas",
+        "v14"
+      ],
+      "py_files": 71,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 71
+    },
+    {
+      "path": "core/agents",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 11,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 11
+    },
+    {
+      "path": "core/baps",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 4,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 5
+    },
+    {
+      "path": "core/brain",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 5,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "core/diagnostics",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 5,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "core/gatekeeper",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "core/knowledge",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 10,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 10
+    },
+    {
+      "path": "core/llm",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 4,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "core/mother_library",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "core/rag",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 4,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "core/safety",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 6,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 6
+    },
+    {
+      "path": "core/schemas",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 11,
+      "total_files": 11
+    },
+    {
+      "path": "core/v14",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 5,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "data",
+      "depth": 0,
+      "subdirs": [
+        "assessments",
+        "knowledge",
+        "profiles",
+        "questionnaire_templates",
+        "vectordb"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 2
+    },
+    {
+      "path": "data/assessments",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "data/knowledge",
+      "depth": 1,
+      "subdirs": [
+        "mental_health"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "data/knowledge/mental_health",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "data/profiles",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 3,
+      "total_files": 3
+    },
+    {
+      "path": "data/questionnaire_templates",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 1
+    },
+    {
+      "path": "data/vectordb",
+      "depth": 1,
+      "subdirs": [
+        "mental_health"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 5,
+      "total_files": 5
+    },
+    {
+      "path": "data/vectordb/mental_health",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 5,
+      "total_files": 5
+    },
+    {
+      "path": "dify",
+      "depth": 0,
+      "subdirs": [
+        "agent-notes",
+        "api",
+        "dev",
+        "docker",
+        "docs",
+        "images",
+        "scripts",
+        "sdks",
+        "web"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 11
+    },
+    {
+      "path": "dify-setup",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 8
+    },
+    {
+      "path": "dify_workflows",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "disclosure",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 7,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 7
+    },
+    {
+      "path": "docs",
+      "depth": 0,
+      "subdirs": [
+        "assessment"
+      ],
+      "py_files": 3,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 44
+    },
+    {
+      "path": "docs/assessment",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "e2e",
+      "depth": 0,
+      "subdirs": [
+        "admin-portal",
+        "fixtures",
+        "h5",
+        "h5-patient"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "e2e/admin-portal",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 4,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "e2e/fixtures",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "e2e/h5",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 3,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "e2e/h5-patient",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 4,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "frontend",
+      "depth": 0,
+      "subdirs": [
+        "components"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "frontend/components",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "h5",
+      "depth": 0,
+      "subdirs": [
+        "public",
+        "src"
+      ],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 0,
+      "json_files": 4,
+      "total_files": 12
+    },
+    {
+      "path": "h5/public",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "h5/src",
+      "depth": 1,
+      "subdirs": [
+        "api",
+        "components",
+        "composables",
+        "router",
+        "stores",
+        "styles",
+        "types",
+        "utils",
+        "views"
+      ],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 1,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "h5/src/api",
+      "depth": 2,
+      "subdirs": [
+        "v3"
+      ],
+      "py_files": 0,
+      "ts_files": 9,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 9
+    },
+    {
+      "path": "h5/src/components",
+      "depth": 2,
+      "subdirs": [
+        "chat",
+        "common",
+        "dashboard",
+        "stage",
+        "task"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 2,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "h5/src/composables",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "h5/src/router",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "h5/src/stores",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 3,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "h5/src/styles",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "h5/src/types",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "h5/src/utils",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "h5/src/views",
+      "depth": 2,
+      "subdirs": [
+        "journey",
+        "v3"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 35,
+      "json_files": 0,
+      "total_files": 35
+    },
+    {
+      "path": "h5-patient-app",
+      "depth": 0,
+      "subdirs": [
+        "src"
+      ],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 0,
+      "json_files": 4,
+      "total_files": 18
+    },
+    {
+      "path": "h5-patient-app/src",
+      "depth": 1,
+      "subdirs": [
+        "api",
+        "components",
+        "router",
+        "stores",
+        "types",
+        "utils",
+        "views"
+      ],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 1,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "h5-patient-app/src/api",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 5,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "h5-patient-app/src/components",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 3,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "h5-patient-app/src/router",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "h5-patient-app/src/stores",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 4,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "h5-patient-app/src/types",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "h5-patient-app/src/utils",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "h5-patient-app/src/views",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 10,
+      "json_files": 0,
+      "total_files": 10
+    },
+    {
+      "path": "helm",
+      "depth": 0,
+      "subdirs": [
+        "bhp"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "helm/bhp",
+      "depth": 1,
+      "subdirs": [
+        "templates"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "helm/bhp/templates",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "integrations",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 1,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "knowledge",
+      "depth": 0,
+      "subdirs": [
+        "kb_case_studies",
+        "kb_domain",
+        "kb_products",
+        "kb_theory",
+        "triggers"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "knowledge/kb_case_studies",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "knowledge/kb_domain",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "knowledge/kb_products",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "knowledge/kb_theory",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "knowledge/triggers",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 2
+    },
+    {
+      "path": "metabolic-core",
+      "depth": 0,
+      "subdirs": [
+        "docs",
+        "sample-data",
+        "scripts",
+        "src",
+        "tests"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 3,
+      "total_files": 7
+    },
+    {
+      "path": "metabolic-core/docs",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "metabolic-core/sample-data",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 2,
+      "total_files": 2
+    },
+    {
+      "path": "metabolic-core/scripts",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "metabolic-core/src",
+      "depth": 1,
+      "subdirs": [
+        "agent",
+        "api",
+        "auth",
+        "certification",
+        "database",
+        "libraries",
+        "orchestrator",
+        "permission",
+        "registry",
+        "sample-data",
+        "signal",
+        "trajectory"
+      ],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "metabolic-core/src/agent",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 3,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "metabolic-core/src/api",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 3,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "metabolic-core/src/auth",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 2,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "metabolic-core/src/certification",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 4,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "metabolic-core/src/database",
+      "depth": 2,
+      "subdirs": [
+        "config",
+        "entities",
+        "migrations",
+        "repositories"
+      ],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "metabolic-core/src/libraries",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 8,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 8
+    },
+    {
+      "path": "metabolic-core/src/orchestrator",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 3,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "metabolic-core/src/permission",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 3,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "metabolic-core/src/registry",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 3,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "metabolic-core/src/sample-data",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "metabolic-core/src/signal",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 3,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "metabolic-core/src/trajectory",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 3,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "metabolic-core/tests",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 1,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "migrations",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 4,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "models",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 1,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 3
+    },
+    {
+      "path": "nginx",
+      "depth": 0,
+      "subdirs": [
+        "conf.d"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "nginx/conf.d",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "notes",
+      "depth": 0,
+      "subdirs": [
+        "test_reports"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "notes/test_reports",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "protocols",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "quality",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 4,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "schemas",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "scripts",
+      "depth": 0,
+      "subdirs": [
+        "sandbox"
+      ],
+      "py_files": 17,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 17
+    },
+    {
+      "path": "scripts/sandbox",
+      "depth": 1,
+      "subdirs": [
+        "screenshots"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "scripts/sandbox/screenshots",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 14
+    },
+    {
+      "path": "services",
+      "depth": 0,
+      "subdirs": [
+        "logic_engine",
+        "services",
+        "state_sync"
+      ],
+      "py_files": 5,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "services/logic_engine",
+      "depth": 1,
+      "subdirs": [
+        "resource",
+        "schema"
+      ],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "services/logic_engine/resource",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 1,
+      "total_files": 1
+    },
+    {
+      "path": "services/logic_engine/schema",
+      "depth": 2,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "services/services",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 5,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 5
+    },
+    {
+      "path": "services/state_sync",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 2
+    },
+    {
+      "path": "tests",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 24,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 27
+    },
+    {
+      "path": "v3",
+      "depth": 0,
+      "subdirs": [
+        "routers"
+      ],
+      "py_files": 7,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 7
+    },
+    {
+      "path": "v3/routers",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 9,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 9
+    },
+    {
+      "path": "workbench",
+      "depth": 0,
+      "subdirs": [],
+      "py_files": 2,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    },
+    {
+      "path": "xingjian-agent",
+      "depth": 0,
+      "subdirs": [
+        "agents",
+        "api",
+        "core",
+        "data",
+        "docs",
+        "prompts"
+      ],
+      "py_files": 3,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 9
+    },
+    {
+      "path": "xingjian-agent/agents",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 10,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 10
+    },
+    {
+      "path": "xingjian-agent/api",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 7,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 7
+    },
+    {
+      "path": "xingjian-agent/core",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 3,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 3
+    },
+    {
+      "path": "xingjian-agent/data",
+      "depth": 1,
+      "subdirs": [
+        "knowledge",
+        "vectordb"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "xingjian-agent/data/knowledge",
+      "depth": 2,
+      "subdirs": [
+        "mental_health"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 0
+    },
+    {
+      "path": "xingjian-agent/data/vectordb",
+      "depth": 2,
+      "subdirs": [
+        "mental_health"
+      ],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 5,
+      "total_files": 5
+    },
+    {
+      "path": "xingjian-agent/docs",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 1
+    },
+    {
+      "path": "xingjian-agent/prompts",
+      "depth": 1,
+      "subdirs": [],
+      "py_files": 0,
+      "ts_files": 0,
+      "vue_files": 0,
+      "json_files": 0,
+      "total_files": 4
+    }
+  ]
+}

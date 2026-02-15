@@ -151,6 +151,8 @@ class User(Base):
 
     # 主键
     id = Column(Integer, primary_key=True, index=True)
+    # FIX-17: 对外暴露的 UUID (防止 ID 枚举)
+    public_id = Column(PG_UUID(as_uuid=True), server_default=sa_text("gen_random_uuid()"), unique=True, index=True)
 
     # 基本信息
     username = Column(String(50), unique=True, nullable=False, index=True)

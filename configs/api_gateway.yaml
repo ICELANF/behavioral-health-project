@@ -1,0 +1,102 @@
+# ══════════════════════════════════════════════════════════════
+# BehaviorOS API Gateway 配置
+# ══════════════════════════════════════════════════════════════
+#
+# 统一 API 网关层：负责认证鉴权、速率限制、路由分发、日志审计
+# 支持部署方式: Kong / APISIX / nginx_proxy / 内置中间件
+#
+# api_gateway 配置参考:
+#   - 生产环境推荐使用 Kong 或 APISIX
+#   - 开发环境使用 nginx_proxy 反向代理
+#   - 最小化部署使用 FastAPI 内置中间件
+
+gateway_config:
+  provider: "nginx_proxy"  # kong | apisix | nginx_proxy | builtin
+  version: "1.0"
+
+  # ── 路由规则 ─────────────────────────────────────────
+  routes:
+    - name: api_backend
+      prefix: /api/v1
+      upstream: http://bhp-api:8000
+      strip_prefix: false
+      rate_limit:
+        requests_per_minute: 300
+        burst: 50
+
+    - name: admin_portal
+      prefix: /admin
+      upstream: http://bhp-admin-portal:5174
+      strip_prefix: false
+      auth_required: true
+
+    - name: h5_frontend
+      prefix: /
+      upstream: http://bhp-h5:5173
+      strip_prefix: false
+
+    - name: health_check
+      prefix: /health
+      upstream: http://bhp-api:8000/health
+      rate_limit:
+        requests_per_minute: 60
+
+  # ── 全局中间件 ───────────────────────────────────────
+  middleware:
+    cors:
+      enabled: true
+      allow_origins: ["*"]
+      allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+      allow_headers: ["Authorization", "Content-Type"]
+
+    rate_limiter:
+      enabled: true
+      default_rpm: 200
+      per_user_rpm: 100
+      per_tenant_rpm: 1000
+
+    jwt_auth:
+      enabled: true
+      exclude_paths:
+        - /api/v1/auth/login
+        - /api/v1/auth/register
+        - /health
+        - /docs
+        - /openapi.json
+
+    request_logging:
+      enabled: true
+      log_headers: false
+      log_body: false
+      log_response_time: true
+
+    api_gateway_metrics:
+      enabled: true
+      endpoint: /metrics
+      include_latency_histogram: true
+
+  # ── nginx_proxy 配置模板 ──────────────────────────────
+  nginx_proxy_template: |
+    upstream api_gateway_backend {
+        server bhp-api:8000;
+    }
+    server {
+        listen 80;
+        server_name _;
+
+        location /api/ {
+            proxy_pass http://api_gateway_backend;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Request-ID $request_id;
+            limit_req zone=api_gateway_zone burst=20;
+        }
+
+        location /admin/ {
+            proxy_pass http://bhp-admin-portal:5174;
+        }
+
+        location / {
+            proxy_pass http://bhp-h5:5173;
+        }
+    }

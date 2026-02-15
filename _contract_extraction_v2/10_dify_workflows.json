@@ -1,0 +1,94 @@
+{
+  "workflows": [
+    {
+      "file": "dify_workflows/baps_assessment_workflow.yml",
+      "filename": "baps_assessment_workflow.yml",
+      "size_bytes": 5946
+    },
+    {
+      "file": "dify-setup/behavior-health-agent.yml",
+      "filename": "behavior-health-agent.yml",
+      "size_bytes": 8952
+    },
+    {
+      "file": "dify-setup/behavior-health-coach.yaml",
+      "filename": "behavior-health-coach.yaml",
+      "size_bytes": 3323
+    },
+    {
+      "file": "dify-setup/proactive-health-balance.yaml",
+      "filename": "proactive-health-balance.yaml",
+      "size_bytes": 6996
+    },
+    {
+      "file": "dify-setup/proactive-health-coach-deepseek.yaml",
+      "filename": "proactive-health-coach-deepseek.yaml",
+      "size_bytes": 3460
+    },
+    {
+      "file": "dify-setup/proactive-health-coach.yaml",
+      "filename": "proactive-health-coach.yaml",
+      "size_bytes": 3458
+    }
+  ],
+  "workflow_configs": [],
+  "dify_integration": [
+    {
+      "file": "main.py",
+      "calls": [
+        "dify_client.stream_chat",
+        "dify_client.base_url",
+        "dify_client.headers",
+        "dify_client.generate_intervention"
+      ]
+    },
+    {
+      "file": "test_dify.py",
+      "calls": [
+        "DIFY_API_KEY = 'app-DWgBYMy4FAnq1fwtWgTKyvcr'"
+      ]
+    },
+    {
+      "file": "core/decision_core.py",
+      "calls": [
+        "dify_client.generate_intervention"
+      ]
+    }
+  ],
+  "summary": {
+    "total_workflows": 6,
+    "total_integration_files": 3,
+    "workflow_list": [
+      {
+        "file": "dify_workflows/baps_assessment_workflow.yml",
+        "name": "",
+        "nodes": 0
+      },
+      {
+        "file": "dify-setup/behavior-health-agent.yml",
+        "name": "",
+        "nodes": 0
+      },
+      {
+        "file": "dify-setup/behavior-health-coach.yaml",
+        "name": "",
+        "nodes": 0
+      },
+      {
+        "file": "dify-setup/proactive-health-balance.yaml",
+        "name": "",
+        "nodes": 0
+      },
+      {
+        "file": "dify-setup/proactive-health-coach-deepseek.yaml",
+        "name": "",
+        "nodes": 0
+      },
+      {
+        "file": "dify-setup/proactive-health-coach.yaml",
+        "name": "",
+        "nodes": 0
+      }
+    ]
+  }
+}

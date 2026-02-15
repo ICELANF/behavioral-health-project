@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    app: bhp-api
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.api.port }}
+      targetPort: {{ .Values.api.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: bhp-api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-admin-portal
+  labels:
+    app: bhp-admin-portal
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.adminPortal.port }}
+      targetPort: {{ .Values.adminPortal.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: bhp-admin-portal
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-h5
+  labels:
+    app: bhp-h5
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.h5.port }}
+      targetPort: {{ .Values.h5.port }}
+      protocol: TCP
+      name: http
+  selector:
+    app: bhp-h5

@@ -1,0 +1,1344 @@
+{
+  "celery_tasks": [],
+  "scheduled_jobs": [
+    {
+      "function": "daily_task_generation",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "6",
+      "raw": "scheduler.add_job(\n        daily_task_generation,\n        CronTrigger(hour=6"
+    },
+    {
+      "function": "reminder_check",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "1",
+      "raw": "scheduler.add_job(\n        reminder_check,\n        IntervalTrigger(minutes=1"
+    },
+    {
+      "function": "expired_task_cleanup",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "23",
+      "raw": "scheduler.add_job(\n        expired_task_cleanup,\n        CronTrigger(hour=23"
+    },
+    {
+      "function": "process_approved_pushes",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "5",
+      "raw": "scheduler.add_job(\n        process_approved_pushes,\n        IntervalTrigger(minutes=5"
+    },
+    {
+      "function": "expire_stale_queue_items",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "6",
+      "raw": "scheduler.add_job(\n        expire_stale_queue_items,\n        CronTrigger(hour=6"
+    },
+    {
+      "function": "knowledge_freshness_check",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "7",
+      "raw": "scheduler.add_job(\n        knowledge_freshness_check,\n        CronTrigger(hour=7"
+    },
+    {
+      "function": "program_advance_day",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "0",
+      "raw": "scheduler.add_job(\n        program_advance_day,\n        CronTrigger(hour=0"
+    },
+    {
+      "function": "program_push_morning",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "9",
+      "raw": "scheduler.add_job(\n        program_push_morning,\n        CronTrigger(hour=9"
+    },
+    {
+      "function": "program_push_noon",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "11",
+      "raw": "scheduler.add_job(\n        program_push_noon,\n        CronTrigger(hour=11"
+    },
+    {
+      "function": "program_push_evening",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "17",
+      "raw": "scheduler.add_job(\n        program_push_evening,\n        CronTrigger(hour=17"
+    },
+    {
+      "function": "program_batch_analysis",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "23",
+      "raw": "scheduler.add_job(\n        program_batch_analysis,\n        CronTrigger(hour=23"
+    },
+    {
+      "function": "safety_daily_report",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "2",
+      "raw": "scheduler.add_job(\n        safety_daily_report,\n        CronTrigger(hour=2"
+    },
+    {
+      "function": "agent_metrics_aggregate",
+      "file": "core/scheduler.py",
+      "trigger": null,
+      "schedule": "1",
+      "raw": "scheduler.add_job(\n        agent_metrics_aggregate,\n        CronTrigger(hour=1"
+    }
+  ],
+  "event_handlers": [
+    {
+      "event": "startup",
+      "file": "api/xingjian_api.py",
+      "type": "handler"
+    },
+    {
+      "event": "CGM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "CGM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "CGM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "CGM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TASK",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TASK",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TASK",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TASK",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "USAGE",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "USAGE",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "USAGE",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "USAGE",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "EMOTION",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "EMOTION",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "EMOTION",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "RHYTHM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "RHYTHM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "RHYTHM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "CGM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "CGM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TASK",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "USAGE",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "RHYTHM",
+      "file": "core/v14/trigger_router.py",
+      "type": "emitter"
+    },
+    {
+      "event": "DEVICE_DATA",
+      "file": "services/state_sync/manager.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TASK_COMPLETE",
+      "file": "services/state_sync/manager.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TEXT_INPUT",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TEXT_INPUT",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TEXT_INPUT",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TEXT_INPUT",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "DEVICE_DATA",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "DEVICE_DATA",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TASK_COMPLETE",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TEXT_INPUT",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TEXT_INPUT",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TEXT_INPUT",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TEXT_INPUT",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "TASK_COMPLETE",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "DEVICE_DATA",
+      "file": "tests/test_state_sync.py",
+      "type": "emitter"
+    },
+    {
+      "event": "startup",
+      "file": "xingjian-agent/api/xingjian_api.py",
+      "type": "handler"
+    }
+  ],
+  "cron_configs": [
+    {
+      "file": "docker-compose.yml",
+      "content": "version: '3.8'\n\nservices:\n  # 1. 核心 API 服务 (保持全配置)\n  app:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    container_name: bhp_v3_api\n    restart: always\n    ports:\n      - \"8000:8000\"\n    environment:\n      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db\n      - REDIS_URL=redis://redis:6379/0\n      - QDRANT_URL=http://qdrant:6333\n      - PYTHONUNBUFFERED=1\n      - PYTHONPATH=.\n      - LOG_LEVEL=info\n    depends_on:\n      db:\n        condition: service_healthy\n      redis:\n        condition: service_started\n      qdrant:\n        condition: service_started\n    volumes:\n      - .:/app\n      - ./static:/app/api/static  # 确保静态资源可用\n    networks:\n      - bhp_network\n\n  # 2. Celery 异步任务 (核心！不能删)\n  worker:\n    build:\n      context: .\n      dockerfile: Dockerfile\n    container_name: bhp_v3_worker\n    command: celery -A api.worker.celery_app worker --loglevel=info\n    environment:\n      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db\n      - REDIS_URL=redis://redis:6379/0\n    depends_on:\n      - redis\n      - db\n    networks:\n      - bhp_network\n\n  # 3. PostgreSQL 数据库 (采用 pg15 优化版镜像)  postgres: db\n  db:\n    image: pgvector/pgvector:pg15  # 换成这个更通用的修复镜像\n    container_name: bhp_v3_postgres\n    restart: always\n    environment:\n      - POSTGRES_USER=bhp_user\n      - POSTGRES_PASSWORD=bhp_password\n      - POSTGRES_DB=bhp_db\n    ports:\n      - \"5432:5432\"\n    volumes:\n      - bhp_db_data:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U bhp_user -d bhp_db\"]\n      interval: 5s\n      timeout: 5s\n      retries: 5\n    networks:\n      - bhp_network\n\n  # 4. Qdrant 向量数据库 (保留知识库支持)\n  qdrant:\n    image: qdrant/qdrant:latest\n    container_name: bhp_v3_qdrant\n    ports:\n      - \"6333:6333\"\n    volumes:\n      - bhp_qdrant_data:/qdrant/storage\n    networks:\n      - bhp_network\n\n  # 5. Redis\n  redis:\n    image: redis:7-alpine\n    container_name: bhp_v3_redis\n    networks:\n      - bhp_network\n\nnetworks:\n  bhp_network:\n    driver: bridge\n\n  nginx:\n    image: nginx:alpine\n    ports:\n      - \"80:80\"\n      - \"443:443\"\n    volumes:\n      - ./nginx/conf.d:/etc/nginx/conf.d\n    depends_on:\n      - bhp-api\n    restart: unless-stopped\n\n  bhp-api:\n    build: .\n    ports:\n      - \"8000:8000\"\n    env_file: .env\n    depends_on:\n      db:\n        condition: service_healthy\n    restart: unless-stopped\n\n  bhp-worker:\n    build: .\n    command: celery -A api.worker worker -l info\n    env_file: .env\n    depends_on:\n      - redis\n    restart: unless-stopped\nvolumes:\n  bhp_db_data:\n  bhp_qdrant_data:"
+    },
+    {
+      "file": "docker-compose.yaml",
+      "content": "# ==================================\n# Dify Docker Compose Configuration\n# Optimized for 56GB Memory Windows\n# ==================================\n\nversion: '3.8'\n\nx-shared-env: &shared-api-worker-env\n  LOG_LEVEL: ${LOG_LEVEL:-INFO}\n  DEBUG: ${DEBUG:-false}\n  FLASK_DEBUG: ${FLASK_DEBUG:-false}\n  SECRET_KEY: ${SECRET_KEY:-sk-9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08}\n  INIT_PASSWORD: ${INIT_PASSWORD:-}\n  DEPLOY_ENV: ${DEPLOY_ENV:-PRODUCTION}\n  EDITION: ${EDITION:-SELF_HOSTED}\n  CONSOLE_API_URL: ${CONSOLE_API_URL:-}\n  CONSOLE_WEB_URL: ${CONSOLE_WEB_URL:-}\n  SERVICE_API_URL: ${SERVICE_API_URL:-}\n  APP_API_URL: ${APP_API_URL:-}\n  APP_WEB_URL: ${APP_WEB_URL:-}\n  FILES_URL: ${FILES_URL:-}\n  FILES_ACCESS_TIMEOUT: ${FILES_ACCESS_TIMEOUT:-300}\n  MIGRATION_ENABLED: ${MIGRATION_ENABLED:-true}\n  # Database\n  DB_USERNAME: ${DB_USERNAME:-postgres}\n  DB_PASSWORD: ${DB_PASSWORD:-difyai123456}\n  DB_HOST: ${DB_HOST:-db}\n  DB_PORT: ${DB_PORT:-5432}\n  DB_DATABASE: ${DB_DATABASE:-dify}\n  SQLALCHEMY_POOL_SIZE: ${SQLALCHEMY_POOL_SIZE:-30}\n  SQLALCHEMY_POOL_RECYCLE: ${SQLALCHEMY_POOL_RECYCLE:-3600}\n  SQLALCHEMY_ECHO: ${SQLALCHEMY_ECHO:-false}\n  # Redis\n  REDIS_HOST: ${REDIS_HOST:-redis}\n  REDIS_PORT: ${REDIS_PORT:-6379}\n  REDIS_USERNAME: ${REDIS_USERNAME:-}\n  REDIS_PASSWORD: ${REDIS_PASSWORD:-difyai123456}\n  REDIS_USE_SSL: ${REDIS_USE_SSL:-false}\n  REDIS_DB: ${REDIS_DB:-0}\n  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://:difyai123456@redis:6379/1}\n  # Storage\n  STORAGE_TYPE: ${STORAGE_TYPE:-local}\n  STORAGE_LOCAL_PATH: ${STORAGE_LOCAL_PATH:-/app/api/storage}\n  # Vector Store\n  VECTOR_STORE: ${VECTOR_STORE:-weaviate}\n  WEAVIATE_ENDPOINT: ${WEAVIATE_ENDPOINT:-http://weaviate:8080}\n  WEAVIATE_API_KEY: ${WEAVIATE_API_KEY:-WVF5YThaHlkYwhGUSmCRgsX3tD5ngdN8pkih}\n  # SSRF Proxy\n  SSRF_PROXY_HTTP_URL: ${SSRF_PROXY_HTTP_URL:-http://ssrf_proxy:3128}\n  SSRF_PROXY_HTTPS_URL: ${SSRF_PROXY_HTTPS_URL:-http://ssrf_proxy:3128}\n  # Sandbox\n  CODE_EXECUTION_ENDPOINT: ${CODE_EXECUTION_ENDPOINT:-http://sandbox:8194}\n  CODE_EXECUTION_API_KEY: ${SANDBOX_API_KEY:-dify-sandbox}\n  CODE_MAX_NUMBER: ${CODE_MAX_NUMBER:-9223372036854775807}\n  CODE_MIN_NUMBER: ${CODE_MIN_NUMBER:--9223372036854775808}\n  CODE_MAX_DEPTH: ${CODE_MAX_DEPTH:-5}\n  CODE_MAX_PRECISION: ${CODE_MAX_PRECISION:-20}\n  CODE_MAX_STRING_LENGTH: ${CODE_MAX_STRING_LENGTH:-80000}\n  CODE_MAX_STRING_ARRAY_LENGTH: ${CODE_MAX_STRING_ARRAY_LENGTH:-30}\n  CODE_MAX_OBJECT_ARRAY_LENGTH: ${CODE_MAX_OBJECT_ARRAY_LENGTH:-30}\n  CODE_MAX_NUMBER_ARRAY_LENGTH: ${CODE_MAX_NUMBER_ARRAY_LENGTH:-1000}\n  # Upload\n  UPLOAD_FILE_SIZE_LIMIT: ${UPLOAD_FILE_SIZE_LIMIT:-15}\n  UPLOAD_FILE_BATCH_LIMIT: ${UPLOAD_FILE_BATCH_LIMIT:-5}\n  UPLOAD_IMAGE_FILE_SIZE_LIMIT: ${UPLOAD_IMAGE_FILE_SIZE_LIMIT:-10}\n  # Sentry\n  SENTRY_DSN: ${SENTRY_DSN:-}\n  SENTRY_TRACES_SAMPLE_RATE: ${SENTRY_TRACES_SAMPLE_RATE:-1.0}\n  SENTRY_PROFILES_SAMPLE_RATE: ${SENTRY_PROFILES_SAMPLE_RATE:-1.0}\n  # Mail\n  MAIL_TYPE: ${MAIL_TYPE:-}\n  MAIL_DEFAULT_SEND_FROM: ${MAIL_DEFAULT_SEND_FROM:-}\n  SMTP_SERVER: ${SMTP_SERVER:-}\n  SMTP_PORT: ${SMTP_PORT:-465}\n  SMTP_USERNAME: ${SMTP_USERNAME:-}\n  SMTP_PASSWORD: ${SMTP_PASSWORD:-}\n  SMTP_USE_TLS: ${SMTP_USE_TLS:-true}\n\nservices:\n  # ==================================\n  # API Service\n  # ==================================\n  api:\n    image: langgenius/dify-api:0.15.3\n    restart: always\n    environment:\n      <<: *shared-api-worker-env\n      MODE: api\n    depends_on:\n      - db\n      - redis\n      - weaviate\n      - sandbox\n      - ssrf_proxy\n    volumes:\n      - ./volumes/app/storage:/app/api/storage\n    deploy:\n      resources:\n        limits:\n          memory: ${API_MEMORY_LIMIT:-8g}\n        reservations:\n          memory: ${API_MEMORY_RESERVATION:-4g}\n    networks:\n      - dify-network\n\n  # ==================================\n  # Worker Service\n  # ==================================\n  worker:\n    image: langgenius/dify-api:0.15.3\n    restart: always\n    environment:\n      <<: *shared-api-worker-env\n      MODE: worker\n    depends_on:\n      - db\n      - redis\n      - weaviate\n      - sandbox\n      - ssrf_proxy\n    volumes:\n      - ./volumes/app/storage:/app/api/storage\n    deploy:\n      resources:\n        limits:\n          memory: ${WORKER_MEMORY_LIMIT:-12g}\n        reservations:\n          memory: ${WORKER_MEMORY_RESERVATION:-6g}\n    networks:\n      - dify-network\n\n  # ==================================\n  # Web Frontend\n  # ==================================\n  web:\n    image: langgenius/dify-web:0.15.3\n    restart: always\n    environment:\n      CONSOLE_API_URL: ${CONSOLE_API_URL:-}\n      APP_API_URL: ${APP_API_URL:-}\n      SENTRY_DSN: ${SENTRY_DSN:-}\n      NEXT_TELEMETRY_DISABLED: 1\n    deploy:\n      resources:\n        limits:\n          memory: 2g\n        reservations:\n          memory: 512m\n    networks:\n      - dify-network\n\n  # ==================================\n  # PostgreSQL Database\n  # ==================================\n  db:\n    image: pgvector/pgvector:pg15\n    restart: always\n    environ"
+    }
+  ],
+  "push_schedules": [
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "schedule": "09:00"
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "schedule": "11:30"
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "schedule": "17:30"
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "schedule": "23:30"
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "schedule": "midnight"
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "fix_v3_api_12.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "alembic/versions/007_add_challenge_tables.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "alembic/versions/025_feedback_learning.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "alembic/versions/025_feedback_learning.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "alembic/versions/025_feedback_learning.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "alembic/versions/025_feedback_learning.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "alembic/versions/025_feedback_learning.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "alembic/versions/025_feedback_learning.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "alembic/versions/028_policy_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "alembic/versions/028_policy_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/agent_feedback_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/agent_feedback_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/challenge_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/challenge_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/challenge_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/challenge_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/device_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/device_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/device_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/device_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/device_rest_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/main.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/safety_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/safety_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/safety_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/routers/tracking.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/routers/tracking.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/routers/tracking.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "api/routers/tracking.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "baps/obstacle_assessment.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "baps/spi_calculator.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "behavior_rx/core/rx_schemas.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "behavior_rx/core/rx_schemas.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "behavior_rx/tests/test_v32_behavior_rx.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "behavior_rx/tests/test_v32_models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/core/rx_schemas.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/core/rx_schemas.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "behavior_rx_v32_complete/tests/test_v32_behavior_rx.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "behavior_rx_v32_complete/tests/test_v32_models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/challenge_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/challenge_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/challenge_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/challenge_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/challenge_service.py",
+      "schedule": "11:30"
+    },
+    {
+      "file": "core/challenge_service.py",
+      "schedule": "17:30"
+    },
+    {
+      "file": "core/challenge_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/diagnostic_pipeline.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/diagnostic_pipeline.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/diagnostic_pipeline.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/diagnostic_pipeline.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/diagnostic_pipeline.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/diagnostic_pipeline.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/diagnostic_pipeline.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/feedback_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/feedback_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/implicit_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/implicit_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/implicit_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/implicit_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/implicit_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/incentive_integration.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/intervention_combinations.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/intervention_tracker.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/intervention_tracker.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/micro_action_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/micro_action_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/milestone_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/milestone_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/milestone_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/milestone_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/milestone_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "09:00"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "11:30"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "17:30"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "11:30"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "17:30"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "11:30"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "17:30"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/policy_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/policy_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/policy_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/program_service.py",
+      "schedule": "09:00"
+    },
+    {
+      "file": "core/program_service.py",
+      "schedule": "11:30"
+    },
+    {
+      "file": "core/program_service.py",
+      "schedule": "17:30"
+    },
+    {
+      "file": "core/program_service.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/rule_registry.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/rule_registry.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/rule_registry.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "09:00"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "11:30"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "17:30"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "09:00"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "11:30"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "17:30"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/scheduler.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/diagnostics/support_assessment.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/diagnostics/support_assessment.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "core/rag/pipeline.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "disclosure/display_adapter.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "disclosure/permissions.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "integrations/dify_workflow_creator.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/create_mock_cases.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "scripts/generate_sim_data.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/behavior_engine.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "services/logic_engine/schema/rules_definition.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "tests/integration_test.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "tests/test_v32_models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "tests/test_v3_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "tests/test_v3_api.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "tests/test_v3_auth.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "v3/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "v3/models.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "v3/routers/tracking.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "v3/routers/tracking.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "v3/routers/tracking.py",
+      "schedule": "daily"
+    },
+    {
+      "file": "v3/routers/tracking.py",
+      "schedule": "daily"
+    }
+  ],
+  "summary": {
+    "total_celery_tasks": 0,
+    "total_scheduled_jobs": 13,
+    "total_event_handlers": 40,
+    "total_cron_configs": 2
+  }
+}

@@ -83,9 +83,22 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
 
-        # 生产环境启用 HSTS
-        if os.getenv("ENABLE_HSTS", "false").lower() == "true":
+        # 生产环境启用 HSTS + CSP
+        env = os.getenv("ENVIRONMENT", "production")
+        if env == "production" or os.getenv("ENABLE_HSTS", "false").lower() == "true":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Content-Security-Policy"] = (
+                "default-src 'self'; "
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+                "style-src 'self' 'unsafe-inline'; "
+                "img-src 'self' data: blob:; "
+                "connect-src 'self' wss: ws:; "
+                "frame-ancestors 'none'"
+            )
+
+        # FIX-08: 隐藏 Server header
+        if "server" in response.headers:
+            del response.headers["server"]
 
         return response
 
@@ -135,15 +148,12 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
-    基于内存的速率限制
-
-    生产环境应替换为 Redis 后端
+    速率限制 — Redis 优先 + 内存回退 (FIX-11)
     """
 
     def __init__(self, app, requests_per_minute: int = 60):
         super().__init__(app)
         self.rpm = requests_per_minute
-        self._buckets: dict = {}  # ip -> [(timestamp, count)]
 
     async def dispatch(self, request: Request, call_next):
         # 跳过健康检查
@@ -151,19 +161,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"
-        now = time.time()
-        window_start = now - 60
 
-        # 清理过期记录
-        if client_ip in self._buckets:
-            self._buckets[client_ip] = [
-                t for t in self._buckets[client_ip] if t > window_start
-            ]
-        else:
-            self._buckets[client_ip] = []
+        from core.rate_limiter import check_rate_limit
+        allowed, remaining = check_rate_limit(
+            key=f"global:{client_ip}",
+            max_attempts=self.rpm,
+            window_seconds=60,
+            prefix="rl:"
+        )
 
-        # 检查限制
-        if len(self._buckets[client_ip]) >= self.rpm:
+        if not allowed:
             return Response(
                 content='{"detail": "Rate limit exceeded"}',
                 status_code=429,
@@ -171,13 +178,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 headers={"Retry-After": "60"}
             )
 
-        self._buckets[client_ip].append(now)
-
         response = await call_next(request)
         response.headers["X-RateLimit-Limit"] = str(self.rpm)
-        response.headers["X-RateLimit-Remaining"] = str(
-            self.rpm - len(self._buckets[client_ip])
-        )
+        response.headers["X-RateLimit-Remaining"] = str(remaining)
         return response
 
 

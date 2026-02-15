@@ -1,0 +1,561 @@
+{
+  "extraction_version": "2.0.0",
+  "extraction_time": "20260213_235948",
+  "project_root": "D:\\behavioral-health-project",
+  "elapsed_seconds": 8.0,
+  "modules": {
+    "1_data_models": {
+      "label": "数据模型",
+      "total_orm_models": 141,
+      "total_pydantic_schemas": 319,
+      "total_enums": 184,
+      "orm_tables": [
+        "user_activity_logs",
+        "tenant_audit_logs",
+        "assessments",
+        "assessment_sessions",
+        "promotion_applications",
+        "stage_transition_logs",
+        "content_bookmarks",
+        "agent_growth_points",
+        "question_bank",
+        "health_competency_assessments",
+        "badges",
+        "behavioral_profiles",
+        "behavior_audit_logs",
+        "nudge_records",
+        "survey_distributions",
+        "content_comments",
+        "support_assessments",
+        "tenant_clients",
+        "obstacle_assessments",
+        "learning_time_logs",
+        "stage_applicability",
+        "survey_response_answers",
+        "knowledge_chunks",
+        "health_data",
+        "micro_action_logs",
+        "challenge_enrollments",
+        "user_memorials",
+        "workout_records",
+        "surveys",
+        "knowledge_contributions",
+        "trigger_records",
+        "tenant_agent_mappings",
+        "knowledge_domains",
+        "batch_ingestion_jobs",
+        "users",
+        "incentive_rewards",
+        "agent_feedbacks",
+        "chat_messages",
+        "activity_records",
+        "safety_logs",
+        "content_likes",
+        "user_milestones",
+        "hrv_readings",
+        "risk_boundary",
+        "behavior_traces",
+        "exam_results",
+        "user_point_balances",
+        "user_credits",
+        "micro_action_tasks",
+        "intervention_strategies",
+        "agent_handoff_log",
+        "user_change_cause_scores",
+        "learning_points_logs",
+        "sleep_records",
+        "chat_sessions",
+        "reminders",
+        "learning_progress",
+        "agent_skill_graph",
+        "user_devices",
+        "survey_questions",
+        "comb_assessments",
+        "cost_budget_ledger",
+        "vital_signs",
+        "user_learning_stats",
+        "agent_compositions",
+        "conflict_matrix",
+        "agent_marketplace_listings",
+        "knowledge_documents",
+        "change_causes",
+        "user_state_sync",
+        "course_modules",
+        "coach_push_queue",
+        "agent_applicability_matrix",
+        "survey_responses",
+        "point_events",
+        "batch_answers",
+        "challenge_push_logs",
+        "heart_rate_readings",
+        "intervention_outcomes",
+        "user_sessions",
+        "assessment_assignments",
+        "rag_query_logs",
+        "llm_call_logs",
+        "user_streaks",
+        "user_points",
+        "expert_domain",
+        "coach_review_items",
+        "policy_rules",
+        "companion_relations",
+        "policy_stage_transition_log",
+        "contraindications",
+        "device_alerts",
+        "challenge_day_pushes",
+        "point_transactions",
+        "content_items",
+        "flip_card_records",
+        "agent_templates",
+        "user_rewards",
+        "evidence_tier_binding",
+        "agent_metrics_daily",
+        "user_badges",
+        "agent_prompt_versions",
+        "glucose_readings",
+        "food_analyses",
+        "challenge_survey_responses",
+        "interventions",
+        "expert_tenants",
+        "content_audio",
+        "behavior_history",
+        "rx_prescriptions",
+        "challenge_templates",
+        "exam_definitions",
+        "decision_trace",
+        "rx_strategy_templates",
+        "intervention_protocol",
+        "coach_messages",
+        "policy_intervention_outcome",
+        "knowledge_citations",
+        "self_efficacy_assessments",
+        "rule_priority"
+      ],
+      "files_scanned": 489
+    },
+    "2_api_endpoints": {
+      "label": "API端点",
+      "total_endpoints": 665,
+      "total_modules": 161,
+      "total_routers": 86,
+      "auth_distribution": {
+        "public": 165,
+        "admin_only": 66,
+        "authenticated": 223,
+        "coach_or_admin": 96,
+        "custom": 111,
+        "role_required": 4
+      },
+      "methods_distribution": {
+        "GET": 0,
+        "POST": 0,
+        "PUT": 0,
+        "DELETE": 0,
+        "PATCH": 0
+      }
+    },
+    "3_agent_registry": {
+      "label": "Agent注册表",
+      "total_domain_agents": 17,
+      "total_expert_agents": 8,
+      "domain_list": [
+        null,
+        "AgentDomain.NUTRITION",
+        "AgentDomain.CARDIAC_REHAB",
+        "AgentDomain.GLUCOSE",
+        "AgentDomain.TCM",
+        "AgentDomain.WEIGHT",
+        "AgentDomain.MOTIVATION",
+        "AgentDomain.STRESS",
+        "AgentDomain.CRISIS",
+        "AgentDomain.MENTAL",
+        "AgentDomain.BEHAVIOR_RX",
+        "AgentDomain.SLEEP",
+        "AgentDomain.EXERCISE"
+      ],
+      "expert_list": [
+        "AdherenceExpertAgent",
+        "BehaviorCoachAgent",
+        "CardiacExpertAgent",
+        "MetabolicExpertAgent",
+        "AdherenceExpertAgent",
+        "BehaviorCoachAgent",
+        "CardiacExpertAgent",
+        "MetabolicExpertAgent"
+      ]
+    },
+    "4_config_files": {
+      "label": "配置文件",
+      "total_config_files": 60,
+      "total_inline_configs": 2,
+      "config_file_list": [
+        {
+          "path": "configs/agent_templates_seed.json",
+          "items": 12
+        },
+        {
+          "path": "configs/alert_thresholds.json",
+          "items": 4
+        },
+        {
+          "path": "configs/api_gateway.yaml",
+          "items": 0
+        },
+        {
+          "path": "configs/badges.json",
+          "items": 3
+        },
+        {
+          "path": "configs/change_causes.json",
+          "items": 24
+        },
+        {
+          "path": "configs/comb_questions.json",
+          "items": 6
+        },
+        {
+          "path": "configs/course_modules.json",
+          "items": 3
+        },
+        {
+          "path": "configs/expert_domains.json",
+          "items": 1
+        },
+        {
+          "path": "configs/glucose-14d-template.json",
+          "items": 9
+        },
+        {
+          "path": "configs/health_competency_questions.json",
+          "items": 6
+        },
+        {
+          "path": "configs/intervention_strategies.json",
+          "items": 45
+        },
+        {
+          "path": "configs/milestones.json",
+          "items": 4
+        },
+        {
+          "path": "configs/obstacle_questions_full.json",
+          "items": 8
+        },
+        {
+          "path": "configs/point_events.json",
+          "items": 3
+        },
+        {
+          "path": "configs/ports.yaml",
+          "items": 0
+        },
+        {
+          "path": "configs/promotion_rules.json",
+          "items": 4
+        },
+        {
+          "path": "configs/rx_strategies.json",
+          "items": 2
+        },
+        {
+          "path": "configs/safety_keywords.json",
+          "items": 5
+        },
+        {
+          "path": "configs/safety_rules.json",
+          "items": 6
+        },
+        {
+          "path": "configs/self_efficacy_questions.json",
+          "items": 6
+        },
+        {
+          "path": "configs/spi_mapping.json",
+          "items": 4
+        },
+        {
+          "path": "configs/support_assessment_questions.json",
+          "items": 6
+        },
+        {
+          "path": "configs/assessment/diagnosis_prompts_complete.json",
+          "items": 7
+        },
+        {
+          "path": "configs/assessment/high_freq_questions.json",
+          "items": 1
+        },
+        {
+          "path": "configs/assessment/prescription_strategy_library.json",
+          "items": 11
+        },
+        {
+          "path": "configs/assessment/spi_implicit_mapping_complete.json",
+          "items": 9
+        },
+        {
+          "path": "configs/behavior/behavior_rules.json",
+          "items": 9
+        },
+        {
+          "path": "configs/challenges/glucose_14day.json",
+          "items": 9
+        },
+        {
+          "path": "data/dify_prompts.json",
+          "items": 4
+        },
+        {
+          "path": "data/profiles/1.json",
+          "items": 18
+        },
+        {
+          "path": "data/profiles/2.json",
+          "items": 18
+        },
+        {
+          "path": "data/profiles/test-integration-user.json",
+          "items": 18
+        },
+        {
+          "path": "data/questionnaire_templates/behavior_change_assessment.json",
+          "items": 13
+        },
+        {
+          "path": "data/vectordb/default__vector_store.json",
+          "items": 3
+        },
+        {
+          "path": "data/vectordb/docstore.json",
+          "items": 3
+        },
+        {
+          "path": "data/vectordb/graph_store.json",
+          "items": 1
+        },
+        {
+          "path": "data/vectordb/image__vector_store.json",
+          "items": 3
+        },
+        {
+          "path": "data/vectordb/index_store.json",
+          "items": 1
+        },
+        {
+          "path": "data/vectordb/mental_health/default__vector_store.json",
+          "items": 3
+        },
+        {
+          "path": "data/vectordb/mental_health/docstore.json",
+          "items": 3
+        },
+        {
+          "path": "data/vectordb/mental_health/graph_store.json",
+          "items": 1
+        },
+        {
+          "path": "data/vectordb/mental_health/image__vector_store.json",
+          "items": 3
+        },
+        {
+          "path": "data/vectordb/mental_health/index_store.json",
+          "items": 1
+        },
+        {
+          "path": "behavior_rx/configs/rx_strategies.json",
+          "items": 2
+        },
+        {
+          "path": "behavior_rx_v32_complete/behavior_rx/configs/rx_strategies.json",
+          "items": 2
+        },
+        {
+          "path": ".env",
+          "items": null
+        },
+        {
+          "path": "architecture.yaml",
+          "items": null
+        },
+        {
+          "path": "config.yaml",
+          "items": null
+        },
+        {
+          "path": "docker-compose.app.yaml",
+          "items": null
+        },
+        {
+          "path": "docker-compose.yaml",
+          "items": null
+        },
+        {
+          "path": "docker-compose.yml",
+          "items": null
+        },
+        {
+          "path": "experts.json",
+          "items": 1
+        },
+        {
+          "path": "openapi_dump.json",
+          "items": 4
+        },
+        {
+          "path": "package-lock.json",
+          "items": 4
+        },
+        {
+          "path": "package.json",
+          "items": 2
+        },
+        {
+          "path": "pyproject.toml",
+          "items": null
+        },
+        {
+          "path": "test-chat.json",
+          "items": 4
+        },
+        {
+          "path": "tmp_openapi.json",
+          "items": 4
+        },
+        {
+          "path": "tsconfig.json",
+          "items": 2
+        },
+        {
+          "path": "xingjian_coach.yml",
+          "items": null
+        }
+      ]
+    },
+    "5_tenant_architecture": {
+      "label": "多租户架构",
+      "total_tenant_models": 5,
+      "total_isolation_patterns": 25,
+      "total_auth_functions": 11,
+      "isolation_types": [
+        "tenant_id_filter",
+        "user_id_filter",
+        "coach_id_filter"
+      ]
+    },
+    "6_safety_pipeline": {
+      "label": "安全管道",
+      "total_policy_rules": 11,
+      "total_crisis_keywords": 8,
+      "total_safety_functions": 14,
+      "crisis_keyword_list": [
+        "去死",
+        "割腕",
+        "遗书",
+        "自残",
+        "跳楼",
+        "结束生命",
+        "自杀",
+        "不想活"
+      ]
+    },
+    "7_alembic_migrations": {
+      "label": "Alembic迁移",
+      "total_migrations": 31,
+      "total_tables": 89,
+      "chain_length": 0,
+      "migration_dirs_found": [
+        "alembic/versions"
+      ]
+    },
+    "8_frontend": {
+      "label": "前端路由",
+      "total_routes": 144,
+      "total_api_services": 216,
+      "total_components": 204,
+      "total_stores": 13,
+      "frontend_dirs": [
+        "admin-portal",
+        "h5",
+        "h5-patient-app",
+        "frontend"
+      ]
+    },
+    "9_scheduled_tasks": {
+      "label": "定时任务",
+      "total_celery_tasks": 0,
+      "total_scheduled_jobs": 13,
+      "total_event_handlers": 40,
+      "total_cron_configs": 2
+    },
+    "10_dify_workflows": {
+      "label": "Dify工作流",
+      "total_workflows": 6,
+      "total_integration_files": 3,
+      "workflow_list": [
+        {
+          "file": "dify_workflows/baps_assessment_workflow.yml",
+          "name": "",
+          "nodes": 0
+        },
+        {
+          "file": "dify-setup/behavior-health-agent.yml",
+          "name": "",
+          "nodes": 0
+        },
+        {
+          "file": "dify-setup/behavior-health-coach.yaml",
+          "name": "",
+          "nodes": 0
+        },
+        {
+          "file": "dify-setup/proactive-health-balance.yaml",
+          "name": "",
+          "nodes": 0
+        },
+        {
+          "file": "dify-setup/proactive-health-coach-deepseek.yaml",
+          "name": "",
+          "nodes": 0
+        },
+        {
+          "file": "dify-setup/proactive-health-coach.yaml",
+          "name": "",
+          "nodes": 0
+        }
+      ]
+    }
+  },
+  "totals": {
+    "orm_models": 141,
+    "pydantic_schemas": 319,
+    "enums": 184,
+    "api_endpoints": 665,
+    "domain_agents": 17,
+    "expert_agents": 8,
+    "config_files": 60,
+    "alembic_migrations": 31,
+    "vue_routes": 144,
+    "vue_components": 204,
+    "celery_tasks": 0,
+    "dify_workflows": 6
+  },
+  "quality_checks": [],
+  "v1_comparison": {
+    "v1_total_models": 2241,
+    "v2_orm_models": 141,
+    "v2_pydantic_schemas": 319,
+    "improvement": "V2区分了ORM和Schema, V1混为一体",
+    "v1_endpoints": 667,
+    "v2_endpoints": 665,
+    "v1_auth_extracted": false,
+    "v2_auth_extracted": true,
+    "v1_configs_empty": true,
+    "v2_configs_populated": true,
+    "new_modules": [
+      "Alembic迁移历史",
+      "前端路由与API服务",
+      "定时任务与事件",
+      "Dify工作流"
+    ]
+  }
+}

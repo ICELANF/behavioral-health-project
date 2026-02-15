@@ -6,6 +6,7 @@ import json
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 import logging
+from loguru import logger
 from fastapi import BackgroundTasks, Depends, FastAPI, Body, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -235,7 +236,31 @@ async def lifespan(app):
         _scheduler.shutdown(wait=False)
         print("[API] APScheduler 已关闭")
 
-app = FastAPI(title="BHP Xingjian Agent Gateway", version="3.1.0", lifespan=lifespan)
+# FIX-07: 生产环境禁用 API 文档
+_env = os.getenv("ENVIRONMENT", "production")
+_docs_url = "/docs" if _env in ("development", "test") else None
+_redoc_url = "/redoc" if _env in ("development", "test") else None
+_openapi_url = "/openapi.json" if _env in ("development", "test") else None
+
+app = FastAPI(
+    title="BHP Xingjian Agent Gateway",
+    version="3.1.0",
+    lifespan=lifespan,
+    docs_url=_docs_url,
+    redoc_url=_redoc_url,
+    openapi_url=_openapi_url,
+)
+
+# FIX-02: 全局异常处理脱敏
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc: Exception):
+    import uuid as _uuid
+    error_id = str(_uuid.uuid4())[:8]
+    logger.exception(f"[{error_id}] Unhandled exception: {exc}")
+    detail = str(exc) if _env in ("development", "test") else f"请联系管理员, 错误编号: {error_id}"
+    return JSONResponse(status_code=500, content={"error": "InternalServerError", "message": "服务器内部错误", "detail": detail})
 
 # --- 配置中心 (从 api.config 集中读取) ---
 from api.config import DIFY_API_URL, DIFY_API_KEY, OLLAMA_API_URL, OLLAMA_MODEL
@@ -243,6 +268,13 @@ from api.config import DIFY_API_URL, DIFY_API_KEY, OLLAMA_API_URL, OLLAMA_MODEL
 # --- 生产级中间件 (CORS白名单 + 安全头 + 日志 + 限流 + Sentry) ---
 from core.middleware import setup_production_middleware
 setup_production_middleware(app)
+
+# --- 安全加固中间件 (FIX-12~18: Legacy鉴权 + CSRF审计 + HTTPS重定向) ---
+try:
+    from core.register_security import register_all_security
+    register_all_security(app)
+except Exception as e:
+    logger.warning(f"[Security] 安全中间件注册失败: {e}")
 
 # 注册认证路由
 try:

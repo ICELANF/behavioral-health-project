@@ -67,3 +67,61 @@ dify/
 
 # Smart Environment
 .smart-env
+
+# Reports (generated at runtime)
+reports/
+
+# Coverage
+.coverage
+htmlcov/
+
+# Archives (don't commit zips)
+*.zip
+*.rar
+
+# SQLite databases
+*.db
+
+# Backup files
+*.bak
+*.bak.*
+*.bak[0-9]*
+
+# Uploaded user files
+static/uploads/
+
+# Temp diagnostic/fix scripts (one-time use)
+openapi_dump.json
+openapi_raw.json
+tmp_openapi.json
+
+# Playwright
+playwright-report/
+
+# Celery
+celerybeat-schedule
+
+# CI/CD source (already integrated)
+cicd-final/
+
+# Security backup (temp)
+.security-backup/
+
+# Temp log/output files at root
+api_full_logs.txt
+api_logs_tmp.txt
+api_stderr.txt
+api_stdout.txt
+auth_errors.txt
+actual_routes.txt
+all_routes.txt
+project_tree.txt
+tree.txt
+verify_report.txt
+_tmp_*.txt
+error_diagnosis*.json
+integration_report*.json
+pentest_report.json
+
+# Old backup directories
+.github/.github/

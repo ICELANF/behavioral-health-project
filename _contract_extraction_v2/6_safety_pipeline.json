@@ -1,0 +1,1294 @@
+{
+  "policy_gate_rules": [
+    {
+      "file": "extract_platform_info.py",
+      "match": "rules = []"
+    },
+    {
+      "file": "alembic/versions/028_policy_engine.py",
+      "match": "'idx_rule_priority_rule', 'rule_priority'"
+    },
+    {
+      "file": "alembic/versions/028_policy_engine.py",
+      "match": "'winner_rule', JSONB, nullable=True),\n        sa.Column('tenant_id'"
+    },
+    {
+      "file": "core/models.py",
+      "class": "PolicyRule",
+      "docstring": "策略规则定义 — V007 Policy OS",
+      "methods": []
+    },
+    {
+      "file": "core/models.py",
+      "class": "PolicyInterventionOutcome",
+      "docstring": "V007干预效果 (distinct from m019 intervention_outcomes)",
+      "methods": []
+    },
+    {
+      "file": "core/models.py",
+      "class": "PolicyStageTransitionLog",
+      "docstring": "V007阶段跃迁日志 (distinct from m019 stage_transition_logs)",
+      "methods": []
+    },
+    {
+      "file": "core/agents/policy_gate.py",
+      "class": "RuntimePolicyGate",
+      "docstring": "所有干预方案在下发给用户前必须经过策略闸门审查",
+      "methods": [
+        {
+          "name": "evaluate",
+          "docstring": "Args:\n    current_stage: S0-S6\n    stability: \"stable\" | \"unstable\" | \"critical\"\n    intervention_strength: \"soft\" | \"normal\" | \"challenge\"\n    dropout_risk: 是否有退出风险\n    relapse_risk: 是否有复发风险\n    risk"
+        }
+      ]
+    },
+    {
+      "file": "core/brain/policy_gate.py",
+      "class": "PolicyDecisionType",
+      "docstring": "策略决定类型",
+      "methods": []
+    },
+    {
+      "file": "core/brain/policy_gate.py",
+      "class": "PolicyDecision",
+      "docstring": "策略闸门决定",
+      "methods": []
+    },
+    {
+      "file": "core/brain/policy_gate.py",
+      "class": "RuntimePolicyGate",
+      "docstring": "策略闸门 — 所有干预决策必须经过此闸门\n\n规则链 (按优先级从高到低):\n1. 不稳定态 + 强干预 → DELAY\n2. S0-S1 → ALLOW_SOFT_SUPPORT（禁止 CHALLENGE/EXECUTION）\n3. dropout_risk + S3+ → ESCALATE_COACH\n4. relapse_risk → ALLOW_SOFT_SUPPORT\n5. 其余 → ALLOW",
+      "methods": [
+        {
+          "name": "evaluate",
+          "docstring": "评估干预是否被允许\n\nArgs:\n    runtime_state: StageRuntimeBuilder 输出的运行态\n    recommended_mode: 推荐的交互模式 (empathy/challenge/execution)\n    source: 请求来源 (api/agent/system)\n\nReturns:\n    PolicyDecision"
+        }
+      ]
+    },
+    {
+      "file": "services/logic_engine/schema/rules_definition.py",
+      "class": "PolicyGate",
+      "docstring": "策略门控",
+      "methods": []
+    }
+  ],
+  "safety_levels": [
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "match": "pass\n\n        "
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "match": "block_and_escalate"
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "match": "flag_for_review"
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "match": "add_disclaimer"
+    },
+    {
+      "file": "extract_platform_contracts_v2.py",
+      "match": "pass"
+    },
+    {
+      "file": "alembic/versions/002_full_schema.py",
+      "match": "pass"
+    },
+    {
+      "file": "api/coach_api.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "api/coach_api.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "api/coach_api.py",
+      "match": "pass  "
+    },
+    {
+      "file": "api/main.py",
+      "match": "pass\n\n        "
+    },
+    {
+      "file": "api/main.py",
+      "match": "pass"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "match": "LOW = \"LOW"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "match": "MEDIUM = \"MEDIUM"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "match": "HIGH = \"HIGH"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "match": "CRITICAL = \"CRITICAL"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "match": "LOW: None"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "match": "MEDIUM: \"我们注意到您可能需要额外支持，有什么可以帮助您的吗？"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "match": "HIGH: \"您的状态已被记录，专业教练可能随时介入协助。"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "match": "CRITICAL: \"请注意：我们检测到异常情况，专业团队将尽快联系您。"
+    },
+    {
+      "file": "api/miniprogram.py",
+      "match": "pass\n    "
+    },
+    {
+      "file": "api/safety_api.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "api/user_api.py",
+      "match": "pass"
+    },
+    {
+      "file": "api/user_api.py",
+      "match": "pass"
+    },
+    {
+      "file": "api/user_api.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "api/user_api.py",
+      "match": "pass"
+    },
+    {
+      "file": "api/user_api.py",
+      "match": "pass"
+    },
+    {
+      "file": "api/user_api.py",
+      "match": "pass"
+    },
+    {
+      "file": "api/user_api.py",
+      "match": "pass"
+    },
+    {
+      "file": "api/v14/quality_routes.py",
+      "match": "pass"
+    },
+    {
+      "file": "behavior_rx/agents/adherence_expert_agent.py",
+      "match": "MEDIUM = 6.0             # 中等"
+    },
+    {
+      "file": "behavior_rx/agents/adherence_expert_agent.py",
+      "match": "LOW = 4.0                # 低依从"
+    },
+    {
+      "file": "behavior_rx/agents/adherence_expert_agent.py",
+      "match": "CRITICAL = 30   # 严重逾期"
+    },
+    {
+      "file": "behavior_rx/agents/adherence_expert_agent.py",
+      "match": "MEDIUM:\n            diagnosed.append({"
+    },
+    {
+      "file": "behavior_rx/agents/adherence_expert_agent.py",
+      "match": "CRITICAL:\n            parts.append("
+    },
+    {
+      "file": "behavior_rx/agents/adherence_expert_agent.py",
+      "match": "CRITICAL:\n            parts.append("
+    },
+    {
+      "file": "behavior_rx/agents/base_expert_agent.py",
+      "match": "pass\n            "
+    },
+    {
+      "file": "behavior_rx/agents/base_expert_agent.py",
+      "match": "pass\n\n        "
+    },
+    {
+      "file": "behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH = 40          # 高恐惧"
+    },
+    {
+      "file": "behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "LOW = 15           # 低恐惧"
+    },
+    {
+      "file": "behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH = 160             # 收缩压运动禁忌阈值"
+    },
+    {
+      "file": "behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH = 100             # 舒张压运动禁忌阈值"
+    },
+    {
+      "file": "behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH:\n                return {"
+    },
+    {
+      "file": "behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH:\n            notes.append({"
+    },
+    {
+      "file": "behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH:\n                return ("
+    },
+    {
+      "file": "behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "flag_for_review"
+    },
+    {
+      "file": "behavior_rx/core/rx_schemas.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "behavior_rx/core/rx_schemas.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "behavior_rx/tests/test_v32_policy_engine.py",
+      "match": "LOW: 2"
+    },
+    {
+      "file": "behavior_rx/tests/test_v32_policy_engine.py",
+      "match": "HIGH: 4"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/adherence_expert_agent.py",
+      "match": "MEDIUM = 6.0             # 中等"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/adherence_expert_agent.py",
+      "match": "LOW = 4.0                # 低依从"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/adherence_expert_agent.py",
+      "match": "CRITICAL = 30   # 严重逾期"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/adherence_expert_agent.py",
+      "match": "MEDIUM:\n            diagnosed.append({"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/adherence_expert_agent.py",
+      "match": "CRITICAL:\n            parts.append("
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/adherence_expert_agent.py",
+      "match": "CRITICAL:\n            parts.append("
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/base_expert_agent.py",
+      "match": "pass\n            "
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/base_expert_agent.py",
+      "match": "pass\n\n        "
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH = 40          # 高恐惧"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "LOW = 15           # 低恐惧"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH = 160             # 收缩压运动禁忌阈值"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH = 100             # 舒张压运动禁忌阈值"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH:\n                return {"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH:\n            notes.append({"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "HIGH:\n                return ("
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/cardiac_expert_agent.py",
+      "match": "flag_for_review"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/core/rx_schemas.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "behavior_rx_v32_complete/behavior_rx/core/rx_schemas.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "behavior_rx_v32_complete/tests/test_v32_policy_engine.py",
+      "match": "LOW: 2"
+    },
+    {
+      "file": "behavior_rx_v32_complete/tests/test_v32_policy_engine.py",
+      "match": "HIGH: 4"
+    },
+    {
+      "file": "core/auto_exit_handler.py",
+      "match": "severity='critical'"
+    },
+    {
+      "file": "core/auto_exit_handler.py",
+      "match": "severity='critical'"
+    },
+    {
+      "file": "core/auto_exit_handler.py",
+      "match": "severity='critical'"
+    },
+    {
+      "file": "core/auto_exit_handler.py",
+      "match": "severity='critical'"
+    },
+    {
+      "file": "core/auto_exit_handler.py",
+      "match": "severity='critical'"
+    },
+    {
+      "file": "core/auto_exit_handler.py",
+      "match": "severity='warning'"
+    },
+    {
+      "file": "core/auto_exit_handler.py",
+      "match": "severity='warning'"
+    },
+    {
+      "file": "core/auto_exit_handler.py",
+      "match": "pass"
+    },
+    {
+      "file": "core/conflict_resolver.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "core/conflict_resolver.py",
+      "match": "pass\n\n\n"
+    },
+    {
+      "file": "core/data_extractor.py",
+      "match": "pass  "
+    },
+    {
+      "file": "core/data_extractor.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"danger\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"danger\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"danger\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"danger\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"danger\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "pass  "
+    },
+    {
+      "file": "core/device_alert_service.py",
+      "match": "pass\n        "
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "CRITICAL = \"critical"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "CRITICAL:\n            primary_agent = "
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "CRITICAL:\n            response_text = ("
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "HIGH:\n            response_text = ("
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "CRITICAL:\n            key_messages.append("
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "CRITICAL:\n            return "
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "HIGH:\n            return "
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "CRITICAL:\n            questions.append("
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "HIGH:\n            questions.append("
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity = \"critical\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity=\"info\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "severity=\"warning\""
+    },
+    {
+      "file": "core/master_agent_v0.py",
+      "match": "pass\n\n        "
+    },
+    {
+      "file": "core/models.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "core/models.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "core/models.py",
+      "match": "CRITICAL = \"critical"
+    },
+    {
+      "file": "core/models.py",
+      "match": "HIGH = \"very_high"
+    },
+    {
+      "file": "core/models.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "core/models.py",
+      "match": "MEDIUM = \"medium"
+    },
+    {
+      "file": "core/models.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "core/models.py",
+      "match": "LOW = \"very_low"
+    },
+    {
+      "file": "core/models.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "core/models.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "core/models.py",
+      "match": "pass"
+    },
+    {
+      "file": "core/models.py",
+      "match": "pass"
+    },
+    {
+      "file": "core/models.py",
+      "match": "pass"
+    },
+    {
+      "file": "core/models.py",
+      "match": "pass"
+    },
+    {
+      "file": "core/models.py",
+      "match": "pass"
+    },
+    {
+      "file": "core/rule_registry.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "core/scheduler.py",
+      "match": "severity=\"low\""
+    },
+    {
+      "file": "core/trigger_engine.py",
+      "match": "CRITICAL = \"critical"
+    },
+    {
+      "file": "core/trigger_engine.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "core/trigger_engine.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "core/_deprecated_trigger_engine_v0.py",
+      "match": "CRITICAL = \"critical"
+    },
+    {
+      "file": "core/_deprecated_trigger_engine_v0.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "core/_deprecated_trigger_engine_v0.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "core/agents/base.py",
+      "match": "CRITICAL = \"critical"
+    },
+    {
+      "file": "core/agents/base.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "core/agents/base.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "core/agents/base.py",
+      "match": "LOW = \"allow"
+    },
+    {
+      "file": "core/agents/coordinator.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "core/agents/generic_llm_agent.py",
+      "match": "pass\n\n        "
+    },
+    {
+      "file": "core/agents/router.py",
+      "match": "pass\n\n    "
+    },
+    {
+      "file": "core/safety/input_filter.py",
+      "match": "severity=\"critical\""
+    },
+    {
+      "file": "core/safety/input_filter.py",
+      "match": "severity=\"high\""
+    },
+    {
+      "file": "core/safety/input_filter.py",
+      "match": "severity=\"high\""
+    },
+    {
+      "file": "core/safety/input_filter.py",
+      "match": "severity=\"medium\""
+    },
+    {
+      "file": "core/safety/input_filter.py",
+      "match": "severity=\"low\""
+    },
+    {
+      "file": "disclosure/controller.py",
+      "match": "CRITICAL:\n            decision.disclosure_level = DisclosureLevel.NONE"
+    },
+    {
+      "file": "disclosure/controller.py",
+      "match": "HIGH:\n            decision.disclosure_level = DisclosureLevel.MINIMAL"
+    },
+    {
+      "file": "disclosure/controller.py",
+      "match": "CRITICAL:\n            logger.warning(f"
+    },
+    {
+      "file": "disclosure/rewriter.py",
+      "match": "pass\n    \n    "
+    },
+    {
+      "file": "disclosure/signature.py",
+      "match": "CRITICAL = \"critical"
+    },
+    {
+      "file": "disclosure/signature.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "disclosure/signature.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "disclosure/signature.py",
+      "match": "CRITICAL: {"
+    },
+    {
+      "file": "disclosure/signature.py",
+      "match": "HIGH: {"
+    },
+    {
+      "file": "disclosure/signature.py",
+      "match": "LOW: {"
+    },
+    {
+      "file": "scripts/assessment_importer.py",
+      "match": "pass\n\n            "
+    },
+    {
+      "file": "scripts/create_mock_cases.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/create_mock_cases.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/create_mock_cases.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/create_mock_cases.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/create_mock_cases.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/prescription_engine.py",
+      "match": "LOW = \"low"
+    },
+    {
+      "file": "scripts/prescription_engine.py",
+      "match": "HIGH = \"high"
+    },
+    {
+      "file": "scripts/prescription_engine.py",
+      "match": "LOW: {"
+    },
+    {
+      "file": "scripts/prescription_engine.py",
+      "match": "HIGH: {"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "scripts/seed_data.py",
+      "match": "pass"
+    },
+    {
+      "file": "services/logic_engine/schema/rules_definition.py",
+      "match": "LOW = \"Low"
+    },
+    {
+      "file": "services/logic_engine/schema/rules_definition.py",
+      "match": "MEDIUM = \"Medium"
+    },
+    {
+      "file": "services/logic_engine/schema/rules_definition.py",
+      "match": "HIGH = \"High"
+    },
+    {
+      "file": "services/logic_engine/schema/rules_definition.py",
+      "match": "CRITICAL = \"Critical"
+    },
+    {
+      "file": "tests/integration_test.py",
+      "match": "pass\n\n        "
+    },
+    {
+      "file": "tests/test_v32_policy_engine.py",
+      "match": "LOW: 1"
+    },
+    {
+      "file": "tests/test_v32_policy_engine.py",
+      "match": "HIGH: 3"
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass"
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass"
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass"
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass\n    "
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass\n    "
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass\n    "
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass\n    "
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass"
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass"
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass"
+    },
+    {
+      "file": "workbench/expert_review.py",
+      "match": "pass"
+    },
+    {
+      "file": "xingjian-agent/core/data_extractor.py",
+      "match": "pass  "
+    },
+    {
+      "file": "xingjian-agent/core/data_extractor.py",
+      "match": "pass\n\n    "
+    }
+  ],
+  "crisis_keywords": [
+    "去死",
+    "割腕",
+    "遗书",
+    "自残",
+    "跳楼",
+    "结束生命",
+    "自杀",
+    "不想活"
+  ],
+  "alert_thresholds": {},
+  "safety_configs": {
+    "configs/safety_rules.json": {
+      "_comment": "安全规则配置 — 阈值/白名单/分级",
+      "thresholds": {
+        "max_input_length": 5000,
+        "max_output_length": 8000,
+        "crisis_auto_escalate": true,
+        "pii_log_enabled": false,
+        "disclaimer_always_append": false,
+        "review_queue_enabled": true
+      },
+      "evidence_tier_weights": {
+        "T1": 1.0,
+        "T2": 0.8,
+        "T3": 0.5,
+        "T4": 0.2
+      },
+      "severity_levels": {
+        "critical": {
+          "action": "block_and_escalate",
+          "notify_admin": true,
+          "log_input": true
+        },
+        "high": {
+          "action": "flag_for_review",
+          "notify_admin": true,
+          "log_input": true
+        },
+        "medium": {
+          "action": "add_disclaimer",
+          "notify_admin": false,
+          "log_input": true
+        },
+        "low": {
+          "action": "pass",
+          "notify_admin": false,
+          "log_input": false
+        }
+      },
+      "whitelist_domains": [
+        "nutrition",
+        "exercise",
+        "sleep",
+        "motivation",
+        "tcm"
+      ],
+      "escalation_contacts": {
+        "crisis_hotline": "400-161-9995",
+        "admin_notification": true
+      }
+    },
+    "configs/safety_keywords.json": {
+      "_comment": "安全关键词配置 — 从 CrisisAgent 提取 + 扩展",
+      "crisis": [
+        "自杀",
+        "自残",
+        "不想活",
+        "结束生命",
+        "去死",
+        "跳楼",
+        "割腕",
+        "遗书",
+        "想死",
+        "自我了断",
+        "安乐死",
+        "服毒",
+        "上吊",
+        "跳河",
+        "烧炭"
+      ],
+      "warning": [
+        "活着没意思",
+        "太痛苦了",
+        "撑不下去",
+        "崩溃",
+        "绝望",
+        "没有希望",
+        "受不了了",
+        "生不如死",
+        "厌世",
+        "了无生趣",
+        "无法承受",
+        "再也不想",
+        "放弃了",
+        "没意义",
+        "活着累"
+      ],
+      "blocked": [
+        "代购药物",
+        "违禁药品",
+        "毒品",
+        "迷药",
+        "非法行医",
+        "假药",
+        "黑市"
+      ],
+      "medical_advice": [
+        "开药",
+        "处方",
+        "推荐药物",
+        "用什么药",
+        "吃多少",
+        "药量",
+        "停药",
+        "换药",
+        "诊断",
+        "确诊",
+        "是什么病",
+        "得了什么"
+      ]
+    },
+    "configs/alert_thresholds.json": {
+      "glucose": {
+        "danger_high": {
+          "value": 13.9,
+          "unit": "mmol/L",
+          "message": "血糖危险偏高"
+        },
+        "warning_high": {
+          "value": 10.0,
+          "unit": "mmol/L",
+          "message": "血糖偏高"
+        },
+        "danger_low": {
+          "value": 3.9,
+          "unit": "mmol/L",
+          "message": "血糖危险偏低，请立即进食"
+        },
+        "warning_low": {
+          "value": 3.0,
+          "unit": "mmol/L",
+          "message": "血糖极低，需要紧急处理"
+        }
+      },
+      "heart_rate": {
+        "danger_high": {
+          "value": 150,
+          "unit": "bpm",
+          "rest_only": true,
+          "message": "静息心率危险偏高"
+        },
+        "warning_high": {
+          "value": 120,
+          "unit": "bpm",
+          "rest_only": true,
+          "message": "静息心率偏高"
+        },
+        "danger_low": {
+          "value": 40,
+          "unit": "bpm",
+          "message": "心率危险偏低"
+        },
+        "warning_low": {
+          "value": 50,
+          "unit": "bpm",
+          "message": "心率异常偏低"
+        }
+      },
+      "exercise": {
+        "warning_excessive": {
+          "value": 180,
+          "unit": "min/day",
+          "message": "运动量过大，注意休息"
+        },
+        "warning_sedentary": {
+          "value": 600,
+          "unit": "sedentary_min/day",
+          "message": "久坐时间过长"
+        }
+      },
+      "sleep": {
+        "warning_low_score": {
+          "value": 50,
+          "unit": "score",
+          "message": "睡眠质量很差"
+        },
+        "warning_short": {
+          "value": 300,
+          "unit": "min",
+          "message": "睡眠时间不足"
+        }
+      }
+    }
+  },
+  "safety_functions": [
+    {
+      "function": "safety_dashboard",
+      "file": "api/safety_api.py",
+      "line": 48,
+      "docstring": "安全仪表盘 — 今日/本周/本月统计",
+      "params": [
+        "db",
+        "admin"
+      ]
+    },
+    {
+      "function": "safety_logs",
+      "file": "api/safety_api.py",
+      "line": 108,
+      "docstring": "安全日志列表 (分页+筛选)",
+      "params": [
+        "page",
+        "page_size",
+        "event_type",
+        "severity",
+        "resolved",
+        "db",
+        "admin"
+      ]
+    },
+    {
+      "function": "safety_log_detail",
+      "file": "api/safety_api.py",
+      "line": 159,
+      "docstring": "安全日志详情",
+      "params": [
+        "log_id",
+        "db",
+        "admin"
+      ]
+    },
+    {
+      "function": "resolve_safety_log",
+      "file": "api/safety_api.py",
+      "line": 189,
+      "docstring": "标记安全事件为已处理",
+      "params": [
+        "log_id",
+        "body",
+        "db",
+        "current_user"
+      ]
+    },
+    {
+      "function": "safety_review_queue",
+      "file": "api/safety_api.py",
+      "line": 217,
+      "docstring": "待审核安全事件队列",
+      "params": [
+        "page",
+        "page_size",
+        "severity",
+        "db",
+        "admin"
+      ]
+    },
+    {
+      "function": "get_safety_config",
+      "file": "api/safety_api.py",
+      "line": 269,
+      "docstring": "获取当前安全关键词/规则配置",
+      "params": [
+        "admin"
+      ]
+    },
+    {
+      "function": "update_safety_config",
+      "file": "api/safety_api.py",
+      "line": 291,
+      "docstring": "更新安全关键词配置 (仅更新传入的字段)",
+      "params": [
+        "body",
+        "admin"
+      ]
+    },
+    {
+      "function": "safety_daily_report",
+      "file": "api/safety_api.py",
+      "line": 334,
+      "docstring": "查看安全日报 (默认昨天)",
+      "params": [
+        "date",
+        "db",
+        "admin"
+      ]
+    },
+    {
+      "function": "check",
+      "file": "core/safety/input_filter.py",
+      "line": 79,
+      "docstring": "检查输入文本安全性",
+      "params": [
+        "text"
+      ]
+    },
+    {
+      "function": "filter",
+      "file": "core/safety/output_filter.py",
+      "line": 57,
+      "docstring": "扫描 LLM 输出并进行安全处理.\n\nArgs:\n    text: LLM 生成的原始输出\n    input_category: L1 输入过滤结果的 category\n\nReturns:\n    OutputFilterResult: 处理后的结果",
+      "params": [
+        "text",
+        "input_category"
+      ]
+    },
+    {
+      "function": "_safety_enabled",
+      "file": "core/safety/pipeline.py",
+      "line": 20,
+      "docstring": "检查安全模块是否启用",
+      "params": []
+    },
+    {
+      "function": "get_safety_pipeline",
+      "file": "core/safety/pipeline.py",
+      "line": 115,
+      "docstring": "获取全局安全管线单例",
+      "params": []
+    },
+    {
+      "function": "filter_output",
+      "file": "core/safety/pipeline.py",
+      "line": 95,
+      "docstring": "L4 输出安全过滤",
+      "params": [
+        "text",
+        "input_category"
+      ]
+    },
+    {
+      "function": "get_crisis_response",
+      "file": "core/safety/pipeline.py",
+      "line": 105,
+      "docstring": "获取标准危机回复模板",
+      "params": []
+    }
+  ],
+  "content_filters": [],
+  "summary": {
+    "total_policy_rules": 11,
+    "total_crisis_keywords": 8,
+    "total_safety_functions": 14,
+    "crisis_keyword_list": [
+      "去死",
+      "割腕",
+      "遗书",
+      "自残",
+      "跳楼",
+      "结束生命",
+      "自杀",
+      "不想活"
+    ]
+  }
+}

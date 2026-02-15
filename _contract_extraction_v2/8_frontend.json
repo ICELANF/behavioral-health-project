@@ -1,0 +1,4079 @@
+{
+  "vue_routes": [
+    {
+      "path": "/login",
+      "name": "Login",
+      "component": "",
+      "meta": {
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/landing",
+      "name": "Landing",
+      "component": "",
+      "meta": {
+        "requiresAuth": "false",
+        "layout": "blank"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client",
+      "name": "ClientHome",
+      "component": "",
+      "meta": {
+        "title": "我的健康",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/home-v2",
+      "name": "ClientHomeOptimized",
+      "component": "",
+      "meta": {
+        "title": "我的健康（优化版）",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/data-input",
+      "name": "ClientDataInput",
+      "component": "",
+      "meta": {
+        "title": "记录数据",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/chat",
+      "name": "ClientChat",
+      "component": "",
+      "meta": {
+        "title": "AI 健康教练",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/chat-v2",
+      "name": "ClientChatOptimized",
+      "component": "",
+      "meta": {
+        "title": "AI 健康助手（优化版）",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/progress",
+      "name": "ClientProgress",
+      "component": "",
+      "meta": {
+        "title": "我的进展",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/my/profile",
+      "name": "ClientMyProfile",
+      "component": "",
+      "meta": {
+        "title": "个人健康档案",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/my/devices",
+      "name": "ClientMyDevices",
+      "component": "",
+      "meta": {
+        "title": "穿戴设备管理",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/my/assessments",
+      "name": "ClientMyAssessments",
+      "component": "",
+      "meta": {
+        "title": "测评记录",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/my/trajectory",
+      "name": "ClientMyTrajectory",
+      "component": "",
+      "meta": {
+        "title": "行为轨迹",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/device-dashboard",
+      "name": "ClientDeviceDashboard",
+      "component": "",
+      "meta": {
+        "title": "设备数据仪表盘",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/assessment/list",
+      "name": "ClientAssessmentList",
+      "component": "",
+      "meta": {
+        "title": "测评中心",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/assessment/take/:id",
+      "name": "ClientAssessmentTake",
+      "component": "",
+      "meta": {
+        "title": "进行测评",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/assessment/result/:id",
+      "name": "ClientAssessmentResult",
+      "component": "",
+      "meta": {
+        "title": "测评结果",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/client/learning-progress",
+      "name": "ClientLearningProgress",
+      "component": "",
+      "meta": {
+        "title": "学习进度",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/coach-portal",
+      "name": "CoachPortal",
+      "component": "",
+      "meta": {
+        "title": "教练工作台",
+        "requiresAuth": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/coach-portal/students",
+      "name": "CoachPortalStudents",
+      "component": "",
+      "meta": {
+        "title": "待跟进学员",
+        "requiresAuth": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/coach-portal/ai-review",
+      "name": "CoachPortalAiReview",
+      "component": "",
+      "meta": {
+        "title": "AI建议审核",
+        "requiresAuth": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/expert-portal",
+      "name": "ExpertPortal",
+      "component": "",
+      "meta": {
+        "title": "督导工作台",
+        "requiresAuth": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/expert-workbench",
+      "name": "ExpertWorkbench",
+      "component": "",
+      "meta": {
+        "title": "专家审核工作台",
+        "requiresAuth": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/exam/session/:id",
+      "name": "ExamSession",
+      "component": "",
+      "meta": {
+        "title": "考试进行中",
+        "requiresAuth": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/component-showcase",
+      "name": "ComponentShowcase",
+      "component": "",
+      "meta": {
+        "title": "组件库展示",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/",
+      "name": "Dashboard",
+      "component": "",
+      "meta": {
+        "title": "工作台",
+        "icon": "dashboard"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "course",
+      "name": "Course",
+      "component": "",
+      "meta": {
+        "title": "课程列表"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "create",
+      "name": "CourseCreate",
+      "component": "",
+      "meta": {
+        "title": "创建课程"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "edit/:id",
+      "name": "CourseEdit",
+      "component": "",
+      "meta": {
+        "title": "编辑课程"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "chapters/:courseId",
+      "name": "CourseChapters",
+      "component": "",
+      "meta": {
+        "title": "章节管理"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "content",
+      "name": "Content",
+      "component": "",
+      "meta": {
+        "title": "内容审核"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "articles",
+      "name": "ContentArticles",
+      "component": "",
+      "meta": {
+        "title": "文章管理"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "cases",
+      "name": "ContentCases",
+      "component": "",
+      "meta": {
+        "title": "案例分享"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "cards",
+      "name": "ContentCards",
+      "component": "",
+      "meta": {
+        "title": "练习卡片"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "video/:videoId/quiz",
+      "name": "VideoQuizCreate",
+      "component": "",
+      "meta": {
+        "title": "创建视频测试"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "video/:videoId/quiz/:quizId",
+      "name": "VideoQuizEdit",
+      "component": "",
+      "meta": {
+        "title": "编辑视频测试"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "question",
+      "name": "Question",
+      "component": "",
+      "meta": {
+        "title": "题库列表"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "create",
+      "name": "QuestionCreate",
+      "component": "",
+      "meta": {
+        "title": "创建题目"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "edit/:id",
+      "name": "QuestionEdit",
+      "component": "",
+      "meta": {
+        "title": "编辑题目"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "exam",
+      "name": "Exam",
+      "component": "",
+      "meta": {
+        "title": "考试列表"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "create",
+      "name": "ExamCreate",
+      "component": "",
+      "meta": {
+        "title": "创建考试"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "edit/:id",
+      "name": "ExamEdit",
+      "component": "",
+      "meta": {
+        "title": "编辑考试"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "results/:examId",
+      "name": "ExamResults",
+      "component": "",
+      "meta": {
+        "title": "成绩管理"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "proctor-review",
+      "name": "ProctorReview",
+      "component": "",
+      "meta": {
+        "title": "监考审核"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "live",
+      "name": "Live",
+      "component": "",
+      "meta": {
+        "title": "直播列表"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "create",
+      "name": "LiveCreate",
+      "component": "",
+      "meta": {
+        "title": "创建直播"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "edit/:id",
+      "name": "LiveEdit",
+      "component": "",
+      "meta": {
+        "title": "编辑直播"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach",
+      "name": "Coach",
+      "component": "",
+      "meta": {
+        "title": "教练列表"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "detail/:id",
+      "name": "CoachDetail",
+      "component": "",
+      "meta": {
+        "title": "教练详情"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "review",
+      "name": "CoachReview",
+      "component": "",
+      "meta": {
+        "title": "晋级审核"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "student",
+      "name": "Student",
+      "component": "",
+      "meta": {
+        "title": "学员管理",
+        "icon": "user"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "prompts",
+      "name": "Prompts",
+      "component": "",
+      "meta": {
+        "title": "Prompt列表"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "create",
+      "name": "PromptCreate",
+      "component": "",
+      "meta": {
+        "title": "创建Prompt"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "edit/:id",
+      "name": "PromptEdit",
+      "component": "",
+      "meta": {
+        "title": "编辑Prompt"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "interventions",
+      "name": "Interventions",
+      "component": "",
+      "meta": {
+        "title": "干预包管理",
+        "icon": "medicine-box"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/my/students",
+      "name": "CoachMyStudents",
+      "component": "",
+      "meta": {
+        "title": "我的学员"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/my/performance",
+      "name": "CoachMyPerformance",
+      "component": "",
+      "meta": {
+        "title": "我的绩效"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/my/certification",
+      "name": "CoachMyCertification",
+      "component": "",
+      "meta": {
+        "title": "我的认证"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/my/tools",
+      "name": "CoachMyTools",
+      "component": "",
+      "meta": {
+        "title": "我的工具箱"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/my/analytics",
+      "name": "CoachMyAnalytics",
+      "component": "",
+      "meta": {
+        "title": "数据分析"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/content-sharing",
+      "name": "CoachContentSharing",
+      "component": "",
+      "meta": {
+        "title": "内容分享"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/student-assessment/:id",
+      "name": "CoachStudentAssessment",
+      "component": "",
+      "meta": {
+        "title": "学员测评交互"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/student-profile/:id",
+      "name": "CoachStudentBehavioralProfile",
+      "component": "",
+      "meta": {
+        "title": "学员行为画像"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/messages",
+      "name": "CoachStudentMessages",
+      "component": "",
+      "meta": {
+        "title": "学员消息"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "coach/student-health/:id",
+      "name": "CoachStudentHealthData",
+      "component": "",
+      "meta": {
+        "title": "学员健康数据"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "admin/challenges",
+      "name": "ChallengeManagement",
+      "component": "",
+      "meta": {
+        "title": "挑战活动管理"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "expert/dashboard/:tenantId",
+      "name": "ExpertDashboard",
+      "component": "",
+      "meta": {
+        "title": "专家工作室管理"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "expert/content-studio/:tenantId",
+      "name": "ExpertContentStudio",
+      "component": "",
+      "meta": {
+        "title": "内容工作室"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "expert/my-agents",
+      "name": "ExpertAgentManage",
+      "component": "",
+      "meta": {
+        "title": "我的 Agent"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "expert/my/supervision",
+      "name": "ExpertMySupervision",
+      "component": "",
+      "meta": {
+        "title": "我的督导"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "expert/my/reviews",
+      "name": "ExpertMyReviews",
+      "component": "",
+      "meta": {
+        "title": "我的审核"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "expert/my/research",
+      "name": "ExpertMyResearch",
+      "component": "",
+      "meta": {
+        "title": "研究数据"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "admin/user-management",
+      "name": "AdminUserManagement",
+      "component": "",
+      "meta": {
+        "title": "用户管理"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "admin/distribution",
+      "name": "AdminDistribution",
+      "component": "",
+      "meta": {
+        "title": "分配管理"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "admin/analytics",
+      "name": "AdminAnalytics",
+      "component": "",
+      "meta": {
+        "title": "数据分析"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "admin/batch-ingestion",
+      "name": "AdminBatchIngestion",
+      "component": "",
+      "meta": {
+        "title": "批量知识灌注"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "admin/content-manage",
+      "name": "AdminContentManage",
+      "component": "",
+      "meta": {
+        "title": "内容管理"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "admin/activity-report",
+      "name": "AdminActivityReport",
+      "component": "",
+      "meta": {
+        "title": "用户活动报告"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "admin/credit-system",
+      "name": "CreditSystem",
+      "component": "",
+      "meta": {
+        "title": "学分概览"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "modules",
+      "name": "CourseModuleManage",
+      "component": "",
+      "meta": {
+        "title": "课程模块管理"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "companions",
+      "name": "CompanionManage",
+      "component": "",
+      "meta": {
+        "title": "同道者关系"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "promotion-review",
+      "name": "PromotionReview",
+      "component": "",
+      "meta": {
+        "title": "晋级审核"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "admin/expert-applications",
+      "name": "ExpertApplicationReview",
+      "component": "",
+      "meta": {
+        "title": "专家入驻审核",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "agent-templates",
+      "name": "AgentTemplateList",
+      "component": "",
+      "meta": {
+        "title": "Agent 模板管理",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "agent-templates/create",
+      "name": "AgentTemplateCreate",
+      "component": "",
+      "meta": {
+        "title": "创建 Agent",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "agent-templates/edit/:agentId",
+      "name": "AgentTemplateEdit",
+      "component": "",
+      "meta": {
+        "title": "编辑 Agent",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "tenant-routing/:tenantId",
+      "name": "TenantRoutingConfig",
+      "component": "",
+      "meta": {
+        "title": "租户路由配置",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "agent-ecosystem",
+      "name": "AgentMarketplace",
+      "component": "",
+      "meta": {
+        "title": "Agent 生态",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "agent-growth",
+      "name": "AgentGrowthReport",
+      "component": "",
+      "meta": {
+        "title": "Agent 成长报告",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "knowledge-sharing",
+      "name": "KnowledgeSharingReview",
+      "component": "",
+      "meta": {
+        "title": "知识共享管理",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "safety",
+      "name": "SafetyManagement",
+      "component": "",
+      "meta": {
+        "title": "安全仪表盘",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "review",
+      "name": "SafetyReviewQueue",
+      "component": "",
+      "meta": {
+        "title": "安全审核队列",
+        "requiresAdmin": "true"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "settings",
+      "name": "Settings",
+      "component": "",
+      "meta": {
+        "title": "系统设置",
+        "icon": "setting"
+      },
+      "file": "admin-portal/src/router.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "rx",
+      "name": "RxModule",
+      "component": "",
+      "meta": {
+        "title": "处方仪表盘",
+        "icon": "MedicineBoxOutlined",
+        "keepAlive": "true"
+      },
+      "file": "admin-portal/src/modules/rx/router/rx-routes.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "compute/:userId?",
+      "name": "RxCompute",
+      "component": "",
+      "meta": {
+        "title": "计算处方",
+        "icon": "ThunderboltOutlined"
+      },
+      "file": "admin-portal/src/modules/rx/router/rx-routes.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "history/:userId",
+      "name": "RxHistory",
+      "component": "",
+      "meta": {
+        "title": "处方历史",
+        "icon": "HistoryOutlined"
+      },
+      "file": "admin-portal/src/modules/rx/router/rx-routes.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "detail/:rxId",
+      "name": "RxDetail",
+      "component": "",
+      "meta": {
+        "title": "处方详情",
+        "icon": "FileTextOutlined"
+      },
+      "file": "admin-portal/src/modules/rx/router/rx-routes.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "agents",
+      "name": "RxAgents",
+      "component": "",
+      "meta": {
+        "title": "Agent 集群",
+        "icon": "RobotOutlined"
+      },
+      "file": "admin-portal/src/modules/rx/router/rx-routes.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "strategies",
+      "name": "RxStrategies",
+      "component": "",
+      "meta": {
+        "title": "策略模板库",
+        "icon": "AppstoreOutlined"
+      },
+      "file": "admin-portal/src/modules/rx/router/rx-routes.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/portal/public",
+      "name": "PublicPortal",
+      "component": "",
+      "meta": {
+        "accessContext": "public",
+        "sourceUI": "UI-1",
+        "title": "行为健康科普入口",
+        "requiresAuth": "false"
+      },
+      "file": "admin-portal/src/router/portal_routes.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/portal/medical",
+      "name": "MedicalAssistant",
+      "component": "",
+      "meta": {
+        "accessContext": "medical",
+        "sourceUI": "UI-3",
+        "title": "基层医护处方助手",
+        "requiresAuth": "true"
+      },
+      "file": "admin-portal/src/router/portal_routes.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/react",
+      "name": "ReactNavigation",
+      "component": "",
+      "meta": {
+        "title": "React页面导航",
+        "requiresAuth": "false",
+        "description": "React集成页面导航中心"
+      },
+      "file": "admin-portal/src/router/react_routes.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/react/demo",
+      "name": "ReactDemo",
+      "component": "",
+      "meta": {
+        "title": "React演示页",
+        "requiresAuth": "false",
+        "description": "展示React组件集成效果，包含逻辑流、决策规则等"
+      },
+      "file": "admin-portal/src/router/react_routes.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/expert/workspace",
+      "name": "ExpertWorkspace",
+      "component": "",
+      "meta": {
+        "title": "专家工作区",
+        "requiresAuth": "true",
+        "role": "expert",
+        "description": "专家专用工作台，包含审核、督导等功能"
+      },
+      "file": "admin-portal/src/router/react_routes.ts",
+      "requires_auth": "true",
+      "required_role": "expert"
+    },
+    {
+      "path": "/journey",
+      "name": "JourneyPage",
+      "component": "",
+      "meta": {
+        "title": "成长之旅",
+        "requiresAuth": "false",
+        "description": "用户行为改变成长历程可视化"
+      },
+      "file": "admin-portal/src/router/react_routes.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/trace",
+      "name": "TracePage",
+      "component": "",
+      "meta": {
+        "title": "决策追踪",
+        "requiresAuth": "true",
+        "description": "查看AI决策过程、逻辑链路和规则执行"
+      },
+      "file": "admin-portal/src/router/react_routes.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/trace/:traceId",
+      "name": "TraceDetail",
+      "component": "",
+      "meta": {
+        "title": "决策详情",
+        "requiresAuth": "true",
+        "description": "查看单个决策的详细追踪信息"
+      },
+      "file": "admin-portal/src/router/react_routes.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/admin/evolution",
+      "name": "AdminEvolution",
+      "component": "",
+      "meta": {
+        "title": "系统演进",
+        "requiresAuth": "true",
+        "role": "admin",
+        "description": "查看系统架构演进和技术栈变化"
+      },
+      "file": "admin-portal/src/router/react_routes.ts",
+      "requires_auth": "true",
+      "required_role": "admin"
+    },
+    {
+      "path": "/login",
+      "name": "login",
+      "component": "",
+      "meta": {
+        "public": "true"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/",
+      "name": "home",
+      "component": "",
+      "meta": {
+        "title": "食物识别"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/challenges",
+      "name": "challenges",
+      "component": "",
+      "meta": {
+        "title": "学习中心"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/content/:type/:id",
+      "name": "content-detail",
+      "component": "",
+      "meta": {
+        "title": "内容详情"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/my-learning",
+      "name": "my-learning",
+      "component": "",
+      "meta": {
+        "title": "我的学习"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/coach-directory",
+      "name": "coach-directory",
+      "component": "",
+      "meta": {
+        "title": "教练目录",
+        "public": "true"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/contribute",
+      "name": "contribute",
+      "component": "",
+      "meta": {
+        "title": "知识投稿"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/expert-hub",
+      "name": "expert-hub",
+      "component": "",
+      "meta": {
+        "title": "专家工作室",
+        "public": "true"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/expert-register",
+      "name": "expert-register",
+      "component": "",
+      "meta": {
+        "title": "申请入驻",
+        "public": "true"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/expert-application-status",
+      "name": "expert-application-status",
+      "component": "",
+      "meta": {
+        "title": "申请状态"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/studio/:tenantId",
+      "name": "expert-studio",
+      "component": "",
+      "meta": {
+        "title": "工作室",
+        "public": "true"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/my-credits",
+      "name": "my-credits",
+      "component": "",
+      "meta": {
+        "title": "我的学分"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/my-companions",
+      "name": "my-companions",
+      "component": "",
+      "meta": {
+        "title": "我的同道者"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/promotion-progress",
+      "name": "promotion-progress",
+      "component": "",
+      "meta": {
+        "title": "晋级进度"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/journey",
+      "name": "journey",
+      "component": "",
+      "meta": {
+        "title": "健康成长伙伴"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/programs",
+      "name": "programs",
+      "component": "",
+      "meta": {
+        "title": "智能监测方案"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/program/:id/today",
+      "name": "program-today",
+      "component": "",
+      "meta": {
+        "title": "今日方案"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/program/:id/timeline",
+      "name": "program-timeline",
+      "component": "",
+      "meta": {
+        "title": "行为轨迹"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/program/:id/progress",
+      "name": "program-progress",
+      "component": "",
+      "meta": {
+        "title": "行为特征"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/v3/assessment",
+      "name": "v3-assessment",
+      "component": "",
+      "meta": {
+        "title": "渐进式评估"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/v3/assessment/:batchId",
+      "name": "v3-assessment-batch",
+      "component": "",
+      "meta": {
+        "title": "评估批次"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/v3/coach",
+      "name": "v3-coach",
+      "component": "",
+      "meta": {
+        "title": "AI 健康教练"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/v3/knowledge",
+      "name": "v3-knowledge",
+      "component": "",
+      "meta": {
+        "title": "知识库",
+        "public": "true"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/register",
+      "name": "register",
+      "component": "",
+      "meta": {
+        "public": "true"
+      },
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/:pathMatch(.*)*",
+      "name": "login",
+      "component": "",
+      "meta": {},
+      "file": "h5/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/login",
+      "name": "Login",
+      "component": "",
+      "meta": {
+        "title": "用户登录",
+        "requiresAuth": "false"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/register",
+      "name": "Register",
+      "component": "",
+      "meta": {
+        "title": "用户注册",
+        "requiresAuth": "false"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "false",
+      "required_role": ""
+    },
+    {
+      "path": "/",
+      "name": "Home",
+      "component": "",
+      "meta": {
+        "title": "首页",
+        "requiresAuth": "true"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/data-input",
+      "name": "DataInput",
+      "component": "",
+      "meta": {
+        "title": "数据录入",
+        "requiresAuth": "true"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/history",
+      "name": "History",
+      "component": "",
+      "meta": {
+        "title": "评估历史",
+        "requiresAuth": "true"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/analysis",
+      "name": "Analysis",
+      "component": "",
+      "meta": {
+        "title": "数据分析",
+        "requiresAuth": "true"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/settings",
+      "name": "Settings",
+      "component": "",
+      "meta": {
+        "title": "个人设置",
+        "requiresAuth": "true"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/chat",
+      "name": "Chat",
+      "component": "",
+      "meta": {
+        "title": "AI健康助手",
+        "requiresAuth": "true"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/health-data",
+      "name": "HealthData",
+      "component": "",
+      "meta": {
+        "title": "健康数据",
+        "requiresAuth": "true"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/result/:id",
+      "name": "Result",
+      "component": "",
+      "meta": {
+        "title": "评估结果",
+        "requiresAuth": "true"
+      },
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "true",
+      "required_role": ""
+    },
+    {
+      "path": "/:pathMatch(.*)*",
+      "name": "",
+      "component": "",
+      "meta": {},
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    },
+    {
+      "path": "/login",
+      "name": "",
+      "component": "",
+      "meta": {},
+      "file": "h5-patient-app/src/router/index.ts",
+      "requires_auth": "",
+      "required_role": ""
+    }
+  ],
+  "route_guards": [
+    {
+      "file": "admin-portal/src/router.ts",
+      "type": "beforeEach",
+      "body_preview": "{\n  const token = localStorage.getItem('admin_token')\n  if (to.meta.requiresAuth !== false && !token) {\n    next('/login')"
+    },
+    {
+      "file": "h5/src/router/index.ts",
+      "type": "beforeEach",
+      "body_preview": "{\n  const token = storage.getToken()\n  if (!to.meta?.public && !token) {\n    next({ name: 'login'"
+    },
+    {
+      "file": "h5-patient-app/src/router/index.ts",
+      "type": "beforeEach",
+      "body_preview": "{\n  // 设置页面标题\n  if (to.meta.title) {\n    document.title = `${to.meta.title"
+    }
+  ],
+  "api_services": [
+    {
+      "function": "agentTemplateApi",
+      "method": "GET",
+      "path": "/v1/agent-templates/list",
+      "file": "admin-portal/src/api/agent-template.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/agent-templates/presets",
+      "file": "admin-portal/src/api/agent-template.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/agent-templates/domains",
+      "file": "admin-portal/src/api/agent-template.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/agent-templates/${agentId}",
+      "file": "admin-portal/src/api/agent-template.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/v1/agent-templates/create",
+      "file": "admin-portal/src/api/agent-template.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/v1/agent-templates/${agentId}/toggle",
+      "file": "admin-portal/src/api/agent-template.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/v1/agent-templates/${agentId}/clone",
+      "file": "admin-portal/src/api/agent-template.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/v1/agent-templates/refresh-cache",
+      "file": "admin-portal/src/api/agent-template.ts"
+    },
+    {
+      "function": "mockQuestionnaires",
+      "method": "GET",
+      "path": "/v1/assessment/questionnaires",
+      "file": "admin-portal/src/api/assessment.ts"
+    },
+    {
+      "function": "list",
+      "method": "GET",
+      "path": "/v1/assessment/questionnaires/${id}",
+      "file": "admin-portal/src/api/assessment.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/assessment/submit",
+      "file": "admin-portal/src/api/assessment.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/assessment/results/${resultId}",
+      "file": "admin-portal/src/api/assessment.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/assessment/patient/${patientId}/results",
+      "file": "admin-portal/src/api/assessment.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/assessment/patient/${patientId}/recommended",
+      "file": "admin-portal/src/api/assessment.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/assessment/patient/${patientId}/draft/${questionnaireId}",
+      "file": "admin-portal/src/api/assessment.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/assessment/patient/${patientId}/draft/${questionnaireId}",
+      "file": "admin-portal/src/api/assessment.ts"
+    },
+    {
+      "function": "mockPatientDashboard",
+      "method": "UNKNOWN",
+      "path": "${ENGINE_API}/api/v1/mp/task/today",
+      "file": "admin-portal/src/api/client.ts"
+    },
+    {
+      "function": "data",
+      "method": "UNKNOWN",
+      "path": "${ENGINE_API}/latest_status",
+      "file": "admin-portal/src/api/client.ts"
+    },
+    {
+      "function": "mockPerformance",
+      "method": "GET",
+      "path": "/v1/coach/${coachId}/performance",
+      "file": "admin-portal/src/api/coach-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/coach/${coachId}/certification",
+      "file": "admin-portal/src/api/coach-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/coach/${coachId}/promotion/apply",
+      "file": "admin-portal/src/api/coach-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/coach/${coachId}/students",
+      "file": "admin-portal/src/api/coach-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/coach/${coachId}/share",
+      "file": "admin-portal/src/api/coach-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/coach/${coachId}/sharing-history",
+      "file": "admin-portal/src/api/coach-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/coach/${coachId}/tool-stats",
+      "file": "admin-portal/src/api/coach-api.ts"
+    },
+    {
+      "function": "mockPrescriptionHistory",
+      "method": "POST",
+      "path": "/v1/copilot/analyze",
+      "file": "admin-portal/src/api/copilot.ts"
+    },
+    {
+      "function": "baseUrl",
+      "method": "GET",
+      "path": "/v1/copilot/prescriptions/${coachId}",
+      "file": "admin-portal/src/api/copilot.ts"
+    },
+    {
+      "function": "start",
+      "method": "POST",
+      "path": "/v1/copilot/prescriptions/${prescriptionId}/action",
+      "file": "admin-portal/src/api/copilot.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/copilot/suggested-actions",
+      "file": "admin-portal/src/api/copilot.ts"
+    },
+    {
+      "function": "fetchContentList",
+      "method": "GET",
+      "path": "/v1/content",
+      "file": "admin-portal/src/api/course.ts"
+    },
+    {
+      "function": "fetchCourseDetail",
+      "method": "GET",
+      "path": "/v1/content/course/${courseId}",
+      "file": "admin-portal/src/api/course.ts"
+    },
+    {
+      "function": "enrollCourse",
+      "method": "POST",
+      "path": "/v1/content/course/${courseId}/enroll",
+      "file": "admin-portal/src/api/course.ts"
+    },
+    {
+      "function": "creditApi",
+      "method": "GET",
+      "path": "/v1/credits/modules",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "companionApi",
+      "method": "GET",
+      "path": "/v1/companions/my-mentees",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "promotionApi",
+      "method": "GET",
+      "path": "/v1/promotion/progress",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/credits/my",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/credits/my/records",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/credits/admin/modules",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "PUT",
+      "path": "/v1/credits/admin/modules/${moduleId}",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/credits/admin/stats",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/companions/my-mentors",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/companions/stats",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/v1/companions/invite",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/companions/all",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "PUT",
+      "path": "/v1/companions/${relationId}/graduate",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/promotion/rules",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/promotion/check",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/v1/promotion/apply",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/v1/promotion/applications",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/v1/promotion/review/${applicationId}",
+      "file": "admin-portal/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "data",
+      "method": "GET",
+      "path": "/v1/device/${patientId}/data",
+      "file": "admin-portal/src/api/device.ts"
+    },
+    {
+      "function": "days",
+      "method": "GET",
+      "path": "/v1/device/${patientId}/list",
+      "file": "admin-portal/src/api/device.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/device/${patientId}/${deviceId}/sync",
+      "file": "admin-portal/src/api/device.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/device/${patientId}/thresholds",
+      "file": "admin-portal/src/api/device.ts"
+    },
+    {
+      "function": "res",
+      "method": "PUT",
+      "path": "/v1/device/${patientId}/thresholds/${key}",
+      "file": "admin-portal/src/api/device.ts"
+    },
+    {
+      "function": "DIFY_CONFIG",
+      "method": "UNKNOWN",
+      "path": "${DIFY_CONFIG.baseUrl}/chat-messages",
+      "file": "admin-portal/src/api/dify.ts"
+    },
+    {
+      "function": "error",
+      "method": "UNKNOWN",
+      "path": "${DIFY_CONFIG.baseUrl}/chat-messages",
+      "file": "admin-portal/src/api/dify.ts"
+    },
+    {
+      "function": "error",
+      "method": "UNKNOWN",
+      "path": "${DIFY_CONFIG.baseUrl}/conversations?${params}",
+      "file": "admin-portal/src/api/dify.ts"
+    },
+    {
+      "function": "error",
+      "method": "UNKNOWN",
+      "path": "${DIFY_CONFIG.baseUrl}/messages?${params}",
+      "file": "admin-portal/src/api/dify.ts"
+    },
+    {
+      "function": "error",
+      "method": "UNKNOWN",
+      "path": "${DIFY_CONFIG.baseUrl}/conversations/${conversationId}",
+      "file": "admin-portal/src/api/dify.ts"
+    },
+    {
+      "function": "error",
+      "method": "UNKNOWN",
+      "path": "${DIFY_CONFIG.baseUrl}/conversations/${conversationId}/name",
+      "file": "admin-portal/src/api/dify.ts"
+    },
+    {
+      "function": "error",
+      "method": "UNKNOWN",
+      "path": "${DIFY_CONFIG.baseUrl}/messages/${messageId}/feedbacks",
+      "file": "admin-portal/src/api/dify.ts"
+    },
+    {
+      "function": "examApi",
+      "method": "GET",
+      "path": "/certification/exams",
+      "file": "admin-portal/src/api/exam.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/certification/exams/${examId}",
+      "file": "admin-portal/src/api/exam.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/certification/exams/${examId}/publish",
+      "file": "admin-portal/src/api/exam.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/certification/exams/${examId}/archive",
+      "file": "admin-portal/src/api/exam.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/certification/exams/${examId}/statistics",
+      "file": "admin-portal/src/api/exam.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/certification/exams/${examId}/questions",
+      "file": "admin-portal/src/api/exam.ts"
+    },
+    {
+      "function": "mockCoaches",
+      "method": "GET",
+      "path": "/v1/expert/${expertId}/coaches",
+      "file": "admin-portal/src/api/expert-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/expert/${expertId}/reviews/pending",
+      "file": "admin-portal/src/api/expert-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/expert/reviews/${reviewId}/decide",
+      "file": "admin-portal/src/api/expert-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/expert/${expertId}/reviews/history",
+      "file": "admin-portal/src/api/expert-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/expert/${expertId}/supervision/schedule",
+      "file": "admin-portal/src/api/expert-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/expert/${expertId}/supervision/sessions",
+      "file": "admin-portal/src/api/expert-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/expert/research/query",
+      "file": "admin-portal/src/api/expert-api.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/expert/research/export",
+      "file": "admin-portal/src/api/expert-api.ts"
+    },
+    {
+      "function": "BASE",
+      "method": "GET",
+      "path": "${BASE}/${tenantId}/content/documents",
+      "file": "admin-portal/src/api/expert-content.ts"
+    },
+    {
+      "function": "fetchAuditQueue",
+      "method": "GET",
+      "path": "/v1/agent/pending-reviews",
+      "file": "admin-portal/src/api/expert.ts"
+    },
+    {
+      "function": "fetchBapsProfile",
+      "method": "GET",
+      "path": "/v1/assessment/pipeline/${userId}/profile",
+      "file": "admin-portal/src/api/expert.ts"
+    },
+    {
+      "function": "fetchCGMData",
+      "method": "GET",
+      "path": "/v1/mp/device/glucose/${userId}",
+      "file": "admin-portal/src/api/expert.ts"
+    },
+    {
+      "function": "fetchAssessmentHistory",
+      "method": "GET",
+      "path": "/v1/assessment/history/${userId}",
+      "file": "admin-portal/src/api/expert.ts"
+    },
+    {
+      "function": "publishAuditResult",
+      "method": "POST",
+      "path": "/v1/agent/feedback",
+      "file": "admin-portal/src/api/expert.ts"
+    },
+    {
+      "function": "rejectAuditCase",
+      "method": "POST",
+      "path": "/v1/agent/feedback",
+      "file": "admin-portal/src/api/expert.ts"
+    },
+    {
+      "function": "records",
+      "method": "POST",
+      "path": "/v1/health/${patientId}/glucose",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/health/${patientId}/weight",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/health/${patientId}/blood-pressure",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/health/${patientId}/exercise",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/health/${patientId}/mood",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/health/${patientId}/meal",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/glucose",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "days",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/weight",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "days",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/exercise",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "days",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/score",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/trends/${metric}",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "days",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/snapshot",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/tasks/daily",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/health/${patientId}/tasks/${taskId}/complete",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/achievements",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/ai-summary",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/health/${patientId}/comparison",
+      "file": "admin-portal/src/api/health.ts"
+    },
+    {
+      "function": "OLLAMA_CONFIG",
+      "method": "UNKNOWN",
+      "path": "${OLLAMA_CONFIG.baseUrl}/api/tags",
+      "file": "admin-portal/src/api/ollama.ts"
+    },
+    {
+      "function": "getAvailableModels",
+      "method": "UNKNOWN",
+      "path": "${OLLAMA_CONFIG.baseUrl}/api/tags",
+      "file": "admin-portal/src/api/ollama.ts"
+    },
+    {
+      "function": "data",
+      "method": "UNKNOWN",
+      "path": "${OLLAMA_CONFIG.baseUrl}/api/generate",
+      "file": "admin-portal/src/api/ollama.ts"
+    },
+    {
+      "function": "error",
+      "method": "UNKNOWN",
+      "path": "${OLLAMA_CONFIG.baseUrl}/api/generate",
+      "file": "admin-portal/src/api/ollama.ts"
+    },
+    {
+      "function": "reader",
+      "method": "UNKNOWN",
+      "path": "${OLLAMA_CONFIG.baseUrl}/api/chat",
+      "file": "admin-portal/src/api/ollama.ts"
+    },
+    {
+      "function": "error",
+      "method": "UNKNOWN",
+      "path": "${OLLAMA_CONFIG.baseUrl}/api/chat",
+      "file": "admin-portal/src/api/ollama.ts"
+    },
+    {
+      "function": "mockProfile",
+      "method": "GET",
+      "path": "/v1/patient/${patientId}/profile",
+      "file": "admin-portal/src/api/patient.ts"
+    },
+    {
+      "function": "res",
+      "method": "PUT",
+      "path": "/v1/patient/${patientId}/profile",
+      "file": "admin-portal/src/api/patient.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/patient/${patientId}/devices",
+      "file": "admin-portal/src/api/patient.ts"
+    },
+    {
+      "function": "res",
+      "method": "POST",
+      "path": "/v1/patient/${patientId}/devices/bind",
+      "file": "admin-portal/src/api/patient.ts"
+    },
+    {
+      "function": "res",
+      "method": "DELETE",
+      "path": "/v1/patient/${patientId}/devices/${deviceId}",
+      "file": "admin-portal/src/api/patient.ts"
+    },
+    {
+      "function": "res",
+      "method": "GET",
+      "path": "/v1/patient/${patientId}/trajectory",
+      "file": "admin-portal/src/api/patient.ts"
+    },
+    {
+      "function": "questionApi",
+      "method": "GET",
+      "path": "/certification/questions",
+      "file": "admin-portal/src/api/question.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/certification/questions/${questionId}",
+      "file": "admin-portal/src/api/question.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/certification/questions/bulk",
+      "file": "admin-portal/src/api/question.ts"
+    },
+    {
+      "function": "resultApi",
+      "method": "GET",
+      "path": "/certification/results",
+      "file": "admin-portal/src/api/result.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/certification/results/${resultId}",
+      "file": "admin-portal/src/api/result.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/certification/results/export",
+      "file": "admin-portal/src/api/result.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/certification/results/${resultId}/invalidate",
+      "file": "admin-portal/src/api/result.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/certification/coaches/${coachId}/results",
+      "file": "admin-portal/src/api/result.ts"
+    },
+    {
+      "function": "API_BASE",
+      "method": "POST",
+      "path": "/compute",
+      "file": "admin-portal/src/modules/rx/api/rxApi.ts"
+    },
+    {
+      "function": "getRx",
+      "method": "GET",
+      "path": "/${rxId}",
+      "file": "admin-portal/src/modules/rx/api/rxApi.ts"
+    },
+    {
+      "function": "getUserRxHistory",
+      "method": "GET",
+      "path": "/user/${userId}",
+      "file": "admin-portal/src/modules/rx/api/rxApi.ts"
+    },
+    {
+      "function": "getStrategies",
+      "method": "GET",
+      "path": "/strategies",
+      "file": "admin-portal/src/modules/rx/api/rxApi.ts"
+    },
+    {
+      "function": "initiateHandoff",
+      "method": "POST",
+      "path": "/handoff",
+      "file": "admin-portal/src/modules/rx/api/rxApi.ts"
+    },
+    {
+      "function": "getHandoffLog",
+      "method": "GET",
+      "path": "/handoff/${userId}",
+      "file": "admin-portal/src/modules/rx/api/rxApi.ts"
+    },
+    {
+      "function": "collaborate",
+      "method": "POST",
+      "path": "/collaborate",
+      "file": "admin-portal/src/modules/rx/api/rxApi.ts"
+    },
+    {
+      "function": "getAgentStatus",
+      "method": "GET",
+      "path": "/agents/status",
+      "file": "admin-portal/src/modules/rx/api/rxApi.ts"
+    },
+    {
+      "function": "chatApi",
+      "method": "POST",
+      "path": "/api/v1/dispatch",
+      "file": "h5/src/api/chat.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/experts",
+      "file": "h5/src/api/chat.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/decompose",
+      "file": "h5/src/api/chat.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/clamping",
+      "file": "h5/src/api/chat.ts"
+    },
+    {
+      "function": "creditApi",
+      "method": "GET",
+      "path": "/api/v1/credits/modules",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "companionApi",
+      "method": "GET",
+      "path": "/api/v1/companions/my-mentees",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "promotionApi",
+      "method": "GET",
+      "path": "/api/v1/promotion/progress",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/credits/my",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/credits/my/records",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/companions/my-mentors",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/companions/stats",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/companions/invite",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "PUT",
+      "path": "/api/v1/companions/${relationId}/graduate",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/promotion/rules",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/promotion/check",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/promotion/apply",
+      "file": "h5/src/api/credit-promotion.ts"
+    },
+    {
+      "function": "dashboardApi",
+      "method": "GET",
+      "path": "/api/v1/dashboard/${userId}",
+      "file": "h5/src/api/dashboard.ts"
+    },
+    {
+      "function": "programApi",
+      "method": "GET",
+      "path": "/api/v1/programs/templates",
+      "file": "h5/src/api/program.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/programs/enroll",
+      "file": "h5/src/api/program.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/programs/my",
+      "file": "h5/src/api/program.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/programs/my/${enrollmentId}/today",
+      "file": "h5/src/api/program.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/programs/my/${enrollmentId}/interact",
+      "file": "h5/src/api/program.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/programs/my/${enrollmentId}/timeline",
+      "file": "h5/src/api/program.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/programs/my/${enrollmentId}/progress",
+      "file": "h5/src/api/program.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/programs/my/${enrollmentId}/status",
+      "file": "h5/src/api/program.ts"
+    },
+    {
+      "function": "fetchFullReport",
+      "method": "GET",
+      "path": "/api/v1/reports/full",
+      "file": "h5/src/api/report.ts"
+    },
+    {
+      "function": "fetchTodayTasks",
+      "method": "GET",
+      "path": "/api/v1/micro-actions/today",
+      "file": "h5/src/api/tasks.ts"
+    },
+    {
+      "function": "completeTask",
+      "method": "POST",
+      "path": "/api/v1/micro-actions/${taskId}/complete",
+      "file": "h5/src/api/tasks.ts"
+    },
+    {
+      "function": "attemptTask",
+      "method": "POST",
+      "path": "/api/v1/micro-actions/${taskId}/complete",
+      "file": "h5/src/api/tasks.ts"
+    },
+    {
+      "function": "skipTask",
+      "method": "POST",
+      "path": "/api/v1/micro-actions/${taskId}/skip",
+      "file": "h5/src/api/tasks.ts"
+    },
+    {
+      "function": "fetchCurrentStage",
+      "method": "GET",
+      "path": "/api/v1/mp/progress/summary",
+      "file": "h5/src/api/tasks.ts"
+    },
+    {
+      "function": "fetchPublishedNarrative",
+      "method": "GET",
+      "path": "/api/v1/messages/inbox",
+      "file": "h5/src/api/tasks.ts"
+    },
+    {
+      "function": "http",
+      "method": "POST",
+      "path": "/api/v3/auth/refresh",
+      "file": "h5/src/api/v3/http.js"
+    },
+    {
+      "function": "authApi",
+      "method": "POST",
+      "path": "/auth/register",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "isPhone",
+      "method": "POST",
+      "path": "/auth/login",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "chatApi",
+      "method": "POST",
+      "path": "/chat/message",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "diagnosticApi",
+      "method": "POST",
+      "path": "/diagnostic/minimal",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "assessmentApi",
+      "method": "GET",
+      "path": "/assessment/batches",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "trackingApi",
+      "method": "POST",
+      "path": "/tracking/daily",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "incentiveApi",
+      "method": "POST",
+      "path": "/incentive/checkin",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "systemApi",
+      "method": "GET",
+      "path": "/status",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/auth/refresh",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/auth/me",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "PUT",
+      "path": "/auth/password",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "PUT",
+      "path": "/auth/profile",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/chat/knowledge",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/chat/knowledge/search",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/chat/prescription",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/chat/stats",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/diagnostic/full",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/assessment/session",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/assessment/submit",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/assessment/recommend",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/tracking/weekly-review",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/incentive/task-complete",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/incentive/balance",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/incentive/rx-context",
+      "file": "h5/src/api/v3/index.js"
+    },
+    {
+      "function": "assessmentAPI",
+      "method": "POST",
+      "path": "/api/assessment/submit",
+      "file": "h5-patient-app/src/api/assessment.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/assessment/${assessmentId}",
+      "file": "h5-patient-app/src/api/assessment.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/assessment/history/${userId}",
+      "file": "h5-patient-app/src/api/assessment.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/assessment/recent/${userId}",
+      "file": "h5-patient-app/src/api/assessment.ts"
+    },
+    {
+      "function": "authAPI",
+      "method": "POST",
+      "path": "/api/v1/auth/login",
+      "file": "h5-patient-app/src/api/auth.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/auth/register",
+      "file": "h5-patient-app/src/api/auth.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/auth/me",
+      "file": "h5-patient-app/src/api/auth.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/auth/logout",
+      "file": "h5-patient-app/src/api/auth.ts"
+    },
+    {
+      "function": "chatAPI",
+      "method": "GET",
+      "path": "/api/v1/mp/llm/health",
+      "file": "h5-patient-app/src/api/chat.ts"
+    },
+    {
+      "function": "baseUrl",
+      "method": "GET",
+      "path": "/api/v1/mp/chat/history/${sessionId}",
+      "file": "h5-patient-app/src/api/chat.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/mp/chat",
+      "file": "h5-patient-app/src/api/chat.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/mp/agent/respond",
+      "file": "h5-patient-app/src/api/chat.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/chat/sessions",
+      "file": "h5-patient-app/src/api/chat.ts"
+    },
+    {
+      "function": "",
+      "method": "DELETE",
+      "path": "/api/v1/mp/chat/session/${sessionId}",
+      "file": "h5-patient-app/src/api/chat.ts"
+    },
+    {
+      "function": "",
+      "method": "DELETE",
+      "path": "/api/v1/mp/chat/history",
+      "file": "h5-patient-app/src/api/chat.ts"
+    },
+    {
+      "function": "deviceAPI",
+      "method": "GET",
+      "path": "/api/v1/mp/device/devices",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/mp/device/devices/bind",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "DELETE",
+      "path": "/api/v1/mp/device/devices/${deviceId}",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/mp/device/glucose/manual",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/device/glucose",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/device/glucose/current",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/device/glucose/chart/daily",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/mp/device/weight",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/mp/device/blood-pressure",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/device/dashboard/today",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "POST",
+      "path": "/api/v1/mp/device/sync",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/device/sleep/last-night",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/device/sleep",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/device/activity",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/device/heart-rate",
+      "file": "h5-patient-app/src/api/device.ts"
+    },
+    {
+      "function": "",
+      "method": "GET",
+      "path": "/api/v1/mp/device/hrv",
+      "file": "h5-patient-app/src/api/device.ts"
+    }
+  ],
+  "vue_components": [
+    {
+      "name": "ExpertHomeExample",
+      "file": "admin-portal/examples/ExpertHomeExample.vue",
+      "size": 9537
+    },
+    {
+      "name": "PatientHomeExample",
+      "file": "admin-portal/examples/PatientHomeExample.vue",
+      "size": 11082
+    },
+    {
+      "name": "App",
+      "file": "admin-portal/src/App.vue",
+      "size": 423
+    },
+    {
+      "name": "AIChatBox",
+      "file": "admin-portal/src/components/AIChatBox.vue",
+      "size": 11293
+    },
+    {
+      "name": "BehaviorStageTag",
+      "file": "admin-portal/src/components/BehaviorStageTag.vue",
+      "size": 1540
+    },
+    {
+      "name": "CoachLevelBadge",
+      "file": "admin-portal/src/components/CoachLevelBadge.vue",
+      "size": 1010
+    },
+    {
+      "name": "HelloWorld",
+      "file": "admin-portal/src/components/HelloWorld.vue",
+      "size": 856
+    },
+    {
+      "name": "ReactWrapper",
+      "file": "admin-portal/src/components/ReactWrapper.vue",
+      "size": 1050
+    },
+    {
+      "name": "RiskLevelTag",
+      "file": "admin-portal/src/components/RiskLevelTag.vue",
+      "size": 584
+    },
+    {
+      "name": "TriggerDomainTag",
+      "file": "admin-portal/src/components/TriggerDomainTag.vue",
+      "size": 1202
+    },
+    {
+      "name": "AgentSuggestionCard",
+      "file": "admin-portal/src/components/agent/AgentSuggestionCard.vue",
+      "size": 7429
+    },
+    {
+      "name": "ProctorCamera",
+      "file": "admin-portal/src/components/exam/ProctorCamera.vue",
+      "size": 4526
+    },
+    {
+      "name": "ViolationWarning",
+      "file": "admin-portal/src/components/exam/ViolationWarning.vue",
+      "size": 4407
+    },
+    {
+      "name": "CGMChart",
+      "file": "admin-portal/src/components/expert/CGMChart.vue",
+      "size": 3775
+    },
+    {
+      "name": "LogicFlowBridge",
+      "file": "admin-portal/src/components/expert/LogicFlowBridge.vue",
+      "size": 3955
+    },
+    {
+      "name": "MetricCard",
+      "file": "admin-portal/src/components/expert/MetricCard.vue",
+      "size": 525
+    },
+    {
+      "name": "AchievementBadge",
+      "file": "admin-portal/src/components/health/AchievementBadge.vue",
+      "size": 4801
+    },
+    {
+      "name": "BigNumberInput",
+      "file": "admin-portal/src/components/health/BigNumberInput.vue",
+      "size": 7783
+    },
+    {
+      "name": "HealthMetricCard",
+      "file": "admin-portal/src/components/health/HealthMetricCard.vue",
+      "size": 4948
+    },
+    {
+      "name": "HealthScoreCircle",
+      "file": "admin-portal/src/components/health/HealthScoreCircle.vue",
+      "size": 4054
+    },
+    {
+      "name": "TaskList",
+      "file": "admin-portal/src/components/health/TaskList.vue",
+      "size": 7180
+    },
+    {
+      "name": "TrendChart",
+      "file": "admin-portal/src/components/health/TrendChart.vue",
+      "size": 10056
+    },
+    {
+      "name": "LandingCounter",
+      "file": "admin-portal/src/components/landing/LandingCounter.vue",
+      "size": 877
+    },
+    {
+      "name": "LandingHeroSVG",
+      "file": "admin-portal/src/components/landing/LandingHeroSVG.vue",
+      "size": 1228
+    },
+    {
+      "name": "CGMChartVue",
+      "file": "admin-portal/src/components/vue-wrappers/CGMChartVue.vue",
+      "size": 2404
+    },
+    {
+      "name": "DecisionTraceVue",
+      "file": "admin-portal/src/components/vue-wrappers/DecisionTraceVue.vue",
+      "size": 2071
+    },
+    {
+      "name": "DualSignPanelVue",
+      "file": "admin-portal/src/components/vue-wrappers/DualSignPanelVue.vue",
+      "size": 2504
+    },
+    {
+      "name": "ExpertWorkspaceVue",
+      "file": "admin-portal/src/components/vue-wrappers/ExpertWorkspaceVue.vue",
+      "size": 2213
+    },
+    {
+      "name": "JourneyPageVue",
+      "file": "admin-portal/src/components/vue-wrappers/JourneyPageVue.vue",
+      "size": 2162
+    },
+    {
+      "name": "LogicFlowBridgeVue",
+      "file": "admin-portal/src/components/vue-wrappers/LogicFlowBridgeVue.vue",
+      "size": 2158
+    },
+    {
+      "name": "TraceGraphVue",
+      "file": "admin-portal/src/components/vue-wrappers/TraceGraphVue.vue",
+      "size": 2110
+    },
+    {
+      "name": "AdminLayout",
+      "file": "admin-portal/src/layouts/AdminLayout.vue",
+      "size": 27714
+    },
+    {
+      "name": "AgentStatusPanel",
+      "file": "admin-portal/src/modules/rx/components/rx/AgentStatusPanel.vue",
+      "size": 7736
+    },
+    {
+      "name": "BigFiveRadar",
+      "file": "admin-portal/src/modules/rx/components/rx/BigFiveRadar.vue",
+      "size": 5987
+    },
+    {
+      "name": "HandoffLogTable",
+      "file": "admin-portal/src/modules/rx/components/rx/HandoffLogTable.vue",
+      "size": 5950
+    },
+    {
+      "name": "RxComputeForm",
+      "file": "admin-portal/src/modules/rx/components/rx/RxComputeForm.vue",
+      "size": 8711
+    },
+    {
+      "name": "RxPrescriptionCard",
+      "file": "admin-portal/src/modules/rx/components/rx/RxPrescriptionCard.vue",
+      "size": 9512
+    },
+    {
+      "name": "StrategyGrid",
+      "file": "admin-portal/src/modules/rx/components/rx/StrategyGrid.vue",
+      "size": 5216
+    },
+    {
+      "name": "TTMProgressBar",
+      "file": "admin-portal/src/modules/rx/components/rx/TTMProgressBar.vue",
+      "size": 4755
+    },
+    {
+      "name": "RxDashboard",
+      "file": "admin-portal/src/modules/rx/views/RxDashboard.vue",
+      "size": 12722
+    },
+    {
+      "name": "ComponentShowcase",
+      "file": "admin-portal/src/views/ComponentShowcase.vue",
+      "size": 13678
+    },
+    {
+      "name": "LandingPage",
+      "file": "admin-portal/src/views/LandingPage.vue",
+      "size": 8032
+    },
+    {
+      "name": "Login",
+      "file": "admin-portal/src/views/Login.vue",
+      "size": 14574
+    },
+    {
+      "name": "ReactNavigation",
+      "file": "admin-portal/src/views/ReactNavigation.vue",
+      "size": 3951
+    },
+    {
+      "name": "Settings",
+      "file": "admin-portal/src/views/Settings.vue",
+      "size": 21532
+    },
+    {
+      "name": "AdminAnalytics",
+      "file": "admin-portal/src/views/admin/AdminAnalytics.vue",
+      "size": 14077
+    },
+    {
+      "name": "AgentGrowthReport",
+      "file": "admin-portal/src/views/admin/AgentGrowthReport.vue",
+      "size": 8966
+    },
+    {
+      "name": "AgentMarketplace",
+      "file": "admin-portal/src/views/admin/AgentMarketplace.vue",
+      "size": 13413
+    },
+    {
+      "name": "AgentTemplateEdit",
+      "file": "admin-portal/src/views/admin/AgentTemplateEdit.vue",
+      "size": 8234
+    },
+    {
+      "name": "AgentTemplateList",
+      "file": "admin-portal/src/views/admin/AgentTemplateList.vue",
+      "size": 7293
+    },
+    {
+      "name": "BatchIngestion",
+      "file": "admin-portal/src/views/admin/BatchIngestion.vue",
+      "size": 9169
+    },
+    {
+      "name": "ChallengeManagement",
+      "file": "admin-portal/src/views/admin/ChallengeManagement.vue",
+      "size": 40018
+    },
+    {
+      "name": "CompanionManage",
+      "file": "admin-portal/src/views/admin/CompanionManage.vue",
+      "size": 3691
+    },
+    {
+      "name": "ContentManage",
+      "file": "admin-portal/src/views/admin/ContentManage.vue",
+      "size": 15571
+    },
+    {
+      "name": "CourseModuleManage",
+      "file": "admin-portal/src/views/admin/CourseModuleManage.vue",
+      "size": 10396
+    },
+    {
+      "name": "CreditDashboard",
+      "file": "admin-portal/src/views/admin/CreditDashboard.vue",
+      "size": 3684
+    },
+    {
+      "name": "Distribution",
+      "file": "admin-portal/src/views/admin/Distribution.vue",
+      "size": 11322
+    },
+    {
+      "name": "ExpertApplicationReview",
+      "file": "admin-portal/src/views/admin/ExpertApplicationReview.vue",
+      "size": 9474
+    },
+    {
+      "name": "ExpertContentStudio",
+      "file": "admin-portal/src/views/admin/ExpertContentStudio.vue",
+      "size": 17689
+    },
+    {
+      "name": "ExpertDashboard",
+      "file": "admin-portal/src/views/admin/ExpertDashboard.vue",
+      "size": 12815
+    },
+    {
+      "name": "KnowledgeSharingReview",
+      "file": "admin-portal/src/views/admin/KnowledgeSharingReview.vue",
+      "size": 12468
+    },
+    {
+      "name": "PromotionReview",
+      "file": "admin-portal/src/views/admin/PromotionReview.vue",
+      "size": 6116
+    },
+    {
+      "name": "TenantRoutingConfig",
+      "file": "admin-portal/src/views/admin/TenantRoutingConfig.vue",
+      "size": 12026
+    },
+    {
+      "name": "UserActivityReport",
+      "file": "admin-portal/src/views/admin/UserActivityReport.vue",
+      "size": 10895
+    },
+    {
+      "name": "Index",
+      "file": "admin-portal/src/views/admin/interventions/Index.vue",
+      "size": 28148
+    },
+    {
+      "name": "UserManagement",
+      "file": "admin-portal/src/views/admin/my/UserManagement.vue",
+      "size": 13049
+    },
+    {
+      "name": "Edit",
+      "file": "admin-portal/src/views/admin/prompts/Edit.vue",
+      "size": 9506
+    },
+    {
+      "name": "Index",
+      "file": "admin-portal/src/views/admin/prompts/Index.vue",
+      "size": 10604
+    },
+    {
+      "name": "ChatView",
+      "file": "admin-portal/src/views/client/ChatView.vue",
+      "size": 17153
+    },
+    {
+      "name": "ChatViewOptimized",
+      "file": "admin-portal/src/views/client/ChatViewOptimized.vue",
+      "size": 23464
+    },
+    {
+      "name": "DataInputOptimized",
+      "file": "admin-portal/src/views/client/DataInputOptimized.vue",
+      "size": 24820
+    },
+    {
+      "name": "DeviceDashboard",
+      "file": "admin-portal/src/views/client/DeviceDashboard.vue",
+      "size": 15571
+    },
+    {
+      "name": "HomeView",
+      "file": "admin-portal/src/views/client/HomeView.vue",
+      "size": 38412
+    },
+    {
+      "name": "HomeViewOptimized",
+      "file": "admin-portal/src/views/client/HomeViewOptimized.vue",
+      "size": 15615
+    },
+    {
+      "name": "LearningProgress",
+      "file": "admin-portal/src/views/client/LearningProgress.vue",
+      "size": 11824
+    },
+    {
+      "name": "ProgressDashboard",
+      "file": "admin-portal/src/views/client/ProgressDashboard.vue",
+      "size": 21721
+    },
+    {
+      "name": "AssessmentList",
+      "file": "admin-portal/src/views/client/assessment/AssessmentList.vue",
+      "size": 8201
+    },
+    {
+      "name": "AssessmentResult",
+      "file": "admin-portal/src/views/client/assessment/AssessmentResult.vue",
+      "size": 10378
+    },
+    {
+      "name": "TakeAssessment",
+      "file": "admin-portal/src/views/client/assessment/TakeAssessment.vue",
+      "size": 15207
+    },
+    {
+      "name": "MyAssessments",
+      "file": "admin-portal/src/views/client/my/MyAssessments.vue",
+      "size": 6680
+    },
+    {
+      "name": "MyDevices",
+      "file": "admin-portal/src/views/client/my/MyDevices.vue",
+      "size": 9284
+    },
+    {
+      "name": "MyProfile",
+      "file": "admin-portal/src/views/client/my/MyProfile.vue",
+      "size": 9927
+    },
+    {
+      "name": "MyTrajectory",
+      "file": "admin-portal/src/views/client/my/MyTrajectory.vue",
+      "size": 9783
+    },
+    {
+      "name": "CoachAiReview",
+      "file": "admin-portal/src/views/coach/CoachAiReview.vue",
+      "size": 10496
+    },
+    {
+      "name": "CoachCopilot",
+      "file": "admin-portal/src/views/coach/CoachCopilot.vue",
+      "size": 13397
+    },
+    {
+      "name": "CoachHome",
+      "file": "admin-portal/src/views/coach/CoachHome.vue",
+      "size": 123448
+    },
+    {
+      "name": "CoachStudentList",
+      "file": "admin-portal/src/views/coach/CoachStudentList.vue",
+      "size": 7852
+    },
+    {
+      "name": "ContentSharing",
+      "file": "admin-portal/src/views/coach/ContentSharing.vue",
+      "size": 9760
+    },
+    {
+      "name": "Detail",
+      "file": "admin-portal/src/views/coach/Detail.vue",
+      "size": 22133
+    },
+    {
+      "name": "List",
+      "file": "admin-portal/src/views/coach/List.vue",
+      "size": 23345
+    },
+    {
+      "name": "Review",
+      "file": "admin-portal/src/views/coach/Review.vue",
+      "size": 21458
+    },
+    {
+      "name": "StudentAssessment",
+      "file": "admin-portal/src/views/coach/StudentAssessment.vue",
+      "size": 19408
+    },
+    {
+      "name": "StudentBehavioralProfile",
+      "file": "admin-portal/src/views/coach/StudentBehavioralProfile.vue",
+      "size": 13749
+    },
+    {
+      "name": "StudentHealthData",
+      "file": "admin-portal/src/views/coach/StudentHealthData.vue",
+      "size": 13485
+    },
+    {
+      "name": "StudentList",
+      "file": "admin-portal/src/views/coach/StudentList.vue",
+      "size": 22300
+    },
+    {
+      "name": "StudentMessages",
+      "file": "admin-portal/src/views/coach/StudentMessages.vue",
+      "size": 10266
+    },
+    {
+      "name": "CoachAnalytics",
+      "file": "admin-portal/src/views/coach/my/CoachAnalytics.vue",
+      "size": 10625
+    },
+    {
+      "name": "MyCertification",
+      "file": "admin-portal/src/views/coach/my/MyCertification.vue",
+      "size": 6663
+    },
+    {
+      "name": "MyPerformance",
+      "file": "admin-portal/src/views/coach/my/MyPerformance.vue",
+      "size": 7949
+    },
+    {
+      "name": "MyStudents",
+      "file": "admin-portal/src/views/coach/my/MyStudents.vue",
+      "size": 9856
+    },
+    {
+      "name": "MyTools",
+      "file": "admin-portal/src/views/coach/my/MyTools.vue",
+      "size": 6726
+    },
+    {
+      "name": "EmpathyGuide",
+      "file": "admin-portal/src/views/coach/tools/EmpathyGuide.vue",
+      "size": 11569
+    },
+    {
+      "name": "HabitCard",
+      "file": "admin-portal/src/views/coach/tools/HabitCard.vue",
+      "size": 14145
+    },
+    {
+      "name": "StressForm",
+      "file": "admin-portal/src/views/coach/tools/StressForm.vue",
+      "size": 12624
+    },
+    {
+      "name": "ArticleList",
+      "file": "admin-portal/src/views/content/ArticleList.vue",
+      "size": 18843
+    },
+    {
+      "name": "CardList",
+      "file": "admin-portal/src/views/content/CardList.vue",
+      "size": 21071
+    },
+    {
+      "name": "CaseList",
+      "file": "admin-portal/src/views/content/CaseList.vue",
+      "size": 16972
+    },
+    {
+      "name": "ReviewQueue",
+      "file": "admin-portal/src/views/content/ReviewQueue.vue",
+      "size": 15136
+    },
+    {
+      "name": "VideoQuizEditor",
+      "file": "admin-portal/src/views/content/VideoQuizEditor.vue",
+      "size": 16133
+    },
+    {
+      "name": "Chapters",
+      "file": "admin-portal/src/views/course/Chapters.vue",
+      "size": 18603
+    },
+    {
+      "name": "Edit",
+      "file": "admin-portal/src/views/course/Edit.vue",
+      "size": 11453
+    },
+    {
+      "name": "List",
+      "file": "admin-portal/src/views/course/List.vue",
+      "size": 21713
+    },
+    {
+      "name": "Index",
+      "file": "admin-portal/src/views/dashboard/Index.vue",
+      "size": 7944
+    },
+    {
+      "name": "ExamEdit",
+      "file": "admin-portal/src/views/exam/ExamEdit.vue",
+      "size": 22148
+    },
+    {
+      "name": "ExamList",
+      "file": "admin-portal/src/views/exam/ExamList.vue",
+      "size": 12784
+    },
+    {
+      "name": "ExamSession",
+      "file": "admin-portal/src/views/exam/ExamSession.vue",
+      "size": 33236
+    },
+    {
+      "name": "ProctorReview",
+      "file": "admin-portal/src/views/exam/ProctorReview.vue",
+      "size": 20507
+    },
+    {
+      "name": "QuestionBank",
+      "file": "admin-portal/src/views/exam/QuestionBank.vue",
+      "size": 17258
+    },
+    {
+      "name": "QuestionEdit",
+      "file": "admin-portal/src/views/exam/QuestionEdit.vue",
+      "size": 22392
+    },
+    {
+      "name": "Results",
+      "file": "admin-portal/src/views/exam/Results.vue",
+      "size": 17969
+    },
+    {
+      "name": "DualSignPanel",
+      "file": "admin-portal/src/views/expert/DualSignPanel.vue",
+      "size": 7428
+    },
+    {
+      "name": "ExpertAgentManage",
+      "file": "admin-portal/src/views/expert/ExpertAgentManage.vue",
+      "size": 13414
+    },
+    {
+      "name": "ExpertHome",
+      "file": "admin-portal/src/views/expert/ExpertHome.vue",
+      "size": 24683
+    },
+    {
+      "name": "ExpertWorkbench",
+      "file": "admin-portal/src/views/expert/ExpertWorkbench.vue",
+      "size": 4838
+    },
+    {
+      "name": "MyResearch",
+      "file": "admin-portal/src/views/expert/my/MyResearch.vue",
+      "size": 6338
+    },
+    {
+      "name": "MyReviews",
+      "file": "admin-portal/src/views/expert/my/MyReviews.vue",
+      "size": 8445
+    },
+    {
+      "name": "MySupervision",
+      "file": "admin-portal/src/views/expert/my/MySupervision.vue",
+      "size": 6891
+    },
+    {
+      "name": "Edit",
+      "file": "admin-portal/src/views/live/Edit.vue",
+      "size": 13312
+    },
+    {
+      "name": "List",
+      "file": "admin-portal/src/views/live/List.vue",
+      "size": 18005
+    },
+    {
+      "name": "MedicalAssistant",
+      "file": "admin-portal/src/views/portals/MedicalAssistant.vue",
+      "size": 13802
+    },
+    {
+      "name": "PublicPortal",
+      "file": "admin-portal/src/views/portals/PublicPortal.vue",
+      "size": 10764
+    },
+    {
+      "name": "AdminEvolution",
+      "file": "admin-portal/src/views/react/AdminEvolution.vue",
+      "size": 258
+    },
+    {
+      "name": "DemoPage",
+      "file": "admin-portal/src/views/react/DemoPage.vue",
+      "size": 240
+    },
+    {
+      "name": "ExpertWorkspace",
+      "file": "admin-portal/src/views/react/ExpertWorkspace.vue",
+      "size": 261
+    },
+    {
+      "name": "JourneyPage",
+      "file": "admin-portal/src/views/react/JourneyPage.vue",
+      "size": 249
+    },
+    {
+      "name": "TracePage",
+      "file": "admin-portal/src/views/react/TracePage.vue",
+      "size": 243
+    },
+    {
+      "name": "SafetyDashboard",
+      "file": "admin-portal/src/views/safety/SafetyDashboard.vue",
+      "size": 5795
+    },
+    {
+      "name": "SafetyReviewQueue",
+      "file": "admin-portal/src/views/safety/SafetyReviewQueue.vue",
+      "size": 6574
+    },
+    {
+      "name": "App",
+      "file": "h5/src/App.vue",
+      "size": 354
+    },
+    {
+      "name": "InteractionBar",
+      "file": "h5/src/components/InteractionBar.vue",
+      "size": 1927
+    },
+    {
+      "name": "ShareSheet",
+      "file": "h5/src/components/ShareSheet.vue",
+      "size": 3256
+    },
+    {
+      "name": "CitationBlock",
+      "file": "h5/src/components/chat/CitationBlock.vue",
+      "size": 11138
+    },
+    {
+      "name": "CitationMarker",
+      "file": "h5/src/components/chat/CitationMarker.vue",
+      "size": 4191
+    },
+    {
+      "name": "EfficacySlider",
+      "file": "h5/src/components/chat/EfficacySlider.vue",
+      "size": 1822
+    },
+    {
+      "name": "MessageBubble",
+      "file": "h5/src/components/chat/MessageBubble.vue",
+      "size": 4013
+    },
+    {
+      "name": "TaskCard",
+      "file": "h5/src/components/chat/TaskCard.vue",
+      "size": 2788
+    },
+    {
+      "name": "TabBar",
+      "file": "h5/src/components/common/TabBar.vue",
+      "size": 564
+    },
+    {
+      "name": "StageHeader",
+      "file": "h5/src/components/stage/StageHeader.vue",
+      "size": 1559
+    },
+    {
+      "name": "BehaviorTaskCard",
+      "file": "h5/src/components/task/BehaviorTaskCard.vue",
+      "size": 5900
+    },
+    {
+      "name": "AboutUs",
+      "file": "h5/src/views/AboutUs.vue",
+      "size": 4129
+    },
+    {
+      "name": "AccountSettings",
+      "file": "h5/src/views/AccountSettings.vue",
+      "size": 4715
+    },
+    {
+      "name": "BehaviorAssessment",
+      "file": "h5/src/views/BehaviorAssessment.vue",
+      "size": 20575
+    },
+    {
+      "name": "ChallengeDay",
+      "file": "h5/src/views/ChallengeDay.vue",
+      "size": 37614
+    },
+    {
+      "name": "ChallengeList",
+      "file": "h5/src/views/ChallengeList.vue",
+      "size": 10452
+    },
+    {
+      "name": "Chat",
+      "file": "h5/src/views/Chat.vue",
+      "size": 10885
+    },
+    {
+      "name": "CoachDirectory",
+      "file": "h5/src/views/CoachDirectory.vue",
+      "size": 6165
+    },
+    {
+      "name": "ContentDetail",
+      "file": "h5/src/views/ContentDetail.vue",
+      "size": 10227
+    },
+    {
+      "name": "Contribute",
+      "file": "h5/src/views/Contribute.vue",
+      "size": 8609
+    },
+    {
+      "name": "Dashboard",
+      "file": "h5/src/views/Dashboard.vue",
+      "size": 9210
+    },
+    {
+      "name": "DataSync",
+      "file": "h5/src/views/DataSync.vue",
+      "size": 8915
+    },
+    {
+      "name": "ExpertApplicationStatus",
+      "file": "h5/src/views/ExpertApplicationStatus.vue",
+      "size": 6274
+    },
+    {
+      "name": "ExpertHub",
+      "file": "h5/src/views/ExpertHub.vue",
+      "size": 5498
+    },
+    {
+      "name": "ExpertRegister",
+      "file": "h5/src/views/ExpertRegister.vue",
+      "size": 25543
+    },
+    {
+      "name": "ExpertStudio",
+      "file": "h5/src/views/ExpertStudio.vue",
+      "size": 8813
+    },
+    {
+      "name": "FoodRecognition",
+      "file": "h5/src/views/FoodRecognition.vue",
+      "size": 15564
+    },
+    {
+      "name": "HealthRecords",
+      "file": "h5/src/views/HealthRecords.vue",
+      "size": 21279
+    },
+    {
+      "name": "HistoryReports",
+      "file": "h5/src/views/HistoryReports.vue",
+      "size": 5927
+    },
+    {
+      "name": "Home",
+      "file": "h5/src/views/Home.vue",
+      "size": 28740
+    },
+    {
+      "name": "LearnCenter",
+      "file": "h5/src/views/LearnCenter.vue",
+      "size": 11782
+    },
+    {
+      "name": "Login",
+      "file": "h5/src/views/Login.vue",
+      "size": 5195
+    },
+    {
+      "name": "MyCompanions",
+      "file": "h5/src/views/MyCompanions.vue",
+      "size": 4469
+    },
+    {
+      "name": "MyCredits",
+      "file": "h5/src/views/MyCredits.vue",
+      "size": 4060
+    },
+    {
+      "name": "MyLearning",
+      "file": "h5/src/views/MyLearning.vue",
+      "size": 12891
+    },
+    {
+      "name": "MyPlan",
+      "file": "h5/src/views/MyPlan.vue",
+      "size": 11843
+    },
+    {
+      "name": "MyPrograms",
+      "file": "h5/src/views/MyPrograms.vue",
+      "size": 7435
+    },
+    {
+      "name": "MyStage",
+      "file": "h5/src/views/MyStage.vue",
+      "size": 17921
+    },
+    {
+      "name": "Notifications",
+      "file": "h5/src/views/Notifications.vue",
+      "size": 17057
+    },
+    {
+      "name": "PrivacyPolicy",
+      "file": "h5/src/views/PrivacyPolicy.vue",
+      "size": 4072
+    },
+    {
+      "name": "Profile",
+      "file": "h5/src/views/Profile.vue",
+      "size": 5284
+    },
+    {
+      "name": "ProgramProgress",
+      "file": "h5/src/views/ProgramProgress.vue",
+      "size": 5258
+    },
+    {
+      "name": "ProgramTimeline",
+      "file": "h5/src/views/ProgramTimeline.vue",
+      "size": 3940
+    },
+    {
+      "name": "ProgramToday",
+      "file": "h5/src/views/ProgramToday.vue",
+      "size": 10216
+    },
+    {
+      "name": "PromotionProgress",
+      "file": "h5/src/views/PromotionProgress.vue",
+      "size": 9622
+    },
+    {
+      "name": "Tasks",
+      "file": "h5/src/views/Tasks.vue",
+      "size": 11455
+    },
+    {
+      "name": "JourneyView",
+      "file": "h5/src/views/journey/JourneyView.vue",
+      "size": 2574
+    },
+    {
+      "name": "Assessment",
+      "file": "h5/src/views/v3/Assessment.vue",
+      "size": 2122
+    },
+    {
+      "name": "AssessmentBatch",
+      "file": "h5/src/views/v3/AssessmentBatch.vue",
+      "size": 3733
+    },
+    {
+      "name": "Coach",
+      "file": "h5/src/views/v3/Coach.vue",
+      "size": 3586
+    },
+    {
+      "name": "Knowledge",
+      "file": "h5/src/views/v3/Knowledge.vue",
+      "size": 2726
+    },
+    {
+      "name": "Register",
+      "file": "h5/src/views/v3/Register.vue",
+      "size": 2127
+    },
+    {
+      "name": "App",
+      "file": "h5-patient-app/src/App.vue",
+      "size": 413
+    },
+    {
+      "name": "DataInputForm",
+      "file": "h5-patient-app/src/components/DataInputForm.vue",
+      "size": 942
+    },
+    {
+      "name": "RiskCard",
+      "file": "h5-patient-app/src/components/RiskCard.vue",
+      "size": 1348
+    },
+    {
+      "name": "TriggerList",
+      "file": "h5-patient-app/src/components/TriggerList.vue",
+      "size": 1644
+    },
+    {
+      "name": "ChatPage",
+      "file": "h5-patient-app/src/views/ChatPage.vue",
+      "size": 9899
+    },
+    {
+      "name": "DataAnalysisPage",
+      "file": "h5-patient-app/src/views/DataAnalysisPage.vue",
+      "size": 10196
+    },
+    {
+      "name": "DataInputPage",
+      "file": "h5-patient-app/src/views/DataInputPage.vue",
+      "size": 6157
+    },
+    {
+      "name": "HealthDataPage",
+      "file": "h5-patient-app/src/views/HealthDataPage.vue",
+      "size": 21912
+    },
+    {
+      "name": "HistoryPage",
+      "file": "h5-patient-app/src/views/HistoryPage.vue",
+      "size": 4345
+    },
+    {
+      "name": "HomePage",
+      "file": "h5-patient-app/src/views/HomePage.vue",
+      "size": 6785
+    },
+    {
+      "name": "LoginPage",
+      "file": "h5-patient-app/src/views/LoginPage.vue",
+      "size": 3275
+    },
+    {
+      "name": "RegisterPage",
+      "file": "h5-patient-app/src/views/RegisterPage.vue",
+      "size": 4263
+    },
+    {
+      "name": "ResultPage",
+      "file": "h5-patient-app/src/views/ResultPage.vue",
+      "size": 5994
+    },
+    {
+      "name": "SettingsPage",
+      "file": "h5-patient-app/src/views/SettingsPage.vue",
+      "size": 7134
+    }
+  ],
+  "stores": [
+    {
+      "name": "rx",
+      "file": "admin-portal/src/modules/rx/stores/rxStore.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "agent",
+      "file": "admin-portal/src/stores/agent.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "auth",
+      "file": "admin-portal/src/stores/auth.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "brain",
+      "file": "admin-portal/src/stores/brain.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "exam",
+      "file": "admin-portal/src/stores/exam.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "question",
+      "file": "admin-portal/src/stores/question.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "chat",
+      "file": "h5/src/stores/chat.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "tenant",
+      "file": "h5/src/stores/tenant.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "user",
+      "file": "h5/src/stores/user.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "assessment",
+      "file": "h5-patient-app/src/stores/assessment.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "chat",
+      "file": "h5-patient-app/src/stores/chat.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "device",
+      "file": "h5-patient-app/src/stores/device.ts",
+      "type": "pinia"
+    },
+    {
+      "name": "user",
+      "file": "h5-patient-app/src/stores/user.ts",
+      "type": "pinia"
+    }
+  ],
+  "summary": {
+    "total_routes": 144,
+    "total_api_services": 216,
+    "total_components": 204,
+    "total_stores": 13,
+    "frontend_dirs": [
+      "admin-portal",
+      "h5",
+      "h5-patient-app",
+      "frontend"
+    ]
+  }
+}

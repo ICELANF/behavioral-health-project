@@ -1,0 +1,181 @@
+{
+  "user_id": "2",
+  "created_at": "2026-02-11T14:32:56.202096",
+  "updated_at": "2026-02-12T17:25:23.360080",
+  "basic": {
+    "age": null,
+    "sex": null,
+    "height_cm": null,
+    "weight_kg": null
+  },
+  "medical": {
+    "diabetes": "none",
+    "bp": null,
+    "bp_category": null,
+    "medications": [],
+    "conditions": []
+  },
+  "behavior": {
+    "stage": "resistance",
+    "stage_chinese": "完全对抗",
+    "spi_coefficient": 0.3,
+    "patterns": [],
+    "adherence_score": 0.0,
+    "task_completion_rate": 0.0,
+    "streak_days": 0,
+    "cultivation_phase": "startup"
+  },
+  "psych": {
+    "stress_level": "medium",
+    "stress_score": 50,
+    "motivation": "medium",
+    "motivation_score": 50,
+    "efficacy_score": 50.0,
+    "anxiety_level": "normal",
+    "depression_level": "normal",
+    "mood_trend": "stable",
+    "social_support": "moderate"
+  },
+  "constitution": {
+    "bmi": null,
+    "bmi_category": null,
+    "visceral_fat": null,
+    "inflammation_risk": null,
+    "tcm_constitution": null
+  },
+  "biometrics": {
+    "glucose": {
+      "fasting": null,
+      "hba1c": null,
+      "tir": null,
+      "trend": "stable"
+    },
+    "hrv": {
+      "sdnn": null,
+      "rmssd": null,
+      "trend": "stable"
+    },
+    "sleep": {
+      "avg_duration": null,
+      "avg_quality": null,
+      "trend": "stable"
+    },
+    "activity": {
+      "avg_steps": 0,
+      "active_minutes_weekly": 0,
+      "exercise_frequency": "none"
+    }
+  },
+  "preferences": {
+    "focus": [],
+    "coaching_style": "gentle",
+    "max_tasks_per_day": 2,
+    "language": "zh-CN"
+  },
+  "goals": {
+    "primary": null,
+    "secondary": []
+  },
+  "risk_flags": [],
+  "history": {
+    "total_sessions": 24,
+    "first_session": null,
+    "last_session": "2026-02-12T17:25:23.381492",
+    "total_tasks_assigned": 12,
+    "total_tasks_completed": 0,
+    "assessments_count": 0
+  },
+  "current_intervention": null,
+  "today": {
+    "tasks": [
+      {
+        "task_id": "task_aa628278_0",
+        "title": "今日任务：15分钟轻度运动",
+        "status": "pending"
+      }
+    ],
+    "mood_log": [],
+    "device_sync_time": null,
+    "check_ins": 0
+  },
+  "session_history": [
+    {
+      "session_id": "62a9a782",
+      "timestamp": "2026-02-11T14:32:56.201043",
+      "input_type": "text",
+      "message_preview": "[metabolic] analysis"
+    },
+    {
+      "session_id": "0822066a",
+      "timestamp": "2026-02-11T14:33:53.018151",
+      "input_type": "text",
+      "message_preview": "[metabolic] analysis"
+    },
+    {
+      "session_id": "e0fde72c",
+      "timestamp": "2026-02-11T14:40:10.078633",
+      "input_type": "text",
+      "message_preview": "[metabolic] analysis"
+    },
+    {
+      "session_id": "33594319",
+      "timestamp": "2026-02-11T17:00:07.484378",
+      "input_type": "text",
+      "message_preview": "[sleep] analysis"
+    },
+    {
+      "session_id": "c90bafae",
+      "timestamp": "2026-02-11T17:03:51.661350",
+      "input_type": "text",
+      "message_preview": "[sleep] analysis"
+    },
+    {
+      "session_id": "5882eed0",
+      "timestamp": "2026-02-12T09:58:50.996737",
+      "input_type": "text",
+      "message_preview": "[sleep] analysis"
+    },
+    {
+      "session_id": "0c1e4fe9",
+      "timestamp": "2026-02-12T10:02:46.426814",
+      "input_type": "text",
+      "message_preview": "[sleep] analysis"
+    },
+    {
+      "session_id": "202b0949",
+      "timestamp": "2026-02-12T10:03:35.662230",
+      "input_type": "text",
+      "message_preview": "[sleep] analysis"
+    },
+    {
+      "session_id": "fe8631aa",
+      "timestamp": "2026-02-12T15:59:06.021922",
+      "input_type": "text",
+      "message_preview": "[SleepAgent] analysis"
+    },
+    {
+      "session_id": "c4830e06",
+      "timestamp": "2026-02-12T15:59:36.833321",
+      "input_type": "text",
+      "message_preview": "[SleepAgent] analysis"
+    },
+    {
+      "session_id": "6bbfe1bc",
+      "timestamp": "2026-02-12T15:59:52.266361",
+      "input_type": "text",
+      "message_preview": "[SleepAgent] analysis"
+    },
+    {
+      "session_id": "aa628278",
+      "timestamp": "2026-02-12T17:25:23.360080",
+      "input_type": "text",
+      "message_preview": "[metabolic] analysis"
+    }
+  ],
+  "last_updated": "2026-02-12T17:25:23.381504",
+  "tracking_points": [
+    "今日任务完成情况 (1项)",
+    "睡眠质量记录",
+    "心情变化记录"
+  ]
+}

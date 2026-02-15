@@ -1,0 +1,115 @@
+{
+  "timestamp": "2026-02-03T09:22:04.835Z",
+  "summary": {
+    "passed": 13,
+    "warned": 0,
+    "failed": 0,
+    "total": 13
+  },
+  "results": [
+    {
+      "name": "5173_H5行为教练",
+      "url": "http://localhost:5173",
+      "category": "前端应用",
+      "status": "PASS",
+      "detail": "HTTP 200 | 行健行为教练",
+      "title": "行健行为教练"
+    },
+    {
+      "name": "5174_Admin管理后台",
+      "url": "http://localhost:5174",
+      "category": "前端应用",
+      "status": "PASS",
+      "detail": "HTTP 200 | admin-portal",
+      "title": "admin-portal"
+    },
+    {
+      "name": "5174_公众科普入口",
+      "url": "http://localhost:5174/portal/public",
+      "category": "前端应用",
+      "status": "PASS",
+      "detail": "HTTP 200 | admin-portal",
+      "title": "admin-portal"
+    },
+    {
+      "name": "5174_医护处方助手",
+      "url": "http://localhost:5174/portal/medical",
+      "category": "前端应用",
+      "status": "PASS",
+      "detail": "HTTP 200 | admin-portal",
+      "title": "admin-portal"
+    },
+    {
+      "name": "5175_H5患者端",
+      "url": "http://localhost:5175",
+      "category": "前端应用",
+      "status": "PASS",
+      "detail": "HTTP 200 | 用户登录 - 行为健康平台",
+      "title": "用户登录 - 行为健康平台"
+    },
+    {
+      "name": "5176_UI组件库",
+      "url": "http://localhost:5176",
+      "category": "前端应用",
+      "status": "PASS",
+      "detail": "HTTP 200 | 行为健康UI组件库 - 演示",
+      "title": "行为健康UI组件库 - 演示"
+    },
+    {
+      "name": "8888_Django管理",
+      "url": "http://localhost:8888",
+      "category": "前端应用",
+      "status": "PASS",
+      "detail": "HTTP 200 | 首页 - 行为健康数字平台",
+      "title": "首页 - 行为健康数字平台"
+    },
+    {
+      "name": "9000_静态演示页",
+      "url": "http://localhost:9000",
+      "category": "前端应用",
+      "status": "PASS",
+      "detail": "HTTP 200 | 主动健康指挥舱",
+      "title": "主动健康指挥舱"
+    },
+    {
+      "name": "8000_AgentGateway",
+      "url": "http://localhost:8000/docs",
+      "category": "后端API",
+      "status": "PASS",
+      "detail": "HTTP 200 | Xingjian Agent Gateway - Swagger UI",
+      "title": "Xingjian Agent Gateway - Swagger UI"
+    },
+    {
+      "name": "8001_BAPS评估API",
+      "url": "http://localhost:8001/docs",
+      "category": "后端API",
+      "status": "PASS",
+      "detail": "HTTP 200 | 行健行为教练 BAPS API - Swagger UI",
+      "title": "行健行为教练 BAPS API - Swagger UI"
+    },
+    {
+      "name": "8002_决策引擎API",
+      "url": "http://localhost:8002/docs",
+      "category": "后端API",
+      "status": "PASS",
+      "detail": "HTTP 200 | 行为健康数字平台 API - Swagger UI",
+      "title": "行为健康数字平台 API - Swagger UI"
+    },
+    {
+      "name": "8080_Dify编排平台",
+      "url": "http://localhost:8080",
+      "category": "基础设施",
+      "status": "PASS",
+      "detail": "HTTP 200 | Dify",
+      "title": "Dify"
+    },
+    {
+      "name": "11434_Ollama_LLM",
+      "url": "http://localhost:11434",
+      "category": "基础设施",
+      "status": "PASS",
+      "detail": "HTTP 200 | ",
+      "title": ""
+    }
+  ]
+}

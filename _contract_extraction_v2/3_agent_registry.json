@@ -1,0 +1,573 @@
+{
+  "domain_agents": [
+    {
+      "class_name": "MasterAgent",
+      "base_classes": [
+        "_MasterAgentBase"
+      ],
+      "file": "core/master_agent.py",
+      "line": 33,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "MasterAgent Facade — 带日志与异常保护的中枢代理入口。\n\n在 master_agent_v0.MasterAgent 基础上增加:\n  - 每个核心方法的 try/except 保护\n  - 结构化日志记录 (进入/退出/异常)\n  - 统一错误响应构建"
+    },
+    {
+      "class_name": "GenericLLMAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/generic_llm_agent.py",
+      "line": 13,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "纯 LLM 动态 Agent — 无规则逻辑, 完全依赖 system_prompt"
+    },
+    {
+      "class_name": "BehaviorRxAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/integrative_agents.py",
+      "line": 9,
+      "domain": "AgentDomain.BEHAVIOR_RX",
+      "display_name": "行为处方师",
+      "keywords": [
+        "行为处方",
+        "习惯",
+        "戒烟",
+        "依从性",
+        "打卡",
+        "任务"
+      ],
+      "priority": 2,
+      "base_weight": 0.9,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "行为处方师Agent — 跨全领域综合干预输出"
+    },
+    {
+      "class_name": "WeightAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/integrative_agents.py",
+      "line": 44,
+      "domain": "AgentDomain.WEIGHT",
+      "display_name": "体重管理师",
+      "keywords": [
+        "体重",
+        "减重",
+        "BMI",
+        "脂肪",
+        "腰围",
+        "减肥"
+      ],
+      "priority": 2,
+      "base_weight": 0.85,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "体重管理师Agent — 多系统联动(饮食+运动+代谢+睡眠+心理)"
+    },
+    {
+      "class_name": "CardiacRehabAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/integrative_agents.py",
+      "line": 70,
+      "domain": "AgentDomain.CARDIAC_REHAB",
+      "display_name": "心脏康复师",
+      "keywords": [
+        "心脏",
+        "心血管",
+        "冠心病",
+        "康复",
+        "心梗",
+        "支架"
+      ],
+      "priority": 1,
+      "base_weight": 0.85,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "心脏康复师Agent — 全方位康复方案"
+    },
+    {
+      "class_name": "CrisisAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/specialist_agents.py",
+      "line": 12,
+      "domain": "AgentDomain.CRISIS",
+      "display_name": "危机干预",
+      "keywords": [
+        "自杀",
+        "自残",
+        "不想活",
+        "结束生命",
+        "活着没意思",
+        "去死",
+        "跳楼",
+        "割腕",
+        "安眠药",
+        "遗书"
+      ],
+      "priority": 0,
+      "base_weight": 1.0,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "危机干预Agent — 优先级0(最高), 检测自杀/自残等危急信号"
+    },
+    {
+      "class_name": "SleepAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/specialist_agents.py",
+      "line": 56,
+      "domain": "AgentDomain.SLEEP",
+      "display_name": "睡眠专家",
+      "keywords": [
+        "睡眠",
+        "失眠",
+        "早醒",
+        "熬夜",
+        "睡不着",
+        "嗜睡",
+        "打鼾",
+        "午睡"
+      ],
+      "priority": 2,
+      "base_weight": 0.85,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "睡眠专家Agent"
+    },
+    {
+      "class_name": "GlucoseAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/specialist_agents.py",
+      "line": 88,
+      "domain": "AgentDomain.GLUCOSE",
+      "display_name": "血糖管理",
+      "keywords": [
+        "血糖",
+        "糖尿病",
+        "胰岛素",
+        "低血糖",
+        "高血糖",
+        "糖化",
+        "控糖"
+      ],
+      "priority": 1,
+      "base_weight": 0.9,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "血糖管理Agent"
+    },
+    {
+      "class_name": "StressAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/specialist_agents.py",
+      "line": 117,
+      "domain": "AgentDomain.STRESS",
+      "display_name": "压力管理",
+      "keywords": [
+        "压力",
+        "焦虑",
+        "紧张",
+        "烦躁",
+        "崩溃",
+        "喘不过气"
+      ],
+      "priority": 2,
+      "base_weight": 0.85,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "压力管理Agent"
+    },
+    {
+      "class_name": "NutritionAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/specialist_agents.py",
+      "line": 144,
+      "domain": "AgentDomain.NUTRITION",
+      "display_name": "营养指导",
+      "keywords": [
+        "饮食",
+        "营养",
+        "减肥",
+        "热量",
+        "碳水",
+        "蛋白质",
+        "吃什么",
+        "食谱",
+        "代餐",
+        "节食"
+      ],
+      "priority": 3,
+      "base_weight": 0.8,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "营养指导Agent"
+    },
+    {
+      "class_name": "ExerciseAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/specialist_agents.py",
+      "line": 171,
+      "domain": "AgentDomain.EXERCISE",
+      "display_name": "运动指导",
+      "keywords": [
+        "运动",
+        "健身",
+        "步数",
+        "跑步",
+        "散步",
+        "力量训练",
+        "瑜伽"
+      ],
+      "priority": 3,
+      "base_weight": 0.8,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "运动指导Agent"
+    },
+    {
+      "class_name": "MentalHealthAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/specialist_agents.py",
+      "line": 196,
+      "domain": "AgentDomain.MENTAL",
+      "display_name": "心理咨询",
+      "keywords": [
+        "情绪",
+        "抑郁",
+        "心情",
+        "难过",
+        "伤心",
+        "郁闷",
+        "无助"
+      ],
+      "priority": 2,
+      "base_weight": 0.85,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "心理咨询Agent"
+    },
+    {
+      "class_name": "TCMWellnessAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/specialist_agents.py",
+      "line": 220,
+      "domain": "AgentDomain.TCM",
+      "display_name": "中医养生",
+      "keywords": [
+        "中医",
+        "体质",
+        "穴位",
+        "气血",
+        "经络",
+        "养生",
+        "上火",
+        "湿气"
+      ],
+      "priority": 4,
+      "base_weight": 0.75,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "中医养生Agent"
+    },
+    {
+      "class_name": "MotivationAgent",
+      "base_classes": [
+        "BaseAgent"
+      ],
+      "file": "core/agents/specialist_agents.py",
+      "line": 239,
+      "domain": "AgentDomain.MOTIVATION",
+      "display_name": "动机管理",
+      "keywords": [
+        "动力",
+        "坚持",
+        "放弃",
+        "没意义",
+        "为什么",
+        "值不值"
+      ],
+      "priority": 3,
+      "base_weight": 0.8,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "动机管理Agent"
+    },
+    {
+      "class_name": "SafetyAgent",
+      "base_classes": [
+        "BaseV14Agent"
+      ],
+      "file": "core/v14/agents.py",
+      "line": 132,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "安全兜底Agent [v14-NEW]\n\n检测危急关键词，立即升级到人工\n这个Agent始终启用，专家不可配置"
+    },
+    {
+      "class_name": "ResistanceAgent",
+      "base_classes": [
+        "BaseV14Agent"
+      ],
+      "file": "core/v14/agents.py",
+      "line": 186,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "阻抗识别Agent [v14-NEW]\n\n识别用户的拖延、抗拒、情绪波动等阻抗信号\n判断是阶段问题、能力问题还是情绪问题"
+    },
+    {
+      "class_name": "ExplainAgent",
+      "base_classes": [
+        "BaseV14Agent"
+      ],
+      "file": "core/v14/agents.py",
+      "line": 275,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "行为解释Agent [v14-NEW]\n\n把\"为什么是这个任务\"讲成\"符合你现阶段的理由\"\n原则：不暴露评估，但让人被理解"
+    }
+  ],
+  "expert_agents": [
+    {
+      "class_name": "AdherenceExpertAgent",
+      "base_classes": [
+        "BaseExpertAgent"
+      ],
+      "file": "behavior_rx/agents/adherence_expert_agent.py",
+      "line": 93,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "就医依从性专家Agent — 横切面Agent\n\n与其他3款Agent的关系:\n  - 行为教练: 负责认知准备 → 依从Agent确保行为链落地\n  - 代谢专家: 制定饮食运动方案 → 依从Agent确保方案执行\n  - 心血管专家: 制定运动处方 → 依从Agent确保用药+复查链\n\n触发机制:\n  - 不单独作为入口Agent使用\n  - 被其他Agent在检测到依从问题时「横切」触发\n  - 也可由系统检测到依从异常时主动触发\n\n核心重定义:\n  传统视角: \"患者不依从\" — 归因于患者态度/意愿\n  BehaviorOS视角: \"行为链断裂\" — 归因于行为设计, 寻找断点并修复"
+    },
+    {
+      "class_name": "BehaviorCoachAgent",
+      "base_classes": [
+        "BaseExpertAgent"
+      ],
+      "file": "behavior_rx/agents/behavior_coach_agent.py",
+      "line": 34,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "行为阶段教练 — 行为处方「半透明」Agent\n\n冰山模型差异:\n  - 其他3款Agent: 行为处方完全隐藏在专业内容之下\n  - 本Agent: 行为处方半透明 — 用户能感知到行为科学方法论\n\n处理流程:\n  S0(前意识) → 意识提升/情绪唤醒\n  S1(意识)   → 决策平衡/自我再评价\n  S2(准备)   → 自我解放/认知重构/行动计划\n  S3+(就绪)  → 交接给领域Agent"
+    },
+    {
+      "class_name": "CardiacExpertAgent",
+      "base_classes": [
+        "BaseExpertAgent"
+      ],
+      "file": "behavior_rx/agents/cardiac_expert_agent.py",
+      "line": 75,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "心血管/心脏康复专家Agent\n\n行为处方特色:\n  - systematic_desensitization 作为核心策略 (运动恐惧脱敏)\n  - 三周渐进暴露协议 (Week1: 散步 → Week2: 快走 → Week3: 轻有氧)\n  - 心率安全锚定 (将心率区间与安全感绑定)\n  - 家属过度保护干预 (识别并处理家属阻碍康复的行为)\n\n安全优先:\n  - 心率超过阈值 → 立即停止指令\n  - RPE > 14 → 降级处方强度\n  - 胸痛/眩晕 → 触发 AutoExitHandler\n  - 收缩压 > 160 → 暂停运动处方"
+    },
+    {
+      "class_name": "MetabolicExpertAgent",
+      "base_classes": [
+        "BaseExpertAgent"
+      ],
+      "file": "behavior_rx/agents/metabolic_expert_agent.py",
+      "line": 36,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "代谢内分泌专家Agent\n\n冰山模型示例:\n  水面上 (用户看到):\n    \"你的空腹血糖连续3天偏高,可能和晚餐时间过晚有关。\n     建议试试把晚餐提前到6:30之前,先坚持3天看看效果。\"\n\n  水面下 (行为处方):\n    strategy=stimulus_control, intensity=moderate\n    micro_action: \"晚餐时间提前到6:30\"\n    trigger: \"设置6:00闹钟提醒准备晚餐\"\n    reward: \"3天达标→积分奖励\""
+    },
+    {
+      "class_name": "AdherenceExpertAgent",
+      "base_classes": [
+        "BaseExpertAgent"
+      ],
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/adherence_expert_agent.py",
+      "line": 93,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "就医依从性专家Agent — 横切面Agent\n\n与其他3款Agent的关系:\n  - 行为教练: 负责认知准备 → 依从Agent确保行为链落地\n  - 代谢专家: 制定饮食运动方案 → 依从Agent确保方案执行\n  - 心血管专家: 制定运动处方 → 依从Agent确保用药+复查链\n\n触发机制:\n  - 不单独作为入口Agent使用\n  - 被其他Agent在检测到依从问题时「横切」触发\n  - 也可由系统检测到依从异常时主动触发\n\n核心重定义:\n  传统视角: \"患者不依从\" — 归因于患者态度/意愿\n  BehaviorOS视角: \"行为链断裂\" — 归因于行为设计, 寻找断点并修复"
+    },
+    {
+      "class_name": "BehaviorCoachAgent",
+      "base_classes": [
+        "BaseExpertAgent"
+      ],
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/behavior_coach_agent.py",
+      "line": 34,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "行为阶段教练 — 行为处方「半透明」Agent\n\n冰山模型差异:\n  - 其他3款Agent: 行为处方完全隐藏在专业内容之下\n  - 本Agent: 行为处方半透明 — 用户能感知到行为科学方法论\n\n处理流程:\n  S0(前意识) → 意识提升/情绪唤醒\n  S1(意识)   → 决策平衡/自我再评价\n  S2(准备)   → 自我解放/认知重构/行动计划\n  S3+(就绪)  → 交接给领域Agent"
+    },
+    {
+      "class_name": "CardiacExpertAgent",
+      "base_classes": [
+        "BaseExpertAgent"
+      ],
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/cardiac_expert_agent.py",
+      "line": 75,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "心血管/心脏康复专家Agent\n\n行为处方特色:\n  - systematic_desensitization 作为核心策略 (运动恐惧脱敏)\n  - 三周渐进暴露协议 (Week1: 散步 → Week2: 快走 → Week3: 轻有氧)\n  - 心率安全锚定 (将心率区间与安全感绑定)\n  - 家属过度保护干预 (识别并处理家属阻碍康复的行为)\n\n安全优先:\n  - 心率超过阈值 → 立即停止指令\n  - RPE > 14 → 降级处方强度\n  - 胸痛/眩晕 → 触发 AutoExitHandler\n  - 收缩压 > 160 → 暂停运动处方"
+    },
+    {
+      "class_name": "MetabolicExpertAgent",
+      "base_classes": [
+        "BaseExpertAgent"
+      ],
+      "file": "behavior_rx_v32_complete/behavior_rx/agents/metabolic_expert_agent.py",
+      "line": 36,
+      "domain": null,
+      "display_name": null,
+      "keywords": [],
+      "priority": null,
+      "base_weight": null,
+      "risk_level": null,
+      "system_prompt": null,
+      "description": "代谢内分泌专家Agent\n\n冰山模型示例:\n  水面上 (用户看到):\n    \"你的空腹血糖连续3天偏高,可能和晚餐时间过晚有关。\n     建议试试把晚餐提前到6:30之前,先坚持3天看看效果。\"\n\n  水面下 (行为处方):\n    strategy=stimulus_control, intensity=moderate\n    micro_action: \"晚餐时间提前到6:30\"\n    trigger: \"设置6:00闹钟提醒准备晚餐\"\n    reward: \"3天达标→积分奖励\""
+    }
+  ],
+  "domain_map": {},
+  "routing_rules": {
+    "medium": {
+      "priority": 0,
+      "file": "api/coach_api.py"
+    },
+    "days_since_contact": {
+      "priority": 9,
+      "file": "api/coach_api.py"
+    },
+    "reason": {
+      "priority": 0,
+      "file": "core/master_agent_v0.py"
+    },
+    "high": {
+      "priority": 4,
+      "file": "core/master_agent_v0.py"
+    }
+  },
+  "agent_configs": {
+    "api/llm_service.py": {
+      "temperature": "0.7"
+    },
+    "core/llm/client.py": {
+      "temperature": "0.7",
+      "max_tokens": "4096",
+      "model": "N/A"
+    },
+    "core/llm/coach_agent.py": {
+      "temperature": "0.1",
+      "max_tokens": "20"
+    },
+    "tests/test_v3_llm_rag.py": {
+      "model": "qwen-plus"
+    },
+    "xingjian-agent/api/services.py": {
+      "temperature": "0.2"
+    }
+  },
+  "summary": {
+    "total_domain_agents": 17,
+    "total_expert_agents": 8,
+    "domain_list": [
+      null,
+      "AgentDomain.NUTRITION",
+      "AgentDomain.CARDIAC_REHAB",
+      "AgentDomain.GLUCOSE",
+      "AgentDomain.TCM",
+      "AgentDomain.WEIGHT",
+      "AgentDomain.MOTIVATION",
+      "AgentDomain.STRESS",
+      "AgentDomain.CRISIS",
+      "AgentDomain.MENTAL",
+      "AgentDomain.BEHAVIOR_RX",
+      "AgentDomain.SLEEP",
+      "AgentDomain.EXERCISE"
+    ],
+    "expert_list": [
+      "AdherenceExpertAgent",
+      "BehaviorCoachAgent",
+      "CardiacExpertAgent",
+      "MetabolicExpertAgent",
+      "AdherenceExpertAgent",
+      "BehaviorCoachAgent",
+      "CardiacExpertAgent",
+      "MetabolicExpertAgent"
+    ]
+  }
+}

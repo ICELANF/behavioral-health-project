@@ -1,0 +1,29 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress
+  labels:
+    app: bhp
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    {{- range .Values.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            pathType: {{ .pathType }}
+            backend:
+              service:
+                name: {{ $.Release.Name }}-{{ .service }}
+                port:
+                  number: {{ if eq .service "api" }}{{ $.Values.api.port }}{{ else if eq .service "admin-portal" }}{{ $.Values.adminPortal.port }}{{ else }}{{ $.Values.h5.port }}{{ end }}
+          {{- end }}
+    {{- end }}
+{{- end }}

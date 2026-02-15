@@ -1,0 +1,72 @@
+# Default values for BHP platform
+
+replicaCount: 2
+
+api:
+  image:
+    repository: bhp-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 8000
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+adminPortal:
+  image:
+    repository: bhp-admin-portal
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 5174
+  replicaCount: 1
+
+h5:
+  image:
+    repository: bhp-h5
+    tag: latest
+    pullPolicy: IfNotPresent
+  port: 5173
+  replicaCount: 1
+
+postgresql:
+  enabled: true
+  image: pgvector/pgvector:pg15
+  port: 5432
+  auth:
+    database: bhp
+    username: postgres
+    password: ""
+  persistence:
+    size: 20Gi
+
+redis:
+  enabled: true
+  port: 6379
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations: {}
+  hosts:
+    - host: bhp.local
+      paths:
+        - path: /api
+          pathType: Prefix
+          service: api
+        - path: /admin
+          pathType: Prefix
+          service: admin-portal
+        - path: /
+          pathType: Prefix
+          service: h5
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
