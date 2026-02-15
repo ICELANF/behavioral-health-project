@@ -1,43 +1,4 @@
-"""
-处方编排Agent
-领域: rx
-层级: professional
-"""
-from ..base import BaseProfessionalAgent
+"""处方编排Agent — V4.2 实现"""
+from .core_engines import RxComposerAgent as Agent
 
-
-class Agent(BaseProfessionalAgent):
-    @property
-    def name(self) -> str:
-        return "rx_composer"
-
-    @property
-    def domain(self) -> str:
-        return "rx"
-
-    async def run(self, message: str, **kwargs) -> dict:
-        # 安全检查
-        if not await self.safety_check(message):
-            return self._format_response(
-                "检测到安全风险，已转介专业支持。",
-                safety_intercepted=True,
-            )
-
-        # TODO: 实现具体逻辑
-        # 1. 意图识别
-        # 2. 知识检索 (RAG)
-        # 3. 响应生成 (LLM)
-        # 4. 安全过滤 (L2-L5)
-
-        return self._format_response(
-            f"[rx_composer] 收到: {message[:100]}",
-            status="stub",
-        )
-
-    async def compute_rx(self, profile: dict) -> dict:
-        """调用Rx引擎生成行为处方"""
-        # TODO: 接入BehaviorRxEngine
-        # from app.engines.behavior_rx import BehaviorRxEngine
-        # rx = BehaviorRxEngine()
-        # return await rx.compute(profile, domain=self.domain)
-        return {"rx": "placeholder", "domain": self.domain}
+__all__ = ["Agent"]
