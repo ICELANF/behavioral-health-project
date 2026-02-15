@@ -1,222 +1,269 @@
-# -*- coding: utf-8 -*-
 """
-晋级系统 API
+双轨晋级 API 端点
+契约来源: Sheet④ 晋级契约 + Sheet⑩ P0 双轨晋级校验引擎
 
-晋级进度查询、晋级申请、审核
+端点清单:
+  GET  /v1/promotion/status        — 查询当前晋级状态
+  GET  /v1/promotion/gap-report    — 获取差距分析报告
+  POST /v1/promotion/check         — 手动触发晋级校验
+  POST /v1/promotion/ceremony      — 启动晋级仪式
+  GET  /v1/promotion/peers         — 同道者仪表盘
+  GET  /v1/promotion/thresholds    — 查看晋级条件
 """
 
-import json
-from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import text
-from typing import Optional
+from pydantic import BaseModel
+from typing import Optional, Dict, Any, List
+from datetime import datetime
 
-from core.database import get_db
-from api.dependencies import get_current_user, require_coach_or_admin
-from core.models import User, PromotionApplication, PromotionStatus, ROLE_LEVEL
-from core.promotion_service import check_promotion_eligibility
-
-router = APIRouter(prefix="/api/v1/promotion", tags=["晋级系统"])
-
-# 加载晋级规则
-_rules_path = Path(__file__).parent.parent / "configs" / "promotion_rules.json"
-_RULES = {}
-if _rules_path.exists():
-    with open(_rules_path, "r", encoding="utf-8") as f:
-        _RULES = json.load(f)
+router = APIRouter(prefix="/v1/promotion", tags=["dual-track-promotion"])
 
 
-@router.get("/progress")
-def get_promotion_progress(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+# ── 响应模型 ──
+
+class PromotionStatusResponse(BaseModel):
+    state: int
+    state_name: str
+    current_level: str
+    target_level: str
+    guidance_message: str
+    ceremony_ready: bool
+    ceremony_name: Optional[str] = None
+    ceremony_emoji: Optional[str] = None
+    gap_count: int = 0
+    points_summary: Optional[Dict] = None
+
+
+class GapReportResponse(BaseModel):
+    promotion_key: str
+    state: int
+    total_gaps: int
+    gaps: List[Dict]
+    estimated_total_days: int
+    ceremony_name: str
+    generated_at: str
+
+
+class CeremonyResponse(BaseModel):
+    success: bool
+    new_level: Optional[str] = None
+    ceremony: Optional[Dict] = None
+    reason: Optional[str] = None
+
+
+class PeerDashboardResponse(BaseModel):
+    promotion_key: str
+    peers: List[Dict]
+    total: int
+    required: int
+    progress_target: str
+    advanced_target: str
+
+
+class ThresholdResponse(BaseModel):
+    promotion_key: str
+    from_level: str
+    to_level: str
+    points_threshold: Dict
+    growth_requirements: Dict
+    ceremony: Dict
+
+
+# ── 依赖注入占位 (实际项目替换为真实实现) ──
+
+async def get_promotion_orchestrator():
+    """获取晋级编排器实例"""
+    from app.core.deps import get_promotion_orchestrator_singleton
+    return get_promotion_orchestrator_singleton()
+
+
+async def get_current_user(request):
+    """获取当前用户 (placeholder)"""
+    from app.core.deps import get_current_user as _get_user
+    return await _get_user(request)
+
+
+# ── 端点实现 ──
+
+@router.get("/status", response_model=PromotionStatusResponse)
+async def get_promotion_status(
+    user=Depends(get_current_user),
+    orchestrator=Depends(get_promotion_orchestrator),
 ):
-    """获取当前用户晋级进度（四维雷达数据）"""
-    row = db.execute(
-        text("SELECT * FROM v_promotion_progress WHERE user_id = :uid"),
-        {"uid": current_user.id}
-    ).mappings().first()
+    """
+    查询当前晋级状态。
+    
+    返回4种状态之一:
+      1=正常成长, 2=等待验证, 3=成长先到, 4=晋级就绪
+    """
+    current_level = getattr(user, "level", "L0")
+    result = await orchestrator.check_promotion_eligibility(user.id, current_level)
+    
+    return PromotionStatusResponse(
+        state=result.get("state", 1),
+        state_name=result.get("state_name", "NORMAL_GROWTH"),
+        current_level=current_level,
+        target_level=_next_level(current_level),
+        guidance_message=result.get("guidance_message", ""),
+        ceremony_ready=result.get("ceremony_ready", False),
+        ceremony_name=result.get("ceremony_name"),
+        ceremony_emoji=result.get("ceremony_emoji"),
+        gap_count=result.get("gap_report", {}).get("total_gaps", 0) if result.get("gap_report") else 0,
+        points_summary=None,  # TODO: 前端可另调积分接口
+    )
 
-    if not row:
-        return {"user_id": current_user.id, "message": "暂无数据"}
 
-    progress = dict(row)
-
-    # 匹配当前适用的晋级规则
-    current_role = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
-    applicable_rule = None
-    for rule in _RULES.get("rules", []):
-        if rule["from_role"] == current_role.lower():
-            applicable_rule = rule
-            break
-
-    progress["next_level_rule"] = applicable_rule
-    return progress
-
-
-@router.get("/rules")
-def get_promotion_rules(
-    current_user: User = Depends(get_current_user),
+@router.get("/gap-report", response_model=GapReportResponse)
+async def get_gap_report(
+    user=Depends(get_current_user),
+    orchestrator=Depends(get_promotion_orchestrator),
 ):
-    """获取所有晋级规则配置"""
-    return _RULES.get("rules", [])
+    """
+    获取差距分析报告。
+    
+    仅在状态2(等待验证)或状态3(成长先到)时有意义。
+    返回具体差距项+预估达成天数。
+    """
+    current_level = getattr(user, "level", "L0")
+    result = await orchestrator.check_promotion_eligibility(user.id, current_level)
+    
+    gap_report = result.get("gap_report")
+    if not gap_report:
+        return GapReportResponse(
+            promotion_key=orchestrator.get_promotion_key(current_level) or "",
+            state=result.get("state", 1),
+            total_gaps=0,
+            gaps=[],
+            estimated_total_days=0,
+            ceremony_name=result.get("ceremony_name", ""),
+            generated_at=datetime.utcnow().isoformat(),
+        )
+    
+    return GapReportResponse(**gap_report)
 
 
-@router.get("/check")
-def check_eligibility(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+@router.post("/check", response_model=PromotionStatusResponse)
+async def manual_check(
+    user=Depends(get_current_user),
+    orchestrator=Depends(get_promotion_orchestrator),
 ):
-    """校验当前用户晋级资格（不提交申请）"""
-    eligible, result = check_promotion_eligibility(db, current_user)
-    return result
+    """
+    手动触发晋级校验。
+    
+    通常系统在积分变动时自动触发, 此端点允许用户手动刷新。
+    """
+    current_level = getattr(user, "level", "L0")
+    result = await orchestrator.check_promotion_eligibility(user.id, current_level)
+    
+    return PromotionStatusResponse(
+        state=result.get("state", 1),
+        state_name=result.get("state_name", "NORMAL_GROWTH"),
+        current_level=current_level,
+        target_level=_next_level(current_level),
+        guidance_message=result.get("guidance_message", ""),
+        ceremony_ready=result.get("ceremony_ready", False),
+        ceremony_name=result.get("ceremony_name"),
+        ceremony_emoji=result.get("ceremony_emoji"),
+    )
 
 
-@router.post("/apply")
-def apply_for_promotion(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+@router.post("/ceremony", response_model=CeremonyResponse)
+async def start_ceremony(
+    user=Depends(get_current_user),
+    orchestrator=Depends(get_promotion_orchestrator),
 ):
-    """提交晋级申请（自动校验条件）"""
-    # 先校验资格
-    eligible, check_result = check_promotion_eligibility(db, current_user)
-
-    if not eligible:
+    """
+    启动晋级仪式。
+    
+    前置条件: 状态必须为4(晋级就绪)。
+    返回仪式信息+需签署的契约清单。
+    触发: CeremonyModal + Confetti 动效。
+    """
+    current_level = getattr(user, "level", "L0")
+    result = await orchestrator.initiate_ceremony(user.id, current_level)
+    
+    if not result["success"]:
         raise HTTPException(
             status_code=400,
             detail={
-                "message": "不满足晋级条件",
-                "check_result": check_result,
+                "error": "ceremony_not_ready",
+                "message": result.get("reason", "晋级条件尚未满足"),
+                "state": result.get("state"),
             }
         )
+    
+    return CeremonyResponse(**result)
 
-    current_role = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
 
-    # 查找适用规则
-    rule = None
-    for r in _RULES.get("rules", []):
-        if r["from_role"] == current_role.lower():
-            rule = r
-            break
+@router.get("/peers", response_model=PeerDashboardResponse)
+async def get_peer_dashboard(
+    user=Depends(get_current_user),
+):
+    """
+    获取同道者仪表盘。
+    
+    显示当前层级的4名同道者培养进度。
+    """
+    from app.core.deps import get_peer_tracking_service
+    peer_svc = get_peer_tracking_service()
+    
+    current_level = getattr(user, "level", "L0")
+    dashboard = await peer_svc.get_peer_dashboard(user.id, current_level)
+    
+    return PeerDashboardResponse(**dashboard)
 
-    if not rule:
-        raise HTTPException(400, "当前角色无可用晋级路径")
 
-    # 检查是否已有待审核申请 (ORM)
-    pending = db.query(PromotionApplication).filter(
-        PromotionApplication.user_id == current_user.id,
-        PromotionApplication.status == PromotionStatus.PENDING,
-    ).first()
-
-    if pending:
-        raise HTTPException(409, "已有待审核的晋级申请")
-
-    # 获取当前进度快照
-    progress = db.execute(
-        text("SELECT * FROM v_promotion_progress WHERE user_id = :uid"),
-        {"uid": current_user.id}
-    ).mappings().first()
-
-    if not progress:
-        raise HTTPException(400, "无法获取晋级进度数据")
-
-    p = dict(progress)
-    from_role = current_role.upper()
-    to_role = rule["to_role"].upper()
-
-    # 创建申请 (ORM)
-    app = PromotionApplication(
-        user_id=current_user.id,
-        from_role=from_role,
-        to_role=to_role,
-        credit_snapshot={
-            "total_credits": float(p.get("total_credits", 0) or 0),
-            "mandatory_credits": float(p.get("mandatory_credits", 0) or 0),
-            "m1": float(p.get("m1_credits", 0) or 0),
-            "m2": float(p.get("m2_credits", 0) or 0),
-            "m3": float(p.get("m3_credits", 0) or 0),
-            "m4": float(p.get("m4_credits", 0) or 0),
-        },
-        point_snapshot={
-            "growth": float(p.get("growth_points", 0) or 0),
-            "contribution": float(p.get("contribution_points", 0) or 0),
-            "influence": float(p.get("influence_points", 0) or 0),
-        },
-        companion_snapshot={
-            "graduated": int(p.get("companions_graduated", 0) or 0),
-            "active": int(p.get("companions_active", 0) or 0),
-            "avg_quality": float(p["companion_avg_quality"]) if p.get("companion_avg_quality") else None,
-        },
-        check_result=check_result,
-        status=PromotionStatus.PENDING,
-    )
-    db.add(app)
-    db.commit()
-    db.refresh(app)
-
-    return {
-        "message": "晋级申请已提交",
-        "application_id": str(app.id),
-        "from": rule["from_role"],
-        "to": rule["to_role"],
+@router.get("/thresholds/{level}", response_model=ThresholdResponse)
+async def get_level_thresholds(level: str):
+    """
+    查看指定层级的晋级条件 (公开, 无需认证)。
+    
+    路径参数: L0, L1, L2, L3, L4
+    """
+    from dual_track_engine import PROMOTION_THRESHOLDS
+    
+    key_map = {
+        "L0": "L0_TO_L1", "L1": "L1_TO_L2", "L2": "L2_TO_L3",
+        "L3": "L3_TO_L4", "L4": "L4_TO_L5",
     }
-
-
-@router.get("/applications")
-def list_promotion_applications(
-    status: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_coach_or_admin),
-):
-    """查看晋级申请列表（教练/管理员）"""
-    sql = (
-        "SELECT pa.*, u.username "
-        "FROM promotion_applications pa "
-        "JOIN users u ON pa.user_id = u.id"
+    
+    promo_key = key_map.get(level.upper())
+    if not promo_key:
+        raise HTTPException(404, detail=f"Level {level} not found or is max level")
+    
+    threshold = PROMOTION_THRESHOLDS[promo_key]
+    pts = threshold.points
+    grw = threshold.growth
+    
+    return ThresholdResponse(
+        promotion_key=promo_key,
+        from_level=threshold.from_level.value,
+        to_level=threshold.to_level.value,
+        points_threshold={
+            "growth": pts.growth,
+            "contribution": pts.contribution,
+            "influence": pts.influence,
+            "is_hard_gate": pts.is_hard_gate,
+        },
+        growth_requirements={
+            "peer_required": grw.peer_req.total_required,
+            "peer_progressed": grw.peer_req.min_progressed,
+            "peer_advanced": grw.peer_req.min_advanced,
+            "capabilities": grw.capability_requirements,
+            "exams": grw.exam_requirements,
+            "ethics": grw.ethics_requirements,
+            "min_period_months": grw.min_period_months,
+        },
+        ceremony={
+            "name": grw.ceremony_name,
+            "emoji": grw.ceremony_emoji,
+        },
     )
-    params = {}
-
-    if status:
-        sql += " WHERE pa.status = :st"
-        params["st"] = status
-
-    sql += " ORDER BY pa.created_at DESC"
-    rows = db.execute(text(sql), params).mappings().all()
-    return [dict(r) for r in rows]
 
 
-@router.post("/review/{application_id}")
-def review_promotion(
-    application_id: str,
-    action: str,
-    comment: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_coach_or_admin),
-):
-    """审核晋级申请"""
-    if action not in ("approved", "rejected"):
-        raise HTTPException(400, "action 必须是 approved 或 rejected")
+# ── 辅助函数 ──
 
-    app = db.query(PromotionApplication).filter(
-        PromotionApplication.id == application_id,
-        PromotionApplication.status == PromotionStatus.PENDING,
-    ).first()
-
-    if not app:
-        raise HTTPException(404, "申请不存在或已处理")
-
-    from datetime import datetime
-    app.status = PromotionStatus.APPROVED if action == "approved" else PromotionStatus.REJECTED
-    app.reviewer_id = current_user.id
-    app.review_comment = comment
-    app.reviewed_at = datetime.utcnow()
-
-    # 如果通过，更新用户角色
-    if action == "approved":
-        user = db.query(User).filter(User.id == app.user_id).first()
-        if user:
-            user.role = app.to_role
-
-    db.commit()
-    return {"message": f"申请已{action}", "application_id": application_id}
+def _next_level(current: str) -> str:
+    levels = ["L0", "L1", "L2", "L3", "L4", "L5"]
+    idx = levels.index(current) if current in levels else 0
+    return levels[min(idx + 1, len(levels) - 1)]
