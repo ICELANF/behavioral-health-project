@@ -195,7 +195,7 @@ def get_governance_dashboard(
     """治理健康仪表盘 (管理员)"""
     from core.responsibility_tracker import ResponsibilityTracker
     tracker = ResponsibilityTracker(db)
-    health = tracker.get_governance_health()
+    health = tracker.get_all_registry_stats()
 
     # Add governance violations summary
     from sqlalchemy import func
