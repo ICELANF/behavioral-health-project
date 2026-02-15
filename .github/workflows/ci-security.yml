@@ -9,9 +9,9 @@ name: CI — Security & Acceptance
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [main, master, develop]
   push:
-    branches: [main, develop]
+    branches: [main, master, develop]
 
 concurrency:
   group: ci-${{ github.ref }}

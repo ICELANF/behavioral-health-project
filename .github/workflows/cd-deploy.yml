@@ -11,7 +11,7 @@ on:
   workflow_run:
     workflows: ["CI — Security & Acceptance"]
     types: [completed]
-    branches: [main]
+    branches: [main, master]
 
   workflow_dispatch:
     inputs:
