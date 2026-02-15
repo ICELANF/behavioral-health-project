@@ -1567,6 +1567,14 @@ try:
 except ImportError as e:
     print(f"[API] V4.1 兼容桥接路由注册失败: {e}")
 
+# ========== V4.2 Admin绑定管理路由 ==========
+try:
+    from api.admin_bindings_api import router as admin_bindings_router
+    app.include_router(admin_bindings_router)
+    print("[API] V4.2 Admin绑定管理路由已注册 (/v1/admin/bindings)")
+except ImportError as e:
+    print(f"[API] V4.2 Admin绑定管理路由注册失败: {e}")
+
 
 if __name__ == "__main__":
     import uvicorn
