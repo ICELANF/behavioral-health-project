@@ -82,8 +82,9 @@ def get_patient_assessments(
     """Coach views student assessment results — aggregated, no raw answers."""
     rows = db.execute(
         sa_text("""
-            SELECT a.id, a.assessment_type, a.scale_name,
-                   a.total_score, a.risk_level, a.completed_at
+            SELECT a.id, a.assessment_id, a.primary_concern,
+                   a.risk_level, a.risk_score, a.primary_agent,
+                   a.status, a.completed_at
             FROM assessments a
             WHERE a.user_id = :user_id
             ORDER BY a.completed_at DESC NULLS LAST
@@ -94,8 +95,10 @@ def get_patient_assessments(
     results = []
     for r in rows.mappings().all():
         d = dict(r)
-        if d.get("risk_level") and hasattr(d["risk_level"], "value"):
-            d["risk_level"] = d["risk_level"].value
+        # Convert enum values to strings
+        for k in ("risk_level", "primary_agent"):
+            if d.get(k) and hasattr(d[k], "value"):
+                d[k] = d[k].value
         results.append(d)
 
     return {
