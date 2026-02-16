@@ -1575,6 +1575,13 @@ try:
 except ImportError as e:
     print(f"[API] V4.2 Admin绑定管理路由注册失败: {e}")
 
+# ========== V4.3 中医骨科康复Agent注册表 ==========
+try:
+    from api.routes_tcm_ortho import TCM_ORTHO_AGENT_REGISTRY, GATEWAY_EXTENSIONS
+    print(f"[API] V4.3 中医骨科Agent注册表已加载 ({len(TCM_ORTHO_AGENT_REGISTRY)} agents, {len(GATEWAY_EXTENSIONS)} gateway endpoints)")
+except ImportError as e:
+    print(f"[API] V4.3 中医骨科Agent注册表加载失败: {e}")
+
 
 if __name__ == "__main__":
     import uvicorn
