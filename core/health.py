@@ -20,29 +20,37 @@ from loguru import logger
 async def check_database() -> Dict[str, Any]:
     """检查数据库连接"""
     try:
-        from core.database import check_database_connection, get_database_info
+        from core.database import check_database_connection
         ok = check_database_connection()
-        info = get_database_info()
-        return {"status": "ok" if ok else "error", "dialect": info.get("dialect", "unknown")}
+        return {"status": "ok" if ok else "error"}
     except Exception as e:
         return {"status": "error", "detail": str(e)}
 
 
 async def check_redis() -> Dict[str, Any]:
     """检查 Redis 连接"""
-    redis_host = os.getenv("REDIS_HOST", "localhost")
-    redis_port = int(os.getenv("REDIS_PORT", "6379"))
-    redis_password = os.getenv("REDIS_PASSWORD", "")
+    redis_url = os.getenv("REDIS_URL", "")
+    if not redis_url:
+        redis_host = os.getenv("REDIS_HOST", "localhost")
+        redis_port = int(os.getenv("REDIS_PORT", "6379"))
+        redis_password = os.getenv("REDIS_PASSWORD", "")
+    else:
+        redis_host = redis_url
+        redis_port = 6379
+        redis_password = ""
 
     try:
-        import redis
-        r = redis.Redis(host=redis_host, port=redis_port, password=redis_password, socket_timeout=3)
+        import redis as redis_lib
+        if redis_url:
+            r = redis_lib.from_url(redis_url, socket_timeout=3)
+        else:
+            r = redis_lib.Redis(host=redis_host, port=redis_port, password=redis_password, socket_timeout=3)
         r.ping()
         return {"status": "ok", "host": redis_host}
     except ImportError:
         return {"status": "skip", "detail": "redis package not installed"}
     except Exception as e:
-        return {"status": "error", "detail": str(e)}
+        return {"status": "warn", "detail": str(e)}
 
 
 async def check_ollama() -> Dict[str, Any]:
@@ -55,9 +63,9 @@ async def check_ollama() -> Dict[str, Any]:
                 models = resp.json().get("models", [])
                 model_names = [m["name"] for m in models[:5]]
                 return {"status": "ok", "models": model_names}
-            return {"status": "error", "status_code": resp.status_code}
+            return {"status": "warn", "status_code": resp.status_code}
     except Exception as e:
-        return {"status": "error", "detail": str(e)}
+        return {"status": "warn", "detail": str(e)}
 
 
 async def check_dify() -> Dict[str, Any]:

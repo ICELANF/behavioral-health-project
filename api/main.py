@@ -8,6 +8,45 @@ from typing import Optional, Dict, Any, List
 import logging
 from loguru import logger
 from fastapi import BackgroundTasks, Depends, FastAPI, Body, Header, HTTPException
+
+# ── 日志配置: 文件轮转 + 结构化 ──
+_log_dir = os.getenv("LOG_DIR", "/app/logs")
+os.makedirs(_log_dir, exist_ok=True)
+logger.add(
+    os.path.join(_log_dir, "bhp_{time:YYYY-MM-DD}.log"),
+    rotation="00:00",    # 每天零点轮转
+    retention="30 days", # 保留30天
+    compression="gz",    # 压缩旧日志
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="{time:YYYY-MM-DD HH:mm:ss.SSS} | {level:<8} | {name}:{function}:{line} | {message}",
+    enqueue=True,        # 异步写入 (多 worker 安全)
+)
+# JSON 结构化日志 (用于 ELK/Loki 采集)
+if os.getenv("LOG_JSON", "").lower() == "true":
+    logger.add(
+        os.path.join(_log_dir, "bhp_{time:YYYY-MM-DD}.jsonl"),
+        rotation="00:00",
+        retention="14 days",
+        compression="gz",
+        serialize=True,
+        level="INFO",
+        enqueue=True,
+    )
+# 拦截标准 logging → loguru
+class _InterceptHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            level = logger.level(record.levelname).name
+        except ValueError:
+            level = record.levelno
+        logger.opt(depth=6, exception=record.exc_info).log(level, record.getMessage())
+
+logging.basicConfig(handlers=[_InterceptHandler()], level=0, force=True)
+for _name in ("uvicorn", "uvicorn.error", "uvicorn.access", "sqlalchemy.engine"):
+    logging.getLogger(_name).handlers = [_InterceptHandler()]
+
+import time as _time_mod
+_app_start_time = _time_mod.time()
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -157,6 +196,7 @@ def _validate_startup_env():
     recommended = {
         "CORS_ORIGINS": "CORS白名单 (生产必须设置)",
         "REDIS_URL": "Redis连接 (限流/缓存/任务锁)",
+        "SENTRY_DSN": "Sentry错误追踪 (生产建议开启)",
     }
     for var, desc in required.items():
         val = os.getenv(var, "")
@@ -737,8 +777,26 @@ async def dispatch_request(
 
 @app.get("/health")
 async def health():
-    """基础健康检查（快速）"""
-    return {"status": "online", "version": "16.0.0"}
+    """Liveness 探针 — 进程存活即返回 200"""
+    import time as _t
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "uptime_seconds": int(_t.time() - _app_start_time),
+    }
+
+
+@app.get("/ready")
+async def readiness():
+    """Readiness 探针 — DB 可连接才返回 200"""
+    from fastapi.responses import JSONResponse
+    try:
+        from core.database import check_database_connection
+        if check_database_connection():
+            return {"status": "ready"}
+        return JSONResponse(status_code=503, content={"status": "not_ready", "reason": "database unreachable"})
+    except Exception as e:
+        return JSONResponse(status_code=503, content={"status": "not_ready", "reason": str(e)})
 
 
 @app.get("/api/v1/health")

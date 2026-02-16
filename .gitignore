@@ -129,6 +129,9 @@ pentest_report.json
 # Test reports (generated at runtime)
 test_reports/
 
+# Database backups
+backups/
+
 # Old backup directories
 .github/.github/
 
