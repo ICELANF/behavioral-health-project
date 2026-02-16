@@ -96,9 +96,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
                 "frame-ancestors 'none'"
             )
 
-        # FIX-08: 隐藏 Server header
-        if "server" in response.headers:
-            del response.headers["server"]
+        # FIX-08: 隐藏 Server 实现细节
+        response.headers["Server"] = "BHP"
 
         return response
 

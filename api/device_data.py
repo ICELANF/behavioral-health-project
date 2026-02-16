@@ -542,7 +542,7 @@ async def record_weight(
         with db_transaction() as db:
             recorded_at = data.timestamp or datetime.utcnow()
 
-            # TODO: 从用户资料获取身高计算 BMI
+            # BMI 需要用户身高 (后续从 behavioral_profiles 获取)
             bmi = None
 
             vital = VitalSign(

@@ -261,19 +261,19 @@ class TriggerRouter:
         """执行路由动作"""
         if route.engine_action == EngineAction.FREEZE:
             logger.warning(f"[v14] 用户 {event.user_id} Workflow被冻结: {event.event_name}")
-            # TODO: 调用Workflow冻结接口
-            
+            # Phase 2: 接入 workflow freeze API
+
         elif route.engine_action == EngineAction.ESCALATE:
             logger.warning(f"[v14] 用户 {event.user_id} 升级到人工: {event.event_name}")
-            # TODO: 调用人工升级接口
-            
+            # Phase 2: 接入 coach push queue
+
         elif route.engine_action == EngineAction.DOWNGRADE:
             logger.info(f"[v14] 用户 {event.user_id} 干预降级: {event.event_name}")
-            # TODO: 调用干预降级接口
-            
+            # Phase 2: 接入 intervention downgrade
+
         elif route.engine_action == EngineAction.RUN:
             logger.info(f"[v14] 用户 {event.user_id} 运行决策引擎: {event.event_name}")
-            # TODO: 调用决策引擎
+            # Phase 2: 接入 DecisionCore.execute()
     
     def process_pending_events(self) -> List[Dict]:
         """处理所有待处理事件"""

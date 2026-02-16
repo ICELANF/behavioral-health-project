@@ -54,14 +54,14 @@ celery_app.conf.beat_schedule = {
 @celery_app.task(name="api.tasks.flush_llm_logs")
 def flush_llm_logs():
     """将内存中的 LLM 调用日志写入数据库"""
-    # TODO: 从 CoachAgent._conversation_log 读取并写入 llm_call_logs 表
+    # Phase 2: 接入 CoachAgent._conversation_log → llm_call_logs
     return {"status": "ok", "message": "placeholder"}
 
 
 @celery_app.task(name="api.tasks.generate_weekly_reviews")
 def generate_weekly_reviews():
     """批量生成周度效果报告"""
-    # TODO: 查询活跃用户, 调用 generate_weekly_review
+    # Phase 2: 查询活跃用户 → generate_weekly_review
     return {"status": "ok", "message": "placeholder"}
 
 

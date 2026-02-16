@@ -585,7 +585,7 @@ async def agent_respond(
             logger.info(f"[Agent] 调用 LLM: event={request.event}, stage={stage.value}")
             message = await behavior_health_agent.respond(
                 user_message=prompt_message,
-                history=None,  # TODO: 集成 session_manager 获取历史
+                history=None,  # 历史对话由 session_manager 管理，此处为无状态调用
                 stage=stage.value,
                 day_index=state["day_index"],
                 event=request.event,

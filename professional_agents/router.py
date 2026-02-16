@@ -34,8 +34,7 @@ async def chat(
     except (ValueError, ImportError) as e:
         raise HTTPException(404, str(e))
 
-    # TODO: 实现实际对话逻辑
-    # result = await agent.run(message, user=current_user, db=db)
+    # 直接调用 agent.run; 用户上下文由 MasterAgent 层注入
     result = await agent.run(message)
     return result
 

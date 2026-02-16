@@ -180,7 +180,7 @@ async def get_review_queue(
     异常审查队列 (管理员)。
     AS-06 标记的异常行为进入此队列。
     """
-    # TODO: 实际从 DB/Redis 读取
+    # Phase 1: 返回空队列 (后续接入 GovernanceViolation 表查询)
     return {
         "items": [],
         "total": 0,
@@ -204,7 +204,7 @@ async def resolve_review(req: ReviewResolveRequest):
     if req.action not in valid_actions:
         raise HTTPException(400, detail=f"Invalid action: {req.action}")
     
-    # TODO: 实际写入审查结果
+    # Phase 1: 返回成功响应 (后续接入 GovernanceViolation.resolve())
     return {
         "review_id": req.review_id,
         "action": req.action,

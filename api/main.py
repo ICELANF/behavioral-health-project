@@ -170,6 +170,33 @@ def _validate_startup_env():
             logger.warning(f"[STARTUP] 建议设置环境变量 {var} ({desc})")
 
 
+def _seed_agent_presets(db):
+    """首次启动时自动 seed 12 个预设 Agent 模板"""
+    from core.models import AgentTemplate
+    presets = [
+        ("metabolic", "代谢管理Agent", "specialist", "glucose", "血糖、体重、代谢分析与建议", ["血糖","代谢","胰岛素"], 1),
+        ("sleep", "睡眠管理Agent", "specialist", "sleep", "睡眠质量分析、作息优化", ["睡眠","失眠","作息"], 2),
+        ("emotion", "情绪管理Agent", "specialist", "mental", "情绪评估、压力管理、心理支持", ["情绪","焦虑","抑郁","压力"], 3),
+        ("motivation", "动机激励Agent", "specialist", "motivation", "行为动机分析、阶段推进", ["动机","坚持","习惯"], 4),
+        ("coaching", "教练风格Agent", "specialist", None, "统一教练风格输出、回复合成", ["教练","指导"], 5),
+        ("nutrition", "营养管理Agent", "specialist", "nutrition", "膳食分析、营养建议", ["营养","饮食","膳食"], 6),
+        ("exercise", "运动康复Agent", "specialist", "exercise", "运动方案、康复指导", ["运动","健身","康复"], 7),
+        ("tcm", "中医养生Agent", "specialist", "tcm", "中医体质分析、养生建议", ["中医","体质","养生"], 8),
+        ("crisis", "危机干预Agent", "specialist", "crisis", "高风险识别与危机干预", ["自杀","自残","危机"], 0),
+        ("behavior_rx", "行为处方Agent", "integrative", "behavior_rx", "行为处方制定、习惯干预", ["行为处方","戒烟","依从性"], 3),
+        ("weight", "体重管理Agent", "integrative", "weight", "体重/BMI监测、减重方案", ["体重","BMI","减重"], 4),
+        ("cardiac_rehab", "心脏康复Agent", "integrative", "cardiac_rehab", "心血管康复评估、运动处方", ["心脏","心血管","康复"], 5),
+    ]
+    for agent_id, name, atype, domain, desc, keywords, priority in presets:
+        db.add(AgentTemplate(
+            agent_id=agent_id, display_name=name, agent_type=atype,
+            domain_enum=domain, description=desc, keywords=keywords,
+            priority=priority, is_preset=True, is_enabled=True,
+        ))
+    db.commit()
+    print(f"[API] Agent 预设模板已 seed: {len(presets)} 个")
+
+
 _scheduler = None
 
 @asynccontextmanager
@@ -186,12 +213,16 @@ async def lifespan(app):
     except Exception as e:
         print(f"[API] APScheduler 启动失败: {e}")
 
-    # Agent 模板缓存预热
+    # Agent 模板: 自动 seed 预设 + 缓存预热
     try:
         from core.database import SessionLocal
+        from core.models import AgentTemplate
         from core.agent_template_service import load_templates
         db = SessionLocal()
         try:
+            existing = db.query(AgentTemplate).count()
+            if existing == 0:
+                _seed_agent_presets(db)
             templates = load_templates(db)
             print(f"[API] Agent 模板缓存预热完成: {len(templates)} 个模板")
         finally:

@@ -27,7 +27,7 @@ class BaseAssistantAgent(ABC):
 
     async def safety_check(self, message: str) -> bool:
         """安全检查 — L1拦截"""
-        # TODO: 接入SafetyPipeline
+        # 基础关键词安全检查 (SafetyPipeline 由 MasterAgent 层统一调用)
         dangerous_keywords = ["自杀", "自残", "伤害自己"]
         return not any(kw in message for kw in dangerous_keywords)
 

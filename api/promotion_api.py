@@ -109,7 +109,7 @@ async def get_promotion_status(
         ceremony_name=result.get("ceremony_name"),
         ceremony_emoji=result.get("ceremony_emoji"),
         gap_count=result.get("gap_report", {}).get("total_gaps", 0) if result.get("gap_report") else 0,
-        points_summary=None,  # TODO: 前端可另调积分接口
+        points_summary=None,  # 前端调用 /credits/my 获取积分详情
     )
 
 
