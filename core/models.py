@@ -2886,11 +2886,27 @@ class CompanionRelation(Base):
     graduated_at = Column(DateTime, nullable=True)
     notes = Column(Text, nullable=True)
 
+    # CR-28: 互动追踪
+    last_interaction_at = Column(DateTime, nullable=True, comment="最后互动时间")
+    interaction_count = Column(Integer, nullable=True, server_default=sa_text("0"), comment="累计互动次数")
+    avg_quality_score = Column(Float, nullable=True, comment="平均互动质量 0.0~1.0")
+
+    # CR-28: 互惠性
+    initiator_count_a = Column(Integer, nullable=True, server_default=sa_text("0"), comment="mentor方发起互动次数")
+    initiator_count_b = Column(Integer, nullable=True, server_default=sa_text("0"), comment="mentee方发起互动次数")
+    reciprocity_score = Column(Float, nullable=True, comment="互惠分 0.0~1.0")
+
+    # CR-28: 生命周期
+    state_changed_at = Column(DateTime, nullable=True, comment="状态变更时间")
+    dissolved_at = Column(DateTime, nullable=True, comment="解除时间")
+    dissolve_reason = Column(String(50), nullable=True, comment="解除原因")
+
     __table_args__ = (
         Index("idx_cr_mentor", "mentor_id"),
         Index("idx_cr_mentee", "mentee_id"),
         Index("idx_cr_status", "status"),
         Index("idx_cr_mentor_mentee", "mentor_id", "mentee_id", unique=True),
+        Index("idx_cr_status_last_interaction", "status", "last_interaction_at"),
     )
 
 

@@ -22,7 +22,7 @@ PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 export PYTHONPATH="${PROJECT_DIR}/backend:${PYTHONPATH}"
 
 # 默认数据库 URL
-export DATABASE_URL="${DATABASE_URL:-postgresql+asyncpg://postgres:postgres@localhost:5432/health_platform}"
+export DATABASE_URL="${DATABASE_URL:-postgresql+asyncpg://bhp_user:bhp_password@host.docker.internal:5432/bhp_db}"
 
 echo -e "${CYAN}"
 echo "╔══════════════════════════════════════════════════╗"
