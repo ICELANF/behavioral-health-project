@@ -147,7 +147,28 @@ jobs:
 
       - name: Database setup
         run: |
-          alembic upgrade head
+          # Migration 001 uses Base.metadata.create_all() which creates ALL current
+          # ORM tables at once.  Later migrations (004, 005, 008, 022, 025 ...) also
+          # do op.create_table() for some of those same tables, so running
+          # "alembic upgrade head" on a fresh DB fails with "already exists".
+          #
+          # The correct approach for CI (fresh DB):
+          #   1. Create required schemas
+          #   2. Use create_all() to build all tables from current ORM
+          #   3. Stamp alembic_version as HEAD (skip per-migration replay)
+          python -c "
+          import os, sys
+          sys.path.insert(0, '.')
+          from sqlalchemy import create_engine, text
+          engine = create_engine(os.environ['DATABASE_URL'])
+          with engine.begin() as conn:
+              conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
+          from core.models import Base
+          Base.metadata.create_all(engine)
+          print('✅ All tables created from ORM')
+          "
+          alembic stamp head
+          echo "✅ Alembic stamped at HEAD"
 
       - name: Seed demo accounts
         run: |
@@ -261,7 +282,17 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install requests httpx
-          alembic upgrade head
+          # Fresh DB: create_all + stamp (same as acceptance job)
+          python -c "
+          import os, sys; sys.path.insert(0, '.')
+          from sqlalchemy import create_engine, text
+          engine = create_engine(os.environ['DATABASE_URL'])
+          with engine.begin() as conn:
+              conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
+          from core.models import Base
+          Base.metadata.create_all(engine)
+          "
+          alembic stamp head
           python scripts/seed_demo_accounts.py --db $DATABASE_URL
           ENVIRONMENT=test uvicorn api.main:app --host 0.0.0.0 --port 8000 &
           for i in $(seq 1 30); do
