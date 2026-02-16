@@ -109,7 +109,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: bhp
           POSTGRES_PASSWORD: bhp_test
@@ -162,6 +162,7 @@ jobs:
           from sqlalchemy import create_engine, text
           engine = create_engine(os.environ['DATABASE_URL'])
           with engine.begin() as conn:
+              conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
               conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
           from core.models import Base
           Base.metadata.create_all(engine)
@@ -247,7 +248,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:15
+        image: pgvector/pgvector:pg15
         env:
           POSTGRES_USER: bhp
           POSTGRES_PASSWORD: bhp_test
@@ -288,6 +289,7 @@ jobs:
           from sqlalchemy import create_engine, text
           engine = create_engine(os.environ['DATABASE_URL'])
           with engine.begin() as conn:
+              conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
               conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
           from core.models import Base
           Base.metadata.create_all(engine)
