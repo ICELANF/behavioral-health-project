@@ -3570,7 +3570,7 @@ class AgentMarketplaceListing(Base):
     __tablename__ = "agent_marketplace_listings"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    template_id = Column(Integer, ForeignKey("agent_templates.id"), nullable=False, comment="源模�")
+    template_id = Column(Integer, ForeignKey("coach_schema.agent_templates.id"), nullable=False, comment="源模�")
     publisher_id = Column(Integer, ForeignKey("users.id"), nullable=False, comment="发布�")
     tenant_id = Column(String(64), nullable=False, comment="来源租户")
 
