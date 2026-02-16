@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from core.database import get_db
-from core.models import User, GovernanceViolation, ROLE_LEVEL_STR
+from core.models import User, GovernanceViolation, ROLE_LEVEL, ROLE_LEVEL_STR, ROLE_DISPLAY
 from api.dependencies import get_current_user, require_admin, require_coach_or_admin
 
 router = APIRouter(prefix="/api/v1/governance", tags=["governance"])
@@ -37,11 +37,24 @@ def get_dual_track_status(
 ):
     """获取双轨晋级状态 (4种状态)"""
     target_id = user_id if user_id else current_user.id
-    from core.dual_track_engine import DualTrackEngine
-    engine = DualTrackEngine(db)
-    result = engine.check_dual_track(target_id)
-    db.commit()
-    return result
+    from core.dual_track_engine import PROMOTION_THRESHOLDS
+    user = db.query(User).filter(User.id == target_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    current_level = ROLE_DISPLAY.get(user.role, "L0")
+    level_map = {"L0": "L0_TO_L1", "L1": "L1_TO_L2", "L2": "L2_TO_L3",
+                 "L3": "L3_TO_L4", "L4": "L4_TO_L5"}
+    promo_key = level_map.get(current_level)
+    threshold = PROMOTION_THRESHOLDS.get(promo_key) if promo_key else None
+    return {
+        "user_id": target_id,
+        "current_level": current_level,
+        "promotion_key": promo_key,
+        "state": "max_level" if not promo_key else "pending_check",
+        "target_level": threshold.to_level.value if threshold else None,
+        "ceremony_name": threshold.growth.ceremony_name if threshold else None,
+        "ceremony_emoji": threshold.growth.ceremony_emoji if threshold else None,
+    }
 
 
 @router.get("/dual-track/gap-analysis")
@@ -52,28 +65,52 @@ def get_gap_analysis(
 ):
     """获取晋级差距分析报告"""
     target_id = user_id if user_id else current_user.id
-    from core.dual_track_engine import DualTrackEngine
-    engine = DualTrackEngine(db)
-    return engine.get_gap_analysis(target_id)
+    from core.dual_track_engine import PROMOTION_THRESHOLDS
+    user = db.query(User).filter(User.id == target_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+    current_level = ROLE_DISPLAY.get(user.role, "L0")
+    level_map = {"L0": "L0_TO_L1", "L1": "L1_TO_L2", "L2": "L2_TO_L3",
+                 "L3": "L3_TO_L4", "L4": "L4_TO_L5"}
+    promo_key = level_map.get(current_level)
+    threshold = PROMOTION_THRESHOLDS.get(promo_key) if promo_key else None
+    if not threshold:
+        return {"user_id": target_id, "current_level": current_level, "gaps": [], "message": "已达最高等级"}
+    return {
+        "user_id": target_id,
+        "current_level": current_level,
+        "target_level": threshold.to_level.value,
+        "points_required": {"growth": threshold.points.growth, "contribution": threshold.points.contribution, "influence": threshold.points.influence},
+        "growth_requirements": {
+            "capability": threshold.growth.capability_requirements,
+            "exam": threshold.growth.exam_requirements,
+            "behavior": threshold.growth.behavior_requirements,
+            "ethics": threshold.growth.ethics_requirements,
+            "min_period_months": threshold.growth.min_period_months,
+            "peer_total_required": threshold.growth.peer_req.total_required,
+        },
+    }
 
 
 @router.get("/dual-track/thresholds")
 def get_promotion_thresholds(current_user: User = Depends(get_current_user)):
     """获取各级别晋级门槛"""
-    from core.dual_track_engine import POINTS_THRESHOLDS, GROWTH_REQUIREMENTS
+    from core.dual_track_engine import PROMOTION_THRESHOLDS
     levels = []
-    for level in range(2, 7):
-        pts = POINTS_THRESHOLDS.get(level, {})
-        grw = GROWTH_REQUIREMENTS.get(level, {})
+    for key, threshold in PROMOTION_THRESHOLDS.items():
         levels.append({
-            "target_level": level,
-            "label": grw.get("label", ""),
-            "emoji": grw.get("emoji", ""),
-            "points_thresholds": pts,
-            "companions_required": grw.get("companions", {}).get("count", 4),
-            "companions_quality": grw.get("companions", {}).get("quality", ""),
-            "behavior_requirement": grw.get("behavior", ""),
-            "assessment_requirement": grw.get("assessment", ""),
+            "promotion_key": key,
+            "from_level": threshold.from_level.value,
+            "to_level": threshold.to_level.value,
+            "ceremony_name": threshold.growth.ceremony_name,
+            "ceremony_emoji": threshold.growth.ceremony_emoji,
+            "points_thresholds": {
+                "growth": threshold.points.growth,
+                "contribution": threshold.points.contribution,
+                "influence": threshold.points.influence,
+            },
+            "companions_required": threshold.growth.peer_req.total_required,
+            "min_period_months": threshold.growth.min_period_months,
         })
     return {"levels": levels}
 

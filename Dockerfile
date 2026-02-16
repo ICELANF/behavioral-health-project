@@ -65,7 +65,6 @@ COPY config.yaml ./
 COPY alembic.ini ./
 COPY main.py ./
 COPY cli.py ./
-COPY migrate_map.py ./
 COPY scaffold.py ./
 
 # Create directories for runtime data

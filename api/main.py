@@ -147,11 +147,35 @@ class CoordinateRequest(BaseModel):
 
 from contextlib import asynccontextmanager
 
+
+def _validate_startup_env():
+    """启动时校验关键环境变量，缺失则警告"""
+    required = {
+        "DATABASE_URL": "数据库连接",
+        "JWT_SECRET_KEY": "JWT签名密钥",
+    }
+    recommended = {
+        "CORS_ORIGINS": "CORS白名单 (生产必须设置)",
+        "REDIS_URL": "Redis连接 (限流/缓存/任务锁)",
+    }
+    for var, desc in required.items():
+        val = os.getenv(var, "")
+        if not val:
+            logger.warning(f"[STARTUP] 缺少必需环境变量 {var} ({desc})")
+        else:
+            logger.info(f"[STARTUP] ✓ {var} ({desc})")
+    for var, desc in recommended.items():
+        val = os.getenv(var, "")
+        if not val:
+            logger.warning(f"[STARTUP] 建议设置环境变量 {var} ({desc})")
+
+
 _scheduler = None
 
 @asynccontextmanager
 async def lifespan(app):
     """启动/关闭 APScheduler + Agent 模板缓存预热"""
+    _validate_startup_env()
     global _scheduler
     try:
         from core.scheduler import setup_scheduler

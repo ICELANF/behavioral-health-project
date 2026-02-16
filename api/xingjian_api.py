@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from api.dependencies import get_current_user
 from core.models import User
+from core.middleware import get_cors_origins
 from agents.orchestrator import AgentOrchestrator
 from agents.octopus_engine import OctopusClampingEngine, get_clamping_engine
 
@@ -31,10 +32,10 @@ app = FastAPI(
     redoc_url="/redoc"
 )
 
-# 跨域配置 (允许 Dify 访问)
+# 跨域配置 (生产安全白名单)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

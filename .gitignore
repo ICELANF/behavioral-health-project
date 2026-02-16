@@ -75,9 +75,11 @@ reports/
 .coverage
 htmlcov/
 
-# Archives (don't commit zips)
+# Archives (don't commit zips/tarballs)
 *.zip
 *.rar
+*.tar.gz
+*.tar.bz2
 
 # SQLite databases
 *.db
@@ -86,6 +88,7 @@ htmlcov/
 *.bak
 *.bak.*
 *.bak[0-9]*
+*.dump
 
 # Uploaded user files
 static/uploads/
@@ -123,5 +126,17 @@ error_diagnosis*.json
 integration_report*.json
 pentest_report.json
 
+# Test reports (generated at runtime)
+test_reports/
+
 # Old backup directories
 .github/.github/
+
+# Root-level dev test scripts (use tests/ dir instead)
+/test_baps.py
+/test_baps_integration.py
+/test_dify.py
+/test_health_advice.py
+/test_integration.py
+/test_read_json.py
+/test_rx_endpoints.py

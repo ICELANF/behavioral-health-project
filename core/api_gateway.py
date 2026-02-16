@@ -38,7 +38,7 @@ gateway_config: Dict[str, Any] = {
         "per_tenant_rpm": 1000,
     },
     "cors": {
-        "allow_origins": ["*"],
+        "allow_origins": os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:5174").split(","),
         "allow_methods": ["GET", "POST", "PUT", "DELETE"],
     },
 }

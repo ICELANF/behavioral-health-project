@@ -68,9 +68,11 @@ async def lifespan(app: FastAPI):
 # 5. FastAPI 应用配置
 app = FastAPI(title="行健行为教练 API", lifespan=lifespan)
 
+from core.middleware import get_cors_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=get_cors_origins(),
     allow_methods=["*"],
     allow_headers=["*"],
 )

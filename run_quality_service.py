@@ -62,9 +62,10 @@ def create_app(
         description="AI响应质量审计API（独立服务）"
     )
     
+    from core.middleware import get_cors_origins
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=get_cors_origins(),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
