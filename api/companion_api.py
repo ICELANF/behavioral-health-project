@@ -226,3 +226,55 @@ def graduate_mentee(
 
     db.commit()
     return {"message": "同道者已标记毕业", "id": str(cr.id)}
+
+
+# ══════════════════════════════════════════════════════════
+# CR-28: 同道者匹配 + 追踪端点 (审计修复)
+# ══════════════════════════════════════════════════════════
+
+from core.peer_tracking_service import PeerTrackingService, CompanionMatchStrategy
+
+
+@router.get("/match", summary="同道者智能匹配")
+def find_companion_matches(
+    strategy: str = "stage_proximity",
+    top_k: int = 5,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """基于多维度匹配算法推荐同道者候选人"""
+    try:
+        match_strategy = CompanionMatchStrategy(strategy)
+    except ValueError:
+        match_strategy = CompanionMatchStrategy.STAGE_PROXIMITY
+    service = PeerTrackingService(db)
+    matches = service.find_matches(current_user.id, match_strategy, min(top_k, 10))
+    return {"matches": matches, "strategy": strategy}
+
+
+@router.post("/{companion_id}/interact", summary="记录同道互动")
+def record_companion_interaction(
+    companion_id: int,
+    interaction_type: str = "message",
+    quality_score: Optional[float] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """记录一次同道者互动（消息/视频/线下等）"""
+    service = PeerTrackingService(db)
+    ok = service.record_interaction(
+        current_user.id, companion_id, interaction_type, quality_score,
+    )
+    if not ok:
+        raise HTTPException(404, "同道关系不存在或已解除")
+    return {"status": "recorded"}
+
+
+@router.get("/dashboard", summary="同道仪表盘")
+def companion_dashboard(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取当前用户的同道者全景仪表盘"""
+    service = PeerTrackingService(db)
+    return service.get_companion_dashboard(current_user.id)

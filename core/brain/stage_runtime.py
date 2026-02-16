@@ -1,3 +1,4 @@
+# C3 降级: 运行时缓存 (DELEGATE → stage_engine) — 不独立判定阶段
 # -*- coding: utf-8 -*-
 """
 StageRuntimeBuilder - 阶段运行态引擎

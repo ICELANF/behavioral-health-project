@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "postgresql+asyncpg://postgres:postgres@localhost:5432/health_platform"
+    "postgresql+asyncpg://bhp_user:bhp_password@host.docker.internal:5432/bhp_db"
 )
 
 
