@@ -818,3 +818,45 @@ def suggest_reviewer(
         "suggested_reviewers": suggestions[:5],
         "total_available": len(suggestions),
     }
+
+
+# ══════════════════════════════════════════════════════════
+# CR-15: Governance Health-Check (审计修复)
+# ══════════════════════════════════════════════════════════
+
+from core.governance_health_check import GovernanceHealthCheckService
+
+
+@router.get("/health-check", summary="治理健康度检查")
+def governance_health_check(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """运行 6 维度治理健康度检查，返回综合报告"""
+    service = GovernanceHealthCheckService(db)
+    report = service.run_full_check()
+    return {"status": "ok", "report": report}
+
+
+@router.get("/health-check/history", summary="治理健康度历史")
+def governance_health_check_history(
+    limit: int = 20,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """查询治理健康度检查历史记录"""
+    from core.models import ResponsibilityMetric
+    metrics = db.query(ResponsibilityMetric).filter(
+        ResponsibilityMetric.metric_type == "governance_health_check",
+    ).order_by(
+        ResponsibilityMetric.checked_at.desc()
+    ).limit(limit).all()
+    return {"count": len(metrics), "history": [
+        {
+            "id": m.id,
+            "status": m.status,
+            "score": m.value,
+            "checked_at": m.checked_at.isoformat() if m.checked_at else None,
+        }
+        for m in metrics
+    ]}

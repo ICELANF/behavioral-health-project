@@ -1,3 +1,4 @@
+# C3 辅助层: 阶段配置映射 (READ-ONLY) — 判定请用 StageAuthority
 """
 统一阶段解析器 — 消除 P/S/L 三套编码歧义
 放置: api/core/stage_mapping.py

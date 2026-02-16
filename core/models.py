@@ -1,3 +1,11 @@
+# ── C4 权威源声明 ────────────────────────────────────────
+# | 字段           | 权威源 (SOURCE OF TRUTH) | 缓存 (SNAPSHOT)    |
+# |current_stage   | JourneyStageV4           | User.current_stage |
+# |agency_mode     | JourneyStageV4           | User.agency_mode   |
+# |agency_score    | JourneyStageV4           | User.agency_score  |
+# |trust_score     | JourneyStageV4           | User.trust_score   |
+# 写入规则: 先写权威源 → FieldSyncGuard 自动同步缓存
+# ────────────────────────────────────────────────────────
 from datetime import datetime
 from typing import Optional, List
 from sqlalchemy import (
