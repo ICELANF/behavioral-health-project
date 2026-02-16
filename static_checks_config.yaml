@@ -1,0 +1,49 @@
+# ============================================================================
+# static_checks_config.yaml — 静态检查排除配置
+# 位置：项目根目录
+# 用法：static_checks.py 启动时自动读取此文件
+# ============================================================================
+
+# 排除目录（不参与静态检查的路径）
+exclude_patterns:
+  - "dify/"                    # Vendor 代码，非自有
+  - "migrations/"              # Alembic 迁移，f-string SQL 是标准写法
+  - "_archived_temp_code/"     # 已归档的临时文件
+  - "__pycache__/"             # Python 缓存
+  - ".venv/"                   # 虚拟环境
+  - "node_modules/"            # Node 依赖
+  - ".git/"                    # Git 目录
+  - "*.egg-info/"              # 打包产物
+
+# 排除特定文件
+exclude_files:
+  - "auth.py"                  # 早期脚手架（已归档）
+  - "v41_week2_001_coach_schema.py"  # V4.1 草稿（已归档）
+  - "v42_drop_views.py"        # 一次性迁移脚本（已归档）
+
+# 严重级别过滤
+severity:
+  min_level: "warning"         # 最低报告级别：warning | error | info
+  treat_as_error:              # 以下类型视为 error（即使原级别较低）
+    - "security"               # 安全相关问题始终报错
+    - "sql_injection"          # SQL 注入风险
+    - "hardcoded_secret"       # 硬编码密钥
+
+# 自定义规则
+rules:
+  # 允许 migrations/ 中使用 f-string（Alembic 标准模式）
+  allow_fstring_sql:
+    paths: ["migrations/"]
+    enabled: true
+
+  # 核心模块更严格检查
+  strict_mode:
+    paths:
+      - "app/"
+      - "core/"
+      - "api/"
+      - "scripts/"
+    extra_checks:
+      - "type_hints_required"
+      - "docstring_required"
+      - "no_bare_except"
