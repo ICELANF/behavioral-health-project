@@ -4181,16 +4181,21 @@ class ResponsibilityMetric(Base):
     __tablename__ = "responsibility_metrics"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    metric_code = Column(String(20), nullable=False)
-    metric_value = Column(Float, nullable=False, default=0.0)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    metric_code = Column(String(20), nullable=True)
+    metric_value = Column(Float, nullable=True, default=0.0)
     threshold_value = Column(Float, nullable=True)
     status = Column(String(20), nullable=False, default="healthy")
-    period_start = Column(Date, nullable=False)
-    period_end = Column(Date, nullable=False)
+    period_start = Column(Date, nullable=True)
+    period_end = Column(Date, nullable=True)
     details = Column(JSON, default={})
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
+    # ── CR-15: 治理健康度检查补充列 ──
+    metric_type = Column(String(50), nullable=True, index=True)
+    value = Column(Float, nullable=True)
+    detail = Column(JSON, nullable=True)
+    checked_at = Column(DateTime, nullable=True)
 
 
 class AntiCheatEvent(Base):
@@ -4829,5 +4834,172 @@ def get_model_by_name(name: str):
         "CoachSupervisionRecord": CoachSupervisionRecord,
         "CoachKpiMetric": CoachKpiMetric,
         "PeerTracking": PeerTracking,
+        # V5.0 Flywheel ORM (PATCH-1)
+        "BehaviorPrescription": BehaviorPrescription,
+        "DailyTask": DailyTask,
+        "TaskCheckin": TaskCheckin,
+        "ObserverQuotaLog": ObserverQuotaLog,
+        "CoachReviewLog": CoachReviewLog,
+        "UserContext": UserContext,
+        "Notification": Notification,
     }
     return models.get(name)
+
+
+# ═══════════════════════════════════════════════════
+# V5.0 飞轮ORM模型 (PATCH-1, 修复CA-02)
+# ═══════════════════════════════════════════════════
+
+class BehaviorPrescription(Base):
+    """行为处方 — 由rx_composer生成/教练审核激活"""
+    __tablename__ = "behavior_prescriptions"
+
+    id = Column(String(80), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    target_behavior = Column(String(200), nullable=False)
+    frequency_dose = Column(String(100))
+    time_place = Column(String(200))
+    trigger_cue = Column(String(200))
+    obstacle_plan = Column(Text)
+    support_resource = Column(Text)
+
+    domain = Column(String(30))
+    difficulty_level = Column(String(20), server_default=sa_text("'easy'"))
+    cultivation_stage = Column(String(30), server_default=sa_text("'startup'"))
+    status = Column(String(20), server_default=sa_text("'draft'"), index=True)
+    expires_at = Column(DateTime)
+    approved_by_review = Column(String(80))
+
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    updated_at = Column(DateTime, server_default=sa_text("now()"))
+
+    user = relationship("User", backref="behavior_prescriptions")
+
+
+class DailyTask(Base):
+    """每日任务 — 由scheduler_agent从处方生成"""
+    __tablename__ = "daily_tasks"
+
+    id = Column(String(80), primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    task_date = Column(Date, nullable=False)
+    order_num = Column(Integer, server_default=sa_text("0"))
+    title = Column(String(200), nullable=False)
+    tag = Column(String(20))
+    tag_color = Column(String(10))
+    time_hint = Column(String(100))
+    input_mode = Column(String(20))
+    quick_label = Column(String(20), server_default=sa_text("'打卡'"))
+    source = Column(String(20), server_default=sa_text("'rx'"))
+    agent_id = Column(String(50))
+    rx_id = Column(String(80), ForeignKey("behavior_prescriptions.id"))
+    done = Column(Boolean, server_default=sa_text("false"))
+    done_time = Column(DateTime)
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+    __table_args__ = (
+        Index("idx_dt_user_date", "user_id", "task_date"),
+    )
+
+    user = relationship("User", backref="daily_tasks")
+    prescription = relationship("BehaviorPrescription", backref="daily_tasks")
+
+
+class TaskCheckin(Base):
+    """任务打卡记录"""
+    __tablename__ = "task_checkins"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    task_id = Column(String(80), ForeignKey("daily_tasks.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    note = Column(Text)
+    photo_url = Column(String(500))
+    value = Column(Float)
+    voice_url = Column(String(500))
+    points_earned = Column(Integer, server_default=sa_text("0"))
+    checked_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+
+    __table_args__ = (
+        Index("idx_checkin_user_date", "user_id", "checked_at"),
+        Index("idx_checkin_task", "task_id"),
+    )
+
+    user = relationship("User", backref="task_checkins")
+    task = relationship("DailyTask", backref="checkins")
+
+
+class ObserverQuotaLog(Base):
+    """Observer试用墙额度日志"""
+    __tablename__ = "observer_quota_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    quota_type = Column(String(20), nullable=False)
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+
+    __table_args__ = (
+        Index("idx_observer_quota_user_date", "user_id", "created_at"),
+    )
+
+    user = relationship("User", backref="observer_quota_logs")
+
+
+class CoachReviewLog(Base):
+    """教练审核日志"""
+    __tablename__ = "coach_review_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    coach_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    review_id = Column(String(50), nullable=False)
+    action = Column(String(20), nullable=False)
+    note = Column(Text)
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+
+    __table_args__ = (
+        Index("idx_review_log_coach", "coach_id", "created_at"),
+    )
+
+    coach = relationship("User", backref="review_logs")
+
+
+class UserContext(Base):
+    """Agent跨Session用户记忆"""
+    __tablename__ = "user_contexts"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    category = Column(String(30), nullable=False)
+    key = Column(String(100), nullable=False)
+    value = Column(Text, nullable=False)
+    source_agent = Column(String(50))
+    confidence = Column(Float, server_default=sa_text("0.8"))
+    extracted_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+    expires_at = Column(DateTime)
+
+    __table_args__ = (
+        UniqueConstraint("user_id", "category", "key", name="uq_uctx_user_cat_key"),
+        Index("idx_uctx_user_cat", "user_id", "category"),
+    )
+
+    user = relationship("User", backref="contexts")
+
+
+class Notification(Base):
+    """用户通知 — 主动触达"""
+    __tablename__ = "notifications"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    title = Column(String(200))
+    body = Column(Text)
+    type = Column(String(50))
+    priority = Column(String(20), server_default=sa_text("'normal'"))
+    is_read = Column(Boolean, server_default=sa_text("false"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+    __table_args__ = (
+        Index("idx_notif_user_unread", "user_id", "is_read", "created_at"),
+    )
+
+    user = relationship("User", backref="notifications")

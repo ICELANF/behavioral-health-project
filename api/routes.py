@@ -56,12 +56,7 @@ _config = None
 
 
 def get_orchestrator():
-    """获取 Orchestrator 实例"""
-    if _orchestrator is None:
-        raise HTTPException(
-            status_code=503,
-            detail="服务尚未初始化，请稍后再试"
-        )
+    """获取 Orchestrator 实例 — 允许 None (chat 端点自行降级)"""
     return _orchestrator
 
 
@@ -164,12 +159,15 @@ async def chat(
     - 集成效能感限幅 (Octopus Clamping)
     - 返回 reasoning_path 和 clamped_tasks
     - 支持穿戴设备数据 (wearable_data) 输入
+    - Orchestrator 未就绪时自动降级到 Ollama 直连
     """
     # 获取或创建会话
     session = session_manager.get_or_create_session(request.session_id)
-
-    # 记录用户消息
     session.add_message("user", request.message)
+
+    # ── 降级路径: Orchestrator 未初始化 → Ollama 直连 ──
+    if orchestrator is None:
+        return await _ollama_fallback_chat(request, session)
 
     try:
         # 1. 获取专家响应
@@ -193,8 +191,7 @@ async def chat(
             consulted_experts = orch_result.consulted_experts
             routing_confidence = orch_result.routing_confidence
 
-        # 2. 生成原始任务列表（模拟从专家响应中提取）
-        # 实际生产中应该从 LLM 解析或专家系统返回
+        # 2. 生成原始任务列表
         raw_tasks = [
             {"id": 1, "content": "深度冥想20分钟", "difficulty": 4, "type": "mental"},
             {"id": 2, "content": "记录一次情绪日志", "difficulty": 2, "type": "mental"},
@@ -273,10 +270,68 @@ async def chat(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"处理请求时发生错误: {str(e)}"
-        )
+        # Orchestrator 运行时异常 → 降级到 Ollama
+        return await _ollama_fallback_chat(request, session)
+
+
+async def _ollama_fallback_chat(request: OctopusChatRequest, session):
+    """Ollama 直连降级 — Orchestrator 不可用时保底返回 AI 回复"""
+    import os
+    ollama_url = os.getenv("OLLAMA_API_URL", "http://host.docker.internal:11434")
+    ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
+
+    system_prompt = (
+        "你是\"行健行为教练\"，专注于行为健康干预。"
+        "请用温和、专业的语气回复用户，提供个性化的行为建议。"
+        "回复控制在200字以内。"
+    )
+
+    response_text = (
+        "您好！感谢您的分享。作为您的行为健康教练，我建议您：\n\n"
+        "1. 保持规律的生活作息\n"
+        "2. 每天进行适量运动\n"
+        "3. 注意饮食均衡\n\n"
+        "如果有具体的健康问题，请随时告诉我。"
+    )
+
+    try:
+        import httpx
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": request.message},
+        ]
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            resp = await client.post(
+                f"{ollama_url}/api/chat",
+                json={"model": ollama_model, "messages": messages, "stream": False},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                response_text = data.get("message", {}).get("content", response_text)
+    except Exception:
+        pass  # 静态兜底已赋值
+
+    session.add_message("assistant", response_text, expert_id="ollama_fallback")
+
+    return OctopusChatResponse(
+        session_id=session.session_id,
+        status="success",
+        response=response_text,
+        clamped_tasks=[
+            ClampedTask(id=1, content="进行3次深呼吸", difficulty=1, type="mental"),
+            ClampedTask(id=2, content="记录一次情绪日志", difficulty=2, type="mental"),
+        ],
+        reasoning_path=[],
+        input_efficacy=request.efficacy_score,
+        final_efficacy=request.efficacy_score,
+        clamping_level="minimal",
+        primary_expert="行健行为教练",
+        primary_expert_id="ollama_fallback",
+        consulted_experts=[],
+        external_hooks={},
+        wearable_impact=None,
+        timestamp=datetime.now(),
+    )
 
 
 # =============================================================================

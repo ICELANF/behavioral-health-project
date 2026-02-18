@@ -126,6 +126,16 @@ class MicroActionTaskService:
             # 若用户有教练，创建一条汇总推送队列条目
             self._create_queue_summary(db, user_id, tasks)
 
+        # R2 增强: 处方驱动的任务生成 (当 r2_scheduler_agent 部署后自动生效)
+        try:
+            from api.r2_scheduler_agent import run_daily_task_generation
+            r2_result = run_daily_task_generation(db)
+            logger.info(f"R2 处方驱动任务生成: {r2_result}")
+        except ImportError:
+            pass  # r2_scheduler_agent 未部署, 跳过
+        except Exception as e:
+            logger.warning(f"R2 处方驱动任务生成失败: {e}")
+
         return tasks
 
     def _create_queue_summary(self, db: Session, user_id: int, tasks: List[MicroActionTask]):

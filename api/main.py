@@ -1673,6 +1673,56 @@ try:
 except ImportError as e:
     print(f"[API] V4.1 跨层网关路由注册失败: {e}")
 
+# ========== R2-R8 飞轮实装路由 (必须在bridge之前注册, 避免catch-all拦截) ==========
+try:
+    from api.r2_scheduler_agent import scheduler_router
+    app.include_router(scheduler_router)
+    print("[API] R2 scheduler_agent API 已注册")
+except Exception as e:
+    print(f"[API] R2 scheduler_agent: {e}")
+
+try:
+    from api.r3_grower_flywheel_api_live import router as grower_live_router
+    app.include_router(grower_live_router)
+    print("[API] R3 Grower飞轮(Live) 已注册 (5 endpoints)")
+except Exception as e:
+    print(f"[API] R3 Grower(Live): {e}")
+
+try:
+    from api.r4_role_upgrade_trigger import router as upgrade_router
+    app.include_router(upgrade_router)
+    print("[API] R4 角色升级触发器 已注册 (2 endpoints)")
+except Exception as e:
+    print(f"[API] R4 role_upgrade: {e}")
+
+try:
+    from api.r5_observer_flywheel_api_live import router as observer_live_router
+    app.include_router(observer_live_router)
+    print("[API] R5 Observer飞轮(Live) 已注册 (3 endpoints)")
+except Exception as e:
+    print(f"[API] R5 Observer(Live): {e}")
+
+try:
+    from api.r6_coach_flywheel_api_live import router as coach_live_router
+    app.include_router(coach_live_router)
+    print("[API] R6 Coach飞轮(Live) 已注册 (4 endpoints)")
+except Exception as e:
+    print(f"[API] R6 Coach(Live): {e}")
+
+try:
+    from api.r7_notification_agent import notif_router
+    app.include_router(notif_router)
+    print("[API] R7 通知API 已注册 (2 endpoints)")
+except Exception as e:
+    print(f"[API] R7 notification: {e}")
+
+try:
+    from api.r8_user_context import router as context_router
+    app.include_router(context_router)
+    print("[API] R8 用户上下文 已注册 (3 endpoints)")
+except Exception as e:
+    print(f"[API] R8 user_context: {e}")
+
 try:
     from gateway.bridge import bridge_router
     app.include_router(bridge_router)
@@ -1694,6 +1744,45 @@ try:
     print(f"[API] V4.3 中医骨科Agent注册表已加载 ({len(TCM_ORTHO_AGENT_REGISTRY)} agents, {len(GATEWAY_EXTENSIONS)} gateway endpoints)")
 except ImportError as e:
     print(f"[API] V4.3 中医骨科Agent注册表加载失败: {e}")
+
+
+# ========== V5.0 飞轮API路由 ==========
+# --- Mock版 (已被 R3/R5/R6 Live版替代) ---
+# try:
+#     from api.observer_flywheel_api import router as observer_flywheel_router
+#     app.include_router(observer_flywheel_router)
+# except ImportError as e:
+#     print(f"[API] V5.0 Observer飞轮路由注册失败: {e}")
+#
+# try:
+#     from api.grower_flywheel_api import router as grower_flywheel_router
+#     app.include_router(grower_flywheel_router)
+# except ImportError as e:
+#     print(f"[API] V5.0 Grower飞轮路由注册失败: {e}")
+#
+# try:
+#     from api.coach_flywheel_api import router as coach_flywheel_router
+#     app.include_router(coach_flywheel_router)
+# except ImportError as e:
+#     print(f"[API] V5.0 Coach飞轮路由注册失败: {e}")
+
+# --- Expert + Admin (保留, 已加认证) ---
+try:
+    from api.expert_flywheel_api import router as expert_flywheel_router
+    app.include_router(expert_flywheel_router)
+    print("[API] V5.0 Expert飞轮路由已注册 (4 endpoints)")
+except ImportError as e:
+    print(f"[API] V5.0 Expert飞轮路由注册失败: {e}")
+
+try:
+    from api.admin_flywheel_api import router as admin_flywheel_router
+    app.include_router(admin_flywheel_router)
+    print("[API] V5.0 Admin飞轮路由已注册 (12 endpoints)")
+except ImportError as e:
+    print(f"[API] V5.0 Admin飞轮路由注册失败: {e}")
+
+
+# (R2-R8 已移到 bridge 之前注册, 见上方)
 
 
 if __name__ == "__main__":

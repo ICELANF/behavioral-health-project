@@ -10,10 +10,34 @@ const router = createRouter({
       component: () => import('@/views/Login.vue'),
       meta: { public: true }
     },
+    // ═══ 飞轮首页: 按角色分流 (2026-02-17) ═══
     {
       path: '/',
       name: 'home',
-      component: () => import('@/views/Home.vue')
+      component: () => import('@/views/Home.vue'),
+      beforeEnter: (_to, _from, next) => {
+        const token = storage.getToken()
+        if (!token) { next({ name: 'login' }); return }
+        // 尝试从localStorage读取角色等级 (登录后由auth store写入)
+        const roleLevel = parseInt(localStorage.getItem('bhp_role_level') || '0', 10)
+        if (roleLevel <= 1) {
+          next({ path: '/home/observer', replace: true })
+        } else {
+          next({ path: '/home/today', replace: true })
+        }
+      }
+    },
+    {
+      path: '/home/observer',
+      name: 'observer-home',
+      component: () => import('@/views/home/ObserverHome.vue'),
+      meta: { title: '开始你的健康旅程' }
+    },
+    {
+      path: '/home/today',
+      name: 'grower-today',
+      component: () => import('@/views/home/GrowerTodayHome.vue'),
+      meta: { title: '今日行动' }
     },
     {
       path: '/chat',

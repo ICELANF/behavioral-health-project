@@ -16,6 +16,8 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 from datetime import datetime
 
+from api.dependencies import get_current_user
+
 router = APIRouter(prefix="/v1/promotion", tags=["dual-track-promotion"])
 
 
@@ -72,15 +74,22 @@ class ThresholdResponse(BaseModel):
 # ── 依赖注入占位 (实际项目替换为真实实现) ──
 
 async def get_promotion_orchestrator():
-    """获取晋级编排器实例"""
-    from app.core.deps import get_promotion_orchestrator_singleton
-    return get_promotion_orchestrator_singleton()
+    """获取晋级编排器实例 — 回退到stub"""
+    try:
+        from core.promotion_service import PromotionService
+        return PromotionService()
+    except ImportError:
+        return _StubOrchestrator()
 
 
-async def get_current_user(request):
-    """获取当前用户 (placeholder)"""
-    from app.core.deps import get_current_user as _get_user
-    return await _get_user(request)
+class _StubOrchestrator:
+    """晋级编排器占位 — 依赖模块未就绪时使用"""
+    async def check_promotion_eligibility(self, user_id, level):
+        return {"state": 1, "state_name": "NORMAL_GROWTH", "guidance_message": "晋级模块初始化中", "ceremony_ready": False}
+    async def initiate_ceremony(self, user_id, level):
+        return {"success": False, "reason": "晋级模块初始化中"}
+    def get_promotion_key(self, level):
+        return f"{level}_TO_NEXT"
 
 
 # ── 端点实现 ──
@@ -204,8 +213,11 @@ async def get_peer_dashboard(
     
     显示当前层级的4名同道者培养进度。
     """
-    from app.core.deps import get_peer_tracking_service
-    peer_svc = get_peer_tracking_service()
+    try:
+        from core.peer_tracking_service import PeerTrackingService
+        peer_svc = PeerTrackingService()
+    except ImportError:
+        raise HTTPException(503, detail="同道者追踪服务初始化中")
     
     current_level = getattr(user, "level", "L0")
     dashboard = await peer_svc.get_peer_dashboard(user.id, current_level)
@@ -220,7 +232,10 @@ async def get_level_thresholds(level: str):
     
     路径参数: L0, L1, L2, L3, L4
     """
-    from dual_track_engine import PROMOTION_THRESHOLDS
+    try:
+        from core.promotion_service import PROMOTION_THRESHOLDS
+    except ImportError:
+        raise HTTPException(503, detail="双轨晋级引擎初始化中")
     
     key_map = {
         "L0": "L0_TO_L1", "L1": "L1_TO_L2", "L2": "L2_TO_L3",

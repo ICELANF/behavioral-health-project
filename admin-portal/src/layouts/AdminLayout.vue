@@ -213,6 +213,18 @@
           <template #icon><SettingOutlined /></template>
           <span>系统设置</span>
         </a-menu-item>
+
+        <!-- ═══ 新版界面（零侵入集成） ═══ -->
+        <a-menu-item-group title="新版界面 v16.1">
+          <a-menu-item key="ui1-bridge" @click="$router.push('/ui1')">
+            <template #icon><AppstoreOutlined /></template>
+            <span>行为健康组件库</span>
+          </a-menu-item>
+          <a-menu-item key="ui2-bridge" @click="$router.push('/ui2')">
+            <template #icon><ExperimentOutlined /></template>
+            <span>专家双签工作台</span>
+          </a-menu-item>
+        </a-menu-item-group>
       </a-menu>
     </a-layout-sider>
 
@@ -386,7 +398,9 @@ import {
   BarChartOutlined,
   CloudUploadOutlined,
   FileAddOutlined,
-  LineChartOutlined
+  LineChartOutlined,
+  AppstoreOutlined,
+  ExperimentOutlined
 } from '@ant-design/icons-vue'
 import request from '../api/request'
 
@@ -498,6 +512,10 @@ watch(() => route.path, (path) => {
     selectedKeys.value = ['interventions']
   } else if (path === '/settings') {
     selectedKeys.value = ['settings']
+  } else if (path === '/ui1') {
+    selectedKeys.value = ['ui1-bridge']
+  } else if (path === '/ui2') {
+    selectedKeys.value = ['ui2-bridge']
   } else if (path.startsWith('/admin/credit-system')) {
     openKeys.value = ['admin-credit-system']
     if (path.includes('dashboard')) selectedKeys.value = ['admin-credit-dashboard']

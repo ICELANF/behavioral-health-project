@@ -647,3 +647,11 @@ class ResponsibilityTracker:
             "auto_count": sum(1 for r in RESPONSIBILITY_REGISTRY if r.tracking_mode == TrackingMode.AUTO),
             "semi_auto_count": sum(1 for r in RESPONSIBILITY_REGISTRY if r.tracking_mode == TrackingMode.SEMI_AUTO),
         }
+
+    def get_user_metrics(self, user_id: int) -> Dict[str, Any]:
+        """同步获取用户责任指标概要 (governance_api 兼容)"""
+        return {
+            "user_id": user_id,
+            "registry_stats": self.get_all_registry_stats(),
+            "available_roles": list(ROLE_RESPONSIBILITIES.keys()),
+        }

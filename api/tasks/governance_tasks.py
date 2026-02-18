@@ -7,13 +7,22 @@ logger = logging.getLogger(__name__)
 
 @celery_app.task(name="api.tasks.governance_tasks.governance_health_check", bind=True, max_retries=2, default_retry_delay=120)
 def governance_health_check(self):
-    """每日治理健康检查 — 统计违规/合规数据"""
+    """每6小时治理健康检查 — 6维度全量巡检 (CR-15 修复)"""
     try:
         with get_sync_session() as db:
-            logger.info("[governance_health_check] %s", date.today())
-            # Phase 1: 返回空结果 (后续接入 GovernanceViolation 统计)
-            return {"date": str(date.today()), "total": 0}
-    except Exception as e: raise self.retry(exc=e)
+            from core.governance_health_check import GovernanceHealthCheckService
+            logger.info("[governance_health_check] starting full check %s", date.today())
+            service = GovernanceHealthCheckService(db)
+            report = service.run_full_check()
+            result = report.to_dict()
+            logger.info(
+                "[governance_health_check] done: overall=%s score=%.3f",
+                result["overall_status"], result["overall_score"],
+            )
+            return result
+    except Exception as e:
+        logger.error("[governance_health_check] failed: %s", e)
+        raise self.retry(exc=e)
 
 @celery_app.task(name="api.tasks.governance_tasks.coach_challenge_7d_push", bind=True, max_retries=2, default_retry_delay=60)
 def coach_challenge_7d_push(self):

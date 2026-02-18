@@ -177,7 +177,7 @@ def get_my_metrics(
 ):
     """获取当前用户的责任指标状态"""
     from core.responsibility_tracker import ResponsibilityTracker
-    tracker = ResponsibilityTracker(db)
+    tracker = ResponsibilityTracker()
     return tracker.get_user_metrics(current_user.id)
 
 
@@ -189,7 +189,7 @@ def get_user_metrics(
 ):
     """获取指定用户的责任指标 (教练/管理员)"""
     from core.responsibility_tracker import ResponsibilityTracker
-    tracker = ResponsibilityTracker(db)
+    tracker = ResponsibilityTracker()
     return tracker.get_user_metrics(user_id)
 
 
@@ -207,7 +207,7 @@ def record_metric(
 ):
     """记录责任指标数据 (管理员/系统)"""
     from core.responsibility_tracker import ResponsibilityTracker
-    tracker = ResponsibilityTracker(db)
+    tracker = ResponsibilityTracker()
     result = tracker.record_metric(req.user_id, req.metric_code, req.value)
     db.commit()
     return result
@@ -231,7 +231,7 @@ def get_governance_dashboard(
 ):
     """治理健康仪表盘 (管理员)"""
     from core.responsibility_tracker import ResponsibilityTracker
-    tracker = ResponsibilityTracker(db)
+    tracker = ResponsibilityTracker()
     health = tracker.get_all_registry_stats()
 
     # Add governance violations summary

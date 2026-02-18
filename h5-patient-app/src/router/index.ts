@@ -1,101 +1,63 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
-import { storage } from '@/utils/storage'
-import { showToast } from 'vant'
+
+/**
+ * Patient App (:5176) 已合并入 H5 主线 (:5173)
+ * 所有路由重定向到 H5 等价页面
+ * 日期: 2026-02-17 (P0-2 路由合并)
+ * 移除时间: 2026-04-01
+ */
+
+// Patient App → H5 路径映射
+const H5_BASE = (import.meta.env.VITE_H5_URL as string) || 'http://localhost:5173'
+const REDIRECT_MAP: Record<string, string> = {
+  '/':            '/',
+  '/login':       '/login',
+  '/register':    '/register',
+  '/data-input':  '/health-records',
+  '/history':     '/history-reports',
+  '/analysis':    '/dashboard',
+  '/settings':    '/account-settings',
+  '/chat':        '/chat',
+  '/health-data': '/dashboard',
+}
+
+function redirectToH5(h5Path: string) {
+  window.location.href = `${H5_BASE}${h5Path}`
+}
 
 const routes: RouteRecordRaw[] = [
-  {
-    path: '/login',
-    name: 'Login',
-    component: () => import('@/views/LoginPage.vue'),
-    meta: {
-      title: '用户登录',
-      requiresAuth: false
-    }
-  },
-  {
-    path: '/register',
-    name: 'Register',
-    component: () => import('@/views/RegisterPage.vue'),
-    meta: {
-      title: '用户注册',
-      requiresAuth: false
-    }
-  },
-  {
-    path: '/',
-    name: 'Home',
-    component: () => import('@/views/HomePage.vue'),
-    meta: {
-      title: '首页',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/data-input',
-    name: 'DataInput',
-    component: () => import('@/views/DataInputPage.vue'),
-    meta: {
-      title: '数据录入',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/history',
-    name: 'History',
-    component: () => import('@/views/HistoryPage.vue'),
-    meta: {
-      title: '评估历史',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/analysis',
-    name: 'Analysis',
-    component: () => import('@/views/DataAnalysisPage.vue'),
-    meta: {
-      title: '数据分析',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/settings',
-    name: 'Settings',
-    component: () => import('@/views/SettingsPage.vue'),
-    meta: {
-      title: '个人设置',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/chat',
-    name: 'Chat',
-    component: () => import('@/views/ChatPage.vue'),
-    meta: {
-      title: 'AI健康助手',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/health-data',
-    name: 'HealthData',
-    component: () => import('@/views/HealthDataPage.vue'),
-    meta: {
-      title: '健康数据',
-      requiresAuth: true
-    }
-  },
-  {
-    path: '/result/:id',
-    name: 'Result',
-    component: () => import('@/views/ResultPage.vue'),
-    meta: {
-      title: '评估结果',
-      requiresAuth: true
-    }
-  },
+  // 保留一个空壳页面用于显示迁移提示（可选）
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/'
+    name: 'Deprecated',
+    component: {
+      template: `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:system-ui;padding:24px;text-align:center">
+          <h2 style="margin-bottom:16px">页面已迁移</h2>
+          <p style="color:#666;margin-bottom:24px">该功能已整合到H5主端，正在为您跳转...</p>
+          <a :href="targetUrl" style="color:#1890ff;text-decoration:underline">点击此处手动跳转</a>
+        </div>
+      `,
+      computed: {
+        targetUrl() {
+          const path = (this as any).$route.path
+          const mapped = REDIRECT_MAP[path] || '/'
+          return `${H5_BASE}${mapped}`
+        }
+      },
+      mounted() {
+        const path = (this as any).$route.path
+        // /result/:id → /v3/assessment/:id
+        if (path.startsWith('/result/')) {
+          const id = path.replace('/result/', '')
+          redirectToH5(`/v3/assessment/${id}`)
+          return
+        }
+        const mapped = REDIRECT_MAP[path] || '/'
+        redirectToH5(mapped)
+      }
+    },
+    meta: { title: '页面已迁移', requiresAuth: false }
   }
 ]
 
@@ -104,41 +66,9 @@ const router = createRouter({
   routes
 })
 
-// 路由守卫
-router.beforeEach((to, from, next) => {
-  // 设置页面标题
-  if (to.meta.title) {
-    document.title = `${to.meta.title} - ${import.meta.env.VITE_APP_TITLE || '行为健康平台'}`
-  }
-
-  // 检查是否需要认证
-  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
-
-  if (requiresAuth) {
-    // 需要认证的路由，检查Token
-    const token = storage.token.get()
-
-    if (!token) {
-      // 未登录，跳转到登录页
-      showToast('请先登录')
-      next({
-        path: '/login',
-        query: { redirect: to.fullPath } // 保存目标路由，登录后跳转
-      })
-    } else {
-      next()
-    }
-  } else {
-    // 不需要认证的路由
-    const token = storage.token.get()
-
-    // 如果已登录且访问登录/注册页，重定向到首页
-    if (token && (to.path === '/login' || to.path === '/register')) {
-      next('/')
-    } else {
-      next()
-    }
-  }
+router.beforeEach((to, _from, next) => {
+  document.title = '行为健康平台 — 页面已迁移'
+  next()
 })
 
 export default router

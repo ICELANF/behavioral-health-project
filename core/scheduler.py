@@ -301,6 +301,47 @@ def safety_daily_report():
         logger.error(f"[Scheduler] 安全日报生成失败: {e}")
 
 
+# ── CR-15 治理健康度定期巡检 ──────────────────────────
+
+@with_redis_lock("scheduler:governance_health_check", ttl=600)
+def governance_health_check():
+    """每6小时运行一次治理健康度全量检查(6维度)"""
+    from core.database import get_db_session
+    from core.governance_health_check import GovernanceHealthCheckService
+
+    try:
+        with get_db_session() as db:
+            service = GovernanceHealthCheckService(db)
+            report = service.run_full_check()
+            logger.info(
+                "[Scheduler] 治理健康度检查完成: overall=%s score=%.3f",
+                report.overall_status.value, report.overall_score,
+            )
+    except Exception as e:
+        logger.error("[Scheduler] 治理健康度检查失败: %s", e)
+
+
+# ── CR-28 同道者生命周期更新 ──────────────────────────
+
+@with_redis_lock("scheduler:companion_lifecycle_update", ttl=600)
+def companion_lifecycle_update():
+    """每天03:30更新同道关系生命周期状态(冷却/休眠/解除)"""
+    from core.database import get_db_session
+    from core.peer_tracking_service import PeerTrackingService
+
+    try:
+        with get_db_session() as db:
+            service = PeerTrackingService(db)
+            stats = service.update_lifecycle_states()
+            logger.info(
+                "[Scheduler] 同道者生命周期更新: cooling=%d dormant=%d dissolved=%d reactivated=%d",
+                stats["cooling"], stats["dormant"],
+                stats["dissolved"], stats["reactivated"],
+            )
+    except Exception as e:
+        logger.error("[Scheduler] 同道者生命周期更新失败: %s", e)
+
+
 def setup_scheduler() -> "AsyncIOScheduler | None":
     """
     配置并返回调度器
@@ -435,5 +476,51 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
         replace_existing=True,
     )
 
-    logger.info("[Scheduler] 定时任务调度器已配置 (含V004方案引擎+V005安全日报+Phase4指标聚合)")
+    # ── CR-15 治理健康度巡检 (每6小时) ──
+    scheduler.add_job(
+        governance_health_check,
+        IntervalTrigger(hours=6),
+        id="governance_health_check",
+        name="治理健康度巡检",
+        replace_existing=True,
+    )
+
+    # ── CR-28 同道者生命周期更新 (每天03:30) ──
+    scheduler.add_job(
+        companion_lifecycle_update,
+        CronTrigger(hour=3, minute=30),
+        id="companion_lifecycle_update",
+        name="同道者生命周期更新",
+        replace_existing=True,
+    )
+
+    # ── R7 通知定时任务 (07:15/10:15/20:15, 错开 program_push 整点) ──
+    try:
+        from api.r7_notification_agent import register_notification_jobs
+        from core.database import AsyncSessionLocal
+        register_notification_jobs(scheduler, AsyncSessionLocal)
+    except Exception as e:
+        logger.warning(f"[Scheduler] R7 notification_agent 注册失败: {e}")
+
+    # ── R8 上下文过期清理 (每天02:00) ──
+    try:
+        from api.r8_user_context import cleanup_expired_contexts
+        from core.database import AsyncSessionLocal as _AsyncSessionLocal
+
+        @with_redis_lock("scheduler:cleanup_contexts", ttl=60)
+        async def job_cleanup_contexts():
+            async with _AsyncSessionLocal() as db:
+                await cleanup_expired_contexts(db)
+
+        scheduler.add_job(
+            job_cleanup_contexts,
+            CronTrigger(hour=2, minute=0),
+            id="cleanup_contexts",
+            name="R8用户上下文过期清理",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] R8 context cleanup 注册失败: {e}")
+
+    logger.info("[Scheduler] 定时任务调度器已配置 (含V004方案引擎+V005安全日报+Phase4指标聚合+CR15治理巡检+CR28同道生命周期+R7通知+R8上下文)")
     return scheduler

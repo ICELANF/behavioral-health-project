@@ -282,6 +282,17 @@ async def send_message(
             logger.warning(f"RAG 增强失败, 使用原始 prompt: {e}")
             enhanced = None
 
+        # R8: 跨Session用户上下文注入
+        try:
+            from api.r8_user_context import build_context_prompt
+            from core.database import async_session_factory
+            async with async_session_factory() as async_db:
+                context_prompt = await build_context_prompt(async_db, current_user.id)
+                if context_prompt:
+                    final_system_prompt += f"\n\n{context_prompt}"
+        except Exception as e:
+            logger.debug(f"R8 上下文加载跳过: {e}")
+
         messages_for_llm = [{"role": "system", "content": final_system_prompt}] + history
 
         async with httpx.AsyncClient(timeout=60.0) as client:
@@ -318,6 +329,21 @@ async def send_message(
             "4. 定期监测健康指标\n\n"
             "如果有具体的健康问题，请随时告诉我，我会为您提供更针对性的建议。"
         )
+
+    # R8: 从对话中提取用户上下文 (异步, 不阻塞主流程)
+    try:
+        from api.r8_user_context import extract_context_from_conversation
+        from core.database import async_session_factory
+        async with async_session_factory() as async_db:
+            await extract_context_from_conversation(
+                async_db, current_user.id,
+                user_message=request.content,
+                agent_response=ai_reply,
+                agent_id="chat_assistant",
+            )
+            await async_db.commit()
+    except Exception as e:
+        logger.debug(f"R8 上下文提取跳过: {e}")
 
     # ── SafetyPipeline L4: 输出过滤 ──
     _final_text = rag_data["text"] if rag_data else ai_reply

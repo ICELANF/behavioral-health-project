@@ -23,17 +23,24 @@ const routes: RouteRecordRaw[] = [
   // ============ React集成页面路由 ============
   ...reactRoutes,
   // ============ C 端患者路由 ============
+  // P0-2 路由合并: V1→V2 重定向 (2026-02-17)
   {
     path: '/client',
     name: 'ClientHome',
-    component: () => import('./views/client/HomeView.vue'),
+    redirect: '/client/home-v2',
     meta: { title: '我的健康', requiresAuth: false }
   },
   {
+    path: '/client/home-original',
+    name: 'ClientHomeOriginal',
+    redirect: '/client/home-v2',
+    meta: { title: '我的健康(原版)', requiresAuth: false }
+  },
+  {
     path: '/client/home-v2',
-    name: 'ClientHomeOptimized',
+    name: 'ClientHomeV2',
     component: () => import('./views/client/HomeViewOptimized.vue'),
-    meta: { title: '我的健康（优化版）', requiresAuth: false }
+    meta: { title: '我的健康', requiresAuth: false }
   },
   {
     path: '/client/data-input',
@@ -41,17 +48,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./views/client/DataInputOptimized.vue'),
     meta: { title: '记录数据', requiresAuth: false }
   },
+  // P0-2 路由合并: Chat V1→V2 重定向 (2026-02-17)
   {
     path: '/client/chat',
     name: 'ClientChat',
-    component: () => import('./views/client/ChatView.vue'),
-    meta: { title: 'AI 健康教练', requiresAuth: false }
+    redirect: '/client/chat-v2',
+    meta: { title: 'AI 健康助手', requiresAuth: false }
   },
   {
     path: '/client/chat-v2',
-    name: 'ClientChatOptimized',
+    name: 'ClientChatV2',
     component: () => import('./views/client/ChatViewOptimized.vue'),
-    meta: { title: 'AI 健康助手（优化版）', requiresAuth: false }
+    meta: { title: 'AI 健康助手', requiresAuth: false }
   },
   {
     path: '/client/progress',
@@ -116,6 +124,25 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./views/client/LearningProgress.vue'),
     meta: { title: '学习进度', requiresAuth: false }
   },
+  // ============ 飞轮首页: 按角色分流 (2026-02-17) ============
+  {
+    path: '/coach/workbench',
+    name: 'CoachWorkbench',
+    component: () => import('./views/coach/CoachWorkbench.vue'),
+    meta: { title: '教练工作台', requiresAuth: true }
+  },
+  {
+    path: '/expert/audit',
+    name: 'ExpertAuditWorkbench',
+    component: () => import('./views/expert/ExpertAuditWorkbench.vue'),
+    meta: { title: '审核工作台', requiresAuth: true }
+  },
+  {
+    path: '/admin/command-center',
+    name: 'AdminCommandCenter',
+    component: () => import('./views/admin/AdminCommandCenter.vue'),
+    meta: { title: '指挥中心', requiresAuth: true }
+  },
   // ============ 健康教练门户 ============
   {
     path: '/coach-portal',
@@ -167,6 +194,9 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     component: () => import('./layouts/AdminLayout.vue'),
     redirect: '/dashboard',
+    // 飞轮角色分流: 根据角色跳转不同首页 (2026-02-17)
+    // Coach→/coach/workbench, Expert→/expert/audit, Admin→/admin/command-center
+    // 可在路由守卫中扩展: router.beforeEach 检查 roleLevel
     children: [
       {
         path: 'dashboard',
@@ -506,6 +536,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./views/expert/ExpertAgentManage.vue'),
         meta: { title: '我的 Agent' }
       },
+      // ============ 专家双签审核 ============
+      {
+        path: 'expert/dual-sign',
+        name: 'ExpertDualSign',
+        component: () => import('./views/expert/DualSignDemoPage.vue'),
+        meta: { title: '专家双签审核' }
+      },
       // ============ Expert "我的" 模块 ============
       {
         path: 'expert/my/supervision',
@@ -681,6 +718,19 @@ const routes: RouteRecordRaw[] = [
         name: 'Settings',
         component: () => import('./views/Settings.vue'),
         meta: { title: '系统设置', icon: 'setting' }
+      },
+      // ═══ UI集成 — 零侵入 iframe 桥接 ═══
+      {
+        path: 'ui1',
+        name: 'UI1Bridge',
+        component: () => import('./views/ui1/UI1BridgePage.vue'),
+        meta: { title: '行为健康组件库', icon: 'appstore' }
+      },
+      {
+        path: 'ui2',
+        name: 'UI2Bridge',
+        component: () => import('./views/ui2/UI2BridgePage.vue'),
+        meta: { title: '专家双签工作台', icon: 'experiment' }
       }
     ]
   }
@@ -696,9 +746,25 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('admin_token')
   if (to.meta.requiresAuth !== false && !token) {
     next('/login')
-  } else {
-    next()
+    return
   }
+
+  // 飞轮角色分流: 访问 /dashboard 时按角色跳转 (2026-02-17)
+  if (to.path === '/dashboard' && token) {
+    const roleLevel = parseInt(localStorage.getItem('bhp_role_level') || '0', 10)
+    if (roleLevel >= 99) {
+      next('/admin/command-center')
+      return
+    } else if (roleLevel >= 5) {
+      next('/expert/audit')
+      return
+    } else if (roleLevel >= 4) {
+      next('/coach/workbench')
+      return
+    }
+  }
+
+  next()
 })
 
 export default router
