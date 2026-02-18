@@ -325,7 +325,7 @@ def get_stage_progress(
     """获取当前阶段进度详情 (自己或教练查看学员)"""
     target_id = user_id if user_id else current_user.id
     from core.stage_engine import StageEngine
-    engine = StageEngine(db)
+    engine = StageEngine()
     return engine.get_stage_progress(target_id)
 
 
@@ -340,7 +340,7 @@ def check_stage_advance(
     """检查用户是否满足推进到下一阶段的条件"""
     target_id = user_id if user_id else current_user.id
     from core.stage_engine import StageEngine
-    engine = StageEngine(db)
+    engine = StageEngine()
     return engine.check_advance_eligibility(target_id)
 
 
@@ -354,7 +354,7 @@ def advance_stage(
 ):
     """推进用户到下一阶段 (需教练或管理员权限)"""
     from core.stage_engine import StageEngine
-    engine = StageEngine(db)
+    engine = StageEngine()
     result = engine.advance_stage(
         req.user_id, req.reason, "coach",
         current_user.id, req.force,
@@ -374,7 +374,7 @@ def record_interruption(
 ):
     """记录用户阶段中断/回退 (需教练或管理员权限)"""
     from core.stage_engine import StageEngine
-    engine = StageEngine(db)
+    engine = StageEngine()
     result = engine.record_interruption(req.user_id, req.reason, req.regress_to)
     if result["success"]:
         db.commit()
@@ -391,7 +391,7 @@ def graduate_user(
 ):
     """触发用户毕业仪式 (需教练或管理员权限)"""
     from core.stage_engine import StageEngine
-    engine = StageEngine(db)
+    engine = StageEngine()
     result = engine.graduate_user(req.user_id, current_user.id)
     if result["success"]:
         db.commit()
@@ -410,7 +410,7 @@ def get_stage_transitions(
     """获取阶段跃迁历史记录"""
     target_id = user_id if user_id else current_user.id
     from core.stage_engine import StageEngine
-    engine = StageEngine(db)
+    engine = StageEngine()
     return engine.get_stage_transitions(target_id, limit)
 
 
