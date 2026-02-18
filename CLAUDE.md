@@ -1,7 +1,7 @@
-# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.0.1)
+# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.0.2)
 
 > 本文件由 Claude Code 自动加载，指导 AI 如何在本项目中工作。
-> **V5.0.1 变更**: 2026-02-18 代码契约精确化 + Agent清单47→实数 + R2-R8飞轮实装经验回写
+> **V5.0.2 变更**: 2026-02-18 Alembic 045 DB持久化 + StageEngine修复 + CI集成96+5全平台测试
 >
 > 上游契约: `contracts/行健平台-契约注册表-V5_0_1.xlsx`
 > Agent配置清单: `agent_multimodal_host_config.md` (47+ Agent类 · 15预设模板 · 4层安全 · 6模态)
@@ -12,14 +12,20 @@
 
 BHP（Behavioral Health Platform）是一个行为健康数字化管理平台，服务于慢病逆转与行为改变领域。平台包含 Observer(观察者)、Grower(成长者)、Coach(教练)、Expert(专家)、Admin(管理员) 五种用户角色，集成了评估引擎、AI Agent 系统、RAG 知识库、多模态交互引擎、智能监测方案及微信生态对接能力。
 
-**规模**: 49+ 路由模块 · 600+ API 端点 · 130+ 数据模型 · 21+ 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **R2-R8 飞轮实装 (3,192行)**
+**规模**: 74+ 路由模块 · 630+ API 端点 · 130+ 数据模型 · 45 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **R2-R8 飞轮实装 (3,192行)**
 
-> ⚠️ **V5.0.1 变更**:
+> ⚠️ **V5.0.2 变更**:
+> - Alembic 045: 5表+4视图+种子数据持久化 (program/reflection/coach_review/credit views)
+> - StageEngine(db)→StageEngine() 构造函数修复 (journey_api.py, 6处)
+> - CI 流水线新增 Stage 2.5: test_platform_full.py (96模块+5链 全平台门禁)
+> - test_platform_full.py 新增 --json 参数, JSON key 标准化
+> - **全平台测试: 96/96 + 5/5 chains (25个模块 × 5条跨模块业务链)**
+>
+> V5.0.1 变更 (保留):
 > - Agent 从 33→47+ (源码实际类数, 含 specialist/integrative/v4/behaviorRx/tcm/assistant/professional/v14)
-> - 新增 §十六 代码契约 (import路径/认证签名/角色判断/Session模式 精确规范)
-> - R2-R8 飞轮已从 mock→真实DB+认证+个性化反馈+微信推送, 全部14端点线上验证通过
+> - §十六 代码契约 (import路径/认证签名/角色判断/Session模式 精确规范)
+> - R2-R8 飞轮已从 mock→真实DB+认证+个性化反馈+微信推送
 > - 修正: 角色枚举值 bhp_coach→coach, bhp_promoter→promoter, bhp_master→master
-> - 修正: 项目结构 models.py/database.py 实际在 core/ 下
 
 ---
 
@@ -472,6 +478,9 @@ cd miniprogram && npm run dev:weapp
 - bhp-wx-gateway 端口 8080 与 dify-nginx 冲突 → 需调整
 - 微信服务号认证需 7-14 天 → 提前启动
 - 小程序审核定位"健康管理"非"诊断"
+- ~~StageEngine(db) 构造函数错误~~ → ✅ V5.0.2 已修复 (journey_api.py)
+- ~~program_templates 等表未持久化~~ → ✅ V5.0.2 Alembic 045 已持久化
+- Chat 503: 需配置 `CLOUD_LLM_API_KEY` 使 AI 对话功能可用
 
 ---
 
@@ -525,6 +534,25 @@ cd miniprogram && npm run dev:weapp
 | L5 | E2E 联调 | 发版前 |
 | L6 | 多模态 | 修改 multimodal/ 后 |
 | L7 | 微信集成 | 修改 wechat/ 后 |
+| **L8** | **全平台功能验证 (96+5)** | **发版前必跑, CI 门禁自动执行** |
+
+### 13.2.1 全平台测试套件 *(V5.0.2 新增)*
+
+```bash
+# 全量测试 (25模块 × 96测试 + 5跨模块链)
+python scripts/test_platform_full.py
+
+# 指定模块
+python scripts/test_platform_full.py --module auth,chat,learning
+
+# 仅链测试
+python scripts/test_platform_full.py --chain-only
+
+# 自定义 JSON 报告路径 (CI 用)
+python scripts/test_platform_full.py --json reports/platform_test_report.json
+```
+
+**CI 门禁**: `.github/workflows/ci-security.yml` Stage 2.5 `platform-full-test` — 任一测试失败阻断部署。
 
 ### 13.3 API 契约锁定
 - 不变更现有端点URL/方法/请求体
@@ -543,6 +571,8 @@ cd miniprogram && npm run dev:weapp
 | 微信生态 | 服务号+小程序+企微 | P1-P3 |
 | **飞轮实装** *(V5.0.1)* | **R2-R8 全部14端点+3定时任务上线运行** | **✅完成** |
 | **代码契约** *(V5.0.1)* | **§十六 精确import/认证/角色/Session规范** | **✅完成** |
+| **DB持久化** *(V5.0.2)* | **Alembic 045: 5表+4视图+种子数据, 全部IF NOT EXISTS幂等** | **✅完成** |
+| **CI全平台门禁** *(V5.0.2)* | **96模块+5链测试纳入ci-security.yml Stage 2.5** | **✅完成** |
 
 ---
 
