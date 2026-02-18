@@ -237,13 +237,120 @@ jobs:
           retention-days: 90
 
   # ──────────────────────────────────────────────────────────
+  #  Stage 2.5: 全平台功能验证 (96 tests + 5 chains)
+  # ──────────────────────────────────────────────────────────
+  platform-full-test:
+    name: 🧪 Full Platform Test (96+5)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: acceptance
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: bhp
+          POSTGRES_PASSWORD: bhp_test
+          POSTGRES_DB: bhp_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install requests httpx
+
+      - name: Database setup
+        run: |
+          python -c "
+          import os, sys; sys.path.insert(0, '.')
+          from sqlalchemy import create_engine, text
+          engine = create_engine(os.environ['DATABASE_URL'])
+          with engine.begin() as conn:
+              conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
+              conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
+          from core.models import Base
+          Base.metadata.create_all(engine)
+          "
+          alembic stamp head
+          python scripts/seed_demo_accounts.py --db $DATABASE_URL
+
+      - name: Start application
+        run: |
+          ENVIRONMENT=test \
+          uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:8000/health && break
+            sleep 2
+          done
+          curl -sf http://localhost:8000/health || { echo "❌ App failed to start"; exit 1; }
+
+      - name: Run full platform test (96 tests + 5 chains)
+        run: |
+          python scripts/test_platform_full.py --json reports/platform_test_report.json
+          echo "exit_code=$?" >> $GITHUB_ENV
+
+      - name: Validate platform test results
+        run: |
+          python -c "
+          import json, sys
+          with open('reports/platform_test_report.json') as f:
+              data = json.load(f)
+          mod = data.get('module_summary', {})
+          chains = data.get('chain_summary', {})
+          mod_pass = mod.get('passed', 0)
+          mod_total = mod.get('total', 0)
+          mod_fail = mod.get('failed', 0)
+          chain_pass = chains.get('passed', 0)
+          chain_total = chains.get('total', 0)
+          chain_fail = chains.get('failed', 0)
+          print(f'  Modules: {mod_pass}/{mod_total} passed, {mod_fail} failed')
+          print(f'  Chains:  {chain_pass}/{chain_total} passed, {chain_fail} failed')
+          if mod_fail > 0 or chain_fail > 0:
+              print(f'❌ Platform test failed: {mod_fail} module + {chain_fail} chain failures')
+              sys.exit(1)
+          print(f'✅ Platform test PASS — {mod_pass}/{mod_total} + {chain_pass}/{chain_total} chains')
+          "
+
+      - name: Upload platform test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: platform-test-report
+          path: reports/platform_test_report.json
+          retention-days: 90
+
+  # ──────────────────────────────────────────────────────────
   #  Stage 3: 渗透测试 (仅 main 分支, 或手动触发)
   # ──────────────────────────────────────────────────────────
   pentest:
     name: 🔓 Penetration Test
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: acceptance
+    needs: platform-full-test
     if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
 
     services:

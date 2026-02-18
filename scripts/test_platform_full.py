@@ -1386,18 +1386,18 @@ async def run_all(modules: list[str] | None = None, chain_only: bool = False):
         "run_at": datetime.now().isoformat(),
         "target": BASE,
         "elapsed_seconds": round(elapsed, 1),
-        "module_tests": {
+        "module_summary": {
             "total": len(results),
             "passed": sum(1 for r in results if r["passed"]),
             "failed": sum(1 for r in results if not r["passed"]),
-            "details": results,
         },
-        "chain_tests": {
+        "chain_summary": {
             "total": len(chain_results),
             "passed": sum(1 for r in chain_results if r["passed"]),
             "failed": sum(1 for r in chain_results if not r["passed"]),
-            "details": chain_results,
         },
+        "module_details": results,
+        "chain_details": chain_results,
     }
 
     try:
@@ -1427,11 +1427,18 @@ def main():
                         help="Comma-separated module names (e.g. auth,chat,learning)")
     parser.add_argument("--chain-only", action="store_true",
                         help="Only run cross-module chain tests")
+    parser.add_argument("--json", type=str, default=None,
+                        help="Custom JSON report output path")
     args = parser.parse_args()
 
     modules = None
     if args.module:
         modules = [m.strip() for m in args.module.split(",") if m.strip()]
+
+    # Override report path if --json is given
+    if args.json:
+        global REPORT_PATH
+        REPORT_PATH = args.json
 
     rc = asyncio.run(run_all(modules=modules, chain_only=args.chain_only))
     sys.exit(rc)
