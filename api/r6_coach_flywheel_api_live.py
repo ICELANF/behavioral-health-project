@@ -102,8 +102,8 @@ async def get_review_queue(
     """
     coach_id = current_user.id
 
-    # 权限检查 (role字段: observer/grower/sharer/bhp_coach/bhp_promoter/bhp_master/ADMIN)
-    _COACH_ROLES = {"bhp_coach", "bhp_promoter", "bhp_master", "admin"}
+    # 权限检查 (role字段: observer/grower/sharer/coach/promoter/supervisor/master/admin)
+    _COACH_ROLES = {"coach", "promoter", "supervisor", "master", "admin"}
     role_stmt = text("SELECT role FROM users WHERE id = :uid")
     role_result = await db.execute(role_stmt, {"uid": coach_id})
     role_val = (role_result.scalar() or "").lower()
