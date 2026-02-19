@@ -110,9 +110,42 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { learningApi } from '@/api/index'
 
 const overallStats = ref({ coursesCompleted: 3, totalHours: 12, badges: 5, streak: 7 })
+const loading = ref(true)
+
+async function loadLearningData() {
+  loading.value = true
+  // Use userId=0 as a self-reference (backend may use current user from token)
+  const userId = parseInt(localStorage.getItem('admin_user_id') || '0')
+  const [statsR, timeR, streakR] = await Promise.allSettled([
+    learningApi.getStats(userId),
+    learningApi.getTime(userId),
+    learningApi.getStreak(userId),
+  ])
+
+  if (statsR.status === 'fulfilled' && statsR.value) {
+    const s = statsR.value
+    overallStats.value.coursesCompleted = s.courses_completed ?? s.coursesCompleted ?? overallStats.value.coursesCompleted
+    overallStats.value.badges = s.badges ?? s.badges_earned ?? overallStats.value.badges
+  } else {
+    console.warn('Failed to load learning stats, using mock', statsR.status === 'rejected' ? statsR.reason : '')
+  }
+
+  if (timeR.status === 'fulfilled' && timeR.value) {
+    overallStats.value.totalHours = timeR.value.total_hours ?? timeR.value.totalHours ?? overallStats.value.totalHours
+  }
+
+  if (streakR.status === 'fulfilled' && streakR.value) {
+    overallStats.value.streak = streakR.value.current_streak ?? streakR.value.streak ?? overallStats.value.streak
+  }
+
+  loading.value = false
+}
+
+onMounted(loadLearningData)
 
 const roadmap = ref([
   {

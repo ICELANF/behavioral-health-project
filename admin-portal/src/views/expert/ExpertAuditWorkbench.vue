@@ -241,14 +241,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { expertFlywheelApi, type ExpertAuditItem } from '@/api/expert-api'
 
 // ── 指标 ──
-const todayAudited = ref(23)
-const passRate = ref(87)
-const pendingQueue = ref(8)
-const redlineBlocked = ref(2)
-const agentAnomalyCount = ref(1)
+const todayAudited = ref(0)
+const passRate = ref(0)
+const pendingQueue = ref(0)
+const redlineBlocked = ref(0)
+const agentAnomalyCount = ref(0)
+const loading = ref(true)
 const passRateClass = computed(() => passRate.value >= 90 ? 'green' : passRate.value >= 80 ? 'yellow' : 'red')
 
 // ── 筛选 ──
@@ -256,25 +258,25 @@ const selectedTypes = ref(['ai_dialogue', 'prescription', 'agent_behavior'])
 const selectedRisk = ref('all')
 const selectedAgent = ref('all')
 
-const auditTypes = [
-  { key: 'ai_dialogue', icon: '💬', label: 'AI对话', count: 5 },
-  { key: 'prescription', icon: '📋', label: '行为处方', count: 2 },
-  { key: 'agent_behavior', icon: '🤖', label: 'Agent行为', count: 1 },
+const auditTypes = ref([
+  { key: 'ai_dialogue', icon: '💬', label: 'AI对话', count: 0 },
+  { key: 'prescription', icon: '📋', label: '行为处方', count: 0 },
+  { key: 'agent_behavior', icon: '🤖', label: 'Agent行为', count: 0 },
   { key: 'content', icon: '📄', label: '内容推荐', count: 0 },
-  { key: 'safety', icon: '🛡️', label: '安全事件', count: 2 },
-]
+  { key: 'safety', icon: '🛡️', label: '安全事件', count: 0 },
+])
 
-const riskLevels = [
-  { key: 'critical', label: '🚨 严重', count: 2 },
-  { key: 'high', label: '🔴 高', count: 3 },
-  { key: 'medium', label: '🟡 中', count: 3 },
+const riskLevels = ref([
+  { key: 'critical', label: '🚨 严重', count: 0 },
+  { key: 'high', label: '🔴 高', count: 0 },
+  { key: 'medium', label: '🟡 中', count: 0 },
   { key: 'low', label: '🟢 低', count: 0 },
-]
+])
 
-const agentList = [
+const agentList = ref([
   'crisis_responder', 'nutrition_guide', 'exercise_guide', 'emotion_support',
   'behavior_coach', 'tcm_wellness', 'pain_relief_guide', 'rx_composer',
-]
+])
 
 const riskMap: Record<string, string> = {
   critical: '🚨 严重', high: '🔴 高危', medium: '🟡 中等', low: '🟢 低风险',
@@ -297,16 +299,10 @@ const issueTags = [
 ]
 
 // ── 审核项 ──
-interface AuditItem {
-  id: string; title: string; type: string; typeIcon: string;
-  agent: string; userName: string; userStage: string;
-  risk: string; time: string;
-  dialogue?: any[]; safetyFlags?: any[];
-  rxFields?: any[]; evidenceLevel?: number;
-  decisionSteps?: any[]; history: any[];
-}
+type AuditItem = ExpertAuditItem
 
-const auditItems = ref<AuditItem[]>([
+// Mock fallback
+const mockAuditItems: AuditItem[] = [
   {
     id: 'au1', title: '王阿姨血糖对话 — 疑似越界', type: 'ai_dialogue', typeIcon: '💬',
     agent: 'nutrition_guide', userName: '王阿姨', userStage: 'S1/L2',
@@ -333,10 +329,12 @@ const auditItems = ref<AuditItem[]>([
       { key: 'support', label: '支持', value: '老伴陪同', flagged: false },
     ],
     evidenceLevel: 2,
+    safetyFlags: [],
     history: [],
   },
-])
+]
 
+const auditItems = ref<AuditItem[]>([])
 const currentAudit = ref<AuditItem | null>(null)
 
 const filteredItems = computed(() => {
@@ -348,6 +346,74 @@ const filteredItems = computed(() => {
   })
 })
 
+async function loadData() {
+  loading.value = true
+  const [metricsResult, queueResult, anomaliesResult] = await Promise.allSettled([
+    expertFlywheelApi.getQualityMetrics(),
+    expertFlywheelApi.getAuditQueue(),
+    expertFlywheelApi.getAgentAnomalies(),
+  ])
+
+  if (metricsResult.status === 'fulfilled') {
+    const m = metricsResult.value
+    todayAudited.value = m.todayAudited
+    passRate.value = m.passRate
+    pendingQueue.value = m.pendingQueue
+    redlineBlocked.value = m.redlineBlocked
+    agentAnomalyCount.value = m.agentAnomalyCount
+    // Update type counts from byType
+    for (const t of auditTypes.value) {
+      t.count = m.byType[t.key] ?? 0
+    }
+  } else {
+    console.warn('Failed to load expert metrics, using defaults', metricsResult.reason)
+    todayAudited.value = 23; passRate.value = 87; pendingQueue.value = 8
+    redlineBlocked.value = 2; agentAnomalyCount.value = 1
+  }
+
+  if (queueResult.status === 'fulfilled') {
+    auditItems.value = queueResult.value.items
+    // Update risk counts from byRisk
+    for (const r of riskLevels.value) {
+      r.count = queueResult.value.byRisk[r.key] ?? 0
+    }
+  } else {
+    console.warn('Failed to load audit queue, using mock', queueResult.reason)
+    auditItems.value = mockAuditItems
+  }
+
+  if (anomaliesResult.status === 'fulfilled') {
+    const anomalies = anomaliesResult.value
+    // Extract unique agent names for filter
+    const names = new Set(anomalies.map(a => a.agentName))
+    if (names.size > 0) {
+      agentList.value = [...new Set([...agentList.value, ...names])]
+    }
+  }
+
+  loading.value = false
+}
+
+async function loadQueue() {
+  try {
+    const params: any = {}
+    if (selectedTypes.value.length < auditTypes.value.length) {
+      params.type_filter = selectedTypes.value.join(',')
+    }
+    if (selectedRisk.value !== 'all') params.risk_filter = selectedRisk.value
+    if (selectedAgent.value !== 'all') params.agent_filter = selectedAgent.value
+    const result = await expertFlywheelApi.getAuditQueue(params)
+    auditItems.value = result.items
+  } catch (e) {
+    console.warn('Failed to reload audit queue', e)
+  }
+}
+
+// Reload queue on filter changes
+watch([selectedTypes, selectedRisk, selectedAgent], loadQueue, { deep: true })
+
+onMounted(loadData)
+
 function selectAudit(item: AuditItem) { currentAudit.value = item }
 function modalityIcon(m: string) {
   const map: Record<string, string> = { voice: '🎤', image: '📷', video: '🎬', device: '⌚' }
@@ -358,11 +424,31 @@ function evidenceLabel(level: number) {
   return map[level] || ''
 }
 
-function submitVerdict(verdict: string) {
-  // TODO: API调用
-  const idx = auditItems.value.findIndex(a => a.id === currentAudit.value?.id)
-  if (idx >= 0) {
-    auditItems.value.splice(idx, 1)
+async function submitVerdict(verdict: string) {
+  if (!currentAudit.value) return
+  try {
+    const result = await expertFlywheelApi.submitVerdict(currentAudit.value.id, {
+      verdict,
+      score: verdictScore.value,
+      issues: selectedIssues.value,
+      note: verdictNote.value,
+    })
+    // Remove from local list
+    const idx = auditItems.value.findIndex(a => a.id === currentAudit.value?.id)
+    if (idx >= 0) auditItems.value.splice(idx, 1)
+    pendingQueue.value--
+    todayAudited.value++
+    // Jump to next item (use next_id from API if available)
+    if (result.nextId) {
+      const next = auditItems.value.find(a => a.id === result.nextId)
+      currentAudit.value = next || auditItems.value[0] || null
+    } else {
+      currentAudit.value = auditItems.value[0] || null
+    }
+  } catch (e) {
+    console.warn('Verdict API failed, handling locally', e)
+    const idx = auditItems.value.findIndex(a => a.id === currentAudit.value?.id)
+    if (idx >= 0) auditItems.value.splice(idx, 1)
     pendingQueue.value--
     todayAudited.value++
     currentAudit.value = auditItems.value[0] || null

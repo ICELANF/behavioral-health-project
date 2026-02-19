@@ -160,68 +160,57 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { adminFlywheelApi, type CoreKPI, type ChannelHealth, type FunnelStep, type AgentGroup, type AgentPerf, type CoachRank, type SafetyMetric, type ActiveAlert } from '@/api/admin-flywheel-api'
 
-// ── 告警 ──
-const activeAlerts = ref([
+// ── Mock defaults ──
+const mockAlerts: ActiveAlert[] = [
   { id: 'a1', level: 'critical', message: 'VLM服务响应超时 >5s (影响图片识别)', time: '2分钟前' },
   { id: 'a2', level: 'warning', message: '微信服务号模板消息发送失败率升高至8%', time: '15分钟前' },
-])
-function alertIcon(level: string) {
-  return level === 'critical' ? '🚨' : level === 'warning' ? '⚠️' : 'ℹ️'
-}
-function dismissAlert(id: string) {
-  activeAlerts.value = activeAlerts.value.filter(a => a.id !== id)
-}
-
-// ── 核心KPI ──
-const coreKPIs = ref([
-  { icon: '👥', value: '1,247', label: 'DAU (全渠道)', sub: 'App 680 · 微信 402 · 小程序 165',
-    trendDir: 'up', trendPct: 12, status: 'good' },
-  { icon: '🔄', value: '34.2%', label: 'Observer→Grower 转化', sub: '本周 vs 上周 +5.1pp',
-    trendDir: 'up', trendPct: 5.1, status: 'good' },
-  { icon: '📊', value: '78.5%', label: '7日留存率', sub: 'Grower角色',
-    trendDir: 'down', trendPct: 2.3, status: 'warn' },
-  { icon: '🤖', value: '1.8s', label: 'AI平均响应', sub: 'P95: 3.2s · 超时率: 0.3%',
-    trendDir: 'up', trendPct: 0.5, status: 'good' },
-])
-
-// ── 渠道 ──
-const channels = ref([
-  { icon: '📱', name: 'H5 移动端', status: 'healthy', statusLabel: '正常',
-    dau: '680', msgToday: '3,420', avgReply: '1.6s' },
-  { icon: '💬', name: '微信服务号', status: 'healthy', statusLabel: '正常',
-    dau: '402', msgToday: '1,890', avgReply: '2.1s' },
-  { icon: '🟢', name: '微信小程序', status: 'healthy', statusLabel: '正常',
-    dau: '165', msgToday: '720', avgReply: '1.4s' },
-  { icon: '👔', name: '企业微信', status: 'degraded', statusLabel: '告警',
-    dau: '23', msgToday: '156', avgReply: '4.2s' },
-])
-
-// ── 漏斗 ──
-const funnelSteps = ref([
+]
+const mockKPIs: CoreKPI[] = [
+  { icon: '👥', value: '1,247', label: 'DAU (全渠道)', sub: 'App 680 · 微信 402 · 小程序 165', trendDir: 'up', trendPct: 12, status: 'good' },
+  { icon: '🔄', value: '34.2%', label: 'Observer→Grower 转化', sub: '本周 vs 上周 +5.1pp', trendDir: 'up', trendPct: 5.1, status: 'good' },
+  { icon: '📊', value: '78.5%', label: '7日留存率', sub: 'Grower角色', trendDir: 'down', trendPct: 2.3, status: 'warn' },
+  { icon: '🤖', value: '1.8s', label: 'AI平均响应', sub: 'P95: 3.2s · 超时率: 0.3%', trendDir: 'up', trendPct: 0.5, status: 'good' },
+]
+const mockChannels: ChannelHealth[] = [
+  { icon: '📱', name: 'H5 移动端', status: 'healthy', statusLabel: '正常', dau: '680', msgToday: '3,420', avgReply: '1.6s' },
+  { icon: '💬', name: '微信服务号', status: 'healthy', statusLabel: '正常', dau: '402', msgToday: '1,890', avgReply: '2.1s' },
+  { icon: '🟢', name: '微信小程序', status: 'healthy', statusLabel: '正常', dau: '165', msgToday: '720', avgReply: '1.4s' },
+  { icon: '👔', name: '企业微信', status: 'degraded', statusLabel: '告警', dau: '23', msgToday: '156', avgReply: '4.2s' },
+]
+const mockFunnel: FunnelStep[] = [
   { label: '访问', count: '5,280', pct: 100, color: '#93c5fd' },
   { label: '注册(Observer)', count: '2,140', pct: 40, color: '#60a5fa', convRate: '40.5' },
   { label: '完成评估', count: '892', pct: 17, color: '#3b82f6', convRate: '41.7' },
   { label: '升级Grower', count: '731', pct: 14, color: '#2563eb', convRate: '81.9' },
   { label: '7日活跃', count: '574', pct: 11, color: '#1d4ed8', convRate: '78.5' },
-])
+]
 
-// ── Agent监控 ──
-const agentGroups = ref([
-  { name: '用户层', agents: Array.from({length: 14}, (_, i) => ({
-    id: `u${i}`, name: `用户Agent${i+1}`, status: i === 4 ? 'slow' : 'ok', statusLabel: i === 4 ? '响应慢' : '正常'
-  }))},
-  { name: '教练层', agents: Array.from({length: 10}, (_, i) => ({
-    id: `c${i}`, name: `教练Agent${i+1}`, status: 'ok', statusLabel: '正常'
-  }))},
-  { name: '系统层', agents: Array.from({length: 4}, (_, i) => ({
-    id: `s${i}`, name: `系统Agent${i+1}`, status: 'ok', statusLabel: '正常'
-  }))},
-  { name: '中医骨科', agents: Array.from({length: 5}, (_, i) => ({
-    id: `t${i}`, name: `中医Agent${i+1}`, status: i === 2 ? 'error' : 'ok', statusLabel: i === 2 ? '异常' : '正常'
-  }))},
-])
+// ── Reactive state ──
+const activeAlerts = ref<ActiveAlert[]>([])
+const coreKPIs = ref<CoreKPI[]>([])
+const channels = ref<ChannelHealth[]>([])
+const funnelSteps = ref<FunnelStep[]>([])
+const agentGroups = ref<AgentGroup[]>([])
+const slowestAgents = ref<AgentPerf[]>([])
+const coachRanking = ref<CoachRank[]>([])
+const safetyMetrics = ref<SafetyMetric[]>([])
+const loading = ref(true)
+
+function alertIcon(level: string) {
+  return level === 'critical' ? '🚨' : level === 'warning' ? '⚠️' : 'ℹ️'
+}
+
+async function dismissAlert(id: string) {
+  activeAlerts.value = activeAlerts.value.filter(a => a.id !== id)
+  try {
+    await adminFlywheelApi.dismissAlert(id)
+  } catch (e) {
+    console.warn('Dismiss alert API failed', e)
+  }
+}
 
 const agentHealthAll = computed(() =>
   agentGroups.value.every(g => g.agents.every(a => a.status === 'ok'))
@@ -229,33 +218,88 @@ const agentHealthAll = computed(() =>
 const agentIssueCount = computed(() =>
   agentGroups.value.reduce((sum, g) => sum + g.agents.filter(a => a.status !== 'ok').length, 0)
 )
+const maxP95 = computed(() => {
+  const vals = slowestAgents.value.map(a => a.p95)
+  return vals.length > 0 ? Math.max(...vals) : 1
+})
 
-const slowestAgents = ref([
-  { name: 'vlm_service (食物)', p95: 3800 },
-  { name: 'tcm_ortho_expert', p95: 2400 },
-  { name: 'emotion_support', p95: 1900 },
-  { name: 'rx_composer', p95: 1600 },
-  { name: 'nutrition_guide', p95: 1200 },
-])
-const maxP95 = computed(() => Math.max(...slowestAgents.value.map(a => a.p95)))
+async function loadAll() {
+  loading.value = true
+  const [kpiR, chR, funR, agMonR, agPerfR, coachR, safeR, alertR] = await Promise.allSettled([
+    adminFlywheelApi.getKpiRealtime(),
+    adminFlywheelApi.getChannelsHealth(),
+    adminFlywheelApi.getFunnel(),
+    adminFlywheelApi.getAgentsMonitor(),
+    adminFlywheelApi.getAgentsPerformance(5),
+    adminFlywheelApi.getCoachesRanking(),
+    adminFlywheelApi.getSafety24h(),
+    adminFlywheelApi.getActiveAlerts(),
+  ])
 
-// ── 教练 ──
-const coachRanking = ref([
-  { name: '张教练', students: 45, todayReviewed: 34, avgSeconds: 28 },
-  { name: '李教练', students: 38, todayReviewed: 29, avgSeconds: 35 },
-  { name: '王教练', students: 42, todayReviewed: 22, avgSeconds: 42 },
-  { name: '陈教练', students: 30, todayReviewed: 18, avgSeconds: 55 },
-])
+  coreKPIs.value = kpiR.status === 'fulfilled' ? kpiR.value : (console.warn('KPI fallback'), mockKPIs)
+  channels.value = chR.status === 'fulfilled' ? chR.value : (console.warn('Channel fallback'), mockChannels)
+  funnelSteps.value = funR.status === 'fulfilled' ? funR.value : (console.warn('Funnel fallback'), mockFunnel)
 
-// ── 安全 ──
-const safetyMetrics = ref([
-  { rule: 'S1', label: '医疗边界', count: 3 },
-  { rule: 'S2', label: '隐私保护', count: 0 },
-  { rule: 'S3', label: '危机检测', count: 1 },
-  { rule: 'S4', label: '内容合规', count: 0 },
-  { rule: 'S5', label: '数据最小化', count: 0 },
-  { rule: 'S6', label: '微信合规', count: 2 },
-])
+  if (agMonR.status === 'fulfilled') {
+    agentGroups.value = agMonR.value
+  } else {
+    console.warn('Agent monitor fallback')
+    agentGroups.value = [
+      { name: '用户层', agents: Array.from({length: 14}, (_, i) => ({ id: `u${i}`, name: `用户Agent${i+1}`, status: i === 4 ? 'slow' : 'ok', statusLabel: i === 4 ? '响应慢' : '正常' })) },
+      { name: '教练层', agents: Array.from({length: 10}, (_, i) => ({ id: `c${i}`, name: `教练Agent${i+1}`, status: 'ok', statusLabel: '正常' })) },
+      { name: '系统层', agents: Array.from({length: 4}, (_, i) => ({ id: `s${i}`, name: `系统Agent${i+1}`, status: 'ok', statusLabel: '正常' })) },
+      { name: '中医骨科', agents: Array.from({length: 5}, (_, i) => ({ id: `t${i}`, name: `中医Agent${i+1}`, status: i === 2 ? 'error' : 'ok', statusLabel: i === 2 ? '异常' : '正常' })) },
+    ]
+  }
+
+  slowestAgents.value = agPerfR.status === 'fulfilled' ? agPerfR.value : [
+    { name: 'vlm_service (食物)', p95: 3800 },
+    { name: 'tcm_ortho_expert', p95: 2400 },
+    { name: 'emotion_support', p95: 1900 },
+    { name: 'rx_composer', p95: 1600 },
+    { name: 'nutrition_guide', p95: 1200 },
+  ]
+
+  coachRanking.value = coachR.status === 'fulfilled' ? coachR.value : [
+    { name: '张教练', students: 45, todayReviewed: 34, avgSeconds: 28 },
+    { name: '李教练', students: 38, todayReviewed: 29, avgSeconds: 35 },
+    { name: '王教练', students: 42, todayReviewed: 22, avgSeconds: 42 },
+    { name: '陈教练', students: 30, todayReviewed: 18, avgSeconds: 55 },
+  ]
+
+  safetyMetrics.value = safeR.status === 'fulfilled' ? safeR.value : [
+    { rule: 'S1', label: '医疗边界', count: 3 },
+    { rule: 'S2', label: '隐私保护', count: 0 },
+    { rule: 'S3', label: '危机检测', count: 1 },
+    { rule: 'S4', label: '内容合规', count: 0 },
+    { rule: 'S5', label: '数据最小化', count: 0 },
+    { rule: 'S6', label: '微信合规', count: 2 },
+  ]
+
+  activeAlerts.value = alertR.status === 'fulfilled' ? alertR.value : mockAlerts
+  loading.value = false
+}
+
+// Polling: refresh KPI + alerts every 5 minutes
+let pollTimer: ReturnType<typeof setInterval> | null = null
+
+async function pollRefresh() {
+  const [kpiR, alertR] = await Promise.allSettled([
+    adminFlywheelApi.getKpiRealtime(),
+    adminFlywheelApi.getActiveAlerts(),
+  ])
+  if (kpiR.status === 'fulfilled') coreKPIs.value = kpiR.value
+  if (alertR.status === 'fulfilled') activeAlerts.value = alertR.value
+}
+
+onMounted(() => {
+  loadAll()
+  pollTimer = setInterval(pollRefresh, 5 * 60 * 1000)
+})
+
+onUnmounted(() => {
+  if (pollTimer) clearInterval(pollTimer)
+})
 </script>
 
 <style scoped>

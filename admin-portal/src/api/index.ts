@@ -52,6 +52,11 @@ import type {
   PointTransaction, PaginatedResponse
 } from '@/types'
 
+// Re-export flywheel APIs for convenience
+export { coachFlywheelApi } from './coach-api'
+export { expertFlywheelApi } from './expert-api'
+export { adminFlywheelApi } from './admin-flywheel-api'
+
 // =====================================================================
 // 旅程 (journey_api.py — 15 endpoints)
 // =====================================================================

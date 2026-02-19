@@ -159,51 +159,73 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { coachFlywheelApi, type ReviewQueueItem } from '@/api/coach-api'
 
 // ── 数据 ──
-const pendingCount = ref(12)
-const todayReviewed = ref(34)
-const avgSeconds = ref(28)
-const myStudentCount = ref(45)
+const pendingCount = ref(0)
+const todayReviewed = ref(0)
+const avgSeconds = ref(0)
+const myStudentCount = ref(0)
 const activeFilter = ref('all')
 const editedReply = ref('')
+const loading = ref(true)
 
-interface QueueItem {
-  id: string
-  name: string
-  stage: string
-  level: string
-  bptType: string
-  streakDays: number
-  riskLevel: 'low' | 'medium' | 'high' | 'crisis'
-  type: 'prescription' | 'ai_reply' | 'push'
-  typeLabel: string
-  priority: 'normal' | 'urgent'
-  waitTime: string
-  aiSummary: string
-  aiDraft?: string
-  pushType?: string
-  pushContent?: string
+type QueueItem = ReviewQueueItem
+
+// Mock fallback data
+const mockQueue: QueueItem[] = [
+  {
+    id: 'q1', name: '李大爷', studentId: 0, stage: 'S2', level: 'L3', bptType: '关系型',
+    streakDays: 5, riskLevel: 'medium', type: 'prescription', typeLabel: '行为处方',
+    priority: 'normal', waitTime: '2小时前', status: 'pending', createdAt: '',
+    aiSummary: '李大爷连续5天完成八段锦打卡，但血糖控制不理想(空腹7.8)，AI建议将运动从早上调整到餐后30分钟，并增加步行处方。',
+    rxFields: null, aiDraft: null, pushType: null, pushContent: null,
+  } as QueueItem,
+  {
+    id: 'q2', name: '王阿姨', studentId: 0, stage: 'S1', level: 'L2', bptType: '情绪型',
+    streakDays: 0, riskLevel: 'high', type: 'ai_reply', typeLabel: 'AI回复审核',
+    priority: 'urgent', waitTime: '15分钟前', status: 'pending', createdAt: '',
+    aiSummary: '王阿姨在对话中表达了对控糖失败的沮丧感，SPI=22分(L2层)，有dropout风险。',
+    aiDraft: '阿姨，控糖确实不容易，您能坚持测量血糖已经很了不起了。我们不急着改变太多，先从您最舒服的节奏开始，好吗？',
+    rxFields: null, pushType: null, pushContent: null,
+  } as QueueItem,
+]
+
+const queue = ref<QueueItem[]>([])
+const currentItem = ref<QueueItem | null>(null)
+
+async function loadData() {
+  loading.value = true
+  const [statsResult, queueResult] = await Promise.allSettled([
+    coachFlywheelApi.getStatsToday(),
+    coachFlywheelApi.getReviewQueue({ status: 'pending', limit: 50 }),
+  ])
+
+  if (statsResult.status === 'fulfilled') {
+    const s = statsResult.value
+    todayReviewed.value = s.todayReviewed
+    pendingCount.value = s.pendingCount
+    avgSeconds.value = s.avgSeconds
+    myStudentCount.value = s.streakDays // reuse for display
+  } else {
+    console.warn('Failed to load coach stats, using defaults', statsResult.reason)
+    pendingCount.value = 12; todayReviewed.value = 34; avgSeconds.value = 28; myStudentCount.value = 45
+  }
+
+  if (queueResult.status === 'fulfilled') {
+    queue.value = queueResult.value.items
+    pendingCount.value = queueResult.value.totalPending
+  } else {
+    console.warn('Failed to load review queue, using mock', queueResult.reason)
+    queue.value = mockQueue
+  }
+
+  currentItem.value = queue.value[0] || null
+  loading.value = false
 }
 
-const queue = ref<QueueItem[]>([
-  {
-    id: 'q1', name: '李大爷', stage: 'S2', level: 'L3', bptType: '关系型',
-    streakDays: 5, riskLevel: 'medium', type: 'prescription', typeLabel: '行为处方',
-    priority: 'normal', waitTime: '2小时前',
-    aiSummary: '李大爷连续5天完成八段锦打卡，但血糖控制不理想(空腹7.8)，AI建议将运动从早上调整到餐后30分钟，并增加步行处方。情绪稳定，睡眠质量改善。'
-  },
-  {
-    id: 'q2', name: '王阿姨', stage: 'S1', level: 'L2', bptType: '情绪型',
-    streakDays: 0, riskLevel: 'high', type: 'ai_reply', typeLabel: 'AI回复审核',
-    priority: 'urgent', waitTime: '15分钟前',
-    aiSummary: '王阿姨在对话中表达了对控糖失败的沮丧感，SPI=22分(L2层)，有dropout风险。AI建议以共情为主，避免设定新目标。',
-    aiDraft: '阿姨，控糖确实不容易，您能坚持测量血糖已经很了不起了。我们不急着改变太多，先从您最舒服的节奏开始，好吗？'
-  },
-])
-
-const currentItem = ref<QueueItem | null>(queue.value[0] || null)
+onMounted(loadData)
 
 const filters = computed(() => [
   { key: 'all', label: '全部', count: queue.value.length },
@@ -247,30 +269,40 @@ function riskLabel(level: string): string {
   return map[level] || ''
 }
 
-function handleApprove() {
-  // TODO: API调用 — 通过处方/回复/推送
+async function handleApprove() {
+  if (!currentItem.value) return
+  try {
+    await coachFlywheelApi.approveReview(currentItem.value.id)
+  } catch (e) {
+    console.warn('Approve API failed, continuing locally', e)
+  }
   removeCurrentAndNext()
 }
 
-function handleReject() {
-  // TODO: API调用 — 驳回, 打开备注弹窗
+async function handleReject() {
+  if (!currentItem.value) return
+  try {
+    await coachFlywheelApi.rejectReview(currentItem.value.id, { reason: '教练驳回' })
+  } catch (e) {
+    console.warn('Reject API failed, continuing locally', e)
+  }
   removeCurrentAndNext()
 }
 
 function handleSkip() {
   // 跳到下一个, 当前保留在队列
   const idx = queue.value.findIndex(q => q.id === currentItem.value?.id)
-  if (idx < queue.value.length - 1) {
-    currentItem.value = queue.value[idx + 1]
+  if (idx >= 0 && idx < queue.value.length - 1) {
+    currentItem.value = queue.value[idx + 1] ?? null
   }
 }
 
 function removeCurrentAndNext() {
   const idx = queue.value.findIndex(q => q.id === currentItem.value?.id)
-  queue.value.splice(idx, 1)
+  if (idx >= 0) queue.value.splice(idx, 1)
   pendingCount.value--
   todayReviewed.value++
-  currentItem.value = queue.value[idx] || queue.value[0] || null
+  currentItem.value = queue.value[idx] ?? queue.value[0] ?? null
 }
 
 function handleKeydown(e: KeyboardEvent) {

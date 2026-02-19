@@ -130,7 +130,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { deviceApi } from '@/api/index'
 
 const activePeriod = ref('7d')
 const periods = [
@@ -139,6 +140,7 @@ const periods = [
   { key: '90d', label: '90天' },
 ]
 const periodLabel = computed(() => periods.find(p => p.key === activePeriod.value)?.label || '')
+const loading = ref(true)
 
 const metricCards = ref([
   { key: 'hr', icon: '❤️', title: '心率', value: '72', unit: 'bpm', normalRange: '60-100', trend: '较昨日 ↓2', trendClass: 'down-good', color: '#cf1322', alert: false },
@@ -198,6 +200,67 @@ const glucoseColor = (val) => {
   if (val <= 7.8) return '#fa8c16'
   return '#ff4d4f'
 }
+
+function periodDays() {
+  return activePeriod.value === '7d' ? 7 : activePeriod.value === '30d' ? 30 : 90
+}
+
+async function loadDeviceData() {
+  loading.value = true
+  const days = periodDays()
+  const [summaryR, glucoseR, heartR, sleepR, stepsR] = await Promise.allSettled([
+    deviceApi.getSummary(),
+    deviceApi.getBloodGlucose(days),
+    deviceApi.getHeartRate(days),
+    deviceApi.getSleep(days),
+    deviceApi.getSteps(days),
+  ])
+
+  if (summaryR.status === 'fulfilled' && summaryR.value) {
+    const s = summaryR.value
+    // Update metric cards from summary if data available
+    if (s.heart_rate) metricCards.value[0].value = String(s.heart_rate)
+    if (s.sleep_hours) metricCards.value[1].value = String(s.sleep_hours)
+    if (s.steps) metricCards.value[2].value = String(s.steps).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+    if (s.fasting_glucose) metricCards.value[3].value = String(s.fasting_glucose)
+    if (s.blood_pressure) metricCards.value[4].value = s.blood_pressure
+    if (s.calories) metricCards.value[5].value = String(s.calories)
+  }
+
+  if (glucoseR.status === 'fulfilled' && Array.isArray(glucoseR.value) && glucoseR.value.length > 0) {
+    glucoseData.value = glucoseR.value.map(r => ({
+      time: r.time || r.measured_at || '',
+      value: r.value ?? r.glucose_value ?? 0,
+      tag: r.tag || (r.value <= 6.1 ? '正常' : r.value <= 7.8 ? '偏高' : '危险'),
+    }))
+  }
+
+  if (heartR.status === 'fulfilled' && Array.isArray(heartR.value) && heartR.value.length > 0) {
+    heartRateData.value = heartR.value.map(r => r.value ?? r.heart_rate ?? 70)
+  }
+
+  if (sleepR.status === 'fulfilled' && Array.isArray(sleepR.value) && sleepR.value.length > 0) {
+    sleepData.value = sleepR.value.map(r => ({
+      label: r.label || r.date || '',
+      total: r.total ?? r.total_hours ?? 7,
+      deep: r.deep ?? r.deep_hours ?? 2,
+      light: r.light ?? r.light_hours ?? 3,
+      rem: r.rem ?? r.rem_hours ?? 1.5,
+    }))
+  }
+
+  if (stepsR.status === 'fulfilled' && Array.isArray(stepsR.value) && stepsR.value.length > 0) {
+    stepsData.value = stepsR.value.map(r => ({
+      label: r.label || r.date || '',
+      steps: r.steps ?? r.step_count ?? 0,
+    }))
+  }
+
+  loading.value = false
+}
+
+watch(activePeriod, loadDeviceData)
+onMounted(loadDeviceData)
 </script>
 
 <style scoped>

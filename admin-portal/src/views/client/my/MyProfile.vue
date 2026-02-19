@@ -129,10 +129,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { profileApi } from '@/api/index'
 
 const editing = ref(false)
 const newAllergy = ref('')
+const loading = ref(true)
 
 const profile = reactive({
   name: '张三',
@@ -150,6 +152,36 @@ const profile = reactive({
   allergies: ['青霉素', '磺胺类'],
   emergencyContact: { name: '李四', relation: '配偶', phone: '13800138000' },
 })
+
+async function loadProfile() {
+  loading.value = true
+  try {
+    const data = await profileApi.getProfile()
+    if (data) {
+      profile.name = data.display_name || data.name || data.username || profile.name
+      profile.gender = data.gender || profile.gender
+      profile.age = data.age ?? profile.age
+      profile.height = String(data.height ?? profile.height)
+      profile.weight = String(data.weight ?? profile.weight)
+      profile.diagnosis = data.diagnosis || data.primary_diagnosis || profile.diagnosis
+      profile.diagnosisDate = data.diagnosis_date || data.diagnosisDate || profile.diagnosisDate
+      profile.medicalNotes = data.medical_notes || data.medicalNotes || profile.medicalNotes
+      if (Array.isArray(data.medications)) profile.medications = data.medications
+      if (Array.isArray(data.allergies)) profile.allergies = data.allergies
+      if (data.emergency_contact || data.emergencyContact) {
+        const ec = data.emergency_contact || data.emergencyContact
+        profile.emergencyContact.name = ec.name || profile.emergencyContact.name
+        profile.emergencyContact.relation = ec.relation || profile.emergencyContact.relation
+        profile.emergencyContact.phone = ec.phone || profile.emergencyContact.phone
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load profile, using mock', e)
+  }
+  loading.value = false
+}
+
+onMounted(loadProfile)
 
 const bmiValue = computed(() => {
   const h = parseFloat(profile.height) / 100
@@ -187,9 +219,17 @@ const addAllergy = () => {
   }
 }
 
-const saveProfile = () => {
+const saveProfile = async () => {
+  try {
+    await profileApi.updateProfile({
+      display_name: profile.name,
+      email: undefined, // only send if changed
+      phone: undefined,
+    })
+  } catch (e) {
+    console.warn('Failed to save profile', e)
+  }
   editing.value = false
-  // Would call API to save
 }
 </script>
 

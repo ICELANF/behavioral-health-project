@@ -55,7 +55,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { assessmentApi } from '@/api/index'
+
+const loading = ref(true)
 
 const pendingAssessments = ref([
   { id: 'phq9', name: 'PHQ-9 抑郁筛查', description: '共9题，约3分钟完成' },
@@ -70,6 +73,52 @@ const completedAssessments = ref([
   { id: 'r5', name: 'GAD-7 焦虑评估', date: '2024-12-20', shortDate: '12/20', score: 12, maxScore: 21, level: '中度焦虑', levelClass: 'level-moderate' },
   { id: 'r6', name: 'PHQ-9 抑郁筛查', date: '2024-12-15', shortDate: '12/15', score: 10, maxScore: 27, level: '轻度抑郁', levelClass: 'level-mild' },
 ])
+
+function scoreLevelClass(score, maxScore) {
+  const pct = score / maxScore
+  if (pct >= 0.7) return 'level-severe'
+  if (pct >= 0.4) return 'level-moderate'
+  if (pct >= 0.2) return 'level-mild'
+  return 'level-normal'
+}
+
+async function loadAssessments() {
+  loading.value = true
+  try {
+    const assignments = await assessmentApi.getAssignments()
+    if (Array.isArray(assignments) && assignments.length > 0) {
+      // Separate pending vs completed
+      const pending = []
+      const completed = []
+      for (const a of assignments) {
+        if (a.status === 'completed' || a.completed_at) {
+          const date = a.completed_at || a.date || ''
+          const shortDate = date ? `${new Date(date).getMonth()+1}/${new Date(date).getDate()}` : ''
+          completed.push({
+            id: String(a.id), name: a.assessment_name || a.name || '',
+            date, shortDate,
+            score: a.score ?? 0, maxScore: a.max_score ?? 100,
+            level: a.level || a.interpretation || '',
+            levelClass: scoreLevelClass(a.score ?? 0, a.max_score ?? 100),
+          })
+        } else {
+          pending.push({
+            id: String(a.id),
+            name: a.assessment_name || a.name || '',
+            description: a.description || '',
+          })
+        }
+      }
+      if (pending.length > 0) pendingAssessments.value = pending
+      if (completed.length > 0) completedAssessments.value = completed
+    }
+  } catch (e) {
+    console.warn('Failed to load assessments, using mock', e)
+  }
+  loading.value = false
+}
+
+onMounted(loadAssessments)
 
 const barColor = (score, max) => {
   const pct = score / max
