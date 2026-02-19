@@ -1244,17 +1244,36 @@ def coach_directory(
     total = query.count()
     coaches = query.offset(skip).limit(limit).all()
 
-    items = []
+    role_title_map = {
+        "coach": "健康教练", "promoter": "健康促进师",
+        "supervisor": "督导师", "master": "大师教练",
+    }
+    role_level_map = {
+        "coach": 4, "promoter": 5, "supervisor": 5, "master": 6,
+    }
+
+    coach_list = []
     for c in coaches:
         profile = c.profile or {}
-        items.append({
+        role_val = c.role.value if hasattr(c.role, 'value') else c.role
+        # 统计学员数 (referred_by)
+        student_count = 0
+        try:
+            student_count = db.query(User).filter(User.referred_by == c.id).count()
+        except Exception:
+            pass
+        coach_list.append({
             "id": c.id,
             "username": c.username,
             "full_name": c.full_name,
-            "role": c.role.value if hasattr(c.role, 'value') else c.role,
+            "role": role_val,
+            "title": role_title_map.get(role_val, "教练"),
+            "role_level": role_level_map.get(role_val, 4),
+            "student_count": student_count,
+            "rating": float(profile.get("rating", 4.8)),
             "specialties": profile.get("specialties", []),
             "bio": profile.get("bio", ""),
             "avatar_url": profile.get("avatar_url"),
         })
 
-    return {"total": total, "items": items}
+    return {"total": total, "coaches": coach_list}

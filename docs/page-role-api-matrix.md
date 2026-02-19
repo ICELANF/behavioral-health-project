@@ -86,13 +86,13 @@
 | 12 | `/programs` | 智能监测方案 | 已加入(进度)、可用模板 | 加入方案 | `GET /v1/programs/my` `GET /v1/programs/templates` `POST /v1/programs/enroll` | ✅真实 |
 | 13 | `/health-records` | 健康档案 | 今日仪表盘、血糖/血压/体重/心率/睡眠/运动 | 浏览 | `GET /v1/auth/me` `GET /v1/mp/device/dashboard/today` `GET /v1/mp/device/glucose` `GET /v1/mp/device/blood-pressure` `GET /v1/mp/device/weight` `GET /v1/mp/device/heart-rate` `GET /v1/mp/device/sleep` `GET /v1/mp/device/activity` | ✅真实 |
 | 14 | `/history-reports` | 历史报告 | 全量报告 | 浏览 | `GET /v1/reports/full` `GET /v1/dashboard/{uid}` | ✅真实 |
-| 15 | `/dashboard` | 仪表盘 | 仪表盘数据 | 浏览 | `GET /v1/dashboard/{uid}` `GET /v1/reports/full` | ✅真实 |
+| 15 | `/dashboard` | 仪表盘 | 仪表盘数据 | 浏览 | `GET /v1/dashboard/{uid}` `GET /v1/reports/full` | ⚠mock兜底 |
 | 16 | `/data-sync` | 数据同步 | 设备列表 | 同步/绑定设备 | `GET /v1/mp/device/devices` `POST /v1/mp/device/sync` `POST /v1/mp/device/devices/bind` | ✅真实 |
 | 17 | `/notifications` | 消息通知 | 消息/提醒/待评估/预警 | 标已读 | `GET /v1/chat/sessions` `GET /v1/messages/inbox` `GET /v1/messages/unread-count` `GET /v1/reminders` `GET /v1/assessment-assignments/my-pending` `GET /v1/mp/device/dashboard/today` `GET /v1/alerts/my` `POST /v1/messages/{id}/read` `POST /v1/alerts/{id}/read` | ✅真实 |
 | 18 | `/account-settings` | 账号设置 | 账号信息 | 修改密码 | `GET /v1/auth/me` `PUT /v1/auth/password` | ✅真实 |
 | 19 | `/my-credits` | 我的学分 | 总览(必修/选修)、模块进度、记录 | 加载更多 | `GET /v1/credits/my` `GET /v1/credits/my/records` | ✅真实 |
 | 20 | `/my-companions` | 我的同道者 | 统计、双标签(带教/导师) | 切标签、刷新 | `GET /v1/companions/stats` `GET /v1/companions/my-mentees` `GET /v1/companions/my-mentors` | ✅真实 |
-| 21 | `/promotion-progress` | 晋级进度 | 当前→下级、5轴雷达、各维度进度 | 申请晋级(满足时) | `GET /v1/promotion/progress` `GET /v1/promotion/check` `POST /v1/promotion/apply` | ✅真实 |
+| 21 | `/promotion-progress` | 晋级进度 | 当前→下级、5轴雷达、各维度进度 | 申请晋级(满足时) | `GET /v1/promotion/progress` `GET /v1/promotion/check` `POST /v1/promotion/apply` | ❌路径不匹配(P0) |
 | 22 | `/journey` | 健康成长伙伴 | AI健康叙事 | 刷新 | `GET /v1/messages/inbox` | ✅真实 |
 | 23 | `/contribute` | 知识投稿 | 投稿表单、我的投稿(审核状态) | 提交投稿 | `POST /v1/contributions/submit` `GET /v1/contributions/my` | ✅真实 |
 | 24 | `/expert-application-status` | 申请状态 | 入驻申请状态 | 浏览 | (相关API) | ✅真实 |
@@ -210,7 +210,11 @@
 
 ### 全mock页面清单 (优先接入真实API)
 
-- **H5**: ObserverHome, GrowerTodayHome
+- **H5**: ObserverHome, GrowerTodayHome, Profile (无API调用)
+- **H5 路径不匹配**: PromotionProgress (promotion_api 前缀 /v1 缺 /api, 4端点路径名不一致)
+- **H5 字段不匹配**: CoachDirectory (items vs coaches, 缺 title/student_count/rating)
+- **H5 端点不存在**: Home.vue 的 /latest_status (定义在根main.py, 服务器运行api.main)
+- **详见**: `docs/h5-page-audit.md` (43页逐页审计报告, 2026-02-19)
 - **Admin Client**: MyDevices, MyTrajectory, AssessmentList, AssessmentResult
 - **Coach**: CoachStudentList, ContentSharing, StudentAssessment, coach/Review
 - **Expert**: ExpertHome, MySupervision, MyReviews, MyResearch, MedicalAssistant

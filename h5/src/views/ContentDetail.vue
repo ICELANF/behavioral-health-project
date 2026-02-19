@@ -179,7 +179,7 @@ async function loadContent() {
 // 点赞
 async function toggleLike() {
   try {
-    await api.post(`/api/v1/content/detail/${contentType.value}/${contentId.value}/like`)
+    await api.post(`/api/v1/content/${contentId.value}/like`)
     liked.value = !liked.value
     likeCount.value += liked.value ? 1 : -1
   } catch {
@@ -190,7 +190,7 @@ async function toggleLike() {
 // 收藏
 async function toggleCollect() {
   try {
-    await api.post(`/api/v1/content/detail/${contentType.value}/${contentId.value}/collect`)
+    await api.post(`/api/v1/content/${contentId.value}/collect`)
     collected.value = !collected.value
     collectCount.value += collected.value ? 1 : -1
   } catch {
@@ -211,7 +211,7 @@ async function submitComment() {
   submittingComment.value = true
   try {
     const res: any = await api.post(
-      `/api/v1/content/detail/${contentType.value}/${contentId.value}/comment`,
+      `/api/v1/content/${contentId.value}/comment`,
       { content: text }
     )
     comments.value.unshift(res.comment || {

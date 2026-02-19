@@ -119,11 +119,9 @@ async function changePassword() {
 
   changingPw.value = true
   try {
-    await api.put('/api/v1/auth/password', null, {
-      params: {
-        old_password: pwForm.old_password,
-        new_password: pwForm.new_password
-      }
+    await api.put('/api/v1/auth/password', {
+      old_password: pwForm.old_password,
+      new_password: pwForm.new_password
     })
     showToast({ message: '密码修改成功', type: 'success' })
     pwForm.old_password = ''

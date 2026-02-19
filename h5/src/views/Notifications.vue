@@ -327,6 +327,14 @@ onMounted(async () => {
     loadingPendingAssess.value = false
   }
 
+  // 加载系统通知
+  try {
+    const res: any = await api.get('/api/v1/notifications/system?limit=20')
+    notifications.value = res.notifications || []
+  } catch {
+    notifications.value = []
+  }
+
   // 加载健康提醒（来自设备）
   try {
     const res: any = await api.get('/api/v1/mp/device/dashboard/today')

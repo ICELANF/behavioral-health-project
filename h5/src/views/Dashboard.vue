@@ -7,6 +7,12 @@
     </van-nav-bar>
 
     <div class="page-content">
+      <!-- 加载失败提示 -->
+      <van-empty v-if="loadError" description="数据加载失败">
+        <van-button type="primary" size="small" round @click="loadError = false; loadDashboardData()">重新加载</van-button>
+      </van-empty>
+
+      <template v-else>
       <!-- 综合评分卡片 -->
       <div class="score-cards">
         <div class="score-card overall">
@@ -60,6 +66,7 @@
           <van-empty v-else description="暂无报告数据" />
         </div>
       </van-popup>
+      </template>
     </div>
 
     <TabBar />
@@ -91,6 +98,7 @@ const dashboardData = ref<DashboardData>({
   risk_level: 'medium',
   recommendations: []
 })
+const loadError = ref(false)
 
 const currentDate = computed(() => {
   const now = new Date()
@@ -139,29 +147,8 @@ async function loadDashboardData() {
     setTimeout(() => initChart(), 100)
   } catch (error) {
     console.error('Failed to load dashboard:', error)
-    showToast('数据加载失败，显示模拟数据')
-    // 使用模拟数据
-    dashboardData.value = {
-      overall_score: 64,
-      stress_score: 55,
-      fatigue_score: 50,
-      trend: [
-        { date: '01-17', score: 58 },
-        { date: '01-18', score: 62 },
-        { date: '01-19', score: 60 },
-        { date: '01-20', score: 65 },
-        { date: '01-21', score: 63 },
-        { date: '01-22', score: 64 },
-        { date: '01-23', score: 64 }
-      ],
-      risk_level: 'medium',
-      recommendations: [
-        '压力指数偏高，建议增加放松活动',
-        '睡眠质量有待改善',
-        '建议每天进行 10 分钟深呼吸练习'
-      ]
-    }
-    setTimeout(() => initChart(), 100)
+    loadError.value = true
+    showToast('数据加载失败，请稍后重试')
   } finally {
     isLoading.value = false
     closeToast()

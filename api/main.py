@@ -806,6 +806,110 @@ async def comprehensive_health():
     return await full_health_check()
 
 
+# --- 健康状态概览接口 (Home.vue 使用) ---
+@app.get("/api/v1/health/latest-status")
+async def get_latest_health_status(current_user: User = Depends(get_current_user)):
+    """
+    获取用户最新健康状态概览。
+
+    返回最近血糖读数、趋势历史等，供首页健康卡片使用。
+    """
+    result = {
+        "current_glucose": 0,
+        "ai_content": "暂无数据",
+        "strategy_name": "等待数据",
+        "history": [],
+        "timestamps": [],
+    }
+    try:
+        from core.database import get_db_session
+        from sqlalchemy import desc
+        db = next(get_db_session())
+        try:
+            from core.models import DeviceData
+            # 获取最近血糖数据
+            readings = db.query(DeviceData).filter(
+                DeviceData.user_id == current_user.id,
+                DeviceData.data_type == "glucose",
+            ).order_by(desc(DeviceData.recorded_at)).limit(10).all()
+
+            if readings:
+                latest = readings[0]
+                result["current_glucose"] = float(latest.value) if latest.value else 0
+                result["history"] = [float(r.value) for r in reversed(readings) if r.value]
+                result["timestamps"] = [
+                    r.recorded_at.strftime("%H:%M") if r.recorded_at else ""
+                    for r in reversed(readings)
+                ]
+                result["ai_content"] = "数据已更新"
+                result["strategy_name"] = "持续监测"
+        except Exception:
+            pass
+        finally:
+            db.close()
+    except Exception:
+        pass
+
+    return result
+
+
+# --- 系统通知接口 ---
+@app.get("/api/v1/notifications/system")
+async def get_system_notifications(
+    limit: int = 20,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    获取系统通知列表。
+
+    聚合积分变动、里程碑达成、晋级提醒等系统级通知。
+    """
+    notifications = []
+    try:
+        from core.database import get_db_session
+        from sqlalchemy import desc
+        db = next(get_db_session())
+        try:
+            # 尝试从 credit_events 获取最近积分变动
+            from core.models import CreditEvent
+            events = db.query(CreditEvent).filter(
+                CreditEvent.user_id == current_user.id
+            ).order_by(desc(CreditEvent.created_at)).limit(limit).all()
+            for ev in events:
+                notifications.append({
+                    "type": "system",
+                    "title": f"积分变动: {ev.event_type}",
+                    "body": f"获得 {ev.points} 积分 — {ev.description or ''}",
+                    "created_at": ev.created_at.isoformat() if ev.created_at else None,
+                })
+        except Exception:
+            pass
+
+        try:
+            # 尝试从 user_milestones 获取里程碑
+            from core.models import UserMilestone
+            milestones = db.query(UserMilestone).filter(
+                UserMilestone.user_id == current_user.id
+            ).order_by(desc(UserMilestone.achieved_at)).limit(limit).all()
+            for m in milestones:
+                notifications.append({
+                    "type": "task",
+                    "title": f"里程碑达成: {m.milestone_key}",
+                    "body": m.display_message or "恭喜你达成了新的里程碑！",
+                    "created_at": m.achieved_at.isoformat() if m.achieved_at else None,
+                })
+        except Exception:
+            pass
+
+        # 按时间倒序排列
+        notifications.sort(key=lambda x: x.get("created_at") or "", reverse=True)
+        db.close()
+    except Exception:
+        pass
+
+    return {"notifications": notifications[:limit]}
+
+
 # --- 专家列表接口 ---
 @app.get("/api/v1/experts")
 async def get_experts(current_user: User = Depends(get_current_user)):

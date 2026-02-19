@@ -256,37 +256,31 @@ const isCustomMode = ref(false)
 const customQuestions = ref<any[]>([])
 const customAnswers = ref<Record<string, number>>({})
 
-// TTM7 21 题
-const questions = [
-  // S0 无知无觉
+// TTM7 21 题 — 从后端加载，硬编码作为兜底
+const FALLBACK_QUESTIONS = [
   { id: 'TTM01', group: '第1组', text: '我觉得我的生活方式没什么需要改变的' },
   { id: 'TTM02', group: '第1组', text: '我没有改变日常习惯的想法' },
   { id: 'TTM03', group: '第1组', text: '别人说我需要改变，但我不这样认为' },
-  // S1 强烈抗拒
   { id: 'TTM04', group: '第2组', text: '我知道有些习惯可能不好，但我不想改' },
   { id: 'TTM05', group: '第2组', text: '改变太难了，我还没准备好' },
   { id: 'TTM06', group: '第2组', text: '现在不是改变的好时机' },
-  // S2 被动承受
   { id: 'TTM07', group: '第3组', text: '我开始意识到改变可能对我有好处' },
   { id: 'TTM08', group: '第3组', text: '我在考虑是不是该做些改变' },
   { id: 'TTM09', group: '第3组', text: '我偶尔会尝试一些改变，但没有坚持' },
-  // S3 勉强接受
   { id: 'TTM10', group: '第4组', text: '我打算在近期开始做一些改变' },
   { id: 'TTM11', group: '第4组', text: '我在为改变做准备，比如收集信息' },
   { id: 'TTM12', group: '第4组', text: '我已经有了一个初步的行动计划' },
-  // S4 主动尝试
   { id: 'TTM13', group: '第5组', text: '我已经开始改变一些具体的习惯了' },
   { id: 'TTM14', group: '第5组', text: '我正在积极尝试新的健康行为' },
   { id: 'TTM15', group: '第5组', text: '虽然有困难，但我在坚持新习惯' },
-  // S5 规律践行
   { id: 'TTM16', group: '第6组', text: '新的健康习惯已经成为我日常的一部分' },
   { id: 'TTM17', group: '第6组', text: '我已经坚持改变超过一个月了' },
   { id: 'TTM18', group: '第6组', text: '即使遇到困难，我也能继续保持好习惯' },
-  // S6 内化为常
   { id: 'TTM19', group: '第7组', text: '健康的生活方式对我来说已经很自然' },
   { id: 'TTM20', group: '第7组', text: '我不再需要刻意提醒自己保持好习惯' },
   { id: 'TTM21', group: '第7组', text: '我经常帮助身边的人也开始改变' },
 ]
+const questions = ref(FALLBACK_QUESTIONS)
 
 const options = [
   { value: 1, label: '完全不符合' },
@@ -296,8 +290,8 @@ const options = [
   { value: 5, label: '非常符合' },
 ]
 
-const currentQuestion = computed(() => questions[currentIndex.value])
-const allAnswered = computed(() => questions.every(q => answers.value[q.id]))
+const currentQuestion = computed(() => questions.value[currentIndex.value])
+const allAnswered = computed(() => questions.value.every(q => answers.value[q.id]))
 
 const currentIndividualQuestion = computed(() => individualQuestions.value[currentIndex.value])
 const allIndividualAnswered = computed(() => individualQuestions.value.every(q => individualAnswers.value[q.id]))
@@ -328,7 +322,7 @@ const stageClass = computed(() => {
 function selectAnswer(value: number) {
   answers.value[currentQuestion.value.id] = value
   // 自动前进到下一题
-  if (currentIndex.value < questions.length - 1) {
+  if (currentIndex.value < questions.value.length - 1) {
     setTimeout(() => currentIndex.value++, 200)
   }
 }
@@ -412,6 +406,13 @@ async function submitAssessment() {
 
 // 加载教练推送的评估任务详情
 onMounted(async () => {
+  // 尝试从后端加载 TTM7 题目（支持后台管理）
+  try {
+    const qRes: any = await api.get('/api/v1/assessment/ttm7-questions')
+    if (qRes.questions?.length) {
+      questions.value = qRes.questions
+    }
+  } catch { /* 使用内置题目 */ }
   const aid = route.query.assignment_id
   if (aid) {
     assignmentId.value = Number(aid)

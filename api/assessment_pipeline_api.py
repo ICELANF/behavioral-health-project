@@ -70,6 +70,67 @@ class EvaluateRequest(BaseModel):
         }
 
 
+# ============ TTM7 题目端点 ============
+
+@router.get("/ttm7-questions")
+async def get_ttm7_questions():
+    """
+    获取 TTM7 改变阶段评估题目列表 (21 题, 7 组)。
+
+    无需认证，供 BehaviorAssessment.vue 动态加载。
+    """
+    try:
+        from core.baps.questionnaires import TTM7Questionnaire
+        q = TTM7Questionnaire()
+        items = q.get_items()
+        # 映射为前端期望的格式: {id, group, text}
+        GROUP_MAP = {
+            "precontemplation": "第1组", "resistance": "第2组",
+            "contemplation": "第3组", "preparation": "第4组",
+            "action": "第5组", "maintenance": "第6组",
+            "termination": "第7组",
+        }
+        questions = []
+        for item in items:
+            questions.append({
+                "id": item.get("id", ""),
+                "group": GROUP_MAP.get(item.get("dimension", ""), item.get("dimension", "")),
+                "text": item.get("text", ""),
+            })
+        return {"questions": questions, "total": len(questions), "source": "backend"}
+    except Exception:
+        pass
+
+    # Fallback: 内置标准 TTM7 题目
+    return {
+        "questions": [
+            {"id": "TTM01", "group": "第1组", "text": "我觉得我的生活方式没什么需要改变的"},
+            {"id": "TTM02", "group": "第1组", "text": "我没有改变日常习惯的想法"},
+            {"id": "TTM03", "group": "第1组", "text": "别人说我需要改变，但我不这样认为"},
+            {"id": "TTM04", "group": "第2组", "text": "我知道有些习惯可能不好，但我不想改"},
+            {"id": "TTM05", "group": "第2组", "text": "改变太难了，我还没准备好"},
+            {"id": "TTM06", "group": "第2组", "text": "现在不是改变的好时机"},
+            {"id": "TTM07", "group": "第3组", "text": "我开始意识到改变可能对我有好处"},
+            {"id": "TTM08", "group": "第3组", "text": "我在考虑是不是该做些改变"},
+            {"id": "TTM09", "group": "第3组", "text": "我偶尔会尝试一些改变，但没有坚持"},
+            {"id": "TTM10", "group": "第4组", "text": "我打算在近期开始做一些改变"},
+            {"id": "TTM11", "group": "第4组", "text": "我在为改变做准备，比如收集信息"},
+            {"id": "TTM12", "group": "第4组", "text": "我已经有了一个初步的行动计划"},
+            {"id": "TTM13", "group": "第5组", "text": "我已经开始改变一些具体的习惯了"},
+            {"id": "TTM14", "group": "第5组", "text": "我正在积极尝试新的健康行为"},
+            {"id": "TTM15", "group": "第5组", "text": "虽然有困难，但我在坚持新习惯"},
+            {"id": "TTM16", "group": "第6组", "text": "新的健康习惯已经成为我日常的一部分"},
+            {"id": "TTM17", "group": "第6组", "text": "我已经坚持改变超过一个月了"},
+            {"id": "TTM18", "group": "第6组", "text": "即使遇到困难，我也能继续保持好习惯"},
+            {"id": "TTM19", "group": "第7组", "text": "健康的生活方式对我来说已经很自然"},
+            {"id": "TTM20", "group": "第7组", "text": "我不再需要刻意提醒自己保持好习惯"},
+            {"id": "TTM21", "group": "第7组", "text": "我经常帮助身边的人也开始改变"},
+        ],
+        "total": 21,
+        "source": "builtin",
+    }
+
+
 # ============ 评估流水线端点 ============
 
 @router.post("/evaluate")

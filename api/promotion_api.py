@@ -3,12 +3,15 @@
 契约来源: Sheet④ 晋级契约 + Sheet⑩ P0 双轨晋级校验引擎
 
 端点清单:
-  GET  /v1/promotion/status        — 查询当前晋级状态
-  GET  /v1/promotion/gap-report    — 获取差距分析报告
-  POST /v1/promotion/check         — 手动触发晋级校验
-  POST /v1/promotion/ceremony      — 启动晋级仪式
-  GET  /v1/promotion/peers         — 同道者仪表盘
-  GET  /v1/promotion/thresholds    — 查看晋级条件
+  GET  /api/v1/promotion/status        — 查询当前晋级状态
+  GET  /api/v1/promotion/progress      — 别名: 查询晋级进度 (H5前端使用)
+  GET  /api/v1/promotion/gap-report    — 获取差距分析报告
+  GET  /api/v1/promotion/check         — 手动触发晋级校验
+  GET  /api/v1/promotion/rules         — 获取当前等级晋级规则 (H5前端使用)
+  POST /api/v1/promotion/ceremony      — 启动晋级仪式
+  POST /api/v1/promotion/apply         — 别名: 提交晋级申请 (H5前端使用)
+  GET  /api/v1/promotion/peers         — 同道者仪表盘
+  GET  /api/v1/promotion/thresholds    — 查看晋级条件
 """
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -18,7 +21,7 @@ from datetime import datetime
 
 from api.dependencies import get_current_user
 
-router = APIRouter(prefix="/v1/promotion", tags=["dual-track-promotion"])
+router = APIRouter(prefix="/api/v1/promotion", tags=["dual-track-promotion"])
 
 
 # ── 响应模型 ──
@@ -151,19 +154,44 @@ async def get_gap_report(
     return GapReportResponse(**gap_report)
 
 
+@router.get("/progress", response_model=PromotionStatusResponse)
+async def get_promotion_progress(
+    user=Depends(get_current_user),
+    orchestrator=Depends(get_promotion_orchestrator),
+):
+    """
+    获取晋级进度 (H5前端使用的别名, 等同于 /status)。
+    """
+    return await get_promotion_status(user=user, orchestrator=orchestrator)
+
+
+@router.get("/check", response_model=PromotionStatusResponse)
+async def manual_check_get(
+    user=Depends(get_current_user),
+    orchestrator=Depends(get_promotion_orchestrator),
+):
+    """
+    手动触发晋级校验 (GET, H5前端使用)。
+    """
+    return await _do_manual_check(user, orchestrator)
+
+
 @router.post("/check", response_model=PromotionStatusResponse)
 async def manual_check(
     user=Depends(get_current_user),
     orchestrator=Depends(get_promotion_orchestrator),
 ):
     """
-    手动触发晋级校验。
-    
-    通常系统在积分变动时自动触发, 此端点允许用户手动刷新。
+    手动触发晋级校验 (POST, 后台管理使用)。
     """
+    return await _do_manual_check(user, orchestrator)
+
+
+async def _do_manual_check(user, orchestrator):
+    """晋级校验内部实现。"""
     current_level = getattr(user, "level", "L0")
     result = await orchestrator.check_promotion_eligibility(user.id, current_level)
-    
+
     return PromotionStatusResponse(
         state=result.get("state", 1),
         state_name=result.get("state_name", "NORMAL_GROWTH"),
@@ -202,6 +230,83 @@ async def start_ceremony(
         )
     
     return CeremonyResponse(**result)
+
+
+@router.post("/apply", response_model=CeremonyResponse)
+async def apply_promotion(
+    user=Depends(get_current_user),
+    orchestrator=Depends(get_promotion_orchestrator),
+):
+    """
+    提交晋级申请 (H5前端使用的别名, 等同于 /ceremony)。
+    """
+    return await start_ceremony(user=user, orchestrator=orchestrator)
+
+
+@router.get("/rules")
+async def get_promotion_rules(
+    user=Depends(get_current_user),
+):
+    """
+    获取当前等级的晋级规则 (H5前端使用)。
+
+    返回当前等级到下一等级的晋级条件概览。
+    """
+    current_level = getattr(user, "level", "L0")
+    target = _next_level(current_level)
+
+    # 尝试从 promotion_service 获取真实阈值
+    try:
+        from core.promotion_service import PROMOTION_THRESHOLDS
+        key_map = {
+            "L0": "L0_TO_L1", "L1": "L1_TO_L2", "L2": "L2_TO_L3",
+            "L3": "L3_TO_L4", "L4": "L4_TO_L5",
+        }
+        promo_key = key_map.get(current_level.upper())
+        if promo_key and promo_key in PROMOTION_THRESHOLDS:
+            threshold = PROMOTION_THRESHOLDS[promo_key]
+            pts = threshold.points
+            grw = threshold.growth
+            return {
+                "current_level": current_level,
+                "target_level": target,
+                "promotion_key": promo_key,
+                "points_threshold": {
+                    "growth": pts.growth,
+                    "contribution": pts.contribution,
+                    "influence": pts.influence,
+                },
+                "growth_requirements": {
+                    "peer_required": grw.peer_req.total_required,
+                    "min_period_months": grw.min_period_months,
+                },
+                "ceremony_name": grw.ceremony_name,
+            }
+    except (ImportError, Exception):
+        pass
+
+    # Fallback: 返回基础规则概览
+    _BASIC_RULES = {
+        "L0": {"growth": 100, "contribution": 0, "influence": 0, "peer_required": 0},
+        "L1": {"growth": 500, "contribution": 50, "influence": 0, "peer_required": 0},
+        "L2": {"growth": 800, "contribution": 200, "influence": 50, "peer_required": 4},
+        "L3": {"growth": 1500, "contribution": 600, "influence": 200, "peer_required": 4},
+        "L4": {"growth": 3000, "contribution": 1500, "influence": 600, "peer_required": 4},
+    }
+    rules = _BASIC_RULES.get(current_level.upper(), {})
+    return {
+        "current_level": current_level,
+        "target_level": target,
+        "promotion_key": f"{current_level}_TO_{target}",
+        "points_threshold": {
+            "growth": rules.get("growth", 0),
+            "contribution": rules.get("contribution", 0),
+            "influence": rules.get("influence", 0),
+        },
+        "growth_requirements": {
+            "peer_required": rules.get("peer_required", 0),
+        },
+    }
 
 
 @router.get("/peers", response_model=PeerDashboardResponse)

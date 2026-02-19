@@ -388,7 +388,7 @@ const healthData = reactive({
 async function refreshHealth() {
   try {
     const [statusRes, progressRes] = await Promise.all([
-      api.get('/latest_status').catch(() => null),
+      api.get('/api/v1/health/latest-status').catch(() => null),
       api.get('/api/v1/mp/progress/summary').catch(() => null),
     ])
     const cg = (statusRes as any)?.current_glucose || 0
