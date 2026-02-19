@@ -312,7 +312,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
-import { expertApi } from '@/api/expert-api'
+import { expertFlywheelApi } from '@/api/expert-api'
+import request from '@/api/request'
 import {
   BellOutlined,
   DashboardOutlined,
@@ -366,62 +367,54 @@ const upcomingLives = ref<any[]>([])
 // 待审案例
 const pendingCases = ref<any[]>([])
 
-// 加载数据
+// 加载数据 — rewired to existing real endpoints
 async function loadExpertData() {
-  const id = expertInfo.id
-  const [coachesResult, reviewsResult, sessionsResult] = await Promise.allSettled([
-    expertApi.getSupervisedCoaches(id),
-    expertApi.getReviewQueue(id),
-    expertApi.getSupervisionSessions(id),
+  const [coachesResult, reviewsResult, promotionResult] = await Promise.allSettled([
+    request.get('/v1/admin/coaches'),  // admin endpoint for coaches list
+    expertFlywheelApi.getAuditQueue(),  // real audit queue
+    request.get('/v1/promotion/applications', { params: { status: 'pending' } }),
   ])
 
   if (coachesResult.status === 'fulfilled') {
-    const coaches = coachesResult.value.coaches || []
-    supervisedCoaches.value = coaches.map((c: any) => ({
-      id: c.id, name: c.name, avatar: c.avatar || '', level: c.level || 'L1',
-      studentCount: c.student_count ?? c.studentCount ?? 0,
-      caseCount: c.case_count ?? c.caseCount ?? 0,
+    const coaches = coachesResult.value.data?.items || coachesResult.value.data || []
+    supervisedCoaches.value = (Array.isArray(coaches) ? coaches : []).slice(0, 10).map((c: any) => ({
+      id: c.id, name: c.full_name || c.username || '', avatar: c.avatar || '', level: `L${c.level || 0}`,
+      studentCount: c.student_count ?? 0,
+      caseCount: c.case_count ?? 0,
     }))
     overviewStats.coachesSupervised = supervisedCoaches.value.length
   } else {
-    console.warn('Failed to load supervised coaches:', coachesResult.reason)
+    console.warn('Failed to load coaches:', coachesResult.reason)
   }
 
   if (reviewsResult.status === 'fulfilled') {
     const items = reviewsResult.value.items || []
-    pendingApplications.value = items
-      .filter((r: any) => r.type === 'promotion')
-      .map((r: any) => ({
-        id: r.id, coachName: r.submitter || r.coach_name, avatar: '',
-        currentLevel: r.current_level || '', targetLevel: r.target_level || '',
-        appliedAt: r.submit_date || r.submitDate || '',
-        requirements: r.requirements || { courses: false, exams: false, cases: false, mentoring: false },
-      }))
-    pendingCases.value = items
-      .filter((r: any) => r.type === 'case')
-      .map((r: any) => ({
-        id: r.id, title: r.title, coachName: r.submitter, submittedAt: r.submit_date || r.submitDate || '',
-        type: r.urgency === 'high' ? 'learning' : 'success', summary: r.description || '',
-      }))
-    overviewStats.pendingReviews = pendingApplications.value.length
+    pendingCases.value = items.map((r: any) => ({
+      id: r.id, title: r.title, coachName: r.userName || '', submittedAt: r.time || '',
+      type: r.risk === 'high' || r.risk === 'critical' ? 'learning' : 'success',
+      summary: r.description || '',
+    }))
     overviewStats.casesToReview = pendingCases.value.length
   } else {
-    console.warn('Failed to load review queue:', reviewsResult.reason)
+    console.warn('Failed to load audit queue:', reviewsResult.reason)
   }
 
-  if (sessionsResult.status === 'fulfilled') {
-    const sessions = sessionsResult.value.sessions || []
-    upcomingLives.value = sessions
-      .filter((s: any) => s.status !== '已完成')
-      .map((s: any) => ({
-        id: s.id, title: s.topic || s.title || '', cover: '',
-        status: s.status === '待进行' ? 'scheduled' : 'live',
-        scheduledAt: s.date || '', level: s.coach || '',
-      }))
-    overviewStats.upcomingLives = upcomingLives.value.length
+  if (promotionResult.status === 'fulfilled') {
+    const apps = promotionResult.value.data?.applications || []
+    pendingApplications.value = apps.map((r: any) => ({
+      id: r.application_id, coachName: r.full_name || r.username || '', avatar: '',
+      currentLevel: r.current_level || '', targetLevel: r.target_level || '',
+      appliedAt: r.applied_at || '',
+      requirements: { courses: false, exams: false, cases: false, mentoring: false },
+    }))
+    overviewStats.pendingReviews = pendingApplications.value.length
   } else {
-    console.warn('Failed to load supervision sessions:', sessionsResult.reason)
+    console.warn('Failed to load promotion applications:', promotionResult.reason)
   }
+
+  // Lives: no real backend — show empty
+  upcomingLives.value = []
+  overviewStats.upcomingLives = 0
 }
 
 onMounted(loadExpertData)
@@ -460,7 +453,7 @@ const approveApplication = (application: typeof pendingApplications.value[0]) =>
     content: `确定通过 ${application.coachName} 的 ${application.targetLevel} 晋级申请吗？`,
     async onOk() {
       try {
-        await expertApi.submitReview(application.id, { approved: true, comment: '' })
+        await request.post(`/v1/promotion/review/${application.id}`, { approved: true, reason: '' })
         message.success('已通过晋级申请')
         pendingApplications.value = pendingApplications.value.filter(a => a.id !== application.id)
         overviewStats.pendingReviews = pendingApplications.value.length
@@ -478,7 +471,7 @@ const rejectApplication = (application: typeof pendingApplications.value[0]) => 
     content: `确定拒绝 ${application.coachName} 的晋级申请吗？`,
     async onOk() {
       try {
-        await expertApi.submitReview(application.id, { approved: false, comment: '' })
+        await request.post(`/v1/promotion/review/${application.id}`, { approved: false, reason: '' })
         message.info('已拒绝晋级申请')
         pendingApplications.value = pendingApplications.value.filter(a => a.id !== application.id)
         overviewStats.pendingReviews = pendingApplications.value.length

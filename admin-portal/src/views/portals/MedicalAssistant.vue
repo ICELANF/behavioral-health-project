@@ -117,10 +117,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { UserOutlined, CheckOutlined, RightOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import request from '@/api/request'
 
 const router = useRouter()
 const patientSearch = ref('')
@@ -146,6 +147,35 @@ const todayTodos = ref<{ id: number; title: string; patient: string; time: strin
 const pendingCount = computed(() => todayTodos.value.filter(t => !t.done).length)
 
 const recentPrescriptions = ref<{ id: number; patient: string; name: string; date: string; status: string; statusLabel: string }[]>([])
+
+const statusLabelMap: Record<string, string> = { active: '执行中', completed: '已完成', paused: '已暂停', pending: '待开始' }
+
+onMounted(async () => {
+  // Load today's todos from daily-tasks API
+  try {
+    const res = await request.get('v1/daily-tasks/today')
+    const tasks = res.data?.tasks || (Array.isArray(res.data) ? res.data : [])
+    todayTodos.value = tasks.slice(0, 5).map((t: any) => ({
+      id: t.id, title: t.title || t.tag || '任务',
+      patient: '', time: t.due_time || '',
+      done: t.done ?? t.completed ?? false,
+      type: t.tag || 'task', typeLabel: t.tag || '任务',
+    }))
+  } catch { /* API unavailable — keep empty */ }
+
+  // Load recent prescriptions from coach review queue
+  try {
+    const res = await request.get('v1/coach/review-queue')
+    const items = res.data?.items || res.data || []
+    recentPrescriptions.value = (Array.isArray(items) ? items : []).slice(0, 5).map((rx: any) => ({
+      id: rx.id, patient: rx.user_name || rx.patient || '',
+      name: rx.title || rx.name || '行为处方',
+      date: (rx.created_at || rx.date || '').slice(0, 10),
+      status: rx.status || 'active',
+      statusLabel: statusLabelMap[rx.status] || rx.status || '执行中',
+    }))
+  } catch { /* API unavailable — keep empty */ }
+})
 
 // ---- 患者搜索 → 学员管理页 ----
 const onPatientSearch = (value: string) => {

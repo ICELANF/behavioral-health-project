@@ -231,7 +231,7 @@ import { HealthScoreCircle, TrendChart, AchievementBadge } from '@/components/he
 
 const router = useRouter()
 
-const patientId = localStorage.getItem('admin_user_id') || '0'
+// patientId no longer needed — real endpoints are JWT-scoped
 const loading = ref(true)
 
 // 周期选择
@@ -343,87 +343,105 @@ const loadData = async () => {
   try {
     loading.value = true
 
-    // 并行加载数据
-    const [scoreData, trendsGlucose, trendsWeight, exerciseData, achievementsData, summaryData] = await Promise.all([
-      healthApi.getHealthScore(patientId, selectedPeriod.value),
-      healthApi.getTrends(patientId, 'glucose', selectedPeriod.value),
-      healthApi.getTrends(patientId, 'weight', selectedPeriod.value),
-      healthApi.getExerciseHistory(patientId, { period: selectedPeriod.value === 'week' ? '7d' : selectedPeriod.value === 'month' ? '30d' : '90d' }),
-      healthApi.getAchievements(patientId),
-      healthApi.getAISummary(patientId, selectedPeriod.value === 'quarter' ? 'month' : selectedPeriod.value)
+    const periodDays = selectedPeriod.value === 'week' ? '7d' : selectedPeriod.value === 'month' ? '30d' : '90d'
+
+    // 并行加载数据（JWT-scoped, no patientId）
+    const [scoreRes, glucoseRes, weightRes, exerciseRes, achieveRes, summaryRes] = await Promise.allSettled([
+      healthApi.getHealthScore(),
+      healthApi.getTrends('glucose', { period: selectedPeriod.value }),
+      healthApi.getTrends('weight', { period: selectedPeriod.value }),
+      healthApi.getExerciseHistory({ period: periodDays }),
+      healthApi.getAchievements(),
+      healthApi.getAISummary(),
     ])
 
     // 更新健康评分
-    if (scoreData) {
-      overallScore.value = scoreData.overall
-      achievementRate.value = scoreData.overall
-      streakDays.value = scoreData.streak_days ?? scoreData.streakDays ?? 0
-      scoreTrendDiff.value = scoreData.trend_diff ?? scoreData.trendDiff ?? 0
+    if (scoreRes.status === 'fulfilled' && scoreRes.value) {
+      const sd = scoreRes.value
+      overallScore.value = sd.overall_score ?? sd.overall ?? sd.score ?? 0
+      achievementRate.value = overallScore.value
+      streakDays.value = sd.streak_days ?? sd.streakDays ?? 0
+      scoreTrendDiff.value = sd.trend_diff ?? sd.trendDiff ?? 0
     }
 
     // 更新血糖趋势
-    if (trendsGlucose?.data) {
-      glucoseData.value = trendsGlucose.data.map((d: any) => d.value)
-      dateLabels.value = trendsGlucose.data.map((d: any) => d.date)
-      glucoseStats.value = {
-        average: trendsGlucose.average.toFixed(1),
-        max: trendsGlucose.max.toFixed(1),
-        min: trendsGlucose.min.toFixed(1)
-      }
-      glucoseTrend.value = {
-        status: trendsGlucose.trend === 'improving' ? 'good' : 'warning',
-        text: trendsGlucose.trend === 'improving' ? '平稳下降 ✓' : trendsGlucose.trend === 'declining' ? '需要注意 ⚠' : '保持稳定'
+    if (glucoseRes.status === 'fulfilled' && glucoseRes.value) {
+      const tg = glucoseRes.value
+      const records = tg.data || tg.records || tg.items || (Array.isArray(tg) ? tg : [])
+      if (records.length > 0) {
+        glucoseData.value = records.map((d: any) => d.value || d.glucose || 0)
+        dateLabels.value = records.map((d: any) => (d.date || d.measured_at || '').slice(5, 10))
+        const vals = glucoseData.value.filter((v: number) => v > 0)
+        const avg = vals.length ? vals.reduce((s: number, v: number) => s + v, 0) / vals.length : 0
+        glucoseStats.value = {
+          average: avg.toFixed(1),
+          max: vals.length ? Math.max(...vals).toFixed(1) : '--',
+          min: vals.length ? Math.min(...vals).toFixed(1) : '--',
+        }
+        glucoseTrend.value = {
+          status: tg.trend === 'improving' ? 'good' : 'warning',
+          text: tg.trend === 'improving' ? '平稳下降 ✓' : tg.trend === 'declining' ? '需要注意 ⚠' : '保持稳定',
+        }
       }
     }
 
     // 更新体重趋势
-    if (trendsWeight?.data) {
-      weightData.value = trendsWeight.data.map((d: any) => d.value)
-      const first = trendsWeight.data[0]?.value || 0
-      const last = trendsWeight.data[trendsWeight.data.length - 1]?.value || 0
-      const lost = first - last
-      weightStats.value = {
-        current: `${last.toFixed(1)}kg`,
-        target: trendsWeight.target ? `${trendsWeight.target}kg` : '--',
-        lost: `${lost.toFixed(1)}kg`
-      }
-      weightTrend.value = {
-        status: lost > 0 ? 'good' : 'warning',
-        text: lost > 0 ? `已减 ${lost.toFixed(1)}kg ✓` : '保持中'
+    if (weightRes.status === 'fulfilled' && weightRes.value) {
+      const tw = weightRes.value
+      const records = tw.data || tw.records || tw.items || (Array.isArray(tw) ? tw : [])
+      if (records.length > 0) {
+        weightData.value = records.map((d: any) => d.value || d.weight || 0)
+        const first = weightData.value[0] || 0
+        const last = weightData.value[weightData.value.length - 1] || 0
+        const lost = first - last
+        weightStats.value = {
+          current: `${last.toFixed(1)}kg`,
+          target: tw.target ? `${tw.target}kg` : '--',
+          lost: `${lost.toFixed(1)}kg`,
+        }
+        weightTrend.value = {
+          status: lost > 0 ? 'good' : 'warning',
+          text: lost > 0 ? `已减 ${lost.toFixed(1)}kg ✓` : '保持中',
+        }
       }
     }
 
     // 更新运动数据
-    if (exerciseData?.records) {
-      const weeklyData = exerciseData.records.slice(-7).map((r: any, i: number) => ({
+    if (exerciseRes.status === 'fulfilled' && exerciseRes.value) {
+      const ex = exerciseRes.value
+      const records = ex.records || ex.items || (Array.isArray(ex) ? ex : [])
+      const weeklyData = records.slice(-7).map((r: any, i: number) => ({
         label: ['一', '二', '三', '四', '五', '六', '日'][i] || `${i + 1}`,
-        minutes: r.duration || 0
+        minutes: r.duration || r.minutes || 0,
       }))
       const total = weeklyData.reduce((sum: number, d: any) => sum + d.minutes, 0)
       exerciseStats.value = {
         weeklyTotal: total,
         dailyTarget: 30,
         completedDays: weeklyData.filter((d: any) => d.minutes > 0).length,
-        dailyAverage: Math.round(total / 7),
-        weeklyData
+        dailyAverage: Math.round(total / Math.max(weeklyData.length, 1)),
+        weeklyData,
       }
     }
 
-    // 更新成就徽章
-    if (achievementsData?.achievements) {
-      recentAchievements.value = achievementsData.achievements.slice(0, 4).map((a: any) => ({
+    // 更新成就徽章 (credits/my returns credit records)
+    if (achieveRes.status === 'fulfilled' && achieveRes.value) {
+      const ad = achieveRes.value
+      const items = ad.achievements || ad.records || ad.items || (Array.isArray(ad) ? ad : [])
+      recentAchievements.value = items.slice(0, 4).map((a: any) => ({
         id: a.id,
-        icon: a.icon,
-        name: a.name,
-        unlocked: a.unlocked,
-        unlockedDate: a.unlockedAt ? new Date(a.unlockedAt).toISOString() : undefined
+        icon: a.icon || '🏅',
+        name: a.name || a.description || a.event_type || '',
+        unlocked: a.unlocked ?? true,
+        unlockedDate: a.unlockedAt || a.created_at || undefined,
       }))
     }
 
     // 更新AI总结
-    if (summaryData) {
-      aiSummary.value = summaryData.summary || '暂无总结'
-      aiSuggestions.value = summaryData.suggestions || []
+    if (summaryRes.status === 'fulfilled' && summaryRes.value) {
+      const sm = summaryRes.value
+      aiSummary.value = sm.tip || sm.summary || sm.content || '暂无总结'
+      aiSuggestions.value = sm.suggestions || []
     }
 
   } catch (error) {

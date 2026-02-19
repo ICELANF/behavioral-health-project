@@ -90,7 +90,9 @@
 
     <!-- 直播列表 -->
     <a-card>
+      <a-empty v-if="!loading && lives.length === 0" description="直播功能即将上线，敬请期待" style="padding: 60px 0" />
       <a-table
+        v-else
         :dataSource="filteredLives"
         :columns="columns"
         :loading="loading"
@@ -319,8 +321,9 @@ const loadLives = async () => {
   try {
     const res = await request.get('v1/live/sessions')
     lives.value = res.data?.items || res.data || []
-  } catch (e) {
-    console.error('加载直播列表失败:', e)
+  } catch {
+    // Live streaming backend not yet available — show empty state
+    lives.value = []
   } finally {
     loading.value = false
   }

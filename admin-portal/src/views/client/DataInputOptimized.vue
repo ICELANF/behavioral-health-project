@@ -295,7 +295,7 @@ import { BigNumberInput } from '@/components/health'
 
 const router = useRouter()
 
-const patientId = localStorage.getItem('admin_user_id') || '0'
+// patientId no longer needed — real endpoints are JWT-scoped
 
 // 当前步骤
 const step = ref(1)
@@ -375,15 +375,20 @@ const weightTrend = computed(() => {
 const loadHistoricalData = async (type: string) => {
   try {
     if (type === 'glucose') {
-      const data = await healthApi.getGlucoseHistory(patientId, { period: '7d' })
-      if (data.average) {
+      const data = await healthApi.getGlucoseHistory({ period: '7d' })
+      const records = data?.records || data?.items || (Array.isArray(data) ? data : [])
+      if (data?.average) {
         historicalAverage.value.glucose = data.average.toFixed(1)
+      } else if (records.length > 0) {
+        const avg = records.reduce((s: number, r: any) => s + (r.value || 0), 0) / records.length
+        historicalAverage.value.glucose = avg.toFixed(1)
       }
     } else if (type === 'weight') {
-      const data = await healthApi.getWeightHistory(patientId, { period: '7d' })
-      if (data.records && data.records.length > 0) {
-        const lastRecord = data.records[data.records.length - 1]
-        historicalAverage.value.weight = lastRecord.value.toFixed(1)
+      const data = await healthApi.getWeightHistory({ period: '7d' })
+      const records = data?.records || data?.items || (Array.isArray(data) ? data : [])
+      if (records.length > 0) {
+        const lastRecord = records[records.length - 1]
+        historicalAverage.value.weight = (lastRecord.value || lastRecord.weight || 0).toFixed(1)
       }
     }
   } catch (error) {
@@ -444,11 +449,10 @@ const submitData = async () => {
     // 根据类型调用不同的 API
     switch (selectedType.value) {
       case 'glucose':
-        await healthApi.recordGlucose(patientId, {
+        await healthApi.recordGlucose({
           value: parseFloat(String(inputData.value.glucoseValue)),
-          unit: 'mmol/L',
-          timestamp,
-          tag: inputData.value.glucoseTime as any
+          measurement_time: timestamp,
+          meal_tag: inputData.value.glucoseTime,
         })
         trendData.value = {
           current: `${inputData.value.glucoseValue} mmol/L`,
@@ -459,11 +463,9 @@ const submitData = async () => {
         break
 
       case 'weight':
-        await healthApi.recordWeight(patientId, {
+        await healthApi.recordWeight({
           value: parseFloat(String(inputData.value.weightValue)),
-          unit: 'kg',
-          timestamp,
-          bmi: parseFloat(String(inputData.value.weightValue)) / 1.75 / 1.75
+          measurement_time: timestamp,
         })
         trendData.value = {
           current: `${inputData.value.weightValue} kg`,
@@ -474,10 +476,10 @@ const submitData = async () => {
         break
 
       case 'bloodPressure':
-        await healthApi.recordBloodPressure(patientId, {
+        await healthApi.recordBloodPressure({
           systolic: parseInt(inputData.value.systolic),
           diastolic: parseInt(inputData.value.diastolic),
-          timestamp
+          measurement_time: timestamp,
         })
         trendData.value = {
           current: `${inputData.value.systolic}/${inputData.value.diastolic}`,
@@ -488,11 +490,10 @@ const submitData = async () => {
         break
 
       case 'exercise':
-        await healthApi.recordExercise(patientId, {
+        await healthApi.recordExercise({
           type: inputData.value.exerciseType,
           duration: parseInt(String(inputData.value.exerciseDuration)),
-          timestamp,
-          calories: parseInt(String(inputData.value.exerciseDuration)) * 8
+          note: `${inputData.value.exerciseType} ${inputData.value.exerciseDuration}分钟`,
         })
         trendData.value = {
           current: `${inputData.value.exerciseDuration} 分钟`,
@@ -503,10 +504,9 @@ const submitData = async () => {
         break
 
       case 'mood':
-        await healthApi.recordMood(patientId, {
+        await healthApi.recordMood({
           score: inputData.value.moodLevel,
           note: inputData.value.moodNote,
-          timestamp
         })
         trendData.value = {
           current: moodOptions.find(m => m.value === inputData.value.moodLevel)?.label || '',
@@ -517,10 +517,9 @@ const submitData = async () => {
         break
 
       case 'meal':
-        await healthApi.recordMeal(patientId, {
-          type: 'lunch',
+        await healthApi.recordMeal({
           description: inputData.value.mealDescription,
-          timestamp
+          note: inputData.value.mealDescription,
         })
         trendData.value = {
           current: '已记录',

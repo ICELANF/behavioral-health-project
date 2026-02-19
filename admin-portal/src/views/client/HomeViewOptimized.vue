@@ -206,7 +206,7 @@ const healthScore = ref(0)
 const streakDays = ref(0)
 const loading = ref(true)
 
-const patientId = localStorage.getItem('admin_user_id') || '0'
+// patientId no longer needed — real endpoints are JWT-scoped
 
 // 问候语
 const greetingText = computed(() => {
@@ -234,7 +234,7 @@ const toggleTask = async (task: Task) => {
   task.completed = !task.completed
   if (task.completed) {
     try {
-      await healthApi.completeTask(patientId, String(task.id))
+      await healthApi.completeTask(String(task.id))
       message.success({
         content: '🎉 太棒了！任务完成 +10积分',
         duration: 2
@@ -292,64 +292,71 @@ const loadData = async () => {
   try {
     loading.value = true
 
-    // 并行加载多个数据
-    const [scoreData, snapshotData, tasksData, summaryData] = await Promise.all([
-      healthApi.getHealthScore(patientId, 'week'),
-      healthApi.getHealthSnapshot(patientId),
-      healthApi.getDailyTasks(patientId),
-      healthApi.getAISummary(patientId, 'week')
+    // 并行加载多个数据（JWT-scoped, no patientId）
+    const [scoreData, snapshotData, tasksData, summaryData] = await Promise.allSettled([
+      healthApi.getHealthScore(),
+      healthApi.getHealthSnapshot(),
+      healthApi.getDailyTasks(),
+      healthApi.getAISummary(),
     ])
 
     // 更新健康评分
-    if (scoreData) {
-      healthScore.value = scoreData.overall
-      streakDays.value = scoreData.streak_days ?? scoreData.streakDays ?? 0
+    if (scoreData.status === 'fulfilled' && scoreData.value) {
+      const sd = scoreData.value
+      healthScore.value = sd.overall_score ?? sd.overall ?? sd.score ?? 0
+      streakDays.value = sd.streak_days ?? sd.streakDays ?? 0
     }
 
-    // 更新健康快照
-    if (snapshotData) {
-      bloodGlucose.value = {
-        fasting: snapshotData.glucose.value.toString(),
-        status: snapshotData.glucose.status
+    // 更新健康快照 (dashboard/today response shape)
+    if (snapshotData.status === 'fulfilled' && snapshotData.value) {
+      const snap = snapshotData.value
+      if (snap.glucose_latest != null || snap.glucose?.value != null) {
+        bloodGlucose.value = {
+          fasting: String(snap.glucose_latest ?? snap.glucose?.value ?? '--'),
+          status: (snap.glucose?.status) || 'good',
+        }
       }
-      weight.value = {
-        current: snapshotData.weight.value.toString(),
-        status: 'good'
+      if (snap.weight_latest != null || snap.weight?.value != null) {
+        weight.value = {
+          current: String(snap.weight_latest ?? snap.weight?.value ?? '--'),
+          status: 'good',
+        }
       }
-      exercise.value = {
-        weeklyMinutes: snapshotData.exercise.todayMinutes * 7, // 估算周总量
-        targetMinutes: snapshotData.exercise.weeklyGoal
+      if (snap.exercise || snap.activity) {
+        const ex = snap.exercise || snap.activity || {}
+        exercise.value = {
+          weeklyMinutes: (ex.todayMinutes ?? ex.today_minutes ?? 0) * 7,
+          targetMinutes: ex.weeklyGoal ?? ex.weekly_goal ?? 150,
+        }
       }
     }
 
     // 更新任务列表（只显示前3个高优先级任务）
-    if (tasksData?.tasks) {
+    const rawTasks = tasksData.status === 'fulfilled' ? tasksData.value : null
+    const taskList = rawTasks?.tasks || (Array.isArray(rawTasks) ? rawTasks : [])
+    if (taskList.length > 0) {
       const emojiMap: Record<string, string> = {
-        glucose: '🩸',
-        weight: '⚖️',
-        exercise: '🏃',
-        mood: '😊',
-        assessment: '📋'
+        glucose: '🩸', weight: '⚖️', exercise: '🏃',
+        mood: '😊', assessment: '📋', nutrition: '🍎',
+        emotion: '💛', sleep: '😴',
       }
-
-      priorityTasks.value = tasksData.tasks
-        .filter((t: any) => t.priority === 'high' || t.priority === 'medium')
+      priorityTasks.value = taskList
         .slice(0, 3)
         .map((t: any) => ({
           id: t.id,
-          name: t.title,
+          name: t.title || t.tag || '任务',
           hint: t.dueTime ? `建议在 ${t.dueTime} 前完成` : undefined,
-          emoji: emojiMap[t.type] || '📝',
-          completed: t.completed
+          emoji: emojiMap[t.type || t.tag] || '📝',
+          completed: t.completed ?? t.done ?? false,
         }))
     }
 
     // 更新每日提示
-    if (summaryData?.summary) {
-      dailyTip.value = {
-        icon: '💡',
-        title: 'AI 健康建议',
-        content: summaryData.summary
+    if (summaryData.status === 'fulfilled' && summaryData.value) {
+      const tip = summaryData.value
+      const tipText = tip.tip || tip.summary || tip.content || ''
+      if (tipText) {
+        dailyTip.value = { icon: '💡', title: 'AI 健康建议', content: tipText }
       }
     }
 

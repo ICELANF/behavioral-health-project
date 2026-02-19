@@ -114,93 +114,83 @@ export interface HealthSnapshot {
   lastUpdate: string
 }
 
-// ============ API 方法 ============
+// ============ API 方法 — 对接真实后端 ============
+// All methods are JWT-scoped (no patientId needed)
+
+const periodToDays: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90, week: 7, month: 30, quarter: 90 }
 
 export const healthApi = {
-  async recordGlucose(patientId: string, data: Omit<GlucoseRecord, 'id'>) {
-    const res = await request.post(`/v1/health/${patientId}/glucose`, data)
+  // ── Data Recording ──
+  async recordGlucose(data: any) {
+    const res = await request.post('/v1/mp/device/glucose/manual', data)
+    return res.data
+  },
+  async recordWeight(data: any) {
+    const res = await request.post('/v1/mp/device/weight', data)
+    return res.data
+  },
+  async recordBloodPressure(data: any) {
+    const res = await request.post('/v1/mp/device/blood-pressure', data)
+    return res.data
+  },
+  async recordExercise(data: any) {
+    const res = await request.post('/v1/daily-tasks/quick-checkin', { domain: 'exercise', ...data })
+    return res.data
+  },
+  async recordMood(data: any) {
+    const res = await request.post('/v1/daily-tasks/quick-checkin', { domain: 'emotion', ...data })
+    return res.data
+  },
+  async recordMeal(data: any) {
+    const res = await request.post('/v1/daily-tasks/quick-checkin', { domain: 'nutrition', ...data })
     return res.data
   },
 
-  async recordWeight(patientId: string, data: Omit<WeightRecord, 'id'>) {
-    const res = await request.post(`/v1/health/${patientId}/weight`, data)
+  // ── Data Retrieval ──
+  async getGlucoseHistory(params: { period?: string } = {}) {
+    const days = periodToDays[params.period || '7d'] || 7
+    const res = await request.get('/v1/mp/device/glucose', { params: { days } })
+    return res.data
+  },
+  async getWeightHistory(params: { period?: string } = {}) {
+    const days = periodToDays[params.period || '7d'] || 7
+    const res = await request.get('/v1/mp/device/weight', { params: { days } })
+    return res.data
+  },
+  async getExerciseHistory(params: { period?: string } = {}) {
+    const days = periodToDays[params.period || '7d'] || 7
+    const res = await request.get('/v1/mp/device/activity', { params: { days } })
     return res.data
   },
 
-  async recordBloodPressure(patientId: string, data: Omit<BloodPressureRecord, 'id'>) {
-    const res = await request.post(`/v1/health/${patientId}/blood-pressure`, data)
+  // ── Scores & Summaries ──
+  async getHealthScore() {
+    const res = await request.get('/v1/health-data/summary')
     return res.data
   },
-
-  async recordExercise(patientId: string, data: Omit<ExerciseRecord, 'id'>) {
-    const res = await request.post(`/v1/health/${patientId}/exercise`, data)
+  async getHealthSnapshot() {
+    const res = await request.get('/v1/mp/device/dashboard/today')
     return res.data
   },
-
-  async recordMood(patientId: string, data: Omit<MoodRecord, 'id'>) {
-    const res = await request.post(`/v1/health/${patientId}/mood`, data)
+  async getDailyTasks() {
+    const res = await request.get('/v1/daily-tasks/today')
     return res.data
   },
-
-  async recordMeal(patientId: string, data: Omit<MealRecord, 'id'>) {
-    const res = await request.post(`/v1/health/${patientId}/meal`, data)
+  async completeTask(taskId: string) {
+    const res = await request.post(`/v1/daily-tasks/${taskId}/checkin`)
     return res.data
   },
-
-  async getGlucoseHistory(patientId: string, params: { period?: '7d' | '30d' | '90d' } = {}) {
-    const res = await request.get(`/v1/health/${patientId}/glucose`, { params })
+  async getAchievements() {
+    const res = await request.get('/v1/credits/my')
     return res.data
   },
-
-  async getWeightHistory(patientId: string, params: { period?: '7d' | '30d' | '90d' } = {}) {
-    const res = await request.get(`/v1/health/${patientId}/weight`, { params })
+  async getAISummary() {
+    const res = await request.get('/v1/coach-tip/today')
     return res.data
   },
-
-  async getExerciseHistory(patientId: string, params: { period?: '7d' | '30d' | '90d' } = {}) {
-    const res = await request.get(`/v1/health/${patientId}/exercise`, { params })
-    return res.data
-  },
-
-  async getHealthScore(patientId: string, period: 'week' | 'month' | 'quarter' = 'week') {
-    const res = await request.get(`/v1/health/${patientId}/score`, { params: { period } })
-    return res.data
-  },
-
-  async getTrends(patientId: string, metric: string, period: 'week' | 'month' | 'quarter' = 'week') {
-    const res = await request.get(`/v1/health/${patientId}/trends/${metric}`, { params: { period } })
-    return res.data
-  },
-
-  async getHealthSnapshot(patientId: string) {
-    const res = await request.get(`/v1/health/${patientId}/snapshot`)
-    return res.data
-  },
-
-  async getDailyTasks(patientId: string) {
-    const res = await request.get(`/v1/health/${patientId}/tasks/daily`)
-    return res.data
-  },
-
-  async completeTask(patientId: string, taskId: string) {
-    const res = await request.post(`/v1/health/${patientId}/tasks/${taskId}/complete`)
-    return res.data
-  },
-
-  async getAchievements(patientId: string) {
-    const res = await request.get(`/v1/health/${patientId}/achievements`)
-    return res.data
-  },
-
-  async getAISummary(patientId: string, period: 'week' | 'month' = 'week') {
-    const res = await request.get(`/v1/health/${patientId}/ai-summary`, { params: { period } })
-    return res.data
-  },
-
-  async getComparison(patientId: string, currentPeriod: string, previousPeriod: string) {
-    const res = await request.get(`/v1/health/${patientId}/comparison`, {
-      params: { current: currentPeriod, previous: previousPeriod }
-    })
+  async getTrends(metric: string, params: { period?: string } = {}) {
+    const days = periodToDays[params.period || '30d'] || 30
+    const res = await request.get(`/v1/mp/device/${metric}`, { params: { days } })
     return res.data
   },
 }

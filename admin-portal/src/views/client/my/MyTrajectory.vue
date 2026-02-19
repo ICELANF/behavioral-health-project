@@ -91,7 +91,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import request from '@/api/request'
 
 const activeTab = ref('7d')
 
@@ -102,14 +103,89 @@ const chartTabs = [
 ]
 
 const ttmTimeline = ref([])
-
 const implicitData = ref([])
-
 const explicitData = ref([])
-
 const heatmapData = ref([])
-
 const recentEvents = ref([])
+
+const stageColors = { S0: '#d9d9d9', S1: '#bfbfbf', S2: '#91d5ff', S3: '#69c0ff', S4: '#40a9ff', S5: '#1890ff', S6: '#52c41a' }
+const stageNames = { S0: '觉醒期', S1: '松动期', S2: '探索期', S3: '准备期', S4: '行动期', S5: '坚持期', S6: '融入期' }
+
+onMounted(async () => {
+  // Load TTM stage from assessment profile
+  try {
+    const res = await request.get('v1/assessment/profile/me')
+    const profile = res.data
+    const currentStage = profile?.stage || profile?.current_stage || 'S0'
+    const stages = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6']
+    const currentIdx = stages.indexOf(currentStage)
+    ttmTimeline.value = stages.map((s, i) => ({
+      name: stageNames[s] || s,
+      date: i <= currentIdx ? (profile?.stage_dates?.[s] || '') : '',
+      duration: i < currentIdx ? '' : undefined,
+      current: i === currentIdx,
+      completed: i < currentIdx,
+      color: i <= currentIdx ? (stageColors[s] || '#1890ff') : '#e8e8e8',
+    }))
+  } catch {
+    // Fallback — show empty timeline
+    ttmTimeline.value = Object.entries(stageNames).map(([k, v], i) => ({
+      name: v, date: '', current: i === 0, completed: false, color: i === 0 ? '#1890ff' : '#e8e8e8',
+    }))
+  }
+
+  // Load credit events as timeline
+  try {
+    const res = await request.get('v1/credits/my/records', { params: { page_size: 10 } })
+    const records = res.data?.records || res.data?.items || (Array.isArray(res.data) ? res.data : [])
+    const eventColors = { learning: '#1890ff', checkin: '#52c41a', assessment: '#722ed1', promotion: '#faad14' }
+    recentEvents.value = records.slice(0, 8).map((r, i) => ({
+      id: i, text: r.description || r.event_type || '行为事件',
+      time: (r.created_at || '').slice(0, 16).replace('T', ' '),
+      type: r.event_type || '记录',
+      color: eventColors[r.event_type] || '#1890ff',
+    }))
+  } catch { /* keep empty */ }
+
+  // Load daily task history for heatmap
+  try {
+    const res = await request.get('v1/daily-tasks/history', { params: { days: 28 } })
+    const history = res.data?.history || res.data || []
+    const weekLabels = ['本周', '上周', '两周前', '三周前']
+    const weeks = []
+    for (let w = 0; w < 4; w++) {
+      const weekDays = history.slice(w * 7, (w + 1) * 7)
+      weeks.push({
+        label: weekLabels[w] || `W${w}`,
+        days: weekDays.length > 0
+          ? weekDays.map(d => Math.round((d.completed || d.done_count || 0) / Math.max(d.total || d.task_count || 1, 1) * 100))
+          : [0, 0, 0, 0, 0, 0, 0],
+      })
+    }
+    heatmapData.value = weeks
+  } catch {
+    heatmapData.value = [
+      { label: '本周', days: [0, 0, 0, 0, 0, 0, 0] },
+      { label: '上周', days: [0, 0, 0, 0, 0, 0, 0] },
+    ]
+  }
+
+  // Load device summary for implicit/explicit data
+  try {
+    const res = await request.get('v1/mp/device/dashboard/today')
+    const d = res.data || {}
+    implicitData.value = [
+      { icon: '🩸', value: d.glucose_latest ?? '--', label: '血糖', trend: '', trendClass: 'stable' },
+      { icon: '⚖️', value: d.weight_latest ?? '--', label: '体重', trend: '', trendClass: 'stable' },
+      { icon: '❤️', value: d.hr_latest ?? '--', label: '心率', trend: '', trendClass: 'stable' },
+      { icon: '😴', value: d.sleep_hours ?? '--', label: '睡眠(h)', trend: '', trendClass: 'stable' },
+    ]
+    explicitData.value = [
+      { icon: '🏃', value: d.activity_minutes ?? '0', label: '运动(min)', trend: '', trendClass: 'stable' },
+      { icon: '📝', value: d.checkin_count ?? '0', label: '今日打卡', trend: '', trendClass: 'up' },
+    ]
+  } catch { /* keep empty */ }
+})
 
 const heatColor = (val) => {
   if (val >= 80) return '#389e0d'

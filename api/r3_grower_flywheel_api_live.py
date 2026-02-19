@@ -461,3 +461,71 @@ async def _update_streak(db: AsyncSession, user_id: int, today: date) -> int:
         WHERE user_id = :uid
     """), {"streak": new_streak, "longest": new_longest, "today": today, "uid": user_id})
     return new_streak
+
+
+# ═══════════════════════════════════════════════════
+# POST /daily-tasks/quick-checkin — Domain-based quick checkin
+# ═══════════════════════════════════════════════════
+
+class QuickCheckinRequest(BaseModel):
+    domain: str  # exercise, emotion, nutrition, sleep, etc.
+    note: Optional[str] = ""
+    score: Optional[int] = None
+    description: Optional[str] = None
+    type: Optional[str] = None
+    duration: Optional[int] = None
+
+
+@router.post("/daily-tasks/quick-checkin")
+async def quick_checkin(
+    body: QuickCheckinRequest,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Quick domain-based checkin — finds today's matching task or creates ad-hoc record."""
+    user_id = current_user.id
+    now = datetime.now()
+    today = now.date()
+    domain = body.domain
+
+    # Try to find today's undone task matching this domain
+    r = await db.execute(text("""
+        SELECT id, title, tag FROM daily_tasks
+        WHERE user_id = :uid AND task_date = :today AND done = false
+          AND (tag = :domain OR title ILIKE :pattern)
+        ORDER BY order_num LIMIT 1
+    """), {"uid": user_id, "today": today, "domain": domain, "pattern": f"%{domain}%"})
+    task = r.mappings().first()
+
+    if task:
+        # Mark existing task as done
+        note = body.note or body.description or ""
+        val = float(body.score or body.duration or 0)
+        await db.execute(text("""
+            INSERT INTO task_checkins (task_id, user_id, note, value, points_earned, checked_at)
+            VALUES (:tid, :uid, :note, :val, 10, :now)
+        """), {"tid": task["id"], "uid": user_id, "note": note, "val": val, "now": now})
+        await db.execute(text("UPDATE daily_tasks SET done = true, done_time = :now WHERE id = :tid"),
+                         {"tid": task["id"], "now": now})
+        await db.execute(text("UPDATE users SET growth_points = COALESCE(growth_points, 0) + 10 WHERE id = :uid"),
+                         {"uid": user_id})
+        await db.commit()
+        return {"success": True, "task_id": task["id"], "message": f"{domain} 打卡成功 +10积分", "points": 10}
+    else:
+        # No matching task — create ad-hoc checkin via a new task
+        note = body.note or body.description or f"{domain} 记录"
+        new_id = f"qc_{user_id}_{domain}_{today.isoformat()}"[:50]
+        await db.execute(text("""
+            INSERT INTO daily_tasks (id, user_id, task_date, title, tag, done, done_time, order_num, created_at)
+            VALUES (:id, :uid, :today, :title, :tag, true, :now, 99, :now)
+            ON CONFLICT (id) DO UPDATE SET done = true, done_time = :now
+        """), {"id": new_id, "uid": user_id, "today": today, "title": note, "tag": domain, "now": now})
+        val = float(body.score or body.duration or 0)
+        await db.execute(text("""
+            INSERT INTO task_checkins (task_id, user_id, note, value, points_earned, checked_at)
+            VALUES (:tid, :uid, :note, :val, 5, :now)
+        """), {"tid": new_id, "uid": user_id, "note": note, "val": val, "now": now})
+        await db.execute(text("UPDATE users SET growth_points = COALESCE(growth_points, 0) + 5 WHERE id = :uid"),
+                         {"uid": user_id})
+        await db.commit()
+        return {"success": True, "task_id": new_id, "message": f"{domain} 记录已保存 +5积分", "points": 5}

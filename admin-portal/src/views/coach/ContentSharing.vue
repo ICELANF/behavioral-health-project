@@ -177,8 +177,19 @@ async function loadContent() {
       type: 'article',
       readTime: item.read_time || '5分钟',
     }))
-    // TODO: intervention packs from program_api when available
-    interventions.value = []
+    // Load intervention packs from program templates
+    try {
+      const intRes = await request.get('/v1/programs/templates')
+      interventions.value = (intRes.data?.items || intRes.data || []).map((t: any) => ({
+        id: t.id,
+        title: t.name || t.title,
+        type: 'intervention',
+        taskCount: t.task_count || t.steps?.length || '--',
+        domain: t.domain || t.category || '综合',
+      }))
+    } catch {
+      interventions.value = []
+    }
   } catch (e) {
     console.error('加载内容列表失败:', e)
     message.error('加载内容列表失败')

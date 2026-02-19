@@ -81,7 +81,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
-import { expertApi } from '@/api/expert-api'
+import request from '@/api/request'
 
 const query = reactive({
   dimension: 'stage',
@@ -122,14 +122,33 @@ const applyQueryResult = (data: any) => {
   minValue.value = summary.min ?? Math.min(...queryResults.value.map(r => r.count), 0)
 }
 
+const dimensionEndpoints: Record<string, string> = {
+  stage: '/v1/analytics/admin/stage-distribution',
+  risk: '/v1/analytics/admin/risk-distribution',
+  domain: '/v1/analytics/admin/stage-distribution',  // reuse stage as domain proxy
+  age: '/v1/analytics/admin/user-growth',
+  assessment: '/v1/analytics/admin/stage-distribution',
+}
+
 const loadInitialStats = async () => {
   try {
-    const res = await expertApi.queryResearchData({ dimension: 'stage' })
-    applyQueryResult(res)
-    aggStats.totalSamples = res.summary?.total ?? queryResults.value.reduce((s, r) => s + r.count, 0)
-    aggStats.activeUsers = res.summary?.active_users ?? 0
-    aggStats.avgInterventionDays = res.summary?.avg_intervention_days ?? 0
-    aggStats.improvementRate = res.summary?.improvement_rate ?? 0
+    const [stageRes, userRes] = await Promise.allSettled([
+      request.get('/v1/analytics/admin/stage-distribution'),
+      request.get('/v1/analytics/admin/user-growth'),
+    ])
+    if (stageRes.status === 'fulfilled') {
+      const data = stageRes.value.data
+      const items = data?.distribution || data?.items || data?.data || (Array.isArray(data) ? data : [])
+      const total = items.reduce((s: number, r: any) => s + (r.count || r.value || 0), 0)
+      applyQueryResult({ data: items.map((r: any) => ({ category: r.stage || r.label || r.name || '', count: r.count || r.value || 0 })), summary: { total } })
+      aggStats.totalSamples = total
+    }
+    if (userRes.status === 'fulfilled') {
+      const data = userRes.value.data
+      aggStats.activeUsers = data?.active_users ?? data?.total ?? 0
+      aggStats.avgInterventionDays = data?.avg_days ?? 0
+      aggStats.improvementRate = data?.improvement_rate ?? 0
+    }
   } catch (e) {
     console.error('加载研究数据失败:', e)
   }
@@ -139,15 +158,11 @@ onMounted(loadInitialStats)
 
 const runQuery = async () => {
   try {
-    const dateRange = query.dateRange
-      ? [query.dateRange[0]?.format?.('YYYY-MM-DD') || '', query.dateRange[1]?.format?.('YYYY-MM-DD') || ''] as [string, string]
-      : undefined
-    const res = await expertApi.queryResearchData({
-      dimension: query.dimension,
-      dateRange,
-      groupBy: query.groupBy !== 'none' ? query.groupBy : undefined,
-    })
-    applyQueryResult(res)
+    const endpoint = dimensionEndpoints[query.dimension] || '/v1/analytics/admin/stage-distribution'
+    const res = await request.get(endpoint)
+    const data = res.data
+    const items = data?.distribution || data?.items || data?.data || (Array.isArray(data) ? data : [])
+    applyQueryResult({ data: items.map((r: any) => ({ category: r.stage || r.label || r.name || '', count: r.count || r.value || 0 })), summary: data?.summary || {} })
     message.success('查询完成')
   } catch (e) {
     console.error('查询失败:', e)
@@ -168,20 +183,9 @@ const exportCSV = () => {
   message.success('CSV 导出成功')
 }
 
-const exportExcel = async () => {
-  try {
-    const blob = await expertApi.exportResearchData({ dimension: query.dimension }, 'excel')
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `research_data_${new Date().toISOString().slice(0, 10)}.xlsx`
-    a.click()
-    URL.revokeObjectURL(url)
-    message.success('Excel 导出成功')
-  } catch (e) {
-    console.error('Excel 导出失败:', e)
-    message.error('Excel 导出失败')
-  }
+const exportExcel = () => {
+  // Client-side export as CSV (Excel-compatible) since no server-side export endpoint
+  exportCSV()
 }
 </script>
 

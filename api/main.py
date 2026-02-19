@@ -1866,6 +1866,13 @@ try:
 except ImportError as e:
     print(f"[API] V5.0 Admin飞轮路由注册失败: {e}")
 
+try:
+    from api.settings_api import router as settings_router
+    app.include_router(settings_router)
+    print("[API] P4 Settings路由已注册 (2 endpoints)")
+except ImportError as e:
+    print(f"[API] P4 Settings路由注册失败: {e}")
+
 
 # (R2-R8 已移到 bridge 之前注册, 见上方)
 

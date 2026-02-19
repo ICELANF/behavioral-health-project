@@ -84,7 +84,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { expertApi } from '@/api/expert-api'
+import { expertFlywheelApi } from '@/api/expert-api'
 
 const router = useRouter()
 
@@ -118,32 +118,32 @@ const monthlyStats = ref<{ month: string; total: number; approved: number; rejec
 const typeColorMap: Record<string, string> = { promotion: '#722ed1', content: '#1890ff', case: '#fa8c16' }
 
 const loadReviewData = async () => {
-  const expertId = localStorage.getItem('admin_user_id') || '0'
+  // Use flywheel API (expert_flywheel_api.py) — real endpoints that exist
   const [pendingRes, historyRes] = await Promise.allSettled([
-    expertApi.getReviewQueue(expertId),
-    expertApi.getReviewHistory(expertId),
+    expertFlywheelApi.getAuditQueue(),
+    expertFlywheelApi.getAuditQueue({ status: 'completed' } as any),
   ])
   if (pendingRes.status === 'fulfilled') {
-    pendingQueue.value = (pendingRes.value.items || pendingRes.value || []).map((r: any) => ({
+    pendingQueue.value = (pendingRes.value.items || []).map((r: any) => ({
       id: String(r.id), type: r.type || 'case', title: r.title || '',
-      description: r.description || '', submitter: r.submitter || r.coach_name || '',
-      submitDate: r.submit_date || r.submitDate || '', urgency: r.urgency || 'normal',
+      description: r.description || '', submitter: r.userName || r.submitter || '',
+      submitDate: r.time || '', urgency: r.risk === 'critical' || r.risk === 'high' ? 'high' : 'normal',
     }))
   } else {
     console.error('加载待审核列表失败:', pendingRes.reason)
   }
   if (historyRes.status === 'fulfilled') {
-    const items = historyRes.value.items || historyRes.value || []
+    const items = historyRes.value.items || []
     reviewHistory.value = items.map((r: any) => ({
       id: String(r.id), type: r.type || 'case', title: r.title || '',
-      submitter: r.submitter || '', reviewDate: r.review_date || r.reviewDate || '',
-      approved: r.approved ?? false, comment: r.comment || '',
+      submitter: r.userName || '', reviewDate: r.time || '',
+      approved: r.verdict === 'pass' || r.approved || false,
+      comment: r.note || r.comment || '',
     }))
-    avgReviewDays.value = historyRes.value.avg_review_days ?? 0
     // Build type stats from history
     const counts: Record<string, number> = {}
     const total = items.length || 1
-    items.forEach((r: any) => { counts[r.type] = (counts[r.type] || 0) + 1 })
+    items.forEach((r: any) => { const t = r.type || 'case'; counts[t] = (counts[t] || 0) + 1 })
     typeStats.value = Object.entries(counts).map(([type, count]) => ({
       type, label: typeLabels[type] || type, count,
       percent: Math.round(count / total * 100), color: typeColorMap[type] || '#999',
@@ -151,11 +151,11 @@ const loadReviewData = async () => {
     // Build monthly stats from history
     const monthly: Record<string, { total: number; approved: number; rejected: number }> = {}
     items.forEach((r: any) => {
-      const d = r.review_date || r.reviewDate || ''
+      const d = r.time || ''
       const m = d ? d.substring(0, 7) : '未知'
       if (!monthly[m]) monthly[m] = { total: 0, approved: 0, rejected: 0 }
       monthly[m].total++
-      if (r.approved) monthly[m].approved++; else monthly[m].rejected++
+      if (r.verdict === 'pass' || r.approved) monthly[m].approved++; else monthly[m].rejected++
     })
     monthlyStats.value = Object.entries(monthly).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6)
       .map(([month, s]) => ({ month, ...s }))
@@ -168,7 +168,7 @@ onMounted(loadReviewData)
 
 const approveItem = async (item: any) => {
   try {
-    await expertApi.submitReview(item.id, { approved: true, comment: '' })
+    await expertFlywheelApi.submitVerdict(item.id, { verdict: 'pass', score: 100, issues: [], note: '' })
     pendingQueue.value = pendingQueue.value.filter(i => i.id !== item.id)
     message.success('已通过审核')
   } catch (e) {
@@ -179,7 +179,7 @@ const approveItem = async (item: any) => {
 
 const rejectItem = async (item: any) => {
   try {
-    await expertApi.submitReview(item.id, { approved: false, comment: '' })
+    await expertFlywheelApi.submitVerdict(item.id, { verdict: 'block', score: 0, issues: ['rejected'], note: '' })
     pendingQueue.value = pendingQueue.value.filter(i => i.id !== item.id)
     message.info('已驳回')
   } catch (e) {

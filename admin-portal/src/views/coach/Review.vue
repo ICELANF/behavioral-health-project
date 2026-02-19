@@ -436,11 +436,10 @@ const handleReject = (record: PromotionApplication) => {
 }
 
 const submitReview = async (appId: string, action: 'approve' | 'reject', comment: string) => {
-  const endpoint = action === 'approve'
-    ? `/v1/coach/promotion-applications/${appId}/approve`
-    : `/v1/coach/promotion-applications/${appId}/reject`
-
-  await request.post(endpoint, { comment })
+  await request.post(`/v1/promotion/review/${appId}`, {
+    approved: action === 'approve',
+    reason: comment,
+  })
 }
 
 const handleDetailOk = async () => {
@@ -487,8 +486,8 @@ const loadApplications = async () => {
   loading.value = true
   error.value = ''
   try {
-    const { data } = await request.get('/v1/coach/promotion-applications')
-    applications.value = data.applications || []
+    const { data } = await request.get('/v1/promotion/applications', { params: { status: statusFilter.value !== 'all' ? statusFilter.value : undefined } })
+    applications.value = data.applications || data.items || data || []
     pagination.total = applications.value.length
   } catch (e: any) {
     console.error('加载晋级申请失败:', e)

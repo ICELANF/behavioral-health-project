@@ -207,7 +207,7 @@ import request from '@/api/request'
 
 const router = useRouter()
 
-const patientId = localStorage.getItem('admin_user_id') || '0'
+// patientId no longer needed — real endpoints are JWT-scoped
 
 // AI信息
 const agentName = ref('AI健康助手')
@@ -227,11 +227,11 @@ const healthSnapshot = ref({
 // 加载健康快照数据
 const loadHealthSnapshot = async () => {
   try {
-    const data = await healthApi.getHealthSnapshot(patientId)
+    const data = await healthApi.getHealthSnapshot()
     if (data) {
       healthSnapshot.value = {
-        glucose: `${data.glucose.value} mmol/L`,
-        weight: `${data.weight.value} kg`
+        glucose: `${data.glucose_latest ?? data.glucose?.value ?? '--'} mmol/L`,
+        weight: `${data.weight_latest ?? data.weight?.value ?? '--'} kg`,
       }
     }
   } catch (error) {
@@ -294,9 +294,8 @@ const handleSend = async () => {
   aiStatusText.value = '正在思考...'
 
   try {
-    const res = await request.post('v1/chat/send', {
+    const res = await request.post('v1/dispatch', {
       message: text,
-      patient_id: patientId,
     })
     const data = res.data
     messages.value.push({

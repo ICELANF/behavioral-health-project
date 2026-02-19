@@ -381,6 +381,83 @@ async def get_level_thresholds(level: str):
     )
 
 
+# ── 晋级审核端点 (Admin/Coach Review) ──
+
+@router.get("/applications")
+async def list_promotion_applications(
+    status: Optional[str] = None,
+    current_user=Depends(get_current_user),
+):
+    """列出晋级申请 — 供教练/管理员审核"""
+    try:
+        from core.database import get_async_session
+        from sqlalchemy import text as sa_text
+        async with get_async_session() as db:
+            conditions = ["1=1"]
+            params: dict = {}
+            if status and status != "all":
+                status_map = {"pending": "pending", "approved": "approved", "rejected": "rejected"}
+                if status in status_map:
+                    conditions.append("pa.status = :status")
+                    params["status"] = status_map[status]
+            where = " AND ".join(conditions)
+            r = await db.execute(sa_text(f"""
+                SELECT pa.id as application_id, pa.user_id, pa.current_level, pa.target_level,
+                       pa.status, pa.applied_at, pa.reviewed_at, pa.reviewer_comment,
+                       u.username, u.full_name
+                FROM promotion_applications pa
+                LEFT JOIN users u ON u.id = pa.user_id
+                WHERE {where}
+                ORDER BY pa.applied_at DESC LIMIT 100
+            """), params)
+            items = []
+            for row in r.mappings():
+                items.append({
+                    "application_id": str(row["application_id"]),
+                    "user_id": row["user_id"],
+                    "username": row.get("username", ""),
+                    "full_name": row.get("full_name", ""),
+                    "current_level": row.get("current_level", ""),
+                    "target_level": row.get("target_level", ""),
+                    "status": row.get("status", "pending"),
+                    "applied_at": str(row.get("applied_at", "")),
+                    "reviewed_at": str(row.get("reviewed_at", "")) if row.get("reviewed_at") else None,
+                    "reviewer_comment": row.get("reviewer_comment", ""),
+                })
+            return {"applications": items, "total": len(items)}
+    except Exception as e:
+        # Table may not exist yet — return empty
+        return {"applications": [], "total": 0, "note": str(e)}
+
+
+class ReviewDecision(BaseModel):
+    approved: bool
+    reason: Optional[str] = ""
+
+
+@router.post("/review/{application_id}")
+async def review_promotion(
+    application_id: str,
+    decision: ReviewDecision,
+    current_user=Depends(get_current_user),
+):
+    """审核晋级申请"""
+    try:
+        from core.database import get_async_session
+        from sqlalchemy import text as sa_text
+        async with get_async_session() as db:
+            new_status = "approved" if decision.approved else "rejected"
+            await db.execute(sa_text("""
+                UPDATE promotion_applications
+                SET status = :status, reviewed_at = NOW(), reviewer_id = :rid, reviewer_comment = :comment
+                WHERE id = :aid
+            """), {"status": new_status, "rid": current_user.id, "comment": decision.reason or "", "aid": application_id})
+            await db.commit()
+            return {"success": True, "application_id": application_id, "status": new_status}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ── 辅助函数 ──
 
 def _next_level(current: str) -> str:

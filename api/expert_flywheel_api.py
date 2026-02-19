@@ -272,13 +272,17 @@ async def get_audit_queue(
     type_filter: Optional[str] = Query(None),
     risk_filter: Optional[str] = Query(None),
     agent_filter: Optional[str] = Query(None),
+    status: Optional[str] = Query(None, description="Filter: 'completed' for reviewed items, default=pending"),
     expert_user=Depends(require_coach_or_admin),
     db: AsyncSession = Depends(get_async_db),
 ):
-    """获取审核队列 — 从 expert_audit_records 查询未审核项"""
+    """获取审核队列 — 从 expert_audit_records 查询未审核项 (status=completed 返回已审核)"""
     try:
         # Build dynamic WHERE clauses
-        conditions = ["verdict IS NULL"]
+        if status == "completed":
+            conditions = ["verdict IS NOT NULL"]
+        else:
+            conditions = ["verdict IS NULL"]
         params: dict = {}
 
         if type_filter and type_filter in _VALID_TYPES:

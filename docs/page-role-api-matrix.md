@@ -1,8 +1,8 @@
 # 行健平台 — 全页面角色权限 × API 对应矩阵
 
-> 生成时间: 2026-02-19
+> 生成时间: 2026-02-20 (P4更新)
 > Admin Portal: localhost:5174 | H5: localhost:5173 | API: localhost:8000
-> 版本: V5.0.2 (Migration 045, 130+ models, 74+ routers, 630+ endpoints)
+> 版本: V5.1.6 (Migration 045, 130+ models, 76+ routers, 640+ endpoints)
 
 ---
 
@@ -57,12 +57,12 @@
 
 | # | 应用 | 路径 | 页面 | 可查看 | 可交互 | 后端API | 数据状态 | 限制 |
 |---|------|------|------|--------|--------|---------|---------|------|
-| 1 | H5 | `/home/observer` | 观察者首页 | 3次配额(绿/黄/红)、快速体验卡(3)、锁定功能(6)、社会证明 | 开始/继续评估、体验食物识别/对话/语音、配额→升级弹窗 | (全部注释掉) | ❌全mock | 3次/天配额墙 |
+| 1 | H5 | `/home/observer` | 观察者首页 | 3次配额(绿/黄/红)、快速体验卡(3)、锁定功能(6)、社会证明 | 开始/继续评估、体验食物识别/对话/语音、配额→升级弹窗 | `GET /v1/observer/home` `GET /v1/observer/quota` `GET /v1/observer/explore` | ✅真实 | 3次/天配额墙 |
 | 2 | H5 | `/chat` | AI对话 | 消息列表、任务卡、专家切换 | 发消息、传照片→食物识别 | `POST /v1/dispatch` `POST /v1/food/recognize` | ✅真实 | 受配额限 |
 | 3 | H5 | `/v3/assessment` | 渐进式评估 | 批次列表、完成进度 | 点批次→做题 | `GET /v3/assessment/batches` `GET /v3/assessment/session` `GET /v3/assessment/recommend` | ✅真实 | 无 |
 | 4 | H5 | `/v3/coach` | AI健康教练 | 对话界面 | 发消息→AI回复 | `POST /v3/chat/message` | ✅真实 | 无 |
 | 5 | H5 | `/profile` | 个人中心 | 用户卡、穿戴数据、菜单 | 导航、登出 | 无(Pinia store) | 登录时加载 | 无 |
-| 6 | Admin | `/client/home-v2` | 我的健康 | 问候/健康评分/任务/快捷操作/AI提示 | 完成任务、导航 | `GET /v1/health/{id}/score` `GET /v1/health/{id}/snapshot` `GET /v1/health/{id}/tasks/daily` `GET /v1/health/{id}/ai-summary` `POST /v1/health/{id}/tasks/{tid}/complete` | ⚠mock兜底 | 无 |
+| 6 | Admin | `/client/home-v2` | 我的健康 | 问候/健康评分/任务/快捷操作/AI提示 | 完成任务、导航 | `GET /v1/health-data/summary` `GET /v1/mp/device/dashboard/today` `GET /v1/daily-tasks/today` `GET /v1/coach-tip/today` `POST /v1/daily-tasks/{tid}/checkin` | ✅真实 | 无 |
 
 ---
 
@@ -72,7 +72,7 @@
 
 | # | 路径 | 页面 | 可查看 | 可交互 | 后端API | 数据状态 |
 |---|------|------|--------|--------|---------|---------|
-| 1 | `/home/today` | 今日行动 | 连续天数、进度环、行动卡、教练提示、周点阵 | 快速打卡、跳转对话/记录 | (全部TODO) | ❌全mock |
+| 1 | `/home/today` | 今日行动 | 连续天数、进度环、行动卡、教练提示、周点阵 | 快速打卡、跳转对话/记录 | `GET /v1/grower/home` `GET /v1/daily-tasks/today` `GET /v1/coach-tip/today` | ✅真实 |
 | 2 | `/chat` | AI对话 | 消息气泡、任务卡、效能滑块、专家切换 | 发消息、传照片、完成任务 | `POST /v1/dispatch` `POST /v1/food/recognize` | ✅真实 |
 | 3 | `/tasks` | 任务中心 | 连续天数、进度、待完成/已完成、领域筛选 | 完成(心情+备注)、跳过、筛选 | `GET /v1/micro-actions/today` `GET /v1/micro-actions/stats` `POST /v1/micro-actions/{id}/complete` `POST /v1/micro-actions/{id}/skip` | ✅真实 |
 | 4 | `/learn` | 学习中心 | 进度卡、6标签页、领域筛选、无限滚动 | 搜索、切标签、筛领域 | `GET /v1/learning/grower/stats/{uid}` `GET /v1/learning/coach/points/{uid}` `GET /v1/content?page&type&domain` | ✅真实 |
@@ -92,7 +92,7 @@
 | 18 | `/account-settings` | 账号设置 | 账号信息 | 修改密码 | `GET /v1/auth/me` `PUT /v1/auth/password` | ✅真实 |
 | 19 | `/my-credits` | 我的学分 | 总览(必修/选修)、模块进度、记录 | 加载更多 | `GET /v1/credits/my` `GET /v1/credits/my/records` | ✅真实 |
 | 20 | `/my-companions` | 我的同道者 | 统计、双标签(带教/导师) | 切标签、刷新 | `GET /v1/companions/stats` `GET /v1/companions/my-mentees` `GET /v1/companions/my-mentors` | ✅真实 |
-| 21 | `/promotion-progress` | 晋级进度 | 当前→下级、5轴雷达、各维度进度 | 申请晋级(满足时) | `GET /v1/promotion/progress` `GET /v1/promotion/check` `POST /v1/promotion/apply` | ❌路径不匹配(P0) |
+| 21 | `/promotion-progress` | 晋级进度 | 当前→下级、5轴雷达、各维度进度 | 申请晋级(满足时) | `GET /v1/promotion/progress` `GET /v1/promotion/check` `POST /v1/promotion/apply` | ✅真实 |
 | 22 | `/journey` | 健康成长伙伴 | AI健康叙事 | 刷新 | `GET /v1/messages/inbox` | ✅真实 |
 | 23 | `/contribute` | 知识投稿 | 投稿表单、我的投稿(审核状态) | 提交投稿 | `POST /v1/contributions/submit` `GET /v1/contributions/my` | ✅真实 |
 | 24 | `/expert-application-status` | 申请状态 | 入驻申请状态 | 浏览 | (相关API) | ✅真实 |
@@ -101,19 +101,19 @@
 
 | # | 路径 | 页面 | 可查看 | 可交互 | 后端API | 数据状态 |
 |---|------|------|--------|--------|---------|---------|
-| 25 | `/client/home-v2` | 我的健康 | 问候/评分/任务/快捷操作/AI提示/底部导航 | 完成任务、导航 | `GET /v1/health/{id}/score` `GET /v1/health/{id}/snapshot` `GET /v1/health/{id}/tasks/daily` `GET /v1/health/{id}/ai-summary` `POST /v1/health/{id}/tasks/{tid}/complete` | ⚠mock兜底 |
-| 26 | `/client/data-input` | 记录数据 | 3步向导(选类型→输数据→完成) | 选类型→填→提交 | `POST /v1/health/{id}/glucose` `POST .../weight` `POST .../blood-pressure` `POST .../exercise` `POST .../mood` `POST .../meal` `GET .../glucose?period=7d` `GET .../weight?period=7d` | ⚠mock兜底 |
-| 27 | `/client/chat-v2` | AI健康助手 | 欢迎屏+对话气泡+建议回复 | 发消息、快捷回复 | `GET /v1/health/{id}/snapshot` | ⚠mock兜底(AI回复本地生成) |
-| 28 | `/client/progress` | 我的进展 | 周/月/季、评分趋势、成就、ECharts图表、AI总结 | 切时段、查成就、点建议 | `GET /v1/health/{id}/score` `GET .../trends/glucose` `GET .../trends/weight` `GET .../exercise` `GET .../achievements` `GET .../ai-summary` | ⚠mock兜底 |
+| 25 | `/client/home-v2` | 我的健康 | 问候/评分/任务/快捷操作/AI提示/底部导航 | 完成任务、导航 | `GET /v1/health-data/summary` `GET /v1/mp/device/dashboard/today` `GET /v1/daily-tasks/today` `GET /v1/coach-tip/today` `POST /v1/daily-tasks/{tid}/checkin` | ✅真实 |
+| 26 | `/client/data-input` | 记录数据 | 3步向导(选类型→输数据→完成) | 选类型→填→提交 | `POST /v1/mp/device/glucose/manual` `POST .../weight` `POST .../blood-pressure` `POST /v1/daily-tasks/quick-checkin` `GET /v1/mp/device/glucose` `GET .../weight` | ✅真实 |
+| 27 | `/client/chat-v2` | AI健康助手 | 欢迎屏+对话气泡+建议回复 | 发消息、快捷回复 | `GET /v1/mp/device/dashboard/today` `POST /v1/dispatch` | ✅真实 |
+| 28 | `/client/progress` | 我的进展 | 周/月/季、评分趋势、成就、ECharts图表、AI总结 | 切时段、查成就、点建议 | `GET /v1/health-data/summary` `GET /v1/mp/device/glucose` `GET .../weight` `GET .../activity` `GET /v1/credits/my` `GET /v1/coach-tip/today` | ✅真实 |
 | 29 | `/client/my/profile` | 个人健康档案 | 基本信息/病程/用药/过敏/紧急联系人 | 编辑→保存、增删药物/过敏 | `GET /assessment/profile/me` `PUT /v3/auth/profile` | ✅真实 |
-| 30 | `/client/my/devices` | 穿戴设备管理 | 设备列表 | 管理设备 | 无API调用 | ❌全mock |
+| 30 | `/client/my/devices` | 穿戴设备管理 | 设备列表 | 管理设备 | `GET /v1/mp/device/devices` `POST /v1/mp/device/devices/bind` `DELETE /v1/mp/device/devices/{id}` `POST /v1/mp/device/sync` | ✅真实 |
 | 31 | `/client/my/assessments` | 测评记录 | 待完成/已完成、趋势图 | 开始测评 | `GET /assessment-assignments/my-pending` | ✅真实 |
-| 32 | `/client/my/trajectory` | 行为轨迹 | 行为轨迹时间线 | 浏览 | 无API调用 | ❌全mock |
+| 32 | `/client/my/trajectory` | 行为轨迹 | TTM阶段时间线、行为数据、热力图、近期事件 | 浏览 | `GET /v1/assessment/profile/me` `GET /v1/credits/my/records` `GET /v1/daily-tasks/history` `GET /v1/mp/device/dashboard/today` | ✅真实 |
 | 33 | `/client/device-dashboard` | 设备仪表盘 | 指标卡、趋势图、时段切换 | 切时段(24h/7d/30d) | `GET /health-data/summary` `GET /health-data/glucose` `GET /health-data/vitals` `GET /health-data/sleep` `GET /health-data/activity` | ✅真实 |
 | 34 | `/client/learning-progress` | 学习进度 | 4统计、课程列表、徽章网格 | 浏览 | `GET /learning/grower/stats/{uid}` `GET /learning/grower/time/{uid}` `GET /learning/grower/streak/{uid}` | ✅真实 |
-| 35 | `/client/assessment/list` | 测评中心 | 可用测评列表 | 开始测评 | 无API调用 | ❌全mock |
+| 35 | `/client/assessment/list` | 测评中心 | 可用测评列表 | 开始测评 | `GET /v1/assessment-assignments/my-pending` `GET /v1/high-freq-questions/all` | ✅真实 |
 | 36 | `/client/assessment/take/:id` | 进行测评 | 测评题目 | 答题提交 | `POST /assessment/submit` | ✅真实 |
-| 37 | `/client/assessment/result/:id` | 测评结果 | 测评结果 | 浏览 | 无API调用 | ❌从路由state |
+| 37 | `/client/assessment/result/:id` | 测评结果 | 测评结果 | 浏览 | `GET /v1/assessment-assignments/{id}/result` | ✅真实 |
 
 ---
 
@@ -130,12 +130,12 @@
 | 7 | `/coach/my/certification` | 我的认证 | 当前等级、升级进度、需求清单、L0→L5路线图 | 申请晋级(满足时) | `GET /v1/coach/my-certification` | ✅真实 |
 | 8 | `/coach/my/tools` | 我的工具箱 | 工具列表+使用统计 | 使用工具 | `GET /v1/coach/my-tools-stats` | ✅真实 |
 | 9 | `/coach/my/analytics` | 数据分析 | 6维度ECharts(风险趋势/微行动/领域/预警/挑战/阶段) | 切天数范围 | `GET /v1/analytics/coach/risk-trend` `GET .../micro-action-trend` `GET .../domain-performance` `GET .../alert-frequency` `GET .../challenge-stats` `GET .../stage-distribution` | ⚠mock兜底 |
-| 10 | `/coach/content-sharing` | 内容分享 | 4步向导(内容→学员→消息→确认) | 选内容、选学员、编辑→发送 | 无API调用 | ❌全mock |
+| 10 | `/coach/content-sharing` | 内容分享 | 4步向导(内容→学员→消息→确认) | 选内容、选学员、编辑→发送 | `GET /v1/content` `GET /v1/programs/templates` `GET /v1/coach/students` `POST /v1/coach/messages` | ✅真实 |
 | 11 | `/coach/messages` | 学员消息 | 左列学员(未读)、右列对话+快捷模板 | 选学员、选类型、发消息 | `GET /v1/coach/students-with-messages` `GET /v1/coach/messages/{sid}` `POST /v1/coach/messages` `POST /v1/coach/reminders` | ✅真实 |
 | 12 | `/coach/student-assessment/:id` | 学员测评交互 | 测评详情 | 审核 | 无API调用 | ❌全mock |
 | 13 | `/coach/student-profile/:id` | 学员行为画像 | 行为画像 | 浏览 | `GET /v1/coach/students/{sid}/behavioral-profile` | ⚠mock兜底 |
 | 14 | `/coach/student-health/:id` | 学员健康数据 | 血糖/睡眠/运动/体重 | 切天数 | `GET /v1/coach/students/{sid}/glucose` `GET .../sleep` `GET .../activity` `GET .../vitals` | ⚠mock兜底 |
-| 15 | `/coach/review` | 晋级审核(管理) | 晋级申请列表 | 审核 | 无API调用 | ❌全mock |
+| 15 | `/coach/review` | 晋级审核(管理) | 晋级申请列表 | 审核通过/拒绝 | `GET /v1/promotion/applications` `POST /v1/promotion/review/{id}` | ✅真实 |
 
 ---
 
@@ -144,14 +144,14 @@
 | # | 路径 | 页面 | 可查看 | 可交互 | 后端API | 数据状态 |
 |---|------|------|--------|--------|---------|---------|
 | 1 | `/expert/audit` | **审核工作台(飞轮)** | 5指标、左侧筛选、3标签(待审/回溯/规则) | 筛选、选Case→双签审核 | `GET /v1/expert/quality-metrics` `GET /v1/expert/audit-queue` `GET /v1/expert/agent-anomalies` `POST /v1/expert/audit/{id}/verdict` | ⚠mock兜底 |
-| 2 | `/expert-portal` | 督导门户首页 | 概览4卡、晋级审核列表 | 查看申请 | 无API调用 | ❌全mock |
+| 2 | `/expert-portal` | 督导门户首页 | 概览4卡、晋级审核列表 | 查看申请、审核通过/拒绝 | `GET /v1/admin/coaches` `GET /v1/expert/audit-queue` `GET /v1/promotion/applications` `POST /v1/promotion/review/{id}` | ✅真实 |
 | 3 | `/expert-workbench` | 专家审核工作台(全屏) | 风险筛选+患者队列+3标签 | 筛选、选患者→双签/回溯 | `GET /v1/agent/pending-reviews` | ✅真实 |
 | 4 | `/expert/my-agents` | 我的Agent | Agent表格+路由测试 | 创建/编辑/删除/开关/测试路由 | `GET /v1/tenants/mine` `GET /v1/tenants/{tid}/my-agents` `POST .../my-agents` `PUT .../my-agents/{aid}` `POST .../toggle` `DELETE .../my-agents/{aid}` `POST .../test-routing` | ✅真实 |
 | 5 | `/expert/dual-sign` | 专家双签审核 | 双签演示 | 双签操作 | (组件内部) | ⚠视组件 |
-| 6 | `/expert/my/supervision` | 我的督导 | 4统计+教练绩效表+督导记录 | 安排督导 | 无API调用 | ❌全mock |
-| 7 | `/expert/my/reviews` | 我的审核 | 4统计+3标签(待审/历史/统计) | 通过/驳回 | 无API调用 | ❌全mock |
-| 8 | `/expert/my/research` | 研究数据 | 研究面板 | 浏览 | 无API调用 | ❌全mock |
-| 9 | `/portal/medical` | 医护处方助手 | 处方助手界面 | 处方操作 | 无API调用 | ❌全mock |
+| 6 | `/expert/my/supervision` | 我的督导 | 4统计+教练绩效表+督导记录 | 安排督导 | `GET /v1/admin/coaches` `GET /v1/promotion/applications` `POST /v1/coach/messages` | ✅真实 |
+| 7 | `/expert/my/reviews` | 我的审核 | 4统计+3标签(待审/历史/统计) | 通过/驳回 | `GET /v1/expert/audit-queue` `POST /v1/expert/audit/{id}/verdict` | ✅真实 |
+| 8 | `/expert/my/research` | 研究数据 | 研究面板(阶段/风险/增长分析) | 查询/导出 | `GET /v1/analytics/admin/stage-distribution` `GET .../risk-distribution` `GET .../user-growth` `GET .../overview` | ✅真实 |
+| 9 | `/portal/medical` | 医护处方助手 | 处方助手(待办+处方) | 查看待办/处方 | `GET /v1/daily-tasks/today` `GET /v1/coach/review-queue` | ✅真实 |
 
 ---
 
@@ -184,12 +184,12 @@
 | 23 | `/content/review` | 内容审核 | 审核队列 | 发布/删除/退回 | `GET /v1/content-manage/list` `POST .../{id}/publish` `DELETE .../{id}` `PUT .../{id}` | ✅真实 |
 | 24 | `/exam/list` | 考试列表 | 考试表 | CRUD/发布/归档/统计 | `GET /certification/exams` `POST .../` `PUT .../{id}` `DELETE .../{id}` `POST .../{id}/publish` `POST .../{id}/archive` `GET .../{id}/statistics` | ✅真实 |
 | 25 | `/question/bank` | 题库列表 | 题目列表 | 导入 | 无API调用 | ❌全mock |
-| 26 | `/live/list` | 直播列表 | 直播列表 | CRUD | 无API调用 | ❌全mock |
-| 27 | `/coach/list` | 教练列表 | 教练表 | 查看 | 无API调用 | ❌全mock |
-| 28 | `/student` | 学员管理 | 学员表 | 管理 | 无API调用 | ❌全mock |
+| 26 | `/live/list` | 直播列表 | 直播列表(空态:即将上线) | — | `GET /v1/live/sessions` (graceful empty) | ⚠即将上线 |
+| 27 | `/coach/list` | 教练列表 | 教练表 | 查看/筛选 | `GET /v1/admin/users` `GET /v1/admin/coaches` `GET /v1/coach/students` `GET /v1/coach/performance` `GET /v1/coach/my-certification` | ✅真实 |
+| 28 | `/student` | 学员管理 | 学员表 | 添加/编辑/发消息 | `GET /v1/coach/students` `POST /v1/admin/users` `PUT /v1/admin/users/{id}` `POST /v1/coach/messages` | ✅真实 |
 | 29 | `/prompts/list` | Prompt管理 | Prompt列表 | CRUD | (未确认) | ⚠待查 |
-| 30 | `/interventions` | 干预包管理 | 干预包列表 | 管理 | 无HTTP调用 | ❌纯本地mock |
-| 31 | `/settings` | 系统设置 | 配置项 | 修改 | 无API调用 | ❌本地存储 |
+| 30 | `/interventions` | 干预包管理 | 干预包列表 | 管理 | `GET /v1/assessment/intervention/match` `GET /v1/programs/templates` | ✅真实 |
+| 31 | `/settings` | 系统设置 | 配置项(基本/等级/考试/通知) | 修改→保存 | `GET /v1/admin/settings/{category}` `PUT /v1/admin/settings/{category}` | ✅真实 |
 | 32 | `/dashboard` | 工作台(旧) | 按角色→分流 | — | 无API调用 | 静态 |
 | 33 | `/expert/dashboard/:tid` | 专家工作室管理 | 租户信息+客户+统计 | 编辑品牌 | `GET /v1/tenants/{tid}` `GET .../clients` `GET .../stats` `PATCH /v1/tenants/{tid}` | ⚠mock兜底 |
 | 34 | `/expert/content-studio/:tid` | 内容工作室 | 文档列表 | CRUD/发布 | `GET /v1/tenants/{tid}/content/documents` `POST .../documents` `PUT .../{did}` `POST .../{did}/publish` `DELETE .../{did}` | ✅真实 |
@@ -203,22 +203,38 @@
 
 | 状态 | 含义 | 页面数 |
 |------|------|--------|
-| ✅真实 | 调用真实后端API | ~62 |
-| ⚠mock兜底 | 调用API,失败时降级为mock | ~21 |
-| ❌全mock | 硬编码数据,无API调用 | ~25 |
+| ✅真实 | 调用真实后端API | ~84 |
+| ⚠mock兜底 | 调用API,失败时降级为mock | ~12 |
+| ❌全mock | 硬编码数据,无API调用 | ~3 |
+| ⚠即将上线 | 功能未开发,空态展示 | ~1 |
 | 静态 | 纯展示页,无需数据 | ~8 |
 
-### 全mock页面清单 (优先接入真实API)
+### P4 清零记录 (2026-02-20)
 
-- **H5**: ObserverHome, GrowerTodayHome, Profile (无API调用)
-- **H5 路径不匹配**: PromotionProgress (promotion_api 前缀 /v1 缺 /api, 4端点路径名不一致)
-- **H5 字段不匹配**: CoachDirectory (items vs coaches, 缺 title/student_count/rating)
-- **H5 端点不存在**: Home.vue 的 /latest_status (定义在根main.py, 服务器运行api.main)
-- **详见**: `docs/h5-page-audit.md` (43页逐页审计报告, 2026-02-19)
-- **Admin Client**: MyDevices, MyTrajectory, AssessmentList, AssessmentResult
-- **Coach**: CoachStudentList, ContentSharing, StudentAssessment, coach/Review
-- **Expert**: ExpertHome, MySupervision, MyReviews, MyResearch, MedicalAssistant
-- **Admin**: QuestionBank, live/List, coach/List, StudentList, interventions, Settings
+**已修复 (❌→✅, 22页)**:
+- **R11**: ContentSharing→程序模板API, StudentList→写入API, AssessmentResult→评估API, MyReviews→飞轮API
+- **R12**: HomeViewOptimized/DataInput/ChatView/ProgressDashboard→health.ts全面重写(JWT作用域)
+- **R13**: coach/Review→晋级API, ExpertHome→飞轮+管理API, MySupervision→教练+晋级API, MyResearch→分析API, Settings→settings_api.py
+- **R14**: MedicalAssistant→任务+审核API, MyTrajectory→评估+学分+任务+设备API
+
+**已重分类 (实际已有API, 6页)**:
+- ObserverHome, GrowerTodayHome (飞轮API), MyDevices (device_rest_api), AssessmentList (assessment_api), Interventions (intervention matching), CoachList (admin users)
+
+**仍为mock (3页)**:
+- **Coach**: CoachStudentList (coach-portal/students), StudentAssessment (coach/student-assessment/:id)
+- **Admin**: QuestionBank (question/bank)
+
+**即将上线 (1页)**:
+- live/List (直播功能)
+
+### 仍为mock兜底 (~12页, 调用真实API但可能返回空数据)
+
+- CoachWorkbench stats, CoachAnalytics 6图表, CoachStudentProfile/Health
+- AdminCommandCenter (部分渠道/容器), AdminAnalytics, AdminDistribution
+- AgentEcosystem/Growth, KnowledgeSharing, Safety dashboard/review
+- ExpertDashboard (部分统计)
+
+> 这些页面调用真实API但可能因子系统表无数据而返回空值,属于正常行为(empty ≠ mock)
 
 ---
 
@@ -231,10 +247,15 @@
 | `GET /v1/learning/grower/stats/{uid}` | H5:LearnCenter, MyLearning; Admin:LearningProgress |
 | `GET /v1/assessment-assignments/my-pending` | H5:BehaviorAssessment, Notifications; Admin:MyAssessments |
 | `GET /v1/auth/me` | H5:HealthRecords, AccountSettings |
-| `GET /v1/mp/device/dashboard/today` | H5:HealthRecords, Notifications |
+| `GET /v1/mp/device/dashboard/today` | H5:HealthRecords, Notifications; Admin:HomeViewOptimized, ChatViewOptimized, MyTrajectory |
 | `POST /v1/food/recognize` | H5:Chat, FoodRecognition |
-| `GET /v1/health/{id}/score` | Admin:HomeViewOptimized, ProgressDashboard |
-| `GET /v1/health/{id}/snapshot` | Admin:HomeViewOptimized, ChatViewOptimized |
+| `GET /v1/health-data/summary` | Admin:HomeViewOptimized, ProgressDashboard |
+| `GET /v1/daily-tasks/today` | Admin:HomeViewOptimized, MedicalAssistant; H5:Home, Tasks |
+| `GET /v1/coach-tip/today` | Admin:HomeViewOptimized, ProgressDashboard |
+| `GET /v1/credits/my/records` | Admin:MyTrajectory |
+| `POST /v1/daily-tasks/quick-checkin` | Admin:DataInputOptimized |
+| `GET /v1/promotion/applications` | Admin:PromotionReview; Coach:Review; Expert:ExpertHome, MySupervision |
+| `GET /v1/admin/settings/{category}` | Admin:Settings |
 
 ---
 

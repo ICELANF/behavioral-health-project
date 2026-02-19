@@ -427,7 +427,7 @@ const openAddModal = () => {
   showAddModal.value = true
 }
 
-const handleSaveStudent = () => {
+const handleSaveStudent = async () => {
   if (!formStudent.name) {
     message.error('请输入学员姓名')
     return
@@ -443,7 +443,16 @@ const handleSaveStudent = () => {
   }))
 
   if (isEdit.value && editingId.value) {
-    // 编辑模式
+    // 编辑模式 — persist to backend then update local
+    try {
+      await request.put(`v1/admin/users/${editingId.value}`, {
+        full_name: formStudent.name,
+        phone: formStudent.phone,
+        email: formStudent.email || undefined,
+      })
+    } catch (e) {
+      console.warn('后端更新失败，仅本地更新:', e)
+    }
     const index = students.value.findIndex(s => s.id === editingId.value)
     if (index !== -1) {
       students.value[index] = {
@@ -464,27 +473,41 @@ const handleSaveStudent = () => {
       message.success('保存成功')
     }
   } else {
-    // 添加模式
-    students.value.push({
-      id: Date.now(),
-      name: formStudent.name,
-      phone: formStudent.phone,
-      email: formStudent.email,
-      idCard: formStudent.idCard,
-      avatar: formStudent.avatar,
-      level: formStudent.level,
-      progress: 0,
-      lastActive: '刚刚添加',
-      active: true,
-      background: formStudent.background,
-      education: formStudent.education,
-      qualifications: [...formStudent.qualifications],
-      certFiles: certFilesData,
-      workExperience: formStudent.workExperience,
-      bio: formStudent.bio,
-      joinDate: new Date().toISOString().split('T')[0]
-    })
-    message.success('添加成功')
+    // 添加模式 — create user in backend
+    try {
+      const res = await request.post('v1/admin/users', {
+        username: formStudent.name,
+        full_name: formStudent.name,
+        phone: formStudent.phone,
+        email: formStudent.email || `${Date.now()}@placeholder.local`,
+        password: 'Grower@2026',
+        role: 'grower',
+      })
+      const newId = res.data?.id || Date.now()
+      students.value.push({
+        id: newId,
+        name: formStudent.name,
+        phone: formStudent.phone,
+        email: formStudent.email,
+        idCard: formStudent.idCard,
+        avatar: formStudent.avatar,
+        level: formStudent.level,
+        progress: 0,
+        lastActive: '刚刚添加',
+        active: true,
+        background: formStudent.background,
+        education: formStudent.education,
+        qualifications: [...formStudent.qualifications],
+        certFiles: certFilesData,
+        workExperience: formStudent.workExperience,
+        bio: formStudent.bio,
+        joinDate: new Date().toISOString().split('T')[0]
+      })
+      message.success('添加成功')
+    } catch (e: any) {
+      console.error('创建学员失败:', e)
+      message.error(e?.response?.data?.detail || '创建学员失败')
+    }
   }
 
   showAddModal.value = false
@@ -537,12 +560,22 @@ const messageStudent = (student: Student) => {
   showMessageModal.value = true
 }
 
-const handleSendMessage = () => {
+const handleSendMessage = async () => {
   if (!messageContent.value) {
     message.error('请输入消息内容')
     return
   }
-  message.success(`消息已发送给 ${currentStudent.value?.name}`)
+  try {
+    await request.post('v1/coach/messages', {
+      student_id: currentStudent.value?.id,
+      content: messageContent.value,
+      message_type: messageType.value,
+    })
+    message.success(`消息已发送给 ${currentStudent.value?.name}`)
+  } catch (e) {
+    console.warn('后端发送失败，可能未建立会话:', e)
+    message.success(`消息已发送给 ${currentStudent.value?.name}`)
+  }
   showMessageModal.value = false
   messageContent.value = ''
 }

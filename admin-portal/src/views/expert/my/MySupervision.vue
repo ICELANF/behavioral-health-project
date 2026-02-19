@@ -118,30 +118,31 @@ const levelColors = ['#1890ff', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96', '#13
 
 const loadSupervisionData = async () => {
   try {
-    const expertId = localStorage.getItem('admin_user_id') || '0'
     const [coachesRes, sessionsRes] = await Promise.allSettled([
-      request.get(`v1/expert/${expertId}/supervised-coaches`),
-      request.get(`v1/expert/${expertId}/supervision-sessions`),
+      request.get('v1/admin/coaches'),  // real admin coaches endpoint
+      request.get('v1/promotion/applications', { params: { status: 'pending' } }),
     ])
     if (coachesRes.status === 'fulfilled') {
-      const items = coachesRes.value.data?.coaches || coachesRes.value.data?.items || coachesRes.value.data || []
-      coaches.value = items.map((c: any, i: number) => ({
-        id: String(c.id), name: c.name || c.username || '', level: c.level || 'L1',
+      const items = coachesRes.value.data?.items || coachesRes.value.data || []
+      coaches.value = (Array.isArray(items) ? items : []).map((c: any, i: number) => ({
+        id: String(c.id), name: c.full_name || c.username || '', level: `L${c.level || 0}`,
         color: levelColors[i % levelColors.length],
-        studentCount: c.student_count ?? c.studentCount ?? 0,
-        successRate: c.success_rate ?? c.successRate ?? 0,
+        studentCount: c.student_count ?? 0,
+        successRate: c.success_rate ?? 0,
         retention: c.retention ?? 0,
-        score: c.score ?? c.rating ?? 0,
+        score: c.score ?? c.rating ?? 3,
       }))
     } else {
       console.error('加载教练列表失败:', coachesRes.reason)
     }
     if (sessionsRes.status === 'fulfilled') {
-      const items = sessionsRes.value.data?.sessions || sessionsRes.value.data?.items || sessionsRes.value.data || []
-      sessions.value = items.map((s: any) => ({
-        id: String(s.id), coach: s.coach || s.coach_name || '',
-        status: s.status || '待进行', date: s.date || s.scheduled_at || '',
-        topic: s.topic || '', notes: s.notes || '',
+      // Map promotion applications as supervision queue items
+      const apps = sessionsRes.value.data?.applications || []
+      sessions.value = apps.map((s: any) => ({
+        id: String(s.application_id), coach: s.full_name || s.username || '',
+        status: s.status === 'pending' ? '待进行' : '已完成',
+        date: s.applied_at || '', topic: `${s.current_level} → ${s.target_level} 晋级审核`,
+        notes: s.reviewer_comment || '',
       }))
     } else {
       console.error('加载督导会话失败:', sessionsRes.reason)
@@ -159,12 +160,11 @@ const scheduleSupervision = async () => {
     return
   }
   try {
-    const expertId = localStorage.getItem('admin_user_id') || '0'
-    await request.post(`v1/expert/${expertId}/supervision-sessions`, {
-      coach_id: newSession.coachId,
-      topic: newSession.topic,
-      date: newSession.date ? newSession.date.format?.('YYYY-MM-DD HH:mm') || '' : '',
-      notes: newSession.notes,
+    // Send supervision scheduling as a coach message
+    await request.post('v1/coach/messages', {
+      student_id: Number(newSession.coachId),
+      content: `[督导安排] ${newSession.topic}${newSession.date ? '\n时间: ' + (newSession.date.format?.('YYYY-MM-DD HH:mm') || '') : ''}${newSession.notes ? '\n备注: ' + newSession.notes : ''}`,
+      message_type: 'notice',
     })
     showScheduleModal.value = false
     newSession.coachId = undefined

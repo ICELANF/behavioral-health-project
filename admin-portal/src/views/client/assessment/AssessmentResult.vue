@@ -62,14 +62,15 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
+import request from '@/api/request'
 
 const route = useRoute()
 const assessmentId = route.params.id
 
-// Load result from localStorage (saved after assessment submission)
+// Start with localStorage data (instant display), then try API
 const stored = localStorage.getItem(`assessment_result_${assessmentId}`)
 const parsedResult = stored ? JSON.parse(stored) : null
 
@@ -134,6 +135,31 @@ const trendColor = (score) => {
   if (pct >= 0.4) return '#d4b106'
   return '#389e0d'
 }
+
+onMounted(async () => {
+  // Try to fetch from API; on success, update result and history
+  try {
+    const res = await request.get(`v1/assessment-assignments/${assessmentId}/result`)
+    const d = res.data
+    if (d) {
+      result.value = {
+        name: d.questionnaire_name || d.name || result.value.name,
+        score: d.score ?? result.value.score,
+        maxScore: d.max_score ?? result.value.maxScore,
+        date: (d.completed_at || d.date || '').slice(0, 10) || result.value.date,
+      }
+      // Populate history if returned
+      if (Array.isArray(d.history)) {
+        history.value = d.history.map((h) => ({
+          score: h.score,
+          shortDate: (h.date || h.completed_at || '').slice(5, 10),
+        }))
+      }
+    }
+  } catch {
+    // API unavailable — keep localStorage data (already loaded above)
+  }
+})
 
 const shareToCoach = () => { message.success('结果已分享给您的健康教练') }
 const downloadPDF = () => { message.info('PDF 下载功能即将上线') }
