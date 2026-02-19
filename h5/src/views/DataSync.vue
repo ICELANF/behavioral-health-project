@@ -173,6 +173,9 @@ async function syncDevice(device: any) {
     const res: any = await api.post(`/api/v1/mp/device/sync?device_id=${encodeURIComponent(deviceId)}`, {})
     addLog(true, `${deviceName} 同步成功，处理 ${res.records_processed || 0} 条记录`)
     showToast({ message: '同步成功', type: 'success' })
+    if (res.task_completed) {
+      setTimeout(() => showToast({ message: '监测任务已自动完成 +10积分', type: 'success' }), 1500)
+    }
     await loadDevices()
   } catch (e: any) {
     addLog(false, `${deviceName} 同步失败: ${e.response?.data?.detail || '未知错误'}`)

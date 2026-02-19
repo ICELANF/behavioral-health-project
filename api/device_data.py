@@ -19,6 +19,8 @@ from sqlalchemy import func, and_
 from loguru import logger
 import enum
 
+import asyncio
+
 from api.dependencies import get_current_user
 from core.database import get_db_session, db_transaction
 from core.models import (
@@ -338,6 +340,7 @@ async def record_glucose_manual(
     手动记录血糖
     """
     try:
+        task_result = None
         with db_transaction() as db:
             recorded_at = reading.timestamp or datetime.utcnow()
 
@@ -363,13 +366,44 @@ async def record_glucose_manual(
             except Exception as e:
                 logger.warning(f"DeviceAlertService glucose检查失败: {e}")
 
-            return {
+            # 自动打卡监测任务
+            try:
+                from core.device_task_bridge import try_auto_checkin_device_task, MEAL_TAG_HINT_MAP
+                task_result = try_auto_checkin_device_task(
+                    db, user_id, "glucose",
+                    value=reading.value,
+                    note=f"血糖 {reading.value} mmol/L",
+                    time_hint=MEAL_TAG_HINT_MAP.get(reading.meal_tag),
+                )
+            except Exception:
+                pass
+
+            result = {
                 "success": True,
                 "reading_id": glucose.id,
                 "value": reading.value,
                 "value_mgdl": mmol_to_mgdl(reading.value),
-                "recorded_at": recorded_at.isoformat()
+                "recorded_at": recorded_at.isoformat(),
+                "task_completed": task_result is not None,
+                "task_info": task_result,
             }
+
+        # 事务提交后: 异步刷新信任分
+        if task_result:
+            try:
+                from core.trust_score_service import extract_trust_signals_from_checkins, TrustScoreService
+                uid = user_id
+                def _update_trust():
+                    with get_db_session() as sync_db:
+                        signals = extract_trust_signals_from_checkins(sync_db, uid, days=7)
+                        svc = TrustScoreService(sync_db)
+                        svc.update_user_trust(uid, signals, source="device_glucose")
+                        sync_db.commit()
+                await asyncio.to_thread(_update_trust)
+            except Exception:
+                pass
+
+        return result
 
     except Exception as e:
         logger.error(f"Record glucose error: {e}")
@@ -539,6 +573,7 @@ async def record_weight(
     记录体重
     """
     try:
+        task_result = None
         with db_transaction() as db:
             recorded_at = data.timestamp or datetime.utcnow()
 
@@ -559,12 +594,42 @@ async def record_weight(
 
             logger.info(f"[Weight] Record: user={user_id}, weight={data.weight_kg}kg")
 
-            return {
+            # 自动打卡监测任务
+            try:
+                from core.device_task_bridge import try_auto_checkin_device_task
+                task_result = try_auto_checkin_device_task(
+                    db, user_id, "weight",
+                    value=data.weight_kg,
+                    note=f"体重 {data.weight_kg} kg",
+                )
+            except Exception:
+                pass
+
+            result = {
                 "success": True,
                 "record_id": vital.id,
                 "weight_kg": data.weight_kg,
-                "recorded_at": recorded_at.isoformat()
+                "recorded_at": recorded_at.isoformat(),
+                "task_completed": task_result is not None,
+                "task_info": task_result,
             }
+
+        # 事务提交后: 异步刷新信任分
+        if task_result:
+            try:
+                from core.trust_score_service import extract_trust_signals_from_checkins, TrustScoreService
+                uid = user_id
+                def _update_trust():
+                    with get_db_session() as sync_db:
+                        signals = extract_trust_signals_from_checkins(sync_db, uid, days=7)
+                        svc = TrustScoreService(sync_db)
+                        svc.update_user_trust(uid, signals, source="device_weight")
+                        sync_db.commit()
+                await asyncio.to_thread(_update_trust)
+            except Exception:
+                pass
+
+        return result
 
     except Exception as e:
         logger.error(f"Record weight error: {e}")
@@ -642,6 +707,7 @@ async def record_blood_pressure(
     记录血压
     """
     try:
+        task_result = None
         with db_transaction() as db:
             recorded_at = data.timestamp or datetime.utcnow()
 
@@ -668,14 +734,44 @@ async def record_blood_pressure(
             else:
                 classification = "2级高血压"
 
-            return {
+            # 自动打卡监测任务
+            try:
+                from core.device_task_bridge import try_auto_checkin_device_task
+                task_result = try_auto_checkin_device_task(
+                    db, user_id, "blood_pressure",
+                    value=float(data.systolic),
+                    note=f"血压 {data.systolic}/{data.diastolic} mmHg",
+                )
+            except Exception:
+                pass
+
+            result = {
                 "success": True,
                 "record_id": vital.id,
                 "systolic": data.systolic,
                 "diastolic": data.diastolic,
                 "classification": classification,
-                "recorded_at": recorded_at.isoformat()
+                "recorded_at": recorded_at.isoformat(),
+                "task_completed": task_result is not None,
+                "task_info": task_result,
             }
+
+        # 事务提交后: 异步刷新信任分
+        if task_result:
+            try:
+                from core.trust_score_service import extract_trust_signals_from_checkins, TrustScoreService
+                uid = user_id
+                def _update_trust():
+                    with get_db_session() as sync_db:
+                        signals = extract_trust_signals_from_checkins(sync_db, uid, days=7)
+                        svc = TrustScoreService(sync_db)
+                        svc.update_user_trust(uid, signals, source="device_blood_pressure")
+                        sync_db.commit()
+                await asyncio.to_thread(_update_trust)
+            except Exception:
+                pass
+
+        return result
 
     except Exception as e:
         logger.error(f"Record BP error: {e}")
@@ -1185,6 +1281,45 @@ async def sync_device_data_batch(
         except Exception as e:
             logger.warning(f"DeviceBehaviorBridge batch处理失败: {e}")
 
+        # 设备 → 每日任务自动打卡
+        tasks_auto_completed = []
+        try:
+            from core.device_task_bridge import try_auto_checkin_device_task, MEAL_TAG_HINT_MAP
+            with db_transaction() as task_db:
+                # 血糖: 取最后一条 reading 打卡
+                if "glucose" in data and data["glucose"].get("readings"):
+                    last_gl = data["glucose"]["readings"][-1]
+                    tr = try_auto_checkin_device_task(
+                        task_db, user_id, "glucose",
+                        value=last_gl["value"],
+                        note=f"血糖 {last_gl['value']} mmol/L (sync)",
+                        time_hint=MEAL_TAG_HINT_MAP.get(last_gl.get("meal_tag")),
+                    )
+                    if tr:
+                        tasks_auto_completed.append(tr)
+                # 睡眠
+                if "sleep" in data and data["sleep"].get("records"):
+                    last_sl = data["sleep"]["records"][-1]
+                    tr = try_auto_checkin_device_task(
+                        task_db, user_id, "sleep",
+                        value=float(last_sl.get("sleep_score") or 0),
+                        note=f"睡眠 {last_sl.get('total_duration_min', 0)}min (sync)",
+                    )
+                    if tr:
+                        tasks_auto_completed.append(tr)
+                # 活动
+                if "activity" in data and data["activity"].get("records"):
+                    last_act = data["activity"]["records"][-1]
+                    tr = try_auto_checkin_device_task(
+                        task_db, user_id, "activity",
+                        value=float(last_act.get("steps", 0)),
+                        note=f"步数 {last_act.get('steps', 0)} (sync)",
+                    )
+                    if tr:
+                        tasks_auto_completed.append(tr)
+        except Exception as e:
+            logger.warning(f"DeviceTaskBridge batch打卡失败: {e}")
+
         # 设备预警检查（批量同步后）
         try:
             from core.device_alert_service import DeviceAlertService
@@ -1213,6 +1348,21 @@ async def sync_device_data_batch(
         except Exception as e:
             logger.warning(f"DeviceAlertService batch检查失败: {e}")
 
+        # 异步刷新信任分
+        if tasks_auto_completed:
+            try:
+                from core.trust_score_service import extract_trust_signals_from_checkins, TrustScoreService
+                uid = user_id
+                def _update_trust():
+                    with get_db_session() as sync_db:
+                        signals = extract_trust_signals_from_checkins(sync_db, uid, days=7)
+                        svc = TrustScoreService(sync_db)
+                        svc.update_user_trust(uid, signals, source="device_batch_sync")
+                        sync_db.commit()
+                await asyncio.to_thread(_update_trust)
+            except Exception:
+                pass
+
         return {
             "success": True,
             "sync_id": sync_id,
@@ -1221,7 +1371,9 @@ async def sync_device_data_batch(
             "records_new": records_new,
             "records_updated": records_processed - records_new,
             "errors": errors if errors else None,
-            "synced_at": datetime.utcnow().isoformat()
+            "synced_at": datetime.utcnow().isoformat(),
+            "task_completed": len(tasks_auto_completed) > 0,
+            "tasks_auto_completed": tasks_auto_completed if tasks_auto_completed else None,
         }
 
     except HTTPException:
