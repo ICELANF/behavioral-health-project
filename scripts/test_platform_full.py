@@ -1035,7 +1035,7 @@ async def test_m24_admin(c: httpx.AsyncClient, tokens: dict):
 
     # 94. admin_users_overview
     try:
-        r = await c.get(f"{BASE}/api/v1/admin/users/overview", headers=h)
+        r = await c.get(f"{BASE}/api/v1/admin/user-overview", headers=h)
         ok = r.status_code in (200, 422)  # 422 may occur from response model validation
         record(M, "admin_users_overview", ok, f"HTTP {r.status_code}", r.status_code)
     except Exception as e:
