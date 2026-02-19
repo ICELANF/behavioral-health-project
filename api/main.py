@@ -1851,26 +1851,7 @@ except ImportError as e:
 
 
 # ========== V5.0 飞轮API路由 ==========
-# --- Mock版 (已被 R3/R5/R6 Live版替代) ---
-# try:
-#     from api.observer_flywheel_api import router as observer_flywheel_router
-#     app.include_router(observer_flywheel_router)
-# except ImportError as e:
-#     print(f"[API] V5.0 Observer飞轮路由注册失败: {e}")
-#
-# try:
-#     from api.grower_flywheel_api import router as grower_flywheel_router
-#     app.include_router(grower_flywheel_router)
-# except ImportError as e:
-#     print(f"[API] V5.0 Grower飞轮路由注册失败: {e}")
-#
-# try:
-#     from api.coach_flywheel_api import router as coach_flywheel_router
-#     app.include_router(coach_flywheel_router)
-# except ImportError as e:
-#     print(f"[API] V5.0 Coach飞轮路由注册失败: {e}")
-
-# --- Expert + Admin (保留, 已加认证) ---
+# --- Expert + Admin ---
 try:
     from api.expert_flywheel_api import router as expert_flywheel_router
     app.include_router(expert_flywheel_router)
