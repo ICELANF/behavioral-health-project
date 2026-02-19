@@ -462,7 +462,7 @@ async def test_m08_companion(c: httpx.AsyncClient, tokens: dict):
 
 
 # ══════════════════════════════════════════════════════════
-# M09  Promotion (3 tests) — prefix /v1/promotion (无 /api)
+# M09  Promotion (3 tests) — prefix /api/v1/promotion
 # ══════════════════════════════════════════════════════════
 async def test_m09_promotion(c: httpx.AsyncClient, tokens: dict):
     M = "M09_Promotion"
@@ -471,21 +471,21 @@ async def test_m09_promotion(c: httpx.AsyncClient, tokens: dict):
 
     # 37. promotion_status
     try:
-        r = await c.get(f"{BASE}/v1/promotion/status", headers=h)
+        r = await c.get(f"{BASE}/api/v1/promotion/status", headers=h)
         record(M, "promotion_status", r.status_code == 200, f"HTTP {r.status_code}", r.status_code)
     except Exception as e:
         record(M, "promotion_status", False, str(e))
 
     # 38. promotion_gap_report
     try:
-        r = await c.get(f"{BASE}/v1/promotion/gap-report", headers=h)
+        r = await c.get(f"{BASE}/api/v1/promotion/gap-report", headers=h)
         record(M, "promotion_gap_report", r.status_code == 200, f"HTTP {r.status_code}", r.status_code)
     except Exception as e:
         record(M, "promotion_gap_report", False, str(e))
 
     # 39. promotion_check
     try:
-        r = await c.post(f"{BASE}/v1/promotion/check", headers=h)
+        r = await c.post(f"{BASE}/api/v1/promotion/check", headers=h)
         ok = r.status_code in (200, 422)
         record(M, "promotion_check", ok, f"HTTP {r.status_code}", r.status_code)
     except Exception as e:
@@ -1104,7 +1104,7 @@ async def chain_1_register_learn_credit_promote(c: httpx.AsyncClient, tokens: di
             return
 
         # Step 4: Check promotion eligibility
-        r = await c.get(f"{BASE}/v1/promotion/status", headers=h)
+        r = await c.get(f"{BASE}/api/v1/promotion/status", headers=h)
         steps.append(f"promotion:{r.status_code}")
         if r.status_code != 200:
             record_chain(name, False, f"promotion failed: {r.status_code}")
