@@ -101,43 +101,15 @@ const chartTabs = [
   { key: '90d', label: '90天' },
 ]
 
-const ttmTimeline = ref([
-  { name: '前思考期', date: '2024-10-01', duration: '45天', color: '#ff4d4f', completed: true },
-  { name: '思考期', date: '2024-11-15', duration: '30天', color: '#fa8c16', completed: true },
-  { name: '准备期', date: '2024-12-15', duration: '15天', color: '#fadb14', completed: true },
-  { name: '行动期', date: '2025-01-01', duration: '至今', color: '#52c41a', current: true },
-  { name: '维持期', date: '', color: '#d9d9d9' },
-  { name: '终止期', date: '', color: '#d9d9d9' },
-])
+const ttmTimeline = ref([])
 
-const implicitData = ref([
-  { icon: '📱', value: '45min', label: 'App日均使用', trend: '↑ 12%', trendClass: 'up' },
-  { icon: '🚶', value: '6,850', label: '日均步数', trend: '↑ 8%', trendClass: 'up' },
-  { icon: '😴', value: '6.8h', label: '平均睡眠', trend: '↑ 5%', trendClass: 'up' },
-  { icon: '❤️', value: '72', label: '静息心率', trend: '↓ 3%', trendClass: 'down-good' },
-])
+const implicitData = ref([])
 
-const explicitData = ref([
-  { icon: '📋', value: '3次', label: '本周测评', trend: '持平', trendClass: 'stable' },
-  { icon: '✅', value: '85%', label: '任务完成率', trend: '↑ 10%', trendClass: 'up' },
-  { icon: '💬', value: '12条', label: '本周对话', trend: '↑ 20%', trendClass: 'up' },
-  { icon: '📖', value: '2篇', label: '阅读课程', trend: '↓ 1篇', trendClass: 'down' },
-])
+const explicitData = ref([])
 
-const heatmapData = ref([
-  { label: '本周', days: [80, 65, 90, 45, 70, 85, 30] },
-  { label: '上周', days: [60, 50, 75, 80, 55, 40, 20] },
-  { label: '2周前', days: [40, 30, 55, 60, 45, 35, 15] },
-  { label: '3周前', days: [25, 20, 40, 35, 30, 20, 10] },
-])
+const heatmapData = ref([])
 
-const recentEvents = ref([
-  { id: 1, text: '完成 PHQ-9 抑郁筛查测评', time: '今天 10:30', type: '测评', color: '#1890ff' },
-  { id: 2, text: '连续第7天完成运动打卡', time: '今天 08:15', type: '打卡', color: '#52c41a' },
-  { id: 3, text: '与AI教练完成一次对话', time: '昨天 20:00', type: '对话', color: '#722ed1' },
-  { id: 4, text: '血糖值超过阈值告警', time: '昨天 14:30', type: '告警', color: '#ff4d4f' },
-  { id: 5, text: '完成《压力管理入门》课程', time: '前天 16:00', type: '学习', color: '#fa8c16' },
-])
+const recentEvents = ref([])
 
 const heatColor = (val) => {
   if (val >= 80) return '#389e0d'

@@ -385,11 +385,7 @@ const coach = ref<any>({
 })
 
 // 课程进度
-const courseProgress = ref([
-  { course_id: '1', course_name: '行为健康入门', progress: 100, status: 'completed', completed_at: '2025-12-15' },
-  { course_id: '2', course_name: '慢病管理基础', progress: 80, status: 'ongoing', completed_at: null },
-  { course_id: '3', course_name: '动机访谈技术', progress: 45, status: 'ongoing', completed_at: null }
-])
+const courseProgress = ref<any[]>([])
 
 const courseColumns = [
   { title: '课程名称', dataIndex: 'course_name' },
@@ -399,10 +395,7 @@ const courseColumns = [
 ]
 
 // 考试成绩
-const examResults = ref([
-  { exam_id: '1', exam_name: 'L1 理论考试', score: 85, passing_score: 60, passed: true, date: '2025-12-20' },
-  { exam_id: '2', exam_name: 'L1 案例模拟', score: 78, passing_score: 70, passed: true, date: '2025-12-22' }
-])
+const examResults = ref<any[]>([])
 
 const examColumns = [
   { title: '考试名称', dataIndex: 'exam_name' },
@@ -412,10 +405,7 @@ const examColumns = [
 ]
 
 // 晋级历史
-const promotionHistory = ref([
-  { id: '1', from_level: 'L0', to_level: 'L1', date: '2025-11-01', approved: true, comment: '考核通过，学习表现优秀' },
-  { id: '2', from_level: 'L1', to_level: 'L2', date: '2026-01-15', approved: true, comment: '案例数量达标，督导评价良好' }
-])
+const promotionHistory = ref<any[]>([])
 
 // 学员列表
 const students = ref<any[]>([])
@@ -429,17 +419,10 @@ const studentColumns = [
 ]
 
 // 案例记录
-const cases = ref([
-  { id: '1', title: '2型糖尿病逆转案例', type: 'diabetes', description: '患者男性，52岁，通过8周干预成功逆转糖尿病前期...', date: '2026-01-10' },
-  { id: '2', title: '高血压综合管理', type: 'hypertension', description: '患者女性，48岁，高血压3年，通过生活方式干预...', date: '2026-01-05' },
-  { id: '3', title: '体重管理成功案例', type: 'weight', description: '患者男性，35岁，BMI 32，12周减重12公斤...', date: '2025-12-28' }
-])
+const cases = ref<any[]>([])
 
 // 督导记录
-const mentoringRecords = ref([
-  { id: '1', supervisor_name: '孙七', topic: '案例讨论：糖尿病患者沟通技巧', duration: 60, rating: 5, date: '2026-01-20', feedback: '表现出色' },
-  { id: '2', supervisor_name: '孙七', topic: '技能培训：动机访谈实践', duration: 90, rating: 4, date: '2026-01-15', feedback: '需要加强提问技巧' }
-])
+const mentoringRecords = ref<any[]>([])
 
 const mentoringColumns = [
   { title: '督导师', key: 'supervisor' },

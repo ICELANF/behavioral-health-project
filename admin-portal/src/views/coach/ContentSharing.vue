@@ -14,8 +14,10 @@
     <!-- Step 1: Select Content -->
     <div v-if="currentStep === 0">
       <a-card title="选择要分享的内容">
-        <a-tabs v-model:activeKey="contentTab">
+        <a-spin v-if="loadingContent" tip="加载内容..." />
+        <a-tabs v-else v-model:activeKey="contentTab">
           <a-tab-pane key="course" tab="课程">
+            <a-empty v-if="courses.length === 0" description="暂无课程内容" />
             <div v-for="item in courses" :key="item.id" class="content-item" :class="{ selected: selectedContent?.id === item.id }" @click="selectContent(item)">
               <span class="content-icon">📚</span>
               <div class="content-info">
@@ -26,6 +28,7 @@
             </div>
           </a-tab-pane>
           <a-tab-pane key="article" tab="文章">
+            <a-empty v-if="articles.length === 0" description="暂无文章内容" />
             <div v-for="item in articles" :key="item.id" class="content-item" :class="{ selected: selectedContent?.id === item.id }" @click="selectContent(item)">
               <span class="content-icon">📄</span>
               <div class="content-info">
@@ -36,6 +39,7 @@
             </div>
           </a-tab-pane>
           <a-tab-pane key="intervention" tab="干预包">
+            <a-empty v-if="interventions.length === 0" description="暂无干预包" />
             <div v-for="item in interventions" :key="item.id" class="content-item" :class="{ selected: selectedContent?.id === item.id }" @click="selectContent(item)">
               <span class="content-icon">📦</span>
               <div class="content-info">
@@ -52,6 +56,8 @@
     <!-- Step 2: Select Students -->
     <div v-if="currentStep === 1">
       <a-card title="选择接收学员">
+        <a-empty v-if="students.length === 0" description="暂无学员数据" />
+        <template v-else>
         <a-input-search v-model:value="studentSearch" placeholder="搜索学员" style="margin-bottom: 12px" />
         <a-checkbox-group v-model:value="selectedStudentIds" style="width: 100%">
           <div v-for="s in filteredStudents" :key="s.id" class="student-check-item">
@@ -68,6 +74,7 @@
           <a-button size="small" @click="selectAllStudents">全选</a-button>
           <a-button size="small" style="margin-left: 8px" @click="selectedStudentIds = []">清空</a-button>
         </div>
+        </template>
       </a-card>
     </div>
 
@@ -107,8 +114,7 @@
         <div v-for="s in trackingData" :key="s.id" class="tracking-item">
           <a-avatar :size="24">{{ s.name[0] }}</a-avatar>
           <span class="tracking-name">{{ s.name }}</span>
-          <a-tag :color="s.read ? 'green' : 'default'" size="small">{{ s.read ? '已阅读' : '未阅读' }}</a-tag>
-          <span v-if="s.readTime" class="tracking-time">{{ s.readTime }}</span>
+          <a-tag :color="s.sent ? 'green' : 'red'" size="small">{{ s.sent ? '已发送' : '发送失败' }}</a-tag>
         </div>
       </a-card>
     </div>
@@ -117,7 +123,7 @@
     <div class="step-actions">
       <a-button v-if="currentStep > 0" @click="currentStep--">上一步</a-button>
       <a-button v-if="currentStep < 3" type="primary" :disabled="!canNext" @click="currentStep++">下一步</a-button>
-      <a-button v-if="currentStep === 3 && !sent" type="primary" @click="sendContent">
+      <a-button v-if="currentStep === 3 && !sent" type="primary" :loading="sending" @click="sendContent">
         {{ sendMode === 'now' ? '立即发送' : '确认定时' }}
       </a-button>
     </div>
@@ -125,8 +131,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import request from '@/api/request'
 
 const currentStep = ref(0)
 const contentTab = ref('course')
@@ -137,32 +144,61 @@ const personalMessage = ref('')
 const sendMode = ref('now')
 const scheduledTime = ref(null)
 const sent = ref(false)
+const sending = ref(false)
+const loadingContent = ref(false)
 
-const courses = ref([
-  { id: 'c1', title: '压力管理入门', type: 'course', chapters: 8, duration: '2小时' },
-  { id: 'c2', title: '健康饮食指南', type: 'course', chapters: 6, duration: '1.5小时' },
-  { id: 'c3', title: '运动与情绪管理', type: 'course', chapters: 5, duration: '1小时' },
-])
+const courses = ref<any[]>([])
+const articles = ref<any[]>([])
+const interventions = ref<any[]>([])
+const students = ref<any[]>([])
 
-const articles = ref([
-  { id: 'a1', title: '如何建立健康的睡眠习惯', type: 'article', readTime: '5分钟' },
-  { id: 'a2', title: '正念冥想入门指南', type: 'article', readTime: '8分钟' },
-  { id: 'a3', title: '情绪日记的写作技巧', type: 'article', readTime: '6分钟' },
-])
+const STAGE_LABELS: Record<string, string> = {
+  S0: '觉醒期', S1: '松动期', S2: '探索期', S3: '准备期',
+  S4: '行动期', S5: '坚持期', S6: '融入期',
+}
 
-const interventions = ref([
-  { id: 'i1', title: '21天运动打卡', type: 'intervention', taskCount: 21, domain: '运动' },
-  { id: 'i2', title: '饮食记录周计划', type: 'intervention', taskCount: 7, domain: '饮食' },
-])
+async function loadContent() {
+  loadingContent.value = true
+  try {
+    const [courseRes, articleRes] = await Promise.all([
+      request.get('/v1/content', { params: { type: 'course', page_size: 50 } }),
+      request.get('/v1/content', { params: { type: 'article', page_size: 50 } }),
+    ])
+    courses.value = (courseRes.data.items || []).map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      type: 'course',
+      chapters: item.chapter_count || '--',
+      duration: item.duration || '--',
+    }))
+    articles.value = (articleRes.data.items || []).map((item: any) => ({
+      id: item.id,
+      title: item.title,
+      type: 'article',
+      readTime: item.read_time || '5分钟',
+    }))
+    // TODO: intervention packs from program_api when available
+    interventions.value = []
+  } catch (e) {
+    console.error('加载内容列表失败:', e)
+    message.error('加载内容列表失败')
+  } finally {
+    loadingContent.value = false
+  }
+}
 
-const students = ref([
-  { id: '1', name: '张伟', stage: '行动期' },
-  { id: '2', name: '李娜', stage: '思考期' },
-  { id: '3', name: '王芳', stage: '前思考期' },
-  { id: '4', name: '赵强', stage: '准备期' },
-  { id: '5', name: '刘洋', stage: '维持期' },
-  { id: '6', name: '陈静', stage: '行动期' },
-])
+async function loadStudents() {
+  try {
+    const res = await request.get('/v1/coach/dashboard')
+    students.value = (res.data.students || []).map((s: any) => ({
+      id: String(s.id),
+      name: s.name,
+      stage: STAGE_LABELS[s.stage] || s.stage || '未评估',
+    }))
+  } catch (e) {
+    console.error('加载学员列表失败:', e)
+  }
+}
 
 const filteredStudents = computed(() => {
   if (!studentSearch.value) return students.value
@@ -180,14 +216,43 @@ const trackingData = ref<any[]>([])
 const selectContent = (item: any) => { selectedContent.value = item }
 const selectAllStudents = () => { selectedStudentIds.value = students.value.map(s => s.id) }
 
-const sendContent = () => {
-  sent.value = true
-  trackingData.value = selectedStudentIds.value.map(id => {
-    const s = students.value.find(st => st.id === id)
-    return { id, name: s?.name || '', read: Math.random() > 0.5, readTime: Math.random() > 0.5 ? '10分钟前' : '' }
-  })
-  message.success(sendMode.value === 'now' ? '内容已发送' : '定时发送已安排')
+const sendContent = async () => {
+  sending.value = true
+  try {
+    const content = selectedContent.value
+    const msgContent = personalMessage.value
+      ? `[内容分享] ${content.title}\n${personalMessage.value}`
+      : `[内容分享] ${content.title}`
+
+    // 逐个发送消息给选中学员
+    const results = await Promise.allSettled(
+      selectedStudentIds.value.map(id =>
+        request.post('/v1/coach/messages', {
+          student_id: Number(id),
+          content: msgContent,
+          message_type: 'advice',
+        })
+      )
+    )
+    const successCount = results.filter(r => r.status === 'fulfilled').length
+    sent.value = true
+    trackingData.value = selectedStudentIds.value.map(id => {
+      const s = students.value.find(st => st.id === id)
+      const succeeded = results[selectedStudentIds.value.indexOf(id)]?.status === 'fulfilled'
+      return { id, name: s?.name || '', read: false, sent: succeeded, readTime: '' }
+    })
+    message.success(`已发送给 ${successCount}/${selectedStudentIds.value.length} 位学员`)
+  } catch (e) {
+    message.error('发送失败')
+  } finally {
+    sending.value = false
+  }
 }
+
+onMounted(() => {
+  loadContent()
+  loadStudents()
+})
 </script>
 
 <style scoped>

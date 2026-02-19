@@ -231,9 +231,9 @@ const loadHistory = async () => {
   try {
     const coachId = localStorage.getItem('admin_username') || 'coach1'
     const res = await copilotApi.getPrescriptionHistory(coachId, { page: 1, pageSize: 20 })
-    historyList.value = res?.data?.list || res?.list || mockHistory()
+    historyList.value = res?.data?.list || res?.list || []
   } catch (e) {
-    historyList.value = mockHistory()
+    console.warn('加载处方历史失败:', e)
   }
   historyLoading.value = false
 }
@@ -247,12 +247,6 @@ const loadMoreHistory = async () => {
     historyList.value.push(...newItems)
   } catch (e) { /* no more */ }
 }
-
-const mockHistory = () => [
-  { risk_level: 'L2', instruction: '该用户情绪激动，建议启动压力评估工具', suggested_tool: 'STRESS_ASSESSMENT_FORM', created_at: '2025-01-15 14:30', adopted: true, ignored: false },
-  { risk_level: 'L1', instruction: '用户处于阻抗期，建议使用同理心倾听', suggested_tool: 'EMPATHY_MODULE_01', created_at: '2025-01-15 10:15', adopted: true, ignored: false },
-  { risk_level: 'LOW', instruction: '用户表达改变意愿，建议制定微习惯', suggested_tool: 'HABIT_DESIGNER', created_at: '2025-01-14 16:45', adopted: false, ignored: true },
-]
 
 const pushPrescription = (data) => {
   const items = (data.outputs?.to_coach || []).map(item => ({

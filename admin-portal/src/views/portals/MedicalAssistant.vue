@@ -141,20 +141,11 @@ const prescriptionTemplates = ref([
   { id: 4, icon: '😴', name: '睡眠改善行为处方', desc: '睡眠卫生+放松训练', items: 5, bg: '#ecfeff', color: '#0891b2' },
 ])
 
-const todayTodos = ref([
-  { id: 1, title: '复核老张血糖监测数据', patient: '张建国', time: '09:00', done: false, type: 'review', typeLabel: '复核' },
-  { id: 2, title: '电话随访服药依从性', patient: '李梅', time: '10:30', done: false, type: 'followup', typeLabel: '随访' },
-  { id: 3, title: '开具运动处方更新', patient: '王伟', time: '14:00', done: true, type: 'rx', typeLabel: '处方' },
-  { id: 4, title: '行为阶段评估', patient: '赵敏', time: '15:30', done: false, type: 'assess', typeLabel: '评估' },
-])
+const todayTodos = ref<{ id: number; title: string; patient: string; time: string; done: boolean; type: string; typeLabel: string }[]>([])
 
 const pendingCount = computed(() => todayTodos.value.filter(t => !t.done).length)
 
-const recentPrescriptions = ref([
-  { id: 1, patient: '张建国', name: '血糖管理行为处方 v2', date: '今天 09:15', status: 'active', statusLabel: '执行中' },
-  { id: 2, patient: '李梅', name: '体重控制行为处方', date: '昨天 16:40', status: 'active', statusLabel: '执行中' },
-  { id: 3, patient: '王伟', name: '运动康复处方', date: '02-01', status: 'completed', statusLabel: '已完成' },
-])
+const recentPrescriptions = ref<{ id: number; patient: string; name: string; date: string; status: string; statusLabel: string }[]>([])
 
 // ---- 患者搜索 → 学员管理页 ----
 const onPatientSearch = (value: string) => {

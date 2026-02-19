@@ -113,7 +113,7 @@
 import { ref, onMounted } from 'vue'
 import { learningApi } from '@/api/index'
 
-const overallStats = ref({ coursesCompleted: 3, totalHours: 12, badges: 5, streak: 7 })
+const overallStats = ref({ coursesCompleted: 0, totalHours: 0, badges: 0, streak: 0 })
 const loading = ref(true)
 
 async function loadLearningData() {
@@ -128,18 +128,18 @@ async function loadLearningData() {
 
   if (statsR.status === 'fulfilled' && statsR.value) {
     const s = statsR.value
-    overallStats.value.coursesCompleted = s.courses_completed ?? s.coursesCompleted ?? overallStats.value.coursesCompleted
-    overallStats.value.badges = s.badges ?? s.badges_earned ?? overallStats.value.badges
+    overallStats.value.coursesCompleted = s.courses_completed ?? s.coursesCompleted ?? 0
+    overallStats.value.badges = s.badges ?? s.badges_earned ?? 0
   } else {
-    console.warn('Failed to load learning stats, using mock', statsR.status === 'rejected' ? statsR.reason : '')
+    console.error('加载学习统计失败:', statsR.status === 'rejected' ? statsR.reason : '')
   }
 
   if (timeR.status === 'fulfilled' && timeR.value) {
-    overallStats.value.totalHours = timeR.value.total_hours ?? timeR.value.totalHours ?? overallStats.value.totalHours
+    overallStats.value.totalHours = timeR.value.total_hours ?? timeR.value.totalHours ?? 0
   }
 
   if (streakR.status === 'fulfilled' && streakR.value) {
-    overallStats.value.streak = streakR.value.current_streak ?? streakR.value.streak ?? overallStats.value.streak
+    overallStats.value.streak = streakR.value.current_streak ?? streakR.value.streak ?? 0
   }
 
   loading.value = false
@@ -147,67 +147,11 @@ async function loadLearningData() {
 
 onMounted(loadLearningData)
 
-const roadmap = ref([
-  {
-    name: '基础认知', completed: true, current: false, progress: 100,
-    skills: [
-      { name: '健康基础知识', icon: '📖', progress: 100, unlocked: true },
-      { name: '行为改变原理', icon: '🧠', progress: 100, unlocked: true },
-    ]
-  },
-  {
-    name: '技能学习', completed: false, current: true, progress: 65,
-    skills: [
-      { name: '压力管理技术', icon: '🧘', progress: 80, unlocked: true },
-      { name: '健康饮食规划', icon: '🥗', progress: 60, unlocked: true },
-      { name: '运动计划制定', icon: '🏃', progress: 40, unlocked: true },
-      { name: '情绪调节方法', icon: '😌', progress: 30, unlocked: true },
-    ]
-  },
-  {
-    name: '实践应用', completed: false, current: false, progress: 15,
-    skills: [
-      { name: '自我监测', icon: '📊', progress: 30, unlocked: true },
-      { name: '习惯养成', icon: '🎯', progress: 20, unlocked: true },
-      { name: '社会支持', icon: '👥', progress: 0, unlocked: false },
-    ]
-  },
-  {
-    name: '持续维持', completed: false, current: false, progress: 0,
-    skills: [
-      { name: '复发预防', icon: '🛡️', progress: 0, unlocked: false },
-      { name: '长期目标管理', icon: '🏔️', progress: 0, unlocked: false },
-    ]
-  },
-])
-
-const courseProgress = ref([
-  { id: '1', name: '压力管理入门', progress: 100, completedChapters: 8, totalChapters: 8, lastStudied: '3天前' },
-  { id: '2', name: '健康饮食指南', progress: 75, completedChapters: 5, totalChapters: 6, lastStudied: '今天' },
-  { id: '3', name: '运动与情绪管理', progress: 40, completedChapters: 2, totalChapters: 5, lastStudied: '昨天' },
-  { id: '4', name: '睡眠改善课程', progress: 0, completedChapters: 0, totalChapters: 4, lastStudied: '未开始' },
-])
-
-const badges = ref([
-  { id: '1', icon: '🌱', name: '学习新手', earned: true, earnedDate: '2024-11-01', condition: '' },
-  { id: '2', icon: '📚', name: '好学勤练', earned: true, earnedDate: '2024-11-15', condition: '' },
-  { id: '3', icon: '🔥', name: '连续7天', earned: true, earnedDate: '2025-01-15', condition: '' },
-  { id: '4', icon: '🏅', name: '首课完成', earned: true, earnedDate: '2024-12-20', condition: '' },
-  { id: '5', icon: '⭐', name: '满分测评', earned: true, earnedDate: '2025-01-10', condition: '' },
-  { id: '6', icon: '💪', name: '运动达人', earned: false, condition: '完成运动课程' },
-  { id: '7', icon: '🧘', name: '正念大师', earned: false, condition: '连续冥想30天' },
-  { id: '8', icon: '👑', name: '全课通关', earned: false, condition: '完成所有课程' },
-])
-
-const certificates = ref([
-  { id: '1', name: '压力管理入门结业证书', date: '2024-12-20' },
-])
-
-const recommendations = ref([
-  { id: '1', icon: '📖', name: '继续学习《健康饮食指南》', description: '还剩1章即可完成', link: '' },
-  { id: '2', icon: '📝', name: '完成本周PSS-10测评', description: '定期评估有助于跟踪进度', link: '/client/assessment/list' },
-  { id: '3', icon: '🏃', name: '开始《运动与情绪管理》第3章', description: '学习运动对情绪的积极影响', link: '' },
-])
+const roadmap = ref([])
+const courseProgress = ref([])
+const badges = ref([])
+const certificates = ref([])
+const recommendations = ref([])
 </script>
 
 <style scoped>

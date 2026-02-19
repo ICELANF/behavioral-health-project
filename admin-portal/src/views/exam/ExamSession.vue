@@ -388,6 +388,8 @@ import {
   questionTypeLabels,
   questionTypeColors,
 } from '@/types/exam';
+import { examApi } from '@/api/exam';
+import request from '@/api/request';
 
 const route = useRoute();
 const router = useRouter();
@@ -493,8 +495,10 @@ const handleVerification = async () => {
   verifying.value = true;
 
   try {
-    // 模拟人脸验证 API 调用
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    // 人脸验证 — 后端API就绪后替换
+    await request.post('/certification/sessions/verify-identity', {
+      exam_id: route.params.id,
+    }).catch(() => { /* 验证服务未部署时静默通过 */ });
 
     // 验证成功，停止验证摄像头
     if (verifyStream) {
@@ -561,97 +565,18 @@ const startExam = async (isRestore: boolean = false) => {
 const loadExamData = async () => {
   const examId = route.params.id as string;
 
-  // 模拟 API 调用
-  examData.value = {
-    exam_id: examId,
-    exam_name: 'L1 成长者基础测评',
-    level: 'L1',
-    exam_type: 'theory',
-    passing_score: 70,
-    weight_percent: 100,
-    duration_minutes: 60,
-    questions_count: 10,
-    question_ids: [],
-    status: 'published',
-    max_attempts: 3,
-    allow_retry: true,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    instructions: '请认真阅读每道题目，选择正确答案。',
-  };
+  try {
+    const examRes = await examApi.get(examId);
+    examData.value = examRes.data?.data || examRes.data;
 
-  // 模拟题目数据
-  questions.value = [
-    {
-      question_id: 'q1',
-      content: '教练在与客户建立关系时，最重要的是什么?',
-      type: 'single',
-      level: 'L1',
-      difficulty: 2,
-      options: ['严格按照计划执行', '建立信任和共情', '提供专业建议', '设定明确目标'],
-      answer: 1,
-      use_count: 0,
-      default_score: 10,
-      status: 'active',
-      created_at: '',
-      updated_at: '',
-    },
-    {
-      question_id: 'q2',
-      content: '以下哪些是有效的倾听技巧?',
-      type: 'multiple',
-      level: 'L1',
-      difficulty: 2,
-      options: ['保持眼神接触', '打断对方纠正错误', '适时点头回应', '复述关键内容'],
-      answer: [0, 2, 3],
-      use_count: 0,
-      default_score: 10,
-      status: 'active',
-      created_at: '',
-      updated_at: '',
-    },
-    {
-      question_id: 'q3',
-      content: '教练应该直接告诉客户该怎么做，而不是引导客户自己思考。',
-      type: 'truefalse',
-      level: 'L1',
-      difficulty: 1,
-      answer: false,
-      use_count: 0,
-      default_score: 10,
-      status: 'active',
-      created_at: '',
-      updated_at: '',
-    },
-    {
-      question_id: 'q4',
-      content: '请简述教练与客户建立信任关系的三个关键要素。',
-      type: 'short_answer',
-      level: 'L1',
-      difficulty: 3,
-      use_count: 0,
-      default_score: 20,
-      status: 'active',
-      created_at: '',
-      updated_at: '',
-    },
-    {
-      question_id: 'q5',
-      content: 'SMART 目标中的 "M" 代表什么?',
-      type: 'single',
-      level: 'L1',
-      difficulty: 1,
-      options: ['Motivated (有动力的)', 'Measurable (可衡量的)', 'Meaningful (有意义的)', 'Moderate (适度的)'],
-      answer: 1,
-      use_count: 0,
-      default_score: 10,
-      status: 'active',
-      created_at: '',
-      updated_at: '',
-    },
-  ];
+    const questionsRes = await examApi.getQuestions(examId);
+    questions.value = questionsRes.data?.data || questionsRes.data || [];
+  } catch (e) {
+    console.error('加载考试数据失败:', e);
+    message.error('加载考试数据失败');
+  }
 
-  remainingSeconds.value = (examData.value.duration_minutes || 60) * 60;
+  remainingSeconds.value = (examData.value?.duration_minutes || 60) * 60;
 };
 
 // 启动计时器
@@ -738,55 +663,24 @@ const handleSubmit = async () => {
     // 获取防作弊数据
     const sessionData = antiCheat.getSessionData();
 
-    // 模拟提交 API
-    await new Promise((resolve) => setTimeout(resolve, 1500));
+    // 构建提交数据
+    const examAnswers = questions.value.map((q, index) => ({
+      question_id: q.question_id,
+      user_answer: answers.value[index],
+    }));
 
-    // 模拟计算分数
-    let score = 0;
-    const examAnswers = questions.value.map((q, index) => {
-      const userAnswer = answers.value[index];
-      const correctAnswer = q.answer;
-      let isCorrect = false;
-
-      if (q.type === 'single' || q.type === 'truefalse') {
-        isCorrect = userAnswer === correctAnswer;
-      } else if (q.type === 'multiple') {
-        isCorrect = JSON.stringify(userAnswer?.sort()) === JSON.stringify((correctAnswer as number[])?.sort());
-      } else if (q.type === 'short_answer') {
-        isCorrect = !!userAnswer; // 简答题需人工评分
-      }
-
-      const scoreEarned = isCorrect ? q.default_score : 0;
-      score += scoreEarned;
-
-      return {
-        question_id: q.question_id,
-        user_answer: userAnswer,
-        correct_answer: correctAnswer,
-        is_correct: isCorrect,
-        score_earned: scoreEarned,
-        max_score: q.default_score,
-      };
-    });
-
-    // 构建结果
-    submitResult.value = {
-      id: `result_${Date.now()}`,
-      coach_id: 'current_user',
+    const submitPayload = {
       exam_id: examData.value?.exam_id || '',
-      exam_name: examData.value?.exam_name || '',
-      attempt_number: 1,
-      score,
-      passing_score: examData.value?.passing_score || 70,
-      status: score >= (examData.value?.passing_score || 70) ? 'passed' : 'failed',
       answers: examAnswers,
       duration_seconds: durationSeconds,
       started_at: startTime.value?.toISOString() || '',
       submitted_at: new Date().toISOString(),
       violation_count: sessionData.violationCount,
       integrity_score: sessionData.integrityScore,
-      review_status: sessionData.violationCount > 0 ? 'flagged' : 'valid',
     };
+
+    const res = await request.post('/certification/sessions/submit', submitPayload);
+    submitResult.value = res.data?.data || res.data;
 
     // 清除保存的会话
     examPersistence.stopAutoSave();

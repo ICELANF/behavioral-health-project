@@ -335,13 +335,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import {
   PictureOutlined,
   UploadOutlined,
   PlusOutlined
 } from '@ant-design/icons-vue'
+import request from '../api/request'
 
 // 状态
 const saving = ref(false)
@@ -367,7 +368,7 @@ const basicSettings = reactive({
   logo: '',
   copyright: '© 2026 行为健康教练平台 版权所有',
   icp: '',
-  contactEmail: 'support@example.com',
+  contactEmail: '',
   contactPhone: '400-000-0000'
 })
 
@@ -439,10 +440,10 @@ const examSettings = reactive({
 const notificationSettings = reactive({
   email: {
     enabled: true,
-    smtpHost: 'smtp.example.com',
+    smtpHost: '',
     smtpPort: 465,
     useSSL: true,
-    senderEmail: 'noreply@example.com',
+    senderEmail: '',
     senderName: '行为健康平台'
   },
   sms: {
@@ -478,35 +479,26 @@ const roleColors: Record<string, string> = {
   reviewer: 'orange'
 }
 
-const adminUsers = ref([
-  {
-    id: '1',
-    name: '系统管理员',
-    email: 'admin@example.com',
-    phone: '13800000001',
-    role: 'super_admin',
-    active: true,
-    last_login: '2026-01-24 10:30'
-  },
-  {
-    id: '2',
-    name: '张运营',
-    email: 'operator@example.com',
-    phone: '13800000002',
-    role: 'operator',
-    active: true,
-    last_login: '2026-01-23 15:20'
-  },
-  {
-    id: '3',
-    name: '李审核',
-    email: 'reviewer@example.com',
-    phone: '13800000003',
-    role: 'reviewer',
-    active: true,
-    last_login: '2026-01-22 09:15'
+const adminUsers = ref<any[]>([])
+
+const loadAdminUsers = async () => {
+  try {
+    const res = await request.get('v1/admin/users', { params: { role: 'admin', page_size: 50 } })
+    adminUsers.value = (res.data?.items || res.data || []).map((u: any) => ({
+      id: String(u.id),
+      name: u.full_name || u.username || '',
+      email: u.email || '',
+      phone: u.phone || '',
+      role: u.role || 'admin',
+      active: u.is_active ?? true,
+      last_login: u.last_login || '-'
+    }))
+  } catch (e) {
+    console.error('加载管理员列表失败:', e)
   }
-])
+}
+
+onMounted(loadAdminUsers)
 
 // 用户表单
 const userForm = reactive({
@@ -544,8 +536,11 @@ const handleLogoUpload = (file: File) => {
 const saveBasicSettings = async () => {
   saving.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await request.put('v1/admin/settings/basic', basicSettings)
     message.success('基础设置已保存')
+  } catch (e) {
+    console.error('保存基础设置失败:', e)
+    message.error('保存基础设置失败')
   } finally {
     saving.value = false
   }
@@ -554,8 +549,11 @@ const saveBasicSettings = async () => {
 const saveLevelConfigs = async () => {
   saving.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await request.put('v1/admin/settings/levels', { levels: levelConfigs.value })
     message.success('等级配置已保存')
+  } catch (e) {
+    console.error('保存等级配置失败:', e)
+    message.error('保存等级配置失败')
   } finally {
     saving.value = false
   }
@@ -564,8 +562,11 @@ const saveLevelConfigs = async () => {
 const saveExamSettings = async () => {
   saving.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await request.put('v1/admin/settings/exam', examSettings)
     message.success('考试设置已保存')
+  } catch (e) {
+    console.error('保存考试设置失败:', e)
+    message.error('保存考试设置失败')
   } finally {
     saving.value = false
   }
@@ -574,8 +575,11 @@ const saveExamSettings = async () => {
 const saveNotificationSettings = async () => {
   saving.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await request.put('v1/admin/settings/notification', notificationSettings)
     message.success('通知设置已保存')
+  } catch (e) {
+    console.error('保存通知设置失败:', e)
+    message.error('保存通知设置失败')
   } finally {
     saving.value = false
   }
@@ -608,36 +612,27 @@ const handleSaveUser = async () => {
     await userFormRef.value?.validate()
     saving.value = true
 
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const payload = {
+      full_name: userForm.name,
+      email: userForm.email,
+      phone: userForm.phone,
+      role: userForm.role,
+      ...(userForm.password ? { password: userForm.password } : {})
+    }
 
     if (isEditUser.value && editingUserId.value) {
-      const index = adminUsers.value.findIndex(u => u.id === editingUserId.value)
-      if (index > -1) {
-        adminUsers.value[index] = {
-          ...adminUsers.value[index],
-          name: userForm.name,
-          email: userForm.email,
-          phone: userForm.phone,
-          role: userForm.role
-        }
-        message.success('管理员信息已更新')
-      }
+      await request.put(`v1/admin/users/${editingUserId.value}`, payload)
+      message.success('管理员信息已更新')
     } else {
-      adminUsers.value.push({
-        id: Date.now().toString(),
-        name: userForm.name,
-        email: userForm.email,
-        phone: userForm.phone,
-        role: userForm.role,
-        active: true,
-        last_login: '-'
-      })
+      await request.post('v1/admin/users', payload)
       message.success('管理员已添加')
     }
 
     userModalVisible.value = false
+    await loadAdminUsers()
   } catch (error) {
-    console.error('Validation failed:', error)
+    console.error('保存失败:', error)
+    message.error('保存失败')
   } finally {
     saving.value = false
   }
@@ -647,11 +642,14 @@ const resetPassword = (user: any) => {
   message.success(`已向 ${user.email} 发送密码重置邮件`)
 }
 
-const deleteUser = (user: any) => {
-  const index = adminUsers.value.findIndex(u => u.id === user.id)
-  if (index > -1) {
-    adminUsers.value.splice(index, 1)
+const deleteUser = async (user: any) => {
+  try {
+    await request.delete(`v1/admin/users/${user.id}`)
     message.success('管理员已删除')
+    await loadAdminUsers()
+  } catch (e) {
+    console.error('删除管理员失败:', e)
+    message.error('删除管理员失败')
   }
 }
 </script>

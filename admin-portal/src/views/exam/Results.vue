@@ -295,78 +295,9 @@ const filters = reactive<ResultListParams>({
 // 日期范围
 const dateRange = ref<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
-// 成绩列表 (使用模拟数据)
+// 成绩列表
 const resultList = ref<ExamResult[]>([]);
 
-// 模拟成绩数据
-const mockResults: ExamResult[] = [
-  {
-    id: 'r1',
-    coach_id: 'coach_001',
-    exam_id: 'exam_l1_theory',
-    exam_name: 'L1 成长者基础测评',
-    attempt_number: 1,
-    score: 85,
-    passing_score: 70,
-    status: 'passed',
-    answers: [
-      { question_id: 'q1', user_answer: 2, correct_answer: 2, is_correct: true, score_earned: 2, max_score: 2 },
-      { question_id: 'q2', user_answer: [0, 1, 2], correct_answer: [0, 1, 2], is_correct: true, score_earned: 4, max_score: 4 },
-      { question_id: 'q3', user_answer: true, correct_answer: true, is_correct: true, score_earned: 1, max_score: 1 },
-      { question_id: 'q4', user_answer: 0, correct_answer: 1, is_correct: false, score_earned: 0, max_score: 2 },
-    ],
-    duration_seconds: 2850,
-    started_at: '2026-01-24T09:00:00Z',
-    submitted_at: '2026-01-24T09:47:30Z',
-    violation_count: 0,
-    integrity_score: 100,
-    review_status: 'valid',
-  },
-  {
-    id: 'r2',
-    coach_id: 'coach_002',
-    exam_id: 'exam_l1_theory',
-    exam_name: 'L1 成长者基础测评',
-    attempt_number: 1,
-    score: 62,
-    passing_score: 70,
-    status: 'failed',
-    answers: [
-      { question_id: 'q1', user_answer: 1, correct_answer: 2, is_correct: false, score_earned: 0, max_score: 2 },
-      { question_id: 'q2', user_answer: [0, 1], correct_answer: [0, 1, 2], is_correct: false, score_earned: 2, max_score: 4 },
-      { question_id: 'q3', user_answer: false, correct_answer: true, is_correct: false, score_earned: 0, max_score: 1 },
-      { question_id: 'q4', user_answer: 1, correct_answer: 1, is_correct: true, score_earned: 2, max_score: 2 },
-    ],
-    duration_seconds: 3600,
-    started_at: '2026-01-24T10:00:00Z',
-    submitted_at: '2026-01-24T11:00:00Z',
-    violation_count: 2,
-    integrity_score: 85,
-    review_status: 'flagged',
-  },
-  {
-    id: 'r3',
-    coach_id: 'coach_003',
-    exam_id: 'exam_l1_theory',
-    exam_name: 'L1 成长者基础测评',
-    attempt_number: 2,
-    score: 78,
-    passing_score: 70,
-    status: 'passed',
-    answers: [
-      { question_id: 'q1', user_answer: 2, correct_answer: 2, is_correct: true, score_earned: 2, max_score: 2 },
-      { question_id: 'q2', user_answer: [0, 1, 2], correct_answer: [0, 1, 2], is_correct: true, score_earned: 4, max_score: 4 },
-      { question_id: 'q3', user_answer: true, correct_answer: true, is_correct: true, score_earned: 1, max_score: 1 },
-      { question_id: 'q4', user_answer: 1, correct_answer: 1, is_correct: true, score_earned: 2, max_score: 2 },
-    ],
-    duration_seconds: 2400,
-    started_at: '2026-01-23T14:00:00Z',
-    submitted_at: '2026-01-23T14:40:00Z',
-    violation_count: 0,
-    integrity_score: 100,
-    review_status: 'valid',
-  },
-];
 
 // 分页配置
 const pagination = computed(() => ({
@@ -506,13 +437,14 @@ const loadResults = async () => {
   loading.value = true;
   try {
     filters.exam_id = examId.value;
-    // 使用模拟数据
-    resultList.value = mockResults;
+    const response = await resultApi.list(filters);
+    const results = response.data?.data || [];
+    resultList.value = results;
 
     // 计算统计数据
-    const total = mockResults.length;
-    const passCount = mockResults.filter((r) => r.status === 'passed').length;
-    const scores = mockResults.map((r) => r.score);
+    const total = results.length;
+    const passCount = results.filter((r: ExamResult) => r.status === 'passed').length;
+    const scores = results.map((r: ExamResult) => r.score);
 
     statistics.value = {
       exam_id: examId.value,
@@ -520,14 +452,13 @@ const loadResults = async () => {
       passCount,
       failCount: total - passCount,
       passRate: total > 0 ? Math.round((passCount / total) * 100) : 0,
-      averageScore: total > 0 ? Math.round((scores.reduce((a, b) => a + b, 0) / total) * 10) / 10 : 0,
+      averageScore: total > 0 ? Math.round((scores.reduce((a: number, b: number) => a + b, 0) / total) * 10) / 10 : 0,
       highestScore: total > 0 ? Math.max(...scores) : 0,
       lowestScore: total > 0 ? Math.min(...scores) : 0,
     };
-
-    // 尝试从API加载
-    // const response = await resultApi.list(filters);
-    // resultList.value = response.data.data || [];
+  } catch (e) {
+    console.error('加载成绩列表失败:', e);
+    resultList.value = [];
   } finally {
     loading.value = false;
   }

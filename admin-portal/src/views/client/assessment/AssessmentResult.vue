@@ -69,23 +69,16 @@ import { message } from 'ant-design-vue'
 const route = useRoute()
 const assessmentId = route.params.id
 
-// Load result from localStorage or use mock
+// Load result from localStorage (saved after assessment submission)
 const stored = localStorage.getItem(`assessment_result_${assessmentId}`)
 const parsedResult = stored ? JSON.parse(stored) : null
 
-const resultMap = {
-  phq9: { name: 'PHQ-9 抑郁筛查', score: 8, maxScore: 27, date: '2025-01-15' },
-  gad7: { name: 'GAD-7 焦虑评估', score: 8, maxScore: 21, date: '2025-01-15' },
-  pss10: { name: 'PSS-10 压力感知', score: 22, maxScore: 40, date: '2025-01-14' },
-  who5: { name: 'WHO-5 幸福指数', score: 56, maxScore: 100, date: '2025-01-13' },
-  r1: { name: 'GAD-7 焦虑评估', score: 8, maxScore: 21, date: '2025-01-15' },
-  r2: { name: 'PHQ-9 抑郁筛查', score: 5, maxScore: 27, date: '2025-01-10' },
-  r3: { name: 'WHO-5 幸福指数', score: 56, maxScore: 100, date: '2025-01-05' },
-  r4: { name: 'PSS-10 压力感知', score: 22, maxScore: 40, date: '2024-12-28' },
-}
-
-const defaultResult = resultMap[assessmentId] || { name: '测评结果', score: parsedResult?.score || 0, maxScore: 100, date: parsedResult?.date?.slice(0, 10) || new Date().toISOString().slice(0, 10) }
-const result = ref({ ...defaultResult, ...(parsedResult ? { score: parsedResult.score, date: parsedResult.date?.slice(0, 10), name: parsedResult.questionnaireName || defaultResult.name } : {}) })
+const result = ref({
+  name: parsedResult?.questionnaireName || parsedResult?.name || '测评结果',
+  score: parsedResult?.score || 0,
+  maxScore: parsedResult?.maxScore || parsedResult?.max_score || 100,
+  date: parsedResult?.date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+})
 const maxScore = computed(() => result.value.maxScore)
 
 const scorePct = computed(() => result.value.score / maxScore.value)
@@ -126,13 +119,7 @@ const scoreRanges = computed(() => [
 
 const isInRange = (range) => result.value.score >= range.min && result.value.score < range.max
 
-const history = ref([
-  { score: 15, shortDate: '10/15' },
-  { score: 12, shortDate: '11/10' },
-  { score: 10, shortDate: '12/05' },
-  { score: 8, shortDate: '12/28' },
-  { score: result.value.score, shortDate: '1/15' },
-])
+const history = ref([])
 
 const trendDirection = computed(() => {
   if (history.value.length < 2) return null

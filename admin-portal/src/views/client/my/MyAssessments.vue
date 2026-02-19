@@ -60,19 +60,8 @@ import { assessmentApi } from '@/api/index'
 
 const loading = ref(true)
 
-const pendingAssessments = ref([
-  { id: 'phq9', name: 'PHQ-9 抑郁筛查', description: '共9题，约3分钟完成' },
-  { id: 'pss10', name: 'PSS-10 压力感知量表', description: '共10题，约5分钟完成' },
-])
-
-const completedAssessments = ref([
-  { id: 'r1', name: 'GAD-7 焦虑评估', date: '2025-01-15', shortDate: '1/15', score: 8, maxScore: 21, level: '轻度焦虑', levelClass: 'level-mild' },
-  { id: 'r2', name: 'PHQ-9 抑郁筛查', date: '2025-01-10', shortDate: '1/10', score: 5, maxScore: 27, level: '无/极轻微', levelClass: 'level-normal' },
-  { id: 'r3', name: 'WHO-5 幸福指数', date: '2025-01-05', shortDate: '1/5', score: 56, maxScore: 100, level: '一般', levelClass: 'level-moderate' },
-  { id: 'r4', name: 'PSS-10 压力感知', date: '2024-12-28', shortDate: '12/28', score: 22, maxScore: 40, level: '中等压力', levelClass: 'level-moderate' },
-  { id: 'r5', name: 'GAD-7 焦虑评估', date: '2024-12-20', shortDate: '12/20', score: 12, maxScore: 21, level: '中度焦虑', levelClass: 'level-moderate' },
-  { id: 'r6', name: 'PHQ-9 抑郁筛查', date: '2024-12-15', shortDate: '12/15', score: 10, maxScore: 27, level: '轻度抑郁', levelClass: 'level-mild' },
-])
+const pendingAssessments = ref([])
+const completedAssessments = ref([])
 
 function scoreLevelClass(score, maxScore) {
   const pct = score / maxScore
@@ -109,11 +98,11 @@ async function loadAssessments() {
           })
         }
       }
-      if (pending.length > 0) pendingAssessments.value = pending
-      if (completed.length > 0) completedAssessments.value = completed
+      pendingAssessments.value = pending
+      completedAssessments.value = completed
     }
   } catch (e) {
-    console.warn('Failed to load assessments, using mock', e)
+    console.error('加载测评记录失败:', e)
   }
   loading.value = false
 }

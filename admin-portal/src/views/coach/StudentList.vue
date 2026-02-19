@@ -277,9 +277,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { UserOutlined, UploadOutlined, PlusOutlined, FileOutlined } from '@ant-design/icons-vue'
+import request from '../../api/request'
 import type { UploadFile } from 'ant-design-vue'
 
 interface CertFile {
@@ -310,93 +311,42 @@ interface Student {
   joinDate?: string
 }
 
-const students = ref<Student[]>([
-  {
-    id: 1,
-    name: '王小明',
-    phone: '13800138001',
-    email: 'wangxm@example.com',
-    idCard: '110101199001011234',
-    avatar: '',
-    level: 1,
-    progress: 65,
-    lastActive: '今天 14:30',
-    active: true,
-    background: '医学',
-    education: '本科',
-    qualifications: ['健康管理师', '营养师'],
-    certFiles: [
-      { uid: '1', name: '健康管理师证书.jpg', url: '', type: 'image/jpeg', status: 'done' }
-    ],
-    workExperience: '2020-2023 北京协和医院 健康管理科\n2018-2020 某健康管理公司 健康顾问',
-    bio: '5年健康管理经验，擅长慢病管理和健康干预',
-    joinDate: '2024-06-15'
-  },
-  {
-    id: 2,
-    name: '李小红',
-    phone: '13800138002',
-    idCard: '310101199502022345',
-    level: 0,
-    progress: 30,
-    lastActive: '昨天 09:15',
-    active: true,
-    background: '护理',
-    education: '大专',
-    qualifications: ['护士执业证'],
-    certFiles: [],
-    joinDate: '2024-08-20'
-  },
-  {
-    id: 3,
-    name: '张小强',
-    phone: '13800138003',
-    idCard: '440101199303033456',
-    level: 1,
-    progress: 85,
-    lastActive: '3天前',
-    active: false,
-    background: '心理学',
-    education: '硕士',
-    qualifications: ['心理咨询师'],
-    certFiles: [],
-    bio: '心理学硕士，专注行为健康领域',
-    joinDate: '2024-05-10'
-  },
-  {
-    id: 4,
-    name: '刘小芳',
-    phone: '13800138004',
-    idCard: '320101199104044567',
-    level: 2,
-    progress: 45,
-    lastActive: '今天 10:20',
-    active: true,
-    background: '营养学',
-    education: '本科',
-    qualifications: ['营养师', '健康管理师'],
-    certFiles: [],
-    joinDate: '2024-03-05'
-  },
-  {
-    id: 5,
-    name: '陈小伟',
-    phone: '13800138005',
-    idCard: '510101199605055678',
-    level: 0,
-    progress: 15,
-    lastActive: '1周前',
-    active: false,
-    background: '运动康复',
-    education: '本科',
-    certFiles: [],
-    joinDate: '2024-09-01'
-  },
-])
+const students = ref<Student[]>([])
+
+const loadStudents = async () => {
+  try {
+    const res = await request.get('v1/coach/dashboard')
+    const raw = res.data?.students || []
+    students.value = raw.map((s: any) => ({
+      id: s.id,
+      name: s.full_name || s.username || '',
+      phone: s.phone || '',
+      email: s.email || '',
+      idCard: s.id_card || '',
+      avatar: s.avatar || '',
+      level: s.level || 0,
+      progress: s.adherence_rate || s.progress || 0,
+      lastActive: s.last_active || '-',
+      active: s.active_days > 0 || s.is_active || false,
+      background: s.background || '',
+      education: s.education || '',
+      qualifications: s.qualifications || [],
+      certFiles: s.cert_files || [],
+      workExperience: s.work_experience || '',
+      bio: s.bio || '',
+      joinDate: s.created_at ? String(s.created_at).split('T')[0] : ''
+    }))
+  } catch (e) {
+    console.error('加载学员列表失败:', e)
+  }
+}
+
+onMounted(loadStudents)
 
 const activeCount = computed(() => students.value.filter(s => s.active).length)
-const completedCourses = 12
+const completedCourses = computed(() => students.value.filter(s => s.progress >= 100).length)
 const avgProgress = computed(() => {
+  if (students.value.length === 0) return 0
   const total = students.value.reduce((sum, s) => sum + s.progress, 0)
   return Math.round(total / students.value.length)
 })

@@ -1,98 +1,5 @@
-import React, { useState } from 'react';
-
-// 模拟数据
-const mockStudent = {
-  id: 'U1024',
-  name: '张XX',
-  gender: '女',
-  age: 48,
-  avatar: '👩',
-  chiefComplaint: '糖化血红蛋白6.5%，空腹血糖偏高',
-  enrollmentDate: '2026-01-15',
-  daysEnrolled: 18,
-  currentStage: 'S1',
-  stageName: '思考期',
-  lastActive: '2小时前',
-  riskLevel: 'YELLOW'
-};
-
-const mockDiagnosis = {
-  spiScore: 52,
-  spiLevel: 'medium_high',
-  spiInterpretation: '中等偏上',
-  successRate: '50-70%',
-  psychLevel: 'L3',
-  psychLevelName: '妥协与接受',
-  psychLevelDisplay: '准备期',
-  coefficient: 0.6,
-  confidence: 0.82,
-  updatedAt: '2026-01-28',
-  dataSource: '隐性+补充问卷',
-  
-  problemDifficultyPurpose: {
-    surfaceProblem: '糖化血红蛋白6.5%，空腹血糖偏高',
-    behaviorDifficulty: ['情绪性进食(压力大时吃零食)', '缺乏运动习惯', '睡眠不足'],
-    deepPurpose: '保持健康陪伴孩子成长，维持工作状态'
-  },
-  
-  sixReasons: [
-    { id: 'D1', name: '内在驱动力', score: 16, max: 20, source: '目标陈述', isWeak: false },
-    { id: 'D2', name: '外在事件', score: 12, max: 20, source: '体检报告', isWeak: false },
-    { id: 'D3', name: '情绪体验', score: 14, max: 20, source: '对话分析', isWeak: false },
-    { id: 'D4', name: '认知知识', score: 9, max: 20, source: '问答表现', isWeak: true },
-    { id: 'D5', name: '能力资源', score: 8, max: 20, source: '任务完成', isWeak: true },
-    { id: 'D6', name: '社会支持', score: 18, max: 25, source: '互动分析', isWeak: false }
-  ],
-  
-  psychLevelEvidence: [
-    { type: 'language', content: "用户多次说'试试看'", weight: 0.3 },
-    { type: 'behavior', content: '任务完成率50%，有尝试但不稳定', weight: 0.4 },
-    { type: 'emotion', content: '担心但愿意', weight: 0.3 }
-  ]
-};
-
-const mockPrescription = {
-  version: 'v2',
-  effectiveDate: '2026-01-25',
-  currentPhase: '启动期',
-  weekNumber: 2,
-  
-  targetBehaviors: [
-    { id: 'B1', name: '餐后散步', target: '30分钟', frequency: '每日', difficulty: 2, completionRate: 0.8 },
-    { id: 'B2', name: '糖代谢知识学习', target: '15分钟', frequency: '每周3次', difficulty: 1, completionRate: 0.6 },
-    { id: 'B3', name: '饮食记录', target: '-', frequency: '每日', difficulty: 2, completionRate: 0.3 }
-  ],
-  
-  coreStrategies: ['微习惯培养', '即时正向反馈', '认知教育'],
-  weeklyCompletionRate: 0.57
-};
-
-const mockAISuggestions = [
-  {
-    id: 1,
-    priority: 'high',
-    type: 'address_obstacle',
-    icon: '🎯',
-    title: '饮食记录连续3天未完成，建议了解原因',
-    message: '最近饮食记录好像有些中断，是遇到什么困难了吗？有时候觉得麻烦是很正常的，我们可以一起想想更简单的方式...'
-  },
-  {
-    id: 2,
-    priority: 'medium',
-    type: 'knowledge_push',
-    icon: '📚',
-    title: '认知知识得分较低，建议推送教育内容',
-    content: { id: 'KC_POSTMEAL_GLUCOSE', title: '餐后血糖为什么重要' }
-  },
-  {
-    id: 3,
-    priority: 'low',
-    type: 'positive_reinforcement',
-    icon: '🌟',
-    title: '散步任务完成较好，建议正向强化',
-    message: '这周的餐后散步坚持得很棒！身体有没有感觉轻松一些？'
-  }
-];
+import React, { useState, useEffect } from 'react';
+import request from '../../api/request';
 
 // 样式
 const styles = {
@@ -404,28 +311,64 @@ const getDifficultyStars = (level) => {
 // 组件
 const CoachDashboard = () => {
   const [activeTab, setActiveTab] = useState('diagnosis');
-  
-  const riskColor = getRiskColor(mockStudent.riskLevel);
+  const [student, setStudent] = useState({
+    id: '', name: '', gender: '', age: 0, avatar: '',
+    chiefComplaint: '', enrollmentDate: '', daysEnrolled: 0,
+    currentStage: '', stageName: '', lastActive: '', riskLevel: 'GREEN'
+  });
+  const [diagnosis, setDiagnosis] = useState({
+    spiScore: 0, spiLevel: '', spiInterpretation: '', successRate: '',
+    psychLevel: '', psychLevelName: '', psychLevelDisplay: '',
+    coefficient: 0, confidence: 0, updatedAt: '', dataSource: '',
+    problemDifficultyPurpose: { surfaceProblem: '', behaviorDifficulty: [], deepPurpose: '' },
+    sixReasons: [], psychLevelEvidence: []
+  });
+  const [prescription, setPrescription] = useState({
+    version: '', effectiveDate: '', currentPhase: '', weekNumber: 0,
+    targetBehaviors: [], coreStrategies: [], weeklyCompletionRate: 0
+  });
+  const [aiSuggestions, setAISuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const res = await request.get('/v1/coach/dashboard');
+        const data = res.data;
+        if (data?.student) setStudent(prev => ({ ...prev, ...data.student }));
+        if (data?.diagnosis) setDiagnosis(prev => ({ ...prev, ...data.diagnosis }));
+        if (data?.prescription) setPrescription(prev => ({ ...prev, ...data.prescription }));
+        if (Array.isArray(data?.ai_suggestions)) setAISuggestions(data.ai_suggestions);
+      } catch (e) {
+        console.error('加载教练仪表盘失败:', e);
+      }
+      setLoading(false);
+    };
+    loadData();
+  }, []);
+
+  const riskColor = getRiskColor(student.riskLevel);
   
   return (
     <div style={styles.container}>
       {/* 头部 */}
       <div style={styles.header}>
         <div style={styles.studentInfo}>
-          <div style={styles.avatar}>{mockStudent.avatar}</div>
+          <div style={styles.avatar}>{student.avatar}</div>
           <div style={styles.studentMeta}>
             <div style={styles.studentName}>
-              学员档案: {mockStudent.name} ({mockStudent.gender}, {mockStudent.age}岁)
+              学员档案: {student.name} ({student.gender}, {student.age}岁)
             </div>
             <div style={styles.studentTags}>
               <span style={{...styles.tag, backgroundColor: riskColor.bg, color: riskColor.text}}>
-                ● {mockStudent.stageName}
+                ● {student.stageName}
               </span>
               <span style={{...styles.tag, backgroundColor: '#f0f0f0', color: '#666'}}>
-                入组 {mockStudent.daysEnrolled} 天
+                入组 {student.daysEnrolled} 天
               </span>
               <span style={{...styles.tag, backgroundColor: '#f0f0f0', color: '#666'}}>
-                最近活跃: {mockStudent.lastActive}
+                最近活跃: {student.lastActive}
               </span>
             </div>
           </div>
@@ -466,21 +409,21 @@ const CoachDashboard = () => {
                 <span>📋</span> 第一层：行为诊断
               </div>
               <div style={styles.cardMeta}>
-                置信度: {Math.round(mockDiagnosis.confidence * 100)}% | 更新: {mockDiagnosis.updatedAt}
+                置信度: {Math.round(diagnosis.confidence * 100)}% | 更新: {diagnosis.updatedAt}
               </div>
             </div>
             
             <div style={styles.infoBox}>
               <div style={{fontWeight: '600', marginBottom: '8px', color: '#389e0d'}}>问题-困难-目的</div>
               <div style={{fontSize: '13px', lineHeight: 1.8}}>
-                <div><strong>表层问题:</strong> {mockDiagnosis.problemDifficultyPurpose.surfaceProblem}</div>
-                <div><strong>中层困难:</strong> {mockDiagnosis.problemDifficultyPurpose.behaviorDifficulty.join('、')}</div>
-                <div><strong>深层目的:</strong> {mockDiagnosis.problemDifficultyPurpose.deepPurpose}</div>
+                <div><strong>表层问题:</strong> {diagnosis.problemDifficultyPurpose.surfaceProblem}</div>
+                <div><strong>中层困难:</strong> {diagnosis.problemDifficultyPurpose.behaviorDifficulty.join('、')}</div>
+                <div><strong>深层目的:</strong> {diagnosis.problemDifficultyPurpose.deepPurpose}</div>
               </div>
             </div>
             
             <div style={{fontWeight: '600', marginBottom: '12px', fontSize: '14px'}}>六类原因评分</div>
-            {mockDiagnosis.sixReasons.map(reason => (
+            {diagnosis.sixReasons.map(reason => (
               <div key={reason.id} style={styles.barContainer}>
                 <div style={styles.barLabel}>
                   <span>
@@ -504,13 +447,13 @@ const CoachDashboard = () => {
             <div style={{marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f0f0f0'}}>
               <div style={{fontWeight: '600', marginBottom: '8px', fontSize: '14px'}}>心理层次</div>
               <div style={styles.levelBadge}>
-                {mockDiagnosis.psychLevel} {mockDiagnosis.psychLevelName}
+                {diagnosis.psychLevel} {diagnosis.psychLevelName}
               </div>
               <div style={{fontSize: '13px', color: '#666', marginTop: '8px'}}>
                 核心心理: "改变可能是必要的，但我想可控地去做"
               </div>
               <div style={styles.evidenceList}>
-                {mockDiagnosis.psychLevelEvidence.map((ev, idx) => (
+                {diagnosis.psychLevelEvidence.map((ev, idx) => (
                   <div key={idx} style={styles.evidenceItem}>
                     <span style={{color: '#1890ff'}}>•</span>
                     <span>{ev.content}</span>
@@ -528,18 +471,18 @@ const CoachDashboard = () => {
                 <span>📊</span> 第二层：SPI评估
               </div>
               <div style={styles.cardMeta}>
-                评估日期: {mockDiagnosis.updatedAt}
+                评估日期: {diagnosis.updatedAt}
               </div>
             </div>
             
             <div style={styles.spiCircle}>
-              <div style={styles.spiScore}>{mockDiagnosis.spiScore}</div>
-              <div style={styles.spiLabel}>{mockDiagnosis.spiInterpretation}</div>
+              <div style={styles.spiScore}>{diagnosis.spiScore}</div>
+              <div style={styles.spiLabel}>{diagnosis.spiInterpretation}</div>
             </div>
             
             <div style={{textAlign: 'center', marginBottom: '20px'}}>
               <div style={{fontSize: '14px', color: '#666'}}>预测成功率</div>
-              <div style={{fontSize: '24px', fontWeight: '600', color: '#1890ff'}}>{mockDiagnosis.successRate}</div>
+              <div style={{fontSize: '24px', fontWeight: '600', color: '#1890ff'}}>{diagnosis.successRate}</div>
             </div>
             
             <div style={{backgroundColor: '#fafafa', borderRadius: '8px', padding: '16px', fontSize: '13px'}}>
@@ -572,24 +515,24 @@ const CoachDashboard = () => {
                 <span>💊</span> 第四层：当前处方
               </div>
               <div style={styles.cardMeta}>
-                版本 {mockPrescription.version} | 生效: {mockPrescription.effectiveDate}
+                版本 {prescription.version} | 生效: {prescription.effectiveDate}
               </div>
             </div>
             
             <div style={{display: 'flex', gap: '16px', marginBottom: '16px'}}>
               <div style={{...styles.tag, backgroundColor: '#e6f7ff', color: '#1890ff', padding: '6px 12px'}}>
-                {mockPrescription.currentPhase} (第{mockPrescription.weekNumber}周)
+                {prescription.currentPhase} (第{prescription.weekNumber}周)
               </div>
               <div style={{fontSize: '14px', color: '#666'}}>
-                本周完成率: <strong style={{color: mockPrescription.weeklyCompletionRate >= 0.6 ? '#52c41a' : '#fa8c16'}}>
-                  {Math.round(mockPrescription.weeklyCompletionRate * 100)}%
+                本周完成率: <strong style={{color: prescription.weeklyCompletionRate >= 0.6 ? '#52c41a' : '#fa8c16'}}>
+                  {Math.round(prescription.weeklyCompletionRate * 100)}%
                 </strong>
               </div>
             </div>
             
             <div style={{fontWeight: '600', marginBottom: '8px', fontSize: '14px'}}>目标行为</div>
             <div style={styles.taskList}>
-              {mockPrescription.targetBehaviors.map(task => (
+              {prescription.targetBehaviors.map(task => (
                 <div key={task.id} style={styles.taskItem}>
                   <div style={styles.taskInfo}>
                     <div style={styles.taskName}>
@@ -624,7 +567,7 @@ const CoachDashboard = () => {
             <div style={{marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #f0f0f0'}}>
               <div style={{fontWeight: '600', marginBottom: '8px', fontSize: '14px'}}>干预策略</div>
               <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
-                {mockPrescription.coreStrategies.map((strategy, idx) => (
+                {prescription.coreStrategies.map((strategy, idx) => (
                   <span key={idx} style={{...styles.tag, backgroundColor: '#f0f0f0', color: '#666', padding: '4px 10px'}}>
                     {strategy}
                   </span>
@@ -653,7 +596,7 @@ const CoachDashboard = () => {
               基于最近3天数据分析，建议今日跟进:
             </div>
             
-            {mockAISuggestions.map(suggestion => (
+            {aiSuggestions.map(suggestion => (
               <div key={suggestion.id} style={styles.suggestionCard}>
                 <div style={styles.suggestionHeader}>
                   <span style={{fontSize: '18px'}}>{suggestion.icon}</span>

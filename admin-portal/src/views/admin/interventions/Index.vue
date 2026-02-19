@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import {
   Card,
   Table,
@@ -62,7 +62,20 @@ const matchTest = reactive({
 })
 
 // 数据
-const dataSource = ref<InterventionPack[]>(getAllInterventionPacks())
+const dataSource = ref<InterventionPack[]>([])
+
+async function loadInterventionPacks() {
+  loading.value = true
+  try {
+    dataSource.value = await getAllInterventionPacks()
+  } catch (e) {
+    console.error('加载干预包失败:', e)
+  }
+  loading.value = false
+}
+
+onMounted(loadInterventionPacks)
+
 const matchResults = ref<MatchResult[]>([])
 const matchedPackIds = ref<Set<string>>(new Set())
 const executablePackIds = ref<Set<string>>(new Set())
@@ -150,7 +163,7 @@ const getActionCategoryTag = (category: string) => {
 }
 
 // 执行匹配测试
-const handleMatchTest = () => {
+const handleMatchTest = async () => {
   if (!matchTest.trigger_tag) {
     message.warning('请选择触发标签')
     return
@@ -161,7 +174,7 @@ const handleMatchTest = () => {
   }
 
   // 调用匹配函数
-  const results = matchInterventionPack(
+  const results = await matchInterventionPack(
     matchTest.trigger_tag,
     matchTest.behavior_stage,
     matchTest.coach_level

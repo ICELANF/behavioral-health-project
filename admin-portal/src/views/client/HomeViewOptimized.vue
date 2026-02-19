@@ -201,13 +201,12 @@ import type { Task } from '@/components/health'
 const router = useRouter()
 
 // 用户信息
-const userName = ref('张先生')
+const userName = ref(localStorage.getItem('admin_name') || localStorage.getItem('admin_username') || '')
 const healthScore = ref(0)
 const streakDays = ref(0)
 const loading = ref(true)
 
-// 患者ID（实际应该从登录状态获取）
-const patientId = 'p001'
+const patientId = localStorage.getItem('admin_user_id') || '0'
 
 // 问候语
 const greetingText = computed(() => {
@@ -250,8 +249,8 @@ const toggleTask = async (task: Task) => {
 const bloodGlucose = ref({ fasting: '--', status: 'good' as const })
 const weight = ref({ current: '--', status: 'good' as const })
 const exercise = ref({ weeklyMinutes: 0, targetMinutes: 150 })
-const todayMedCount = ref(3)
-const takenMedCount = ref(2)
+const todayMedCount = ref(0)
+const takenMedCount = ref(0)
 
 const getStatusText = (status: string) => {
   const map: Record<string, string> = {
@@ -304,7 +303,7 @@ const loadData = async () => {
     // 更新健康评分
     if (scoreData) {
       healthScore.value = scoreData.overall
-      streakDays.value = 7 // 可以从后端返回
+      streakDays.value = scoreData.streak_days ?? scoreData.streakDays ?? 0
     }
 
     // 更新健康快照

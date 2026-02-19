@@ -261,6 +261,7 @@ import {
 } from '@ant-design/icons-vue';
 import type { CertificationLevel, ExamResult } from '@/types/exam';
 import { levelLabels, levelColors } from '@/types/exam';
+import request from '@/api/request';
 
 interface ProctorSession extends ExamResult {
   coach_name: string;
@@ -306,13 +307,13 @@ const pagination = ref<TablePaginationConfig>({
 
 // 统计
 const flaggedCount = computed(() => sessions.value.filter((s) => s.review_status === 'flagged').length);
-const todayReviewedCount = ref(12);
+const todayReviewedCount = ref(0);
 const avgViolationCount = computed(() => {
   if (sessions.value.length === 0) return 0;
   const total = sessions.value.reduce((sum, s) => sum + s.violation_count, 0);
   return total / sessions.value.length;
 });
-const invalidationRate = ref(8.5);
+const invalidationRate = ref(0);
 
 // 常量
 const reviewStatusLabels: Record<string, string> = {
@@ -389,92 +390,18 @@ const fetchSessions = async () => {
   loading.value = true;
 
   try {
-    // 模拟 API 调用
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    sessions.value = [
-      {
-        id: 'session_1',
-        coach_id: 'coach_001',
-        coach_name: '张教练',
-        exam_id: 'exam_001',
-        exam_name: 'L1 成长者基础测评',
-        level: 'L1',
-        attempt_number: 1,
-        score: 82,
-        passing_score: 70,
-        status: 'passed',
-        answers: [],
-        duration_seconds: 2580,
-        started_at: '2024-01-15T09:00:00Z',
-        submitted_at: '2024-01-15T09:43:00Z',
-        violation_count: 3,
-        integrity_score: 85,
-        review_status: 'flagged',
-        violations: [
-          { id: 'v1', type: 'tab_change', severity: 'medium', timestamp: '2024-01-15T09:15:00Z', duration_ms: 2500 },
-          { id: 'v2', type: 'fullscreen_exit', severity: 'medium', timestamp: '2024-01-15T09:22:00Z' },
-          { id: 'v3', type: 'window_blur', severity: 'low', timestamp: '2024-01-15T09:35:00Z', duration_ms: 1200 },
-        ],
-        snapshots: [
-          { id: 's1', timestamp: '2024-01-15T09:05:00Z', trigger: 'interval' },
-          { id: 's2', timestamp: '2024-01-15T09:15:00Z', trigger: 'violation' },
-          { id: 's3', timestamp: '2024-01-15T09:22:00Z', trigger: 'violation' },
-        ],
-      },
-      {
-        id: 'session_2',
-        coach_id: 'coach_002',
-        coach_name: '李教练',
-        exam_id: 'exam_001',
-        exam_name: 'L1 成长者基础测评',
-        level: 'L1',
-        attempt_number: 1,
-        score: 75,
-        passing_score: 70,
-        status: 'passed',
-        answers: [],
-        duration_seconds: 3100,
-        started_at: '2024-01-15T10:00:00Z',
-        submitted_at: '2024-01-15T10:51:40Z',
-        violation_count: 5,
-        integrity_score: 65,
-        review_status: 'flagged',
-        violations: [
-          { id: 'v4', type: 'face_not_detected', severity: 'high', timestamp: '2024-01-15T10:08:00Z' },
-          { id: 'v5', type: 'tab_change', severity: 'medium', timestamp: '2024-01-15T10:12:00Z' },
-          { id: 'v6', type: 'tab_change', severity: 'medium', timestamp: '2024-01-15T10:18:00Z' },
-          { id: 'v7', type: 'fullscreen_exit', severity: 'medium', timestamp: '2024-01-15T10:25:00Z' },
-          { id: 'v8', type: 'window_blur', severity: 'low', timestamp: '2024-01-15T10:40:00Z' },
-        ],
-        snapshots: [],
-      },
-      {
-        id: 'session_3',
-        coach_id: 'coach_003',
-        coach_name: '王教练',
-        exam_id: 'exam_002',
-        exam_name: 'L2 分享者技能考核',
-        level: 'L2',
-        attempt_number: 1,
-        score: 88,
-        passing_score: 75,
-        status: 'passed',
-        answers: [],
-        duration_seconds: 2800,
-        started_at: '2024-01-14T14:00:00Z',
-        submitted_at: '2024-01-14T14:46:40Z',
-        violation_count: 1,
-        integrity_score: 95,
-        review_status: 'valid',
-        violations: [
-          { id: 'v9', type: 'window_blur', severity: 'low', timestamp: '2024-01-14T14:30:00Z', duration_ms: 800 },
-        ],
-        snapshots: [],
-      },
-    ];
-
-    pagination.value.total = sessions.value.length;
+    const params: any = {
+      page: pagination.value.current,
+      page_size: pagination.value.pageSize,
+    };
+    if (filterStatus.value !== 'all') {
+      params.review_status = filterStatus.value;
+    }
+    const res = await request.get('/certification/sessions/proctor', { params });
+    sessions.value = res.data?.items || res.data?.data || res.data || [];
+    pagination.value.total = res.data?.total || sessions.value.length;
+  } catch (e) {
+    console.error('加载监考记录失败:', e);
   } finally {
     loading.value = false;
   }
@@ -498,8 +425,9 @@ const showDetail = (record: ProctorSession) => {
 
 const approveSession = async (session: ProctorSession) => {
   try {
-    // 模拟 API 调用
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await request.post(`/certification/sessions/${session.id}/approve`, {
+      remark: reviewRemark.value || undefined,
+    });
 
     session.review_status = 'valid';
     session.review_remark = reviewRemark.value || undefined;
@@ -507,6 +435,7 @@ const approveSession = async (session: ProctorSession) => {
     message.success('审核通过');
     showDetailModal.value = false;
   } catch (error) {
+    console.error('审核失败:', error);
     message.error('操作失败');
   }
 };
@@ -526,8 +455,9 @@ const confirmInvalidate = async () => {
   invalidating.value = true;
 
   try {
-    // 模拟 API 调用
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await request.post(`/certification/sessions/${sessionToInvalidate.value?.id}/invalidate`, {
+      reason: invalidateReason.value,
+    });
 
     if (sessionToInvalidate.value) {
       sessionToInvalidate.value.review_status = 'invalidated';

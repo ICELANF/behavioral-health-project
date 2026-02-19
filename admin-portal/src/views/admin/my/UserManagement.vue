@@ -219,13 +219,6 @@ const loadUsers = async () => {
     pagination.total = data.total || 0
   } catch (e: any) {
     console.error('加载用户列表失败:', e)
-    // Fallback to mock data if API not available
-    if (!users.value.length) {
-      users.value = [
-        { id: 1, username: 'admin', full_name: '系统管理员', role: 'admin', is_active: true, email: 'admin@bhc.com', phone: '13800000001', created_at: '2026-01-01T00:00:00' },
-      ]
-      pagination.total = 1
-    }
   } finally {
     loading.value = false
   }

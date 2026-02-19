@@ -7,126 +7,18 @@ import { TraceNode, TraceLink, TraceSession } from '../../../types/react-types';
 import { supabase } from '../../../lib/supabase';
 import { GitBranch, RefreshCw, AlertCircle, LayoutGrid, Workflow } from 'lucide-react';
 
-const mockRuleJson = `{
-  "trigger": "PHQ9_DEPRESSION_CHECK",
-  "conditions": [
-    {
-      "field": "phq9_score",
-      "operator": ">=",
-      "value": 15,
-      "label": "中重度抑郁阈值"
-    },
-    {
-      "field": "cgm_volatility",
-      "operator": ">",
-      "value": 3.9,
-      "label": "血糖波动过大"
-    }
-  ],
-  "logic": "IF phq9 >= 15 AND cgm_volatility > 3.9 THEN SET RISK = R3",
-  "actions": [
-    {
-      "type": "ASSESSMENT",
-      "value": "启动抗抑郁筛查"
-    },
-    {
-      "type": "INTERVENTION",
-      "value": "限制碳水摄入"
-    }
-  ],
-  "octopus_clamp": "LIMIT_TASKS = 1",
-  "narrative_override": "CONVERT_TO_EMPATHY",
-  "ttm_stage": "S3_ACTION",
-  "output_layer": {
-    "L5": "专业医学语言",
-    "L6": "共情叙事语言"
-  }
-}`;
-
-const mockDecisionRules = {
-  trigger: "CGM_HIGH_VOLATILITY",
-  logic: "IF val > 10.0 AND trend == 'UP' THEN SET RISK = R3",
-  octopus_clamp: "LIMIT_TASKS = 1",
-  narrative_override: "CONVERT_TO_EMPATHY"
-};
-
-const mockTraceData: TraceSession = {
-  id: 'session_001',
-  caseId: 'tr_7721',
-  patientId: 'PT-8821',
-  nodes: [
-    {
-      id: 'input_phq9',
-      type: 'INPUT',
-      label: 'PHQ-9评分',
-      value: '18分',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'input_cgm',
-      type: 'INPUT',
-      label: 'CGM趋势',
-      value: '波动剧烈',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'rule_depression',
-      type: 'RULE',
-      label: '抑郁评估规则',
-      value: 'PHQ-9 >= 15: 中重度抑郁',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'rule_glucose',
-      type: 'RULE',
-      label: '血糖评估规则',
-      value: 'CGM波动 > 3.9: 控制不佳',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'decision_risk',
-      type: 'DECISION',
-      label: '风险等级判定',
-      value: 'R3 - 需要立即干预',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'decision_intervention',
-      type: 'DECISION',
-      label: '干预方案决策',
-      value: '启动抗抑郁筛查 + 饮食调整',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'output_l5',
-      type: 'OUTPUT',
-      label: 'L5专业输出',
-      value: '检测到中重度抑郁倾向及餐后血糖控制不佳。建议立即启动抗抑郁筛查并限制碳水摄入。',
-      timestamp: new Date().toISOString(),
-    },
-    {
-      id: 'output_l6',
-      type: 'OUTPUT',
-      label: 'L6叙事输出',
-      value: '最近似乎感到身体有些沉重？没关系，这是身体在提醒我们需要一点小小的调整。',
-      timestamp: new Date().toISOString(),
-    },
-  ],
-  links: [
-    { source: 'input_phq9', target: 'rule_depression', weight: 1.0 },
-    { source: 'input_cgm', target: 'rule_glucose', weight: 1.0 },
-    { source: 'rule_depression', target: 'decision_risk', weight: 0.8 },
-    { source: 'rule_glucose', target: 'decision_risk', weight: 0.6 },
-    { source: 'decision_risk', target: 'decision_intervention', weight: 1.0 },
-    { source: 'decision_intervention', target: 'output_l5', weight: 1.0 },
-    { source: 'decision_intervention', target: 'output_l6', weight: 0.9 },
-  ],
+const emptyTraceSession: TraceSession = {
+  id: '',
+  caseId: '',
+  patientId: '',
+  nodes: [],
+  links: [],
   createdAt: new Date(),
 };
 
 const TracePage: React.FC = () => {
   const [selectedNode, setSelectedNode] = useState<TraceNode | null>(null);
-  const [traceData, setTraceData] = useState<TraceSession>(mockTraceData);
+  const [traceData, setTraceData] = useState<TraceSession>(emptyTraceSession);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'graph' | 'flow'>('flow');
@@ -173,7 +65,7 @@ const TracePage: React.FC = () => {
       }
     } catch (err) {
       console.error('加载回溯数据失败:', err);
-      setError('加载回溯数据失败，显示模拟数据');
+      setError('加载回溯数据失败');
     } finally {
       setIsLoading(false);
     }
@@ -264,7 +156,7 @@ const TracePage: React.FC = () => {
 {viewMode === 'flow' ? (
           <div className="space-y-8">
             <div className="mb-6">
-              <DecisionTrace nodes={traceData.nodes} ruleJson={mockRuleJson} />
+              <DecisionTrace nodes={traceData.nodes} ruleJson={traceData.decisionRules ? JSON.stringify(traceData.decisionRules, null, 2) : undefined} />
             </div>
 
             <div className="bg-white rounded-lg border border-slate-200 p-6">
@@ -272,7 +164,7 @@ const TracePage: React.FC = () => {
                 <GitBranch className="w-5 h-5" />
                 决策逻辑解析 · 专家联动视图
               </h2>
-              <LogicFlowBridge decisionRules={traceData.decisionRules || mockDecisionRules} />
+              <LogicFlowBridge decisionRules={traceData.decisionRules || {}} />
             </div>
 
             <div className="bg-white rounded-lg border border-slate-200 p-6">

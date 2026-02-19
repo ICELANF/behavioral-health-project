@@ -184,12 +184,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined, UploadOutlined, DownOutlined, InboxOutlined } from '@ant-design/icons-vue'
+import { useQuestionStore } from '../../stores/question'
+import { questionApi } from '../../api/question'
 
 const router = useRouter()
+const questionStore = useQuestionStore()
+const loading = ref(false)
 
 const filters = reactive({
   type: undefined as string | undefined,
@@ -231,16 +235,19 @@ const importPreviewColumns = [
   { title: '等级', dataIndex: 'level', width: 60 },
 ]
 
-const questions = ref([
-  { question_id: '1', content: '行为健康的核心理念是什么？', type: 'single', level: 'L0', difficulty: 2, use_count: 45, tags: ['行为健康基础'], options: ['以疾病为中心', '以行为改变为核心，关注整体健康', '仅关注心理健康', '仅关注身体健康'], answer: [1], explanation: '行为健康强调通过行为改变促进整体健康', correct_rate: 78 },
-  { question_id: '2', content: '以下哪些属于行为健康干预领域？', type: 'multiple', level: 'L0', difficulty: 3, use_count: 38, tags: ['行为健康基础'], options: ['饮食管理', '运动指导', '压力管理', '药物研发'], answer: [0, 1, 2], explanation: '行为健康干预包括饮食、运动、压力管理等', correct_rate: 65 },
-  { question_id: '3', content: 'TTM模型将行为改变分为几个阶段？', type: 'single', level: 'L1', difficulty: 2, use_count: 52, tags: ['TTM模型'], options: ['3个', '4个', '5个', '6个'], answer: [3], explanation: 'TTM模型包括前思考、思考、准备、行动、维持、终止6个阶段', correct_rate: 82 },
-  { question_id: '4', content: '动机访谈(MI)的核心精神包括哪些？', type: 'multiple', level: 'L2', difficulty: 4, use_count: 23, tags: ['动机访谈'], options: ['合作', '唤出', '接纳', '慈悲', '说教'], answer: [0, 1, 2, 3], explanation: 'MI四大核心精神：合作、唤出、接纳、慈悲', correct_rate: 58 },
-  { question_id: '5', content: 'OARS技术中的"R"代表什么？', type: 'single', level: 'L1', difficulty: 3, use_count: 31, tags: ['动机访谈'], options: ['记录(Record)', '反映(Reflection)', '推荐(Recommend)', '回顾(Review)'], answer: [1], explanation: 'OARS: Open questions, Affirmations, Reflections, Summaries', correct_rate: 71 },
-  { question_id: '6', content: 'PSS-10量表用于评估什么？', type: 'single', level: 'L1', difficulty: 2, use_count: 28, tags: ['压力管理', '心理学基础'], options: ['抑郁程度', '焦虑程度', '感知压力', '生活质量'], answer: [2], explanation: 'PSS-10(Perceived Stress Scale)用于评估个体感知压力水平', correct_rate: 75 },
-  { question_id: '7', content: '认知行为治疗(CBT)的核心假设是什么？', type: 'single', level: 'L2', difficulty: 3, use_count: 19, tags: ['认知行为', '心理学基础'], options: ['行为决定思维', '思维、情感和行为相互影响', '情感控制一切', '环境决定行为'], answer: [1], explanation: 'CBT认为思维、情感和行为之间存在相互影响的关系', correct_rate: 68 },
-  { question_id: '8', content: '成人每周推荐的中等强度有氧运动时间是多少？', type: 'single', level: 'L0', difficulty: 2, use_count: 41, tags: ['运动科学'], options: ['75分钟', '100分钟', '150分钟', '300分钟'], answer: [2], explanation: 'WHO建议成人每周至少150分钟中等强度有氧运动', correct_rate: 80 },
-])
+const questions = computed(() => questionStore.questions)
+
+const loadQuestions = async () => {
+  loading.value = true
+  try {
+    await questionStore.fetchQuestions({})
+  } catch (e) {
+    console.error('加载题库失败:', e)
+  }
+  loading.value = false
+}
+
+onMounted(loadQuestions)
 
 const selectedRowKeys = ref<string[]>([])
 const previewVisible = ref(false)
@@ -252,9 +259,13 @@ const importing = ref(false)
 
 const stats = computed(() => ({
   total: questions.value.length,
-  monthNew: 3,
-  avgUse: questions.value.reduce((s, q) => s + q.use_count, 0) / (questions.value.length || 1),
-  examCount: 12,
+  monthNew: questions.value.filter(q => {
+    const d = new Date(q.created_at || '')
+    const now = new Date()
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
+  }).length,
+  avgUse: questions.value.reduce((s: number, q: any) => s + (q.use_count || 0), 0) / (questions.value.length || 1),
+  examCount: questionStore.total || questions.value.length,
 }))
 
 const filteredQuestions = computed(() => {
@@ -289,11 +300,13 @@ const editQuestion = (record: any) => {
   router.push(`/question/edit/${record.question_id}`)
 }
 
-const deleteQuestion = (record: any) => {
-  const index = questions.value.findIndex(q => q.question_id === record.question_id)
-  if (index > -1) {
-    questions.value.splice(index, 1)
+const deleteQuestion = async (record: any) => {
+  try {
+    await questionStore.deleteQuestion(record.question_id)
     message.success('题目已删除')
+  } catch (e) {
+    console.error('删除题目失败:', e)
+    message.error('删除失败')
   }
 }
 
@@ -303,16 +316,22 @@ const handleBatchAction = ({ key }: { key: string }) => {
       title: '确认批量删除',
       content: `确定要删除选中的 ${selectedRowKeys.value.length} 道题目吗？此操作不可撤销。`,
       okType: 'danger',
-      onOk() {
-        questions.value = questions.value.filter(q => !selectedRowKeys.value.includes(q.question_id))
-        selectedRowKeys.value = []
-        message.success('批量删除成功')
+      async onOk() {
+        try {
+          await Promise.all(selectedRowKeys.value.map(id => questionStore.deleteQuestion(id)))
+          selectedRowKeys.value = []
+          message.success('批量删除成功')
+        } catch (e) {
+          console.error('批量删除失败:', e)
+          message.error('部分题目删除失败')
+          await loadQuestions()
+        }
       }
     })
   } else if (key === 'export') {
-    const selected = questions.value.filter(q => selectedRowKeys.value.includes(q.question_id))
+    const selected = questions.value.filter((q: any) => selectedRowKeys.value.includes(q.question_id))
     const csv = ['题目内容,类型,等级,难度,使用次数']
-    selected.forEach(q => csv.push(`"${q.content}",${q.type},${q.level},${q.difficulty},${q.use_count}`))
+    selected.forEach((q: any) => csv.push(`"${q.content}",${q.type},${q.level},${q.difficulty},${q.use_count}`))
     const blob = new Blob(['\uFEFF' + csv.join('\n')], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -327,24 +346,24 @@ const handleBatchAction = ({ key }: { key: string }) => {
 }
 
 const handleImport = async () => {
-  if (importFileList.value.length === 0) {
-    message.warning('请选择要导入的文件')
+  if (importPreview.value.length === 0) {
+    message.warning('没有可导入的题目')
     return
   }
   importing.value = true
-  // Simulate import
-  setTimeout(() => {
-    const mockImported = [
-      { question_id: `imp_${Date.now()}_1`, content: '健康行为改变的SMART目标原则中，S代表什么？', type: 'single', level: 'L0', difficulty: 1, use_count: 0, tags: ['行为健康基础'] },
-      { question_id: `imp_${Date.now()}_2`, content: '以下哪些是有效的压力管理技术？', type: 'multiple', level: 'L1', difficulty: 3, use_count: 0, tags: ['压力管理'] },
-    ]
-    questions.value.push(...mockImported)
-    importing.value = false
+  try {
+    const res = await questionApi.bulkImport(importPreview.value)
+    const imported = res.data?.data?.imported || importPreview.value.length
     showImportModal.value = false
     importFileList.value = []
     importPreview.value = []
-    message.success(`成功导入 ${mockImported.length} 道题目`)
-  }, 1500)
+    message.success(`成功导入 ${imported} 道题目`)
+    await loadQuestions()
+  } catch (e) {
+    console.error('导入失败:', e)
+    message.error('导入失败')
+  }
+  importing.value = false
 }
 </script>
 

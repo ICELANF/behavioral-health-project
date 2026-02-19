@@ -8,9 +8,9 @@
     <!-- Coach overview -->
     <a-row :gutter="16" style="margin-bottom: 16px">
       <a-col :span="6"><a-card size="small"><a-statistic title="被督导教练" :value="coaches.length" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="本月督导次数" :value="12" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="平均教练评分" :value="4.3" :precision="1" value-style="color: #3f8600" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="待处理事项" :value="3" value-style="color: #cf1322" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="本月督导次数" :value="monthlySessionCount" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="平均教练评分" :value="avgCoachScore" :precision="1" value-style="color: #3f8600" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="待处理事项" :value="pendingCount" value-style="color: #cf1322" /></a-card></a-col>
     </a-row>
 
     <!-- Coach Performance Comparison -->
@@ -78,18 +78,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import request from '@/api/request'
 
 const showScheduleModal = ref(false)
-const newSession = reactive({ coachId: undefined, topic: '', date: null, notes: '' })
+const newSession = reactive({ coachId: undefined as string | undefined, topic: '', date: null as any, notes: '' })
 
-const coaches = ref([
-  { id: '1', name: '王教练', level: 'L2 中级', color: '#1890ff', studentCount: 15, successRate: 74, retention: 88, score: 4.5 },
-  { id: '2', name: '李教练', level: 'L1 初级', color: '#52c41a', studentCount: 8, successRate: 62, retention: 80, score: 3.8 },
-  { id: '3', name: '张教练', level: 'L2 中级', color: '#722ed1', studentCount: 12, successRate: 78, retention: 90, score: 4.2 },
-  { id: '4', name: '赵教练', level: 'L1 初级', color: '#fa8c16', studentCount: 6, successRate: 55, retention: 75, score: 3.5 },
-])
+interface CoachItem {
+  id: string; name: string; level: string; color: string;
+  studentCount: number; successRate: number; retention: number; score: number;
+}
+
+const coaches = ref<CoachItem[]>([])
 
 const coachColumns = [
   { title: '教练', key: 'name', width: 160 },
@@ -100,32 +101,82 @@ const coachColumns = [
   { title: '操作', key: 'action', width: 150 },
 ]
 
-const sessions = ref([
-  { id: '1', coach: '李教练', status: '已完成', date: '2025-01-14 14:00', topic: '低成功率案例复盘', notes: '建议加强OARS技术运用，安排模拟练习' },
-  { id: '2', coach: '赵教练', status: '已完成', date: '2025-01-12 10:00', topic: '高风险学员处理', notes: '讨论了3例高风险案例的应对策略' },
-  { id: '3', coach: '王教练', status: '待进行', date: '2025-01-18 14:00', topic: 'L3晋级准备指导', notes: '' },
-])
+interface SessionItem {
+  id: string; coach: string; status: string; date: string; topic: string; notes: string;
+}
 
-const scheduleSupervision = () => {
+const sessions = ref<SessionItem[]>([])
+
+const monthlySessionCount = computed(() => sessions.value.filter(s => s.status === '已完成').length)
+const avgCoachScore = computed(() => {
+  if (coaches.value.length === 0) return 0
+  return coaches.value.reduce((sum, c) => sum + c.score, 0) / coaches.value.length
+})
+const pendingCount = computed(() => sessions.value.filter(s => s.status === '待进行').length)
+
+const levelColors = ['#1890ff', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96', '#13c2c2']
+
+const loadSupervisionData = async () => {
+  try {
+    const expertId = localStorage.getItem('admin_user_id') || '0'
+    const [coachesRes, sessionsRes] = await Promise.allSettled([
+      request.get(`v1/expert/${expertId}/supervised-coaches`),
+      request.get(`v1/expert/${expertId}/supervision-sessions`),
+    ])
+    if (coachesRes.status === 'fulfilled') {
+      const items = coachesRes.value.data?.coaches || coachesRes.value.data?.items || coachesRes.value.data || []
+      coaches.value = items.map((c: any, i: number) => ({
+        id: String(c.id), name: c.name || c.username || '', level: c.level || 'L1',
+        color: levelColors[i % levelColors.length],
+        studentCount: c.student_count ?? c.studentCount ?? 0,
+        successRate: c.success_rate ?? c.successRate ?? 0,
+        retention: c.retention ?? 0,
+        score: c.score ?? c.rating ?? 0,
+      }))
+    } else {
+      console.error('加载教练列表失败:', coachesRes.reason)
+    }
+    if (sessionsRes.status === 'fulfilled') {
+      const items = sessionsRes.value.data?.sessions || sessionsRes.value.data?.items || sessionsRes.value.data || []
+      sessions.value = items.map((s: any) => ({
+        id: String(s.id), coach: s.coach || s.coach_name || '',
+        status: s.status || '待进行', date: s.date || s.scheduled_at || '',
+        topic: s.topic || '', notes: s.notes || '',
+      }))
+    } else {
+      console.error('加载督导会话失败:', sessionsRes.reason)
+    }
+  } catch (e) {
+    console.error('加载督导数据失败:', e)
+  }
+}
+
+onMounted(loadSupervisionData)
+
+const scheduleSupervision = async () => {
   if (!newSession.coachId || !newSession.topic) {
     message.warning('请填写必要信息')
     return
   }
-  const coach = coaches.value.find(c => c.id === newSession.coachId)
-  sessions.value.unshift({
-    id: `s_${Date.now()}`,
-    coach: coach?.name || '',
-    status: '待进行',
-    date: newSession.date ? newSession.date.format?.('YYYY-MM-DD HH:mm') || '待定' : '待定',
-    topic: newSession.topic,
-    notes: newSession.notes,
-  })
-  showScheduleModal.value = false
-  newSession.coachId = undefined
-  newSession.topic = ''
-  newSession.date = null
-  newSession.notes = ''
-  message.success('督导已安排')
+  try {
+    const expertId = localStorage.getItem('admin_user_id') || '0'
+    await request.post(`v1/expert/${expertId}/supervision-sessions`, {
+      coach_id: newSession.coachId,
+      topic: newSession.topic,
+      date: newSession.date ? newSession.date.format?.('YYYY-MM-DD HH:mm') || '' : '',
+      notes: newSession.notes,
+    })
+    showScheduleModal.value = false
+    newSession.coachId = undefined
+    newSession.topic = ''
+    newSession.date = null
+    newSession.notes = ''
+    message.success('督导已安排')
+    await loadSupervisionData()
+  } catch (e) {
+    console.error('安排督导失败:', e)
+    message.error('安排督导失败')
+  }
 }
 </script>
 

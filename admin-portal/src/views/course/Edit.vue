@@ -213,12 +213,22 @@ const formState = reactive({
   visibility: 'all'
 })
 
-const availableCourses = [
-  { value: 'c1', label: '行为健康入门' },
-  { value: 'c2', label: '慢病与代谢基础认知' }
-]
+const availableCourses = ref<{ value: string; label: string }[]>([])
+
+const loadCourseOptions = async () => {
+  try {
+    const res = await request.get('/v1/content', { params: { content_type: 'course', page_size: 100 } })
+    const items = res.data?.items || res.data || []
+    availableCourses.value = items.map((c: any) => ({
+      value: String(c.id), label: c.title || '',
+    }))
+  } catch (e) {
+    console.error('加载课程列表失败:', e)
+  }
+}
 
 onMounted(async () => {
+  await loadCourseOptions()
   if (isEdit.value) {
     try {
       const { data } = await request.get(`/v1/content-manage/${route.params.id}`)
@@ -245,18 +255,23 @@ const removeObjective = (index: number) => {
   formState.objectives.splice(index, 1)
 }
 
-const handleCoverUpload = (options: any) => {
-  const { file, onSuccess } = options
-  // TODO: 上传到OSS
-  setTimeout(() => {
-    coverFileList.value = [{
-      uid: '-1',
-      name: file.name,
-      status: 'done',
-      url: URL.createObjectURL(file)
-    }]
+const handleCoverUpload = async (options: any) => {
+  const { file, onSuccess, onError } = options
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await request.post('/v1/content-manage/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    const url = res.data?.url || res.data?.file_url || URL.createObjectURL(file)
+    coverFileList.value = [{ uid: '-1', name: file.name, status: 'done', url }]
+    onSuccess?.(res.data)
+  } catch (e) {
+    console.error('上传封面失败:', e)
+    // Fallback: use local preview if upload endpoint not available
+    coverFileList.value = [{ uid: '-1', name: file.name, status: 'done', url: URL.createObjectURL(file) }]
     onSuccess?.()
-  }, 1000)
+  }
 }
 
 const handleCoverPreview = (file: any) => {

@@ -316,6 +316,7 @@ import {
   InfoCircleOutlined
 } from '@ant-design/icons-vue'
 import type { QuestionType, CertificationLevel } from '../../types/exam'
+import { questionApi } from '../../api/question'
 
 const route = useRoute()
 const router = useRouter()
@@ -548,8 +549,12 @@ const handleSave = async () => {
 
     saving.value = true
 
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    if (isEdit.value) {
+      const questionId = route.params.id as string
+      await questionApi.update(questionId, formState)
+    } else {
+      await questionApi.create(formState)
+    }
 
     message.success(isEdit.value ? '题目已更新' : '题目已创建')
     router.push('/question/bank')
@@ -571,23 +576,27 @@ const loadQuestion = async () => {
 
   loading.value = true
   try {
-    // 模拟加载数据
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // 模拟数据
-    Object.assign(formState, {
-      type: 'single',
-      level: 'L1',
-      difficulty: 3,
-      content: '行为改变的五阶段模型（跨理论模型）中，"准备阶段"的主要特征是什么？',
-      options: ['完全没有改变意愿', '开始考虑改变', '已制定行动计划', '已开始行动'],
-      answer: 2,
-      explanation: '准备阶段的特征是个体已经打算在近期采取行动，通常指未来30天内。',
-      default_score: 2,
-      category: 'behavior_science',
-      status: 'active',
-      tags: ['行为科学', 'TTM模型']
-    })
+    const questionId = route.params.id as string
+    const res = await questionApi.get(questionId)
+    const q = res.data?.data || res.data
+    if (q) {
+      Object.assign(formState, {
+        type: q.type || 'single',
+        level: q.level || 'L1',
+        difficulty: q.difficulty || 1,
+        content: q.content || '',
+        options: q.options || ['', '', '', ''],
+        answer: q.answer ?? null,
+        explanation: q.explanation || '',
+        default_score: q.default_score || 1,
+        category: q.category || '',
+        status: q.status || 'draft',
+        tags: q.tags || []
+      })
+    }
+  } catch (e) {
+    console.error('加载题目失败:', e)
+    message.error('加载题目失败')
   } finally {
     loading.value = false
   }

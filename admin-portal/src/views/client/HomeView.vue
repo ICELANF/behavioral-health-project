@@ -437,10 +437,10 @@ import {
 const router = useRouter()
 
 // 用户信息
-const userName = ref('小明')
-const healthScore = ref(78)
-const streakDays = ref(7)
-const totalPoints = ref(1280)
+const userName = ref(localStorage.getItem('admin_name') || localStorage.getItem('admin_username') || '')
+const healthScore = ref(0)
+const streakDays = ref(0)
+const totalPoints = ref(0)
 
 // 问候语
 const greetingText = computed(() => {
@@ -465,10 +465,10 @@ const healthStatus = computed(() => {
 const currentStageKey = ref<keyof typeof BEHAVIOR_STAGE_MAP>('preparation')
 
 // 健康指标
-const bloodGlucose = ref({ fasting: 6.8, postprandial: 9.2, trend: 'down' as const })
-const weight = ref({ current: 75.5, target: 70, trend: 'down' as const })
-const exercise = ref({ weeklyMinutes: 120, targetMinutes: 150, streak: 7 })
-const medication = ref({ adherenceRate: 92, missedDoses: 2 })
+const bloodGlucose = ref({ fasting: 0, postprandial: 0, trend: 'down' as const })
+const weight = ref({ current: 0, target: 0, trend: 'down' as const })
+const exercise = ref({ weeklyMinutes: 0, targetMinutes: 150, streak: 0 })
+const medication = ref({ adherenceRate: 0, missedDoses: 0 })
 
 const getTrendIcon = (trend: string) => {
   if (trend === 'up') return ArrowUpOutlined
@@ -490,7 +490,7 @@ const toggleTask = async (task: Task) => {
 }
 
 // 关注领域
-const userFocusAreas = ref<FocusArea[]>(['glucose', 'diet', 'exercise'])
+const userFocusAreas = ref<FocusArea[]>([])
 const showFocusModal = ref(false)
 const tempFocusAreas = ref<FocusArea[]>([])
 

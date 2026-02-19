@@ -197,6 +197,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { PlusOutlined } from '@ant-design/icons-vue'
 import dayjs, { Dayjs } from 'dayjs'
+import request from '../../api/request'
 
 const route = useRoute()
 const router = useRouter()
@@ -212,11 +213,20 @@ const formRef = ref()
 const coverFileList = ref<any[]>([])
 
 // 讲师列表
-const instructors = ref([
-  { id: 'C001', name: '张三', level: 'L2' },
-  { id: 'C003', name: '王五', level: 'L3' },
-  { id: 'C005', name: '孙七', level: 'L4' }
-])
+const instructors = ref<{ id: string; name: string; level: string }[]>([])
+
+const loadInstructors = async () => {
+  try {
+    const res = await request.get('v1/coach/list', { params: { page_size: 100 } })
+    instructors.value = (res.data?.items || res.data || []).map((c: any) => ({
+      id: String(c.id),
+      name: c.username || c.name || '',
+      level: c.level || 'L0'
+    }))
+  } catch (e) {
+    console.error('加载讲师列表失败:', e)
+  }
+}
 
 // 常量
 const levelColors: Record<string, string> = {
@@ -295,12 +305,38 @@ const handleCancel = () => {
 const handleSaveDraft = async () => {
   saving.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const payload = buildPayload()
+    if (isEdit.value) {
+      await request.put(`v1/live/sessions/${liveId.value}`, { ...payload, status: 'draft' })
+    } else {
+      await request.post('v1/live/sessions', { ...payload, status: 'draft' })
+    }
     message.success('草稿已保存')
+  } catch (e) {
+    console.error('保存草稿失败:', e)
+    message.error('保存草稿失败')
   } finally {
     saving.value = false
   }
 }
+
+const buildPayload = () => ({
+  title: formState.title,
+  description: formState.description,
+  instructor_id: formState.instructor_id,
+  audience: formState.audience,
+  level: formState.level,
+  scheduled_at: formState.date && formState.time
+    ? formState.date.format('YYYY-MM-DD') + 'T' + formState.time.format('HH:mm') + ':00'
+    : undefined,
+  duration_minutes: formState.duration_minutes,
+  cover_url: formState.cover_url,
+  enable_recording: formState.enable_recording,
+  enable_replay: formState.enable_replay,
+  interaction_options: formState.interaction_options,
+  enable_reminder: formState.enable_reminder,
+  reminder_times: formState.reminder_times,
+})
 
 // 发布
 const handlePublish = async () => {
@@ -308,12 +344,17 @@ const handlePublish = async () => {
     await formRef.value?.validate()
 
     saving.value = true
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
+    const payload = buildPayload()
+    if (isEdit.value) {
+      await request.put(`v1/live/sessions/${liveId.value}`, payload)
+    } else {
+      await request.post('v1/live/sessions', payload)
+    }
     message.success(isEdit.value ? '直播已更新' : '直播已创建')
     router.push('/live/list')
   } catch (error) {
-    console.error('Validation failed:', error)
+    console.error('保存失败:', error)
+    message.error('保存失败')
   } finally {
     saving.value = false
   }
@@ -325,27 +366,33 @@ const loadLiveData = async () => {
 
   loading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    // 模拟数据
-    formState.title = '动机访谈技术实战演练'
-    formState.description = '通过案例演示和互动练习，掌握动机访谈的核心技术。'
-    formState.instructor_id = 'C003'
-    formState.level = 'L1'
-    formState.date = dayjs('2026-01-25')
-    formState.time = dayjs('2026-01-25 19:00')
-    formState.duration_minutes = 120
-    formState.enable_recording = true
-    formState.enable_replay = true
-    formState.interaction_options = ['chat', 'question']
-    formState.enable_reminder = true
-    formState.reminder_times = ['1h', '15m']
+    const res = await request.get(`v1/live/sessions/${liveId.value}`)
+    const d = res.data
+    if (d) {
+      formState.title = d.title || ''
+      formState.description = d.description || ''
+      formState.instructor_id = d.instructor_id ? String(d.instructor_id) : undefined
+      formState.level = d.level || 'L0'
+      formState.date = d.scheduled_at ? dayjs(d.scheduled_at) : null
+      formState.time = d.scheduled_at ? dayjs(d.scheduled_at) : null
+      formState.duration_minutes = d.duration_minutes || 60
+      formState.cover_url = d.cover_url || ''
+      formState.enable_recording = d.enable_recording ?? true
+      formState.enable_replay = d.enable_replay ?? true
+      formState.interaction_options = d.interaction_options || ['chat', 'question']
+      formState.enable_reminder = d.enable_reminder ?? true
+      formState.reminder_times = d.reminder_times || ['1h', '15m']
+    }
+  } catch (e) {
+    console.error('加载直播数据失败:', e)
+    message.error('加载直播数据失败')
   } finally {
     loading.value = false
   }
 }
 
 onMounted(() => {
+  loadInstructors()
   loadLiveData()
 })
 </script>

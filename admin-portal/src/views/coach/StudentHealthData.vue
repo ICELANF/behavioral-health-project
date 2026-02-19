@@ -154,6 +154,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { message } from 'ant-design-vue'
 import request from '@/api/request'
 
 const route = useRoute()
@@ -263,6 +264,7 @@ const loadGlucose = async () => {
     if (res.data.student_name) studentName.value = res.data.student_name
   } catch (e) {
     console.warn('Failed to load glucose', e)
+    message.error('加载血糖数据失败')
   }
 }
 
@@ -273,6 +275,7 @@ const loadSleep = async () => {
     if (res.data.student_name) studentName.value = res.data.student_name
   } catch (e) {
     console.warn('Failed to load sleep', e)
+    message.error('加载睡眠数据失败')
   }
 }
 
@@ -282,6 +285,7 @@ const loadActivity = async () => {
     activityData.value = res.data.records || []
   } catch (e) {
     console.warn('Failed to load activity', e)
+    message.error('加载运动数据失败')
   }
 }
 
@@ -291,6 +295,7 @@ const loadVitals = async () => {
     vitalsData.value = res.data.records || []
   } catch (e) {
     console.warn('Failed to load vitals', e)
+    message.error('加载体重数据失败')
   }
 }
 

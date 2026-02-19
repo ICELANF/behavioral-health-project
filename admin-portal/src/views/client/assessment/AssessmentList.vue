@@ -64,7 +64,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import request from '@/api/request'
 
 const activeCategory = ref('all')
 const categories = [
@@ -75,32 +76,60 @@ const categories = [
   { key: 'behavior', label: '行为' },
 ]
 
-const recommended = ref([
-  { id: 'phq9', name: 'PHQ-9 抑郁筛查', description: '患者健康问卷-9项，评估抑郁症状严重程度', icon: '😔', color: '#e6f7ff', questionCount: 9, estimatedMin: 3 },
-])
-
-const allQuestionnaires = ref([
-  { id: 'phq9', name: 'PHQ-9 抑郁筛查', description: '评估过去两周的抑郁症状', icon: '😔', color: '#e6f7ff', questionCount: 9, estimatedMin: 3, category: 'mood', completedCount: 2 },
-  { id: 'gad7', name: 'GAD-7 焦虑评估', description: '广泛性焦虑障碍7项量表', icon: '😰', color: '#fff7e6', questionCount: 7, estimatedMin: 3, category: 'mood', completedCount: 1 },
-  { id: 'pss10', name: 'PSS-10 压力感知', description: '感知压力量表10项版', icon: '😤', color: '#fff1f0', questionCount: 10, estimatedMin: 5, category: 'stress', completedCount: 1 },
-  { id: 'who5', name: 'WHO-5 幸福指数', description: 'WHO五项幸福感指数', icon: '😊', color: '#f6ffed', questionCount: 5, estimatedMin: 2, category: 'wellbeing', completedCount: 1 },
-  { id: 'audit', name: 'AUDIT 饮酒评估', description: '酒精使用障碍识别测试', icon: '🍷', color: '#f9f0ff', questionCount: 10, estimatedMin: 5, category: 'behavior', completedCount: 0 },
-  { id: 'ipaq', name: 'IPAQ 体力活动', description: '国际体力活动问卷-短版', icon: '🏃', color: '#e6fffb', questionCount: 7, estimatedMin: 4, category: 'behavior', completedCount: 0 },
-  { id: 'psqi', name: 'PSQI 睡眠质量', description: '匹兹堡睡眠质量指数', icon: '😴', color: '#f0f5ff', questionCount: 19, estimatedMin: 8, category: 'wellbeing', completedCount: 0 },
-  { id: 'dass21', name: 'DASS-21 综合评估', description: '抑郁-焦虑-压力量表21项', icon: '📋', color: '#fffbe6', questionCount: 21, estimatedMin: 10, category: 'mood', completedCount: 0 },
-])
+const recommended = ref([])
+const allQuestionnaires = ref([])
 
 const filteredQuestionnaires = computed(() => {
   if (activeCategory.value === 'all') return allQuestionnaires.value
   return allQuestionnaires.value.filter(q => q.category === activeCategory.value)
 })
 
-const completedRecords = ref([
-  { id: 'r1', name: 'GAD-7 焦虑评估', date: '2025-01-15', score: 8, maxScore: 21 },
-  { id: 'r2', name: 'PHQ-9 抑郁筛查', date: '2025-01-10', score: 5, maxScore: 27 },
-  { id: 'r3', name: 'WHO-5 幸福指数', date: '2025-01-05', score: 56, maxScore: 100 },
-  { id: 'r4', name: 'PSS-10 压力感知', date: '2024-12-28', score: 22, maxScore: 40 },
-])
+const completedRecords = ref([])
+
+const iconMap = { phq9: '😔', gad7: '😰', pss10: '😤', who5: '😊', audit: '🍷', ipaq: '🏃', psqi: '😴', dass21: '📋' }
+const colorMap = { phq9: '#e6f7ff', gad7: '#fff7e6', pss10: '#fff1f0', who5: '#f6ffed', audit: '#f9f0ff', ipaq: '#e6fffb', psqi: '#f0f5ff', dass21: '#fffbe6' }
+
+const loadAssessments = async () => {
+  try {
+    const [catalogRes, recordsRes] = await Promise.allSettled([
+      request.get('v1/assessments'),
+      request.get('v1/assessments/my-results'),
+    ])
+    if (catalogRes.status === 'fulfilled') {
+      const items = catalogRes.value.data?.items || catalogRes.value.data || []
+      allQuestionnaires.value = items.map((q) => ({
+        id: q.id || q.code || '', name: q.name || q.title || '',
+        description: q.description || '', icon: iconMap[q.code] || '📋',
+        color: colorMap[q.code] || '#f5f5f5',
+        questionCount: q.question_count ?? q.questionCount ?? 0,
+        estimatedMin: q.estimated_min ?? q.estimatedMin ?? 5,
+        category: q.category || 'mood', completedCount: q.completed_count ?? q.completedCount ?? 0,
+      }))
+      recommended.value = items.filter((q) => q.recommended).map((q) => ({
+        id: q.id || q.code || '', name: q.name || q.title || '',
+        description: q.description || '', icon: iconMap[q.code] || '📋',
+        color: colorMap[q.code] || '#f5f5f5',
+        questionCount: q.question_count ?? q.questionCount ?? 0,
+        estimatedMin: q.estimated_min ?? q.estimatedMin ?? 5,
+      }))
+    } else {
+      console.error('加载问卷目录失败:', catalogRes.reason)
+    }
+    if (recordsRes.status === 'fulfilled') {
+      const items = recordsRes.value.data?.items || recordsRes.value.data || []
+      completedRecords.value = items.map((r) => ({
+        id: String(r.id), name: r.name || r.questionnaire_name || '',
+        date: r.date || r.completed_at || '', score: r.score ?? 0, maxScore: r.max_score ?? r.maxScore ?? 100,
+      }))
+    } else {
+      console.error('加载完成记录失败:', recordsRes.reason)
+    }
+  } catch (e) {
+    console.error('加载测评数据失败:', e)
+  }
+}
+
+onMounted(loadAssessments)
 
 const scoreColor = (score, max) => {
   const pct = score / max

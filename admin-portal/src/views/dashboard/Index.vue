@@ -18,28 +18,28 @@
     <a-row :gutter="16">
       <a-col :span="6">
         <a-card>
-          <a-statistic title="注册学员" :value="1256" suffix="人">
+          <a-statistic title="注册学员" :value="stats.totalUsers" suffix="人">
             <template #prefix><UserOutlined /></template>
           </a-statistic>
         </a-card>
       </a-col>
       <a-col :span="6">
         <a-card>
-          <a-statistic title="认证教练" :value="89" suffix="人">
+          <a-statistic title="认证教练" :value="stats.totalCoaches" suffix="人">
             <template #prefix><TeamOutlined /></template>
           </a-statistic>
         </a-card>
       </a-col>
       <a-col :span="6">
         <a-card>
-          <a-statistic title="课程数量" :value="18" suffix="门">
+          <a-statistic title="课程数量" :value="stats.totalCourses" suffix="门">
             <template #prefix><VideoCameraOutlined /></template>
           </a-statistic>
         </a-card>
       </a-col>
       <a-col :span="6">
         <a-card>
-          <a-statistic title="今日学习" :value="342" suffix="人次">
+          <a-statistic title="今日学习" :value="stats.todayLearning" suffix="人次">
             <template #prefix><ReadOutlined /></template>
           </a-statistic>
         </a-card>
@@ -50,40 +50,20 @@
       <a-col :span="16">
         <a-card title="认证等级分布">
           <div style="display: flex; align-items: flex-end; height: 280px; gap: 40px; padding: 20px; justify-content: center;">
-            <div style="text-align: center;">
-              <div style="height: 180px; width: 60px; background: linear-gradient(to top, #1890ff, #69c0ff); border-radius: 4px;"></div>
-              <div style="margin-top: 8px; color: #666;">L0<br/>856人</div>
+            <div v-for="bar in levelDistribution" :key="bar.level" style="text-align: center;">
+              <div :style="{ height: bar.height + 'px', width: '60px', background: bar.gradient, borderRadius: '4px' }"></div>
+              <div style="margin-top: 8px; color: #666;">{{ bar.level }}<br/>{{ bar.count }}人</div>
             </div>
-            <div style="text-align: center;">
-              <div style="height: 120px; width: 60px; background: linear-gradient(to top, #52c41a, #95de64); border-radius: 4px;"></div>
-              <div style="margin-top: 8px; color: #666;">L1<br/>52人</div>
-            </div>
-            <div style="text-align: center;">
-              <div style="height: 80px; width: 60px; background: linear-gradient(to top, #faad14, #ffc53d); border-radius: 4px;"></div>
-              <div style="margin-top: 8px; color: #666;">L2<br/>28人</div>
-            </div>
-            <div style="text-align: center;">
-              <div style="height: 40px; width: 60px; background: linear-gradient(to top, #f5222d, #ff7875); border-radius: 4px;"></div>
-              <div style="margin-top: 8px; color: #666;">L3<br/>7人</div>
-            </div>
-            <div style="text-align: center;">
-              <div style="height: 20px; width: 60px; background: linear-gradient(to top, #722ed1, #b37feb); border-radius: 4px;"></div>
-              <div style="margin-top: 8px; color: #666;">L4<br/>2人</div>
-            </div>
+            <a-empty v-if="levelDistribution.length === 0" description="暂无数据" />
           </div>
         </a-card>
       </a-col>
       <a-col :span="8">
         <a-card title="待处理事项">
-          <div style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
-            <a-badge status="warning" text="3个晋级申请待审核" />
+          <div v-for="(todo, idx) in pendingTodos" :key="idx" :style="{ padding: '8px 0', borderBottom: idx < pendingTodos.length - 1 ? '1px solid #f0f0f0' : 'none' }">
+            <a-badge :status="todo.status" :text="todo.text" />
           </div>
-          <div style="padding: 8px 0; border-bottom: 1px solid #f0f0f0;">
-            <a-badge status="processing" text="5份实操考试待评分" />
-          </div>
-          <div style="padding: 8px 0;">
-            <a-badge status="default" text="2个课程待上架" />
-          </div>
+          <a-empty v-if="pendingTodos.length === 0" description="暂无待处理事项" />
         </a-card>
       </a-col>
     </a-row>
@@ -91,70 +71,12 @@
     <a-row :gutter="16" style="margin-top: 16px">
       <a-col :span="12">
         <a-card title="最近考试">
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 1px solid #f0f0f0;">
-                <th style="text-align: left; padding: 8px;">考试名称</th>
-                <th style="text-align: left; padding: 8px;">参考人数</th>
-                <th style="text-align: left; padding: 8px;">平均分</th>
-                <th style="text-align: left; padding: 8px;">通过率</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom: 1px solid #f0f0f0;">
-                <td style="padding: 8px;">L1理论考试</td>
-                <td style="padding: 8px;">45</td>
-                <td style="padding: 8px;">78</td>
-                <td style="padding: 8px;">82%</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #f0f0f0;">
-                <td style="padding: 8px;">L2案例模拟</td>
-                <td style="padding: 8px;">23</td>
-                <td style="padding: 8px;">72</td>
-                <td style="padding: 8px;">65%</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px;">L1对话评估</td>
-                <td style="padding: 8px;">38</td>
-                <td style="padding: 8px;">75</td>
-                <td style="padding: 8px;">74%</td>
-              </tr>
-            </tbody>
-          </table>
+          <a-table :dataSource="recentExams" :columns="examColumns" rowKey="name" size="small" :pagination="false" />
         </a-card>
       </a-col>
       <a-col :span="12">
         <a-card title="晋级申请">
-          <table style="width: 100%; border-collapse: collapse;">
-            <thead>
-              <tr style="border-bottom: 1px solid #f0f0f0;">
-                <th style="text-align: left; padding: 8px;">教练</th>
-                <th style="text-align: left; padding: 8px;">当前等级</th>
-                <th style="text-align: left; padding: 8px;">申请等级</th>
-                <th style="text-align: left; padding: 8px;">申请日期</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr style="border-bottom: 1px solid #f0f0f0;">
-                <td style="padding: 8px;">张三</td>
-                <td style="padding: 8px;">L1</td>
-                <td style="padding: 8px;">L2</td>
-                <td style="padding: 8px;">2026-01-24</td>
-              </tr>
-              <tr style="border-bottom: 1px solid #f0f0f0;">
-                <td style="padding: 8px;">李四</td>
-                <td style="padding: 8px;">L0</td>
-                <td style="padding: 8px;">L1</td>
-                <td style="padding: 8px;">2026-01-23</td>
-              </tr>
-              <tr>
-                <td style="padding: 8px;">王五</td>
-                <td style="padding: 8px;">L2</td>
-                <td style="padding: 8px;">L3</td>
-                <td style="padding: 8px;">2026-01-22</td>
-              </tr>
-            </tbody>
-          </table>
+          <a-table :dataSource="recentPromotions" :columns="promotionColumns" rowKey="id" size="small" :pagination="false" />
         </a-card>
       </a-col>
     </a-row>
@@ -162,13 +84,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import {
   UserOutlined,
   TeamOutlined,
   VideoCameraOutlined,
   ReadOutlined
 } from '@ant-design/icons-vue'
+import request from '@/api/request'
 
 // 角色映射
 const roleLabels: Record<string, string> = {
@@ -201,6 +124,75 @@ const userInfo = ref({
   roleColor: roleColors[storedRole] || 'default',
   level: storedLevel
 })
+
+const stats = reactive({ totalUsers: 0, totalCoaches: 0, totalCourses: 0, todayLearning: 0 })
+
+const levelGradients = [
+  'linear-gradient(to top, #1890ff, #69c0ff)',
+  'linear-gradient(to top, #52c41a, #95de64)',
+  'linear-gradient(to top, #faad14, #ffc53d)',
+  'linear-gradient(to top, #f5222d, #ff7875)',
+  'linear-gradient(to top, #722ed1, #b37feb)',
+]
+const levelDistribution = ref<{ level: string; count: number; height: number; gradient: string }[]>([])
+
+const pendingTodos = ref<{ status: string; text: string }[]>([])
+const recentExams = ref<any[]>([])
+const recentPromotions = ref<any[]>([])
+
+const examColumns = [
+  { title: '考试名称', dataIndex: 'name' },
+  { title: '参考人数', dataIndex: 'participants' },
+  { title: '平均分', dataIndex: 'avgScore' },
+  { title: '通过率', dataIndex: 'passRate' },
+]
+const promotionColumns = [
+  { title: '教练', dataIndex: 'coachName' },
+  { title: '当前等级', dataIndex: 'currentLevel' },
+  { title: '申请等级', dataIndex: 'targetLevel' },
+  { title: '申请日期', dataIndex: 'appliedAt' },
+]
+
+const loadDashboard = async () => {
+  try {
+    const res = await request.get('v1/analytics/admin/overview')
+    const d = res.data?.data || res.data || {}
+    stats.totalUsers = d.total_users ?? d.totalUsers ?? 0
+    stats.totalCoaches = d.total_coaches ?? d.totalCoaches ?? 0
+    stats.totalCourses = d.total_courses ?? d.totalCourses ?? 0
+    stats.todayLearning = d.today_learning ?? d.todayLearning ?? 0
+    // Level distribution
+    const dist = d.level_distribution || d.levelDistribution || {}
+    const maxCount = Math.max(...Object.values(dist).map(Number), 1)
+    levelDistribution.value = Object.entries(dist).map(([level, count], i) => ({
+      level, count: Number(count),
+      height: Math.max(Math.round((Number(count) / maxCount) * 200), 10),
+      gradient: levelGradients[i % levelGradients.length],
+    }))
+    // Pending todos
+    const todos = d.pending_todos || d.pendingTodos || []
+    pendingTodos.value = todos.map((t: any) => ({
+      status: t.status || 'default', text: t.text || t.label || '',
+    }))
+    // Recent exams
+    recentExams.value = (d.recent_exams || d.recentExams || []).map((e: any) => ({
+      name: e.name || e.title || '', participants: e.participants ?? 0,
+      avgScore: e.avg_score ?? e.avgScore ?? 0,
+      passRate: e.pass_rate ? `${e.pass_rate}%` : (e.passRate || '0%'),
+    }))
+    // Promotion applications
+    recentPromotions.value = (d.recent_promotions || d.recentPromotions || []).map((p: any) => ({
+      id: p.id, coachName: p.coach_name || p.coachName || '',
+      currentLevel: p.current_level || p.currentLevel || '',
+      targetLevel: p.target_level || p.targetLevel || '',
+      appliedAt: p.applied_at || p.appliedAt || '',
+    }))
+  } catch (e) {
+    console.error('加载仪表盘数据失败:', e)
+  }
+}
+
+onMounted(loadDashboard)
 </script>
 
 <style scoped>

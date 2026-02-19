@@ -92,14 +92,15 @@
         </a-card>
       </a-col>
       <a-col :span="10">
+        <!-- TODO: 接入 GET /v1/analytics/admin/system-info 动态获取系统概况 -->
         <a-card title="系统概况" :bordered="false">
           <a-descriptions :column="1" bordered size="small">
-            <a-descriptions-item label="Agent在线数">12</a-descriptions-item>
-            <a-descriptions-item label="调度任务数">5</a-descriptions-item>
-            <a-descriptions-item label="知识库文档">51 chunks</a-descriptions-item>
-            <a-descriptions-item label="平台版本">v18.0</a-descriptions-item>
-            <a-descriptions-item label="AI模型">qwen2.5:0.5b</a-descriptions-item>
-            <a-descriptions-item label="视觉模型">qwen2.5vl:7b</a-descriptions-item>
+            <a-descriptions-item label="Agent在线数">{{ systemInfo.agent_count }}</a-descriptions-item>
+            <a-descriptions-item label="调度任务数">{{ systemInfo.scheduler_jobs }}</a-descriptions-item>
+            <a-descriptions-item label="知识库文档">{{ systemInfo.knowledge_chunks }}</a-descriptions-item>
+            <a-descriptions-item label="平台版本">{{ systemInfo.platform_version }}</a-descriptions-item>
+            <a-descriptions-item label="AI模型">{{ systemInfo.ai_model }}</a-descriptions-item>
+            <a-descriptions-item label="视觉模型">{{ systemInfo.vision_model }}</a-descriptions-item>
           </a-descriptions>
         </a-card>
       </a-col>
@@ -131,6 +132,15 @@ import {
 const refreshing = ref(false)
 
 const overview = ref({ total_users: 0, active_users: 0, coach_count: 0, high_risk_count: 0 })
+
+const systemInfo = ref({
+  agent_count: 0,
+  scheduler_jobs: 0,
+  knowledge_chunks: '-',
+  platform_version: '-',
+  ai_model: '-',
+  vision_model: '-',
+})
 
 const growthChartRef = ref<HTMLElement>()
 const roleChartRef = ref<HTMLElement>()

@@ -136,8 +136,8 @@ const handlePublish = async () => {
     await publishAuditResult({
       caseId: props.auditCase.id,
       patientId: props.auditCase.patientId,
-      masterSignerId: 'current_expert_id',
-      secondarySignerId: 'secondary_expert_id',
+      masterSignerId: localStorage.getItem('admin_user_id') || '',
+      secondarySignerId: props.auditCase.secondarySignerId || '',
       originalL5Output: props.auditCase.originalL5Output,
       approvedL6Output: editedNarrative.value,
       riskLevel: props.auditCase.rawMetrics.riskLevel,

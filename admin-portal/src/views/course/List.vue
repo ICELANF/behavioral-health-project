@@ -220,7 +220,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
 const onlyAccessible = ref(false)
-const defaultCover = 'https://via.placeholder.com/160x90?text=Course'
+const defaultCover = ''
 
 const filters = reactive({
   audience: undefined as string | undefined,
@@ -322,157 +322,7 @@ const computeAccessStatus = (level: string) => {
   }
 }
 
-// 模拟数据（扩展多来源，含 access_status）
-const courses = ref<any[]>([
-  {
-    course_id: '1',
-    title: '行为健康入门',
-    source: 'platform' as ContentSource,
-    audience: 'client',
-    level: 'L0',
-    category: 'knowledge',
-    domain: 'stress',
-    cover_url: '',
-    chapter_count: 6,
-    duration_minutes: 90,
-    view_count: 15680,
-    enroll_count: 856,
-    avg_rating: 4.8,
-    author_id: 'platform',
-    author_name: '平台官方',
-    author_avatar: '',
-    author_verified: true,
-    status: 'published',
-    updated_at: '2026-01-20'
-  },
-  {
-    course_id: '2',
-    title: '正念冥想：从入门到精通',
-    source: 'expert' as ContentSource,
-    audience: 'both',
-    level: 'L0',
-    category: 'practice',
-    domain: 'stress',
-    cover_url: '',
-    chapter_count: 12,
-    duration_minutes: 240,
-    view_count: 12340,
-    enroll_count: 678,
-    avg_rating: 4.9,
-    author_id: 'expert1',
-    author_name: '李明远',
-    author_title: '正念导师',
-    author_avatar: '',
-    author_verified: true,
-    status: 'published',
-    updated_at: '2026-01-18'
-  },
-  {
-    course_id: '3',
-    title: '代谢与慢病风险入门',
-    source: 'platform' as ContentSource,
-    audience: 'coach',
-    level: 'L1',
-    category: 'knowledge',
-    domain: 'glucose',
-    cover_url: '',
-    chapter_count: 8,
-    duration_minutes: 120,
-    view_count: 8920,
-    enroll_count: 234,
-    avg_rating: 4.7,
-    author_id: 'platform',
-    author_name: '平台官方',
-    author_verified: true,
-    status: 'published',
-    updated_at: '2026-01-19'
-  },
-  {
-    course_id: '4',
-    title: '睡眠改善实战指南',
-    source: 'expert' as ContentSource,
-    audience: 'client',
-    level: 'L0',
-    category: 'method',
-    domain: 'sleep',
-    cover_url: '',
-    chapter_count: 8,
-    duration_minutes: 150,
-    view_count: 9560,
-    enroll_count: 432,
-    avg_rating: 4.6,
-    author_id: 'expert2',
-    author_name: '王睡眠专家',
-    author_title: '睡眠医学博士',
-    author_avatar: '',
-    author_verified: true,
-    status: 'published',
-    updated_at: '2026-01-15'
-  },
-  {
-    course_id: '5',
-    title: '高级动机访谈技术',
-    source: 'platform' as ContentSource,
-    audience: 'coach',
-    level: 'L2',
-    category: 'skill',
-    cover_url: '',
-    chapter_count: 10,
-    duration_minutes: 300,
-    view_count: 3450,
-    enroll_count: 89,
-    avg_rating: 4.9,
-    author_id: 'platform',
-    author_name: '平台官方',
-    author_verified: true,
-    status: 'draft',
-    updated_at: '2026-01-24'
-  },
-  {
-    course_id: '6',
-    title: '情绪管理教练实战',
-    source: 'coach' as ContentSource,
-    audience: 'coach',
-    level: 'L1',
-    category: 'case',
-    domain: 'stress',
-    cover_url: '',
-    chapter_count: 6,
-    duration_minutes: 90,
-    view_count: 0,
-    enroll_count: 0,
-    author_id: 'coach1',
-    author_name: '张教练',
-    author_title: 'L3教练',
-    author_avatar: '',
-    author_verified: true,
-    status: 'pending',
-    review_status: 'pending',
-    updated_at: '2026-02-03'
-  },
-  {
-    course_id: '7',
-    title: '行为画像深度解读',
-    source: 'expert' as ContentSource,
-    audience: 'coach',
-    level: 'L3',
-    category: 'knowledge',
-    domain: 'growth',
-    cover_url: '',
-    chapter_count: 8,
-    duration_minutes: 180,
-    view_count: 1200,
-    enroll_count: 45,
-    avg_rating: 4.9,
-    author_id: 'expert3',
-    author_name: '赵专家',
-    author_title: '行为科学博士',
-    author_avatar: '',
-    author_verified: true,
-    status: 'published',
-    updated_at: '2026-02-01'
-  }
-])
+const courses = ref<any[]>([])
 
 // 计算后的课程列表（带 access_status）
 const filteredCourses = computed(() => {
@@ -489,7 +339,7 @@ const filteredCourses = computed(() => {
 const fetchCourses = async () => {
   loading.value = true
 
-  // 尝试调用API
+  try {
   const apiData = await fetchContentList({
     page: pagination.current,
     page_size: pagination.pageSize,
@@ -532,9 +382,9 @@ const fetchCourses = async () => {
     stats.platform = items.filter((i: any) => i.source === 'platform').length
     stats.expert = items.filter((i: any) => i.source === 'expert').length
     stats.pending = items.filter((i: any) => i.review_status === 'pending').length
-  } else {
-    // Mock 降级
-    pagination.total = filteredCourses.value.length
+  }
+  } catch (e) {
+    console.error('加载课程列表失败:', e)
   }
 
   loading.value = false

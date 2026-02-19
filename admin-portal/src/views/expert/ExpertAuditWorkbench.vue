@@ -301,39 +301,6 @@ const issueTags = [
 // ── 审核项 ──
 type AuditItem = ExpertAuditItem
 
-// Mock fallback
-const mockAuditItems: AuditItem[] = [
-  {
-    id: 'au1', title: '王阿姨血糖对话 — 疑似越界', type: 'ai_dialogue', typeIcon: '💬',
-    agent: 'nutrition_guide', userName: '王阿姨', userStage: 'S1/L2',
-    risk: 'high', time: '14:32',
-    dialogue: [
-      { id: 1, role: 'user', text: '我血糖空腹8.5，是不是该加药了？', modality: 'text' },
-      { id: 2, role: 'ai', text: '您的空腹血糖偏高。建议您先尝试在餐后30分钟散步15分钟，配合减少精制碳水摄入。如果持续偏高，建议咨询您的主治医生调整用药方案。⚠️ 以上为AI生成的健康建议，不构成医疗诊断。', modality: 'text' },
-    ],
-    safetyFlags: [
-      { rule: 'S1-医疗边界', description: '用户询问用药调整，AI未直接建议用药但涉及药物话题', action: '已添加免责' },
-    ],
-    history: [],
-  },
-  {
-    id: 'au2', title: '李大爷运动处方 — 强度偏高', type: 'prescription', typeIcon: '📋',
-    agent: 'rx_composer', userName: '李大爷', userStage: 'S2/L3',
-    risk: 'medium', time: '11:20',
-    rxFields: [
-      { key: 'target', label: '目标行为', value: '每日快走30分钟', flagged: true, flagReason: 'S2阶段建议≤15分钟' },
-      { key: 'frequency', label: '频次', value: '每天', flagged: false },
-      { key: 'time_place', label: '时间地点', value: '晚饭后小区步道', flagged: false },
-      { key: 'trigger', label: '启动线索', value: '放下碗筷→换鞋→出门', flagged: false },
-      { key: 'obstacle', label: '障碍预案', value: '下雨改室内踏步', flagged: false },
-      { key: 'support', label: '支持', value: '老伴陪同', flagged: false },
-    ],
-    evidenceLevel: 2,
-    safetyFlags: [],
-    history: [],
-  },
-]
-
 const auditItems = ref<AuditItem[]>([])
 const currentAudit = ref<AuditItem | null>(null)
 
@@ -366,9 +333,7 @@ async function loadData() {
       t.count = m.byType[t.key] ?? 0
     }
   } else {
-    console.warn('Failed to load expert metrics, using defaults', metricsResult.reason)
-    todayAudited.value = 23; passRate.value = 87; pendingQueue.value = 8
-    redlineBlocked.value = 2; agentAnomalyCount.value = 1
+    console.warn('Failed to load expert metrics:', metricsResult.reason)
   }
 
   if (queueResult.status === 'fulfilled') {
@@ -378,8 +343,7 @@ async function loadData() {
       r.count = queueResult.value.byRisk[r.key] ?? 0
     }
   } else {
-    console.warn('Failed to load audit queue, using mock', queueResult.reason)
-    auditItems.value = mockAuditItems
+    console.warn('Failed to load audit queue:', queueResult.reason)
   }
 
   if (anomaliesResult.status === 'fulfilled') {

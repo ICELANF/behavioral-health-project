@@ -143,56 +143,26 @@ const periodLabel = computed(() => periods.find(p => p.key === activePeriod.valu
 const loading = ref(true)
 
 const metricCards = ref([
-  { key: 'hr', icon: '❤️', title: '心率', value: '72', unit: 'bpm', normalRange: '60-100', trend: '较昨日 ↓2', trendClass: 'down-good', color: '#cf1322', alert: false },
-  { key: 'sleep', icon: '😴', title: '睡眠', value: '7.2', unit: '小时', normalRange: '7-9h', trend: '较昨日 ↑0.3h', trendClass: 'up', color: '#1a237e', alert: false },
-  { key: 'steps', icon: '🚶', title: '步数', value: '8,432', unit: '步', normalRange: '≥8000', trend: '较昨日 ↑1200', trendClass: 'up', color: '#389e0d', alert: false },
-  { key: 'glucose', icon: '🩸', title: '空腹血糖', value: '5.8', unit: 'mmol/L', normalRange: '3.9-6.1', trend: '较上次 ↓0.3', trendClass: 'down-good', color: '#d46b08', alert: false },
-  { key: 'bp', icon: '💓', title: '血压', value: '128/82', unit: 'mmHg', normalRange: '<140/90', trend: '较上次 ↓5', trendClass: 'down-good', color: '#722ed1', alert: false },
-  { key: 'calories', icon: '🔥', title: '消耗', value: '320', unit: 'kcal', normalRange: '≥300', trend: '较昨日 ↑45', trendClass: 'up', color: '#fa541c', alert: false },
+  { key: 'hr', icon: '❤️', title: '心率', value: '--', unit: 'bpm', normalRange: '60-100', trend: '', trendClass: '', color: '#cf1322', alert: false },
+  { key: 'sleep', icon: '😴', title: '睡眠', value: '--', unit: '小时', normalRange: '7-9h', trend: '', trendClass: '', color: '#1a237e', alert: false },
+  { key: 'steps', icon: '🚶', title: '步数', value: '--', unit: '步', normalRange: '≥8000', trend: '', trendClass: '', color: '#389e0d', alert: false },
+  { key: 'glucose', icon: '🩸', title: '空腹血糖', value: '--', unit: 'mmol/L', normalRange: '3.9-6.1', trend: '', trendClass: '', color: '#d46b08', alert: false },
+  { key: 'bp', icon: '💓', title: '血压', value: '--', unit: 'mmHg', normalRange: '<140/90', trend: '', trendClass: '', color: '#722ed1', alert: false },
+  { key: 'calories', icon: '🔥', title: '消耗', value: '--', unit: 'kcal', normalRange: '≥300', trend: '', trendClass: '', color: '#fa541c', alert: false },
 ])
 
-const heartRateData = ref([68, 72, 75, 70, 65, 80, 95, 88, 72, 68, 70, 73, 69, 71])
-const chartLabels = ref(['6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00', '0:00', '2:00', '4:00', '', ''])
+const heartRateData = ref([])
+const chartLabels = ref([])
 
-const sleepData = ref([
-  { label: '周一', total: 6.5, deep: 1.5, light: 3.5, rem: 1.5 },
-  { label: '周二', total: 7.2, deep: 2.0, light: 3.5, rem: 1.7 },
-  { label: '周三', total: 6.8, deep: 1.8, light: 3.2, rem: 1.8 },
-  { label: '周四', total: 7.5, deep: 2.2, light: 3.5, rem: 1.8 },
-  { label: '周五', total: 7.0, deep: 1.7, light: 3.5, rem: 1.8 },
-  { label: '周六', total: 8.2, deep: 2.5, light: 3.7, rem: 2.0 },
-  { label: '周日', total: 7.8, deep: 2.3, light: 3.5, rem: 2.0 },
-])
+const sleepData = ref([])
 
-const stepsData = ref([
-  { label: '周一', steps: 8200 }, { label: '周二', steps: 6500 }, { label: '周三', steps: 9100 },
-  { label: '周四', steps: 7300 }, { label: '周五', steps: 8800 }, { label: '周六', steps: 10200 }, { label: '周日', steps: 4500 },
-])
+const stepsData = ref([])
 
-const glucoseData = ref([
-  { time: '06:30 空腹', value: 5.8, tag: '正常' },
-  { time: '09:00 早餐后', value: 7.5, tag: '偏高' },
-  { time: '12:30 午餐前', value: 5.2, tag: '正常' },
-  { time: '14:30 午餐后', value: 8.1, tag: '偏高' },
-  { time: '18:00 晚餐前', value: 5.5, tag: '正常' },
-  { time: '20:00 晚餐后', value: 7.2, tag: '偏高' },
-  { time: '22:00 睡前', value: 6.0, tag: '正常' },
-])
+const glucoseData = ref([])
 
-const bpData = ref([
-  { date: '今天 08:00', systolic: 128, diastolic: 82, pulse: 72 },
-  { date: '昨天 08:15', systolic: 132, diastolic: 85, pulse: 75 },
-  { date: '前天 07:50', systolic: 125, diastolic: 80, pulse: 70 },
-])
+const bpData = ref([])
 
-const thresholds = ref([
-  { key: 'hr_high', name: '心率过高', low: 100, high: 999, unit: 'bpm', triggered: false },
-  { key: 'hr_low', name: '心率过低', low: 0, high: 50, unit: 'bpm', triggered: false },
-  { key: 'glucose_high', name: '血糖过高', low: 7.8, high: 999, unit: 'mmol/L', triggered: false },
-  { key: 'glucose_low', name: '血糖过低', low: 0, high: 3.9, unit: 'mmol/L', triggered: false },
-  { key: 'bp_high', name: '血压过高', low: 140, high: 999, unit: 'mmHg', triggered: false },
-  { key: 'steps_low', name: '步数不足', low: 0, high: 3000, unit: '步', triggered: false },
-])
+const thresholds = ref([])
 
 const glucoseColor = (val) => {
   if (val < 3.9) return '#faad14'

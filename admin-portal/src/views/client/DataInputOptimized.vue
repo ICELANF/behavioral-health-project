@@ -295,8 +295,7 @@ import { BigNumberInput } from '@/components/health'
 
 const router = useRouter()
 
-// 患者ID（实际应该从登录状态获取）
-const patientId = 'p001'
+const patientId = localStorage.getItem('admin_user_id') || '0'
 
 // 当前步骤
 const step = ref(1)

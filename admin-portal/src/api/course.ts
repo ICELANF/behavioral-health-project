@@ -1,6 +1,6 @@
 /**
  * 课程内容 API 客户端
- * 调用 /api/v1/content 系列端点，带 mock 降级
+ * 调用 /api/v1/content 系列端点
  */
 
 import request from './request'
@@ -63,37 +63,22 @@ export interface CourseDetail {
  * 获取内容列表
  */
 export async function fetchContentList(params: ContentListParams = {}) {
-  try {
-    const res = await request.get('/v1/content', { params })
-    return res.data
-  } catch (error) {
-    console.warn('fetchContentList API failed, using local data', error)
-    return null
-  }
+  const res = await request.get('/v1/content', { params })
+  return res.data
 }
 
 /**
  * 获取课程详情
  */
 export async function fetchCourseDetail(courseId: string): Promise<CourseDetail | null> {
-  try {
-    const res = await request.get(`/v1/content/course/${courseId}`)
-    return res.data
-  } catch (error) {
-    console.warn('fetchCourseDetail API failed', error)
-    return null
-  }
+  const res = await request.get(`/v1/content/course/${courseId}`)
+  return res.data
 }
 
 /**
  * 报名课程
  */
 export async function enrollCourse(courseId: string) {
-  try {
-    const res = await request.post(`/v1/content/course/${courseId}/enroll`)
-    return res.data
-  } catch (error) {
-    console.warn('enrollCourse API failed', error)
-    return null
-  }
+  const res = await request.post(`/v1/content/course/${courseId}/enroll`)
+  return res.data
 }

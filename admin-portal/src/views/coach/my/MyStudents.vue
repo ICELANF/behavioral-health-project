@@ -131,17 +131,6 @@ const loadStudents = async () => {
     })
   } catch (e: any) {
     console.error('加载学员列表失败:', e)
-    // Fallback mock data
-    if (!allStudents.value.length) {
-      allStudents.value = [
-        { id: '1', name: '张伟', stage: '行动期', risk: '低风险', completion: 85, activeDays: 6, lastActive: '今天', group: 'action' },
-        { id: '2', name: '李娜', stage: '思考期', risk: '中风险', completion: 45, activeDays: 3, lastActive: '昨天', group: 'contemplation' },
-        { id: '3', name: '王芳', stage: '前思考期', risk: '高风险', completion: 15, activeDays: 1, lastActive: '3天前', group: 'precontemplation' },
-        { id: '4', name: '赵强', stage: '准备期', risk: '中风险', completion: 60, activeDays: 4, lastActive: '今天', group: 'preparation' },
-        { id: '5', name: '刘洋', stage: '维持期', risk: '低风险', completion: 92, activeDays: 7, lastActive: '今天', group: 'maintenance' },
-        { id: '6', name: '陈静', stage: '行动期', risk: '中风险', completion: 70, activeDays: 5, lastActive: '今天', group: 'action' },
-      ]
-    }
   } finally {
     loading.value = false
   }

@@ -3,29 +3,9 @@ import { DualSignPanel } from '../Expert/DualSignPanel';
 import TracePage from './TracePage';
 import { AuditCase } from '../../../types/react-types';
 
-const mockCase: AuditCase = {
-  id: 'tr_7721',
-  patientId: 'PT-8821',
-  rawMetrics: {
-    phq9: 18,
-    cgmTrend: '波动剧烈',
-    riskLevel: 'R3'
-  },
-  originalL5Output: '检测到中重度抑郁倾向及餐后血糖控制不佳。建议立即启动抗抑郁筛查并限制碳水摄入。',
-  narrativeL6Preview: '最近似乎感到身体有些沉重？没关系，这是身体在提醒我们需要一点小小的调整。试试看从一次深呼吸开始，慢慢找回节律。',
-  status: 'pending',
-  decisionRules: {
-    trigger: 'PHQ9_DEPRESSION_CHECK',
-    logic: 'IF phq9 >= 15 AND cgm_volatility > 3.9 THEN SET RISK = R3',
-    octopus_clamp: 'LIMIT_TASKS = 1',
-    narrative_override: 'CONVERT_TO_EMPATHY'
-  },
-  decisionTraceId: 'trace_20240115_7721',
-  createdAt: new Date('2024-01-15')
-};
-
 const ExpertWorkspace = () => {
   const [activeTab, setActiveTab] = useState<'audit' | 'trace' | 'brain'>('audit');
+  const [auditCase, setAuditCase] = useState<AuditCase | null>(null);
 
   if (activeTab === 'trace') {
     return <TracePage />;
@@ -75,7 +55,11 @@ const ExpertWorkspace = () => {
       </nav>
 
       <main className="max-w-[1400px] mx-auto py-8">
-        {activeTab === 'audit' && <DualSignPanel auditCase={mockCase} />}
+        {activeTab === 'audit' && (auditCase ? <DualSignPanel auditCase={auditCase} /> : (
+          <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-400">
+            <p>暂无待审案例</p>
+          </div>
+        ))}
         {activeTab === 'brain' && (
           <div className="bg-white rounded-lg border border-slate-200 p-8 text-center text-slate-400">
             <p>规则引擎功能开发中...</p>

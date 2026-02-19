@@ -309,9 +309,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
+import { expertApi } from '@/api/expert-api'
 import {
   BellOutlined,
   DashboardOutlined,
@@ -338,100 +339,92 @@ const router = useRouter()
 
 // 专家信息
 const expertInfo = reactive({
-  id: 'expert001',
-  name: localStorage.getItem('admin_name') || '张专家',
+  id: localStorage.getItem('admin_user_id') || '0',
+  name: localStorage.getItem('admin_name') || '专家',
   avatar: ''
 })
 
-const notifications = ref(5)
+const notifications = ref(0)
 
 // 概览统计
 const overviewStats = reactive({
-  coachesSupervised: 12,
-  pendingReviews: 3,
-  upcomingLives: 2,
-  casesToReview: 5
+  coachesSupervised: 0,
+  pendingReviews: 0,
+  upcomingLives: 0,
+  casesToReview: 0
 })
 
 // 待审核申请
-const pendingApplications = ref([
-  {
-    id: 'app001',
-    coachName: '李教练',
-    avatar: '',
-    currentLevel: 'L1',
-    targetLevel: 'L2',
-    appliedAt: '2024-01-24',
-    requirements: {
-      courses: true,
-      exams: true,
-      cases: true,
-      mentoring: false
-    }
-  },
-  {
-    id: 'app002',
-    coachName: '王教练',
-    avatar: '',
-    currentLevel: 'L2',
-    targetLevel: 'L3',
-    appliedAt: '2024-01-23',
-    requirements: {
-      courses: true,
-      exams: false,
-      cases: true,
-      mentoring: true
-    }
-  }
-])
+const pendingApplications = ref<any[]>([])
 
 // 带教教练
-const supervisedCoaches = ref([
-  { id: 'c001', name: '李教练', avatar: '', level: 'L2', studentCount: 28, caseCount: 15 },
-  { id: 'c002', name: '王教练', avatar: '', level: 'L1', studentCount: 18, caseCount: 8 },
-  { id: 'c003', name: '张教练', avatar: '', level: 'L2', studentCount: 35, caseCount: 22 },
-  { id: 'c004', name: '刘教练', avatar: '', level: 'L1', studentCount: 12, caseCount: 5 }
-])
+const supervisedCoaches = ref<any[]>([])
 
 // 直播列表
-const upcomingLives = ref([
-  {
-    id: 'live001',
-    title: 'L2认证培训：糖尿病患者心理支持技巧',
-    cover: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400',
-    status: 'scheduled',
-    scheduledAt: '2024-01-26 14:00',
-    level: 'L2教练'
-  },
-  {
-    id: 'live002',
-    title: 'TTM模型在行为改变中的应用',
-    cover: 'https://images.unsplash.com/photo-1559757175-5700dde675bc?w=400',
-    status: 'live',
-    scheduledAt: '进行中',
-    level: '全体教练'
-  }
-])
+const upcomingLives = ref<any[]>([])
 
 // 待审案例
-const pendingCases = ref([
-  {
-    id: 'case001',
-    title: '高血糖患者成功逆转案例',
-    coachName: '李教练',
-    submittedAt: '2024-01-24',
-    type: 'success',
-    summary: '患者通过3个月的饮食和运动干预，成功将糖化血红蛋白从8.5%降至6.2%...'
-  },
-  {
-    id: 'case002',
-    title: '肥胖患者减重困难分析',
-    coachName: '王教练',
-    submittedAt: '2024-01-23',
-    type: 'learning',
-    summary: '患者多次尝试减重未成功，分析原因可能与情绪性进食有关...'
+const pendingCases = ref<any[]>([])
+
+// 加载数据
+async function loadExpertData() {
+  const id = expertInfo.id
+  const [coachesResult, reviewsResult, sessionsResult] = await Promise.allSettled([
+    expertApi.getSupervisedCoaches(id),
+    expertApi.getReviewQueue(id),
+    expertApi.getSupervisionSessions(id),
+  ])
+
+  if (coachesResult.status === 'fulfilled') {
+    const coaches = coachesResult.value.coaches || []
+    supervisedCoaches.value = coaches.map((c: any) => ({
+      id: c.id, name: c.name, avatar: c.avatar || '', level: c.level || 'L1',
+      studentCount: c.student_count ?? c.studentCount ?? 0,
+      caseCount: c.case_count ?? c.caseCount ?? 0,
+    }))
+    overviewStats.coachesSupervised = supervisedCoaches.value.length
+  } else {
+    console.warn('Failed to load supervised coaches:', coachesResult.reason)
   }
-])
+
+  if (reviewsResult.status === 'fulfilled') {
+    const items = reviewsResult.value.items || []
+    pendingApplications.value = items
+      .filter((r: any) => r.type === 'promotion')
+      .map((r: any) => ({
+        id: r.id, coachName: r.submitter || r.coach_name, avatar: '',
+        currentLevel: r.current_level || '', targetLevel: r.target_level || '',
+        appliedAt: r.submit_date || r.submitDate || '',
+        requirements: r.requirements || { courses: false, exams: false, cases: false, mentoring: false },
+      }))
+    pendingCases.value = items
+      .filter((r: any) => r.type === 'case')
+      .map((r: any) => ({
+        id: r.id, title: r.title, coachName: r.submitter, submittedAt: r.submit_date || r.submitDate || '',
+        type: r.urgency === 'high' ? 'learning' : 'success', summary: r.description || '',
+      }))
+    overviewStats.pendingReviews = pendingApplications.value.length
+    overviewStats.casesToReview = pendingCases.value.length
+  } else {
+    console.warn('Failed to load review queue:', reviewsResult.reason)
+  }
+
+  if (sessionsResult.status === 'fulfilled') {
+    const sessions = sessionsResult.value.sessions || []
+    upcomingLives.value = sessions
+      .filter((s: any) => s.status !== '已完成')
+      .map((s: any) => ({
+        id: s.id, title: s.topic || s.title || '', cover: '',
+        status: s.status === '待进行' ? 'scheduled' : 'live',
+        scheduledAt: s.date || '', level: s.coach || '',
+      }))
+    overviewStats.upcomingLives = upcomingLives.value.length
+  } else {
+    console.warn('Failed to load supervision sessions:', sessionsResult.reason)
+  }
+}
+
+onMounted(loadExpertData)
 
 // 方法
 const getGreeting = () => {
@@ -465,9 +458,16 @@ const approveApplication = (application: typeof pendingApplications.value[0]) =>
   Modal.confirm({
     title: '确认通过',
     content: `确定通过 ${application.coachName} 的 ${application.targetLevel} 晋级申请吗？`,
-    onOk() {
-      message.success('已通过晋级申请')
-      pendingApplications.value = pendingApplications.value.filter(a => a.id !== application.id)
+    async onOk() {
+      try {
+        await expertApi.submitReview(application.id, { approved: true, comment: '' })
+        message.success('已通过晋级申请')
+        pendingApplications.value = pendingApplications.value.filter(a => a.id !== application.id)
+        overviewStats.pendingReviews = pendingApplications.value.length
+      } catch (e) {
+        console.error('审核失败:', e)
+        message.error('操作失败，请重试')
+      }
     }
   })
 }
@@ -476,9 +476,16 @@ const rejectApplication = (application: typeof pendingApplications.value[0]) => 
   Modal.confirm({
     title: '确认拒绝',
     content: `确定拒绝 ${application.coachName} 的晋级申请吗？`,
-    onOk() {
-      message.info('已拒绝晋级申请')
-      pendingApplications.value = pendingApplications.value.filter(a => a.id !== application.id)
+    async onOk() {
+      try {
+        await expertApi.submitReview(application.id, { approved: false, comment: '' })
+        message.info('已拒绝晋级申请')
+        pendingApplications.value = pendingApplications.value.filter(a => a.id !== application.id)
+        overviewStats.pendingReviews = pendingApplications.value.length
+      } catch (e) {
+        console.error('审核失败:', e)
+        message.error('操作失败，请重试')
+      }
     }
   })
 }

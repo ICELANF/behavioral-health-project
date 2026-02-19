@@ -137,20 +137,17 @@ const newAllergy = ref('')
 const loading = ref(true)
 
 const profile = reactive({
-  name: '张三',
+  name: '',
   gender: 'male',
-  age: 45,
-  height: '172',
-  weight: '78',
-  diagnosis: '2型糖尿病',
-  diagnosisDate: '2023-06-15',
-  medicalNotes: '空腹血糖偏高，HbA1c 7.2%，合并轻度高血压',
-  medications: [
-    { name: '二甲双胍', dosage: '500mg', frequency: '每日两次' },
-    { name: '氨氯地平', dosage: '5mg', frequency: '每日一次' },
-  ],
-  allergies: ['青霉素', '磺胺类'],
-  emergencyContact: { name: '李四', relation: '配偶', phone: '13800138000' },
+  age: 0,
+  height: '',
+  weight: '',
+  diagnosis: '',
+  diagnosisDate: '',
+  medicalNotes: '',
+  medications: [],
+  allergies: [],
+  emergencyContact: { name: '', relation: '', phone: '' },
 })
 
 async function loadProfile() {
@@ -158,25 +155,25 @@ async function loadProfile() {
   try {
     const data = await profileApi.getProfile()
     if (data) {
-      profile.name = data.display_name || data.name || data.username || profile.name
-      profile.gender = data.gender || profile.gender
-      profile.age = data.age ?? profile.age
-      profile.height = String(data.height ?? profile.height)
-      profile.weight = String(data.weight ?? profile.weight)
-      profile.diagnosis = data.diagnosis || data.primary_diagnosis || profile.diagnosis
-      profile.diagnosisDate = data.diagnosis_date || data.diagnosisDate || profile.diagnosisDate
-      profile.medicalNotes = data.medical_notes || data.medicalNotes || profile.medicalNotes
+      profile.name = data.display_name || data.name || data.username || ''
+      profile.gender = data.gender || 'male'
+      profile.age = data.age ?? 0
+      profile.height = String(data.height ?? '')
+      profile.weight = String(data.weight ?? '')
+      profile.diagnosis = data.diagnosis || data.primary_diagnosis || ''
+      profile.diagnosisDate = data.diagnosis_date || data.diagnosisDate || ''
+      profile.medicalNotes = data.medical_notes || data.medicalNotes || ''
       if (Array.isArray(data.medications)) profile.medications = data.medications
       if (Array.isArray(data.allergies)) profile.allergies = data.allergies
       if (data.emergency_contact || data.emergencyContact) {
         const ec = data.emergency_contact || data.emergencyContact
-        profile.emergencyContact.name = ec.name || profile.emergencyContact.name
-        profile.emergencyContact.relation = ec.relation || profile.emergencyContact.relation
-        profile.emergencyContact.phone = ec.phone || profile.emergencyContact.phone
+        profile.emergencyContact.name = ec.name || ''
+        profile.emergencyContact.relation = ec.relation || ''
+        profile.emergencyContact.phone = ec.phone || ''
       }
     }
   } catch (e) {
-    console.warn('Failed to load profile, using mock', e)
+    console.error('加载个人档案失败:', e)
   }
   loading.value = false
 }

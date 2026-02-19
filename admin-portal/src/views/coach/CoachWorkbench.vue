@@ -173,25 +173,6 @@ const loading = ref(true)
 
 type QueueItem = ReviewQueueItem
 
-// Mock fallback data
-const mockQueue: QueueItem[] = [
-  {
-    id: 'q1', name: '李大爷', studentId: 0, stage: 'S2', level: 'L3', bptType: '关系型',
-    streakDays: 5, riskLevel: 'medium', type: 'prescription', typeLabel: '行为处方',
-    priority: 'normal', waitTime: '2小时前', status: 'pending', createdAt: '',
-    aiSummary: '李大爷连续5天完成八段锦打卡，但血糖控制不理想(空腹7.8)，AI建议将运动从早上调整到餐后30分钟，并增加步行处方。',
-    rxFields: null, aiDraft: null, pushType: null, pushContent: null,
-  } as QueueItem,
-  {
-    id: 'q2', name: '王阿姨', studentId: 0, stage: 'S1', level: 'L2', bptType: '情绪型',
-    streakDays: 0, riskLevel: 'high', type: 'ai_reply', typeLabel: 'AI回复审核',
-    priority: 'urgent', waitTime: '15分钟前', status: 'pending', createdAt: '',
-    aiSummary: '王阿姨在对话中表达了对控糖失败的沮丧感，SPI=22分(L2层)，有dropout风险。',
-    aiDraft: '阿姨，控糖确实不容易，您能坚持测量血糖已经很了不起了。我们不急着改变太多，先从您最舒服的节奏开始，好吗？',
-    rxFields: null, pushType: null, pushContent: null,
-  } as QueueItem,
-]
-
 const queue = ref<QueueItem[]>([])
 const currentItem = ref<QueueItem | null>(null)
 
@@ -209,16 +190,14 @@ async function loadData() {
     avgSeconds.value = s.avgSeconds
     myStudentCount.value = s.streakDays // reuse for display
   } else {
-    console.warn('Failed to load coach stats, using defaults', statsResult.reason)
-    pendingCount.value = 12; todayReviewed.value = 34; avgSeconds.value = 28; myStudentCount.value = 45
+    console.warn('Failed to load coach stats:', statsResult.reason)
   }
 
   if (queueResult.status === 'fulfilled') {
     queue.value = queueResult.value.items
     pendingCount.value = queueResult.value.totalPending
   } else {
-    console.warn('Failed to load review queue, using mock', queueResult.reason)
-    queue.value = mockQueue
+    console.warn('Failed to load review queue:', queueResult.reason)
   }
 
   currentItem.value = queue.value[0] || null
@@ -241,12 +220,12 @@ const filteredQueue = computed(() => {
 
 // ── 处方六要素 ──
 const rxFields = ref([
-  { key: 'target', label: '目标行为', value: '餐后30分钟步行15分钟', rows: 1, placeholder: '具体做什么' },
-  { key: 'frequency', label: '频次剂量', value: '每日午餐后 + 晚餐后', rows: 1, placeholder: '多久一次' },
-  { key: 'time_place', label: '时间地点', value: '饭后30分钟，小区内步道', rows: 1, placeholder: '何时何地' },
-  { key: 'trigger', label: '启动线索', value: '吃完饭放下碗筷→换鞋→出门', rows: 1, placeholder: '提醒机制' },
-  { key: 'obstacle', label: '障碍预案', value: '下雨天改为室内原地踏步10分钟', rows: 1, placeholder: '遇到困难怎么办' },
-  { key: 'support', label: '支持资源', value: '邀请老伴一起走', rows: 1, placeholder: '谁来帮助(选填)' },
+  { key: 'target', label: '目标行为', value: '', rows: 1, placeholder: '具体做什么' },
+  { key: 'frequency', label: '频次剂量', value: '', rows: 1, placeholder: '多久一次' },
+  { key: 'time_place', label: '时间地点', value: '', rows: 1, placeholder: '何时何地' },
+  { key: 'trigger', label: '启动线索', value: '', rows: 1, placeholder: '提醒机制' },
+  { key: 'obstacle', label: '障碍预案', value: '', rows: 1, placeholder: '遇到困难怎么办' },
+  { key: 'support', label: '支持资源', value: '', rows: 1, placeholder: '谁来帮助(选填)' },
 ])
 
 // ── 方法 ──

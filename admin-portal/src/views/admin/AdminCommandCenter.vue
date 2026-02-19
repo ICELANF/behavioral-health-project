@@ -163,31 +163,6 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { adminFlywheelApi, type CoreKPI, type ChannelHealth, type FunnelStep, type AgentGroup, type AgentPerf, type CoachRank, type SafetyMetric, type ActiveAlert } from '@/api/admin-flywheel-api'
 
-// ── Mock defaults ──
-const mockAlerts: ActiveAlert[] = [
-  { id: 'a1', level: 'critical', message: 'VLM服务响应超时 >5s (影响图片识别)', time: '2分钟前' },
-  { id: 'a2', level: 'warning', message: '微信服务号模板消息发送失败率升高至8%', time: '15分钟前' },
-]
-const mockKPIs: CoreKPI[] = [
-  { icon: '👥', value: '1,247', label: 'DAU (全渠道)', sub: 'App 680 · 微信 402 · 小程序 165', trendDir: 'up', trendPct: 12, status: 'good' },
-  { icon: '🔄', value: '34.2%', label: 'Observer→Grower 转化', sub: '本周 vs 上周 +5.1pp', trendDir: 'up', trendPct: 5.1, status: 'good' },
-  { icon: '📊', value: '78.5%', label: '7日留存率', sub: 'Grower角色', trendDir: 'down', trendPct: 2.3, status: 'warn' },
-  { icon: '🤖', value: '1.8s', label: 'AI平均响应', sub: 'P95: 3.2s · 超时率: 0.3%', trendDir: 'up', trendPct: 0.5, status: 'good' },
-]
-const mockChannels: ChannelHealth[] = [
-  { icon: '📱', name: 'H5 移动端', status: 'healthy', statusLabel: '正常', dau: '680', msgToday: '3,420', avgReply: '1.6s' },
-  { icon: '💬', name: '微信服务号', status: 'healthy', statusLabel: '正常', dau: '402', msgToday: '1,890', avgReply: '2.1s' },
-  { icon: '🟢', name: '微信小程序', status: 'healthy', statusLabel: '正常', dau: '165', msgToday: '720', avgReply: '1.4s' },
-  { icon: '👔', name: '企业微信', status: 'degraded', statusLabel: '告警', dau: '23', msgToday: '156', avgReply: '4.2s' },
-]
-const mockFunnel: FunnelStep[] = [
-  { label: '访问', count: '5,280', pct: 100, color: '#93c5fd' },
-  { label: '注册(Observer)', count: '2,140', pct: 40, color: '#60a5fa', convRate: '40.5' },
-  { label: '完成评估', count: '892', pct: 17, color: '#3b82f6', convRate: '41.7' },
-  { label: '升级Grower', count: '731', pct: 14, color: '#2563eb', convRate: '81.9' },
-  { label: '7日活跃', count: '574', pct: 11, color: '#1d4ed8', convRate: '78.5' },
-]
-
 // ── Reactive state ──
 const activeAlerts = ref<ActiveAlert[]>([])
 const coreKPIs = ref<CoreKPI[]>([])
@@ -236,47 +211,29 @@ async function loadAll() {
     adminFlywheelApi.getActiveAlerts(),
   ])
 
-  coreKPIs.value = kpiR.status === 'fulfilled' ? kpiR.value : (console.warn('KPI fallback'), mockKPIs)
-  channels.value = chR.status === 'fulfilled' ? chR.value : (console.warn('Channel fallback'), mockChannels)
-  funnelSteps.value = funR.status === 'fulfilled' ? funR.value : (console.warn('Funnel fallback'), mockFunnel)
+  if (kpiR.status === 'fulfilled') coreKPIs.value = kpiR.value
+  else console.warn('KPI load failed:', kpiR.reason)
 
-  if (agMonR.status === 'fulfilled') {
-    agentGroups.value = agMonR.value
-  } else {
-    console.warn('Agent monitor fallback')
-    agentGroups.value = [
-      { name: '用户层', agents: Array.from({length: 14}, (_, i) => ({ id: `u${i}`, name: `用户Agent${i+1}`, status: i === 4 ? 'slow' : 'ok', statusLabel: i === 4 ? '响应慢' : '正常' })) },
-      { name: '教练层', agents: Array.from({length: 10}, (_, i) => ({ id: `c${i}`, name: `教练Agent${i+1}`, status: 'ok', statusLabel: '正常' })) },
-      { name: '系统层', agents: Array.from({length: 4}, (_, i) => ({ id: `s${i}`, name: `系统Agent${i+1}`, status: 'ok', statusLabel: '正常' })) },
-      { name: '中医骨科', agents: Array.from({length: 5}, (_, i) => ({ id: `t${i}`, name: `中医Agent${i+1}`, status: i === 2 ? 'error' : 'ok', statusLabel: i === 2 ? '异常' : '正常' })) },
-    ]
-  }
+  if (chR.status === 'fulfilled') channels.value = chR.value
+  else console.warn('Channel load failed:', chR.reason)
 
-  slowestAgents.value = agPerfR.status === 'fulfilled' ? agPerfR.value : [
-    { name: 'vlm_service (食物)', p95: 3800 },
-    { name: 'tcm_ortho_expert', p95: 2400 },
-    { name: 'emotion_support', p95: 1900 },
-    { name: 'rx_composer', p95: 1600 },
-    { name: 'nutrition_guide', p95: 1200 },
-  ]
+  if (funR.status === 'fulfilled') funnelSteps.value = funR.value
+  else console.warn('Funnel load failed:', funR.reason)
 
-  coachRanking.value = coachR.status === 'fulfilled' ? coachR.value : [
-    { name: '张教练', students: 45, todayReviewed: 34, avgSeconds: 28 },
-    { name: '李教练', students: 38, todayReviewed: 29, avgSeconds: 35 },
-    { name: '王教练', students: 42, todayReviewed: 22, avgSeconds: 42 },
-    { name: '陈教练', students: 30, todayReviewed: 18, avgSeconds: 55 },
-  ]
+  if (agMonR.status === 'fulfilled') agentGroups.value = agMonR.value
+  else console.warn('Agent monitor load failed:', agMonR.reason)
 
-  safetyMetrics.value = safeR.status === 'fulfilled' ? safeR.value : [
-    { rule: 'S1', label: '医疗边界', count: 3 },
-    { rule: 'S2', label: '隐私保护', count: 0 },
-    { rule: 'S3', label: '危机检测', count: 1 },
-    { rule: 'S4', label: '内容合规', count: 0 },
-    { rule: 'S5', label: '数据最小化', count: 0 },
-    { rule: 'S6', label: '微信合规', count: 2 },
-  ]
+  if (agPerfR.status === 'fulfilled') slowestAgents.value = agPerfR.value
+  else console.warn('Agent perf load failed:', agPerfR.reason)
 
-  activeAlerts.value = alertR.status === 'fulfilled' ? alertR.value : mockAlerts
+  if (coachR.status === 'fulfilled') coachRanking.value = coachR.value
+  else console.warn('Coach ranking load failed:', coachR.reason)
+
+  if (safeR.status === 'fulfilled') safetyMetrics.value = safeR.value
+  else console.warn('Safety load failed:', safeR.reason)
+
+  if (alertR.status === 'fulfilled') activeAlerts.value = alertR.value
+  else console.warn('Alerts load failed:', alertR.reason)
   loading.value = false
 }
 

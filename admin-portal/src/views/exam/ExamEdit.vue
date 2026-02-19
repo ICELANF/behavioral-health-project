@@ -408,96 +408,7 @@ const pickerFilters = reactive<QuestionListParams>({
 const tempSelectedKeys = ref<string[]>([]);
 
 // 可用题目列表
-const availableQuestions = computed(() => {
-  if (questionStore.questions.length > 0) {
-    return questionStore.questions;
-  }
-  // 模拟数据
-  return mockQuestions;
-});
-
-// 模拟题目数据
-const mockQuestions: Question[] = [
-  {
-    question_id: 'q1',
-    content: '行为改变的五阶段模型（跨理论模型）中，"准备阶段"的主要特征是什么？',
-    type: 'single',
-    level: 'L1',
-    difficulty: 3,
-    options: ['完全没有改变意愿', '开始考虑改变', '已制定行动计划', '已开始行动'],
-    answer: 2,
-    explanation: '准备阶段的特征是个体已经打算在近期采取行动...',
-    tags: ['行为科学', 'TTM模型'],
-    use_count: 45,
-    default_score: 2,
-    status: 'active',
-    created_at: '2026-01-20T10:00:00Z',
-    updated_at: '2026-01-20T10:00:00Z',
-  },
-  {
-    question_id: 'q2',
-    content: '关于动机访谈（MI）技术，以下哪些是其核心原则？（多选）',
-    type: 'multiple',
-    level: 'L1',
-    difficulty: 4,
-    options: ['表达共情', '发展矛盾', '支持自我效能', '直接指导'],
-    answer: [0, 1, 2],
-    explanation: '动机访谈的核心原则包括表达共情、发展矛盾、支持自我效能...',
-    tags: ['动机访谈', 'MI'],
-    use_count: 38,
-    default_score: 4,
-    status: 'active',
-    created_at: '2026-01-19T10:00:00Z',
-    updated_at: '2026-01-19T10:00:00Z',
-  },
-  {
-    question_id: 'q3',
-    content: '糖尿病前期的空腹血糖标准是 6.1-7.0 mmol/L',
-    type: 'truefalse',
-    level: 'L2',
-    difficulty: 2,
-    answer: true,
-    explanation: '根据WHO标准，空腹血糖6.1-7.0mmol/L为糖耐量受损...',
-    tags: ['糖尿病', '诊断标准'],
-    use_count: 52,
-    default_score: 1,
-    status: 'active',
-    created_at: '2026-01-18T10:00:00Z',
-    updated_at: '2026-01-18T10:00:00Z',
-  },
-  {
-    question_id: 'q4',
-    content: 'COM-B行为改变模型中的"M"代表什么？',
-    type: 'single',
-    level: 'L1',
-    difficulty: 2,
-    options: ['能力(Capability)', '动机(Motivation)', '管理(Management)', '方法(Method)'],
-    answer: 1,
-    explanation: 'COM-B模型中M代表Motivation（动机）...',
-    tags: ['行为科学', 'COM-B'],
-    use_count: 67,
-    default_score: 2,
-    status: 'active',
-    created_at: '2026-01-17T10:00:00Z',
-    updated_at: '2026-01-17T10:00:00Z',
-  },
-  {
-    question_id: 'q5',
-    content: '在教练对话中遇到用户表达抗拒时，最佳的处理方式是？',
-    type: 'single',
-    level: 'L2',
-    difficulty: 4,
-    options: ['直接指出问题', '给出具体建议', '倾听并共情', '转换话题'],
-    answer: 2,
-    explanation: '面对抗拒，首先应该倾听并表达共情...',
-    tags: ['教练技能', '阻抗处理'],
-    use_count: 29,
-    default_score: 3,
-    status: 'active',
-    created_at: '2026-01-16T10:00:00Z',
-    updated_at: '2026-01-16T10:00:00Z',
-  },
-];
+const availableQuestions = computed(() => questionStore.questions);
 
 // 选择器表格列
 const pickerColumns = [
@@ -618,7 +529,7 @@ const loadExam = async () => {
       // 加载已选题目
       if (exam.question_ids && exam.question_ids.length > 0) {
         await questionStore.fetchQuestions({});
-        const allQuestions = questionStore.questions.length > 0 ? questionStore.questions : mockQuestions;
+        const allQuestions = questionStore.questions;
         selectedQuestions.value = allQuestions
           .filter((q) => exam.question_ids.includes(q.question_id))
           .map((q) => ({ ...q, score: q.default_score || 1 }));

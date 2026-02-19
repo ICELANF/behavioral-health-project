@@ -1336,81 +1336,33 @@ const pendingStudents = ref<any[]>([])
 
 // 四层诊断数据
 const diagnosisData = reactive({
-  spiScore: 72,
-  successRate: 68,
-  sixReasons: [
-    { name: '知识不足', score: 35, max: 100, isWeak: true },
-    { name: '技能欠缺', score: 50, max: 100, isWeak: true },
-    { name: '动机不强', score: 65, max: 100, isWeak: false },
-    { name: '环境障碍', score: 40, max: 100, isWeak: true },
-    { name: '信念偏差', score: 55, max: 100, isWeak: false },
-    { name: '习惯惯性', score: 70, max: 100, isWeak: false }
-  ],
+  spiScore: 0,
+  successRate: 0,
+  sixReasons: [] as { name: string; score: number; max: number; isWeak: boolean }[],
   psychLevels: [
     { label: '认知层', color: 'blue' },
     { label: '情绪层', color: 'orange' },
     { label: '动机层', color: 'green' },
     { label: '行为层', color: 'purple' }
   ],
-  problem: '餐后血糖持续偏高，饮食控制不理想',
-  difficulty: 3,
-  purpose: '降低餐后血糖至10mmol/L以下，建立健康饮食习惯',
-  evidence: [
-    { label: '近7天餐后血糖均值', value: '11.2 mmol/L', status: 'danger' },
-    { label: '饮食打卡完成率', value: '43%', status: 'warning' },
-    { label: '运动执行率', value: '67%', status: 'normal' }
-  ],
+  problem: '',
+  difficulty: 0,
+  purpose: '',
+  evidence: [] as { label: string; value: string; status: string }[],
   interventionFormula: 'SPI = 0.4×行为执行 + 0.3×指标改善 + 0.2×知识掌握 + 0.1×态度转变',
-  interventionAlert: '当前SPI低于80分，建议加强干预力度，重点关注饮食行为改变'
+  interventionAlert: ''
 })
 
 // 行为处方数据
 const prescriptionData = reactive({
-  phase: { current: '强化期', week: '第3周', total: '共8周' },
-  phaseTags: [
-    { label: '评估期', done: true },
-    { label: '启动期', done: true },
-    { label: '强化期', active: true },
-    { label: '巩固期', done: false },
-    { label: '维持期', done: false }
-  ],
-  targetBehaviors: [
-    { name: '每餐主食减量1/3', progress: 60, target: '21天连续达标', currentDays: 13 },
-    { name: '餐后30分钟散步', progress: 75, target: '21天连续达标', currentDays: 16 },
-    { name: '每日血糖监测2次', progress: 85, target: '14天连续达标', currentDays: 12 }
-  ],
-  strategies: [
-    { label: '动机访谈', type: 'blue' },
-    { label: '行为契约', type: 'green' },
-    { label: '同伴支持', type: 'orange' },
-    { label: '奖励机制', type: 'purple' }
-  ]
+  phase: { current: '', week: '', total: '' },
+  phaseTags: [] as { label: string; done?: boolean; active?: boolean }[],
+  targetBehaviors: [] as { name: string; progress: number; target: string; currentDays: number }[],
+  strategies: [] as { label: string; type: string }[]
 })
 
 // AI诊断建议
-const aiDiagnosisSuggestions = ref([
-  {
-    id: 'ads1',
-    title: '调整饮食干预策略',
-    content: '学员饮食打卡率低，建议从"减量"策略调整为"替换"策略，用低GI食物替代高GI食物，降低行为改变难度。',
-    type: 'strategy',
-    priority: 'high'
-  },
-  {
-    id: 'ads2',
-    title: '增加知识教育频次',
-    content: '知识不足是当前主要薄弱项，建议每周推送2条碳水化合物与血糖关系的科普内容。',
-    type: 'education',
-    priority: 'medium'
-  },
-  {
-    id: 'ads3',
-    title: '引入同伴激励机制',
-    content: '学员处于行动期但动力波动，建议匹配1位同阶段学员组成互助小组，提升坚持率。',
-    type: 'social',
-    priority: 'medium'
-  }
-])
+const aiDiagnosisSuggestions = ref<{ id: string; title: string; content: string; type: string; priority: string }[]>([])
 
 // ── AI 教练共驾台 (CoachCopilot 双模式) ──
 import copilotApi from '../../api/copilot'
@@ -1503,12 +1455,12 @@ const interventionTools = ref([
 
 // 学习进度
 const learningProgress = reactive({
-  certProgress: 65,
-  coursesCompleted: 8,
-  coursesTotal: 12,
-  examsPassed: 2,
-  examsTotal: 3,
-  caseCount: 15
+  certProgress: 0,
+  coursesCompleted: 0,
+  coursesTotal: 0,
+  examsPassed: 0,
+  examsTotal: 0,
+  caseCount: 0
 })
 
 // 抽屉状态
@@ -2069,84 +2021,6 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-// ── 示例数据生成器 ──
-function generateSampleStudents() {
-  const names = [
-    '张明华', '王小红', '李建国', '赵芳芳', '刘大伟', '陈晓丽', '杨志强', '黄丽萍',
-    '周文博', '吴雅琴', '孙海涛', '马晓东', '朱秀英', '胡建华', '林美玲', '郭志远',
-    '何晓燕', '高建平', '罗雪梅', '梁伟明', '谢丽娟', '宋志刚', '唐小芳', '韩大勇',
-    '冯雅静', '曹明辉', '彭晓霞', '潘建文', '蒋美华', '邓志豪',
-  ]
-  const stages = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6']
-  const conditions = [
-    '2型糖尿病·饮食管理', '高血压·运动干预', '肥胖·综合管理', '失眠·睡眠行为调整',
-    '焦虑·情绪管理', '慢性疼痛·行为康复', '代谢综合征·生活方式干预', '行为健康管理',
-  ]
-  const contactDays = ['今天', '1天前', '2天前', '3天前', '5天前', '7天前', '10天前']
-
-  return names.map((name, i) => {
-    const stage = stages[i % stages.length]
-    const dayIdx = Math.min(i % 7, contactDays.length - 1)
-    const daysNum = [0, 1, 2, 3, 5, 7, 10][dayIdx]
-    let priority = 'low'
-    if (daysNum >= 5 || stage === 'S0') priority = 'high'
-    else if (daysNum >= 3 || stage === 'S1') priority = 'medium'
-
-    return {
-      id: 1000 + i,
-      name,
-      avatar: '',
-      condition: conditions[i % conditions.length],
-      stage,
-      stageLabel: getStageLabel(stage),
-      lastContact: contactDays[dayIdx],
-      priority,
-      healthData: {
-        fastingGlucose: +(5.0 + Math.random() * 8).toFixed(1),
-        postprandialGlucose: +(7.0 + Math.random() * 9).toFixed(1),
-        weight: +(55 + Math.random() * 40).toFixed(1),
-        exerciseMinutes: Math.floor(Math.random() * 90),
-      },
-      microAction7d: { completed: Math.floor(Math.random() * 7), total: 7 },
-      riskFlags: daysNum >= 5 ? ['dropout_risk'] : [],
-      records: [],
-      interventionPlan: null,
-      assessScore: 0,
-      assessNote: '',
-    }
-  })
-}
-
-function generateAiRecommendations(students: any[]) {
-  const templates = [
-    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}近3天血糖波动较大，建议进行电话跟进，了解饮食和用药情况` },
-    { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}处于准备期，建议推送"运动入门指南"课程，强化行为改变动机` },
-    { type: 'followup', typeLabel: '跟进提醒', tpl: (n: string) => `${n}已3天未打卡，建议发送关怀消息，了解近况` },
-    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}睡眠质量持续下降，建议关注情绪状态并调整睡眠干预方案` },
-    { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}行为执行率较低，建议降低任务难度，采用渐进式目标设定` },
-    { type: 'followup', typeLabel: '跟进提醒', tpl: (n: string) => `${n}上次评估已超过30天，建议推送高频快速评估` },
-    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}餐后血糖多次超过13.9mmol/L，建议立即电话了解饮食情况` },
-    { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}已进入行动期但动力不足，建议引入同伴激励机制` },
-  ]
-  // 从高优先级学员中生成审核条目
-  const candidates = students
-    .filter(s => s.priority === 'high' || s.priority === 'medium')
-    .slice(0, PAGE_SIZE)
-  return candidates.map((s, i) => {
-    const t = templates[i % templates.length]
-    return {
-      id: `ai${String(i + 1).padStart(3, '0')}`,
-      type: t.type,
-      typeLabel: t.typeLabel,
-      studentName: s.name,
-      suggestion: t.tpl(s.name),
-      status: 'pending' as 'pending' | 'approved' | 'modified' | 'rejected',
-      showModify: false,
-      modifiedText: '',
-    }
-  })
-}
-
 async function loadDashboard() {
   loading.value = true
   try {
@@ -2194,24 +2068,37 @@ async function loadDashboard() {
       assessNote: '',
     }))
 
-    // API 有数据则使用，无数据则用示例
-    if (rawStudents.length > 0) {
-      pendingStudents.value = rawStudents.slice(0, PAGE_SIZE)
-    } else {
-      pendingStudents.value = generateSampleStudents().slice(0, PAGE_SIZE)
+    pendingStudents.value = rawStudents.slice(0, PAGE_SIZE)
+  } catch (e: any) {
+    console.error('[CoachHome] Dashboard API 失败:', e)
+  } finally {
+    loading.value = false
+  }
+  // 异步加载 AI 推送建议
+  loadAiRecommendations()
+}
+
+async function loadAiRecommendations() {
+  try {
+    const res = await fetch(`${API_BASE}/v1/push-recommendations`, { headers: authHeaders })
+    if (!res.ok) throw new Error('Push recommendations API failed')
+    const data = await res.json()
+    const recs = data.recommendations || []
+    if (recs.length > 0) {
+      aiRecommendations.value = recs.map((r: any, i: number) => ({
+        id: `ai${String(i + 1).padStart(3, '0')}`,
+        type: r.priority === 'high' ? 'alert' : r.push_type === 'questions' ? 'intervention' : 'followup',
+        typeLabel: r.priority === 'high' ? '风险提醒' : r.push_type === 'questions' ? '干预建议' : '跟进提醒',
+        studentName: r.student_name,
+        suggestion: r.reasoning,
+        status: 'pending' as const,
+        showModify: false,
+        modifiedText: '',
+        _sourceId: r.student_id,
+      }))
     }
   } catch (e) {
-    console.warn('[CoachHome] Dashboard API 不可用，使用示例数据:', e)
-    pendingStudents.value = generateSampleStudents().slice(0, PAGE_SIZE)
-    todayStats.pendingFollowups = pendingStudents.value.filter(s => s.priority !== 'low').length
-    todayStats.alertStudents = pendingStudents.value.filter(s => s.priority === 'high').length
-    todayStats.unreadMessages = 5
-  } finally {
-    // 同步生成 AI 审核列表
-    if (aiRecommendations.value.length === 0) {
-      aiRecommendations.value = generateAiRecommendations(pendingStudents.value)
-    }
-    loading.value = false
+    console.warn('[CoachHome] AI推送建议加载失败:', e)
   }
 }
 

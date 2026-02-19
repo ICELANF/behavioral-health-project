@@ -182,6 +182,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { message } from 'ant-design-vue'
 import request from '@/api/request'
 
 const route = useRoute()
@@ -281,6 +282,7 @@ async function loadProfile() {
     data.value = res.data
   } catch (e: any) {
     data.value = {}
+    message.error('加载行为画像失败')
   } finally {
     loading.value = false
   }

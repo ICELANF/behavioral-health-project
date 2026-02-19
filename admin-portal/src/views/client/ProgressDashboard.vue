@@ -231,8 +231,7 @@ import { HealthScoreCircle, TrendChart, AchievementBadge } from '@/components/he
 
 const router = useRouter()
 
-// 患者ID（实际应该从登录状态获取）
-const patientId = 'p001'
+const patientId = localStorage.getItem('admin_user_id') || '0'
 const loading = ref(true)
 
 // 周期选择
@@ -268,9 +267,10 @@ const selectPeriod = (value: string) => {
 const overallScore = ref(0)
 const achievementRate = ref(0)
 const streakDays = ref(0)
+const scoreTrendDiff = ref(0)
 
 const scoreTrend = computed(() => {
-  const diff = 5 // 相比上周
+  const diff = scoreTrendDiff.value
   if (diff > 0) {
     return { type: 'up', text: `↗ 比上周提升 ${diff}分` }
   } else if (diff < 0) {
@@ -357,7 +357,8 @@ const loadData = async () => {
     if (scoreData) {
       overallScore.value = scoreData.overall
       achievementRate.value = scoreData.overall
-      streakDays.value = 7
+      streakDays.value = scoreData.streak_days ?? scoreData.streakDays ?? 0
+      scoreTrendDiff.value = scoreData.trend_diff ?? scoreData.trendDiff ?? 0
     }
 
     // 更新血糖趋势
@@ -383,7 +384,7 @@ const loadData = async () => {
       const lost = first - last
       weightStats.value = {
         current: `${last.toFixed(1)}kg`,
-        target: '70.0kg',
+        target: trendsWeight.target ? `${trendsWeight.target}kg` : '--',
         lost: `${lost.toFixed(1)}kg`
       }
       weightTrend.value = {

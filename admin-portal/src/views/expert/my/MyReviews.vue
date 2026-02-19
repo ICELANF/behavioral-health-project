@@ -7,9 +7,9 @@
     <!-- Stats -->
     <a-row :gutter="16" style="margin-bottom: 16px">
       <a-col :span="6"><a-card size="small"><a-statistic title="待审核" :value="pendingQueue.length" value-style="color: #d46b08" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="本月已审" :value="32" value-style="color: #3f8600" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="通过率" :value="78" suffix="%" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="平均审核时长" :value="1.5" suffix="天" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="本月已审" :value="monthlyReviewed" value-style="color: #3f8600" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="通过率" :value="approvalRate" suffix="%" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="平均审核时长" :value="avgReviewDays" suffix="天" /></a-card></a-col>
     </a-row>
 
     <!-- Tabs -->
@@ -81,9 +81,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { expertApi } from '@/api/expert-api'
 
 const router = useRouter()
 
@@ -92,18 +93,15 @@ const activeTab = ref('pending')
 const typeLabels: Record<string, string> = { promotion: '晋级审核', content: '内容审核', case: '案例审核' }
 const typeColors: Record<string, string> = { promotion: 'purple', content: 'blue', case: 'orange' }
 
-const pendingQueue = ref([
-  { id: '1', type: 'promotion', title: '王教练申请L3晋级', description: '已完成所有必修课程，干预成功率74%，申请教练认证', submitter: '王教练', submitDate: '2025-01-14', urgency: 'normal' },
-  { id: '2', type: 'content', title: '《慢病自我管理》课程审核', description: '新增4个章节，涵盖饮食、运动、用药、心理四个维度', submitter: '张专家', submitDate: '2025-01-13', urgency: 'normal' },
-  { id: '3', type: 'case', title: '高风险案例复核', description: '患者周明连续5天未活跃，PSS-10评分28分（高压力）', submitter: '李教练', submitDate: '2025-01-12', urgency: 'high' },
-])
+const pendingQueue = ref<any[]>([])
+const reviewHistory = ref<any[]>([])
 
-const reviewHistory = ref([
-  { id: 'h1', type: 'promotion', title: '张教练L2晋级', submitter: '张教练', reviewDate: '2025-01-10', approved: true, comment: '各项指标达标' },
-  { id: 'h2', type: 'content', title: '《动机访谈实践》审核', submitter: '王专家', reviewDate: '2025-01-08', approved: true, comment: '内容质量优秀' },
-  { id: 'h3', type: 'case', title: '中风险案例复核', submitter: '赵教练', reviewDate: '2025-01-06', approved: false, comment: '干预方案需要调整，建议增加随访频率' },
-  { id: 'h4', type: 'promotion', title: '赵教练L1晋级', submitter: '赵教练', reviewDate: '2025-01-04', approved: false, comment: '考试未通过，建议重考后再申请' },
-])
+const monthlyReviewed = computed(() => reviewHistory.value.length)
+const approvalRate = computed(() => {
+  if (reviewHistory.value.length === 0) return 0
+  return Math.round(reviewHistory.value.filter(r => r.approved).length / reviewHistory.value.length * 100)
+})
+const avgReviewDays = ref(0)
 
 const historyColumns = [
   { title: '类型', key: 'type', width: 100 },
@@ -114,26 +112,80 @@ const historyColumns = [
   { title: '意见', dataIndex: 'comment', ellipsis: true },
 ]
 
-const typeStats = ref([
-  { type: 'promotion', label: '晋级审核', count: 12, percent: 38, color: '#722ed1' },
-  { type: 'content', label: '内容审核', count: 15, percent: 47, color: '#1890ff' },
-  { type: 'case', label: '案例审核', count: 5, percent: 15, color: '#fa8c16' },
-])
+const typeStats = ref<{ type: string; label: string; count: number; percent: number; color: string }[]>([])
+const monthlyStats = ref<{ month: string; total: number; approved: number; rejected: number }[]>([])
 
-const monthlyStats = ref([
-  { month: '1月', total: 32, approved: 25, rejected: 7 },
-  { month: '12月', total: 28, approved: 22, rejected: 6 },
-  { month: '11月', total: 25, approved: 20, rejected: 5 },
-])
+const typeColorMap: Record<string, string> = { promotion: '#722ed1', content: '#1890ff', case: '#fa8c16' }
 
-const approveItem = (item: any) => {
-  pendingQueue.value = pendingQueue.value.filter(i => i.id !== item.id)
-  message.success('已通过审核')
+const loadReviewData = async () => {
+  const expertId = localStorage.getItem('admin_user_id') || '0'
+  const [pendingRes, historyRes] = await Promise.allSettled([
+    expertApi.getReviewQueue(expertId),
+    expertApi.getReviewHistory(expertId),
+  ])
+  if (pendingRes.status === 'fulfilled') {
+    pendingQueue.value = (pendingRes.value.items || pendingRes.value || []).map((r: any) => ({
+      id: String(r.id), type: r.type || 'case', title: r.title || '',
+      description: r.description || '', submitter: r.submitter || r.coach_name || '',
+      submitDate: r.submit_date || r.submitDate || '', urgency: r.urgency || 'normal',
+    }))
+  } else {
+    console.error('加载待审核列表失败:', pendingRes.reason)
+  }
+  if (historyRes.status === 'fulfilled') {
+    const items = historyRes.value.items || historyRes.value || []
+    reviewHistory.value = items.map((r: any) => ({
+      id: String(r.id), type: r.type || 'case', title: r.title || '',
+      submitter: r.submitter || '', reviewDate: r.review_date || r.reviewDate || '',
+      approved: r.approved ?? false, comment: r.comment || '',
+    }))
+    avgReviewDays.value = historyRes.value.avg_review_days ?? 0
+    // Build type stats from history
+    const counts: Record<string, number> = {}
+    const total = items.length || 1
+    items.forEach((r: any) => { counts[r.type] = (counts[r.type] || 0) + 1 })
+    typeStats.value = Object.entries(counts).map(([type, count]) => ({
+      type, label: typeLabels[type] || type, count,
+      percent: Math.round(count / total * 100), color: typeColorMap[type] || '#999',
+    }))
+    // Build monthly stats from history
+    const monthly: Record<string, { total: number; approved: number; rejected: number }> = {}
+    items.forEach((r: any) => {
+      const d = r.review_date || r.reviewDate || ''
+      const m = d ? d.substring(0, 7) : '未知'
+      if (!monthly[m]) monthly[m] = { total: 0, approved: 0, rejected: 0 }
+      monthly[m].total++
+      if (r.approved) monthly[m].approved++; else monthly[m].rejected++
+    })
+    monthlyStats.value = Object.entries(monthly).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6)
+      .map(([month, s]) => ({ month, ...s }))
+  } else {
+    console.error('加载审核历史失败:', historyRes.reason)
+  }
 }
 
-const rejectItem = (item: any) => {
-  pendingQueue.value = pendingQueue.value.filter(i => i.id !== item.id)
-  message.info('已驳回')
+onMounted(loadReviewData)
+
+const approveItem = async (item: any) => {
+  try {
+    await expertApi.submitReview(item.id, { approved: true, comment: '' })
+    pendingQueue.value = pendingQueue.value.filter(i => i.id !== item.id)
+    message.success('已通过审核')
+  } catch (e) {
+    console.error('审核失败:', e)
+    message.error('操作失败，请重试')
+  }
+}
+
+const rejectItem = async (item: any) => {
+  try {
+    await expertApi.submitReview(item.id, { approved: false, comment: '' })
+    pendingQueue.value = pendingQueue.value.filter(i => i.id !== item.id)
+    message.info('已驳回')
+  } catch (e) {
+    console.error('驳回失败:', e)
+    message.error('操作失败，请重试')
+  }
 }
 
 const viewDetail = (item: any) => {

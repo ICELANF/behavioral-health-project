@@ -3,44 +3,9 @@ import { DecisionTrace } from '../Trace/DecisionTrace';
 import { TraceNode } from '../../../types/react-types';
 import { useBrainContext } from '../../../contexts/BrainContext';
 
-const mockNodes: TraceNode[] = [
-  {
-    id: 'n1',
-    type: 'INPUT',
-    label: '行为事件',
-    value: 'CGM 持续高位 (12.5mmol/L)',
-    timestamp: new Date().toISOString(),
-    metadata: {}
-  },
-  {
-    id: 'n2',
-    type: 'RULE',
-    label: '触发路由',
-    value: '命中：高血糖行为引导规则',
-    timestamp: new Date().toISOString(),
-    metadata: {}
-  },
-  {
-    id: 'n3',
-    type: 'DECISION',
-    label: 'Brain 判定',
-    value: 'TTM 阶段 S3 (行动期) -> R3 风险',
-    timestamp: new Date().toISOString(),
-    metadata: {}
-  },
-  {
-    id: 'n4',
-    type: 'OUTPUT',
-    label: '披露改写',
-    value: '推送：[平稳节律] 建议卡片',
-    timestamp: new Date().toISOString(),
-    metadata: {}
-  }
-];
-
 const AdminEvolution = () => {
   const { decisionTraces } = useBrainContext();
-  const [displayNodes, setDisplayNodes] = useState<TraceNode[]>(mockNodes);
+  const [displayNodes, setDisplayNodes] = useState<TraceNode[]>([]);
 
   useEffect(() => {
     if (decisionTraces.length > 0) {

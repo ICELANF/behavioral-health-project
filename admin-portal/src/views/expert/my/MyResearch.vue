@@ -10,10 +10,10 @@
 
     <!-- Aggregate Stats -->
     <a-row :gutter="16" style="margin-bottom: 16px">
-      <a-col :span="6"><a-card size="small"><a-statistic title="总样本数" :value="1248" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="活跃用户" :value="856" value-style="color: #3f8600" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="平均干预天数" :value="45" suffix="天" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="整体行为改善率" :value="62" suffix="%" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="总样本数" :value="aggStats.totalSamples" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="活跃用户" :value="aggStats.activeUsers" value-style="color: #3f8600" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="平均干预天数" :value="aggStats.avgInterventionDays" suffix="天" /></a-card></a-col>
+      <a-col :span="6"><a-card size="small"><a-statistic title="整体行为改善率" :value="aggStats.improvementRate" suffix="%" /></a-card></a-col>
     </a-row>
 
     <!-- Custom Query -->
@@ -79,23 +79,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
+import { expertApi } from '@/api/expert-api'
 
 const query = reactive({
   dimension: 'stage',
-  dateRange: null,
+  dateRange: null as any,
   groupBy: 'none',
 })
 
-const queryResults = ref([
-  { key: '1', category: '前思考期', count: 186, percent: 14.9 },
-  { key: '2', category: '思考期', count: 312, percent: 25.0 },
-  { key: '3', category: '准备期', count: 268, percent: 21.5 },
-  { key: '4', category: '行动期', count: 298, percent: 23.9 },
-  { key: '5', category: '维持期', count: 152, percent: 12.2 },
-  { key: '6', category: '终止期', count: 32, percent: 2.5 },
-])
+const aggStats = reactive({ totalSamples: 0, activeUsers: 0, avgInterventionDays: 0, improvementRate: 0 })
+
+const queryResults = ref<{ key: string; category: string; count: number; percent: number }[]>([])
 
 const resultColumns = [
   { title: '分类', dataIndex: 'category', width: 120 },
@@ -107,14 +103,56 @@ const resultColumns = [
 const maxCount = computed(() => Math.max(...queryResults.value.map(r => r.count), 1))
 const totalSamples = computed(() => queryResults.value.reduce((s, r) => s + r.count, 0))
 const avgValue = computed(() => totalSamples.value / (queryResults.value.length || 1))
-const stdDev = ref(89.45)
-const medianValue = ref(275)
-const maxValue = ref(312)
-const minValue = ref(32)
+const stdDev = ref(0)
+const medianValue = ref(0)
+const maxValue = ref(0)
+const minValue = ref(0)
 
-const runQuery = () => {
-  message.success('查询完成')
-  // In production, would call API with query params
+const applyQueryResult = (data: any) => {
+  const items = data.data || data.items || []
+  const total = items.reduce((s: number, r: any) => s + (r.count || 0), 0) || 1
+  queryResults.value = items.map((r: any, i: number) => ({
+    key: String(i + 1), category: r.category || r.label || '',
+    count: r.count || 0, percent: parseFloat(((r.count || 0) / total * 100).toFixed(1)),
+  }))
+  const summary = data.summary || {}
+  stdDev.value = summary.std_dev ?? summary.stdDev ?? 0
+  medianValue.value = summary.median ?? 0
+  maxValue.value = summary.max ?? Math.max(...queryResults.value.map(r => r.count), 0)
+  minValue.value = summary.min ?? Math.min(...queryResults.value.map(r => r.count), 0)
+}
+
+const loadInitialStats = async () => {
+  try {
+    const res = await expertApi.queryResearchData({ dimension: 'stage' })
+    applyQueryResult(res)
+    aggStats.totalSamples = res.summary?.total ?? queryResults.value.reduce((s, r) => s + r.count, 0)
+    aggStats.activeUsers = res.summary?.active_users ?? 0
+    aggStats.avgInterventionDays = res.summary?.avg_intervention_days ?? 0
+    aggStats.improvementRate = res.summary?.improvement_rate ?? 0
+  } catch (e) {
+    console.error('加载研究数据失败:', e)
+  }
+}
+
+onMounted(loadInitialStats)
+
+const runQuery = async () => {
+  try {
+    const dateRange = query.dateRange
+      ? [query.dateRange[0]?.format?.('YYYY-MM-DD') || '', query.dateRange[1]?.format?.('YYYY-MM-DD') || ''] as [string, string]
+      : undefined
+    const res = await expertApi.queryResearchData({
+      dimension: query.dimension,
+      dateRange,
+      groupBy: query.groupBy !== 'none' ? query.groupBy : undefined,
+    })
+    applyQueryResult(res)
+    message.success('查询完成')
+  } catch (e) {
+    console.error('查询失败:', e)
+    message.error('查询失败')
+  }
 }
 
 const exportCSV = () => {
@@ -130,8 +168,20 @@ const exportCSV = () => {
   message.success('CSV 导出成功')
 }
 
-const exportExcel = () => {
-  message.info('Excel 导出功能即将上线')
+const exportExcel = async () => {
+  try {
+    const blob = await expertApi.exportResearchData({ dimension: query.dimension }, 'excel')
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `research_data_${new Date().toISOString().slice(0, 10)}.xlsx`
+    a.click()
+    URL.revokeObjectURL(url)
+    message.success('Excel 导出成功')
+  } catch (e) {
+    console.error('Excel 导出失败:', e)
+    message.error('Excel 导出失败')
+  }
 }
 </script>
 

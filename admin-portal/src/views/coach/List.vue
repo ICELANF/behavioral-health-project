@@ -576,7 +576,7 @@ const handleSave = async () => {
         password: 'Coach@2026',
         full_name: formState.name,
         role: 'coach',
-        email: formState.email || `${username}@placeholder.com`,
+        email: formState.email || '',
         phone: formState.phone,
       })
       message.success('教练已添加')

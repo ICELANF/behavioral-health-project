@@ -193,17 +193,6 @@ const formState = reactive({
   password: ''
 })
 
-// 模拟用户数据（v18.1统一角色 - 密码与React前端一致）
-const mockUsers: Record<string, { password: string; role: string; level: number; name: string }> = {
-  observer: { password: 'Observer@2026', role: 'observer', level: 1, name: '赵观察员' },
-  grower: { password: 'Grower@2026', role: 'grower', level: 2, name: '小明' },
-  sharer: { password: 'Sharer@2026', role: 'sharer', level: 3, name: '陈分享者' },
-  coach: { password: 'Coach@2026', role: 'coach', level: 4, name: '李教练' },
-  promoter: { password: 'Promoter@2026', role: 'promoter', level: 5, name: '王促进师' },
-  supervisor: { password: 'Supervisor@2026', role: 'supervisor', level: 5, name: '张督导' },
-  master: { password: 'Master@2026', role: 'master', level: 6, name: '刘大师' },
-  admin: { password: 'Admin@2026', role: 'admin', level: 99, name: '管理员' },
-}
 
 const getRoleIcon = (role: string) => {
   const icons: Record<string, string> = {
@@ -281,21 +270,9 @@ const handleLogin = async () => {
     } else {
       message.error('登录失败')
     }
-  } catch {
-    // 后端不可用时使用模拟登录
-    const user = mockUsers[formState.username]
-    if (user && user.password === formState.password) {
-      // 检查角色是否匹配
-      if (user.role !== selectedRole.value && selectedRole.value !== 'admin') {
-        message.warning(`该账号是 ${getRoleName(user.role)} 身份，请选择正确的身份登录`)
-        return
-      }
-      const mockToken = 'mock_token_' + Date.now()
-      saveLoginState(mockToken, formState.username, user.role, user.level, user.name)
-      navigateToHome(user.role)
-    } else {
-      message.error('用户名或密码错误')
-    }
+  } catch (e: any) {
+    const msg = e?.response?.data?.detail || '登录失败，请检查网络连接'
+    message.error(msg)
   } finally {
     loading.value = false
   }

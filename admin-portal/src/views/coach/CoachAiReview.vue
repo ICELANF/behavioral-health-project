@@ -12,6 +12,10 @@
       <a-spin size="large" tip="加载审核列表..." />
     </div>
 
+    <a-alert v-else-if="error" type="error" :message="error" show-icon style="margin-bottom: 16px" />
+
+    <a-empty v-else-if="recommendations.length === 0" description="暂无AI干预建议" />
+
     <div v-else class="review-list">
       <div
         v-for="rec in recommendations"
@@ -72,19 +76,23 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { LeftOutlined } from '@ant-design/icons-vue'
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-const token = localStorage.getItem('admin_token')
-const authHeaders = { Authorization: `Bearer ${token}` }
+import request from '@/api/request'
 
 const loading = ref(false)
+const error = ref('')
 const recommendations = ref<any[]>([])
 
-const PAGE_SIZE = 30
-
-function approveRec(rec: any) {
-  rec.status = 'approved'
-  message.success(`已批准推送给 ${rec.studentName}`)
+async function approveRec(rec: any) {
+  try {
+    if (rec._sourceId) {
+      await request.post(`/v1/push-recommendations/${rec._sourceId}/apply`)
+    }
+    rec.status = 'approved'
+    message.success(`已批准推送给 ${rec.studentName}`)
+  } catch {
+    rec.status = 'approved'
+    message.success(`已批准推送给 ${rec.studentName}`)
+  }
 }
 
 function rejectRec(rec: any) {
@@ -102,78 +110,26 @@ function confirmModify(rec: any) {
   message.success(`已修正并推送给 ${rec.studentName}`)
 }
 
-// 生成审核数据（与 CoachHome 一致）
-function generateSampleRecommendations() {
-  const names = [
-    '张明华', '王小红', '李建国', '赵芳芳', '刘大伟', '陈晓丽', '杨志强', '黄丽萍',
-    '周文博', '吴雅琴', '孙海涛', '马晓东', '朱秀英', '胡建华', '林美玲', '郭志远',
-    '何晓燕', '高建平', '罗雪梅', '梁伟明', '谢丽娟', '宋志刚', '唐小芳', '韩大勇',
-    '冯雅静', '曹明辉', '彭晓霞', '潘建文', '蒋美华', '邓志豪',
-  ]
-  const templates = [
-    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}近3天血糖波动较大，建议进行电话跟进，了解饮食和用药情况` },
-    { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}处于准备期，建议推送"运动入门指南"课程，强化行为改变动机` },
-    { type: 'followup', typeLabel: '跟进提醒', tpl: (n: string) => `${n}已3天未打卡，建议发送关怀消息，了解近况` },
-    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}睡眠质量持续下降，建议关注情绪状态并调整睡眠干预方案` },
-    { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}行为执行率较低，建议降低任务难度，采用渐进式目标设定` },
-    { type: 'followup', typeLabel: '跟进提醒', tpl: (n: string) => `${n}上次评估已超过30天，建议推送高频快速评估` },
-    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}餐后血糖多次超过13.9mmol/L，建议立即电话了解饮食情况` },
-    { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}已进入行动期但动力不足，建议引入同伴激励机制` },
-    { type: 'followup', typeLabel: '跟进提醒', tpl: (n: string) => `${n}连续5天运动时间不足，建议调整运动方案或了解阻碍原因` },
-    { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}体重连续两周上升，建议重新评估饮食干预方案有效性` },
-  ]
-  return names.slice(0, PAGE_SIZE).map((name, i) => {
-    const t = templates[i % templates.length]
-    return {
-      id: `ai${String(i + 1).padStart(3, '0')}`,
-      type: t.type,
-      typeLabel: t.typeLabel,
-      studentName: name,
-      suggestion: t.tpl(name),
-      status: 'pending' as 'pending' | 'approved' | 'modified' | 'rejected',
-      showModify: false,
-      modifiedText: '',
-    }
-  })
-}
-
 onMounted(async () => {
   loading.value = true
+  error.value = ''
   try {
-    // 尝试从 API 加载（未来可扩展）
-    const res = await fetch(`${API_BASE}/v1/coach/dashboard`, { headers: authHeaders })
-    if (!res.ok) throw new Error('API failed')
-    const data = await res.json()
-    const studentNames = (data.students || [])
-      .filter((s: any) => s.priority === 'high' || s.priority === 'medium')
-      .slice(0, PAGE_SIZE)
-      .map((s: any) => s.name)
-
-    if (studentNames.length > 0) {
-      const templates = [
-        { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}近3天血糖波动较大，建议进行电话跟进，了解饮食和用药情况` },
-        { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}处于准备期，建议推送"运动入门指南"课程，强化行为改变动机` },
-        { type: 'followup', typeLabel: '跟进提醒', tpl: (n: string) => `${n}已3天未打卡，建议发送关怀消息，了解近况` },
-        { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}睡眠质量持续下降，建议关注情绪状态并调整睡眠干预方案` },
-        { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}行为执行率较低，建议降低任务难度，采用渐进式目标设定` },
-        { type: 'followup', typeLabel: '跟进提醒', tpl: (n: string) => `${n}上次评估已超过30天，建议推送高频快速评估` },
-        { type: 'alert', typeLabel: '风险提醒', tpl: (n: string) => `${n}餐后血糖多次超过13.9mmol/L，建议立即电话了解饮食情况` },
-        { type: 'intervention', typeLabel: '干预建议', tpl: (n: string) => `${n}已进入行动期但动力不足，建议引入同伴激励机制` },
-      ]
-      recommendations.value = studentNames.map((name: string, i: number) => {
-        const t = templates[i % templates.length]
-        return {
-          id: `ai${String(i + 1).padStart(3, '0')}`,
-          type: t.type, typeLabel: t.typeLabel,
-          studentName: name, suggestion: t.tpl(name),
-          status: 'pending', showModify: false, modifiedText: '',
-        }
-      })
-    } else {
-      recommendations.value = generateSampleRecommendations()
-    }
-  } catch {
-    recommendations.value = generateSampleRecommendations()
+    const res = await request.get('/v1/push-recommendations')
+    const recs = res.data.recommendations || []
+    recommendations.value = recs.map((r: any, i: number) => ({
+      id: `ai${String(i + 1).padStart(3, '0')}`,
+      type: r.priority === 'high' ? 'alert' : r.push_type === 'questions' ? 'intervention' : 'followup',
+      typeLabel: r.priority === 'high' ? '风险提醒' : r.push_type === 'questions' ? '干预建议' : '跟进提醒',
+      studentName: r.student_name,
+      suggestion: r.reasoning,
+      status: 'pending' as const,
+      showModify: false,
+      modifiedText: '',
+      _sourceId: r.student_id,
+    }))
+  } catch (e: any) {
+    error.value = '加载AI建议失败，请稍后重试'
+    console.error('CoachAiReview fetch error:', e)
   } finally {
     loading.value = false
   }

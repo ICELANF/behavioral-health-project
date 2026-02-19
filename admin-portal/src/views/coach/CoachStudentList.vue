@@ -11,6 +11,10 @@
       <a-spin size="large" tip="加载学员数据..." />
     </div>
 
+    <a-alert v-else-if="error" type="error" :message="error" show-icon style="margin-bottom: 16px" />
+
+    <a-empty v-else-if="students.length === 0" description="暂无待跟进学员" />
+
     <div v-else class="list-container">
       <div
         v-for="student in students"
@@ -65,16 +69,13 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { LeftOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
+import request from '@/api/request'
 
 const router = useRouter()
-const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-const token = localStorage.getItem('admin_token')
-const authHeaders = { Authorization: `Bearer ${token}` }
 
 const loading = ref(false)
+const error = ref('')
 const students = ref<any[]>([])
-
-const PAGE_SIZE = 30
 
 const stageLabels: Record<string, string> = {
   S0: '觉醒期', S1: '松动期', S2: '探索期', S3: '准备期',
@@ -86,56 +87,13 @@ function openDetail(student: any) {
   router.push(`/coach/student-assessment/${student.id}`)
 }
 
-// 示例学员生成（与 CoachHome 保持一致）
-function generateSampleStudents() {
-  const names = [
-    '张明华', '王小红', '李建国', '赵芳芳', '刘大伟', '陈晓丽', '杨志强', '黄丽萍',
-    '周文博', '吴雅琴', '孙海涛', '马晓东', '朱秀英', '胡建华', '林美玲', '郭志远',
-    '何晓燕', '高建平', '罗雪梅', '梁伟明', '谢丽娟', '宋志刚', '唐小芳', '韩大勇',
-    '冯雅静', '曹明辉', '彭晓霞', '潘建文', '蒋美华', '邓志豪',
-  ]
-  const stages = ['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6']
-  const conditions = [
-    '2型糖尿病·饮食管理', '高血压·运动干预', '肥胖·综合管理', '失眠·睡眠行为调整',
-    '焦虑·情绪管理', '慢性疼痛·行为康复', '代谢综合征·生活方式干预', '行为健康管理',
-  ]
-  const contactDays = ['今天', '1天前', '2天前', '3天前', '5天前', '7天前', '10天前']
-
-  return names.map((name, i) => {
-    const stage = stages[i % stages.length]
-    const dayIdx = Math.min(i % 7, contactDays.length - 1)
-    const daysNum = [0, 1, 2, 3, 5, 7, 10][dayIdx]
-    let priority = 'low'
-    if (daysNum >= 5 || stage === 'S0') priority = 'high'
-    else if (daysNum >= 3 || stage === 'S1') priority = 'medium'
-
-    return {
-      id: 1000 + i,
-      name,
-      avatar: '',
-      condition: conditions[i % conditions.length],
-      stage,
-      lastContact: contactDays[dayIdx],
-      priority,
-      healthData: {
-        fastingGlucose: +(5.0 + Math.random() * 8).toFixed(1),
-        postprandialGlucose: +(7.0 + Math.random() * 9).toFixed(1),
-        weight: +(55 + Math.random() * 40).toFixed(1),
-        exerciseMinutes: Math.floor(Math.random() * 90),
-      },
-      microAction7d: { completed: Math.floor(Math.random() * 7), total: 7 },
-      riskFlags: daysNum >= 5 ? ['dropout_risk'] : [],
-    }
-  })
-}
-
 onMounted(async () => {
   loading.value = true
+  error.value = ''
   try {
-    const res = await fetch(`${API_BASE}/v1/coach/dashboard`, { headers: authHeaders })
-    if (!res.ok) throw new Error('API failed')
-    const data = await res.json()
-    const rawStudents = (data.students || []).map((st: any) => ({
+    const res = await request.get('/v1/coach/dashboard')
+    const data = res.data
+    students.value = (data.students || []).map((st: any) => ({
       id: st.id,
       name: st.name,
       avatar: st.avatar || '',
@@ -152,9 +110,9 @@ onMounted(async () => {
       microAction7d: st.micro_action_7d || { completed: 0, total: 0 },
       riskFlags: st.risk_flags || [],
     }))
-    students.value = rawStudents.length > 0 ? rawStudents.slice(0, PAGE_SIZE) : generateSampleStudents()
-  } catch {
-    students.value = generateSampleStudents()
+  } catch (e: any) {
+    error.value = '加载学员数据失败，请稍后重试'
+    console.error('CoachStudentList fetch error:', e)
   } finally {
     loading.value = false
   }

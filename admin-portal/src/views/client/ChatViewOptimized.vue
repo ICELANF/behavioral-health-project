@@ -203,11 +203,11 @@ import {
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { healthApi } from '@/api/health'
+import request from '@/api/request'
 
 const router = useRouter()
 
-// 患者ID（实际应该从登录状态获取）
-const patientId = 'p001'
+const patientId = localStorage.getItem('admin_user_id') || '0'
 
 // AI信息
 const agentName = ref('AI健康助手')
@@ -240,12 +240,7 @@ const loadHealthSnapshot = async () => {
 }
 
 // 快速提问
-const quickQuestions = ref([
-  { icon: '🩸', text: '今天的血糖正常吗？' },
-  { icon: '🍽️', text: '午餐应该吃什么？' },
-  { icon: '🏃', text: '推荐一个运动计划' },
-  { icon: '💊', text: '忘记吃药怎么办？' }
-])
+const quickQuestions = ref<{ icon: string; text: string }[]>([])
 
 // 上下文快捷回复
 const contextualQuickReplies = ref<string[]>([])
@@ -293,24 +288,38 @@ const handleSend = async () => {
 
   scrollToBottom()
 
-  // 模拟AI回复
+  // 调用AI回复
   isTyping.value = true
   aiMood.value = 'thinking'
   aiStatusText.value = '正在思考...'
 
-  setTimeout(() => {
-    const reply = generateAIReply(text)
-    messages.value.push(reply)
-
+  try {
+    const res = await request.post('v1/chat/send', {
+      message: text,
+      patient_id: patientId,
+    })
+    const data = res.data
+    messages.value.push({
+      role: 'assistant',
+      content: data?.reply || data?.message || '抱歉，暂时无法回复。',
+      timestamp: Date.now(),
+      suggestedReplies: data?.suggested_replies || [],
+      dataCard: data?.data_card || undefined,
+    })
+    contextualQuickReplies.value = data?.suggested_replies || []
+  } catch (e) {
+    console.error('AI回复失败:', e)
+    messages.value.push({
+      role: 'assistant',
+      content: '抱歉，网络异常，请稍后重试。',
+      timestamp: Date.now(),
+    })
+  } finally {
     isTyping.value = false
     aiMood.value = 'happy'
     aiStatusText.value = '在线，随时为您服务'
-
-    // 更新上下文快捷回复
-    updateContextualReplies(text)
-
     scrollToBottom()
-  }, 1500 + Math.random() * 1000)
+  }
 }
 
 // 快速提问
@@ -319,77 +328,6 @@ const askQuestion = (text: string) => {
   handleSend()
 }
 
-// 生成AI回复
-const generateAIReply = (userText: string): Message => {
-  const lowerText = userText.toLowerCase()
-
-  if (lowerText.includes('血糖')) {
-    return {
-      role: 'assistant',
-      content: '根据您今天的血糖记录 **6.5 mmol/L**，您的血糖控制得不错！这个数值在正常范围内。\n\n建议您继续保持：\n- 均衡饮食\n- 适量运动\n- 按时用药',
-      timestamp: Date.now(),
-      dataCard: {
-        title: '📊 血糖趋势',
-        content: '近7天平均：6.3 mmol/L ✅'
-      },
-      suggestedReplies: ['饮食有什么建议？', '需要调整用药吗？']
-    }
-  }
-
-  if (lowerText.includes('午餐') || lowerText.includes('吃什么')) {
-    return {
-      role: 'assistant',
-      content: '午餐推荐：\n\n**主食**：糙米饭或全麦面包（控制在100g左右）\n**蛋白质**：清蒸鱼或鸡胸肉\n**蔬菜**：西兰花、胡萝卜等\n**水果**：饭后1小时吃半个苹果\n\n记得饭后散步15分钟哦！',
-      timestamp: Date.now(),
-      suggestedReplies: ['晚餐呢？', '有什么忌口的吗？']
-    }
-  }
-
-  if (lowerText.includes('运动')) {
-    return {
-      role: 'assistant',
-      content: '为您推荐一个适合的运动计划：\n\n**每天30分钟**\n- 快走 20分钟\n- 拉伸 10分钟\n\n**建议时间**：饭后1小时\n\n**注意事项**：\n- 携带糖果预防低血糖\n- 穿舒适的鞋子\n- 循序渐进，不要勉强',
-      timestamp: Date.now(),
-      suggestedReplies: ['开始记录运动', '运动后要注意什么？']
-    }
-  }
-
-  if (lowerText.includes('药')) {
-    return {
-      role: 'assistant',
-      content: '如果偶尔忘记吃药，不要慌张：\n\n**如果距离下次吃药还有4小时以上**：\n立即补服\n\n**如果快到下次吃药时间**：\n不要补服，按时服用下一次的药\n\n**重要提示**：\n- 不要一次吃两次的量\n- 建议设置用药提醒\n- 经常忘记需要咨询医生',
-      timestamp: Date.now(),
-      dataCard: {
-        title: '💊 今日用药',
-        content: '已服用 2/3 剂次'
-      },
-      suggestedReplies: ['设置用药提醒', '查看用药记录']
-    }
-  }
-
-  // 默认回复
-  return {
-    role: 'assistant',
-    content: '我理解您的问题。作为您的健康助手，我可以帮您：\n\n- 解答健康疑问\n- 提供饮食建议\n- 制定运动计划\n- 用药提醒和指导\n\n请告诉我您具体想了解什么？',
-    timestamp: Date.now(),
-    suggestedReplies: ['血糖管理', '饮食建议', '运动计划']
-  }
-}
-
-// 更新上下文快捷回复
-const updateContextualReplies = (userText: string) => {
-  const lowerText = userText.toLowerCase()
-
-  if (lowerText.includes('血糖')) {
-    contextualQuickReplies.value = ['饮食建议', '运动计划', '用药指导']
-  } else if (lowerText.includes('饮食') || lowerText.includes('吃')) {
-    contextualQuickReplies.value = ['查看食谱', '记录饮食', '计算热量']
-  } else if (lowerText.includes('运动')) {
-    contextualQuickReplies.value = ['开始记录', '查看进度', '调整计划']
-  } else {
-    contextualQuickReplies.value = ['血糖情况', '今天吃什么', '运动建议']
-  }
-}
 
 // 格式化消息
 const formatMessage = (content: string) => {

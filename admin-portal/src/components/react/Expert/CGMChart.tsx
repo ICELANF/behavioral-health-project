@@ -10,34 +10,8 @@ interface CGMChartProps {
   data?: CGMDataPoint[];
 }
 
-const generateMockCGMData = (): CGMDataPoint[] => {
-  const data: CGMDataPoint[] = [];
-  const startTime = new Date('2024-01-15T00:00:00');
-
-  for (let i = 0; i < 48; i++) {
-    const time = new Date(startTime.getTime() + i * 30 * 60 * 1000);
-    const hour = time.getHours();
-
-    let baseGlucose = 100;
-    if (hour >= 7 && hour <= 9) baseGlucose = 160;
-    else if (hour >= 12 && hour <= 14) baseGlucose = 180;
-    else if (hour >= 18 && hour <= 20) baseGlucose = 170;
-    else if (hour >= 2 && hour <= 4) baseGlucose = 70;
-
-    const variance = (Math.random() - 0.5) * 40;
-    const glucose = Math.max(60, Math.min(250, baseGlucose + variance));
-
-    data.push({
-      time: time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
-      glucose: Math.round(glucose),
-    });
-  }
-
-  return data;
-};
-
 export const CGMChart: React.FC<CGMChartProps> = ({ data }) => {
-  const cgmData = data || generateMockCGMData();
+  const cgmData = data || [];
 
   const option = {
     backgroundColor: 'transparent',

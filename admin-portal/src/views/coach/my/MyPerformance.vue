@@ -125,21 +125,9 @@ const performance = ref<any>({
   risk_distribution: { low: 0, medium: 0, high: 0 },
 })
 
-// Fallback static data for charts
-const monthlyData = ref([
-  { label: '1月', success: 74, retention: 88 },
-  { label: '12月', success: 69, retention: 85 },
-  { label: '11月', success: 65, retention: 82 },
-  { label: '10月', success: 62, retention: 80 },
-  { label: '9月', success: 58, retention: 78 },
-])
+const monthlyData = ref<{ label: string; success: number; retention: number }[]>([])
 
-const toolStats = ref([
-  { name: '压力测评', count: 45, percent: 35, color: '#cf1322' },
-  { name: '同理心倾听', count: 38, percent: 30, color: '#722ed1' },
-  { name: '习惯处方卡', count: 28, percent: 22, color: '#389e0d' },
-  { name: '一般对话', count: 17, percent: 13, color: '#1890ff' },
-])
+const toolStats = ref<{ name: string; count: number; percent: number; color: string }[]>([])
 
 const riskPercent = (level: string) => {
   const dist = performance.value.risk_distribution || {}

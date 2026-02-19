@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Card,
@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons-vue'
 import type { PromptTemplate } from '@/types'
 import { TTM_STAGES, TRIGGER_DOMAINS } from '@/constants'
+import request from '@/api/request'
 
 const router = useRouter()
 
@@ -43,64 +44,21 @@ const categories = [
   { value: 'crisis', label: '危机干预' }
 ]
 
-// 模拟数据
-const mockData: PromptTemplate[] = [
-  {
-    prompt_id: '1',
-    name: '血糖异常问候',
-    description: '当检测到血糖异常时的开场白',
-    category: 'greeting',
-    content: '您好{{name}}，我注意到您最近的血糖读数是{{value}}，这比正常范围稍高一些。我想和您聊聊这个情况，可以吗？',
-    variables: ['name', 'value'],
-    ttm_stage: 'contemplation',
-    trigger_domain: 'glucose',
-    is_active: true,
-    created_at: '2024-01-15 10:30:00',
-    updated_at: '2024-01-15 10:30:00'
-  },
-  {
-    prompt_id: '2',
-    name: '运动动机激励',
-    description: '鼓励用户开始运动的激励话术',
-    category: 'motivation',
-    content: '{{name}}，我知道开始运动可能不容易，但每一小步都是进步。您觉得这周可以尝试{{activity}}吗？哪怕只是{{duration}}分钟也很棒！',
-    variables: ['name', 'activity', 'duration'],
-    ttm_stage: 'preparation',
-    trigger_domain: 'exercise',
-    is_active: true,
-    created_at: '2024-01-14 14:20:00',
-    updated_at: '2024-01-14 14:20:00'
-  },
-  {
-    prompt_id: '3',
-    name: '饮食评估询问',
-    description: '了解用户饮食习惯的评估问题',
-    category: 'assessment',
-    content: '{{name}}，我想了解一下您的日常饮食。能告诉我您昨天的三餐分别吃了什么吗？包括任何零食或饮料。',
-    variables: ['name'],
-    ttm_stage: 'action',
-    trigger_domain: 'diet',
-    is_active: true,
-    created_at: '2024-01-13 09:15:00',
-    updated_at: '2024-01-13 09:15:00'
-  },
-  {
-    prompt_id: '4',
-    name: '用药提醒跟进',
-    description: '药物依从性跟进话术',
-    category: 'follow_up',
-    content: '{{name}}，我想确认一下您的用药情况。您这周的{{medication}}都按时服用了吗？有没有遇到什么困难？',
-    variables: ['name', 'medication'],
-    ttm_stage: 'maintenance',
-    trigger_domain: 'medication',
-    is_active: false,
-    created_at: '2024-01-12 16:45:00',
-    updated_at: '2024-01-12 16:45:00'
-  }
-]
-
-const dataSource = ref<PromptTemplate[]>(mockData)
+const dataSource = ref<PromptTemplate[]>([])
 const loading = ref(false)
+
+async function loadPrompts() {
+  loading.value = true
+  try {
+    const res = await request.get('/v1/prompts')
+    dataSource.value = res.data?.items || res.data || []
+  } catch (e) {
+    console.error('加载Prompt模板失败:', e)
+  }
+  loading.value = false
+}
+
+onMounted(loadPrompts)
 
 // 筛选后的数据
 const filteredData = computed(() => {

@@ -222,9 +222,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
+import request from '../../api/request'
 import {
   PlusOutlined,
   VideoCameraOutlined,
@@ -311,77 +312,21 @@ const statusBadges: Record<string, 'default' | 'processing' | 'success' | 'error
   cancelled: 'error'
 }
 
-// 模拟数据
-const lives = ref<LiveSession[]>([
-  {
-    live_id: 'L001',
-    title: '行为健康基础理论直播课',
-    description: '本次直播将介绍行为健康的基础理论，包括TTM模型、COM-B模型等核心框架。',
-    instructor_name: '孙七',
-    instructor_id: 'C005',
-    level: 'L0',
-    cover_url: '',
-    scheduled_at: '2026-01-24T14:00:00Z',
-    duration_minutes: 90,
-    status: 'live',
-    viewer_count: 156,
-    created_at: '2026-01-20'
-  },
-  {
-    live_id: 'L002',
-    title: '动机访谈技术实战演练',
-    description: '通过案例演示和互动练习，掌握动机访谈的核心技术。',
-    instructor_name: '王五',
-    instructor_id: 'C003',
-    level: 'L1',
-    cover_url: '',
-    scheduled_at: '2026-01-25T19:00:00Z',
-    duration_minutes: 120,
-    status: 'scheduled',
-    created_at: '2026-01-22'
-  },
-  {
-    live_id: 'L003',
-    title: '糖尿病逆转案例分享',
-    description: '分享多个成功的糖尿病逆转案例，讨论干预策略和技巧。',
-    instructor_name: '孙七',
-    instructor_id: 'C005',
-    level: 'L2',
-    cover_url: '',
-    scheduled_at: '2026-01-26T14:30:00Z',
-    duration_minutes: 90,
-    status: 'scheduled',
-    created_at: '2026-01-23'
-  },
-  {
-    live_id: 'L004',
-    title: '高级教练督导工作坊',
-    description: '针对L3级教练的督导技能培训。',
-    instructor_name: '孙七',
-    instructor_id: 'C005',
-    level: 'L3',
-    cover_url: '',
-    scheduled_at: '2026-01-20T10:00:00Z',
-    duration_minutes: 180,
-    status: 'ended',
-    viewer_count: 45,
-    replay_url: 'https://example.com/replay/L004',
-    created_at: '2026-01-15'
-  },
-  {
-    live_id: 'L005',
-    title: '新年答疑直播',
-    description: '解答学员关于课程学习的各种问题。',
-    instructor_name: '张三',
-    instructor_id: 'C001',
-    level: 'L0',
-    cover_url: '',
-    scheduled_at: '2026-01-18T20:00:00Z',
-    duration_minutes: 60,
-    status: 'cancelled',
-    created_at: '2026-01-10'
+const lives = ref<LiveSession[]>([])
+
+const loadLives = async () => {
+  loading.value = true
+  try {
+    const res = await request.get('v1/live/sessions')
+    lives.value = res.data?.items || res.data || []
+  } catch (e) {
+    console.error('加载直播列表失败:', e)
+  } finally {
+    loading.value = false
   }
-])
+}
+
+onMounted(loadLives)
 
 // 计算属性
 const todayLives = computed(() => {
@@ -470,11 +415,14 @@ const cancelLive = (record: LiveSession) => {
     content: `确定要取消直播「${record.title}」吗？取消后将无法恢复。`,
     okText: '确认取消',
     okType: 'danger',
-    onOk: () => {
-      const index = lives.value.findIndex(l => l.live_id === record.live_id)
-      if (index > -1) {
-        lives.value[index].status = 'cancelled'
+    onOk: async () => {
+      try {
+        await request.post(`v1/live/sessions/${record.live_id}/cancel`)
         message.success('直播已取消')
+        await loadLives()
+      } catch (e) {
+        console.error('取消直播失败:', e)
+        message.error('取消直播失败')
       }
     }
   })
@@ -494,11 +442,14 @@ const viewReplay = (record: LiveSession) => {
   }
 }
 
-const deleteLive = (record: LiveSession) => {
-  const index = lives.value.findIndex(l => l.live_id === record.live_id)
-  if (index > -1) {
-    lives.value.splice(index, 1)
+const deleteLive = async (record: LiveSession) => {
+  try {
+    await request.delete(`v1/live/sessions/${record.live_id}`)
     message.success('直播记录已删除')
+    await loadLives()
+  } catch (e) {
+    console.error('删除直播失败:', e)
+    message.error('删除直播失败')
   }
 }
 </script>

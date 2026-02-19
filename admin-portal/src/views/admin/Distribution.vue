@@ -138,13 +138,6 @@ const loadPendingPatients = async () => {
     pendingPatients.value = data.pending || []
   } catch (e: any) {
     console.error('加载待分配列表失败:', e)
-    // Fallback mock
-    if (!pendingPatients.value.length) {
-      pendingPatients.value = [
-        { id: 1, name: '钱一', risk: '高', domain: '糖尿病', assignedCoach: undefined },
-        { id: 2, name: '孙二', risk: '中', domain: '高血压', assignedCoach: undefined },
-      ]
-    }
   } finally {
     loadingPending.value = false
   }
@@ -157,12 +150,6 @@ const loadCoaches = async () => {
     availableCoaches.value = data.coaches || []
   } catch (e: any) {
     console.error('加载教练列表失败:', e)
-    if (!availableCoaches.value.length) {
-      availableCoaches.value = [
-        { id: 1, name: '王教练', level: 'L3 高级', color: '#722ed1', currentLoad: 12, maxLoad: 20, domains: ['糖尿病', '高血压'] },
-        { id: 2, name: '李教练', level: 'L2 中级', color: '#1890ff', currentLoad: 8, maxLoad: 15, domains: ['压力管理'] },
-      ]
-    }
   } finally {
     loadingCoaches.value = false
   }

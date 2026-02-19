@@ -196,105 +196,14 @@ const filters = reactive<ExamListParams>({
 // 加载状态
 const loading = computed(() => examStore.loading);
 
-// 考试列表 (使用模拟数据，后续接入 API)
-const examList = computed(() => {
-  if (examStore.exams.length > 0) {
-    return examStore.exams;
-  }
-  // 模拟数据
-  return mockExams;
-});
-
-// 模拟数据
-const mockExams: ExamDefinition[] = [
-  {
-    exam_id: 'exam_l0_theory',
-    exam_name: 'L0 行为健康基础理论考试',
-    level: 'L0',
-    exam_type: 'theory',
-    passing_score: 60,
-    weight_percent: 100,
-    duration_minutes: 60,
-    questions_count: 50,
-    question_ids: [],
-    status: 'published',
-    max_attempts: 3,
-    allow_retry: true,
-    created_at: '2026-01-20T10:00:00Z',
-    updated_at: '2026-01-20T10:00:00Z',
-  },
-  {
-    exam_id: 'exam_l1_theory',
-    exam_name: 'L1 成长者基础测评',
-    level: 'L1',
-    exam_type: 'theory',
-    passing_score: 70,
-    weight_percent: 40,
-    duration_minutes: 90,
-    questions_count: 80,
-    question_ids: [],
-    status: 'published',
-    max_attempts: 2,
-    allow_retry: true,
-    created_at: '2026-01-18T10:00:00Z',
-    updated_at: '2026-01-18T10:00:00Z',
-  },
-  {
-    exam_id: 'exam_l1_case',
-    exam_name: 'L1 案例分析模拟',
-    level: 'L1',
-    exam_type: 'case_simulation',
-    passing_score: 70,
-    weight_percent: 30,
-    duration_minutes: 45,
-    questions_count: 5,
-    question_ids: [],
-    status: 'draft',
-    max_attempts: 2,
-    allow_retry: true,
-    created_at: '2026-01-22T10:00:00Z',
-    updated_at: '2026-01-22T10:00:00Z',
-  },
-  {
-    exam_id: 'exam_l2_dialogue',
-    exam_name: 'L2 教练对话能力评估',
-    level: 'L2',
-    exam_type: 'dialogue_assessment',
-    passing_score: 75,
-    weight_percent: 40,
-    duration_minutes: 60,
-    questions_count: 10,
-    question_ids: [],
-    status: 'published',
-    max_attempts: 2,
-    allow_retry: true,
-    created_at: '2026-01-15T10:00:00Z',
-    updated_at: '2026-01-15T10:00:00Z',
-  },
-  {
-    exam_id: 'exam_l3_diabetes',
-    exam_name: 'L3 糖尿病逆转专项考核',
-    level: 'L3',
-    exam_type: 'specialty',
-    passing_score: 80,
-    weight_percent: 50,
-    duration_minutes: 120,
-    questions_count: 60,
-    specialty: 'diabetes_reversal',
-    question_ids: [],
-    status: 'draft',
-    max_attempts: 2,
-    allow_retry: true,
-    created_at: '2026-01-24T10:00:00Z',
-    updated_at: '2026-01-24T10:00:00Z',
-  },
-];
+// 考试列表
+const examList = computed(() => examStore.exams);
 
 // 分页配置
 const pagination = computed(() => ({
   current: filters.page,
   pageSize: filters.page_size,
-  total: examStore.total || mockExams.length,
+  total: examStore.total || examStore.exams.length,
   showSizeChanger: true,
   showQuickJumper: true,
   showTotal: (total: number) => `共 ${total} 条`,

@@ -22,6 +22,7 @@ import {
 } from '@ant-design/icons-vue'
 import type { PromptTemplate } from '@/types'
 import { TTM_STAGES, TRIGGER_DOMAINS } from '@/constants'
+import request from '@/api/request'
 
 const router = useRouter()
 const route = useRoute()
@@ -65,13 +66,14 @@ const extractedVariables = computed(() => {
 // 预览内容（替换变量为示例值）
 const previewContent = computed(() => {
   let content = formState.content || ''
+  // Static preview fixtures — never persisted, only used for template variable rendering preview
   const sampleValues: Record<string, string> = {
-    name: '张三',
+    name: '用户',
     value: '8.5',
     activity: '散步',
     duration: '30',
     medication: '二甲双胍',
-    date: '2024-01-15',
+    date: new Date().toISOString().slice(0, 10),
     goal: '每天运动30分钟'
   }
 
@@ -86,20 +88,26 @@ const previewContent = computed(() => {
 onMounted(async () => {
   if (isEdit.value) {
     loading.value = true
-    // 模拟加载数据
-    setTimeout(() => {
-      Object.assign(formState, {
-        name: '血糖异常问候',
-        description: '当检测到血糖异常时的开场白',
-        category: 'greeting',
-        content: '您好{{name}}，我注意到您最近的血糖读数是{{value}}，这比正常范围稍高一些。我想和您聊聊这个情况，可以吗？',
-        variables: ['name', 'value'],
-        ttm_stage: 'contemplation',
-        trigger_domain: 'glucose',
-        is_active: true
-      })
-      loading.value = false
-    }, 500)
+    try {
+      const res = await request.get(`/v1/prompts/${route.params.id}`)
+      const data = res.data
+      if (data) {
+        Object.assign(formState, {
+          name: data.name || '',
+          description: data.description || '',
+          category: data.category,
+          content: data.content || '',
+          variables: data.variables || [],
+          ttm_stage: data.ttm_stage,
+          trigger_domain: data.trigger_domain,
+          is_active: data.is_active ?? true
+        })
+      }
+    } catch (e) {
+      console.error('加载Prompt模板失败:', e)
+      message.error('加载模板失败')
+    }
+    loading.value = false
   }
 })
 
@@ -151,12 +159,19 @@ const handleSave = async () => {
   }
 
   loading.value = true
-  // 模拟保存
-  setTimeout(() => {
-    loading.value = false
+  try {
+    if (isEdit.value) {
+      await request.put(`/v1/prompts/${route.params.id}`, formState)
+    } else {
+      await request.post('/v1/prompts', formState)
+    }
     message.success('保存成功')
     router.push('/prompts/list')
-  }, 500)
+  } catch (e) {
+    console.error('保存Prompt模板失败:', e)
+    message.error('保存失败')
+  }
+  loading.value = false
 }
 
 // 返回列表
