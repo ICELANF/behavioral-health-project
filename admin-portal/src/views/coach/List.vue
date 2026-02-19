@@ -54,6 +54,8 @@
       </a-col>
     </a-row>
 
+    <a-alert v-if="error" :message="error" type="error" show-icon style="margin-bottom: 16px" />
+
     <!-- 筛选区域 -->
     <a-card style="margin-bottom: 16px">
       <a-row :gutter="16">
@@ -316,6 +318,7 @@ import {
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
+import request from '@/api/request'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -416,95 +419,33 @@ const statusBadges: Record<string, 'success' | 'default' | 'error'> = {
   suspended: 'error'
 }
 
-// 模拟数据
-const coaches = ref<Coach[]>([
-  {
-    coach_id: 'C001',
-    name: '张三',
+const coaches = ref<Coach[]>([])
+const error = ref('')
+
+// Map backend response to Coach interface
+const _ROLE_LEVEL: Record<string, string> = {
+  observer: 'L0', grower: 'L1', sharer: 'L2', coach: 'L3',
+  promoter: 'L4', supervisor: 'L4', master: 'L5', admin: 'L5',
+}
+
+function mapBackendCoach(raw: any): Coach {
+  const levelFromProfile = (raw.level || '').replace(/\s.*/, '')  // "L2 中级" → "L2"
+  return {
+    coach_id: String(raw.id),
+    name: raw.name || raw.full_name || raw.username,
     avatar: '',
-    phone: '13800138001',
-    email: 'zhangsan@example.com',
-    level: 'L2',
-    specialty: ['diabetes_reversal', 'weight_management'],
-    student_count: 28,
-    case_count: 45,
-    status: 'active',
-    joined_at: '2024-03-15',
-    last_active: '2026-01-24T10:30:00Z',
-    bio: '5年健康管理经验'
-  },
-  {
-    coach_id: 'C002',
-    name: '李四',
-    avatar: '',
-    phone: '13800138002',
-    email: 'lisi@example.com',
-    level: 'L1',
-    specialty: ['hypertension'],
-    student_count: 15,
-    case_count: 22,
-    status: 'active',
-    joined_at: '2024-06-20',
-    last_active: '2026-01-23T15:20:00Z',
-    bio: '护理学背景'
-  },
-  {
-    coach_id: 'C003',
-    name: '王五',
-    avatar: '',
-    phone: '13800138003',
-    email: 'wangwu@example.com',
-    level: 'L3',
-    specialty: ['stress_psychology', 'sleep_optimization', 'weight_management'],
-    student_count: 52,
-    case_count: 89,
-    status: 'active',
-    joined_at: '2023-09-10',
-    last_active: '2026-01-24T09:15:00Z',
-    bio: '心理学硕士，10年从业经验'
-  },
-  {
-    coach_id: 'C004',
-    name: '赵六',
-    avatar: '',
-    phone: '13800138004',
-    level: 'L0',
-    specialty: [],
-    student_count: 0,
+    phone: raw.phone || '',
+    email: raw.email || '',
+    level: (levelFromProfile || _ROLE_LEVEL[raw.role] || 'L0') as Coach['level'],
+    specialty: raw.domains || raw.specializations || [],
+    student_count: raw.currentLoad ?? 0,
     case_count: 0,
-    status: 'inactive',
-    joined_at: '2025-01-10',
-    last_active: '2026-01-15T16:00:00Z'
-  },
-  {
-    coach_id: 'C005',
-    name: '孙七',
-    avatar: '',
-    phone: '13800138005',
-    email: 'sunqi@example.com',
-    level: 'L4',
-    specialty: ['diabetes_reversal', 'metabolic_syndrome', 'hypertension'],
-    student_count: 120,
-    case_count: 230,
-    status: 'active',
-    joined_at: '2022-05-01',
-    last_active: '2026-01-24T11:00:00Z',
-    bio: '医学博士，糖尿病专家'
-  },
-  {
-    coach_id: 'C006',
-    name: '周八',
-    avatar: '',
-    phone: '13800138006',
-    level: 'L1',
-    specialty: ['weight_management'],
-    student_count: 8,
-    case_count: 12,
-    status: 'suspended',
-    joined_at: '2024-08-15',
-    last_active: '2025-12-01T10:00:00Z'
+    status: raw.is_active === false ? 'suspended' : 'active',
+    joined_at: raw.created_at ? raw.created_at.split('T')[0] : '',
+    last_active: raw.last_login_at || raw.created_at || '',
+    bio: '',
   }
-])
+}
 
 // 计算属性
 const totalCoaches = computed(() => coaches.value.length)
@@ -621,46 +562,31 @@ const handleSave = async () => {
     await formRef.value?.validate()
     saving.value = true
 
-    await new Promise(resolve => setTimeout(resolve, 500))
-
     if (isEdit.value && editingId.value) {
-      const index = coaches.value.findIndex(c => c.coach_id === editingId.value)
-      if (index > -1) {
-        coaches.value[index] = {
-          ...coaches.value[index],
-          name: formState.name,
-          phone: formState.phone,
-          email: formState.email,
-          level: formState.level as any,
-          specialty: [...formState.specialty],
-          avatar: formState.avatar,
-          bio: formState.bio
-        }
-        message.success('教练信息已更新')
-      }
-    } else {
-      const newCoach: Coach = {
-        coach_id: `C${Date.now()}`,
-        name: formState.name,
-        phone: formState.phone,
+      await request.put(`/v1/admin/users/${editingId.value}`, {
+        full_name: formState.name,
         email: formState.email,
-        level: formState.level as any,
-        specialty: [...formState.specialty],
-        avatar: formState.avatar,
-        bio: formState.bio,
-        student_count: 0,
-        case_count: 0,
-        status: 'inactive',
-        joined_at: dayjs().format('YYYY-MM-DD'),
-        last_active: new Date().toISOString()
-      }
-      coaches.value.unshift(newCoach)
+        phone: formState.phone,
+      })
+      message.success('教练信息已更新')
+    } else {
+      const username = formState.phone || `coach_${Date.now()}`
+      await request.post('/v1/admin/users', {
+        username,
+        password: 'Coach@2026',
+        full_name: formState.name,
+        role: 'coach',
+        email: formState.email || `${username}@placeholder.com`,
+        phone: formState.phone,
+      })
       message.success('教练已添加')
     }
 
     modalVisible.value = false
-  } catch (error) {
-    console.error('Validation failed:', error)
+    await loadCoaches()
+  } catch (err: any) {
+    console.error('保存失败:', err)
+    message.error(err?.response?.data?.detail || '保存失败')
   } finally {
     saving.value = false
   }
@@ -672,7 +598,7 @@ const viewCoach = (coach: Coach) => {
 
 const editCoach = (coach: Coach) => {
   isEdit.value = true
-  editingId.value = coach.coach_id
+  editingId.value = coach.coach_id  // numeric id from backend
   formState.name = coach.name
   formState.phone = coach.phone
   formState.email = coach.email || ''
@@ -693,21 +619,25 @@ const suspendCoach = (coach: Coach) => {
     content: `确定要停用教练 ${coach.name} 吗？停用后该教练将无法登录系统。`,
     okText: '确认停用',
     okType: 'danger',
-    onOk: () => {
-      const index = coaches.value.findIndex(c => c.coach_id === coach.coach_id)
-      if (index > -1) {
-        coaches.value[index].status = 'suspended'
+    onOk: async () => {
+      try {
+        await request.put(`/v1/admin/users/${coach.coach_id}/status`, { is_active: false })
         message.success('教练已停用')
+        await loadCoaches()
+      } catch (e: any) {
+        message.error(e?.response?.data?.detail || '操作失败')
       }
     }
   })
 }
 
-const activateCoach = (coach: Coach) => {
-  const index = coaches.value.findIndex(c => c.coach_id === coach.coach_id)
-  if (index > -1) {
-    coaches.value[index].status = 'active'
+const activateCoach = async (coach: Coach) => {
+  try {
+    await request.put(`/v1/admin/users/${coach.coach_id}/status`, { is_active: true })
     message.success('教练已启用')
+    await loadCoaches()
+  } catch (e: any) {
+    message.error(e?.response?.data?.detail || '操作失败')
   }
 }
 
@@ -717,18 +647,35 @@ const deleteCoach = (coach: Coach) => {
     content: `确定要删除教练 ${coach.name} 吗？此操作不可恢复。`,
     okText: '确认删除',
     okType: 'danger',
-    onOk: () => {
-      const index = coaches.value.findIndex(c => c.coach_id === coach.coach_id)
-      if (index > -1) {
-        coaches.value.splice(index, 1)
+    onOk: async () => {
+      try {
+        await request.delete(`/v1/admin/users/${coach.coach_id}`)
         message.success('教练已删除')
+        await loadCoaches()
+      } catch (e: any) {
+        message.error(e?.response?.data?.detail || '删除失败')
       }
     }
   })
 }
 
+const loadCoaches = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const { data } = await request.get('/v1/admin/coaches')
+    coaches.value = (data.coaches || []).map(mapBackendCoach)
+    pagination.total = coaches.value.length
+  } catch (e: any) {
+    console.error('加载教练列表失败:', e)
+    error.value = '加载教练列表失败'
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(() => {
-  pagination.total = coaches.value.length
+  loadCoaches()
 })
 </script>
 

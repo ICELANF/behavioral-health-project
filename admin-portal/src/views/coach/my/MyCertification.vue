@@ -9,7 +9,9 @@
       <a-spin size="large" tip="加载认证信息..." />
     </div>
 
-    <template v-if="!loading">
+    <a-alert v-if="error" :message="error" type="error" show-icon style="margin-bottom: 16px" />
+
+    <template v-if="!loading && !error">
       <!-- Current Level -->
       <a-card class="level-card" style="margin-bottom: 16px">
         <div class="current-level">
@@ -81,14 +83,10 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-const token = localStorage.getItem('token') || ''
-const authHeaders: Record<string, string> = {
-  'Content-Type': 'application/json',
-  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-}
+import request from '@/api/request'
 
 const loading = ref(true)
+const error = ref('')
 
 const currentLevel = ref<any>({ code: '--', name: '加载中', description: '', color: '#d9d9d9', since: null })
 const nextLevel = ref<any>({ code: null, name: '' })
@@ -109,12 +107,9 @@ const levelIndex = ref(0)
 
 const loadData = async () => {
   loading.value = true
+  error.value = ''
   try {
-    const resp = await fetch(`${API_BASE}/v1/coach/my-certification`, {
-      headers: authHeaders,
-    })
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-    const data = await resp.json()
+    const { data } = await request.get('/v1/coach/my-certification')
 
     currentLevel.value = data.current_level || currentLevel.value
     nextLevel.value = data.next_level || { code: null, name: '' }
@@ -122,12 +117,11 @@ const loadData = async () => {
     requirements.value = data.requirements || []
     stats.value = data.stats || stats.value
 
-    // Calculate level index for roadmap
     const idx = levelRoadmap.findIndex(l => l.code === currentLevel.value.code)
     levelIndex.value = idx >= 0 ? idx : 0
   } catch (e: any) {
     console.error('加载认证数据失败:', e)
-    message.error('加载认证数据失败')
+    error.value = '加载认证数据失败，请稍后重试'
   } finally {
     loading.value = false
   }

@@ -5,6 +5,8 @@
       <a-range-picker v-model:value="dateRange" style="width: 240px" />
     </div>
 
+    <a-alert v-if="error" :message="error" type="error" show-icon style="margin-bottom: 16px" />
+
     <!-- Key metrics -->
     <a-row :gutter="16" style="margin-bottom: 20px">
       <a-col :span="6">
@@ -146,20 +148,17 @@ const riskPercent = (level: string) => {
   return Math.round(((dist[level] || 0) / total) * 100)
 }
 
+const error = ref('')
+
 const loadPerformance = async () => {
   loading.value = true
+  error.value = ''
   try {
     const { data } = await request.get('/v1/coach/performance')
     performance.value = data
   } catch (e: any) {
     console.error('加载绩效数据失败:', e)
-    // Fallback
-    performance.value = {
-      total_students: 8,
-      avg_adherence_rate: 65.5,
-      risk_distribution: { low: 4, medium: 3, high: 1 },
-      coach_name: '教练',
-    }
+    error.value = '加载绩效数据失败，请稍后重试'
   } finally {
     loading.value = false
   }

@@ -5,6 +5,8 @@
       <a-breadcrumb-item>教练详情</a-breadcrumb-item>
     </a-breadcrumb>
 
+    <a-alert v-if="error" :message="error" type="error" show-icon style="margin-bottom: 16px" />
+
     <a-spin :spinning="loading">
       <a-row :gutter="16">
         <!-- 左侧：基本信息卡片 -->
@@ -284,6 +286,7 @@ import {
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
+import request from '@/api/request'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -294,6 +297,7 @@ const coachId = computed(() => route.params.id as string)
 
 // 状态
 const loading = ref(false)
+const error = ref('')
 const activeTab = ref('certificates')
 const messageModalVisible = ref(false)
 
@@ -414,11 +418,7 @@ const promotionHistory = ref([
 ])
 
 // 学员列表
-const students = ref([
-  { id: '1', name: '王小明', phone: '138****0001', progress: 65, active: true, last_active: '今天' },
-  { id: '2', name: '李小红', phone: '138****0002', progress: 30, active: true, last_active: '昨天' },
-  { id: '3', name: '张小强', phone: '138****0003', progress: 85, active: false, last_active: '3天前' }
-])
+const students = ref<any[]>([])
 
 const studentColumns = [
   { title: '学员', key: 'name' },
@@ -497,34 +497,57 @@ const handleSendMessage = () => {
   messageModalVisible.value = false
 }
 
+// Role → Level mapping
+const _ROLE_LEVEL: Record<string, string> = {
+  observer: 'L0', grower: 'L1', sharer: 'L2', coach: 'L3',
+  promoter: 'L4', supervisor: 'L4', master: 'L5', admin: 'L5',
+}
+
 // 加载数据
 const loadCoachData = async () => {
   loading.value = true
+  error.value = ''
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const { data } = await request.get(`/v1/admin/users/${coachId.value}`)
+    const profile = data.profile || {}
 
-    // 模拟数据
     coach.value = {
-      coach_id: coachId.value || 'C001',
-      name: '张三',
+      coach_id: String(data.id),
+      name: data.full_name || data.username,
       avatar: '',
-      phone: '13800138001',
-      email: 'zhangsan@example.com',
-      level: 'L2',
-      specialty: ['diabetes_reversal', 'weight_management'],
-      student_count: 28,
-      case_count: 45,
-      mentoring_hours: 36,
-      status: 'active',
-      joined_at: '2024-03-15',
-      last_active: '2026-01-24T10:30:00Z',
-      bio: '5年健康管理经验，专注于糖尿病逆转和体重管理领域',
-      certificates: [
-        { id: '1', name: '健康管理师（二级）', issuer: '人力资源和社会保障部', expiry_date: '2027-06-30', image: '' },
-        { id: '2', name: '营养师资格证', issuer: '中国营养学会', expiry_date: null, image: '' },
-        { id: '3', name: '心理咨询师', issuer: '中科院心理所', expiry_date: '2028-12-31', image: '' }
-      ]
+      phone: data.phone || '',
+      email: data.email || '',
+      level: _ROLE_LEVEL[data.role] || 'L0',
+      specialty: profile.specializations || [],
+      student_count: 0,
+      case_count: 0,
+      mentoring_hours: 0,
+      status: data.is_active ? 'active' : 'suspended',
+      joined_at: data.created_at ? data.created_at.split('T')[0] : '',
+      last_active: data.created_at || '',
+      bio: profile.bio || '',
+      certificates: profile.certifications || [],
     }
+
+    // Load students for this coach
+    try {
+      const studentsRes = await request.get('/v1/coach/students')
+      const raw = studentsRes.data.students || []
+      students.value = raw.map((s: any) => ({
+        id: String(s.id),
+        name: s.full_name || s.username,
+        phone: '',
+        progress: s.adherence_rate || 0,
+        active: s.active_days > 0,
+        last_active: s.last_active ? dayjs(s.last_active).fromNow() : '-',
+      }))
+      coach.value.student_count = students.value.length
+    } catch {
+      // students endpoint may not be accessible as admin for a specific coach
+    }
+  } catch (e: any) {
+    console.error('加载教练数据失败:', e)
+    error.value = '加载教练数据失败'
   } finally {
     loading.value = false
   }

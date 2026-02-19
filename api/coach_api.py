@@ -27,7 +27,7 @@ from core.behavioral_profile_service import BehavioralProfileService
 from core.intervention_matcher import InterventionMatcher
 from core.content_access_service import get_user_level
 from core.data_visibility_service import filter_nested_profile, get_hidden_fields
-from api.dependencies import get_current_user, require_coach_or_admin
+from api.dependencies import get_current_user, require_coach_or_admin, require_admin
 
 _profile_service = BehavioralProfileService()
 _intervention_matcher = InterventionMatcher()
@@ -1277,3 +1277,125 @@ def coach_directory(
         })
 
     return {"total": total, "coaches": coach_list}
+
+
+# ============================================================================
+# 晋级申请审批 (Admin)
+# ============================================================================
+
+@router.get("/promotion-applications")
+def list_promotion_applications(
+    status_filter: Optional[str] = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """查询晋级申请列表"""
+    from core.models import PromotionApplication
+
+    query = db.query(PromotionApplication).order_by(PromotionApplication.created_at.desc())
+
+    if status_filter:
+        query = query.filter(PromotionApplication.status == status_filter)
+
+    apps = query.limit(100).all()
+
+    result = []
+    for app in apps:
+        applicant = db.query(User).filter(User.id == app.user_id).first()
+        reviewer = db.query(User).filter(User.id == app.reviewer_id).first() if app.reviewer_id else None
+
+        result.append({
+            "application_id": str(app.id),
+            "coach_id": str(app.user_id),
+            "coach_name": (applicant.full_name or applicant.username) if applicant else "未知",
+            "coach_phone": getattr(applicant, 'phone', '') or '' if applicant else '',
+            "current_level": app.from_role or '',
+            "target_level": app.to_role or '',
+            "applied_at": app.created_at.strftime("%Y-%m-%d") if app.created_at else '',
+            "status": app.status or 'pending',
+            "check_result": app.check_result or {},
+            "requirements_met": {
+                "courses_completed": (app.check_result or {}).get("courses_completed", False),
+                "exams_passed": (app.check_result or {}).get("exams_passed", False),
+                "cases_count": (app.check_result or {}).get("cases_count", False),
+                "mentoring_hours": (app.check_result or {}).get("mentoring_hours", False),
+            },
+            "reviewer": (reviewer.full_name or reviewer.username) if reviewer else None,
+            "reviewed_at": app.reviewed_at.strftime("%Y-%m-%d") if app.reviewed_at else None,
+            "review_comment": app.review_comment,
+            "materials": [],
+        })
+
+    return {"applications": result, "total": len(result)}
+
+
+@router.post("/promotion-applications/{app_id}/approve")
+def approve_promotion_application(
+    app_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """批准晋级申请"""
+    from core.models import PromotionApplication
+    import uuid as _uuid
+
+    try:
+        app_uuid = _uuid.UUID(app_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="无效的申请ID")
+
+    app = db.query(PromotionApplication).filter(PromotionApplication.id == app_uuid).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="申请不存在")
+    if app.status != "pending":
+        raise HTTPException(status_code=400, detail="该申请已处理")
+
+    app.status = "approved"
+    app.reviewer_id = current_user.id
+    app.review_comment = "审批通过"
+    app.reviewed_at = datetime.utcnow()
+
+    # Optionally upgrade user role
+    applicant = db.query(User).filter(User.id == app.user_id).first()
+    if applicant and app.to_role:
+        try:
+            target_role = UserRole(app.to_role)
+            applicant.role = target_role
+        except ValueError:
+            pass
+
+    db.commit()
+    logger.info(f"管理员 {current_user.username} 批准晋级申请 {app_id}")
+    return {"message": "申请已批准", "application_id": app_id}
+
+
+@router.post("/promotion-applications/{app_id}/reject")
+def reject_promotion_application(
+    app_id: str,
+    body: dict = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """拒绝晋级申请"""
+    from core.models import PromotionApplication
+    import uuid as _uuid
+
+    try:
+        app_uuid = _uuid.UUID(app_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="无效的申请ID")
+
+    app = db.query(PromotionApplication).filter(PromotionApplication.id == app_uuid).first()
+    if not app:
+        raise HTTPException(status_code=404, detail="申请不存在")
+    if app.status != "pending":
+        raise HTTPException(status_code=400, detail="该申请已处理")
+
+    comment = (body or {}).get("comment", "")
+    app.status = "rejected"
+    app.reviewer_id = current_user.id
+    app.review_comment = comment or "审批拒绝"
+    app.reviewed_at = datetime.utcnow()
+    db.commit()
+    logger.info(f"管理员 {current_user.username} 拒绝晋级申请 {app_id}")
+    return {"message": "申请已拒绝", "application_id": app_id}

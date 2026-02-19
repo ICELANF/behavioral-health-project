@@ -12,6 +12,8 @@
       </a-radio-group>
     </div>
 
+    <a-alert v-if="error" :message="error" type="error" show-icon style="margin-bottom: 16px" />
+
     <!-- 统计卡片 -->
     <a-row :gutter="16" class="stats-row">
       <a-col :span="6">
@@ -285,7 +287,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { message, Empty } from 'ant-design-vue'
 import {
   ClockCircleOutlined,
@@ -298,6 +300,7 @@ import {
   TeamOutlined,
   FileOutlined
 } from '@ant-design/icons-vue'
+import request from '@/api/request'
 
 // 接口定义
 interface PromotionApplication {
@@ -327,6 +330,7 @@ interface PromotionApplication {
 
 // 状态
 const loading = ref(false)
+const error = ref('')
 const submitting = ref(false)
 const statusFilter = ref('all')
 const detailVisible = ref(false)
@@ -390,106 +394,7 @@ const reviewForm = reactive({
   comment: ''
 })
 
-// 模拟数据
-const applications = ref<PromotionApplication[]>([
-  {
-    application_id: 'A001',
-    coach_id: 'C002',
-    coach_name: '李四',
-    coach_phone: '138****8002',
-    current_level: 'L1',
-    target_level: 'L2',
-    applied_at: '2026-01-20',
-    status: 'pending',
-    requirements_met: {
-      courses_completed: true,
-      exams_passed: true,
-      cases_count: true,
-      mentoring_hours: false
-    },
-    course_stats: { completed: 5, required: 5 },
-    exam_stats: { passed: 2, required: 2 },
-    case_stats: { count: 25, required: 20 },
-    mentoring_stats: { hours: 8, required: 10 },
-    materials: [
-      { name: '案例报告汇总.pdf', url: '#' },
-      { name: '督导评价表.pdf', url: '#' }
-    ]
-  },
-  {
-    application_id: 'A002',
-    coach_id: 'C003',
-    coach_name: '王五',
-    coach_phone: '138****8003',
-    current_level: 'L2',
-    target_level: 'L3',
-    applied_at: '2026-01-18',
-    status: 'pending',
-    requirements_met: {
-      courses_completed: true,
-      exams_passed: true,
-      cases_count: true,
-      mentoring_hours: true
-    },
-    course_stats: { completed: 8, required: 8 },
-    exam_stats: { passed: 3, required: 3 },
-    case_stats: { count: 60, required: 50 },
-    mentoring_stats: { hours: 25, required: 20 },
-    materials: [
-      { name: '高级案例报告.pdf', url: '#' },
-      { name: '带教学员记录.xlsx', url: '#' },
-      { name: '督导推荐信.pdf', url: '#' }
-    ]
-  },
-  {
-    application_id: 'A003',
-    coach_id: 'C001',
-    coach_name: '张三',
-    coach_phone: '138****8001',
-    current_level: 'L1',
-    target_level: 'L2',
-    applied_at: '2026-01-15',
-    status: 'approved',
-    requirements_met: {
-      courses_completed: true,
-      exams_passed: true,
-      cases_count: true,
-      mentoring_hours: true
-    },
-    course_stats: { completed: 5, required: 5 },
-    exam_stats: { passed: 2, required: 2 },
-    case_stats: { count: 30, required: 20 },
-    mentoring_stats: { hours: 15, required: 10 },
-    materials: [],
-    reviewer: '管理员',
-    reviewed_at: '2026-01-16',
-    review_comment: '考核全部通过，表现优秀'
-  },
-  {
-    application_id: 'A004',
-    coach_id: 'C004',
-    coach_name: '赵六',
-    coach_phone: '138****8004',
-    current_level: 'L0',
-    target_level: 'L1',
-    applied_at: '2026-01-10',
-    status: 'rejected',
-    requirements_met: {
-      courses_completed: true,
-      exams_passed: false,
-      cases_count: false,
-      mentoring_hours: false
-    },
-    course_stats: { completed: 3, required: 3 },
-    exam_stats: { passed: 0, required: 1 },
-    case_stats: { count: 0, required: 5 },
-    mentoring_stats: { hours: 0, required: 0 },
-    materials: [],
-    reviewer: '管理员',
-    reviewed_at: '2026-01-12',
-    review_comment: '考试未通过，案例数量不足，建议继续学习后再申请'
-  }
-])
+const applications = ref<PromotionApplication[]>([])
 
 // 计算属性
 const filteredApplications = computed(() => {
@@ -530,26 +435,29 @@ const handleReject = (record: PromotionApplication) => {
   quickReviewVisible.value = true
 }
 
+const submitReview = async (appId: string, action: 'approve' | 'reject', comment: string) => {
+  const endpoint = action === 'approve'
+    ? `/v1/coach/promotion-applications/${appId}/approve`
+    : `/v1/coach/promotion-applications/${appId}/reject`
+
+  await request.post(endpoint, { comment })
+}
+
 const handleDetailOk = async () => {
   if (!currentApplication.value) return
 
   submitting.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    const index = applications.value.findIndex(a => a.application_id === currentApplication.value?.application_id)
-    if (index > -1) {
-      applications.value[index] = {
-        ...applications.value[index],
-        status: reviewForm.result,
-        reviewer: '管理员',
-        reviewed_at: new Date().toISOString().split('T')[0],
-        review_comment: reviewForm.comment
-      }
-    }
-
+    await submitReview(
+      currentApplication.value.application_id,
+      reviewForm.result === 'approved' ? 'approve' : 'reject',
+      reviewForm.comment
+    )
     message.success(reviewForm.result === 'approved' ? '申请已通过' : '申请已拒绝')
     detailVisible.value = false
+    await loadApplications()
+  } catch (e: any) {
+    message.error(e?.response?.data?.detail || '操作失败')
   } finally {
     submitting.value = false
   }
@@ -560,26 +468,40 @@ const handleQuickReviewConfirm = async () => {
 
   submitting.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-
-    const status = quickReviewType.value === 'approve' ? 'approved' : 'rejected'
-    const index = applications.value.findIndex(a => a.application_id === currentApplication.value?.application_id)
-    if (index > -1) {
-      applications.value[index] = {
-        ...applications.value[index],
-        status,
-        reviewer: '管理员',
-        reviewed_at: new Date().toISOString().split('T')[0],
-        review_comment: reviewForm.comment
-      }
-    }
-
-    message.success(status === 'approved' ? '申请已通过' : '申请已拒绝')
+    await submitReview(
+      currentApplication.value.application_id,
+      quickReviewType.value,
+      reviewForm.comment
+    )
+    message.success(quickReviewType.value === 'approve' ? '申请已通过' : '申请已拒绝')
     quickReviewVisible.value = false
+    await loadApplications()
+  } catch (e: any) {
+    message.error(e?.response?.data?.detail || '操作失败')
   } finally {
     submitting.value = false
   }
 }
+
+const loadApplications = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const { data } = await request.get('/v1/coach/promotion-applications')
+    applications.value = data.applications || []
+    pagination.total = applications.value.length
+  } catch (e: any) {
+    console.error('加载晋级申请失败:', e)
+    error.value = '加载晋级申请失败'
+    applications.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  loadApplications()
+})
 </script>
 
 <style scoped>

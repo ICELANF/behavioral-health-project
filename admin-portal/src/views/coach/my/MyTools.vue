@@ -9,7 +9,9 @@
       <a-spin size="large" tip="加载工具数据..." />
     </div>
 
-    <template v-if="!loading">
+    <a-alert v-if="error" :message="error" type="error" show-icon style="margin-bottom: 16px" />
+
+    <template v-if="!loading && !error">
       <!-- Tool Grid -->
       <div class="tools-grid">
         <div v-for="tool in tools" :key="tool.key" class="tool-card" :style="{ borderColor: tool.color }" @click="useTool(tool)">
@@ -73,14 +75,10 @@ import { message } from 'ant-design-vue'
 
 const router = useRouter()
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-const token = localStorage.getItem('token') || ''
-const authHeaders: Record<string, string> = {
-  'Content-Type': 'application/json',
-  ...(token ? { Authorization: `Bearer ${token}` } : {}),
-}
+import request from '@/api/request'
 
 const loading = ref(true)
+const error = ref('')
 const tools = ref<any[]>([])
 const recentActivity = ref<any[]>([])
 const totalMonthUsage = ref(0)
@@ -99,19 +97,15 @@ const toolIcon = (key: string) => {
 
 const loadData = async () => {
   loading.value = true
+  error.value = ''
   try {
-    const resp = await fetch(`${API_BASE}/v1/coach/my-tools-stats`, {
-      headers: authHeaders,
-    })
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
-    const data = await resp.json()
+    const { data } = await request.get('/v1/coach/my-tools-stats')
 
     tools.value = data.tools || []
     recentActivity.value = data.recent_activity || []
     totalMonthUsage.value = data.total_month_usage ?? 0
     mostUsedTool.value = data.most_used_tool || '--'
 
-    // Calculate active days from recent activity timestamps
     const uniqueDays = new Set(
       recentActivity.value
         .filter((a: any) => a.time)
@@ -120,7 +114,7 @@ const loadData = async () => {
     activeDays.value = Math.max(uniqueDays.size, totalMonthUsage.value > 0 ? 1 : 0)
   } catch (e: any) {
     console.error('加载工具统计失败:', e)
-    message.error('加载工具统计失败')
+    error.value = '加载工具统计失败，请稍后重试'
   } finally {
     loading.value = false
   }
