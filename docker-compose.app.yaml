@@ -60,7 +60,7 @@ services:
       - PYTHONUNBUFFERED=1
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - OLLAMA_API_URL=http://host.docker.internal:11434
-      - DATABASE_URL=postgresql://bhp_user:bhp_password@host.docker.internal:5432/bhp_db
+      - DATABASE_URL=postgresql://postgres:difyai123456@db:5432/health_platform
       # V005 云 LLM 配置
       - CLOUD_LLM_PROVIDER=${CLOUD_LLM_PROVIDER:-}
       - CLOUD_LLM_API_KEY=${CLOUD_LLM_API_KEY:-}

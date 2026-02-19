@@ -106,6 +106,11 @@ def upgrade():
         created_at TIMESTAMP NOT NULL DEFAULT now()
     );
     """)
+    # Ensure columns needed by views exist (pre-existing tables may have different schema)
+    op.execute("ALTER TABLE program_interactions ADD COLUMN IF NOT EXISTS user_reply TEXT;")
+    op.execute("ALTER TABLE program_interactions ADD COLUMN IF NOT EXISTS agent_response TEXT;")
+    op.execute("ALTER TABLE program_interactions ADD COLUMN IF NOT EXISTS push_index INTEGER DEFAULT 0;")
+    op.execute("ALTER TABLE program_interactions ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'pending';")
     op.execute("CREATE INDEX IF NOT EXISTS idx_pi_enrollment ON program_interactions(enrollment_id, day_number);")
 
     # ════════════════════════════════════════════
@@ -168,7 +173,12 @@ def upgrade():
 
     # ════════════════════════════════════════════
     # 7. Views (from migration 027 that may not have executed)
+    #    Drop first to handle column changes safely
     # ════════════════════════════════════════════
+    op.execute("DROP VIEW IF EXISTS v_user_credit_summary CASCADE;")
+    op.execute("DROP VIEW IF EXISTS v_user_total_credits CASCADE;")
+    op.execute("DROP VIEW IF EXISTS v_companion_stats CASCADE;")
+
     op.execute("""
     CREATE OR REPLACE VIEW v_user_credit_summary AS
     SELECT uc.user_id, cm.module_type, cm.target_role,
@@ -200,6 +210,7 @@ def upgrade():
     FROM companion_relations cr GROUP BY cr.mentor_id, cr.mentor_role;
     """)
 
+    op.execute("DROP VIEW IF EXISTS v_program_enrollment_summary;")
     op.execute("""
     CREATE OR REPLACE VIEW v_program_enrollment_summary AS
     SELECT
@@ -230,10 +241,35 @@ def upgrade():
     """)
 
     # ════════════════════════════════════════════
+    # 7b. Recreate v_promotion_progress (depends on base views, may have been dropped by CASCADE)
+    # ════════════════════════════════════════════
+    op.execute("""
+    CREATE OR REPLACE VIEW v_promotion_progress AS
+    SELECT u.id AS user_id,
+        u.role AS current_role,
+        COALESCE(tc.total_credits, 0) AS total_credits,
+        COALESCE(tc.mandatory_credits, 0) AS mandatory_credits,
+        COALESCE(tc.m1_credits, 0) AS m1_credits,
+        COALESCE(tc.m2_credits, 0) AS m2_credits,
+        COALESCE(tc.m3_credits, 0) AS m3_credits,
+        COALESCE(tc.m4_credits, 0) AS m4_credits,
+        COALESCE(up.growth_points, 0) AS growth_points,
+        COALESCE(up.contribution_points, 0) AS contribution_points,
+        COALESCE(up.influence_points, 0) AS influence_points,
+        COALESCE(cs.graduated_count, 0) AS companions_graduated,
+        COALESCE(cs.active_count, 0) AS companions_active,
+        COALESCE(cs.avg_quality, 0) AS companion_avg_quality
+    FROM users u
+    LEFT JOIN v_user_total_credits tc ON u.id = tc.user_id
+    LEFT JOIN user_learning_stats up ON u.id = up.user_id
+    LEFT JOIN v_companion_stats cs ON u.id = cs.mentor_id AND u.role = cs.mentor_role;
+    """)
+
+    # ════════════════════════════════════════════
     # 8. Seed data — glucose-14d program template
     # ════════════════════════════════════════════
     op.execute("""
-    INSERT INTO program_templates (id, slug, title, description, category, total_days, pushes_per_day)
+    INSERT INTO program_templates (id, slug, title, description, category, total_days, pushes_per_day, schedule_json)
     VALUES (
         '00000000-0000-0000-0000-000000000001',
         'glucose-14d',
@@ -241,8 +277,9 @@ def upgrade():
         '基础代谢健康管理方案，涵盖饮食、运动、监测三大模块',
         'metabolic',
         14,
-        3
-    ) ON CONFLICT (id) DO NOTHING;
+        3,
+        '{}'::jsonb
+    ) ON CONFLICT (slug) DO NOTHING;
     """)
 
 

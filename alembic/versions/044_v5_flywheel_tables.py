@@ -29,130 +29,207 @@ depends_on = None
 
 
 def upgrade():
+    conn = op.get_bind()
+
+    def _table_exists(name, schema="public"):
+        r = conn.execute(sa.text(
+            "SELECT EXISTS(SELECT 1 FROM pg_tables WHERE schemaname=:s AND tablename=:t)"
+        ), {"s": schema, "t": name})
+        return r.scalar()
+
+    def _column_exists(table, col):
+        r = conn.execute(sa.text(
+            "SELECT EXISTS(SELECT 1 FROM information_schema.columns "
+            "WHERE table_schema='public' AND table_name=:t AND column_name=:c)"
+        ), {"t": table, "c": col})
+        return r.scalar()
+
+    # ── 0a. behavior_prescriptions (prerequisite for daily_tasks FK) ──
+    if not _table_exists("behavior_prescriptions"):
+        op.execute("""
+        CREATE TABLE behavior_prescriptions (
+            id VARCHAR(80) PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            target_behavior VARCHAR(200) NOT NULL,
+            frequency_dose VARCHAR(100),
+            time_place VARCHAR(200),
+            trigger_cue VARCHAR(200),
+            obstacle_plan TEXT,
+            support_resource TEXT,
+            domain VARCHAR(30),
+            difficulty_level VARCHAR(20) DEFAULT 'easy',
+            cultivation_stage VARCHAR(30) DEFAULT 'startup',
+            status VARCHAR(20) DEFAULT 'draft',
+            expires_at TIMESTAMP,
+            approved_by_review VARCHAR(80),
+            created_at TIMESTAMP NOT NULL DEFAULT now(),
+            updated_at TIMESTAMP DEFAULT now()
+        );
+        """)
+        op.execute("CREATE INDEX IF NOT EXISTS idx_bp_user ON behavior_prescriptions(user_id);")
+        op.execute("CREATE INDEX IF NOT EXISTS idx_bp_status ON behavior_prescriptions(status);")
+
+    # ── 0b. daily_tasks (prerequisite — no prior migration creates it) ──
+    if not _table_exists("daily_tasks"):
+        op.execute("""
+        CREATE TABLE daily_tasks (
+            id VARCHAR(80) PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            task_date DATE NOT NULL,
+            order_num INTEGER DEFAULT 0,
+            title VARCHAR(200) NOT NULL,
+            tag VARCHAR(20),
+            tag_color VARCHAR(10),
+            time_hint VARCHAR(100),
+            input_mode VARCHAR(20),
+            quick_label VARCHAR(20) DEFAULT '打卡',
+            source VARCHAR(20) DEFAULT 'rx',
+            agent_id VARCHAR(50),
+            rx_id VARCHAR(80) REFERENCES behavior_prescriptions(id),
+            done BOOLEAN DEFAULT false,
+            done_time TIMESTAMP,
+            created_at TIMESTAMP NOT NULL DEFAULT now()
+        );
+        """)
+        op.execute("CREATE INDEX IF NOT EXISTS idx_dt_user_date ON daily_tasks(user_id, task_date);")
+
     # ── 1. observer_quota_logs ──
-    op.create_table(
-        "observer_quota_logs",
-        sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("quota_type", sa.String(20), nullable=False),
-        sa.Column("created_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
-    )
-    op.create_index("idx_observer_quota_user_date", "observer_quota_logs", ["user_id", "created_at"])
+    if not _table_exists("observer_quota_logs"):
+        op.create_table(
+            "observer_quota_logs",
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+            sa.Column("quota_type", sa.String(20), nullable=False),
+            sa.Column("created_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
+        )
+        op.create_index("idx_observer_quota_user_date", "observer_quota_logs", ["user_id", "created_at"])
 
     # ── 2. task_checkins ──
-    op.create_table(
-        "task_checkins",
-        sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("task_id", sa.String(50), nullable=False),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
-        sa.Column("note", sa.Text, nullable=True),
-        sa.Column("photo_url", sa.String(500), nullable=True),
-        sa.Column("value", sa.Float, nullable=True),
-        sa.Column("voice_url", sa.String(500), nullable=True),
-        sa.Column("points_earned", sa.Integer, server_default="0"),
-        sa.Column("checked_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
-    )
-    op.create_index("idx_checkin_user_date", "task_checkins", ["user_id", "checked_at"])
-    op.create_index("idx_checkin_task", "task_checkins", ["task_id"])
+    if not _table_exists("task_checkins"):
+        op.create_table(
+            "task_checkins",
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("task_id", sa.String(50), nullable=False),
+            sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+            sa.Column("note", sa.Text, nullable=True),
+            sa.Column("photo_url", sa.String(500), nullable=True),
+            sa.Column("value", sa.Float, nullable=True),
+            sa.Column("voice_url", sa.String(500), nullable=True),
+            sa.Column("points_earned", sa.Integer, server_default="0"),
+            sa.Column("checked_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
+        )
+        op.create_index("idx_checkin_user_date", "task_checkins", ["user_id", "checked_at"])
+        op.create_index("idx_checkin_task", "task_checkins", ["task_id"])
 
     # ── 3. user_streaks ──
-    op.create_table(
-        "user_streaks",
-        sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True),
-        sa.Column("current_streak", sa.Integer, server_default="0", nullable=False),
-        sa.Column("longest_streak", sa.Integer, server_default="0", nullable=False),
-        sa.Column("last_checkin_date", sa.Date, nullable=True),
-        sa.Column("updated_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
-    )
+    if not _table_exists("user_streaks"):
+        op.create_table(
+            "user_streaks",
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True),
+            sa.Column("current_streak", sa.Integer, server_default="0", nullable=False),
+            sa.Column("longest_streak", sa.Integer, server_default="0", nullable=False),
+            sa.Column("last_checkin_date", sa.Date, nullable=True),
+            sa.Column("updated_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
+        )
 
     # ── 4. coach_review_queue ──
-    op.create_table(
-        "coach_review_queue",
-        sa.Column("id", sa.String(50), primary_key=True),
-        sa.Column("coach_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("student_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("type", sa.String(20), nullable=False),
-        sa.Column("priority", sa.String(10), server_default="normal", nullable=False),
-        sa.Column("status", sa.String(20), server_default="pending", nullable=False),
-        sa.Column("ai_summary", sa.Text, nullable=True),
-        sa.Column("rx_fields_json", JSONB, nullable=True),
-        sa.Column("ai_draft", sa.Text, nullable=True),
-        sa.Column("push_type", sa.String(50), nullable=True),
-        sa.Column("push_content", sa.Text, nullable=True),
-        sa.Column("review_note", sa.Text, nullable=True),
-        sa.Column("edited_content", sa.Text, nullable=True),
-        sa.Column("edited_rx_json", JSONB, nullable=True),
-        sa.Column("reviewed_at", sa.DateTime, nullable=True),
-        sa.Column("elapsed_seconds", sa.Integer, nullable=True),
-        sa.Column("created_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("picked_at", sa.DateTime, nullable=True),
-    )
-    op.create_index("idx_review_coach_status", "coach_review_queue", ["coach_id", "status"])
-    op.create_index("idx_review_priority", "coach_review_queue", ["priority", "created_at"])
-    op.create_index("idx_review_student", "coach_review_queue", ["student_id", "created_at"])
+    if not _table_exists("coach_review_queue"):
+        op.create_table(
+            "coach_review_queue",
+            sa.Column("id", sa.String(50), primary_key=True),
+            sa.Column("coach_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+            sa.Column("student_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+            sa.Column("type", sa.String(20), nullable=False),
+            sa.Column("priority", sa.String(10), server_default="normal", nullable=False),
+            sa.Column("status", sa.String(20), server_default="pending", nullable=False),
+            sa.Column("ai_summary", sa.Text, nullable=True),
+            sa.Column("rx_fields_json", JSONB, nullable=True),
+            sa.Column("ai_draft", sa.Text, nullable=True),
+            sa.Column("push_type", sa.String(50), nullable=True),
+            sa.Column("push_content", sa.Text, nullable=True),
+            sa.Column("review_note", sa.Text, nullable=True),
+            sa.Column("edited_content", sa.Text, nullable=True),
+            sa.Column("edited_rx_json", JSONB, nullable=True),
+            sa.Column("reviewed_at", sa.DateTime, nullable=True),
+            sa.Column("elapsed_seconds", sa.Integer, nullable=True),
+            sa.Column("created_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("picked_at", sa.DateTime, nullable=True),
+        )
+        op.create_index("idx_review_coach_status", "coach_review_queue", ["coach_id", "status"])
+        op.create_index("idx_review_priority", "coach_review_queue", ["priority", "created_at"])
+        op.create_index("idx_review_student", "coach_review_queue", ["student_id", "created_at"])
 
     # ── 5. coach_review_logs ──
-    op.create_table(
-        "coach_review_logs",
-        sa.Column("id", sa.Integer, primary_key=True),
-        sa.Column("coach_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("review_id", sa.String(50), nullable=False),
-        sa.Column("action", sa.String(20), nullable=False),
-        sa.Column("elapsed_seconds", sa.Integer, nullable=True),
-        sa.Column("reviewed_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
-    )
-    op.create_index("idx_review_log_coach_date", "coach_review_logs", ["coach_id", "reviewed_at"])
+    if not _table_exists("coach_review_logs"):
+        op.create_table(
+            "coach_review_logs",
+            sa.Column("id", sa.Integer, primary_key=True),
+            sa.Column("coach_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+            sa.Column("review_id", sa.String(50), nullable=False),
+            sa.Column("action", sa.String(20), nullable=False),
+            sa.Column("elapsed_seconds", sa.Integer, nullable=True),
+            sa.Column("reviewed_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
+        )
+        op.create_index("idx_review_log_coach_date", "coach_review_logs", ["coach_id", "reviewed_at"])
 
     # ── 6. expert_audit_records ──
-    op.create_table(
-        "expert_audit_records",
-        sa.Column("id", sa.String(50), primary_key=True),
-        sa.Column("expert_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
-        sa.Column("audit_type", sa.String(30), nullable=False),
-        sa.Column("agent_id", sa.String(50), nullable=True),
-        sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=True),
-        sa.Column("risk_level", sa.String(10), nullable=True),
-        sa.Column("content_snapshot", JSONB, nullable=False),
-        sa.Column("safety_flags", JSONB, server_default="'[]'"),
-        sa.Column("verdict", sa.String(10), nullable=True),
-        sa.Column("score", sa.SmallInteger, nullable=True),
-        sa.Column("issues", ARRAY(sa.Text), nullable=True),
-        sa.Column("note", sa.Text, nullable=True),
-        sa.Column("created_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("reviewed_at", sa.DateTime, nullable=True),
-    )
-    op.create_index("idx_audit_expert_date", "expert_audit_records", ["expert_id", "created_at"])
-    op.create_index("idx_audit_type_risk", "expert_audit_records", ["audit_type", "risk_level"])
-    op.create_index("idx_audit_agent", "expert_audit_records", ["agent_id"])
+    if not _table_exists("expert_audit_records"):
+        op.create_table(
+            "expert_audit_records",
+            sa.Column("id", sa.String(50), primary_key=True),
+            sa.Column("expert_id", sa.Integer, sa.ForeignKey("users.id"), nullable=False),
+            sa.Column("audit_type", sa.String(30), nullable=False),
+            sa.Column("agent_id", sa.String(50), nullable=True),
+            sa.Column("user_id", sa.Integer, sa.ForeignKey("users.id"), nullable=True),
+            sa.Column("risk_level", sa.String(10), nullable=True),
+            sa.Column("content_snapshot", JSONB, nullable=False),
+            sa.Column("safety_flags", JSONB, server_default=sa.text("'[]'::jsonb")),
+            sa.Column("verdict", sa.String(10), nullable=True),
+            sa.Column("score", sa.SmallInteger, nullable=True),
+            sa.Column("issues", ARRAY(sa.Text), nullable=True),
+            sa.Column("note", sa.Text, nullable=True),
+            sa.Column("created_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
+            sa.Column("reviewed_at", sa.DateTime, nullable=True),
+        )
+        op.create_index("idx_audit_expert_date", "expert_audit_records", ["expert_id", "created_at"])
+        op.create_index("idx_audit_type_risk", "expert_audit_records", ["audit_type", "risk_level"])
+        op.create_index("idx_audit_agent", "expert_audit_records", ["agent_id"])
 
     # ── 7. system_alerts ──
-    op.create_table(
-        "system_alerts",
-        sa.Column("id", sa.String(50), primary_key=True),
-        sa.Column("level", sa.String(10), nullable=False),
-        sa.Column("message", sa.Text, nullable=False),
-        sa.Column("source", sa.String(50), nullable=True),
-        sa.Column("status", sa.String(10), server_default="active", nullable=False),
-        sa.Column("dismissed_by", sa.Integer, sa.ForeignKey("users.id"), nullable=True),
-        sa.Column("dismissed_at", sa.DateTime, nullable=True),
-        sa.Column("auto_resolved", sa.Boolean, server_default="false"),
-        sa.Column("created_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
-    )
-    op.create_index("idx_alert_status", "system_alerts", ["status", "created_at"])
+    if not _table_exists("system_alerts"):
+        op.create_table(
+            "system_alerts",
+            sa.Column("id", sa.String(50), primary_key=True),
+            sa.Column("level", sa.String(10), nullable=False),
+            sa.Column("message", sa.Text, nullable=False),
+            sa.Column("source", sa.String(50), nullable=True),
+            sa.Column("status", sa.String(10), server_default="active", nullable=False),
+            sa.Column("dismissed_by", sa.Integer, sa.ForeignKey("users.id"), nullable=True),
+            sa.Column("dismissed_at", sa.DateTime, nullable=True),
+            sa.Column("auto_resolved", sa.Boolean, server_default="false"),
+            sa.Column("created_at", sa.DateTime, server_default=sa.text("NOW()"), nullable=False),
+        )
+        op.create_index("idx_alert_status", "system_alerts", ["status", "created_at"])
 
     # ── 8. 扩展 daily_tasks 表 ──
-    op.add_column("daily_tasks", sa.Column("input_mode", sa.String(20), nullable=True))
-    op.add_column("daily_tasks", sa.Column("quick_label", sa.String(20), server_default="打卡", nullable=True))
-    op.add_column("daily_tasks", sa.Column("agent_id", sa.String(50), nullable=True))
-    op.add_column("daily_tasks", sa.Column("source", sa.String(20), server_default="rx", nullable=True))
+    for col_name, col_sql in [
+        ("input_mode", "VARCHAR(20)"),
+        ("quick_label", "VARCHAR(20) DEFAULT '打卡'"),
+        ("agent_id", "VARCHAR(50)"),
+        ("source", "VARCHAR(20) DEFAULT 'rx'"),
+    ]:
+        op.execute(f"ALTER TABLE daily_tasks ADD COLUMN IF NOT EXISTS {col_name} {col_sql};")
 
     # ── 9. 扩展 users 表 ──
-    op.add_column("users", sa.Column("union_id", sa.String(100), nullable=True))
-    op.add_column("users", sa.Column("wx_openid", sa.String(100), nullable=True))
-    op.add_column("users", sa.Column("wx_miniprogram_openid", sa.String(100), nullable=True))
-    op.add_column("users", sa.Column("preferred_channel", sa.String(20), server_default="app", nullable=True))
-    op.add_column("users", sa.Column("growth_points", sa.Integer, server_default="0", nullable=True))
+    for col_name, col_sql in [
+        ("union_id", "VARCHAR(100)"),
+        ("wx_openid", "VARCHAR(100)"),
+        ("wx_miniprogram_openid", "VARCHAR(100)"),
+        ("preferred_channel", "VARCHAR(20) DEFAULT 'app'"),
+        ("growth_points", "INTEGER DEFAULT 0"),
+    ]:
+        op.execute(f"ALTER TABLE users ADD COLUMN IF NOT EXISTS {col_name} {col_sql};")
 
     # 微信字段唯一索引 (partial - WHERE NOT NULL)
     op.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_union_id ON users(union_id) WHERE union_id IS NOT NULL")

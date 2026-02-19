@@ -31,11 +31,11 @@ except ImportError:
 # ══════════════════════════════════════════════════════════
 # 配置
 # ══════════════════════════════════════════════════════════
-BASE = "http://localhost:8000"
+BASE = os.environ.get("API_BASE_URL", "http://localhost:8000")
 ADMIN_USER = "admin"
 ADMIN_PASS = "Admin@2026"
-OBSERVER_USER = "observer_test"
-OBSERVER_PASS = "Test@2026"
+OBSERVER_USER = "observer"
+OBSERVER_PASS = "Observer@2026"
 REPORT_PATH = r"E:\注册表更新文件\platform_test_report.json"
 TIMEOUT = httpx.Timeout(15.0)
 
@@ -206,7 +206,7 @@ async def test_m03_device(c: httpx.AsyncClient, tokens: dict):
 
     # 11. glucose_data
     try:
-        r = await c.get(f"{BASE}/api/v1/health-data/glucose", headers=h)
+        r = await c.get(f"{BASE}/api/v1/mp/device/glucose", headers=h)
         record(M, "glucose_data", r.status_code == 200, f"HTTP {r.status_code}", r.status_code)
     except Exception as e:
         record(M, "glucose_data", False, str(e))
@@ -227,8 +227,8 @@ async def test_m03_device(c: httpx.AsyncClient, tokens: dict):
 
     # 14. submit_glucose
     try:
-        r = await c.post(f"{BASE}/api/v1/health-data/glucose",
-                         json={"value": 5.8, "recorded_at": datetime.now().isoformat()}, headers=h)
+        r = await c.post(f"{BASE}/api/v1/mp/device/glucose/manual",
+                         json={"value": 5.8, "meal_tag": "fasting"}, headers=h)
         ok = r.status_code in (200, 201, 422)
         record(M, "submit_glucose", ok, f"HTTP {r.status_code}", r.status_code)
     except Exception as e:
