@@ -63,6 +63,9 @@
               <p>{{ section.content }}</p>
             </div>
           </div>
+          <van-empty v-else-if="reportError" description="报告加载失败">
+            <van-button type="primary" size="small" round @click="viewFullReport()">重新加载</van-button>
+          </van-empty>
           <van-empty v-else description="暂无报告数据" />
         </div>
       </van-popup>
@@ -89,6 +92,7 @@ const isLoading = ref(false)
 const reportLoading = ref(false)
 const showReport = ref(false)
 const reportData = ref<any>(null)
+const reportError = ref(false)
 
 const dashboardData = ref<DashboardData>({
   overall_score: 0,
@@ -157,20 +161,15 @@ async function loadDashboardData() {
 
 async function viewFullReport() {
   reportLoading.value = true
+  reportError.value = false
   try {
     const data = await fetchFullReport()
     reportData.value = data
     showReport.value = true
   } catch (error) {
     console.error('Failed to load report:', error)
-    // 使用模拟报告数据
-    reportData.value = {
-      sections: [
-        { title: '健康档案', content: `综合评分 ${dashboardData.value.overall_score} 分，压力指数 ${dashboardData.value.stress_score} 分。整体状态${dashboardData.value.risk_level === 'low' ? '良好' : dashboardData.value.risk_level === 'medium' ? '需关注' : '需干预'}。` },
-        { title: '行为任务进度', content: '本周完成 3 项微习惯任务，行动阶段稳步推进中。坚持打卡有助于巩固行为转变。' },
-        { title: '趋势与建议', content: dashboardData.value.recommendations.join('；') + '。持续保持健康习惯，你的每一步都在被记录。' }
-      ]
-    }
+    reportData.value = null
+    reportError.value = true
     showReport.value = true
   } finally {
     reportLoading.value = false

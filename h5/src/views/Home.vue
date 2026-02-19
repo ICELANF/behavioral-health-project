@@ -240,66 +240,18 @@
             <div class="metric-label">本周运动</div>
             <van-progress :percentage="Math.min(100, Math.round(healthData.exercise.weeklyMinutes / healthData.exercise.targetMinutes * 100))" stroke-width="4" color="#10b981" track-color="#e5e7eb" :show-pivot="false" />
           </div>
-          <div class="metric-card medication" @click="showMedPopup = true">
+          <div class="metric-card actions" @click="router.push('/tasks')">
             <div class="metric-bar" style="background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div>
-            <div class="metric-icon">💊</div>
-            <div class="metric-value">{{ healthData.medication.adherenceRate }}%</div>
-            <div class="metric-label">用药提醒</div>
-            <van-progress :percentage="healthData.medication.adherenceRate" stroke-width="4" :color="healthData.medication.adherenceRate >= 90 ? '#10b981' : '#f59e0b'" track-color="#e5e7eb" :show-pivot="false" />
+            <div class="metric-icon">✅</div>
+            <div class="metric-value">{{ microProgressRate }}%</div>
+            <div class="metric-label">行动完成</div>
+            <van-progress :percentage="microProgressRate" stroke-width="4"
+              :color="microProgressRate >= 80 ? '#10b981' : '#f59e0b'"
+              track-color="#e5e7eb" :show-pivot="false" />
           </div>
         </div>
       </div>
     </div>
-
-    <!-- 用药提醒弹出层 -->
-    <van-popup v-model:show="showMedPopup" position="bottom" round :style="{ height: '85%' }">
-      <div class="med-popup">
-        <div class="med-popup-header">
-          <h3>💊 用药提醒</h3>
-          <van-icon name="cross" @click="showMedPopup = false" />
-        </div>
-        <div class="med-popup-body">
-          <!-- 今日用药打卡 -->
-          <div class="med-section">
-            <h4>📋 今日用药打卡</h4>
-            <div v-for="med in medReminders" :key="med.id" class="med-item" :class="{taken: med.taken}" @click="toggleMedTaken(med)">
-              <div class="med-check-box" :class="{checked: med.taken}">
-                <van-icon v-if="med.taken" name="success" />
-              </div>
-              <div class="med-detail">
-                <div class="med-name">{{ med.name }} <span class="med-dosage">{{ med.dosage }}</span></div>
-                <div class="med-time">⏰ {{ med.time }} · {{ med.frequency }}</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 药物功能说明 -->
-          <div class="med-section">
-            <h4>💡 药物功能说明</h4>
-            <div v-for="med in medReminders" :key="'info-'+med.id" class="drug-info-card">
-              <div class="drug-header">
-                <span class="drug-name">{{ med.name }}</span>
-                <van-tag type="primary" size="small">{{ med.dosage }}</van-tag>
-              </div>
-              <div class="drug-freq">{{ med.frequency }}</div>
-              <div class="drug-note">{{ med.notes }}</div>
-            </div>
-          </div>
-
-          <!-- 注意事项 -->
-          <div class="med-section">
-            <h4>⚠️ 用药注意事项</h4>
-            <div v-for="(p, i) in medPrecautions" :key="i" class="precaution-item">
-              <div class="precaution-icon">{{ p.icon }}</div>
-              <div class="precaution-body">
-                <div class="precaution-title">{{ p.title }}</div>
-                <div class="precaution-desc">{{ p.desc }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </van-popup>
 
     <TabBar />
   </div>
@@ -380,16 +332,16 @@ let lastKnownGlucose = 0
 
 const healthData = reactive({
   bloodGlucose: { fasting: null as number | null, postprandial: null as number | null, trend: 'stable' as 'up' | 'down' | 'stable' },
-  weight: { current: 75.5, target: 70, trend: 'stable' as 'up' | 'down' | 'stable' },
+  weight: { current: null as number | null, target: 70, trend: 'stable' as 'up' | 'down' | 'stable' },
   exercise: { weeklyMinutes: 0, targetMinutes: 150, streak: 0 },
-  medication: { adherenceRate: 0, missedDoses: 0 },
 })
 
 async function refreshHealth() {
   try {
-    const [statusRes, progressRes] = await Promise.all([
+    const [statusRes, progressRes, weightRes] = await Promise.all([
       api.get('/api/v1/health/latest-status').catch(() => null),
       api.get('/api/v1/mp/progress/summary').catch(() => null),
+      api.get('/api/v1/mp/device/weight', { params: { limit: 1 } }).catch(() => null),
     ])
     const cg = (statusRes as any)?.current_glucose || 0
     const history: number[] = (statusRes as any)?.history || []
@@ -401,12 +353,18 @@ async function refreshHealth() {
     if (cg > 0) lastKnownGlucose = cg
     const recent = history.slice(-5)
     healthData.bloodGlucose = { fasting: cg > 0 ? cg : null, postprandial: recent.length ? Math.max(...recent) : null, trend }
-    const totalCompleted = (progressRes as any)?.total_completed || 0
+
+    // Weight from real device API
+    const weightRecords = (weightRes as any)?.records || []
+    if (weightRecords.length > 0) {
+      const wt = weightRecords[0]
+      healthData.weight = { current: wt.weight_kg, target: 70, trend: wt.trend || 'stable' }
+    }
+
+    // Exercise from progress summary
     const streakDays = (progressRes as any)?.streak_days || 0
     const completionRate = (progressRes as any)?.completion_rate || 0
-    healthData.weight = { current: +(75.5 - totalCompleted * 0.1).toFixed(1), target: 70, trend: totalCompleted > 3 ? 'down' : 'stable' }
     healthData.exercise = { weeklyMinutes: Math.round(completionRate * 150), targetMinutes: 150, streak: streakDays }
-    healthData.medication = { adherenceRate: Math.round(completionRate * 100) || 85, missedDoses: Math.max(0, 7 - totalCompleted) }
   } catch { /* 后端不可用时使用默认值 */ }
 }
 
@@ -419,26 +377,6 @@ async function loadDangerAlerts() {
 
 function goToDetail(_type: string) {
   router.push('/health-records')
-}
-
-// ---- 用药提醒 ----
-const showMedPopup = ref(false)
-const medReminders = ref([
-  { id: 1, name: '二甲双胍', dosage: '500mg', time: '08:00', frequency: '每日2次（早/晚餐后）', taken: false, notes: '餐后服用，避免空腹；如出现胃肠不适可随餐服用' },
-  { id: 2, name: '格列美脲', dosage: '2mg', time: '07:30', frequency: '每日1次（早餐前）', taken: true, notes: '早餐前15分钟服用；注意低血糖风险，随身携带糖果' },
-  { id: 3, name: '阿卡波糖', dosage: '50mg', time: '12:00', frequency: '每日3次（随餐）', taken: false, notes: '与第一口饭同时嚼服；可能引起腹胀、排气增多' },
-])
-const medPrecautions = [
-  { icon: '⏰', title: '按时服药', desc: '设定闹钟提醒，固定时间服药，不要随意更改服药时间' },
-  { icon: '🚫', title: '不可自行停药', desc: '即使血糖正常也不要自行停药或减量，需遵医嘱调整' },
-  { icon: '🍺', title: '避免饮酒', desc: '服药期间避免饮酒，酒精可能加重低血糖风险' },
-  { icon: '📋', title: '记录不良反应', desc: '如出现恶心、腹泻、头晕等不适，及时记录并告知医生' },
-  { icon: '💊', title: '勿与部分食物同服', desc: '避免与柚子汁同服；二甲双胍避免与含碘造影剂同用' },
-  { icon: '🔄', title: '定期复查', desc: '每1-3个月复查糖化血红蛋白和肝肾功能' },
-]
-function toggleMedTaken(med: typeof medReminders.value[0]) {
-  med.taken = !med.taken
-  if (med.taken) showToast({ message: `${med.name} 已打卡 ✓`, type: 'success' })
 }
 
 // ---- 定时刷新 ----
@@ -823,50 +761,4 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
   :deep(.van-progress) { margin-top: 8px; }
 }
 
-/* 用药提醒弹出层 */
-.med-popup {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-.med-popup-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 16px; border-bottom: 1px solid $border-color;
-  h3 { margin: 0; font-size: 18px; }
-}
-.med-popup-body {
-  flex: 1; overflow-y: auto; padding: 16px;
-}
-.med-section {
-  margin-bottom: 24px;
-  h4 { font-size: 15px; margin-bottom: 12px; }
-}
-.med-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px; background: #f9fafb; border-radius: 12px; margin-bottom: 10px;
-  &.taken { opacity: 0.6; }
-}
-.med-check-box {
-  width: 24px; height: 24px; border: 2px solid #d1d5db; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  &.checked { background: $success-color; border-color: $success-color; color: #fff; }
-}
-.med-detail { flex: 1; }
-.med-name { font-weight: 600; font-size: 15px; }
-.med-dosage { font-weight: 400; font-size: 13px; color: $text-color-secondary; margin-left: 6px; }
-.med-time { font-size: 12px; color: $text-color-secondary; margin-top: 4px; }
-.drug-info-card {
-  background: #eff6ff; border-radius: 12px; padding: 14px; margin-bottom: 10px;
-  border-left: 4px solid $primary-color;
-}
-.drug-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-.drug-name { font-weight: 600; font-size: 15px; }
-.drug-freq { font-size: 12px; color: $text-color-secondary; margin-bottom: 6px; }
-.drug-note { font-size: 13px; color: #4b5563; line-height: 1.6; }
-.precaution-item {
-  display: flex; gap: 12px; padding: 12px; background: #fffbeb; border-radius: 12px; margin-bottom: 10px;
-}
-.precaution-icon { font-size: 22px; flex-shrink: 0; }
-.precaution-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
-.precaution-desc { font-size: 13px; color: $text-color-secondary; line-height: 1.5; }
 </style>

@@ -102,18 +102,18 @@
     <!-- ═══ 社会证明 ═══ -->
     <div class="social-proof">
       <div class="proof-stat">
-        <strong>{{ userCount.toLocaleString() }}+</strong>
-        <span>人已在使用</span>
+        <strong>专业团队</strong>
+        <span>多学科健康教练</span>
       </div>
       <div class="proof-divider" />
       <div class="proof-stat">
-        <strong>92%</strong>
-        <span>用户坚持21天</span>
+        <strong>AI+人工</strong>
+        <span>双重健康支持</span>
       </div>
       <div class="proof-divider" />
       <div class="proof-stat">
-        <strong>4.8</strong>
-        <span>满意度评分</span>
+        <strong>持续陪伴</strong>
+        <span>每日行为引导</span>
       </div>
     </div>
 
@@ -147,7 +147,6 @@ const dailyUsed = ref(0)
 const assessmentStarted = ref(false)
 const assessmentProgress = ref(0)
 const showUpgradePrompt = ref(false)
-const userCount = ref(12847)
 
 const remaining = computed(() => Math.max(0, 3 - dailyUsed.value))
 
