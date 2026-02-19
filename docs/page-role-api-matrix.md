@@ -121,7 +121,7 @@
 
 | # | 路径 | 页面 | 可查看 | 可交互 | 后端API | 数据状态 |
 |---|------|------|--------|--------|---------|---------|
-| 1 | `/coach/workbench` | **教练工作台(飞轮)** | 4统计、左侧队列、右侧审核面板 | 筛选、选学员、审批/驳回/跳过(A/R/N)、编辑处方 | `GET /v1/coach/stats/today` `GET /v1/coach/review-queue` `POST /v1/coach/review/{id}/approve` `POST /v1/coach/review/{id}/reject` | ✅真实(无兜底) |
+| 1 | `/coach/workbench` | **教练工作台(飞轮)** | 4统计、左侧队列、右侧审核面板 | 筛选、选学员、审批/驳回/跳过(A/R/N)、编辑处方 | `GET /v1/coach/stats/today` `GET /v1/coach/review-queue` `POST /v1/coach/review/{id}/approve` `POST /v1/coach/review/{id}/reject` | ⚠mock兜底 |
 | 2 | `/coach-portal` | 教练门户首页 | 概览4卡、预警、学员、AI建议、工具箱、认证 | 处理预警、跟进学员、批准/修正/驳回AI建议、推送审核 | `GET /v1/coach/dashboard` `GET /v1/high-freq-questions/all` `GET /v1/push-recommendations` `GET /v1/alerts/coach` `PUT /v1/alerts/{id}/resolve` `GET /v1/coach/push-queue/stats` `GET /v1/coach/push-queue` `POST /v1/coach/push-queue/{id}/approve` `POST /v1/coach/push-queue/{id}/reject` `POST /v1/coach/push-queue/batch-approve` `POST /v1/coach/messages` `POST /v1/copilot/analyze` | ✅真实 |
 | 3 | `/coach-portal/students` | 待跟进学员 | 学员卡(头像/阶段/优先级/健康数据) | 查看测评、行为画像 | 无API调用 | ❌全mock |
 | 4 | `/coach-portal/ai-review` | AI建议审核 | 建议卡(类型/学员/AI建议) | 批准/修正/驳回 | `GET /v1/coach/dashboard` | ⚠部分mock |
@@ -143,7 +143,7 @@
 
 | # | 路径 | 页面 | 可查看 | 可交互 | 后端API | 数据状态 |
 |---|------|------|--------|--------|---------|---------|
-| 1 | `/expert/audit` | **审核工作台(飞轮)** | 5指标、左侧筛选、3标签(待审/回溯/规则) | 筛选、选Case→双签审核 | `GET /v1/expert/quality-metrics` `GET /v1/expert/audit-queue` `GET /v1/expert/agent-anomalies` `POST /v1/expert/audit/{id}/verdict` | ✅真实(无兜底) |
+| 1 | `/expert/audit` | **审核工作台(飞轮)** | 5指标、左侧筛选、3标签(待审/回溯/规则) | 筛选、选Case→双签审核 | `GET /v1/expert/quality-metrics` `GET /v1/expert/audit-queue` `GET /v1/expert/agent-anomalies` `POST /v1/expert/audit/{id}/verdict` | ⚠mock兜底 |
 | 2 | `/expert-portal` | 督导门户首页 | 概览4卡、晋级审核列表 | 查看申请 | 无API调用 | ❌全mock |
 | 3 | `/expert-workbench` | 专家审核工作台(全屏) | 风险筛选+患者队列+3标签 | 筛选、选患者→双签/回溯 | `GET /v1/agent/pending-reviews` | ✅真实 |
 | 4 | `/expert/my-agents` | 我的Agent | Agent表格+路由测试 | 创建/编辑/删除/开关/测试路由 | `GET /v1/tenants/mine` `GET /v1/tenants/{tid}/my-agents` `POST .../my-agents` `PUT .../my-agents/{aid}` `POST .../toggle` `DELETE .../my-agents/{aid}` `POST .../test-routing` | ✅真实 |
@@ -159,7 +159,7 @@
 
 | # | 路径 | 页面 | 可查看 | 可交互 | 后端API | 数据状态 |
 |---|------|------|--------|--------|---------|---------|
-| 1 | `/admin/command-center` | **指挥中心(飞轮)** | 告警横幅、4KPI、渠道、漏斗、Agent、教练排名、安全 | 关闭告警、5分钟轮询 | `GET /v1/admin/kpi/realtime` `GET /v1/admin/channels/health` `GET /v1/admin/funnel` `GET /v1/admin/agents/monitor` `GET /v1/admin/agents/performance` `GET /v1/admin/coaches/ranking` `GET /v1/admin/safety/24h` `GET /v1/admin/alerts/active` `POST /v1/admin/alerts/{id}/dismiss` | ✅真实(无兜底) |
+| 1 | `/admin/command-center` | **指挥中心(飞轮)** | 告警横幅、4KPI、渠道、漏斗、Agent、教练排名、安全 | 关闭告警、5分钟轮询 | `GET /v1/admin/kpi/realtime` `GET /v1/admin/channels/health` `GET /v1/admin/funnel` `GET /v1/admin/agents/monitor` `GET /v1/admin/agents/performance` `GET /v1/admin/coaches/ranking` `GET /v1/admin/safety/24h` `GET /v1/admin/alerts/active` `POST /v1/admin/alerts/{id}/dismiss` | ⚠mock兜底 |
 | 2 | `/admin/user-management` | 用户管理 | 4统计+用户表+筛选 | 批量导入、CRUD用户、停用 | `GET /v1/admin/users` `GET /v1/admin/stats` `POST /v1/admin/users` `PUT /v1/admin/users/{id}` `PUT /v1/admin/users/{id}/status` `DELETE /v1/admin/users/{id}` | ✅真实 |
 | 3 | `/admin/analytics` | 数据分析 | 4KPI+ECharts(增长/角色/阶段/风险/排行/挑战) | 刷新 | `GET /v1/analytics/admin/overview` `GET .../user-growth` `GET .../role-distribution` `GET .../stage-distribution` `GET .../risk-distribution` `GET .../coach-leaderboard` `GET .../challenge-effectiveness` | ⚠mock兜底 |
 | 4 | `/admin/batch-ingestion` | 批量知识灌注 | 上传区(范围/领域/租户)、任务历史 | 上传→导入 | `POST /v1/knowledge/batch-upload` `GET /v1/knowledge/batch-jobs` | ✅真实 |
@@ -203,8 +203,8 @@
 
 | 状态 | 含义 | 页面数 |
 |------|------|--------|
-| ✅真实 | 调用真实后端API | ~65 |
-| ⚠mock兜底 | 调用API,失败时降级为mock | ~18 |
+| ✅真实 | 调用真实后端API | ~62 |
+| ⚠mock兜底 | 调用API,失败时降级为mock | ~21 |
 | ❌全mock | 硬编码数据,无API调用 | ~25 |
 | 静态 | 纯展示页,无需数据 | ~8 |
 
