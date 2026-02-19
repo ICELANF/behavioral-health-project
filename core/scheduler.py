@@ -7,7 +7,7 @@ Scheduler - 定时任务调度
 - reminder_check: 每分钟查询到期提醒并推送
 - expired_task_cleanup: 每天23:59将过期未完成任务标记为 expired
 """
-from datetime import datetime
+from datetime import datetime, date
 from loguru import logger
 from core.redis_lock import with_redis_lock
 
@@ -494,6 +494,185 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
         replace_existing=True,
     )
 
+    # ── R2 处方→每日任务生成 (06:15, 错开 daily_task_generation 06:00) ──
+    try:
+        from api.r2_scheduler_agent import run_daily_task_generation
+        from core.database import AsyncSessionLocal as _R2Async
+
+        @with_redis_lock("scheduler:prescription_task_generation", ttl=600)
+        async def job_prescription_task_generation():
+            async with _R2Async() as db:
+                result = await run_daily_task_generation(db)
+                logger.info(f"[Scheduler] R2 处方任务生成: {result}")
+
+        scheduler.add_job(
+            job_prescription_task_generation,
+            CronTrigger(hour=6, minute=15),
+            id="prescription_task_generation",
+            name="R2处方→每日任务生成",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] R2 prescription_task_generation 注册失败: {e}")
+
+    # ── Route 9: 信任分下降 + 参与度预警 (每天22:00) ──
+    try:
+        from core.database import AsyncSessionLocal as _R9Async
+
+        @with_redis_lock("scheduler:trust_engagement_monitor", ttl=600)
+        async def job_trust_engagement_monitor():
+            from sqlalchemy import text as sa_text
+            async with _R9Async() as db:
+                # Users with trust_score < 0.3 AND inactive 3+ days AND have active Rx
+                stmt = sa_text("""
+                    SELECT u.id AS user_id, u.trust_score,
+                           us.current_streak, us.last_checkin_date,
+                           (u.profile->>'coach_id')::int AS coach_id
+                    FROM users u
+                    JOIN user_streaks us ON us.user_id = u.id
+                    WHERE u.is_active = true
+                      AND u.trust_score < 0.3
+                      AND us.last_checkin_date < CURRENT_DATE - INTERVAL '3 days'
+                      AND EXISTS (
+                          SELECT 1 FROM behavior_prescriptions bp
+                          WHERE bp.user_id = u.id AND bp.status = 'active'
+                      )
+                """)
+                try:
+                    rows = (await db.execute(stmt)).mappings().all()
+                except Exception:
+                    rows = []
+
+                flagged = 0
+                for row in rows:
+                    uid, coach_id = row["user_id"], row["coach_id"]
+                    trust = row["trust_score"] or 0.0
+                    days = (date.today() - row["last_checkin_date"]).days if row["last_checkin_date"] else 0
+
+                    # Notify user
+                    try:
+                        await db.execute(sa_text("""
+                            INSERT INTO notifications
+                              (user_id, title, body, type, priority, is_read, created_at)
+                            VALUES (:uid, '我们注意到了变化',
+                              '最近几天参与度有所下降，没关系，随时可以回来，我们在这里支持您。',
+                              'trust_decline', 'normal', false, NOW())
+                        """), {"uid": uid})
+                    except Exception:
+                        pass
+
+                    # Enqueue coach alert (if coach assigned)
+                    if coach_id:
+                        try:
+                            await db.execute(sa_text("""
+                                INSERT INTO coach_push_queue
+                                  (coach_id, student_id, source_type, title, content,
+                                   priority, status, created_at)
+                                VALUES (:cid, :uid, 'trust_decline',
+                                  '学员参与度下降预警',
+                                  :content, 'high', 'pending', NOW())
+                            """), {
+                                "cid": coach_id, "uid": uid,
+                                "content": f"信任分 {trust:.2f}，已 {days} 天未打卡，建议主动关怀",
+                            })
+                            flagged += 1
+                        except Exception:
+                            pass
+
+                if rows:
+                    await db.commit()
+                logger.info(f"[Scheduler] 信任预警: {len(rows)} 低信任用户, {flagged} 教练通知")
+
+        scheduler.add_job(
+            job_trust_engagement_monitor,
+            CronTrigger(hour=22, minute=0),
+            id="trust_engagement_monitor",
+            name="信任分下降+参与度预警",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] trust_engagement_monitor 注册失败: {e}")
+
+    # ── Route 10: 教练自动升级预警 (每天08:00) ──
+    try:
+        from core.database import AsyncSessionLocal as _R10Async
+
+        @with_redis_lock("scheduler:coach_auto_escalation", ttl=600)
+        async def job_coach_auto_escalation():
+            from sqlalchemy import text as sa_text
+            async with _R10Async() as db:
+                stmt = sa_text("""
+                    SELECT u.id AS user_id,
+                           (u.profile->>'coach_id')::int AS coach_id,
+                           us.last_checkin_date, u.trust_score,
+                           COUNT(bp.id) AS rx_count
+                    FROM users u
+                    JOIN user_streaks us ON us.user_id = u.id
+                    JOIN behavior_prescriptions bp
+                        ON bp.user_id = u.id AND bp.status = 'active'
+                    WHERE u.is_active = true
+                      AND u.profile->>'coach_id' IS NOT NULL
+                      AND us.last_checkin_date < CURRENT_DATE - INTERVAL '7 days'
+                    GROUP BY u.id, us.last_checkin_date, u.trust_score
+                """)
+                try:
+                    rows = (await db.execute(stmt)).mappings().all()
+                except Exception:
+                    rows = []
+
+                escalated = 0
+                for row in rows:
+                    uid, cid = row["user_id"], row["coach_id"]
+                    if not cid:
+                        continue
+                    days = (date.today() - row["last_checkin_date"]).days if row["last_checkin_date"] else 999
+                    trust = row["trust_score"] or 0.0
+
+                    # Dedup: skip if pending escalation exists within 7 days
+                    try:
+                        dup = await db.execute(sa_text("""
+                            SELECT 1 FROM coach_push_queue
+                            WHERE student_id = :uid AND source_type = 'auto_escalation'
+                              AND status = 'pending'
+                              AND created_at > CURRENT_DATE - INTERVAL '7 days'
+                            LIMIT 1
+                        """), {"uid": uid})
+                        if dup.first():
+                            continue
+                    except Exception:
+                        pass
+
+                    try:
+                        await db.execute(sa_text("""
+                            INSERT INTO coach_push_queue
+                              (coach_id, student_id, source_type, title, content,
+                               priority, status, created_at)
+                            VALUES (:cid, :uid, 'auto_escalation',
+                              :title, :content, 'high', 'pending', NOW())
+                        """), {
+                            "cid": cid, "uid": uid,
+                            "title": f"学员失联预警 ({days}天未打卡)",
+                            "content": f"已 {days} 天未打卡，信任分 {trust:.2f}，"
+                                       f"有 {row['rx_count']} 个活跃处方未执行，建议主动联系。",
+                        })
+                        escalated += 1
+                    except Exception:
+                        pass
+
+                if escalated:
+                    await db.commit()
+                logger.info(f"[Scheduler] 教练自动升级: {len(rows)} 候选, {escalated} 升级")
+
+        scheduler.add_job(
+            job_coach_auto_escalation,
+            CronTrigger(hour=8, minute=0),
+            id="coach_auto_escalation",
+            name="教练自动升级预警",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] coach_auto_escalation 注册失败: {e}")
+
     # ── R7 通知定时任务 (07:15/10:15/20:15, 错开 program_push 整点) ──
     try:
         from api.r7_notification_agent import register_notification_jobs
@@ -522,5 +701,5 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
     except Exception as e:
         logger.warning(f"[Scheduler] R8 context cleanup 注册失败: {e}")
 
-    logger.info("[Scheduler] 定时任务调度器已配置 (含V004方案引擎+V005安全日报+Phase4指标聚合+CR15治理巡检+CR28同道生命周期+R7通知+R8上下文)")
+    logger.info("[Scheduler] 定时任务调度器已配置 (含V004+V005+Phase4+CR15+CR28+R2处方+R9信任预警+R10教练升级+R7通知+R8上下文)")
     return scheduler

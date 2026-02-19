@@ -37,6 +37,12 @@ MORNING_TEMPLATES = {
 EVENING_TEMPLATE = "今天还有{remaining}个任务没完成。没关系，能做多少算多少，明天继续 🌙"
 RECONNECT_TEMPLATE = "好久不见！昨天没看到您的打卡记录，一切都好吗？随时可以回来，我们在这里 🤗"
 
+RECONNECT_STREAK_TEMPLATES = {
+    "long":   "您之前连续{streak}天打卡，这份坚持非常了不起。昨天没看到您，一切都好吗？休息也是照顾自己的方式，我们随时等您回来 🤗",
+    "medium": "连续{streak}天的记录中断了。没关系，每一天都是新的开始。今天回来试试？哪怕只做一件小事也好 💪",
+    "short":  RECONNECT_TEMPLATE,  # fallback to original
+}
+
 MILESTONE_MESSAGES = {
     7: "整整一周！连续7天照顾自己，您已经迈出了最难的那一步 🔥",
     14: "两周了！这不是运气，这是您的决心在发光 ⭐",
@@ -136,14 +142,22 @@ async def send_evening_reminders(db: AsyncSession):
 async def send_reconnect_reminders(db: AsyncSession):
     yesterday = date.today() - timedelta(days=1)
     stmt = text("""
-        SELECT us.user_id FROM user_streaks us
+        SELECT us.user_id, us.current_streak
+        FROM user_streaks us
         WHERE us.current_streak >= 3 AND us.last_checkin_date < :yesterday
     """)
     users = (await db.execute(stmt, {"yesterday": yesterday})).mappings().all()
 
     sent = 0
     for u in users:
-        await _save_notification(db, u["user_id"], "想念您的打卡", RECONNECT_TEMPLATE, "reconnect")
+        streak = u["current_streak"] or 0
+        if streak >= 14:
+            body = RECONNECT_STREAK_TEMPLATES["long"].format(streak=streak)
+        elif streak >= 7:
+            body = RECONNECT_STREAK_TEMPLATES["medium"].format(streak=streak)
+        else:
+            body = RECONNECT_STREAK_TEMPLATES["short"]
+        await _save_notification(db, u["user_id"], "想念您的打卡", body, "reconnect")
         sent += 1
 
     await db.commit()
