@@ -189,6 +189,11 @@ function inputModeIcon(mode: string) {
 
 function handleAction(action: TodayAction) {
   if (action.done) return
+  // 营养拍照任务 → 直接跳转食物识别页 (拍照后自动打卡)
+  if (action.inputMode === 'photo' && action.tag === '营养') {
+    router.push({ path: '/food-recognition', query: { taskId: action.id } })
+    return
+  }
   // 根据inputMode跳转到对应的多模态入口
   switch (action.inputMode) {
     case 'photo':

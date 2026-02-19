@@ -110,6 +110,17 @@
           </div>
         </div>
 
+        <!-- 任务自动完成横幅 -->
+        <Transition name="task-banner">
+          <div v-if="taskCompleted" class="task-complete-banner">
+            <van-icon name="checked" size="20" color="#fff" />
+            <div class="task-complete-info">
+              <div class="task-complete-title">今日营养任务已自动完成!</div>
+              <div class="task-complete-detail">+{{ taskInfo?.points_earned || 10 }}积分 · 连续{{ taskInfo?.streak || 1 }}天</div>
+            </div>
+          </div>
+        </Transition>
+
         <!-- 再拍一张 -->
         <van-button
           type="primary"
@@ -215,6 +226,10 @@ const analyzing = ref(false)
 const previewUrl = ref('')
 const result = ref<any>(null)
 
+// 任务自动完成
+const taskCompleted = ref(false)
+const taskInfo = ref<any>(null)
+
 // 历史
 const loadingHistory = ref(false)
 const history = ref<any[]>([])
@@ -251,6 +266,11 @@ async function onFileSelected(e: Event) {
       timeout: 120000,
     })
     result.value = res
+    // 检查是否自动完成了营养任务
+    if (res.task_completed) {
+      taskCompleted.value = true
+      taskInfo.value = res.task_info
+    }
     showToast({ message: '分析完成', type: 'success' })
     // 刷新历史
     historyOffset.value = 0
@@ -269,6 +289,8 @@ async function onFileSelected(e: Event) {
 function resetCapture() {
   result.value = null
   previewUrl.value = ''
+  taskCompleted.value = false
+  taskInfo.value = null
 }
 
 async function loadHistory(reset = false) {
@@ -521,6 +543,38 @@ onMounted(() => {
     color: #ea580c;
     font-weight: 500;
   }
+}
+
+/* 任务自动完成横幅 */
+.task-complete-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 12px;
+  color: #fff;
+}
+
+.task-complete-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.task-complete-detail {
+  font-size: 12px;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.task-banner-enter-active {
+  animation: bannerSlideDown 0.4s ease-out;
+}
+
+@keyframes bannerSlideDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* 历史记录 */
