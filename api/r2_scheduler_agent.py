@@ -141,7 +141,7 @@ async def generate_daily_tasks_for_user(
                     "rx_id": None, "done": False, "done_time": None,
                 })
     except Exception:
-        pass  # monitoring_plans 表可能不存在
+        await db.rollback()  # monitoring_plans 表可能不存在, 回滚脏事务
 
     # ── Step 3: 排序并写入 ──
     tasks.sort(key=lambda t: _time_sort_key(t.get("time_hint", "")))
@@ -188,16 +188,17 @@ async def run_daily_task_generation(db: AsyncSession):
         stmt = text("""
             SELECT DISTINCT bp.user_id
             FROM behavior_prescriptions bp
-            JOIN users u ON u.id = bp.user_id
+            JOIN users u ON u.id = bp.user_id AND u.is_active = true
             WHERE bp.status = 'active'
               AND (bp.expires_at IS NULL OR bp.expires_at > CURRENT_DATE)
-              AND u.role_level >= 2
+              AND u.role::text NOT IN ('OBSERVER')
         """)
         result = await db.execute(stmt)
         user_ids = [row[0] for row in result.fetchall()]
     except Exception as e:
         logger.warning(f"查询活跃处方用户失败: {e}")
         try:
+            await db.rollback()
             stmt2 = text("SELECT DISTINCT user_id FROM behavior_prescriptions WHERE status = 'active'")
             result = await db.execute(stmt2)
             user_ids = [row[0] for row in result.fetchall()]
