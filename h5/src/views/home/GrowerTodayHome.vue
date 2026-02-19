@@ -128,13 +128,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '@/api/index'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 // ── 用户状态 ──
-const userName = ref('张三')
-const streakDays = ref(7)
-const coachTip = ref('昨天的步数比前天多了800步，今天试试走一个新路线？')
+const userName = ref(userStore.name || '用户')
+const streakDays = ref(0)
+const coachTip = ref('')
 
 // ── 今日行动 ──
 interface TodayAction {
@@ -150,33 +153,7 @@ interface TodayAction {
   doneTime?: string
 }
 
-const todayActions = ref<TodayAction[]>([
-  {
-    id: 'a1', order: 1, title: '记录早餐',
-    tag: '营养', tagColor: '#f59e0b', timeHint: '7:00-9:00',
-    inputMode: 'photo', quickLabel: '拍照', done: false
-  },
-  {
-    id: 'a2', order: 2, title: '晨起血糖测量',
-    tag: '监测', tagColor: '#3b82f6', timeHint: '空腹',
-    inputMode: 'device', quickLabel: '记录', done: false
-  },
-  {
-    id: 'a3', order: 3, title: '八段锦第三式 · 调理脾胃须单举',
-    tag: '运动', tagColor: '#10b981', timeHint: '10分钟',
-    inputMode: 'voice', quickLabel: '开始', done: false
-  },
-  {
-    id: 'a4', order: 4, title: '记录午餐',
-    tag: '营养', tagColor: '#f59e0b', timeHint: '12:00-13:00',
-    inputMode: 'photo', quickLabel: '拍照', done: false
-  },
-  {
-    id: 'a5', order: 5, title: '下午散步15分钟',
-    tag: '运动', tagColor: '#10b981', timeHint: '14:00-16:00',
-    inputMode: 'device', quickLabel: '打卡', done: false
-  },
-])
+const todayActions = ref<TodayAction[]>([])
 
 const doneCount = computed(() => todayActions.value.filter(a => a.done).length)
 const totalCount = computed(() => todayActions.value.length)
@@ -198,15 +175,7 @@ const greetingText = computed(() => {
 })
 
 // ── 本周 ──
-const weekDays = ref([
-  { label: '一', status: 'full' },
-  { label: '二', status: 'full' },
-  { label: '三', status: 'partial' },
-  { label: '四', status: 'full' },
-  { label: '五', status: 'today' },
-  { label: '六', status: 'future' },
-  { label: '日', status: 'future' },
-])
+const weekDays = ref<{ label: string; status: string }[]>([])
 
 // ── 打卡交互 ──
 const showCheckinToast = ref(false)
@@ -236,21 +205,28 @@ function handleAction(action: TodayAction) {
   }
 }
 
-function quickCheckin(action: TodayAction) {
+async function quickCheckin(action: TodayAction) {
+  // 即时乐观更新
   action.done = true
   action.doneTime = new Date().toTimeString().slice(0, 5)
-  
-  // 即时反馈
+
+  // 默认反馈
   const emojis = ['🎉', '💪', '✨', '🔥', '👏']
   const messages = ['太棒了！', '做到了！', '继续保持！', '又进一步！', '好样的！']
   const idx = Math.floor(Math.random() * emojis.length)
   checkinEmoji.value = emojis[idx]
   checkinMessage.value = messages[idx]
+
+  // 调用后端 API
+  try {
+    const res: any = await api.post(`/api/v1/daily-tasks/${action.id}/checkin`)
+    if (res.emoji) checkinEmoji.value = res.emoji
+    if (res.message) checkinMessage.value = res.message
+    if (res.streak_days) streakDays.value = res.streak_days
+  } catch { /* 乐观更新已生效 */ }
+
   showCheckinToast.value = true
   setTimeout(() => showCheckinToast.value = false, 2000)
-  
-  // TODO: 调用后端API记录打卡
-  // await checkinApi.complete(action.id)
 }
 
 function openChat() {
@@ -258,8 +234,45 @@ function openChat() {
 }
 
 onMounted(async () => {
-  // const tasks = await dailyTaskApi.getToday()
-  // todayActions.value = tasks.map(...)
+  // 并行加载今日任务、教练提示、本周一览
+  const [tasksRes, tipRes, weekRes] = await Promise.allSettled([
+    api.get('/api/v1/daily-tasks/today'),
+    api.get('/api/v1/coach-tip/today'),
+    api.get('/api/v1/weekly-summary'),
+  ])
+
+  // 今日任务
+  if (tasksRes.status === 'fulfilled') {
+    const data = tasksRes.value as any
+    todayActions.value = (data.tasks || []).map((t: any) => ({
+      id: t.id,
+      order: t.order,
+      title: t.title,
+      tag: t.tag,
+      tagColor: t.tag_color,
+      timeHint: t.time_hint,
+      inputMode: t.input_mode,
+      quickLabel: t.quick_label,
+      done: t.done,
+      doneTime: t.done_time,
+    }))
+    streakDays.value = data.streak_days || 0
+  }
+
+  // 教练提示
+  if (tipRes.status === 'fulfilled') {
+    const data = tipRes.value as any
+    coachTip.value = data.tip || ''
+  }
+
+  // 本周一览
+  if (weekRes.status === 'fulfilled') {
+    const data = weekRes.value as any
+    weekDays.value = (data.days || []).map((d: any) => ({
+      label: d.label,
+      status: d.status,
+    }))
+  }
 })
 </script>
 

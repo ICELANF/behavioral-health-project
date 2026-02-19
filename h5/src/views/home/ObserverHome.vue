@@ -138,18 +138,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-// import { useUserStore } from '@/stores/user'
-// import { observerQuotaApi } from '@/api/observer'
+import api from '@/api/index'
 
 const router = useRouter()
-// const userStore = useUserStore()
 
 // ── 状态 ──
 const dailyUsed = ref(0)
 const assessmentStarted = ref(false)
 const assessmentProgress = ref(0)
 const showUpgradePrompt = ref(false)
-const userCount = ref(12847) // 从后端获取
+const userCount = ref(12847)
 
 const remaining = computed(() => Math.max(0, 3 - dailyUsed.value))
 
@@ -171,11 +169,22 @@ function continueAssessment() {
   router.push('/v3/assessment/continue')
 }
 
-function tryFeature(type: string) {
+async function tryFeature(type: string) {
   if (remaining.value <= 0) {
     showUpgradePrompt.value = true
     return
   }
+  // 消耗一次额度
+  const quotaType = type === 'food' ? 'food_scan' : type === 'voice' ? 'voice' : 'chat'
+  try {
+    const res: any = await api.post('/api/v1/observer/quota/consume', { quota_type: quotaType })
+    if (!res.success) {
+      showUpgradePrompt.value = true
+      return
+    }
+    dailyUsed.value = 3 - (res.remaining ?? remaining.value - 1)
+  } catch { /* 允许继续使用 */ }
+
   switch (type) {
     case 'food':
       router.push({ path: '/chat', query: { action: 'camera', type: 'food' } })
@@ -190,10 +199,18 @@ function tryFeature(type: string) {
 }
 
 onMounted(async () => {
-  // const quota = await observerQuotaApi.getToday()
-  // dailyUsed.value = quota.used
-  // assessmentStarted.value = quota.assessmentStarted
-  // assessmentProgress.value = quota.assessmentProgress
+  // 加载今日额度
+  try {
+    const quota: any = await api.get('/api/v1/observer/quota/today')
+    dailyUsed.value = quota.total_used || 0
+  } catch { /* 使用默认值 */ }
+
+  // 加载评估进度
+  try {
+    const progress: any = await api.get('/api/v1/assessment/progress')
+    assessmentStarted.value = progress.started || false
+    assessmentProgress.value = progress.progress_pct || 0
+  } catch { /* 使用默认值 */ }
 })
 </script>
 

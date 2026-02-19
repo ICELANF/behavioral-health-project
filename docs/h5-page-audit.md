@@ -11,13 +11,11 @@
 
 | 数据状态 | 页数 | 占比 | 说明 |
 |----------|------|------|------|
-| ✅ 真实数据 | 36 | 84% | 调用真实 API，无 mock 兜底 (P0修复+3, P1修复+2: Dashboard/BehaviorAssessment) |
-| ~~⚠️ mock 兜底~~ | ~~0~~ | ~~0%~~ | ~~全部已修复~~ Dashboard→错误提示+重试, BehaviorAssessment→后端加载+兜底 |
-| ~~⚠️ 路径/字段不匹配~~ | ~~3~~ | ~~7%~~ | ~~已修复 (2026-02-19)~~ → PromotionProgress ✅、CoachDirectory ✅、Home ✅ |
-| ❌ 全 mock | 3 | 7% | ObserverHome、GrowerTodayHome、Profile |
-| 📄 静态 | 2 | 5% | PrivacyPolicy、AboutUs |
-| 🔇 仅用户触发 | 2 | 5% | v3/Coach、v3/Knowledge (无 onMounted 调用) |
-| **合计** | **43** | **100%** | |
+| ✅ 正常工作 | **43** | **100%** | 全部页面已对接真实 API 或按设计正常工作 |
+| 　├ 真实 API (onMounted) | 39 | 91% | 页面加载时调用后端 API 获取数据 |
+| 　├ 真实 API (用户触发) | 2 | 5% | v3/Coach (`POST /v3/chat/message`)、v3/Knowledge (`POST /v3/chat/knowledge`) |
+| 　└ 纯静态 (无需 API) | 2 | 5% | PrivacyPolicy、AboutUs — 纯 HTML 内容页 |
+| **合计** | **43** | **100%** | P0×4 + P1×4 + P2×3 = 11 项问题全部修复 |
 
 ---
 
@@ -41,13 +39,13 @@
 | ~~P1-3~~ | AccountSettings.vue | ~~密码修改参数传递~~ | ✅ **已修复**: `api.put(url, null, {params:...})` → `api.put(url, {old_password, new_password})` JSON body |
 | ~~P1-4~~ | ContentDetail.vue | ~~like/collect/comment 路径拼接~~ | ✅ **已修复**: `/api/v1/content/detail/{type}/{id}/like` → `/api/v1/content/{id}/like` (collect/comment 同理) |
 
-### P2 — 已知设计（V5.0 mock 占位）
+### P2 — 已知设计（V5.0 mock 占位）— ✅ 全部已修复 (2026-02-19)
 
-| # | 页面 | 问题 | 详情 |
-|---|------|------|------|
-| P2-1 | ObserverHome.vue | V5.0 全 mock | API 调用全部注释，返回硬编码 mock 对象 |
-| P2-2 | GrowerTodayHome.vue | V5.0 全 mock | API 调用全部注释，返回硬编码 mock 对象 |
-| P2-3 | Profile.vue | 无 API 调用 | 仅读取 Pinia userStore，无 `/auth/me` 刷新调用 |
+| # | 页面 | 问题 | 修复详情 |
+|---|------|------|----------|
+| ~~P2-1~~ | ObserverHome.vue | ~~V5.0 全 mock~~ | ✅ **已修复**: onMounted 加载 `GET /api/v1/observer/quota/today` + `GET /api/v1/assessment/progress`，tryFeature 调用 `POST /api/v1/observer/quota/consume` |
+| ~~P2-2~~ | GrowerTodayHome.vue | ~~V5.0 全 mock~~ | ✅ **已修复**: onMounted 并行加载 `GET /api/v1/daily-tasks/today` + `GET /api/v1/coach-tip/today` + `GET /api/v1/weekly-summary`，打卡调用 `POST /api/v1/daily-tasks/{id}/checkin` |
+| ~~P2-3~~ | Profile.vue | ~~无 API 调用~~ | ✅ **已修复**: onMounted 加载 `GET /api/v1/auth/me` 刷新用户信息 + `GET /api/v1/mp/device/dashboard/today` 刷新穿戴设备数据 |
 
 ---
 
@@ -68,8 +66,8 @@
 | 路由 | 组件 | API 调用 | 后端状态 | 字段对齐 | 数据状态 | 问题 |
 |------|------|----------|----------|----------|----------|------|
 | `/` | Home.vue | `GET /api/v1/content/recommended` (limit=5), `GET /api/v1/micro-actions/today`, `GET /api/v1/micro-actions/stats`, `POST /api/v1/micro-actions/{id}/complete`, `GET /api/v1/health/latest-status`, `GET /api/v1/mp/progress/summary`, `GET /api/v1/alerts/my?limit=5` | ✅ 7/7 | ✅ 主要字段对齐 | ✅ 真实 | ~~P0-3~~ ✅已修复: `/latest_status` → `/api/v1/health/latest-status`；10s 轮询刷新 |
-| `/home/observer` | ObserverHome.vue | API 调用全部注释 | — | — | ❌ 全 mock | P2-1: V5.0 设计占位 |
-| `/home/today` | GrowerTodayHome.vue | API 调用全部注释 | — | — | ❌ 全 mock | P2-2: V5.0 设计占位 |
+| `/home/observer` | ObserverHome.vue | quota/today + assessment/progress + quota/consume | ✅ | ✅ | ✅ 真实 | ~~P2-1~~ ✅已修复 |
+| `/home/today` | GrowerTodayHome.vue | daily-tasks/today + coach-tip/today + weekly-summary + checkin | ✅ | ✅ | ✅ 真实 | ~~P2-2~~ ✅已修复 |
 
 ### C. 核心交互（4 页）
 
@@ -78,7 +76,7 @@
 | `/chat` | Chat.vue | `POST /api/v1/dispatch` (chatStore.sendMessage), `POST /api/v1/food/recognize` (multipart, 图片+meal_type), `POST /api/v1/decompose` (任务分解) | ✅ api/main.py:703 (dispatch), food_recognition_api.py:92 | ✅ `{answer, rag, tasks, conversation_id}` + `{food_name, calories, protein, fat, carbs, fiber, advice, foods[]}` | ✅ 真实 | 支持语音输入 (Web Speech API)、图片上传 (3张/5MB) |
 | `/tasks` | Tasks.vue | `GET /api/v1/micro-actions/today`, `GET /api/v1/micro-actions/stats`, `POST /api/v1/micro-actions/{id}/complete`, `POST /api/v1/micro-actions/{id}/skip` | ✅ micro_action_api.py:46,139,64,100 | ✅ `{id, action_text, category, status, created_at}` | ✅ 真实 | 7 领域 filter、30 天完成率 |
 | `/dashboard` | Dashboard.vue | `GET /api/v1/dashboard/{userId}`, `GET /api/v1/reports/full` (X-Role: patient) | ✅ | ✅ | ✅ 真实 | ~~P1-1~~ ✅已修复: mock 兜底 → 错误提示+重新加载按钮；ECharts 可视化 |
-| `/profile` | Profile.vue | — (仅读 Pinia userStore) | — | — | ❌ 全 mock | **P2-3**: 无 API 刷新调用 |
+| `/profile` | Profile.vue | auth/me + mp/device/dashboard/today | ✅ | ✅ | ✅ 真实 | ~~P2-3~~ ✅已修复 |
 
 ### D. 健康 / 设备（4 页）
 

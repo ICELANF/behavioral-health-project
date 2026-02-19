@@ -95,13 +95,38 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { showConfirmDialog } from 'vant'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import api from '@/api/index'
 import TabBar from '@/components/common/TabBar.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+onMounted(async () => {
+  // 刷新用户信息
+  try {
+    const me: any = await api.get('/api/v1/auth/me')
+    if (me.username) userStore.name = me.username
+    if (me.id) userStore.userId = me.id
+    if (me.efficacy_score != null) userStore.efficacyScore = me.efficacy_score
+  } catch { /* 使用缓存 */ }
+
+  // 加载穿戴设备摘要
+  try {
+    const device: any = await api.get('/api/v1/mp/device/dashboard/today')
+    if (device) {
+      userStore.wearableData = {
+        hr: device.heart_rate ?? device.hr,
+        steps: device.steps,
+        sleep_hours: device.sleep_hours,
+        hrv: device.hrv,
+      }
+    }
+  } catch { /* 使用缓存 */ }
+})
 
 function goTo(name: string) {
   router.push({ name })
