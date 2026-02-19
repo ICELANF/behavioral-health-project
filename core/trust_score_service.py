@@ -12,10 +12,97 @@ trust_score = 对话深度(25%) + 主动回访率(20%) + 话题开放度(15%)
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from core.models import (
     JourneyState, TrustScoreLog, BehavioralProfile, User,
 )
+
+# ── 情绪关键词 (中文) ──────────────────────────────
+_EMOTION_KEYWORDS = {
+    "开心", "高兴", "快乐", "幸福", "满足", "感恩", "欣慰", "放松",
+    "难过", "伤心", "焦虑", "紧张", "压力", "担心", "害怕", "生气",
+    "烦躁", "失落", "委屈", "孤独", "疲惫", "无聊", "郁闷", "沮丧",
+    "感动", "惊喜", "期待", "自豪", "安心", "舒服", "痛苦", "不安",
+}
+
+
+def extract_trust_signals_from_checkins(
+    db: Session, user_id: int, days: int = 7,
+) -> Dict[str, float]:
+    """
+    从用户近 N 天的打卡数据中提取 6 个信任信号 (启发式，非 AI)。
+
+    Returns dict with keys matching TRUST_SIGNALS:
+      dialog_depth, proactive_return_rate, topic_openness,
+      emotion_expression, autonomous_info_sharing, curiosity_expression
+    """
+    # 查询近 N 天的打卡记录 + 对应的 daily_task
+    rows = db.execute(text("""
+        SELECT tc.note, tc.photo_url, tc.voice_url, tc.value,
+               tc.checked_at::date AS checkin_date,
+               dt.tag
+        FROM task_checkins tc
+        JOIN daily_tasks dt ON dt.id = tc.task_id
+        WHERE tc.user_id = :uid
+          AND tc.checked_at >= NOW() - INTERVAL ':days days'
+        ORDER BY tc.checked_at
+    """.replace(":days", str(int(days)))), {"uid": user_id}).mappings().all()
+
+    if not rows:
+        return {k: 0.0 for k in TRUST_SIGNALS}
+
+    # 查询近 N 天有 daily_tasks 的天数 (分母)
+    total_days_row = db.execute(text("""
+        SELECT COUNT(DISTINCT task_date) AS cnt
+        FROM daily_tasks
+        WHERE user_id = :uid
+          AND task_date >= CURRENT_DATE - INTERVAL ':days days'
+    """.replace(":days", str(int(days)))), {"uid": user_id}).mappings().first()
+    total_task_days = max((total_days_row["cnt"] if total_days_row else 0), 1)
+
+    # ── 信号 1: dialog_depth — note 文字深度 ──
+    notes = [r["note"] or "" for r in rows]
+    if notes:
+        avg_len = sum(len(n) for n in notes) / len(notes)
+        dialog_depth = min(avg_len / 50.0, 1.0)  # 50字 = 1.0
+    else:
+        dialog_depth = 0.0
+
+    # ── 信号 2: proactive_return_rate — 连续打卡天 / 总天 ──
+    checkin_dates = sorted(set(r["checkin_date"] for r in rows))
+    proactive_return_rate = min(len(checkin_dates) / max(total_task_days, 1), 1.0)
+
+    # ── 信号 3: topic_openness — 不同 tag 种类数 / 最大种类 ──
+    tags = set(r["tag"] for r in rows if r["tag"])
+    max_possible_tags = 6  # 营养/运动/监测/睡眠/情绪/学习
+    topic_openness = min(len(tags) / max_possible_tags, 1.0)
+
+    # ── 信号 4: emotion_expression — note 含情绪关键词的比例 ──
+    notes_with_emotion = sum(
+        1 for n in notes if n and any(kw in n for kw in _EMOTION_KEYWORDS)
+    )
+    emotion_expression = notes_with_emotion / len(rows) if rows else 0.0
+
+    # ── 信号 5: autonomous_info_sharing — 主动提供 photo/voice/value 的比例 ──
+    sharing_count = sum(
+        1 for r in rows
+        if r["photo_url"] or r["voice_url"] or r["value"] is not None
+    )
+    autonomous_info_sharing = sharing_count / len(rows) if rows else 0.0
+
+    # ── 信号 6: curiosity_expression — 打卡附带 note 的比例 ──
+    notes_present = sum(1 for n in notes if n.strip())
+    curiosity_expression = notes_present / len(rows) if rows else 0.0
+
+    return {
+        "dialog_depth": round(dialog_depth, 4),
+        "proactive_return_rate": round(proactive_return_rate, 4),
+        "topic_openness": round(topic_openness, 4),
+        "emotion_expression": round(emotion_expression, 4),
+        "autonomous_info_sharing": round(autonomous_info_sharing, 4),
+        "curiosity_expression": round(curiosity_expression, 4),
+    }
 
 # ── Signal weights (V4.0 spec) ──────────────────────────
 TRUST_SIGNALS = {

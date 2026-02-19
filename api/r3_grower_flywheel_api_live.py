@@ -198,6 +198,23 @@ async def checkin_task(
 
     await db.commit()
 
+    # ── 信任分更新 (异步桥接同步服务) ──
+    try:
+        import asyncio
+        from core.trust_score_service import extract_trust_signals_from_checkins, TrustScoreService
+        from core.database import get_db_session
+
+        def _update_trust():
+            with get_db_session() as sync_db:
+                signals = extract_trust_signals_from_checkins(sync_db, user_id, days=7)
+                svc = TrustScoreService(sync_db)
+                svc.update_user_trust(user_id, signals, source="task_checkin")
+                sync_db.commit()
+
+        await asyncio.to_thread(_update_trust)
+    except Exception:
+        pass  # 信任分更新失败不影响打卡主流程
+
     # 检查全部完成
     counts = (await db.execute(text("""
         SELECT COUNT(*) as total, SUM(CASE WHEN done THEN 1 ELSE 0 END) as done_count
