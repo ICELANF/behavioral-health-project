@@ -203,30 +203,33 @@ jobs:
           with open('reports/acceptance.json') as f:
               data = json.load(f)
 
+          meta = data.get('report_meta', {})
+          counts = meta.get('test_counts', {})
           summary = data.get('summary', {})
-          total = summary.get('total', 0)
-          passed = summary.get('passed', 0)
-          failed = summary.get('failed', 0)
-          risk = summary.get('risk_level', 'UNKNOWN')
+
+          total = counts.get('total', summary.get('total_results', 0))
+          passed = counts.get('passed', 0)
+          failed = counts.get('failed', 0)
+          overall = summary.get('overall', 'UNKNOWN')
 
           print(f'  Total:  {total}')
           print(f'  Passed: {passed}')
           print(f'  Failed: {failed}')
-          print(f'  Risk:   {risk}')
+          print(f'  Overall: {overall}')
           print()
 
           if failed > 0:
               print(f'❌ {failed} tests FAILED')
-              for t in data.get('tests', []):
+              for t in data.get('results', []):
                   if t.get('status') == 'FAIL':
                       print(f\"  FAIL: {t.get('name')} — {t.get('detail', '')[:80]}\")
               sys.exit(1)
 
-          if risk not in ('LOW',):
-              print(f'❌ Risk level is {risk}, expected LOW')
+          if overall not in ('PASS',):
+              print(f'❌ Overall result is {overall}, expected PASS')
               sys.exit(1)
 
-          print(f'✅ Acceptance PASS — {passed}/{total}, risk={risk}')
+          print(f'✅ Acceptance PASS — {passed}/{total}')
           "
 
       - name: Upload acceptance report
