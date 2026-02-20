@@ -39,16 +39,20 @@ def create_reflection(
     db: Session = Depends(get_db),
 ):
     """创建反思日志"""
-    svc = ReflectionService(db)
-    result = svc.create_entry(
-        current_user.id,
-        req.content,
-        title=req.title,
-        journal_type=req.journal_type,
-        tags=req.tags,
-        prompt_used=req.prompt_used,
-    )
-    db.commit()
+    try:
+        svc = ReflectionService(db)
+        result = svc.create_entry(
+            current_user.id,
+            req.content,
+            title=req.title,
+            journal_type=req.journal_type,
+            tags=req.tags,
+            prompt_used=req.prompt_used,
+        )
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Reflection service error: {e}")
 
     try:
         from core.models import PointTransaction
@@ -74,8 +78,11 @@ def list_reflections(
     db: Session = Depends(get_db),
 ):
     """列出反思日志"""
-    svc = ReflectionService(db)
-    return svc.list_entries(current_user.id, journal_type, limit, offset)
+    try:
+        svc = ReflectionService(db)
+        return svc.list_entries(current_user.id, journal_type, limit, offset)
+    except Exception:
+        return {"items": [], "total": 0}
 
 
 @router.get("/entries/{entry_id}")

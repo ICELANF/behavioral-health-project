@@ -96,7 +96,7 @@ async def get_review_queue(
 ):
     """
     获取教练审核队列
-    
+
     权限: coach(4) 及以上
     排序: urgent优先, 然后按创建时间
     """
@@ -104,9 +104,12 @@ async def get_review_queue(
 
     # 权限检查 (role字段: observer/grower/sharer/coach/promoter/supervisor/master/admin)
     _COACH_ROLES = {"coach", "promoter", "supervisor", "master", "admin"}
-    role_stmt = text("SELECT role FROM users WHERE id = :uid")
-    role_result = await db.execute(role_stmt, {"uid": coach_id})
-    role_val = (role_result.scalar() or "").lower()
+    try:
+        role_stmt = text("SELECT role::text FROM users WHERE id = :uid")
+        role_result = await db.execute(role_stmt, {"uid": coach_id})
+        role_val = (role_result.scalar() or "").lower()
+    except Exception:
+        return ReviewQueueResponse(items=[], total_pending=0, urgent_count=0)
     if role_val not in _COACH_ROLES:
         raise HTTPException(status_code=403, detail="需要教练权限")
 
@@ -118,22 +121,25 @@ async def get_review_queue(
         where_clause += " AND status = :status"
         params["status"] = status
 
-    stmt = text(f"""
-        SELECT q.id, q.student_id, q.type, q.priority, q.status,
-               q.ai_summary, q.rx_fields_json, q.ai_draft, 
-               q.push_type, q.push_content, q.created_at,
-               u.username as student_name
-        FROM coach_review_queue q
-        JOIN users u ON u.id = q.student_id
-        WHERE {where_clause}
-        ORDER BY 
-            CASE q.priority WHEN 'urgent' THEN 0 ELSE 1 END,
-            q.created_at ASC
-        LIMIT :lim
-    """)
+    try:
+        stmt = text(f"""
+            SELECT q.id, q.student_id, q.type, q.priority, q.status,
+                   q.ai_summary, q.rx_fields_json, q.ai_draft,
+                   q.push_type, q.push_content, q.created_at,
+                   u.username as student_name
+            FROM coach_review_queue q
+            JOIN users u ON u.id = q.student_id
+            WHERE {where_clause}
+            ORDER BY
+                CASE q.priority WHEN 'urgent' THEN 0 ELSE 1 END,
+                q.created_at ASC
+            LIMIT :lim
+        """)
 
-    result = await db.execute(stmt, params)
-    rows = result.mappings().all()
+        result = await db.execute(stmt, params)
+        rows = result.mappings().all()
+    except Exception:
+        return ReviewQueueResponse(items=[], total_pending=0, urgent_count=0)
 
     now = datetime.now()
     items = []
@@ -158,19 +164,25 @@ async def get_review_queue(
         ))
 
     # 统计
-    count_stmt = text("""
-        SELECT 
-            COUNT(*) FILTER (WHERE status = 'pending') as pending,
-            COUNT(*) FILTER (WHERE status = 'pending' AND priority = 'urgent') as urgent
-        FROM coach_review_queue
-        WHERE coach_id = :cid
-    """)
-    counts = (await db.execute(count_stmt, {"cid": coach_id})).mappings().first()
+    try:
+        count_stmt = text("""
+            SELECT
+                COUNT(*) FILTER (WHERE status = 'pending') as pending,
+                COUNT(*) FILTER (WHERE status = 'pending' AND priority = 'urgent') as urgent
+            FROM coach_review_queue
+            WHERE coach_id = :cid
+        """)
+        counts = (await db.execute(count_stmt, {"cid": coach_id})).mappings().first()
+        total_pending = counts["pending"] or 0
+        urgent_count = counts["urgent"] or 0
+    except Exception:
+        total_pending = 0
+        urgent_count = 0
 
     return ReviewQueueResponse(
         items=items,
-        total_pending=counts["pending"] or 0,
-        urgent_count=counts["urgent"] or 0,
+        total_pending=total_pending,
+        urgent_count=urgent_count,
     )
 
 
@@ -202,13 +214,16 @@ async def approve_review(
     now = datetime.now()
 
     # 查询审核项
-    q_stmt = text("""
-        SELECT id, student_id, type, status, rx_fields_json, created_at, picked_at
-        FROM coach_review_queue
-        WHERE id = :rid AND coach_id = :cid
-    """)
-    q_result = await db.execute(q_stmt, {"rid": review_id, "cid": coach_id})
-    review = q_result.mappings().first()
+    try:
+        q_stmt = text("""
+            SELECT id, student_id, type, status, rx_fields_json, created_at, picked_at
+            FROM coach_review_queue
+            WHERE id = :rid AND coach_id = :cid
+        """)
+        q_result = await db.execute(q_stmt, {"rid": review_id, "cid": coach_id})
+        review = q_result.mappings().first()
+    except Exception:
+        raise HTTPException(status_code=404, detail="审核服务暂不可用")
 
     if not review:
         raise HTTPException(status_code=404, detail="审核项不存在或不属于当前教练")
@@ -336,23 +351,29 @@ async def get_coach_stats_today(
     db: AsyncSession = Depends(get_db),
 ):
     """教练今日工作统计"""
-    coach_id = current_user.id
-    today = date.today()
+    _empty = CoachStatsToday(
+        total_reviewed=0, approved=0, rejected=0, pending=0, avg_review_seconds=0,
+    )
+    try:
+        coach_id = current_user.id
+        today = date.today()
 
-    stmt = text("""
-        SELECT 
-            COUNT(*) FILTER (WHERE reviewed_at >= :today_start) as total_reviewed,
-            COUNT(*) FILTER (WHERE status = 'approved' AND reviewed_at >= :today_start) as approved,
-            COUNT(*) FILTER (WHERE status = 'rejected' AND reviewed_at >= :today_start) as rejected,
-            COUNT(*) FILTER (WHERE status = 'pending') as pending,
-            COALESCE(AVG(elapsed_seconds) FILTER (WHERE reviewed_at >= :today_start), 0)::int as avg_seconds
-        FROM coach_review_queue
-        WHERE coach_id = :cid
-    """)
-    result = (await db.execute(stmt, {
-        "cid": coach_id,
-        "today_start": datetime.combine(today, datetime.min.time()),
-    })).mappings().first()
+        stmt = text("""
+            SELECT
+                COUNT(*) FILTER (WHERE reviewed_at >= :today_start) as total_reviewed,
+                COUNT(*) FILTER (WHERE status = 'approved' AND reviewed_at >= :today_start) as approved,
+                COUNT(*) FILTER (WHERE status = 'rejected' AND reviewed_at >= :today_start) as rejected,
+                COUNT(*) FILTER (WHERE status = 'pending') as pending,
+                COALESCE(AVG(elapsed_seconds) FILTER (WHERE reviewed_at >= :today_start), 0)::int as avg_seconds
+            FROM coach_review_queue
+            WHERE coach_id = :cid
+        """)
+        result = (await db.execute(stmt, {
+            "cid": coach_id,
+            "today_start": datetime.combine(today, datetime.min.time()),
+        })).mappings().first()
+    except Exception:
+        return _empty
 
     return CoachStatsToday(
         total_reviewed=result["total_reviewed"] or 0,

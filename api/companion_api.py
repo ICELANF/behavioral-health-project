@@ -88,18 +88,23 @@ def get_companion_stats(
     current_user: User = Depends(get_current_user),
 ):
     """获取我的同道者统计"""
-    row = db.execute(
-        text("SELECT * FROM v_companion_stats WHERE mentor_id = :mid"),
-        {"mid": current_user.id}
-    ).mappings().first()
-
-    return dict(row) if row else {
+    _empty = {
         "mentor_id": current_user.id,
         "graduated_count": 0,
         "active_count": 0,
         "dropped_count": 0,
         "avg_quality": None,
     }
+    try:
+        row = db.execute(
+            text("SELECT * FROM v_companion_stats WHERE mentor_id = :mid"),
+            {"mid": current_user.id}
+        ).mappings().first()
+    except Exception:
+        db.rollback()
+        return _empty
+
+    return dict(row) if row else _empty
 
 
 @router.post("/invite")

@@ -118,14 +118,17 @@ def enroll_program(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = ProgramService(db)
-    result = service.enroll(
-        user_id=current_user.id,
-        template_id=request.template_id,
-        coach_id=request.coach_id,
-        push_preferences=request.push_preferences,
-        custom_schedule=request.custom_schedule,
-    )
+    try:
+        service = ProgramService(db)
+        result = service.enroll(
+            user_id=current_user.id,
+            template_id=request.template_id,
+            coach_id=request.coach_id,
+            push_preferences=request.push_preferences,
+            custom_schedule=request.custom_schedule,
+        )
+    except Exception:
+        raise HTTPException(400, "Program service unavailable")
     if not result.get("success"):
         raise HTTPException(400, result.get("reason", "Enrollment failed"))
     return result
@@ -149,8 +152,11 @@ def get_today_content(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = ProgramService(db)
-    result = service.get_today_content(enrollment_id, current_user.id)
+    try:
+        service = ProgramService(db)
+        result = service.get_today_content(enrollment_id, current_user.id)
+    except Exception:
+        raise HTTPException(404, "Enrollment not found")
     if "error" in result:
         raise HTTPException(404, result["error"])
     return result
@@ -197,8 +203,11 @@ def get_progress_radar(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = ProgramService(db)
-    result = service.get_progress_radar(enrollment_id, current_user.id)
+    try:
+        service = ProgramService(db)
+        result = service.get_progress_radar(enrollment_id, current_user.id)
+    except Exception:
+        raise HTTPException(404, "Enrollment not found")
     if "error" in result:
         raise HTTPException(404, result["error"])
     return result
