@@ -11,7 +11,11 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Body, Header, HTTPExcepti
 
 # ── 日志配置: 文件轮转 + 结构化 ──
 _log_dir = os.getenv("LOG_DIR", "/app/logs")
-os.makedirs(_log_dir, exist_ok=True)
+try:
+    os.makedirs(_log_dir, exist_ok=True)
+except PermissionError:
+    _log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+    os.makedirs(_log_dir, exist_ok=True)
 logger.add(
     os.path.join(_log_dir, "bhp_{time:YYYY-MM-DD}.log"),
     rotation="00:00",    # 每天零点轮转
@@ -562,6 +566,14 @@ try:
     print("[API] 全平台搜索路由已注册")
 except ImportError as e:
     print(f"[API] 全平台搜索路由注册失败: {e}")
+
+# 注册用户行为周报路由
+try:
+    from api.weekly_report_api import router as weekly_report_router
+    app.include_router(weekly_report_router)
+    print("[API] 用户行为周报路由已注册")
+except ImportError as e:
+    print(f"[API] 用户行为周报路由注册失败: {e}")
 
 # 注册多Agent协作路由
 try:
@@ -1872,6 +1884,36 @@ try:
     print("[API] P4 Settings路由已注册 (2 endpoints)")
 except ImportError as e:
     print(f"[API] P4 Settings路由注册失败: {e}")
+
+
+# ========== P5 Routes ==========
+try:
+    from api.wechat_auth_api import router as wechat_auth_router
+    app.include_router(wechat_auth_router)
+    print("[API] P5A WeChat Auth路由已注册 (7 endpoints)")
+except ImportError as e:
+    print(f"[API] P5A WeChat Auth路由注册失败: {e}")
+
+try:
+    from api.event_tracking_api import router as event_tracking_router
+    app.include_router(event_tracking_router)
+    print("[API] P5B Event Tracking路由已注册 (1 endpoint)")
+except ImportError as e:
+    print(f"[API] P5B Event Tracking路由注册失败: {e}")
+
+try:
+    from api.operations_report_api import router as ops_report_router
+    app.include_router(ops_report_router)
+    print("[API] P5B Operations Report路由已注册 (3 endpoints)")
+except ImportError as e:
+    print(f"[API] P5B Operations Report路由注册失败: {e}")
+
+try:
+    from api.feature_flag_api import router as feature_flag_router
+    app.include_router(feature_flag_router)
+    print("[API] P5C Feature Flags路由已注册 (6 endpoints)")
+except ImportError as e:
+    print(f"[API] P5C Feature Flags路由注册失败: {e}")
 
 
 # (R2-R8 已移到 bridge 之前注册, 见上方)
