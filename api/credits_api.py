@@ -95,23 +95,28 @@ def get_my_credits(
     current_user: User = Depends(get_current_user),
 ):
     """获取当前用户学分汇总"""
-    # 总学分 (view)
-    total = db.execute(
-        text("SELECT * FROM v_user_total_credits WHERE user_id = :uid"),
-        {"uid": current_user.id}
-    ).mappings().first()
+    _empty_total = {
+        "total_credits": 0, "mandatory_credits": 0, "elective_credits": 0,
+        "m1_credits": 0, "m2_credits": 0, "m3_credits": 0, "m4_credits": 0
+    }
+    try:
+        # 总学分 (view)
+        total = db.execute(
+            text("SELECT * FROM v_user_total_credits WHERE user_id = :uid"),
+            {"uid": current_user.id}
+        ).mappings().first()
 
-    # 按模块类型 (view)
-    by_type = db.execute(
-        text("SELECT * FROM v_user_credit_summary WHERE user_id = :uid"),
-        {"uid": current_user.id}
-    ).mappings().all()
+        # 按模块类型 (view)
+        by_type = db.execute(
+            text("SELECT * FROM v_user_credit_summary WHERE user_id = :uid"),
+            {"uid": current_user.id}
+        ).mappings().all()
+    except Exception:
+        db.rollback()
+        return {"total": _empty_total, "by_type": []}
 
     return {
-        "total": dict(total) if total else {
-            "total_credits": 0, "mandatory_credits": 0, "elective_credits": 0,
-            "m1_credits": 0, "m2_credits": 0, "m3_credits": 0, "m4_credits": 0
-        },
+        "total": dict(total) if total else _empty_total,
         "by_type": [dict(r) for r in by_type],
     }
 

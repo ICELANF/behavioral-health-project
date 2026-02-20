@@ -65,8 +65,11 @@ def list_templates(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = ProgramService(db)
-    return service.list_templates(category=category, tenant_id=tenant_id)
+    try:
+        service = ProgramService(db)
+        return service.list_templates(category=category, tenant_id=tenant_id)
+    except Exception:
+        return []
 
 
 @router.post("/templates")
@@ -133,8 +136,11 @@ def get_my_programs(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    service = ProgramService(db)
-    return service.get_my_programs(current_user.id)
+    try:
+        service = ProgramService(db)
+        return service.get_my_programs(current_user.id)
+    except Exception:
+        return []
 
 
 @router.get("/my/{enrollment_id}/today")
