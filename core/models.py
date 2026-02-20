@@ -199,7 +199,14 @@ class User(Base):
     current_stage = Column(String(4), nullable=True, default="S0")
     growth_level = Column(String(4), nullable=True, default="G0")
 
-    # V4.0 主体� & 信任
+    # WeChat (physical columns exist in DB since migration 044)
+    wx_openid = Column(String(100), unique=True, nullable=True, index=True)
+    union_id = Column(String(100), unique=True, nullable=True, index=True)
+    wx_miniprogram_openid = Column(String(100), unique=True, nullable=True)
+    preferred_channel = Column(String(20), default="app", nullable=True)
+    growth_points = Column(Integer, default=0, server_default="0")
+
+    # V4.0 主体性 & 信任
     agency_mode = Column(String(20), default="passive")        # passive/transitional/active
     agency_score = Column(Float, default=0.0)                  # 0.0-1.0
     trust_score = Column(Float, default=0.0)                   # 0.0-1.0
@@ -3089,7 +3096,7 @@ class Badge(Base):
 class UserBadge(Base):
     """用户已获得徽�"""
     __tablename__ = "user_badges"
-    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("gen_random_uuid()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     badge_id = Column(String(64), ForeignKey("badges.id"), nullable=False)
     earned_at = Column(DateTime(timezone=True), nullable=False, server_default=sa_text("now()"))
@@ -3105,7 +3112,7 @@ class UserBadge(Base):
 class UserMilestone(Base):
     """用户里程�"""
     __tablename__ = "user_milestones"
-    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("gen_random_uuid()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     milestone = Column(String(20), nullable=False)  # milestone_key enum
     achieved_at = Column(DateTime(timezone=True), nullable=False, server_default=sa_text("now()"))
@@ -3134,7 +3141,7 @@ class UserStreak(Base):
 class FlipCardRecord(Base):
     """翻牌记录"""
     __tablename__ = "flip_card_records"
-    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("gen_random_uuid()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     pool_id = Column(String(64), nullable=False)
     shown_items = Column(JSON, nullable=False)
@@ -3149,7 +3156,7 @@ class FlipCardRecord(Base):
 class NudgeRecord(Base):
     """推�/提醒记录"""
     __tablename__ = "nudge_records"
-    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("gen_random_uuid()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     milestone = Column(String(20))  # milestone_key enum
     channel = Column(String(20), nullable=False)  # nudge_channel enum
@@ -3166,7 +3173,7 @@ class NudgeRecord(Base):
 class UserMemorial(Base):
     """用户�念卡/成就记录"""
     __tablename__ = "user_memorials"
-    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("gen_random_uuid()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     type = Column(String(64), nullable=False)
     template = Column(String(64))
@@ -3182,7 +3189,7 @@ class UserMemorial(Base):
 class PointTransaction(Base):
     """�分流�"""
     __tablename__ = "point_transactions"
-    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("uuid_generate_v4()"))
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4, server_default=sa_text("gen_random_uuid()"))
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     point_type = Column(String(32), nullable=False)
     amount = Column(Integer, nullable=False)
@@ -5003,3 +5010,58 @@ class Notification(Base):
     )
 
     user = relationship("User", backref="notifications")
+
+
+# ============================================
+# P5B: 每日分析聚合
+# ============================================
+
+class AnalyticsDaily(Base):
+    """Pre-computed daily analytics metrics."""
+    __tablename__ = "analytics_daily"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    date = Column(Date, nullable=False, unique=True)
+    dau = Column(Integer, server_default="0")
+    new_users = Column(Integer, server_default="0")
+    active_growers = Column(Integer, server_default="0")
+    conversion_rate = Column(Float, server_default="0.0")
+    retention_7d = Column(Float, server_default="0.0")
+    avg_tasks_completed = Column(Float, server_default="0.0")
+    avg_session_minutes = Column(Float, server_default="0.0")
+    ai_response_avg_ms = Column(Float, server_default="0.0")
+    total_events = Column(Integer, server_default="0")
+    total_chat_messages = Column(Integer, server_default="0")
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+# ============================================
+# P5C: Feature Flags + A/B Test Events
+# ============================================
+
+class FeatureFlag(Base):
+    """Feature flag / A/B experiment configuration."""
+    __tablename__ = "feature_flags"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    key = Column(String(100), nullable=False, unique=True, index=True)
+    description = Column(Text, nullable=True)
+    enabled = Column(Boolean, server_default=sa_text("false"))
+    rollout_pct = Column(Integer, server_default="0")
+    variants = Column(JSON, server_default=sa_text("'[]'::jsonb"))
+    targeting_rules = Column(JSON, server_default=sa_text("'{}'::jsonb"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))
+    updated_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+class AbTestEvent(Base):
+    """A/B test conversion event tracking."""
+    __tablename__ = "ab_test_events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    experiment_key = Column(String(100), nullable=False, index=True)
+    variant = Column(String(50), nullable=False)
+    event_type = Column(String(50), nullable=False)
+    event_data = Column(JSON, server_default=sa_text("'{}'::jsonb"))
+    created_at = Column(DateTime, server_default=sa_text("now()"))

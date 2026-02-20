@@ -128,7 +128,7 @@ section("4. PostgreSQL 连接")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
 if not DATABASE_URL:
     # 尝试常见默认值
-    DATABASE_URL = "postgresql://bhp_user:bhp_password@host.docker.internal:5432/bhp_db"
+    DATABASE_URL = "postgresql://postgres:difyai123456@host.docker.internal:5432/health_platform"
     print(f"  {WARN} DATABASE_URL 未设置, 尝试默认: {DATABASE_URL}")
 
 try:

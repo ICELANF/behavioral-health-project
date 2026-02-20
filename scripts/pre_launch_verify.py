@@ -991,7 +991,7 @@ def mt07_db_health(cfg: VerifyConfig):
     print("─" * 60)
 
     PSQL_CMD = (
-        'docker exec bhp_v3_postgres psql -U bhp_user -d bhp_db -t -A -c'
+        'docker exec dify-db-1 psql -U postgres -d health_platform -t -A -c'
     )
 
     # MT-07-01 Migration version consistency

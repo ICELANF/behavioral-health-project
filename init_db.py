@@ -18,7 +18,7 @@ def main():
 
     # 1. 激活 pgvector (修复 10 个数据库环境报错)
     run_cmd(
-        'docker exec -t bhp_v3_postgres psql -U bhp_user -d bhp_db -c "CREATE EXTENSION IF NOT EXISTS vector;"',
+        'docker exec -t dify-db-1 psql -U postgres -d health_platform -c "CREATE EXTENSION IF NOT EXISTS vector;"',
         "激活 PostgreSQL 向量插件"
     )
 

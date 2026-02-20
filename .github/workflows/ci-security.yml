@@ -162,6 +162,7 @@ jobs:
           from sqlalchemy import create_engine, text
           engine = create_engine(os.environ['DATABASE_URL'])
           with engine.begin() as conn:
+              conn.execute(text('CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"'))
               conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
               conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
           from core.models import Base
@@ -290,6 +291,7 @@ jobs:
           from sqlalchemy import create_engine, text
           engine = create_engine(os.environ['DATABASE_URL'])
           with engine.begin() as conn:
+              conn.execute(text('CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"'))
               conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
               conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
           from core.models import Base
@@ -396,6 +398,7 @@ jobs:
           from sqlalchemy import create_engine, text
           engine = create_engine(os.environ['DATABASE_URL'])
           with engine.begin() as conn:
+              conn.execute(text('CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"'))
               conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
               conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
           from core.models import Base

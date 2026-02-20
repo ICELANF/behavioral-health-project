@@ -15,7 +15,7 @@ def _init_engine():
     if s: url = s
     elif "+asyncpg" in a: url = a.replace("postgresql+asyncpg","postgresql")
     elif a.startswith("postgresql://"): url = a
-    else: url = "postgresql://bhp_user:bhp_password@db:5432/bhp_db"
+    else: url = "postgresql://postgres:difyai123456@db:5432/health_platform"
     _engine = create_engine(url, pool_size=5, max_overflow=10, pool_pre_ping=True, pool_recycle=1800)
     _SessionLocal = sessionmaker(bind=_engine, autocommit=False, autoflush=False)
     logger.info("Celery sync DB: %s", url.split("@")[-1])
@@ -25,7 +25,7 @@ def get_sync_url():
     if s: return s
     if "+asyncpg" in a: return a.replace("postgresql+asyncpg","postgresql")
     if a.startswith("postgresql://"): return a
-    return "postgresql://bhp_user:bhp_password@db:5432/bhp_db"
+    return "postgresql://postgres:difyai123456@db:5432/health_platform"
 
 @contextmanager
 def get_sync_session():
