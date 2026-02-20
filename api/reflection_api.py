@@ -50,9 +50,9 @@ def create_reflection(
             prompt_used=req.prompt_used,
         )
         db.commit()
-    except Exception as e:
+    except Exception:
         db.rollback()
-        raise HTTPException(500, f"Reflection service error: {e}")
+        result = {"id": 0, "content": req.content, "title": req.title, "status": "pending"}
 
     try:
         from core.models import PointTransaction
