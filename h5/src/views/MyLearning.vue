@@ -66,6 +66,13 @@
           </div>
         </div>
 
+        <!-- 周报入口 -->
+        <div class="report-entry card" @click="router.push('/weekly-report')">
+          <van-icon name="chart-trending-o" size="20" color="#1890ff" />
+          <span class="report-entry-text">查看行为周报</span>
+          <van-icon name="arrow" size="14" color="#c0c4cc" />
+        </div>
+
         <!-- 本周学习时长 -->
         <div class="weekly-card card">
           <h3>本周学习</h3>
@@ -372,6 +379,20 @@ onMounted(() => {
     font-size: $font-size-xs;
     color: $text-color-secondary;
     text-align: center;
+  }
+}
+
+.report-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  .report-entry-text {
+    flex: 1;
+    font-size: $font-size-md;
+    color: $text-color;
+    font-weight: 500;
   }
 }
 

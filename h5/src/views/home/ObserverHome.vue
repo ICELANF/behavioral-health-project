@@ -99,8 +99,23 @@
       </button>
     </div>
 
-    <!-- ═══ 社会证明 ═══ -->
+    <!-- ═══ 试用期倒计时 ═══ -->
+    <div class="trial-countdown" v-if="trialDaysLeft > 0">
+      <span class="countdown-icon">⏳</span>
+      <span>试用期还剩 <strong>{{ trialDaysLeft }}</strong> 天</span>
+    </div>
+    <div class="trial-countdown expired" v-else-if="trialDaysLeft <= 0">
+      <span class="countdown-icon">⚠️</span>
+      <span>试用期已结束，<a @click="startAssessment">完成评估解锁</a></span>
+    </div>
+
+    <!-- ═══ 社会证明 (live data) ═══ -->
     <div class="social-proof">
+      <div class="proof-stat" v-if="socialProofCount > 0">
+        <strong>{{ socialProofCount }} 人</strong>
+        <span>今日完成评估升级</span>
+      </div>
+      <div class="proof-divider" v-if="socialProofCount > 0" />
       <div class="proof-stat">
         <strong>专业团队</strong>
         <span>多学科健康教练</span>
@@ -115,6 +130,13 @@
         <strong>持续陪伴</strong>
         <span>每日行为引导</span>
       </div>
+    </div>
+
+    <!-- ═══ 微信分享 (仅微信内) ═══ -->
+    <div class="wx-share-bar" v-if="inWechat">
+      <button class="wx-share-btn" @click="doWxShare">
+        <span>💬</span> 分享给好友
+      </button>
     </div>
 
     <!-- ═══ 用完次数后的全屏升级提示 ═══ -->
@@ -139,14 +161,20 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/index'
+import { isWechat, shareToWechat } from '@/utils/wechat'
+import { useFeatureFlag } from '@/composables/useFeatureFlag'
 
 const router = useRouter()
+const { variant: homeVariant } = useFeatureFlag('observer_home_variant')
 
 // ── 状态 ──
 const dailyUsed = ref(0)
 const assessmentStarted = ref(false)
 const assessmentProgress = ref(0)
 const showUpgradePrompt = ref(false)
+const trialDaysLeft = ref(7)
+const socialProofCount = ref(0)
+const inWechat = ref(isWechat())
 
 const remaining = computed(() => Math.max(0, 3 - dailyUsed.value))
 
@@ -197,6 +225,15 @@ async function tryFeature(type: string) {
   }
 }
 
+function doWxShare() {
+  shareToWechat(
+    '行健平台 — AI健康伙伴',
+    '完成健康评估，解锁专属健康管理方案',
+    window.location.href,
+    ''
+  )
+}
+
 onMounted(async () => {
   // 加载今日额度
   try {
@@ -209,6 +246,22 @@ onMounted(async () => {
     const progress: any = await api.get('/api/v1/assessment/progress')
     assessmentStarted.value = progress.started || false
     assessmentProgress.value = progress.progress_pct || 0
+  } catch { /* 使用默认值 */ }
+
+  // 试用期倒计时 (registration_date + 7 - today)
+  try {
+    const profile: any = await api.get('/api/v1/users/me')
+    if (profile.created_at) {
+      const regDate = new Date(profile.created_at)
+      const diffMs = regDate.getTime() + 7 * 86400000 - Date.now()
+      trialDaysLeft.value = Math.max(0, Math.ceil(diffMs / 86400000))
+    }
+  } catch { /* 使用默认值 */ }
+
+  // 社交证明
+  try {
+    const proof: any = await api.get('/api/v1/ecosystem/referral/social-proof')
+    socialProofCount.value = proof.today_assessments || proof.today_conversions || 0
   } catch { /* 使用默认值 */ }
 })
 </script>
@@ -341,6 +394,24 @@ onMounted(async () => {
 .modal-dismiss {
   background: none; border: none; color: #9ca3af; font-size: 14px;
   cursor: pointer; padding: 8px;
+}
+
+/* ── 试用期倒计时 ── */
+.trial-countdown {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 10px 16px; background: #fffbeb; border-bottom: 1px solid #fde68a;
+  font-size: 13px; color: #92400e;
+}
+.trial-countdown.expired { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
+.trial-countdown a { color: #059669; font-weight: 600; text-decoration: underline; cursor: pointer; }
+.countdown-icon { font-size: 16px; }
+
+/* ── 微信分享 ── */
+.wx-share-bar { padding: 12px 20px; }
+.wx-share-btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 12px; background: #07c160; border: none;
+  border-radius: 12px; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
 }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }

@@ -64,27 +64,27 @@ export { adminFlywheelApi } from './admin-flywheel-api'
 export const journeyApi = {
   /** 旧: /journey/status → 实际: /journey/state */
   getStatus(): Promise<JourneyStatus> {
-    return http.get('/journey/state').then(r => r.data)
+    return http.get('/v1/journey/state').then(r => r.data)
   },
 
   /** 旧: /journey/transitions/{userId} → 实际: /journey/stage/transitions (当前用户) */
   getTransitions(): Promise<any[]> {
-    return http.get('/journey/stage/transitions').then(r => r.data)
+    return http.get('/v1/journey/stage/transitions').then(r => r.data)
   },
 
   /** 额外: 阶段进度 */
   getProgress(): Promise<any> {
-    return http.get('/journey/stage/progress').then(r => r.data)
+    return http.get('/v1/journey/stage/progress').then(r => r.data)
   },
 
   /** 额外: 激活旅程 */
   activate(data?: any): Promise<any> {
-    return http.post('/journey/activate', data).then(r => r.data)
+    return http.post('/v1/journey/activate', data).then(r => r.data)
   },
 
   /** 额外: 历史记录 */
   getHistory(): Promise<any[]> {
-    return http.get('/journey/history').then(r => r.data)
+    return http.get('/v1/journey/history').then(r => r.data)
   },
 }
 
@@ -94,10 +94,10 @@ export const journeyApi = {
 
 export const segmentsApi = {
   getPermissions(): Promise<UserPermissions> {
-    return http.get('/segments/permissions').then(r => r.data)
+    return http.get('/v1/segments/permissions').then(r => r.data)
   },
   getRoles(): Promise<any[]> {
-    return http.get('/segments/roles').then(r => r.data)
+    return http.get('/v1/segments/roles').then(r => r.data)
   },
 }
 
@@ -108,27 +108,27 @@ export const segmentsApi = {
 export const assessmentApi = {
   /** 旧: /assessments/assignments → 实际: /assessment-assignments/my-pending */
   getAssignments(): Promise<AssessmentAssignment[]> {
-    return http.get('/assessment-assignments/my-pending').then(r => r.data)
+    return http.get('/v1/assessment-assignments/my-pending').then(r => r.data)
   },
 
   /** 旧: /assessments/{id}/result → 实际: /assessment-assignments/{id}/result */
   getResult(assignmentId: number): Promise<AssessmentResult> {
-    return http.get(`/assessment-assignments/${assignmentId}/result`).then(r => r.data)
+    return http.get(`/v1/assessment-assignments/${assignmentId}/result`).then(r => r.data)
   },
 
   /** 旧: /assessments/{id}/submit → 实际: /assessment-assignments/{id}/submit */
   submit(assignmentId: number, answers: Record<string, any>): Promise<AssessmentResult> {
-    return http.post(`/assessment-assignments/${assignmentId}/submit`, { answers }).then(r => r.data)
+    return http.post(`/v1/assessment-assignments/${assignmentId}/submit`, { answers }).then(r => r.data)
   },
 
   /** 旧: /assessment-pipeline/run → 实际: /assessment/evaluate */
   runPipeline(userId: number): Promise<any> {
-    return http.post('/assessment/evaluate', { user_id: userId }).then(r => r.data)
+    return http.post('/v1/assessment/evaluate', { user_id: userId }).then(r => r.data)
   },
 
   /** 额外: 获取个人评估画像 */
   getProfile(): Promise<any> {
-    return http.get('/assessment/profile/me').then(r => r.data)
+    return http.get('/v1/assessment/profile/me').then(r => r.data)
   },
 }
 
@@ -139,27 +139,27 @@ export const assessmentApi = {
 
 export const agentApi = {
   listSessions(): Promise<any[]> {
-    return http.get('/chat/sessions').then(r => r.data)
+    return http.get('/v1/chat/sessions').then(r => r.data)
   },
   createSession(agentId?: string): Promise<any> {
-    return http.post('/chat/sessions', { agent_id: agentId }).then(r => r.data)
+    return http.post('/v1/chat/sessions', { agent_id: agentId }).then(r => r.data)
   },
   getMessages(sessionId: string): Promise<any[]> {
-    return http.get(`/chat/sessions/${sessionId}/messages`).then(r => r.data)
+    return http.get(`/v1/chat/sessions/${sessionId}/messages`).then(r => r.data)
   },
   sendMessage(sessionId: string, message: string): Promise<any> {
-    return http.post(`/chat/sessions/${sessionId}/messages`, { content: message }).then(r => r.data)
+    return http.post(`/v1/chat/sessions/${sessionId}/messages`, { content: message }).then(r => r.data)
   },
   deleteSession(sessionId: string): Promise<void> {
-    return http.delete(`/chat/sessions/${sessionId}`).then(r => r.data)
+    return http.delete(`/v1/chat/sessions/${sessionId}`).then(r => r.data)
   },
   /** ✅ 路径正确 */
   runAgent(agentId: string, input: string): Promise<any> {
-    return http.post('/agent/run', { agent_id: agentId, input }).then(r => r.data)
+    return http.post('/v1/agent/run', { agent_id: agentId, input }).then(r => r.data)
   },
   /** ✅ 路径正确 */
   listAgents(): Promise<any[]> {
-    return http.get('/agent/list').then(r => r.data)
+    return http.get('/v1/agent/list').then(r => r.data)
   },
 }
 
@@ -171,23 +171,23 @@ export const agentApi = {
 export const microActionApi = {
   /** ✅ 路径正确 */
   getToday(): Promise<MicroAction[]> {
-    return http.get('/micro-actions/today').then(r => r.data)
+    return http.get('/v1/micro-actions/today').then(r => r.data)
   },
   /** 旧: /micro-actions/{id}/complete → 实际: /micro-actions/{task_id}/complete */
   complete(taskId: number, state: string): Promise<MicroAction> {
-    return http.post(`/micro-actions/${taskId}/complete`, { state }).then(r => r.data)
+    return http.post(`/v1/micro-actions/${taskId}/complete`, { state }).then(r => r.data)
   },
   /** 额外: 跳过任务 */
   skip(taskId: number): Promise<any> {
-    return http.post(`/micro-actions/${taskId}/skip`).then(r => r.data)
+    return http.post(`/v1/micro-actions/${taskId}/skip`).then(r => r.data)
   },
   /** 额外: 历史记录 */
   getHistory(): Promise<any[]> {
-    return http.get('/micro-actions/history').then(r => r.data)
+    return http.get('/v1/micro-actions/history').then(r => r.data)
   },
   /** 额外: 统计 */
   getStats(): Promise<any> {
-    return http.get('/micro-actions/stats').then(r => r.data)
+    return http.get('/v1/micro-actions/stats').then(r => r.data)
   },
 }
 
@@ -198,17 +198,17 @@ export const microActionApi = {
 export const challengeApi = {
   /** ✅ 路径正确 */
   list(): Promise<Challenge[]> {
-    return http.get('/challenges').then(r => r.data)
+    return http.get('/v1/challenges').then(r => r.data)
   },
 
   /** 旧: /challenges/my → 实际: /challenges/my-enrollments */
   getMy(): Promise<Challenge[]> {
-    return http.get('/challenges/my-enrollments').then(r => r.data)
+    return http.get('/v1/challenges/my-enrollments').then(r => r.data)
   },
 
   /** ✅ 路径正确: /challenges/{challenge_id}/enroll */
   enroll(challengeId: number): Promise<any> {
-    return http.post(`/challenges/${challengeId}/enroll`).then(r => r.data)
+    return http.post(`/v1/challenges/${challengeId}/enroll`).then(r => r.data)
   },
 
   /**
@@ -217,17 +217,17 @@ export const challengeApi = {
    * 注意: 参数从 challengeId 变为 enrollmentId
    */
   checkin(enrollmentId: number, data?: any): Promise<any> {
-    return http.post(`/challenges/enrollments/${enrollmentId}/advance`, data).then(r => r.data)
+    return http.post(`/v1/challenges/enrollments/${enrollmentId}/advance`, data).then(r => r.data)
   },
 
   /** 额外: 获取今日推送 */
   getToday(enrollmentId: number): Promise<any> {
-    return http.get(`/challenges/enrollments/${enrollmentId}/today`).then(r => r.data)
+    return http.get(`/v1/challenges/enrollments/${enrollmentId}/today`).then(r => r.data)
   },
 
   /** 额外: 进度查询 */
   getProgress(enrollmentId: number): Promise<any> {
-    return http.get(`/challenges/enrollments/${enrollmentId}/progress`).then(r => r.data)
+    return http.get(`/v1/challenges/enrollments/${enrollmentId}/progress`).then(r => r.data)
   },
 }
 
@@ -238,17 +238,17 @@ export const challengeApi = {
 export const pointsApi = {
   /** 旧: /credits/balance → 实际: /credits/my */
   getBalance(): Promise<{ total: number; growth: number; contribution: number; influence: number }> {
-    return http.get('/credits/my').then(r => r.data)
+    return http.get('/v1/credits/my').then(r => r.data)
   },
 
   /** 旧: /credits/history → 实际: /credits/my/records */
   getHistory(page = 1, pageSize = 20): Promise<PaginatedResponse<PointTransaction>> {
-    return http.get('/credits/my/records', { params: { page, page_size: pageSize } }).then(r => r.data)
+    return http.get('/v1/credits/my/records', { params: { page, page_size: pageSize } }).then(r => r.data)
   },
 
   /** 额外: 积分模块列表 */
   getModules(): Promise<any[]> {
-    return http.get('/credits/modules').then(r => r.data)
+    return http.get('/v1/credits/modules').then(r => r.data)
   },
 }
 
@@ -263,27 +263,32 @@ export const learningApi = {
    * 注: 需要传 userId
    */
   getStats(userId: number): Promise<any> {
-    return http.get(`/learning/grower/stats/${userId}`).then(r => r.data)
+    return http.get(`/v1/learning/grower/stats/${userId}`).then(r => r.data)
   },
 
   /** 旧: /learning/time → 实际: /learning/grower/time/add */
   recordTime(minutes: number, contentId?: number): Promise<any> {
-    return http.post('/learning/grower/time/add', { minutes, content_id: contentId }).then(r => r.data)
+    return http.post('/v1/learning/grower/time/add', { minutes, content_id: contentId }).then(r => r.data)
   },
 
   /** 额外: 获取学习时长 */
   getTime(userId: number): Promise<any> {
-    return http.get(`/learning/grower/time/${userId}`).then(r => r.data)
+    return http.get(`/v1/learning/grower/time/${userId}`).then(r => r.data)
   },
 
   /** 额外: 学习连续天数 */
   getStreak(userId: number): Promise<any> {
-    return http.get(`/learning/grower/streak/${userId}`).then(r => r.data)
+    return http.get(`/v1/learning/grower/streak/${userId}`).then(r => r.data)
   },
 
   /** 额外: 排行榜 */
   getLeaderboard(): Promise<any[]> {
-    return http.get('/learning/leaderboard/growers').then(r => r.data)
+    return http.get('/v1/learning/leaderboard/growers').then(r => r.data)
+  },
+
+  /** 里程碑和奖励 */
+  getRewards(userId: number): Promise<any> {
+    return http.get(`/v1/learning/rewards/${userId}`).then(r => r.data)
   },
 }
 
@@ -294,7 +299,7 @@ export const learningApi = {
 export const contentApi = {
   /** ✅ 路径正确: /content (列表+推荐) */
   list(params?: { category?: string; level?: number; page?: number }): Promise<PaginatedResponse<any>> {
-    return http.get('/content', { params }).then(r => r.data)
+    return http.get('/v1/content', { params }).then(r => r.data)
   },
 
   /**
@@ -303,17 +308,17 @@ export const contentApi = {
    * 使用 stream 版本 (更通用, 不需要 content_type)
    */
   getDetail(contentId: number): Promise<any> {
-    return http.get(`/content/stream/${contentId}`).then(r => r.data)
+    return http.get(`/v1/content/stream/${contentId}`).then(r => r.data)
   },
 
   /** 额外: 按类型获取详情 */
   getDetailByType(contentType: string, contentId: number): Promise<any> {
-    return http.get(`/content/detail/${contentType}/${contentId}`).then(r => r.data)
+    return http.get(`/v1/content/detail/${contentType}/${contentId}`).then(r => r.data)
   },
 
   /** 额外: 推荐内容 */
   getRecommended(): Promise<any[]> {
-    return http.get('/content/recommended').then(r => r.data)
+    return http.get('/v1/content/recommended').then(r => r.data)
   },
 }
 
@@ -324,27 +329,27 @@ export const contentApi = {
 export const deviceApi = {
   /** 旧: /device/summary → 实际: /health-data/summary */
   getSummary(): Promise<any> {
-    return http.get('/health-data/summary').then(r => r.data)
+    return http.get('/v1/health-data/summary').then(r => r.data)
   },
 
   /** 旧: /device/blood-glucose → 实际: /health-data/glucose */
   getBloodGlucose(days?: number): Promise<any[]> {
-    return http.get('/health-data/glucose', { params: { days } }).then(r => r.data)
+    return http.get('/v1/health-data/glucose', { params: { days } }).then(r => r.data)
   },
 
   /** 旧: /device/heart-rate → 实际: /health-data/vitals */
   getHeartRate(days?: number): Promise<any[]> {
-    return http.get('/health-data/vitals', { params: { days } }).then(r => r.data)
+    return http.get('/v1/health-data/vitals', { params: { days } }).then(r => r.data)
   },
 
   /** 旧: /device/sleep → 实际: /health-data/sleep */
   getSleep(days?: number): Promise<any[]> {
-    return http.get('/health-data/sleep', { params: { days } }).then(r => r.data)
+    return http.get('/v1/health-data/sleep', { params: { days } }).then(r => r.data)
   },
 
   /** 旧: /device/steps → 实际: /health-data/activity */
   getSteps(days?: number): Promise<any[]> {
-    return http.get('/health-data/activity', { params: { days } }).then(r => r.data)
+    return http.get('/v1/health-data/activity', { params: { days } }).then(r => r.data)
   },
 }
 
@@ -353,20 +358,14 @@ export const deviceApi = {
 // =====================================================================
 
 export const profileApi = {
-  /** 旧: /users/me → 实际: /assessment/profile/me */
+  /** 获取健康档案 */
   getProfile(): Promise<any> {
-    return http.get('/assessment/profile/me').then(r => r.data)
+    return http.get('/v1/assessment/profile/me').then(r => r.data)
   },
 
-  /**
-   * 旧: PUT /users/me
-   * 实际: PUT /api/v3/auth/profile
-   * 注: v3 路径, 需要绝对URL绕过 baseURL 的 /api/v1 前缀
-   */
-  updateProfile(data: { display_name?: string; email?: string; phone?: string }): Promise<any> {
-    return http.put('/api/v3/auth/profile', data, {
-      baseURL: ''  // 覆盖 baseURL, 使用绝对路径
-    }).then(r => r.data)
+  /** 保存健康档案 (诊断、用药、过敏、紧急联系人等) */
+  updateProfile(data: Record<string, any>): Promise<any> {
+    return http.put('/v1/assessment/profile/me', data).then(r => r.data)
   },
 
   /**
@@ -374,7 +373,7 @@ export const profileApi = {
    * @deprecated 使用 authApi.changePassword 代替
    */
   changePassword(data: { old_password: string; new_password: string }): Promise<void> {
-    return http.put('/auth/password', data).then(r => r.data)
+    return http.put('/v1/auth/password', data).then(r => r.data)
   },
 }
 
@@ -385,47 +384,47 @@ export const profileApi = {
 export const coachApi = {
   /** ✅ 路径正确 */
   getDashboard(): Promise<any> {
-    return http.get('/coach/dashboard').then(r => r.data)
+    return http.get('/v1/coach/dashboard').then(r => r.data)
   },
 
   /** 旧: /coach/clients → 实际: /coach/students */
   getClients(): Promise<any[]> {
-    return http.get('/coach/students').then(r => r.data)
+    return http.get('/v1/coach/students').then(r => r.data)
   },
 
   /** 旧: /coach/clients/{userId} → 实际: /coach/students/{student_id} */
   getClientDetail(studentId: number): Promise<any> {
-    return http.get(`/coach/students/${studentId}`).then(r => r.data)
+    return http.get(`/v1/coach/students/${studentId}`).then(r => r.data)
   },
 
   /** 旧: /coach/kpi → 实际: /coach/performance */
   getKpi(): Promise<any> {
-    return http.get('/coach/performance').then(r => r.data)
+    return http.get('/v1/coach/performance').then(r => r.data)
   },
 
   /** ✅ 路径正确: /learning/coach/points/{user_id} */
   getClientPoints(userId: number): Promise<any> {
-    return http.get(`/learning/coach/points/${userId}`).then(r => r.data)
+    return http.get(`/v1/learning/coach/points/${userId}`).then(r => r.data)
   },
 
   /** 旧: /coach/supervision → 实际: /coach/push-queue/ */
   getSupervisionRecords(): Promise<any[]> {
-    return http.get('/coach/push-queue/').then(r => r.data)
+    return http.get('/v1/coach/push-queue/').then(r => r.data)
   },
 
   /** 额外: 学员活动详情 */
   getClientActivity(studentId: number): Promise<any> {
-    return http.get(`/coach/students/${studentId}/activity`).then(r => r.data)
+    return http.get(`/v1/coach/students/${studentId}/activity`).then(r => r.data)
   },
 
   /** 额外: 学员行为画像 */
   getClientBehavioralProfile(studentId: number): Promise<any> {
-    return http.get(`/coach/students/${studentId}/behavioral-profile`).then(r => r.data)
+    return http.get(`/v1/coach/students/${studentId}/behavioral-profile`).then(r => r.data)
   },
 
   /** 额外: 学员血糖数据 */
   getClientGlucose(studentId: number): Promise<any> {
-    return http.get(`/coach/students/${studentId}/glucose`).then(r => r.data)
+    return http.get(`/v1/coach/students/${studentId}/glucose`).then(r => r.data)
   },
 }
 
@@ -436,12 +435,12 @@ export const coachApi = {
 export const adminApi = {
   /** ✅ 路径正确 */
   getStats(): Promise<any> {
-    return http.get('/admin/stats').then(r => r.data)
+    return http.get('/v1/admin/stats').then(r => r.data)
   },
 
   /** ✅ 路径正确 */
   getUsers(params?: { page?: number; role?: string; search?: string }): Promise<PaginatedResponse<any>> {
-    return http.get('/admin/users', { params }).then(r => r.data)
+    return http.get('/v1/admin/users', { params }).then(r => r.data)
   },
 
   /**
@@ -449,32 +448,32 @@ export const adminApi = {
    * 后端是通用 PUT, 包含 role 在请求体中
    */
   updateUserRole(userId: number, role: string): Promise<any> {
-    return http.put(`/admin/users/${userId}`, { role }).then(r => r.data)
+    return http.put(`/v1/admin/users/${userId}`, { role }).then(r => r.data)
   },
 
   /** 旧: /admin/governance/health → 实际: /governance/dashboard */
   getGovernanceHealth(): Promise<any> {
-    return http.get('/governance/dashboard').then(r => r.data)
+    return http.get('/v1/governance/dashboard').then(r => r.data)
   },
 
   /** 旧: /admin/safety-logs → 实际: /safety/logs */
   getSafetyLogs(params?: { page?: number }): Promise<PaginatedResponse<any>> {
-    return http.get('/safety/logs', { params }).then(r => r.data)
+    return http.get('/v1/safety/logs', { params }).then(r => r.data)
   },
 
   /** 旧: /admin/audit-logs → 实际: /stats/admin/activity-report */
   getAuditLogs(params?: { page?: number; activity_type?: string }): Promise<PaginatedResponse<any>> {
-    return http.get('/stats/admin/activity-report', { params }).then(r => r.data)
+    return http.get('/v1/stats/admin/activity-report', { params }).then(r => r.data)
   },
 
   /** 额外: 分析概览 */
   getAnalyticsOverview(): Promise<any> {
-    return http.get('/analytics/admin/overview').then(r => r.data)
+    return http.get('/v1/analytics/admin/overview').then(r => r.data)
   },
 
   /** 额外: 阶段分布 */
   getStageDistribution(): Promise<any> {
-    return http.get('/analytics/admin/stage-distribution').then(r => r.data)
+    return http.get('/v1/analytics/admin/stage-distribution').then(r => r.data)
   },
 }
 
@@ -485,21 +484,21 @@ export const adminApi = {
 export const reflectionApi = {
   /** 旧: /reflections → 实际: /reflection/entries */
   list(): Promise<any[]> {
-    return http.get('/reflection/entries').then(r => r.data)
+    return http.get('/v1/reflection/entries').then(r => r.data)
   },
 
   /** 旧: POST /reflections → 实际: POST /reflection/entries */
   create(data: { content: string; mood?: number }): Promise<any> {
-    return http.post('/reflection/entries', data).then(r => r.data)
+    return http.post('/v1/reflection/entries', data).then(r => r.data)
   },
 
   /** 额外: 反思提示 */
   getPrompts(): Promise<any[]> {
-    return http.get('/reflection/prompts').then(r => r.data)
+    return http.get('/v1/reflection/prompts').then(r => r.data)
   },
 
   /** 额外: 反思统计 */
   getStats(): Promise<any> {
-    return http.get('/reflection/stats').then(r => r.data)
+    return http.get('/v1/reflection/stats').then(r => r.data)
   },
 }

@@ -295,12 +295,15 @@ const handleSend = async () => {
 
   try {
     const res = await request.post('v1/dispatch', {
+      user_id: localStorage.getItem('admin_user_id') || '0',
       message: text,
+      mode: 'ollama',
     })
     const data = res.data
+    const aiContent = data?.reply || data?.answer || data?.rag?.text || data?.message || ''
     messages.value.push({
       role: 'assistant',
-      content: data?.reply || data?.message || '抱歉，暂时无法回复。',
+      content: aiContent || '抱歉，暂时无法回复。',
       timestamp: Date.now(),
       suggestedReplies: data?.suggested_replies || [],
       dataCard: data?.data_card || undefined,

@@ -90,6 +90,9 @@ export const useAuthStore = defineStore('auth', () => {
         if (data.refresh_token) {
           localStorage.setItem('admin_refresh_token', data.refresh_token)
         }
+        if (data.user?.id) {
+          localStorage.setItem('admin_user_id', String(data.user.id))
+        }
 
         return true
       }

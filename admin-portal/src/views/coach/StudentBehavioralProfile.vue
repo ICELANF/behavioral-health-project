@@ -8,7 +8,7 @@
     <a-spin :spinning="loading">
       <!-- 顶部: 学员信息 + 阶段仪表盘 -->
       <a-row :gutter="16">
-        <a-col :span="8">
+        <a-col :xs="24" :lg="8">
           <a-card :bordered="false" title="学员信息">
             <a-descriptions :column="1" size="small">
               <a-descriptions-item label="姓名">{{ data.student?.full_name || data.student?.username }}</a-descriptions-item>
@@ -17,7 +17,7 @@
           </a-card>
         </a-col>
 
-        <a-col :span="16">
+        <a-col :xs="24" :lg="16">
           <a-card :bordered="false" title="行为阶段">
             <div class="stage-dashboard">
               <div class="stage-current">
@@ -56,7 +56,7 @@
 
       <!-- 第二行: 行为类型 + 心理层级 + 交互模式 -->
       <a-row :gutter="16" style="margin-top: 16px">
-        <a-col :span="8">
+        <a-col :xs="24" :md="12" :lg="8">
           <a-card :bordered="false" title="行为类型 (BPT-6)">
             <a-statistic :value="bpt6Label" :value-style="{ fontSize: '20px', fontWeight: 600 }" />
             <div v-if="profile?.behavior_type?.scores" style="margin-top: 12px">
@@ -68,7 +68,7 @@
           </a-card>
         </a-col>
 
-        <a-col :span="8">
+        <a-col :xs="24" :md="12" :lg="8">
           <a-card :bordered="false" title="心理层级 & 交互模式">
             <a-descriptions :column="1" size="small">
               <a-descriptions-item label="心理层级">
@@ -84,7 +84,7 @@
           </a-card>
         </a-col>
 
-        <a-col :span="8">
+        <a-col :xs="24" :md="12" :lg="8">
           <a-card :bordered="false" title="改变潜力 (CAPACITY)">
             <a-statistic title="总分" :value="profile?.capacity?.total || '--'" />
             <div style="margin-top: 8px">
@@ -103,7 +103,7 @@
 
       <!-- 第三行: 风险标记 + 教练推荐动作 -->
       <a-row :gutter="16" style="margin-top: 16px">
-        <a-col :span="8">
+        <a-col :xs="24" :lg="8">
           <a-card :bordered="false" title="风险标记">
             <a-empty v-if="!profile?.risk_flags?.length" description="无风险标记" :image-style="{ height: '40px' }" />
             <div v-else>
@@ -119,7 +119,7 @@
           </a-card>
         </a-col>
 
-        <a-col :span="16">
+        <a-col :xs="24" :lg="16">
           <a-card :bordered="false" title="推荐教练动作">
             <a-list :data-source="data.coach_actions || []" size="small">
               <template #renderItem="{ item }">

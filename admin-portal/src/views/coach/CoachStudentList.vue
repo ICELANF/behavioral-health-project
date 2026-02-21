@@ -206,4 +206,11 @@ onMounted(async () => {
   gap: 6px;
   flex-shrink: 0;
 }
+
+@media (max-width: 640px) {
+  .student-card { flex-direction: column !important; align-items: flex-start !important; }
+  .student-actions { width: 100%; flex-direction: row; gap: 8px; margin-top: 8px; }
+  .student-actions .ant-btn { flex: 1; }
+  .student-avatar { display: flex; align-items: center; gap: 10px; }
+}
 </style>

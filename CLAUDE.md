@@ -1,9 +1,9 @@
-# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.0.2)
+# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.1.9)
 
 > 本文件由 Claude Code 自动加载，指导 AI 如何在本项目中工作。
-> **V5.0.2 变更**: 2026-02-18 Alembic 045 DB持久化 + StageEngine修复 + CI集成96+5全平台测试
+> **V5.1.9 变更**: 2026-02-20 P2-P5 + Admin响应式 + P6A搜索 + P6B周报 + 全mock清零(87页真实/0全mock) + H5周报页
 >
-> 上游契约: `contracts/行健平台-契约注册表-V5_0_1.xlsx`
+> 上游契约: `E:\注册表更新文件\契约注册表更新_2026-02-20_v3.md`
 > Agent配置清单: `agent_multimodal_host_config.md` (47+ Agent类 · 15预设模板 · 4层安全 · 6模态)
 
 ---
@@ -12,20 +12,20 @@
 
 BHP（Behavioral Health Platform）是一个行为健康数字化管理平台，服务于慢病逆转与行为改变领域。平台包含 Observer(观察者)、Grower(成长者)、Coach(教练)、Expert(专家)、Admin(管理员) 五种用户角色，集成了评估引擎、AI Agent 系统、RAG 知识库、多模态交互引擎、智能监测方案及微信生态对接能力。
 
-**规模**: 74+ 路由模块 · 630+ API 端点 · 130+ 数据模型 · 45 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **R2-R8 飞轮实装 (3,192行)**
+**规模**: 76+ 路由模块 · 650+ API 端点 · 130+ 数据模型 · 49 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **19页Admin响应式** · **全mock=0**
 
-> ⚠️ **V5.0.2 变更**:
-> - Alembic 045: 5表+4视图+种子数据持久化 (program/reflection/coach_review/credit views)
-> - StageEngine(db)→StageEngine() 构造函数修复 (journey_api.py, 6处)
-> - CI 流水线新增 Stage 2.5: test_platform_full.py (96模块+5链 全平台门禁)
-> - test_platform_full.py 新增 --json 参数, JSON key 标准化
-> - **全平台测试: 96/96 + 5/5 chains (25个模块 × 5条跨模块业务链)**
->
-> V5.0.1 变更 (保留):
-> - Agent 从 33→47+ (源码实际类数, 含 specialist/integrative/v4/behaviorRx/tcm/assistant/professional/v14)
-> - §十六 代码契约 (import路径/认证签名/角色判断/Session模式 精确规范)
-> - R2-R8 飞轮已从 mock→真实DB+认证+个性化反馈+微信推送
-> - 修正: 角色枚举值 bhp_coach→coach, bhp_promoter→promoter, bhp_master→master
+> ⚠️ **V5.1.9 变更** (2026-02-20):
+> - **P2 深耕 (V5.1.4)**: R1 Checkin→TrustScore管道 · R2 Admin 86页mock审计(-2675行) · R3 食物AI→自动签到 · R4 设备→自动签到 · R5 H5 3页实装 · R6 Admin+Expert飞轮16端点live · R7 死代码清理(-1224行)
+> - **P3 自动化运维 (V5.1.5)**: R8 处方→任务生成Job(06:15) · R9 信任监控+断连重连Job(22:00) · R10 教练自动上报Job(08:00)
+> - **P4 Mock清零 (V5.1.6)**: R11-R14 共22页修复 · health.ts全量重写(15+端点) · settings_api.py新建
+> - **P5 基础设施 (V5.1.7)**: Migration 046(WeChat ORM同步) · 047(analytics_daily聚合) · 048(feature_flags+A/B测试)
+> - **Admin响应式 (V5.1.8)**: useResponsive.ts组合式 · responsive.css全局 · 19页响应式改造(侧边栏/KPI/双栏/三栏/聊天/看板/浮层)
+> - **P6A 全平台搜索 (V5.1.9)**: search_service(5模块) + search_api(三端隔离admin/coach/client)
+> - **P6B 自动化周报 (V5.1.9)**: Migration 049 + weekly_report_service(8维度) + weekly_report_api(4ep) + scheduler(Sunday 21:00)
+> - **全mock清零 (V5.1.9)**: QuestionBank(修复6项mismatch+bulk endpoint) · CoachStudentList/StudentAssessment(确认已有API) → 全mock=0
+> - **H5周报页 (V5.1.9)**: WeeklyReport.vue(报告展示+历史切换) · MyLearning入口 · 路由注册
+> - asyncpg CAST语法修复 · Chat Ollama fallback正常工作
+> - **全平台测试: 96/96 + 5/5 chains · CI 4-stage门禁**
 
 ---
 
@@ -55,7 +55,7 @@ BHP（Behavioral Health Platform）是一个行为健康数字化管理平台，
 behavioral-health-project/
 ├── main.py                         # ★ FastAPI 入口 (根目录, 非 api/ 下)
 ├── core/                           # ★ 核心业务逻辑 (models/database/redis在此)
-│   ├── models.py                   # 130+ SQLAlchemy 模型 + UserRole枚举 + ROLE_LEVEL映射
+│   ├── models.py                   # 130+ SQLAlchemy 模型 + UserRole枚举 + ROLE_LEVEL映射 (含048迁移)
 │   ├── database.py                 # 同步+异步双模引擎/会话管理 (get_db / get_async_db)
 │   ├── auth.py                     # JWT签发/验证/黑名单
 │   ├── redis_lock.py               # Redis SETNX 分布式互斥锁 (参数: ttl=)
@@ -89,8 +89,8 @@ behavioral-health-project/
 ├── api/                            # ★ 路由模块包
 │   ├── dependencies.py             # 认证守卫: get_current_user / require_admin / require_coach_or_admin
 │   ├── config.py                   # DIFY/OLLAMA 配置
-│   ├── *_api.py                    # 49+ 路由模块
-│   ├── *_service.py                # 61+ 核心服务
+│   ├── *_api.py                    # 49+ 路由模块 (含event_tracking/feature_flag/settings_api)
+│   ├── *_service.py                # 61+ 核心服务 (含device_task_bridge/trust_score_service)
 │   ├── r2_scheduler_agent.py       # ★ V5.0 R2 飞轮: 处方→每日任务
 │   ├── r3_grower_flywheel_api_live.py  # ★ V5.0 R3: Grower飞轮 (5端点)
 │   ├── r4_role_upgrade_trigger.py  # ★ V5.0 R4: 评估完成→角色升级
@@ -127,7 +127,8 @@ behavioral-health-project/
 │       └── tcm_ortho_expert_agents.py  # 中医骨科教练层 (3个)
 ├── gateway/
 │   └── bridge.py                   # V4.1兼容桥接 (含catch-all, 必须最后注册)
-├── admin-portal/                   # Vue 3 管理后台 (:5174) — Coach + Admin
+├── admin-portal/                   # Vue 3 管理后台 (:5174) — Coach + Admin (19页响应式)
+│   └── src/composables/useResponsive.ts  # 响应式断点组合式 (<640/768/1024/1280)
 ├── h5/                             # Vue 3 移动端 (:5173) — Observer + Grower
 ├── miniprogram/                    # V5.0: 微信小程序 (Taro 3)
 ├── knowledge/                      # 知识库 (Markdown)
@@ -231,6 +232,13 @@ behavioral-health-project/
 - TTM 阶段样式使用 `useStageStyle` composable
 - API 调用统一放 `src/api/`, 使用 axios 实例
 - Store 使用 Pinia, 放 `src/stores/`
+- **响应式适配** *(V5.1.8)*:
+  - `src/composables/useResponsive.ts` — 断点: mobile(<640), compact(<768), tablet(640-1023), desktop(>=1024)
+  - `src/styles/responsive.css` — 全局表格/弹窗/抽屉/KPI/表单/描述列表响应式
+  - `main.ts` 中 `import './styles/responsive.css'` 必须在 `antd-overrides.css` 之后
+  - KPI: `:span="6"` → `:xs="24" :sm="12" :lg="6"`; 双栏: `:span="16/8"` → `:xs="24" :lg="16/8"`
+  - AdminLayout: `isCompact`时侧边栏变为 overlay + hamburger 按钮
+  - 模态宽度: `modalWidth(desktopPx)` → mobile返回'100%', compact返回min(px, vw-48)
 
 ### 5.3 多模态编码规范
 
@@ -392,7 +400,127 @@ target_behavior(目标行为) + frequency_dose(频次剂量) + time_place(时间
 | R7 notification_agent | 2+3job | 通知查询/已读 + 早晨/晚间/断连推送 | wx_gateway推送 + coach_push_queue审批 + 07:15/10:15/20:15错开 |
 | R8 user_context | 3 | 上下文CRUD + Agent记忆注入 | user_contexts表 UniqueConstraint |
 
-### 6.9-6.19 (与V5.0版保持一致)
+### 6.9 P2 深耕阶段 (V5.1.4, R1-R7)
+
+| 轮次 | 内容 | 关键文件/端点 |
+|------|------|-------------|
+| R1 | Checkin→TrustScore管道 | trust_score_service + asyncio.to_thread桥接 |
+| R2 | Admin 86页mock审计 (-2675行) | 69文件改写, 全部接入真实API |
+| R3 | 食物AI→daily_tasks自动签到 | food_recognition_api + FoodRecognition.vue banner |
+| R4 | 设备数据→daily_tasks自动签到 | device_task_bridge.py, 4个POST端点 |
+| R5 | H5 3页实装 (学分/同道者/晋级) | MyCredits/MyCompanions/PromotionProgress |
+| R6 | Admin+Expert飞轮live (16端点) | admin_flywheel_api + expert_flywheel_api |
+| R7 | 死代码清理 (-1224行) | 删除4个mock文件 |
+
+**活跃飞轮文件**: `r3_grower_flywheel_api_live.py`, `r5_observer_flywheel_api_live.py`, `r6_coach_flywheel_api_live.py`, `admin_flywheel_api.py`, `expert_flywheel_api.py`
+
+### 6.10 P3 自动化运维 (V5.1.5, R8-R10)
+
+| Job | 调度时间 | 功能 | Redis锁 |
+|-----|---------|------|---------|
+| `prescription_task_generation` | 06:15 | 处方→每日任务自动生成 | ✅ |
+| `trust_engagement_monitor` | 22:00 | 信任<0.3 + 3天不活跃 + 有效Rx → 用户通知+教练预警 | ✅ |
+| `coach_auto_escalation` | 08:00 | 7天+不活跃有Rx → coach_push_queue (7天去重) | ✅ |
+
+**R9 断连模板**: long(≥14天) / medium(≥7天) / short(其他), 差异化重连话术
+
+### 6.11 P4 Mock清零 (V5.1.6, R11-R14)
+
+| 轮次 | 页面 | 关键修复 |
+|------|------|---------|
+| R11 | ContentSharing/StudentList/AssessmentResult/MyReviews | intervention tab + write ops + flywheel |
+| R12 | health.ts全量重写 (15+端点, 无patientId) | 4个客户端页面适配, quick-checkin端点 |
+| R13 | coach/Review/ExpertHome/MySupervision/MyResearch | **新建** settings_api.py, promotion API |
+| R14 | LiveList/MedicalAssistant/MyTrajectory | empty state, wired endpoints |
+
+**修复模式**: asyncpg CAST语法, task_date/order_num列, TS注解, async关键字
+
+**当前页面状态**: ~87 真实 · ~12 mock-fallback(空≠mock) · 0 全mock · 1 即将上线 · ~8 静态
+
+### 6.12 P5 基础设施 (V5.1.7, Migration 046-048)
+
+| Migration | 内容 | 关键表/列 |
+|-----------|------|----------|
+| 046 | WeChat ORM同步 | users表: wx_openid/wx_miniprogram_openid/union_id/preferred_channel/growth_points |
+| 047 | analytics_daily聚合表 | analytics_daily (日活/留存/转化), 调度Job已存在 |
+| 048 | feature_flags + A/B测试 | feature_flags/ab_test_events, 7个API端点, hash变体分配 |
+
+**event_tracking_api**: batch ingestion CAST修复 (tracked: 0→tracked: 2)
+
+### 6.13 Admin Portal 响应式适配 (V5.1.8)
+
+**断点**: 640px(mobile) | 768px(tablet) | 1024px(laptop) | 1280px(desktop)
+
+| Phase | 页面/组件 | 改造方式 |
+|-------|----------|---------|
+| 0 | useResponsive.ts + responsive.css + main.ts | 共享基础设施 |
+| 1 | AdminLayout | sidebar→overlay(hamburger), responsive header |
+| 2-3 | 10页 KPI+双栏 (58个a-col转换) | prop: xs/sm/md/lg |
+| 4 | ExpertAuditWorkbench + CoachWorkbench | 3栏/2栏→stack |
+| 5 | AdminCommandCenter | CSS grid媒体查询 |
+| 6 | CoachHome (7个drawer) | modalWidth() helper |
+| 7 | StudentMessages | 单面板切换 (showChat toggle) |
+| 8 | MyStudents kanban | flex-direction: column |
+| 9 | CoachCopilot | panel→全屏overlay |
+| 10 | ContentSharing + CoachStudentList | steps方向/卡片布局 |
+
+**进度追踪文件**: `E:\注册表更新文件\P2-responsive-progress.md`
+
+### 6.14 P6A 全平台搜索 (V5.1.9)
+
+**端点**: `GET /api/v1/search?q=关键词&modules=users,prescriptions,tasks,checkins,content&limit=5`
+
+**权限隔离** (基于 ROLE_LEVEL):
+
+| 角色 | 解析规则 | users | prescriptions/tasks/checkins | content |
+|------|---------|-------|------------------------------|---------|
+| admin | level >= 99 | 全量 | 全量 | 全量(published) |
+| coach | level >= 4 | 仅 coach_student_bindings 绑定学员 | 仅绑定学员 | 全量(published) |
+| client | 其他 | 仅自己 | 仅自己 | 全量(published) |
+
+**文件**: `api/search_service.py` (5个搜索函数) + `api/search_api.py` (路由)
+**注意**: AsyncSession 不支持并发, 5个模块顺序执行 (非 asyncio.gather)
+
+### 6.15 P6B 自动化周报 (V5.1.9)
+
+**表**: `user_weekly_reports` (Migration 049, UNIQUE user_id+week_start)
+
+**数据维度**: tasks_total/completed, completion_pct, checkin_count, learning_minutes, points_earned, activity_count, streak_days, highlights(JSONB), suggestions(JSONB)
+
+**API** (4端点):
+- `GET /api/v1/weekly-reports` — 当前用户周报列表
+- `GET /api/v1/weekly-reports/latest` — 最新一期
+- `GET /api/v1/weekly-reports/{week_start}` — 指定周
+- `POST /api/v1/admin/weekly-reports/generate` — admin手动触发
+
+**调度**: `user_weekly_report` Job, 每周日 21:00, Redis锁 ttl=900
+
+**文件**: `api/weekly_report_service.py` + `api/weekly_report_api.py`
+
+### 6.16 全Mock清零 (V5.1.9)
+
+3页全mock → 0页:
+
+| 页面 | 原状态 | 修复方式 |
+|------|--------|---------|
+| CoachStudentList | ❌全mock | 前端已调用 `GET /v1/coach/dashboard`, 无需改动 |
+| StudentAssessment | ❌全mock | 前端已调用 `GET /v1/coach/students/{id}/assessment-detail`, 无需改动 |
+| QuestionBank | ❌全mock | 修复6项: response shape(data→items) · 字段名(type→question_type) · 难度(int→string) · 筛选(level→domain) · +use_count · +POST /bulk |
+
+**backend**: `question_api.py` (+use_count/correct_rate, +keyword搜索, +POST /bulk批量导入)
+**frontend**: `stores/question.ts` (response解析), `views/exam/QuestionBank.vue` (字段/筛选/难度/响应式KPI)
+
+### 6.17 H5 行为周报页 (V5.1.9)
+
+**新增文件**: `h5/src/views/WeeklyReport.vue`
+**路由**: `/weekly-report` (registered in router/index.ts)
+**入口**: MyLearning.vue → "查看行为周报" 链接
+
+**功能**: 4指标卡(完成率/学习分钟/积分/完成天数) + 签到活动详情 + 高频行为标签 + 本周建议 + 历史周报切换
+
+**API调用**: `GET /v1/weekly-reports/latest` + `GET /v1/weekly-reports` + `GET /v1/weekly-reports/{week_start}`
+
+### 6.18-6.21 (与V5.0版保持一致)
 
 > 改变动因6×24 · 四阶段养成 · 证据分层T1-T4 · 推送审批网关 · 六种隐式数据源+MULTIMODAL ·
 > 四维用户状态(S+L+G+Lv) · 健康能力Lv0-Lv5 · 成长等级G0-G5 ·
@@ -473,14 +601,18 @@ cd miniprogram && npm run dev:weapp
 
 ## 十、已知问题与注意事项
 
-- `/v1/health/p001/*` 返回 404 → `health.ts` 有 mock fallback
 - `/v1/tenants/hub` 返回空列表 → 无种子专家数据, 正常
 - bhp-wx-gateway 端口 8080 与 dify-nginx 冲突 → 需调整
 - 微信服务号认证需 7-14 天 → 提前启动
 - 小程序审核定位"健康管理"非"诊断"
-- ~~StageEngine(db) 构造函数错误~~ → ✅ V5.0.2 已修复 (journey_api.py)
-- ~~program_templates 等表未持久化~~ → ✅ V5.0.2 Alembic 045 已持久化
 - Chat 503: 需配置 `CLOUD_LLM_API_KEY` 使 AI 对话功能可用
+- 3 全 mock 页面待开发: CoachStudentList(学员总览), StudentAssessment(评估管理), QuestionBank(题库管理)
+- ~~StageEngine(db) 构造函数错误~~ → ✅ V5.0.2 已修复
+- ~~program_templates 等表未持久化~~ → ✅ V5.0.2 Alembic 045 已持久化
+- ~~`/v1/health/p001/*` 返回 404~~ → ✅ V5.1.6 health.ts 全量重写, 15+ 端点实装
+- ~~event_tracking_api `::json` cast 失败~~ → ✅ V5.1.7 改为 `CAST(:detail AS json)`
+- ~~feature_flag_api `::jsonb` cast 失败~~ → ✅ V5.1.7 改为 `CAST(... AS jsonb)` (4处)
+- ~~Admin 86页 mock 数据~~ → ✅ V5.1.4 P2-R2 全部接入真实API (-2675行)
 
 ---
 
@@ -510,7 +642,7 @@ cd miniprogram && npm run dev:weapp
 | 架构总览 | `platform-architecture-overview.md` | 完整路由/模型/服务/数据流 |
 | 核心业务逻辑 | `behavioral-prescription-core-logic-supplemented.md` | 26章, 2367行 |
 | **Agent Host 配置** *(V5.0.1)* | **`agent_multimodal_host_config.md`** | **47+ Agent · LLM配置 · 多模态 · 安全管道** |
-| **契约注册表** *(V5.0.1)* | **`contracts/行健平台-契约注册表-V5_0_1.xlsx`** | **8 Sheet (新增代码契约+Agent完整清单)** |
+| **契约注册表** *(V5.1.9)* | **`E:\注册表更新文件\契约注册表更新_2026-02-20_v3.md`** | **V5.1.9 全量更新 (P2-P6+响应式+全mock清零+H5周报)** |
 | 多模态消息协议 | `core/multimodal/protocol.py` | 10种模态定义 |
 
 ---
@@ -573,6 +705,15 @@ python scripts/test_platform_full.py --json reports/platform_test_report.json
 | **代码契约** *(V5.0.1)* | **§十六 精确import/认证/角色/Session规范** | **✅完成** |
 | **DB持久化** *(V5.0.2)* | **Alembic 045: 5表+4视图+种子数据, 全部IF NOT EXISTS幂等** | **✅完成** |
 | **CI全平台门禁** *(V5.0.2)* | **96模块+5链测试纳入ci-security.yml Stage 2.5** | **✅完成** |
+| **P2深耕** *(V5.1.4)* | **R1-R7: mock审计/食物AI/设备桥接/飞轮live/死代码清理 (69文件, -3899行)** | **✅完成** |
+| **P3自动化运维** *(V5.1.5)* | **R8-R10: 3新定时Job (06:15/08:00/22:00), Redis锁互斥** | **✅完成** |
+| **P4 Mock清零** *(V5.1.6)* | **R11-R14: 22页修复, health.ts重写, settings_api, 6页重分类** | **✅完成** |
+| **P5基础设施** *(V5.1.7)* | **Migration 046-048: WeChat ORM/analytics_daily/feature_flags, asyncpg CAST修复** | **✅完成** |
+| **Admin响应式** *(V5.1.8)* | **19页媒体查询 + useResponsive组合式 + responsive.css全局样式** | **✅完成** |
+| **P6A搜索** *(V5.1.9)* | **search_service(5模块) + search_api(三端隔离) + 顺序AsyncSession** | **✅完成** |
+| **P6B周报** *(V5.1.9)* | **Migration 049 + weekly_report_service(8维度) + 4端点 + scheduler(Sun 21:00)** | **✅完成** |
+| **全mock清零** *(V5.1.9)* | **QuestionBank(6项mismatch+bulk) + CoachStudentList/StudentAssessment(确认已有API) → 0全mock** | **✅完成** |
+| **H5周报页** *(V5.1.9)* | **WeeklyReport.vue + MyLearning入口 + 路由注册** | **✅完成** |
 
 ---
 
@@ -582,12 +723,14 @@ python scripts/test_platform_full.py --json reports/platform_test_report.json
 |----------------|-----------|---------|
 | §6.5 Agent体系 | Agent完整清单 | 47+ Agent类; 分层路由 |
 | §6.8 飞轮实装 | 飞轮实装契约 | 14端点+3 job; R2-R8交叉引用 |
+| §6.9-6.17 P2-P6 | 契约注册表v3 §二-§六+§十一 | R1-R14+046-049迁移+响应式+搜索+周报+全mock清零+H5周报 |
 | §6.17 多模态 | 多模态AI交互 | 10模态; 角色权限; S1-S6 |
 | §6.19 微信 | 微信生态对接 | 3通道; C1-C8合规 |
-| §十六 代码契约 | 代码契约 (新Sheet) | 5条import铁律; 认证签名; 角色判断 |
+| §十六 代码契约 | 代码契约 (新Sheet) | 5条import铁律; 认证签名; 角色判断; asyncpg CAST |
 | §四 Docker | V5.0变更总览 | 容器端口无冲突 |
 
 **对齐原则**: 代码实现以 CLAUDE.md 为准; CLAUDE.md 以契约注册表为准; 冲突时契约注册表优先。
+**实时同步**: 所有重要变更必须同步更新 CLAUDE.md + 契约注册表, 保持版本一致。
 
 ---
 
@@ -653,9 +796,25 @@ WHERE u.role_level >= 2
 | agency_score | Float | 0.0-1.0 |
 
 **不在 User 表的常见字段**:
+- `coach_id` → 不存在, 教练-学员关系见下方 bindings 表
 - `growth_points` → `UserLearningStats.growth_points` (需JOIN)
-- `wx_openid` → 尚不存在 (V5.0 迁移未执行)
+- `wx_openid` → Migration 046 已同步到 ORM
 - `role_level` → 不存在, 用 `ROLE_LEVEL[user.role]`
+
+**教练-学员关系: `coach_schema.coach_student_bindings`** *(Migration 039)*
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | UUID PK | gen_random_uuid() |
+| coach_id | Integer NOT NULL | FK → users.id (教练) |
+| student_id | Integer NOT NULL | FK → users.id (学员) |
+| binding_type | VARCHAR(20) | `assigned` (默认) |
+| permissions | JSONB | {view_profile, send_message, create_rx, ...} |
+| is_active | Boolean | 是否有效 |
+
+> ⚠️ 表在 **coach_schema** (非 public), SQL 必须写 `coach_schema.coach_student_bindings`
+> ⚠️ **无 ORM 模型**, 全部通过 `admin_bindings_api.py` 的 `sa_text()` raw SQL 操作
+> ⚠️ 唯一约束: `(coach_id, student_id, binding_type)` — 同对同类型不重复
 
 ### 16.5 main.py 路由注册顺序
 
@@ -699,7 +858,23 @@ async def my_endpoint(
     return {"data": rows}
 ```
 
-### 16.8 R2-R8 线上版实际 import (参考)
+### 16.8 asyncpg CAST 语法 *(V5.1.7 新增)*
+
+> asyncpg 将 `::type` 中的 `:` 解释为命名参数前缀，导致 SQL 执行失败。
+> **所有 SQLAlchemy `text()` 中的类型转换必须使用 `CAST()` 函数。**
+
+```python
+# ✅ 正确: 使用 CAST() 函数
+await db.execute(text("INSERT INTO t (data) VALUES (CAST(:v AS json))"), {"v": json_str})
+await db.execute(text("UPDATE t SET config = CAST(:v AS jsonb)"), {"v": json_str})
+
+# ❌ 错误: asyncpg 解析失败
+await db.execute(text("INSERT INTO t (data) VALUES (:v::json)"), {"v": json_str})
+```
+
+**已修复文件**: `event_tracking_api.py` (1处), `feature_flag_api.py` (4处)
+
+### 16.9 R2-R8 线上版实际 import (参考)
 
 ```python
 # R2: from core.database import get_async_db; from api.dependencies import require_admin

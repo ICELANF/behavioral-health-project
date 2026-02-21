@@ -9,42 +9,42 @@ export const questionApi = {
    * 获取题目列表
    */
   list(params?: QuestionListParams) {
-    return request.get<{ success: boolean; data: Question[] }>('/certification/questions', { params });
+    return request.get<{ success: boolean; data: Question[] }>('/v1/certification/questions', { params });
   },
 
   /**
    * 获取单个题目详情
    */
   get(questionId: string) {
-    return request.get<{ success: boolean; data: Question }>(`/certification/questions/${questionId}`);
+    return request.get<{ success: boolean; data: Question }>(`/v1/certification/questions/${questionId}`);
   },
 
   /**
    * 创建题目
    */
   create(question: Partial<Question>) {
-    return request.post<{ success: boolean; data: Question }>('/certification/questions', question);
+    return request.post<{ success: boolean; data: Question }>('/v1/certification/questions', question);
   },
 
   /**
    * 更新题目
    */
   update(questionId: string, question: Partial<Question>) {
-    return request.put<{ success: boolean; data: Question }>(`/certification/questions/${questionId}`, question);
+    return request.put<{ success: boolean; data: Question }>(`/v1/certification/questions/${questionId}`, question);
   },
 
   /**
    * 删除题目
    */
   delete(questionId: string) {
-    return request.delete<{ success: boolean }>(`/certification/questions/${questionId}`);
+    return request.delete<{ success: boolean }>(`/v1/certification/questions/${questionId}`);
   },
 
   /**
    * 批量导入题目
    */
   bulkImport(questions: Partial<Question>[]) {
-    return request.post<{ success: boolean; data: { imported: number; failed: number } }>('/certification/questions/bulk', {
+    return request.post<{ success: boolean; data: { imported: number; failed: number } }>('/v1/certification/questions/bulk', {
       questions,
     });
   },

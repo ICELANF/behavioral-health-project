@@ -12,7 +12,7 @@
 
     <a-row :gutter="[16, 16]">
       <!-- 学员风险等级趋势 -->
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="学员风险等级趋势" :bordered="false">
           <a-spin :spinning="loading.risk">
             <div v-if="isEmpty.risk"><a-empty description="暂无风险数据" /></div>
@@ -21,7 +21,7 @@
         </a-card>
       </a-col>
       <!-- 微行动完成率趋势 -->
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="微行动完成率趋势" :bordered="false">
           <a-spin :spinning="loading.micro">
             <div v-if="isEmpty.micro"><a-empty description="暂无微行动数据" /></div>
@@ -30,7 +30,7 @@
         </a-card>
       </a-col>
       <!-- 领域表现对比 -->
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="领域表现对比" :bordered="false">
           <a-spin :spinning="loading.domain">
             <div v-if="isEmpty.domain"><a-empty description="暂无领域数据" /></div>
@@ -39,7 +39,7 @@
         </a-card>
       </a-col>
       <!-- 预警频率分布 -->
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="预警频率分布" :bordered="false">
           <a-spin :spinning="loading.alert">
             <div v-if="isEmpty.alert"><a-empty description="暂无预警数据" /></div>
@@ -48,7 +48,7 @@
         </a-card>
       </a-col>
       <!-- 挑战报名与完成 -->
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="挑战报名与完成" :bordered="false">
           <a-spin :spinning="loading.challenge">
             <div v-if="isEmpty.challenge"><a-empty description="暂无挑战数据" /></div>
@@ -57,7 +57,7 @@
         </a-card>
       </a-col>
       <!-- 学员阶段分布 -->
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="学员阶段分布" :bordered="false">
           <a-spin :spinning="loading.stage">
             <div v-if="isEmpty.stage"><a-empty description="暂无阶段数据" /></div>

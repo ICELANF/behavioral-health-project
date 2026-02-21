@@ -9,21 +9,21 @@ export const resultApi = {
    * 获取考试成绩列表
    */
   list(params: ResultListParams) {
-    return request.get<{ success: boolean; data: ExamResult[] }>('/certification/results', { params });
+    return request.get<{ success: boolean; data: ExamResult[] }>('/v1/certification/results', { params });
   },
 
   /**
    * 获取单个成绩详情
    */
   get(resultId: string) {
-    return request.get<{ success: boolean; data: ExamResult }>(`/certification/results/${resultId}`);
+    return request.get<{ success: boolean; data: ExamResult }>(`/v1/certification/results/${resultId}`);
   },
 
   /**
    * 导出成绩
    */
   export(examId: string, format: 'csv' | 'xlsx' = 'csv') {
-    return request.get(`/certification/results/export`, {
+    return request.get(`/v1/certification/results/export`, {
       params: { exam_id: examId, format },
       responseType: 'blob',
     });
@@ -33,13 +33,13 @@ export const resultApi = {
    * 作废成绩
    */
   invalidate(resultId: string, reason: string) {
-    return request.post<{ success: boolean }>(`/certification/results/${resultId}/invalidate`, { reason });
+    return request.post<{ success: boolean }>(`/v1/certification/results/${resultId}/invalidate`, { reason });
   },
 
   /**
    * 获取考生的所有成绩
    */
   getByCoach(coachId: string) {
-    return request.get<{ success: boolean; data: ExamResult[] }>(`/certification/coaches/${coachId}/results`);
+    return request.get<{ success: boolean; data: ExamResult[] }>(`/v1/certification/coaches/${coachId}/results`);
   },
 };

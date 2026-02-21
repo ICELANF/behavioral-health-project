@@ -13,16 +13,16 @@
 
     <!-- Stats -->
     <a-row :gutter="16" style="margin-bottom: 16px">
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card size="small"><a-statistic title="总学员数" :value="allStudents.length" :loading="loading" /></a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card size="small"><a-statistic title="高风险" :value="riskCounts.high" value-style="color: #cf1322" :loading="loading" /></a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card size="small"><a-statistic title="本周活跃" :value="activeCounts" value-style="color: #3f8600" :loading="loading" /></a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card size="small"><a-statistic title="待跟进" :value="pendingFollowUp" value-style="color: #d46b08" :loading="loading" /></a-card>
       </a-col>
     </a-row>
@@ -200,4 +200,15 @@ onMounted(() => {
 .student-stage { font-size: 11px; color: #999; }
 .student-metrics { display: flex; gap: 12px; font-size: 11px; color: #666; margin-bottom: 6px; }
 .student-actions { display: flex; gap: 4px; }
+
+@media (max-width: 768px) {
+  .kanban-board { flex-direction: column !important; }
+  .kanban-column { min-width: 100% !important; }
+}
+@media (max-width: 640px) {
+  .header-actions { flex-direction: column; width: 100%; }
+  .header-actions .ant-input-search,
+  .header-actions .ant-select { width: 100% !important; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
 </style>

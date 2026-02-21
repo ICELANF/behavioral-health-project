@@ -12,9 +12,14 @@ import './styles/brand-themes.css'
 import './styles/bhp-design-tokens.css'
 import './styles/vant-overrides.css'
 
+import { initTracker } from '@/utils/tracker'
+
 const app = createApp(App)
 
 app.use(createPinia())
 app.use(router)
+
+// P5B: Initialize event tracker (page_view auto-tracking + session lifecycle)
+initTracker(router)
 
 app.mount('#app')

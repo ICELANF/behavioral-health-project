@@ -439,4 +439,14 @@ function handleKeydown(e: KeyboardEvent) {
 .empty-icon { font-size: 64px; margin-bottom: 16px; }
 .empty-state h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 8px; }
 .empty-state p { font-size: 14px; color: #6b7280; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .workbench-body { flex-direction: column !important; }
+  .queue-panel { width: 100% !important; max-height: 200px; overflow-y: auto; }
+  .stats-bar { flex-wrap: wrap; }
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+  .queue-panel { width: 240px !important; }
+}
 </style>

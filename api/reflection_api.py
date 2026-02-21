@@ -50,7 +50,8 @@ def create_reflection(
             prompt_used=req.prompt_used,
         )
         db.commit()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         db.rollback()
         result = {"id": 0, "content": req.content, "title": req.title, "status": "pending"}
 
@@ -81,7 +82,8 @@ def list_reflections(
     try:
         svc = ReflectionService(db)
         return svc.list_entries(current_user.id, journal_type, limit, offset)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         return {"items": [], "total": 0}
 
 

@@ -28,10 +28,23 @@ const router = createRouter({
       }
     },
     {
+      path: '/onboarding',
+      name: 'onboarding',
+      component: () => import('@/views/onboarding/OnboardingGuide.vue'),
+      meta: { title: '欢迎' }
+    },
+    {
       path: '/home/observer',
       name: 'observer-home',
       component: () => import('@/views/home/ObserverHome.vue'),
-      meta: { title: '开始你的健康旅程' }
+      meta: { title: '开始你的健康旅程' },
+      beforeEnter: (_to, _from, next) => {
+        if (!localStorage.getItem('bhp_onboarding_done')) {
+          next({ path: '/onboarding', replace: true })
+        } else {
+          next()
+        }
+      }
     },
     {
       path: '/home/today',
@@ -142,6 +155,12 @@ const router = createRouter({
       name: 'my-learning',
       component: () => import('@/views/MyLearning.vue'),
       meta: { title: '我的学习' }
+    },
+    {
+      path: '/weekly-report',
+      name: 'weekly-report',
+      component: () => import('@/views/WeeklyReport.vue'),
+      meta: { title: '行为周报' }
     },
     {
       path: '/coach-directory',

@@ -108,7 +108,8 @@ async def get_review_queue(
         role_stmt = text("SELECT role::text FROM users WHERE id = :uid")
         role_result = await db.execute(role_stmt, {"uid": coach_id})
         role_val = (role_result.scalar() or "").lower()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         return ReviewQueueResponse(items=[], total_pending=0, urgent_count=0)
     if role_val not in _COACH_ROLES:
         raise HTTPException(status_code=403, detail="需要教练权限")
@@ -138,7 +139,8 @@ async def get_review_queue(
 
         result = await db.execute(stmt, params)
         rows = result.mappings().all()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         return ReviewQueueResponse(items=[], total_pending=0, urgent_count=0)
 
     now = datetime.now()
@@ -175,7 +177,8 @@ async def get_review_queue(
         counts = (await db.execute(count_stmt, {"cid": coach_id})).mappings().first()
         total_pending = counts["pending"] or 0
         urgent_count = counts["urgent"] or 0
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         total_pending = 0
         urgent_count = 0
 
@@ -222,7 +225,8 @@ async def approve_review(
         """)
         q_result = await db.execute(q_stmt, {"rid": review_id, "cid": coach_id})
         review = q_result.mappings().first()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         raise HTTPException(status_code=404, detail="审核服务暂不可用")
 
     if not review:
@@ -372,7 +376,8 @@ async def get_coach_stats_today(
             "cid": coach_id,
             "today_start": datetime.combine(today, datetime.min.time()),
         })).mappings().first()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         return _empty
 
     return CoachStatsToday(

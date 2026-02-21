@@ -119,6 +119,15 @@ export interface HealthSnapshot {
 
 const periodToDays: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90, week: 7, month: 30, quarter: 90 }
 
+function dateRange(days: number): { start_date: string; end_date: string } {
+  const end = new Date()
+  const start = new Date(end.getTime() - days * 86400000)
+  return {
+    start_date: start.toISOString().slice(0, 10),
+    end_date: end.toISOString().slice(0, 10),
+  }
+}
+
 export const healthApi = {
   // ── Data Recording ──
   async recordGlucose(data: any) {
@@ -149,17 +158,21 @@ export const healthApi = {
   // ── Data Retrieval ──
   async getGlucoseHistory(params: { period?: string } = {}) {
     const days = periodToDays[params.period || '7d'] || 7
-    const res = await request.get('/v1/mp/device/glucose', { params: { days } })
+    const res = await request.get('/v1/mp/device/glucose', { params: { ...dateRange(days), limit: days * 4 } })
     return res.data
   },
   async getWeightHistory(params: { period?: string } = {}) {
     const days = periodToDays[params.period || '7d'] || 7
-    const res = await request.get('/v1/mp/device/weight', { params: { days } })
+    const res = await request.get('/v1/mp/device/weight', { params: { ...dateRange(days), limit: days } })
+    return res.data
+  },
+  async getBloodPressureHistory(params: { limit?: number } = {}) {
+    const res = await request.get('/v1/mp/device/blood-pressure', { params: { limit: params.limit || 30 } })
     return res.data
   },
   async getExerciseHistory(params: { period?: string } = {}) {
     const days = periodToDays[params.period || '7d'] || 7
-    const res = await request.get('/v1/mp/device/activity', { params: { days } })
+    const res = await request.get('/v1/mp/device/activity', { params: dateRange(days) })
     return res.data
   },
 
@@ -190,7 +203,22 @@ export const healthApi = {
   },
   async getTrends(metric: string, params: { period?: string } = {}) {
     const days = periodToDays[params.period || '30d'] || 30
-    const res = await request.get(`/v1/mp/device/${metric}`, { params: { days } })
+    const res = await request.get(`/v1/mp/device/${metric}`, { params: { ...dateRange(days), limit: days * 4 } })
+    return res.data
+  },
+  async getTaskCatalog() {
+    const res = await request.get('/v1/daily-tasks/catalog')
+    return res.data
+  },
+  async addTaskFromCatalog(catalogId: string, customTitle?: string) {
+    const res = await request.post('/v1/daily-tasks/add-from-catalog', {
+      catalog_id: catalogId,
+      custom_title: customTitle || undefined,
+    })
+    return res.data
+  },
+  async removeTask(taskId: string) {
+    const res = await request.delete(`/v1/daily-tasks/${taskId}`)
     return res.data
   },
 }

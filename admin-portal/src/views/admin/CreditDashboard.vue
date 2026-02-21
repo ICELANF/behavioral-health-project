@@ -4,22 +4,22 @@
 
     <!-- KPI 卡片 -->
     <a-row :gutter="16" class="mb-4">
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card>
           <a-statistic title="课程模块总数" :value="stats.total_modules" />
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card>
           <a-statistic title="学分记录总数" :value="stats.total_credit_records" />
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card>
           <a-statistic title="有学分用户数" :value="stats.users_with_credits" />
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card>
           <a-statistic title="待审核晋级申请" :value="pendingApplications" />
         </a-card>
@@ -28,7 +28,7 @@
 
     <!-- 模块类型分布 -->
     <a-row :gutter="16">
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="课程模块按类型分布">
           <a-table
             :columns="typeColumns"
@@ -39,7 +39,7 @@
           />
         </a-card>
       </a-col>
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="晋级规则概览">
           <a-table
             :columns="ruleColumns"

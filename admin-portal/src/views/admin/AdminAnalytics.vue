@@ -11,28 +11,28 @@
 
     <!-- KPI 卡片行 -->
     <a-row :gutter="16" class="kpi-row">
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card :bordered="false">
           <a-statistic title="注册用户" :value="overview.total_users" :value-style="{ color: '#1890ff' }">
             <template #prefix><UserOutlined /></template>
           </a-statistic>
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card :bordered="false">
           <a-statistic title="活跃用户" :value="overview.active_users" :value-style="{ color: '#52c41a' }">
             <template #prefix><CheckCircleOutlined /></template>
           </a-statistic>
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card :bordered="false">
           <a-statistic title="认证教练" :value="overview.coach_count" :value-style="{ color: '#722ed1' }">
             <template #prefix><TeamOutlined /></template>
           </a-statistic>
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card :bordered="false">
           <a-statistic title="高风险学员" :value="overview.high_risk_count" :value-style="{ color: '#ff4d4f' }">
             <template #prefix><WarningOutlined /></template>
@@ -43,7 +43,7 @@
 
     <!-- 第一行图表: 用户增长(16) + 角色分布(8) -->
     <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :span="16">
+      <a-col :xs="24" :lg="16">
         <a-card title="用户增长趋势" :bordered="false">
           <a-spin :spinning="loading.growth">
             <div v-if="isEmpty.growth"><a-empty description="暂无增长数据" /></div>
@@ -51,7 +51,7 @@
           </a-spin>
         </a-card>
       </a-col>
-      <a-col :span="8">
+      <a-col :xs="24" :lg="8">
         <a-card title="角色分布" :bordered="false">
           <a-spin :spinning="loading.role">
             <div v-if="isEmpty.role"><a-empty description="暂无角色数据" /></div>
@@ -63,7 +63,7 @@
 
     <!-- 第二行: 阶段分布(12) + 风险分布(12) -->
     <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="行为阶段分布" :bordered="false">
           <a-spin :spinning="loading.stage">
             <div v-if="isEmpty.stage"><a-empty description="暂无阶段数据" /></div>
@@ -71,7 +71,7 @@
           </a-spin>
         </a-card>
       </a-col>
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="风险等级分布" :bordered="false">
           <a-spin :spinning="loading.risk">
             <div v-if="isEmpty.risk"><a-empty description="暂无风险数据" /></div>
@@ -83,7 +83,7 @@
 
     <!-- 第三行: 教练排行(14) + 系统概况(10) -->
     <a-row :gutter="[16, 16]" style="margin-top: 16px">
-      <a-col :span="14">
+      <a-col :xs="24" :lg="14">
         <a-card title="教练绩效排行" :bordered="false">
           <a-spin :spinning="loading.leaderboard">
             <div v-if="isEmpty.leaderboard"><a-empty description="暂无教练数据" /></div>
@@ -91,7 +91,7 @@
           </a-spin>
         </a-card>
       </a-col>
-      <a-col :span="10">
+      <a-col :xs="24" :lg="10">
         <!-- TODO: 接入 GET /v1/analytics/admin/system-info 动态获取系统概况 -->
         <a-card title="系统概况" :bordered="false">
           <a-descriptions :column="1" bordered size="small">

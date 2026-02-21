@@ -7,7 +7,7 @@ Scheduler - 定时任务调度
 - reminder_check: 每分钟查询到期提醒并推送
 - expired_task_cleanup: 每天23:59将过期未完成任务标记为 expired
 """
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from loguru import logger
 from core.redis_lock import with_redis_lock
 
@@ -672,6 +672,203 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
         )
     except Exception as e:
         logger.warning(f"[Scheduler] coach_auto_escalation 注册失败: {e}")
+
+    # ── P5B: 每日分析聚合 (每天03:00) ──
+    try:
+        from core.database import AsyncSessionLocal as _P5bAsync
+
+        @with_redis_lock("scheduler:analytics_daily_aggregate", ttl=600)
+        async def job_analytics_daily_aggregate():
+            from sqlalchemy import text as sa_text
+            async with _P5bAsync() as db:
+                yesterday = (date.today() - timedelta(days=1)).isoformat()
+                try:
+                    # DAU
+                    dau_r = await db.execute(sa_text(
+                        "SELECT COUNT(DISTINCT user_id) FROM user_activity_logs WHERE created_at::date = :d"
+                    ), {"d": yesterday})
+                    dau = dau_r.scalar() or 0
+
+                    # New users
+                    new_r = await db.execute(sa_text(
+                        "SELECT COUNT(*) FROM users WHERE created_at::date = :d"
+                    ), {"d": yesterday})
+                    new_users = new_r.scalar() or 0
+
+                    # Active growers (role > OBSERVER with activity)
+                    ag_r = await db.execute(sa_text("""
+                        SELECT COUNT(DISTINCT u.id) FROM users u
+                        JOIN user_activity_logs ual ON ual.user_id = u.id
+                        WHERE ual.created_at::date = :d AND u.role::text != 'OBSERVER'
+                    """), {"d": yesterday})
+                    active_growers = ag_r.scalar() or 0
+
+                    # Conversion rate (growers+ / total)
+                    total_r = await db.execute(sa_text("SELECT COUNT(*) FROM users WHERE is_active = true"))
+                    total = total_r.scalar() or 1
+                    non_obs_r = await db.execute(sa_text(
+                        "SELECT COUNT(*) FROM users WHERE is_active = true AND role::text != 'OBSERVER'"
+                    ))
+                    non_obs = non_obs_r.scalar() or 0
+                    conversion_rate = round(non_obs / total, 4) if total else 0.0
+
+                    # 7-day retention
+                    d7_ago = (date.today() - timedelta(days=8)).isoformat()
+                    d7_users_r = await db.execute(sa_text(
+                        "SELECT COUNT(DISTINCT user_id) FROM user_activity_logs WHERE created_at::date = :d"
+                    ), {"d": d7_ago})
+                    d7_users = d7_users_r.scalar() or 0
+                    if d7_users:
+                        retained_r = await db.execute(sa_text("""
+                            SELECT COUNT(DISTINCT ual1.user_id) FROM user_activity_logs ual1
+                            WHERE ual1.created_at::date = :d1
+                              AND ual1.user_id IN (
+                                SELECT DISTINCT user_id FROM user_activity_logs WHERE created_at::date = :d0
+                              )
+                        """), {"d0": d7_ago, "d1": yesterday})
+                        retained = retained_r.scalar() or 0
+                        retention_7d = round(retained / d7_users, 4)
+                    else:
+                        retention_7d = 0.0
+
+                    # Total events
+                    ev_r = await db.execute(sa_text(
+                        "SELECT COUNT(*) FROM user_activity_logs WHERE created_at::date = :d"
+                    ), {"d": yesterday})
+                    total_events = ev_r.scalar() or 0
+
+                    # Chat messages
+                    chat_r = await db.execute(sa_text(
+                        "SELECT COUNT(*) FROM user_activity_logs WHERE created_at::date = :d AND activity_type IN ('chat', 'chat_message')"
+                    ), {"d": yesterday})
+                    total_chat = chat_r.scalar() or 0
+
+                    # AI response avg ms
+                    ai_r = await db.execute(sa_text("""
+                        SELECT AVG(CAST(detail->>'response_ms' AS FLOAT))
+                        FROM user_activity_logs
+                        WHERE created_at::date = :d AND detail->>'response_ms' IS NOT NULL
+                    """), {"d": yesterday})
+                    ai_avg = ai_r.scalar() or 0.0
+
+                    # Upsert
+                    await db.execute(sa_text("""
+                        INSERT INTO analytics_daily
+                            (date, dau, new_users, active_growers, conversion_rate,
+                             retention_7d, avg_tasks_completed, avg_session_minutes,
+                             ai_response_avg_ms, total_events, total_chat_messages)
+                        VALUES (:d, :dau, :nu, :ag, :cr, :r7, 0.0, 0.0, :ai, :te, :tc)
+                        ON CONFLICT (date) DO UPDATE SET
+                            dau = EXCLUDED.dau, new_users = EXCLUDED.new_users,
+                            active_growers = EXCLUDED.active_growers,
+                            conversion_rate = EXCLUDED.conversion_rate,
+                            retention_7d = EXCLUDED.retention_7d,
+                            ai_response_avg_ms = EXCLUDED.ai_response_avg_ms,
+                            total_events = EXCLUDED.total_events,
+                            total_chat_messages = EXCLUDED.total_chat_messages
+                    """), {
+                        "d": yesterday, "dau": dau, "nu": new_users, "ag": active_growers,
+                        "cr": conversion_rate, "r7": retention_7d,
+                        "ai": round(ai_avg, 1), "te": total_events, "tc": total_chat,
+                    })
+                    await db.commit()
+                    logger.info(f"[Scheduler] 分析聚合完成: date={yesterday} DAU={dau} events={total_events}")
+                except Exception as e:
+                    logger.warning(f"[Scheduler] 分析聚合失败: {e}")
+
+        scheduler.add_job(
+            job_analytics_daily_aggregate,
+            CronTrigger(hour=3, minute=0),
+            id="analytics_daily_aggregate",
+            name="P5B每日分析聚合",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] analytics_daily_aggregate 注册失败: {e}")
+
+    # ── P5B: 周报生成 (每周一07:00) ──
+    try:
+        from core.database import AsyncSessionLocal as _P5bWeekly
+
+        @with_redis_lock("scheduler:weekly_report_generation", ttl=600)
+        async def job_weekly_report_generation():
+            from sqlalchemy import text as sa_text
+            async with _P5bWeekly() as db:
+                end_date = date.today() - timedelta(days=1)
+                start_date = end_date - timedelta(days=6)
+                try:
+                    result = await db.execute(sa_text("""
+                        SELECT date::text, dau, new_users, conversion_rate, retention_7d,
+                               total_events, total_chat_messages
+                        FROM analytics_daily
+                        WHERE date BETWEEN :s AND :e ORDER BY date
+                    """), {"s": start_date, "e": end_date})
+                    rows = result.mappings().all()
+
+                    if not rows:
+                        logger.info("[Scheduler] 周报: 无数据")
+                        return
+
+                    avg_dau = sum(r["dau"] or 0 for r in rows) // len(rows)
+                    total_new = sum(r["new_users"] or 0 for r in rows)
+                    avg_conv = round(sum(r["conversion_rate"] or 0 for r in rows) / len(rows), 3)
+
+                    # Try send email to admin users
+                    try:
+                        from gateway.channels.email_gateway import send_email, is_configured
+                        if is_configured():
+                            admin_r = await db.execute(sa_text(
+                                "SELECT email FROM users WHERE role::text = 'ADMIN' AND is_active = true"
+                            ))
+                            for admin in admin_r.mappings().all():
+                                await send_email(
+                                    to=admin["email"],
+                                    subject=f"行健平台周报 {start_date} ~ {end_date}",
+                                    body_html=f"""
+                                    <h2>行健平台周报</h2>
+                                    <p>日均活跃: {avg_dau} | 新增用户: {total_new} | 转化率: {avg_conv:.1%}</p>
+                                    <p>详细报表请登录管理后台查看</p>
+                                    """,
+                                )
+                    except Exception:
+                        pass
+
+                    logger.info(f"[Scheduler] 周报生成: {start_date}~{end_date} DAU={avg_dau}")
+                except Exception as e:
+                    logger.warning(f"[Scheduler] 周报生成失败: {e}")
+
+        scheduler.add_job(
+            job_weekly_report_generation,
+            CronTrigger(day_of_week="mon", hour=7, minute=0),
+            id="weekly_report_generation",
+            name="P5B周报生成",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] weekly_report_generation 注册失败: {e}")
+
+    # ── P6B 用户行为周报 (每周日 21:00) ──
+    try:
+        from core.database import AsyncSessionLocal as _P6bWeekly
+
+        @with_redis_lock("scheduler:user_weekly_report", ttl=900)
+        async def job_user_weekly_report():
+            from api.weekly_report_service import generate_all_reports
+            today = date.today()
+            ws = today - timedelta(days=today.weekday() + 7)  # 上周一
+            we = ws + timedelta(days=6)
+            async with _P6bWeekly() as db:
+                await generate_all_reports(db, ws, we)
+
+        scheduler.add_job(
+            job_user_weekly_report,
+            CronTrigger(day_of_week="sun", hour=21, minute=0),
+            id="user_weekly_report",
+            name="P6B用户行为周报",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] user_weekly_report 注册失败: {e}")
 
     # ── R7 通知定时任务 (07:15/10:15/20:15, 错开 program_push 整点) ──
     try:

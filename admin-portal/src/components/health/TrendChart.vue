@@ -226,8 +226,9 @@ const pointsArray = computed(() => {
   const minVal = Math.min(...props.data)
   const range = maxVal - minVal || 1
 
+  const xDivisor = props.data.length > 1 ? props.data.length - 1 : 1
   return props.data.map((value, index) => {
-    const x = (index / (props.data.length - 1)) * props.width
+    const x = (index / xDivisor) * props.width
     const y = props.height - ((value - minVal) / range) * (props.height - 20) - 10
     return { x, y }
   })

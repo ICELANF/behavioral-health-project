@@ -51,6 +51,8 @@ def _q_to_dict(q: QuestionBank) -> dict:
         "domain": q.domain,
         "difficulty": q.difficulty,
         "tags": q.tags,
+        "use_count": getattr(q, "use_count", 0) or 0,
+        "correct_rate": getattr(q, "correct_rate", None),
         "created_by": q.created_by,
         "created_at": q.created_at.isoformat() if q.created_at else None,
     }
@@ -88,8 +90,9 @@ def list_questions(
     question_type: Optional[str] = None,
     domain: Optional[str] = None,
     difficulty: Optional[str] = None,
+    keyword: Optional[str] = None,
     skip: int = 0,
-    limit: int = 20,
+    limit: int = 50,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -101,6 +104,8 @@ def list_questions(
         query = query.filter(QuestionBank.domain == domain)
     if difficulty:
         query = query.filter(QuestionBank.difficulty == difficulty)
+    if keyword:
+        query = query.filter(QuestionBank.content.ilike(f"%{keyword}%"))
     query = query.order_by(QuestionBank.created_at.desc())
     total = query.count()
     items = query.offset(skip).limit(limit).all()
@@ -157,3 +162,40 @@ def delete_question(
     db.delete(q)
     db.commit()
     return {"message": "已删除"}
+
+
+class BulkImportRequest(BaseModel):
+    questions: List[QuestionCreateRequest]
+
+
+@router.post("/bulk")
+def bulk_import_questions(
+    req: BulkImportRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """批量导入题目"""
+    imported = 0
+    failed = 0
+    for item in req.questions:
+        try:
+            q = QuestionBank(
+                question_id=f"Q-{uuid.uuid4().hex[:8].upper()}",
+                content=item.content,
+                question_type=item.question_type,
+                options=item.options,
+                answer=item.answer,
+                explanation=item.explanation,
+                domain=item.domain,
+                difficulty=item.difficulty,
+                tags=item.tags,
+                created_by=current_user.id,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            db.add(q)
+            imported += 1
+        except Exception:
+            failed += 1
+    db.commit()
+    return {"imported": imported, "failed": failed}

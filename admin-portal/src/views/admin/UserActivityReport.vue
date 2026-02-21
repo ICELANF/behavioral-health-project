@@ -21,7 +21,7 @@
 
     <!-- KPI 卡片 -->
     <a-row :gutter="16" class="kpi-row">
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card :bordered="false" :loading="loading">
           <a-statistic
             title="活跃用户数"
@@ -32,7 +32,7 @@
           </a-statistic>
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card :bordered="false" :loading="loading">
           <a-statistic
             title="总活动次数"
@@ -43,7 +43,7 @@
           </a-statistic>
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card :bordered="false" :loading="loading">
           <a-statistic
             title="日均活动"
@@ -55,7 +55,7 @@
           </a-statistic>
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card :bordered="false" :loading="loading">
           <a-statistic
             title="活跃率"
@@ -73,7 +73,7 @@
     <!-- 图表行 -->
     <a-row :gutter="[16, 16]" style="margin-top: 16px">
       <!-- 活动类型分布（饼图） -->
-      <a-col :span="10">
+      <a-col :xs="24" :lg="10">
         <a-card title="活动类型分布" :bordered="false">
           <a-spin :spinning="loading">
             <div v-if="isEmpty.distribution">
@@ -85,7 +85,7 @@
       </a-col>
 
       <!-- 每日活动趋势（折线图） -->
-      <a-col :span="14">
+      <a-col :xs="24" :lg="14">
         <a-card title="每日活动趋势" :bordered="false">
           <a-spin :spinning="loading">
             <div v-if="isEmpty.trend">

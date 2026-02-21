@@ -7,15 +7,15 @@
 
     <!-- Stats -->
     <a-row :gutter="16" style="margin-bottom: 16px">
-      <a-col :span="6"><a-card size="small"><a-statistic title="待分配患者" :value="pendingPatients.length" value-style="color: #d46b08" :loading="loadingPending" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="已分配总数" :value="assignedCount" :loading="loadingStats" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="教练平均负载" :value="avgLoad" :precision="1" :loading="loadingStats" /></a-card></a-col>
-      <a-col :span="6"><a-card size="small"><a-statistic title="待审批转移" :value="transferRequests.length" value-style="color: #cf1322" :loading="loadingTransfers" /></a-card></a-col>
+      <a-col :xs="24" :sm="12" :lg="6"><a-card size="small"><a-statistic title="待分配患者" :value="pendingPatients.length" value-style="color: #d46b08" :loading="loadingPending" /></a-card></a-col>
+      <a-col :xs="24" :sm="12" :lg="6"><a-card size="small"><a-statistic title="已分配总数" :value="assignedCount" :loading="loadingStats" /></a-card></a-col>
+      <a-col :xs="24" :sm="12" :lg="6"><a-card size="small"><a-statistic title="教练平均负载" :value="avgLoad" :precision="1" :loading="loadingStats" /></a-card></a-col>
+      <a-col :xs="24" :sm="12" :lg="6"><a-card size="small"><a-statistic title="待审批转移" :value="transferRequests.length" value-style="color: #cf1322" :loading="loadingTransfers" /></a-card></a-col>
     </a-row>
 
     <a-row :gutter="16">
       <!-- Pending patients queue -->
-      <a-col :span="10">
+      <a-col :xs="24" :lg="10">
         <a-card title="待分配患者队列" :loading="loadingPending">
           <div v-for="patient in pendingPatients" :key="patient.id" class="patient-item">
             <div class="patient-info">
@@ -42,7 +42,7 @@
       </a-col>
 
       <!-- Coach capacity -->
-      <a-col :span="14">
+      <a-col :xs="24" :lg="14">
         <a-card title="教练容量看板" :loading="loadingCoaches">
           <div v-for="coach in availableCoaches" :key="coach.id" class="coach-capacity-item">
             <div class="coach-info">

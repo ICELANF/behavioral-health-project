@@ -241,39 +241,29 @@ async def _try_wx_push(
     db: AsyncSession, user_id: int,
     title: str, body: str, notif_type: str,
 ):
-    """尝试通过 wx_gateway 推送微信模板消息"""
-    result = await db.execute(
-        text("SELECT wx_openid, preferred_channel FROM users WHERE id = :uid"),
-        {"uid": user_id}
-    )
-    user = result.mappings().first()
-    if not user or not user.get("wx_openid"):
-        return
-    if user.get("preferred_channel") not in (None, "wechat", "wx", "app"):
-        return
-
+    """通过统一推送路由器发送通知 (WeChat/SMS/Email/in-app cascade)"""
     try:
-        from gateway.wx_gateway import send_template_message
+        from gateway.channels.push_router import send_notification
         template_map = {
             "morning_task": "daily_task_reminder",
             "evening_reminder": "daily_task_reminder",
             "reconnect": "care_message",
             "milestone": "achievement_notice",
         }
-        await send_template_message(
-            openid=user["wx_openid"],
-            template_id=template_map.get(notif_type, "general_notice"),
-            data={
-                "title": {"value": title},
-                "content": {"value": body[:200]},
-                "time": {"value": datetime.now().strftime("%Y-%m-%d %H:%M")},
-            }
+        template_data = {
+            "title": {"value": title},
+            "content": {"value": body[:200]},
+            "time": {"value": datetime.now().strftime("%Y-%m-%d %H:%M")},
+            "template_id": template_map.get(notif_type, "general_notice"),
+        }
+        result = await send_notification(
+            db=db, user_id=user_id,
+            title=title, body=body,
+            template_data=template_data,
         )
-        logger.info(f"微信推送成功: user={user_id}, type={notif_type}")
-    except ImportError:
-        pass  # wx_gateway 未部署
+        logger.info(f"推送完成: user={user_id}, type={notif_type}, channel={result.get('channel_used')}")
     except Exception as e:
-        logger.debug(f"微信推送失败: {e}")
+        logger.debug(f"推送失败: {e}")
 
 
 async def _enqueue_coach_push(

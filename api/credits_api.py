@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Optional, List
 from pydantic import BaseModel
+from loguru import logger
 
 from core.database import get_db
 from api.dependencies import get_current_user, require_admin
@@ -111,7 +112,8 @@ def get_my_credits(
             text("SELECT * FROM v_user_credit_summary WHERE user_id = :uid"),
             {"uid": current_user.id}
         ).mappings().all()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         db.rollback()
         return {"total": _empty_total, "by_type": []}
 

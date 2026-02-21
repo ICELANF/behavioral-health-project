@@ -9,28 +9,28 @@
 
     <!-- Key metrics -->
     <a-row :gutter="16" style="margin-bottom: 20px">
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card>
           <a-statistic title="管理学员数" :value="performance.total_students" :loading="loading">
             <template #prefix><span style="font-size: 14px">👥</span></template>
           </a-statistic>
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card>
           <a-statistic title="平均完成率" :value="performance.avg_adherence_rate" suffix="%" :loading="loading" :value-style="{ color: performance.avg_adherence_rate >= 70 ? '#3f8600' : '#cf1322' }">
             <template #prefix><span style="font-size: 14px">📈</span></template>
           </a-statistic>
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card>
           <a-statistic title="高风险学员" :value="performance.risk_distribution?.high || 0" :loading="loading" value-style="color: #cf1322">
             <template #prefix><span style="font-size: 14px">⚠️</span></template>
           </a-statistic>
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card>
           <a-statistic title="低风险学员" :value="performance.risk_distribution?.low || 0" :loading="loading" value-style="color: #389e0d">
             <template #prefix><span style="font-size: 14px">✅</span></template>
@@ -66,7 +66,7 @@
 
     <!-- Detailed breakdown -->
     <a-row :gutter="16">
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="干预工具使用统计">
           <div v-for="tool in toolStats" :key="tool.name" class="tool-stat-item">
             <span class="tool-name">{{ tool.name }}</span>
@@ -75,7 +75,7 @@
           </div>
         </a-card>
       </a-col>
-      <a-col :span="12">
+      <a-col :xs="24" :md="12">
         <a-card title="学员风险分布">
           <div class="risk-summary">
             <div class="risk-item">

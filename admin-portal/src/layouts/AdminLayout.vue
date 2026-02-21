@@ -1,7 +1,17 @@
 <template>
   <a-layout class="admin-layout">
-    <!-- 侧边栏 -->
-    <a-layout-sider v-model:collapsed="collapsed" collapsible theme="dark" :width="220">
+    <!-- 移动端遮罩 -->
+    <div v-if="isCompact && mobileDrawerVisible" class="sider-backdrop" @click="mobileDrawerVisible = false" />
+
+    <!-- 侧边栏 (桌面: 内联可折叠; 移动: fixed overlay) -->
+    <a-layout-sider
+      v-model:collapsed="siderCollapsed"
+      :collapsible="!isCompact"
+      :trigger="isCompact ? null : undefined"
+      theme="dark"
+      :width="isCompact ? 260 : 220"
+      :class="{ 'sider-mobile': isCompact, 'sider-mobile-open': isCompact && mobileDrawerVisible }"
+    >
       <div class="logo">
         <span v-if="!collapsed">教练认证管理</span>
         <span v-else>认证</span>
@@ -11,6 +21,7 @@
         v-model:openKeys="openKeys"
         theme="dark"
         mode="inline"
+        @click="onMenuClick"
       >
         <!-- 所有用户可见 -->
         <a-menu-item key="dashboard" @click="$router.push('/dashboard')">
@@ -233,7 +244,8 @@
       <!-- 顶部栏 -->
       <a-layout-header class="header">
         <div class="header-left">
-          <a-breadcrumb>
+          <MenuOutlined v-if="isCompact" class="hamburger" @click="mobileDrawerVisible = true" />
+          <a-breadcrumb class="hide-compact">
             <a-breadcrumb-item v-for="item in breadcrumbs" :key="item.path">
               {{ item.title }}
             </a-breadcrumb-item>
@@ -243,7 +255,7 @@
           <a-popover
             :open="searchPopoverOpen"
             placement="bottom"
-            :overlayStyle="{ width: '480px' }"
+            :overlayStyle="{ width: isCompact ? 'calc(100vw - 48px)' : '480px' }"
           >
             <template #content>
               <div v-if="searchLoading" style="text-align: center; padding: 24px 0">
@@ -322,7 +334,7 @@
             <a-input-search
               v-model:value="searchQuery"
               placeholder="搜索用户、挑战、内容..."
-              style="width: 320px"
+              :style="{ width: isCompact ? '100%' : '320px' }"
               allow-clear
               @search="doSearch"
               @blur="handleSearchBlur"
@@ -338,7 +350,7 @@
               <a-avatar :size="32" style="background-color: #1890ff">
                 <template #icon><UserOutlined /></template>
               </a-avatar>
-              <span class="username">{{ username }}</span>
+              <span class="username hide-compact">{{ username }}</span>
             </a>
             <template #overlay>
               <a-menu>
@@ -373,8 +385,10 @@
 import { ref, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { useResponsive } from '@/composables/useResponsive'
 import {
   DashboardOutlined,
+  MenuOutlined,
   VideoCameraOutlined,
   FileTextOutlined,
   FileSearchOutlined,
@@ -407,9 +421,22 @@ import request from '../api/request'
 const route = useRoute()
 const router = useRouter()
 
+const { isCompact } = useResponsive()
 const collapsed = ref(false)
+const mobileDrawerVisible = ref(false)
 const selectedKeys = ref<string[]>(['dashboard'])
 const openKeys = ref<string[]>([])
+
+// On mobile: collapsed is always false (sider shown via CSS transform); on desktop: normal collapse
+const siderCollapsed = computed({
+  get: () => isCompact.value ? false : collapsed.value,
+  set: (v: boolean) => { collapsed.value = v },
+})
+
+// Auto-close mobile drawer on resize to desktop
+watch(isCompact, (compact) => {
+  if (!compact) mobileDrawerVisible.value = false
+})
 
 // 从 localStorage 读取用户信息
 const username = ref(localStorage.getItem('admin_username') || '管理员')
@@ -596,6 +623,11 @@ const goToResult = (type: string, item: any) => {
   }
 }
 
+// Close mobile drawer on menu item click
+const onMenuClick = () => {
+  if (isCompact.value) mobileDrawerVisible.value = false
+}
+
 const handleLogout = () => {
   localStorage.removeItem('admin_token')
   localStorage.removeItem('admin_refresh_token')
@@ -702,5 +734,48 @@ const handleLogout = () => {
   font-size: 11px;
   color: #999;
   flex-shrink: 0;
+}
+
+/* ── Mobile sidebar overlay ── */
+.hamburger {
+  font-size: 20px;
+  cursor: pointer;
+  color: #333;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.sider-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 199;
+  transition: opacity 0.3s;
+}
+
+.sider-mobile {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 200;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+.sider-mobile-open {
+  transform: translateX(0);
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0 12px !important;
+  }
+  .header-center {
+    padding: 0 8px;
+  }
+  .content {
+    margin: 8px;
+    padding: 12px;
+  }
 }
 </style>

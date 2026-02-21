@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from sqlalchemy.orm import Session
 
+from loguru import logger
+
 from core.database import get_db
 from api.dependencies import get_current_user, require_admin, require_coach_or_admin
 from core.models import User
@@ -68,7 +70,8 @@ def list_templates(
     try:
         service = ProgramService(db)
         return service.list_templates(category=category, tenant_id=tenant_id)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         return []
 
 
@@ -127,7 +130,8 @@ def enroll_program(
             push_preferences=request.push_preferences,
             custom_schedule=request.custom_schedule,
         )
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         raise HTTPException(400, "Program service unavailable")
     if not result.get("success"):
         raise HTTPException(400, result.get("reason", "Enrollment failed"))
@@ -142,7 +146,8 @@ def get_my_programs(
     try:
         service = ProgramService(db)
         return service.get_my_programs(current_user.id)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         return []
 
 
@@ -155,7 +160,8 @@ def get_today_content(
     try:
         service = ProgramService(db)
         result = service.get_today_content(enrollment_id, current_user.id)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         raise HTTPException(404, "Enrollment not found")
     if "error" in result:
         raise HTTPException(404, result["error"])
@@ -206,7 +212,8 @@ def get_progress_radar(
     try:
         service = ProgramService(db)
         result = service.get_progress_radar(enrollment_id, current_user.id)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         raise HTTPException(404, "Enrollment not found")
     if "error" in result:
         raise HTTPException(404, result["error"])

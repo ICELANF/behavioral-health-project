@@ -601,4 +601,17 @@ async function submitVerdict(verdict: string) {
 .empty-icon { font-size: 48px; margin-bottom: 12px; }
 .empty-center h3 { font-size: 16px; font-weight: 700; color: #6b7280; margin: 0 0 4px; }
 .empty-center p { font-size: 13px; color: #9ca3af; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .audit-body { flex-direction: column !important; }
+  .filter-panel { width: 100% !important; max-height: 40vh; overflow-y: auto; }
+  .verdict-panel { width: 100% !important; }
+  .metrics-bar { flex-wrap: wrap; gap: 12px; }
+  .content-meta { flex-direction: column; gap: 4px; }
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+  .filter-panel { width: 220px !important; }
+  .verdict-panel { width: 220px !important; }
+}
 </style>

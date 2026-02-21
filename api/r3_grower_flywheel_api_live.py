@@ -29,9 +29,9 @@ class TodayAction(BaseModel):
     id: str
     order: int
     title: str
-    tag: str
-    tag_color: str
-    time_hint: str
+    tag: str = ""
+    tag_color: str = "#999999"
+    time_hint: str = ""
     input_mode: Optional[str] = None
     quick_label: str = "打卡"
     done: bool = False
@@ -127,8 +127,8 @@ async def get_today_tasks(
 
     tasks = [
         TodayAction(
-            id=r["id"], order=r["order_num"], title=r["title"],
-            tag=r["tag"], tag_color=r["tag_color"],
+            id=r["id"], order=r["order_num"], title=r["title"] or "",
+            tag=r["tag"] or "", tag_color=r["tag_color"] or "#999999",
             time_hint=r["time_hint"] or "",
             input_mode=r["input_mode"],
             quick_label=r["quick_label"] or "打卡",
@@ -529,3 +529,128 @@ async def quick_checkin(
                          {"uid": user_id})
         await db.commit()
         return {"success": True, "task_id": new_id, "message": f"{domain} 记录已保存 +5积分", "points": 5}
+
+
+# ═══════════════════════════════════════════════════
+# GET /daily-tasks/catalog — 可选任务目录
+# ═══════════════════════════════════════════════════
+
+TASK_CATALOG = [
+    # 运动类
+    {"id": "cat_walk_30",   "title": "步行30分钟",    "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🚶"},
+    {"id": "cat_walk_60",   "title": "步行60分钟",    "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🚶‍♂️"},
+    {"id": "cat_yoga",      "title": "瑜伽/拉伸15分钟", "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🧘"},
+    {"id": "cat_tai_chi",   "title": "太极拳20分钟",   "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🥋"},
+    {"id": "cat_swim",      "title": "游泳30分钟",     "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🏊"},
+    {"id": "cat_cycle",     "title": "骑行30分钟",     "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🚴"},
+    {"id": "cat_baduanjin", "title": "八段锦一套",     "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🏋️"},
+    # 营养类
+    {"id": "cat_meal_photo","title": "拍照记录一餐",    "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition","input_mode": "photo",  "quick_label": "拍照", "icon": "📸"},
+    {"id": "cat_water",     "title": "喝水8杯",        "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition","input_mode": "text",   "quick_label": "打卡", "icon": "💧"},
+    {"id": "cat_veggie",    "title": "吃够300g蔬菜",   "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition","input_mode": "text",   "quick_label": "打卡", "icon": "🥦"},
+    {"id": "cat_no_sugar",  "title": "今日无含糖饮料",   "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition","input_mode": "text",   "quick_label": "打卡", "icon": "🚫"},
+    # 监测类
+    {"id": "cat_glucose",   "title": "测量空腹血糖",    "tag": "监测", "tag_color": "#3b82f6", "domain": "glucose",  "input_mode": "device", "quick_label": "记录", "icon": "🩸"},
+    {"id": "cat_bp",        "title": "测量血压",        "tag": "监测", "tag_color": "#3b82f6", "domain": "blood_pressure","input_mode": "device","quick_label": "记录","icon": "💉"},
+    {"id": "cat_weight",    "title": "称体重",         "tag": "监测", "tag_color": "#3b82f6", "domain": "weight",   "input_mode": "device", "quick_label": "记录", "icon": "⚖️"},
+    # 情绪/睡眠类
+    {"id": "cat_mood",      "title": "记录今天心情",     "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",  "input_mode": "text",   "quick_label": "记录", "icon": "😊"},
+    {"id": "cat_journal",   "title": "写感恩日记",      "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",  "input_mode": "text",   "quick_label": "记录", "icon": "📝"},
+    {"id": "cat_breathe",   "title": "腹式呼吸5分钟",   "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",  "input_mode": "text",   "quick_label": "打卡", "icon": "🌬️"},
+    {"id": "cat_sleep",     "title": "记录睡眠",        "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",    "input_mode": "text",   "quick_label": "打卡", "icon": "😴"},
+    {"id": "cat_early_bed", "title": "22:30前入睡",     "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",    "input_mode": "text",   "quick_label": "打卡", "icon": "🌙"},
+    # 学习类
+    {"id": "cat_learn",     "title": "阅读健康知识10分钟","tag": "学习", "tag_color": "#ec4899", "domain": "learning", "input_mode": "text",   "quick_label": "打卡", "icon": "📖"},
+    {"id": "cat_medication","title": "按时服药",        "tag": "用药", "tag_color": "#ef4444", "domain": "medication","input_mode": "text",   "quick_label": "打卡", "icon": "💊"},
+]
+
+
+@router.get("/daily-tasks/catalog")
+async def get_task_catalog(current_user=Depends(get_current_user)):
+    """返回可选任务目录 — 用户可从中挑选添加到今日任务"""
+    return {"catalog": TASK_CATALOG, "total": len(TASK_CATALOG)}
+
+
+# ═══════════════════════════════════════════════════
+# POST /daily-tasks/add-from-catalog — 用户自选添加任务
+# ═══════════════════════════════════════════════════
+
+class AddTaskRequest(BaseModel):
+    catalog_id: str  # from TASK_CATALOG[].id
+    custom_title: Optional[str] = None  # override title
+
+@router.post("/daily-tasks/add-from-catalog")
+async def add_task_from_catalog(
+    body: AddTaskRequest,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """用户从目录中选择一个任务添加到今日列表"""
+    cat_item = next((c for c in TASK_CATALOG if c["id"] == body.catalog_id), None)
+    if not cat_item:
+        raise HTTPException(status_code=400, detail="无效的目录任务ID")
+
+    user_id = current_user.id
+    today = date.today()
+    title = body.custom_title or cat_item["title"]
+
+    # Check if same catalog task already exists today
+    existing = await db.execute(text("""
+        SELECT id FROM daily_tasks
+        WHERE user_id = :uid AND task_date = :today AND title = :title
+        LIMIT 1
+    """), {"uid": user_id, "today": today, "title": title})
+    if existing.first():
+        raise HTTPException(status_code=409, detail="今天已添加过该任务")
+
+    # Get next order number
+    max_ord = await db.execute(text("""
+        SELECT COALESCE(MAX(order_num), 0) FROM daily_tasks
+        WHERE user_id = :uid AND task_date = :today
+    """), {"uid": user_id, "today": today})
+    next_order = (max_ord.scalar() or 0) + 1
+
+    new_id = f"sel_{user_id}_{body.catalog_id}_{today.isoformat()}"[:80]
+    await db.execute(text("""
+        INSERT INTO daily_tasks (id, user_id, task_date, order_num, title, tag, tag_color,
+            time_hint, input_mode, quick_label, source, done, created_at)
+        VALUES (:id, :uid, :today, :ord, :title, :tag, :color, :hint, :mode, :ql, 'self', false, NOW())
+    """), {
+        "id": new_id, "uid": user_id, "today": today, "ord": next_order,
+        "title": title, "tag": cat_item["tag"], "color": cat_item["tag_color"],
+        "hint": "", "mode": cat_item["input_mode"], "ql": cat_item["quick_label"],
+    })
+    await db.commit()
+
+    return {
+        "success": True,
+        "task_id": new_id,
+        "title": title,
+        "tag": cat_item["tag"],
+        "icon": cat_item["icon"],
+        "message": f"已添加「{title}」到今日任务"
+    }
+
+
+# ═══════════════════════════════════════════════════
+# DELETE /daily-tasks/{task_id} — 用户删除自选任务
+# ═══════════════════════════════════════════════════
+
+@router.delete("/daily-tasks/{task_id}")
+async def remove_self_task(
+    task_id: str = Path(...),
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """删除用户自选的未完成任务（仅限 source='self' 且 done=false）"""
+    user_id = current_user.id
+    result = await db.execute(text("""
+        DELETE FROM daily_tasks
+        WHERE id = :tid AND user_id = :uid AND source = 'self' AND done = false
+        RETURNING id
+    """), {"tid": task_id, "uid": user_id})
+    deleted = result.first()
+    await db.commit()
+    if not deleted:
+        raise HTTPException(status_code=404, detail="任务不存在或无法删除（已完成或非自选任务）")
+    return {"success": True, "message": "任务已删除"}

@@ -123,7 +123,7 @@
 |---|------|------|--------|--------|---------|---------|
 | 1 | `/coach/workbench` | **教练工作台(飞轮)** | 4统计、左侧队列、右侧审核面板 | 筛选、选学员、审批/驳回/跳过(A/R/N)、编辑处方 | `GET /v1/coach/stats/today` `GET /v1/coach/review-queue` `POST /v1/coach/review/{id}/approve` `POST /v1/coach/review/{id}/reject` | ⚠mock兜底 |
 | 2 | `/coach-portal` | 教练门户首页 | 概览4卡、预警、学员、AI建议、工具箱、认证 | 处理预警、跟进学员、批准/修正/驳回AI建议、推送审核 | `GET /v1/coach/dashboard` `GET /v1/high-freq-questions/all` `GET /v1/push-recommendations` `GET /v1/alerts/coach` `PUT /v1/alerts/{id}/resolve` `GET /v1/coach/push-queue/stats` `GET /v1/coach/push-queue` `POST /v1/coach/push-queue/{id}/approve` `POST /v1/coach/push-queue/{id}/reject` `POST /v1/coach/push-queue/batch-approve` `POST /v1/coach/messages` `POST /v1/copilot/analyze` | ✅真实 |
-| 3 | `/coach-portal/students` | 待跟进学员 | 学员卡(头像/阶段/优先级/健康数据) | 查看测评、行为画像 | 无API调用 | ❌全mock |
+| 3 | `/coach-portal/students` | 待跟进学员 | 学员卡(头像/阶段/优先级/健康数据) | 查看测评、行为画像 | `GET /v1/coach/dashboard` | ✅真实 |
 | 4 | `/coach-portal/ai-review` | AI建议审核 | 建议卡(类型/学员/AI建议) | 批准/修正/驳回 | `GET /v1/coach/dashboard` | ⚠部分mock |
 | 5 | `/coach/my/students` | 我的学员 | 4统计+看板/列表(阶段/风险) | 搜索、切视图、查轨迹、发消息 | `GET /v1/coach/students` | ✅真实 |
 | 6 | `/coach/my/performance` | 我的绩效 | 4KPI+月度柱状图+工具使用率 | 日期筛选 | `GET /v1/coach/performance` | ✅真实 |
@@ -132,7 +132,7 @@
 | 9 | `/coach/my/analytics` | 数据分析 | 6维度ECharts(风险趋势/微行动/领域/预警/挑战/阶段) | 切天数范围 | `GET /v1/analytics/coach/risk-trend` `GET .../micro-action-trend` `GET .../domain-performance` `GET .../alert-frequency` `GET .../challenge-stats` `GET .../stage-distribution` | ⚠mock兜底 |
 | 10 | `/coach/content-sharing` | 内容分享 | 4步向导(内容→学员→消息→确认) | 选内容、选学员、编辑→发送 | `GET /v1/content` `GET /v1/programs/templates` `GET /v1/coach/students` `POST /v1/coach/messages` | ✅真实 |
 | 11 | `/coach/messages` | 学员消息 | 左列学员(未读)、右列对话+快捷模板 | 选学员、选类型、发消息 | `GET /v1/coach/students-with-messages` `GET /v1/coach/messages/{sid}` `POST /v1/coach/messages` `POST /v1/coach/reminders` | ✅真实 |
-| 12 | `/coach/student-assessment/:id` | 学员测评交互 | 测评详情 | 审核 | 无API调用 | ❌全mock |
+| 12 | `/coach/student-assessment/:id` | 学员测评交互 | 测评记录/对比/阶段变迁/随访 | 批注、发消息 | `GET /v1/coach/students/{id}/assessment-detail` `POST /v1/coach/messages` | ✅真实 |
 | 13 | `/coach/student-profile/:id` | 学员行为画像 | 行为画像 | 浏览 | `GET /v1/coach/students/{sid}/behavioral-profile` | ⚠mock兜底 |
 | 14 | `/coach/student-health/:id` | 学员健康数据 | 血糖/睡眠/运动/体重 | 切天数 | `GET /v1/coach/students/{sid}/glucose` `GET .../sleep` `GET .../activity` `GET .../vitals` | ⚠mock兜底 |
 | 15 | `/coach/review` | 晋级审核(管理) | 晋级申请列表 | 审核通过/拒绝 | `GET /v1/promotion/applications` `POST /v1/promotion/review/{id}` | ✅真实 |
@@ -183,7 +183,7 @@
 | 22 | `/course/list` | 课程列表 | 课程表 | CRUD | `GET /v1/content` | ✅真实 |
 | 23 | `/content/review` | 内容审核 | 审核队列 | 发布/删除/退回 | `GET /v1/content-manage/list` `POST .../{id}/publish` `DELETE .../{id}` `PUT .../{id}` | ✅真实 |
 | 24 | `/exam/list` | 考试列表 | 考试表 | CRUD/发布/归档/统计 | `GET /certification/exams` `POST .../` `PUT .../{id}` `DELETE .../{id}` `POST .../{id}/publish` `POST .../{id}/archive` `GET .../{id}/statistics` | ✅真实 |
-| 25 | `/question/bank` | 题库列表 | 题目列表 | 导入 | 无API调用 | ❌全mock |
+| 25 | `/question/bank` | 题库列表 | 题目列表+统计+筛选 | CRUD/批量导入/导出/删除 | `GET /v1/certification/questions` `POST .../` `PUT .../{id}` `DELETE .../{id}` `POST .../bulk` | ✅真实 |
 | 26 | `/live/list` | 直播列表 | 直播列表(空态:即将上线) | — | `GET /v1/live/sessions` (graceful empty) | ⚠即将上线 |
 | 27 | `/coach/list` | 教练列表 | 教练表 | 查看/筛选 | `GET /v1/admin/users` `GET /v1/admin/coaches` `GET /v1/coach/students` `GET /v1/coach/performance` `GET /v1/coach/my-certification` | ✅真实 |
 | 28 | `/student` | 学员管理 | 学员表 | 添加/编辑/发消息 | `GET /v1/coach/students` `POST /v1/admin/users` `PUT /v1/admin/users/{id}` `POST /v1/coach/messages` | ✅真实 |
@@ -203,9 +203,9 @@
 
 | 状态 | 含义 | 页面数 |
 |------|------|--------|
-| ✅真实 | 调用真实后端API | ~84 |
+| ✅真实 | 调用真实后端API | ~87 |
 | ⚠mock兜底 | 调用API,失败时降级为mock | ~12 |
-| ❌全mock | 硬编码数据,无API调用 | ~3 |
+| ❌全mock | 硬编码数据,无API调用 | 0 |
 | ⚠即将上线 | 功能未开发,空态展示 | ~1 |
 | 静态 | 纯展示页,无需数据 | ~8 |
 
@@ -220,9 +220,10 @@
 **已重分类 (实际已有API, 6页)**:
 - ObserverHome, GrowerTodayHome (飞轮API), MyDevices (device_rest_api), AssessmentList (assessment_api), Interventions (intervention matching), CoachList (admin users)
 
-**仍为mock (3页)**:
-- **Coach**: CoachStudentList (coach-portal/students), StudentAssessment (coach/student-assessment/:id)
-- **Admin**: QuestionBank (question/bank)
+**P5清零 — 全mock→真实 (3页, 2026-02-20)**:
+- CoachStudentList → `GET /v1/coach/dashboard` (已有API,前端已对接)
+- StudentAssessment → `GET /v1/coach/students/{id}/assessment-detail` + `POST /v1/coach/messages` (已有API,前端已对接)
+- QuestionBank → `GET/POST/PUT/DELETE /v1/certification/questions` + `POST .../bulk` (修复response shape/field name/difficulty type 6项mismatch)
 
 **即将上线 (1页)**:
 - live/List (直播功能)

@@ -714,14 +714,17 @@ class AgentGateway:
 
 @app.post("/api/v1/dispatch")
 async def dispatch_request(
-    user_id: str = Body(..., embed=True),
+    user_id: str = Body("", embed=True),
     message: str = Body(..., embed=True),
-    mode: str = Body("dify", embed=True),  # 可选 dify 或 ollama
+    mode: str = Body("ollama", embed=True),  # 可选 dify 或 ollama
     agent_id: str = Body("", embed=True),
     tenant_id: str = Body("", embed=True),
     current_user: User = Depends(get_current_user),
 ):
     """行健行为教练分发中心：根据模式选择路由"""
+    # user_id 可选，默认取当前登录用户
+    if not user_id:
+        user_id = str(current_user.id)
 
     if mode == "dify":
         # 走 Dify 编排好的 A1+A2+A3 完整工作流

@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-02-19T06:30:25.729125",
+  "user_id": 4,
+  "trust_score": 0.8,
+  "trust_level": "established",
+  "trust_signals": {
+    "dialog_depth": 1.0,
+    "topic_openness": 1.0,
+    "emotion_expression": 0.0,
+    "curiosity_expression": 0.875,
+    "proactive_return_rate": 1.0,
+    "autonomous_info_sharing": 0.75
+  },
+  "log_count": 6,
+  "c4_consistency": true,
+  "assertions_passed": 11,
+  "assertions_failed": 0,
+  "failures": [],
+  "passed": true
+}

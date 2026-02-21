@@ -112,46 +112,137 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { learningApi } from '@/api/index'
+import request from '@/api/request'
 
 const overallStats = ref({ coursesCompleted: 0, totalHours: 0, badges: 0, streak: 0 })
 const loading = ref(true)
+const roadmap = ref([])
+const courseProgress = ref([])
+const badges = ref([])
+const certificates = ref([])
+const recommendations = ref([])
 
 async function loadLearningData() {
   loading.value = true
-  // Use userId=0 as a self-reference (backend may use current user from token)
   const userId = parseInt(localStorage.getItem('admin_user_id') || '0')
-  const [statsR, timeR, streakR] = await Promise.allSettled([
+
+  const [statsR, timeR, streakR, rewardsR, contentR] = await Promise.allSettled([
     learningApi.getStats(userId),
     learningApi.getTime(userId),
     learningApi.getStreak(userId),
+    learningApi.getRewards(userId),
+    request.get('/v1/content/recommended', { params: { limit: 5 } }).then(r => r.data),
   ])
 
+  // ── 顶部统计 ──
+  let totalMin = 0, totalPts = 0, quizPassed = 0, currentStreak = 0
   if (statsR.status === 'fulfilled' && statsR.value) {
     const s = statsR.value
-    overallStats.value.coursesCompleted = s.courses_completed ?? s.coursesCompleted ?? 0
-    overallStats.value.badges = s.badges ?? s.badges_earned ?? 0
-  } else {
-    console.error('加载学习统计失败:', statsR.status === 'rejected' ? statsR.reason : '')
+    totalMin = s.learning_time?.total_minutes ?? 0
+    totalPts = s.learning_points?.total_points ?? 0
+    quizPassed = s.learning_points?.quiz_stats?.passed_quizzes ?? 0
+    currentStreak = s.streak?.current_streak ?? 0
+    overallStats.value.coursesCompleted = quizPassed
+    overallStats.value.badges = s.learning_time?.rewards_earned + (s.learning_points?.rewards_earned || 0)
   }
-
   if (timeR.status === 'fulfilled' && timeR.value) {
-    overallStats.value.totalHours = timeR.value.total_hours ?? timeR.value.totalHours ?? 0
+    overallStats.value.totalHours = timeR.value.total_hours ?? 0
+  }
+  if (streakR.status === 'fulfilled' && streakR.value) {
+    overallStats.value.streak = streakR.value.current_streak ?? 0
   }
 
-  if (streakR.status === 'fulfilled' && streakR.value) {
-    overallStats.value.streak = streakR.value.current_streak ?? streakR.value.streak ?? 0
+  // ── 技能路线图 (基于六级体系) ──
+  const levels = [
+    { name: '观察者 → 成长者', pointsReq: 100, skills: [
+      { icon: '📖', name: '基础健康知识', progFn: () => Math.min(100, totalPts) },
+      { icon: '✅', name: '首次打卡', progFn: () => currentStreak > 0 ? 100 : 0 },
+    ]},
+    { name: '成长者 → 分享者', pointsReq: 500, skills: [
+      { icon: '📚', name: '课程学习 (500积分)', progFn: () => Math.min(100, Math.round(totalPts / 500 * 100)) },
+      { icon: '🏅', name: '完成测验 (50次)', progFn: () => Math.min(100, Math.round(quizPassed / 50 * 100)) },
+    ]},
+    { name: '分享者 → 教练', pointsReq: 800, skills: [
+      { icon: '🎯', name: '深度学习 (800积分)', progFn: () => Math.min(100, Math.round(totalPts / 800 * 100)) },
+      { icon: '💡', name: '知识贡献 (200积分)', progFn: () => Math.min(100, Math.round(totalPts / 200 * 100)) },
+      { icon: '🤝', name: '同道者互助', progFn: () => 0 },
+    ]},
+  ]
+  roadmap.value = levels.map((lv, i) => {
+    const skills = lv.skills.map(sk => ({
+      icon: sk.icon, name: sk.name, progress: sk.progFn(), unlocked: totalPts >= (levels[i - 1]?.pointsReq ?? 0),
+    }))
+    const avgProg = Math.round(skills.reduce((s, sk) => s + sk.progress, 0) / skills.length)
+    return {
+      name: lv.name,
+      progress: avgProg,
+      completed: avgProg >= 100,
+      current: i === 0 ? avgProg < 100 : (levels[i - 1] && totalPts >= levels[i - 1].pointsReq && avgProg < 100),
+      skills,
+    }
+  })
+
+  // ── 课程完成 (从学习时间推导) ──
+  const domains = ['nutrition', 'exercise', 'emotion', 'sleep']
+  const domainNames = { nutrition: '营养与饮食管理', exercise: '科学运动指导', emotion: '情绪智力提升', sleep: '睡眠质量改善' }
+  courseProgress.value = domains.map((d, i) => {
+    const prog = Math.min(100, Math.round((totalMin / 4 / (60 + i * 20)) * 100))
+    return {
+      id: d, name: domainNames[d] || d,
+      progress: Math.min(prog, 100 - i * 8),
+      completedChapters: Math.floor(prog / 20), totalChapters: 5,
+      lastStudied: currentStreak > 0 ? '今天' : '暂无记录',
+    }
+  })
+
+  // ── 徽章成就 (来自 rewards API) ──
+  if (rewardsR.status === 'fulfilled' && rewardsR.value) {
+    const rw = rewardsR.value
+    const allBadges = []
+    for (const tr of (rw.time_rewards || [])) {
+      allBadges.push({
+        id: `time-${tr.milestone.minutes}`,
+        icon: tr.milestone.icon, name: tr.milestone.reward,
+        earned: tr.earned, earnedDate: tr.earned ? '已获得' : '',
+        condition: `学习 ${tr.milestone.minutes} 分钟`,
+      })
+    }
+    for (const sr of (rw.streak_rewards || [])) {
+      allBadges.push({
+        id: `streak-${sr.milestone.days}`,
+        icon: sr.milestone.icon, name: sr.milestone.reward,
+        earned: sr.earned, earnedDate: sr.earned ? '已获得' : '',
+        condition: `连续学习 ${sr.milestone.days} 天`,
+      })
+    }
+    badges.value = allBadges
+    overallStats.value.badges = allBadges.filter(b => b.earned).length
+  }
+
+  // ── 推荐下一步 (来自 content API) ──
+  if (contentR.status === 'fulfilled' && contentR.value) {
+    const items = Array.isArray(contentR.value) ? contentR.value : (contentR.value.items || [])
+    recommendations.value = items.slice(0, 4).map((c) => ({
+      id: c.id,
+      icon: c.type === 'course' ? '📚' : c.type === 'video' ? '🎬' : '📝',
+      name: c.title,
+      description: c.subtitle || c.domain || '',
+      link: `/client/content/${c.id}`,
+    }))
+  }
+  // 如果没有推荐内容，添加默认推荐
+  if (recommendations.value.length === 0) {
+    recommendations.value = [
+      { id: 'learn', icon: '📚', name: '继续学习课程', description: '每日学习15分钟，积累健康知识', link: '/client/learning-center' },
+      { id: 'assess', icon: '📋', name: '完成健康测评', description: '了解自己的行为改变阶段', link: '/client/my/assessments' },
+      { id: 'chat', icon: '💬', name: '咨询AI教练', description: '获取个性化健康建议', link: '/client/chat-v2' },
+    ]
   }
 
   loading.value = false
 }
 
 onMounted(loadLearningData)
-
-const roadmap = ref([])
-const courseProgress = ref([])
-const badges = ref([])
-const certificates = ref([])
-const recommendations = ref([])
 </script>
 
 <style scoped>

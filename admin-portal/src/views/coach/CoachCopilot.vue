@@ -308,4 +308,17 @@ defineExpose({ pushPrescription })
 .meta-tag.tool { background: #eff6ff; color: #3b82f6; }
 
 .load-more-btn { font-size: 12px; padding: 4px 16px; background: none; border: 1px solid #d9d9d9; border-radius: 4px; cursor: pointer; color: #666; }
+
+@media (max-width: 768px) {
+  .coach-copilot {
+    width: 100% !important;
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    z-index: 100;
+    border-left: none;
+  }
+}
+@media (min-width: 769px) and (max-width: 1024px) {
+  .coach-copilot { width: 300px !important; }
+}
 </style>

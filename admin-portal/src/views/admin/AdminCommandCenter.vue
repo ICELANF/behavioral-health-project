@@ -375,4 +375,15 @@ onUnmounted(() => {
 .safety-count { font-size: 22px; font-weight: 900; color: rgba(255,255,255,0.3); margin: 4px 0; }
 .safety-count.triggered { color: #f87171; }
 .safety-label { font-size: 10px; color: rgba(255,255,255,0.3); }
+
+@media (max-width: 1024px) {
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .center-body { flex-direction: column !important; }
+}
+@media (max-width: 640px) {
+  .kpi-grid { grid-template-columns: 1fr !important; }
+  .channel-grid { grid-template-columns: 1fr !important; }
+  .safety-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .perf-name { width: 80px !important; }
+}
 </style>

@@ -23,16 +23,16 @@
         <!-- 概览 Tab -->
         <a-tab-pane key="overview" tab="概览">
           <a-row :gutter="16" style="margin-bottom:24px">
-            <a-col :span="6">
+            <a-col :xs="24" :sm="12" :lg="6">
               <a-statistic title="服务中客户" :value="stats?.clients.active || 0" />
             </a-col>
-            <a-col :span="6">
+            <a-col :xs="24" :sm="12" :lg="6">
               <a-statistic title="已毕业" :value="stats?.clients.graduated || 0" />
             </a-col>
-            <a-col :span="6">
+            <a-col :xs="24" :sm="12" :lg="6">
               <a-statistic title="本月新增" :value="stats?.new_this_month || 0" />
             </a-col>
-            <a-col :span="6">
+            <a-col :xs="24" :sm="12" :lg="6">
               <a-statistic title="启用 Agent" :value="(tenant?.enabled_agents || []).length" />
             </a-col>
           </a-row>

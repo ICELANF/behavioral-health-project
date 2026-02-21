@@ -262,7 +262,7 @@ const handleLogin = async () => {
     })
     const data = res.data
     if (data.access_token) {
-      saveLoginState(data.access_token, formState.username, data.user?.role || selectedRole.value, data.user?.level || 0, data.user?.full_name || data.user?.username || formState.username)
+      saveLoginState(data.access_token, formState.username, data.user?.role || selectedRole.value, data.user?.level || 0, data.user?.full_name || data.user?.username || formState.username, data.user?.id)
       if (data.refresh_token) {
         localStorage.setItem('admin_refresh_token', data.refresh_token)
       }
@@ -278,12 +278,13 @@ const handleLogin = async () => {
   }
 }
 
-const saveLoginState = (token: string, username: string, role: string, level: number, name: string) => {
+const saveLoginState = (token: string, username: string, role: string, level: number, name: string, userId?: number | string) => {
   localStorage.setItem('admin_token', token)
   localStorage.setItem('admin_username', username)
   localStorage.setItem('admin_role', role.toUpperCase())
   localStorage.setItem('admin_level', String(ROLE_LEVELS[role] || level))
   localStorage.setItem('admin_name', name)
+  if (userId) localStorage.setItem('admin_user_id', String(userId))
 }
 
 const navigateToHome = (role: string) => {

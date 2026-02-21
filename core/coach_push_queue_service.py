@@ -245,6 +245,28 @@ def deliver_item(db: Session, item: CoachPushQueue):
     item.status = "sent"
     item.sent_at = now
 
+    # Queue async external push via unified push router
+    try:
+        import asyncio
+        from gateway.channels.push_router import send_notification
+        from core.database import AsyncSessionLocal
+
+        async def _push():
+            async with AsyncSessionLocal() as async_db:
+                await send_notification(
+                    db=async_db, user_id=item.student_id,
+                    title=item.title, body=item.content or "",
+                )
+                await async_db.commit()
+
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(_push())
+        else:
+            loop.run_until_complete(_push())
+    except Exception as e:
+        logger.debug(f"[PushQueue] External push queued failed (non-blocking): {e}")
+
     logger.info(f"[PushQueue] 已投递: id={item.id} student={item.student_id}")
 
 

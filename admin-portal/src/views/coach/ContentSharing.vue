@@ -4,7 +4,7 @@
       <h2>内容分享</h2>
     </div>
 
-    <a-steps :current="currentStep" style="margin-bottom: 24px">
+    <a-steps :current="currentStep" :direction="isMobile ? 'vertical' : 'horizontal'" style="margin-bottom: 24px">
       <a-step title="选择内容" />
       <a-step title="选择学员" />
       <a-step title="个性化消息" />
@@ -134,6 +134,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import request from '@/api/request'
+import { useResponsive } from '@/composables/useResponsive'
+
+const { isMobile } = useResponsive()
 
 const currentStep = ref(0)
 const contentTab = ref('course')
@@ -287,4 +290,10 @@ onMounted(() => {
 .tracking-time { font-size: 12px; color: #999; }
 
 .step-actions { margin-top: 20px; display: flex; gap: 8px; justify-content: flex-end; }
+
+@media (max-width: 640px) {
+  .content-item { flex-direction: column; align-items: flex-start; }
+  .step-actions { flex-direction: column; }
+  .step-actions .ant-btn { width: 100%; }
+}
 </style>

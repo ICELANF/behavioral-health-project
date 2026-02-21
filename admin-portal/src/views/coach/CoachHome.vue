@@ -291,7 +291,7 @@
       v-model:open="assessmentDrawerVisible"
       title="推送评估"
       placement="right"
-      :width="720"
+      :width="modalWidth(720)"
       :closable="true"
       destroyOnClose
     >
@@ -478,7 +478,7 @@
       v-model:open="goalDrawerVisible"
       :title="'审核与推送' + (reviewingAssignment ? ' - ' + reviewingAssignment.student_name : '')"
       placement="right"
-      :width="800"
+      :width="modalWidth(800)"
       :closable="true"
       destroyOnClose
     >
@@ -599,7 +599,7 @@
       v-model:open="profileDrawerVisible"
       title="个人中心"
       placement="right"
-      :width="480"
+      :width="modalWidth(480)"
       :closable="true"
       destroyOnClose
     >
@@ -632,7 +632,7 @@
       v-model:open="settingsDrawerVisible"
       title="设置"
       placement="right"
-      :width="480"
+      :width="modalWidth(480)"
       :closable="true"
       destroyOnClose
     >
@@ -663,7 +663,7 @@
       v-model:open="challengeAssignDrawerVisible"
       :title="'分配挑战 - ' + (challengeAssignStudent?.name || '')"
       placement="right"
-      :width="640"
+      :width="modalWidth(640)"
       :closable="true"
       destroyOnClose
     >
@@ -727,7 +727,7 @@
       v-model:open="pushQueueDrawerVisible"
       title="推送审批队列"
       placement="right"
-      :width="720"
+      :width="modalWidth(720)"
       :closable="true"
       destroyOnClose
     >
@@ -865,7 +865,7 @@
       v-model:open="studentDrawerVisible"
       :title="currentStudent?.name"
       placement="right"
-      :width="800"
+      :width="modalWidth(800)"
       :closable="true"
       destroyOnClose
     >
@@ -1283,6 +1283,7 @@
 import { ref, reactive, onMounted, computed, watch, defineAsyncComponent, markRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { useResponsive } from '@/composables/useResponsive'
 import {
   BellOutlined,
   CalendarOutlined,
@@ -1303,6 +1304,7 @@ import {
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
+const { isCompact, modalWidth } = useResponsive()
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const token = localStorage.getItem('admin_token')
@@ -3009,9 +3011,38 @@ onMounted(() => {
   gap: 16px;
 }
 
+@media (max-width: 1024px) {
+  .overview-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
 @media (max-width: 640px) {
+  .overview-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
   .dx-grid {
     grid-template-columns: 1fr;
+  }
+  .portal-header {
+    padding: 12px 14px;
+  }
+  .greeting {
+    font-size: 14px;
+  }
+  .overview-section {
+    padding: 12px;
+  }
+  .student-card {
+    padding: 10px;
+    gap: 8px;
+  }
+  .card-value {
+    font-size: 16px;
+  }
+  .card-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 15px;
   }
 }
 

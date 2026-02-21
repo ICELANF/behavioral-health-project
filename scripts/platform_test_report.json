@@ -1,0 +1,817 @@
+{
+  "run_at": "2026-02-19T18:48:17.377916",
+  "target": "http://bhp-api:8000",
+  "elapsed_seconds": 31.3,
+  "module_summary": {
+    "total": 96,
+    "passed": 96,
+    "failed": 0
+  },
+  "chain_summary": {
+    "total": 5,
+    "passed": 5,
+    "failed": 0
+  },
+  "module_details": [
+    {
+      "module": "M01_Auth",
+      "name": "login_success",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:46.349798"
+    },
+    {
+      "module": "M01_Auth",
+      "name": "login_bad_password",
+      "passed": true,
+      "detail": "HTTP 401",
+      "status_code": 401,
+      "timestamp": "2026-02-19T18:47:46.567993"
+    },
+    {
+      "module": "M01_Auth",
+      "name": "token_refresh",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:46.821832"
+    },
+    {
+      "module": "M02_Learning",
+      "name": "grower_stats",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.147627"
+    },
+    {
+      "module": "M02_Learning",
+      "name": "add_learning_time",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.190957"
+    },
+    {
+      "module": "M02_Learning",
+      "name": "grower_points",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.208903"
+    },
+    {
+      "module": "M02_Learning",
+      "name": "time_history",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.219808"
+    },
+    {
+      "module": "M02_Learning",
+      "name": "coach_levels",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.224687"
+    },
+    {
+      "module": "M02_Learning",
+      "name": "segments_permissions",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.231680"
+    },
+    {
+      "module": "M03_Device",
+      "name": "list_devices",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.550876"
+    },
+    {
+      "module": "M03_Device",
+      "name": "glucose_data",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.629907"
+    },
+    {
+      "module": "M03_Device",
+      "name": "sleep_data",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.650299"
+    },
+    {
+      "module": "M03_Device",
+      "name": "alert_list",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.668771"
+    },
+    {
+      "module": "M03_Device",
+      "name": "submit_glucose",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:47.712785"
+    },
+    {
+      "module": "M04_Survey",
+      "name": "survey_list",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:48.048629"
+    },
+    {
+      "module": "M04_Survey",
+      "name": "survey_create",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:48.098630"
+    },
+    {
+      "module": "M04_Survey",
+      "name": "survey_detail",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:48.111608"
+    },
+    {
+      "module": "M04_Survey",
+      "name": "survey_publish",
+      "passed": true,
+      "detail": "HTTP 400",
+      "status_code": 400,
+      "timestamp": "2026-02-19T18:47:48.119991"
+    },
+    {
+      "module": "M05_Challenge",
+      "name": "challenge_list",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:48.440410"
+    },
+    {
+      "module": "M05_Challenge",
+      "name": "challenge_my_enrollments",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:48.456875"
+    },
+    {
+      "module": "M05_Challenge",
+      "name": "challenge_create",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:48.515594"
+    },
+    {
+      "module": "M05_Challenge",
+      "name": "challenge_enroll",
+      "passed": true,
+      "detail": "HTTP 400",
+      "status_code": 400,
+      "timestamp": "2026-02-19T18:47:48.525931"
+    },
+    {
+      "module": "M05_Challenge",
+      "name": "challenge_progress",
+      "passed": true,
+      "detail": "HTTP 404",
+      "status_code": 404,
+      "timestamp": "2026-02-19T18:47:48.542894"
+    },
+    {
+      "module": "M06_Program",
+      "name": "program_templates",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:48.859106"
+    },
+    {
+      "module": "M06_Program",
+      "name": "program_my_list",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:48.885872"
+    },
+    {
+      "module": "M06_Program",
+      "name": "program_enroll",
+      "passed": true,
+      "detail": "HTTP 400",
+      "status_code": 400,
+      "timestamp": "2026-02-19T18:47:48.903743"
+    },
+    {
+      "module": "M06_Program",
+      "name": "program_progress",
+      "passed": true,
+      "detail": "HTTP 404",
+      "status_code": 404,
+      "timestamp": "2026-02-19T18:47:48.917141"
+    },
+    {
+      "module": "M06_Program",
+      "name": "program_interact",
+      "passed": true,
+      "detail": "HTTP 422",
+      "status_code": 422,
+      "timestamp": "2026-02-19T18:47:48.925621"
+    },
+    {
+      "module": "M07_Credits",
+      "name": "credits_my",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.249513"
+    },
+    {
+      "module": "M07_Credits",
+      "name": "credits_records",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.263130"
+    },
+    {
+      "module": "M07_Credits",
+      "name": "credits_modules",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.274210"
+    },
+    {
+      "module": "M07_Credits",
+      "name": "credits_admin_stats",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.289067"
+    },
+    {
+      "module": "M08_Companion",
+      "name": "companion_mentees",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.604575"
+    },
+    {
+      "module": "M08_Companion",
+      "name": "companion_stats",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.615162"
+    },
+    {
+      "module": "M08_Companion",
+      "name": "companion_invite",
+      "passed": true,
+      "detail": "HTTP 422",
+      "status_code": 422,
+      "timestamp": "2026-02-19T18:47:49.622728"
+    },
+    {
+      "module": "M08_Companion",
+      "name": "companion_dashboard",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.632772"
+    },
+    {
+      "module": "M09_Promotion",
+      "name": "promotion_status",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.943171"
+    },
+    {
+      "module": "M09_Promotion",
+      "name": "promotion_gap_report",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.950068"
+    },
+    {
+      "module": "M09_Promotion",
+      "name": "promotion_check",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:49.956801"
+    },
+    {
+      "module": "M10_AgentTemplates",
+      "name": "agent_template_list",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:50.272696"
+    },
+    {
+      "module": "M10_AgentTemplates",
+      "name": "agent_template_presets",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:50.283759"
+    },
+    {
+      "module": "M10_AgentTemplates",
+      "name": "agent_template_create",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:50.324284"
+    },
+    {
+      "module": "M10_AgentTemplates",
+      "name": "agent_template_domains",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:50.333179"
+    },
+    {
+      "module": "M11_Safety",
+      "name": "safety_dashboard",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:50.661124"
+    },
+    {
+      "module": "M11_Safety",
+      "name": "safety_config",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:50.671588"
+    },
+    {
+      "module": "M11_Safety",
+      "name": "safety_review_queue",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:50.690896"
+    },
+    {
+      "module": "M11_Safety",
+      "name": "safety_daily_report",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:50.708112"
+    },
+    {
+      "module": "M12_Policy",
+      "name": "policy_rules_list",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.021210"
+    },
+    {
+      "module": "M12_Policy",
+      "name": "policy_simulate",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.041636"
+    },
+    {
+      "module": "M12_Policy",
+      "name": "policy_cost_report",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.054314"
+    },
+    {
+      "module": "M12_Policy",
+      "name": "policy_traces",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.067604"
+    },
+    {
+      "module": "M13_Governance",
+      "name": "dual_track_status",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.391057"
+    },
+    {
+      "module": "M13_Governance",
+      "name": "anti_cheat_check",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.407033"
+    },
+    {
+      "module": "M13_Governance",
+      "name": "governance_health",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.498030"
+    },
+    {
+      "module": "M13_Governance",
+      "name": "responsibility_metrics",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.511110"
+    },
+    {
+      "module": "M13_Governance",
+      "name": "self_audit_check",
+      "passed": true,
+      "detail": "HTTP 422",
+      "status_code": 422,
+      "timestamp": "2026-02-19T18:47:51.519968"
+    },
+    {
+      "module": "M13_Governance",
+      "name": "service_rights",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.528063"
+    },
+    {
+      "module": "M14_PeerMatching",
+      "name": "peer_match_recommend",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.874895"
+    },
+    {
+      "module": "M14_PeerMatching",
+      "name": "peer_match_my_peer",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:51.885656"
+    },
+    {
+      "module": "M15_Agency",
+      "name": "agency_status",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.193893"
+    },
+    {
+      "module": "M15_Agency",
+      "name": "agency_history",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.206614"
+    },
+    {
+      "module": "M15_Agency",
+      "name": "agency_mode_profiles",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.214653"
+    },
+    {
+      "module": "M16_Reflection",
+      "name": "reflection_list",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.535578"
+    },
+    {
+      "module": "M16_Reflection",
+      "name": "reflection_create",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.593242"
+    },
+    {
+      "module": "M16_Reflection",
+      "name": "reflection_prompts",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.602614"
+    },
+    {
+      "module": "M17_EcosystemV4",
+      "name": "bpt6_rx_catalog",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.913536"
+    },
+    {
+      "module": "M17_EcosystemV4",
+      "name": "course_phases",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.922104"
+    },
+    {
+      "module": "M17_EcosystemV4",
+      "name": "narrative_timeline",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.956734"
+    },
+    {
+      "module": "M17_EcosystemV4",
+      "name": "referral_stats",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:52.967713"
+    },
+    {
+      "module": "M18_Content",
+      "name": "content_list",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:53.298782"
+    },
+    {
+      "module": "M18_Content",
+      "name": "content_recommended",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:53.319435"
+    },
+    {
+      "module": "M18_Content",
+      "name": "content_search",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:53.331295"
+    },
+    {
+      "module": "M18_Content",
+      "name": "content_course_detail",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:53.339981"
+    },
+    {
+      "module": "M19_Chat",
+      "name": "chat_normal",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:47:55.489790"
+    },
+    {
+      "module": "M19_Chat",
+      "name": "chat_crisis_safe",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:00.393947"
+    },
+    {
+      "module": "M19_Chat",
+      "name": "chat_sessions",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:00.403187"
+    },
+    {
+      "module": "M20_Observer",
+      "name": "observer_quota_today",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:00.719215"
+    },
+    {
+      "module": "M20_Observer",
+      "name": "observer_quota_consume",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:00.730768"
+    },
+    {
+      "module": "M20_Observer",
+      "name": "assessment_progress",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:00.745348"
+    },
+    {
+      "module": "M21_Grower",
+      "name": "daily_tasks_today",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:01.065786"
+    },
+    {
+      "module": "M21_Grower",
+      "name": "user_streak",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:01.075728"
+    },
+    {
+      "module": "M21_Grower",
+      "name": "coach_tip_today",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:01.086192"
+    },
+    {
+      "module": "M21_Grower",
+      "name": "weekly_summary",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:01.097472"
+    },
+    {
+      "module": "M22_Coach",
+      "name": "coach_review_queue",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:01.459961"
+    },
+    {
+      "module": "M22_Coach",
+      "name": "coach_stats_today",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:01.470319"
+    },
+    {
+      "module": "M22_Coach",
+      "name": "coach_review_approve",
+      "passed": true,
+      "detail": "HTTP 404",
+      "status_code": 404,
+      "timestamp": "2026-02-19T18:48:01.482528"
+    },
+    {
+      "module": "M23_Expert",
+      "name": "expert_audit_queue",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:01.804110"
+    },
+    {
+      "module": "M23_Expert",
+      "name": "expert_quality_metrics",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:01.818964"
+    },
+    {
+      "module": "M23_Expert",
+      "name": "expert_agent_anomalies",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:01.830488"
+    },
+    {
+      "module": "M24_Admin",
+      "name": "admin_kpi_realtime",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:02.166211"
+    },
+    {
+      "module": "M24_Admin",
+      "name": "admin_agents_monitor",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:02.180280"
+    },
+    {
+      "module": "M24_Admin",
+      "name": "admin_alerts_active",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:02.200610"
+    },
+    {
+      "module": "M24_Admin",
+      "name": "admin_system_containers",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:02.209340"
+    },
+    {
+      "module": "M24_Admin",
+      "name": "admin_users_overview",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:02.222649"
+    },
+    {
+      "module": "M25_TCMOrtho",
+      "name": "tcm_ortho_chat",
+      "passed": true,
+      "detail": "HTTP 200",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:10.531928"
+    },
+    {
+      "module": "M25_TCMOrtho",
+      "name": "tcm_ortho_agents_registered",
+      "passed": true,
+      "detail": "Found 5 TCM agents: ['tcm_wellness', 'pain_relief_guide', 'tcm_ortho_expert', 'pain_management_expert', 'tcm_exercise_guide']",
+      "status_code": 200,
+      "timestamp": "2026-02-19T18:48:10.543383"
+    }
+  ],
+  "chain_details": [
+    {
+      "chain": "Chain1_Register_Learn_Credit_Promote",
+      "passed": true,
+      "detail": "login:OK → learn_time:200 → credits:200 → promotion:200",
+      "timestamp": "2026-02-19T18:48:11.094389"
+    },
+    {
+      "chain": "Chain2_Content_Learn_Recommend",
+      "passed": true,
+      "detail": "content_list:200 → learn:200 → recommended:200",
+      "timestamp": "2026-02-19T18:48:11.459943"
+    },
+    {
+      "chain": "Chain3_Chat_Safety_Agent",
+      "passed": true,
+      "detail": "crisis_chat:200 → safety_report:200 → agent_templates:200",
+      "timestamp": "2026-02-19T18:48:16.357855"
+    },
+    {
+      "chain": "Chain4_Assessment_Journey_Stage",
+      "passed": true,
+      "detail": "surveys:200 → dual_track:200 → health_check:200",
+      "timestamp": "2026-02-19T18:48:16.742384"
+    },
+    {
+      "chain": "Chain5_Coach_Companion_Push",
+      "passed": true,
+      "detail": "coaches_ranking:200 → companions:200 → audit_queue:200",
+      "timestamp": "2026-02-19T18:48:17.076833"
+    }
+  ]
+}

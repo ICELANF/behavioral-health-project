@@ -26,8 +26,9 @@ export const useQuestionStore = defineStore('question', () => {
     try {
       const mergedParams = { ...filters.value, ...params };
       const response = await questionApi.list(mergedParams);
-      questions.value = response.data.data || [];
-      total.value = questions.value.length;
+      const body = response.data as any;
+      questions.value = body.items || body.data || [];
+      total.value = body.total ?? questions.value.length;
     } catch (error) {
       console.error('Failed to fetch questions:', error);
       questions.value = [];
@@ -40,8 +41,10 @@ export const useQuestionStore = defineStore('question', () => {
     loading.value = true;
     try {
       const response = await questionApi.get(questionId);
-      currentQuestion.value = response.data.data;
-      return response.data.data;
+      const body = response.data as any;
+      const q = body.data || body;
+      currentQuestion.value = q;
+      return q;
     } catch (error) {
       console.error('Failed to fetch question:', error);
       return null;
@@ -52,14 +55,16 @@ export const useQuestionStore = defineStore('question', () => {
 
   async function createQuestion(question: Partial<Question>) {
     const response = await questionApi.create(question);
-    const newQuestion = response.data.data;
+    const body = response.data as any;
+    const newQuestion = body.data || body;
     questions.value.unshift(newQuestion);
     return newQuestion;
   }
 
   async function updateQuestion(questionId: string, question: Partial<Question>) {
     const response = await questionApi.update(questionId, question);
-    const updatedQuestion = response.data.data;
+    const body = response.data as any;
+    const updatedQuestion = body.data || body;
     const index = questions.value.findIndex((q) => q.question_id === questionId);
     if (index > -1) {
       questions.value[index] = updatedQuestion;

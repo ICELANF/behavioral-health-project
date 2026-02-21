@@ -314,15 +314,67 @@ async def get_realtime_kpi(
 # 2. GET /channels/health
 # ═══════════════════════════════════════════════════
 @router.get("/channels/health", response_model=list[ChannelHealth])
-async def get_channels_health(admin_user=Depends(require_admin)):
-    # INFRASTRUCTURE PLACEHOLDER — requires nginx access logs, WeChat API metrics,
-    # and request timing middleware. Returns representative static data.
-    """渠道健康 — 10s轮询"""
+async def get_channels_health(
+    admin_user=Depends(require_admin),
+    db: AsyncSession = Depends(get_async_db),
+):
+    """渠道健康 — 10s轮询 (real metrics from activity logs)"""
+    today_str = date.today().isoformat()
+    try:
+        # H5 DAU from activity logs
+        h5_r = await db.execute(text(
+            "SELECT COUNT(DISTINCT user_id) FROM user_activity_logs WHERE created_at::date = :d"
+        ), {"d": today_str})
+        h5_dau = h5_r.scalar() or 0
+
+        # WeChat DAU (users with wx_openid + today's activity)
+        wx_r = await db.execute(text("""
+            SELECT COUNT(DISTINCT u.id) FROM users u
+            JOIN user_activity_logs ual ON ual.user_id = u.id
+            WHERE u.wx_openid IS NOT NULL AND ual.created_at::date = :d
+        """), {"d": today_str})
+        wx_dau = wx_r.scalar() or 0
+
+        # Today's chat messages
+        msg_r = await db.execute(text(
+            "SELECT COUNT(*) FROM user_activity_logs WHERE created_at::date = :d AND activity_type IN ('chat', 'chat_message')"
+        ), {"d": today_str})
+        msg_today = msg_r.scalar() or 0
+
+        # Error rate from llm_call_logs (if table exists)
+        error_rate = 0.0
+        try:
+            err_r = await db.execute(text("""
+                SELECT COUNT(*) FILTER (WHERE status = 'error')::float / GREATEST(COUNT(*), 1)
+                FROM llm_call_logs WHERE created_at::date = :d
+            """), {"d": today_str})
+            error_rate = round(err_r.scalar() or 0.0, 4)
+        except Exception:
+            pass
+
+    except Exception as e:
+        logger.warning(f"channels/health query failed: {e}")
+        h5_dau, wx_dau, msg_today, error_rate = 0, 0, 0, 0.0
+
     return [
-        ChannelHealth(icon="📱", name="H5 移动端", status="healthy", status_label="正常", dau="--", msg_today="--", avg_reply="--"),
-        ChannelHealth(icon="💬", name="微信服务号", status="healthy", status_label="正常", dau="--", msg_today="--", avg_reply="--"),
-        ChannelHealth(icon="🟢", name="微信小程序", status="healthy", status_label="正常", dau="--", msg_today="--", avg_reply="--"),
-        ChannelHealth(icon="👔", name="企业微信", status="healthy", status_label="正常", dau="--", msg_today="--", avg_reply="--"),
+        ChannelHealth(
+            icon="📱", name="H5 移动端", status="healthy", status_label="正常",
+            dau=str(h5_dau), msg_today=str(msg_today), avg_reply="--", error_rate=error_rate,
+        ),
+        ChannelHealth(
+            icon="💬", name="微信服务号",
+            status="healthy" if wx_dau > 0 else "degraded",
+            status_label="正常" if wx_dau > 0 else "未接入",
+            dau=str(wx_dau), msg_today="--", avg_reply="--",
+        ),
+        ChannelHealth(
+            icon="🟢", name="微信小程序", status="healthy", status_label="待接入",
+            dau="--", msg_today="--", avg_reply="--",
+        ),
+        ChannelHealth(
+            icon="👔", name="企业微信", status="healthy", status_label="待接入",
+            dau="--", msg_today="--", avg_reply="--",
+        ),
     ]
 
 

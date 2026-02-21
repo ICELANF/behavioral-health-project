@@ -372,7 +372,8 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         "full_name": current_user.full_name,
         "is_active": current_user.is_active,
         "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
-        "intervention_stage": getattr(current_user, 'intervention_stage', None)
+        "intervention_stage": getattr(current_user, 'intervention_stage', None),
+        "avatar_url": getattr(current_user, 'avatar_url', None) or "",
     }
 
 

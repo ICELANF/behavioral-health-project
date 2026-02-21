@@ -10,11 +10,13 @@ Assessment Pipeline API - 打通"评估 → 阶段判定 → 行为画像 → �
 """
 import os
 import sys
+import json
 from typing import Dict, Optional, List, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -274,11 +276,99 @@ async def get_my_behavioral_profile(
     db: Session = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    """获取当前用户自己的行为画像 (去诊断化)"""
-    result = profile_service.get_profile_summary(db, current_user.id)
-    if not result:
-        raise HTTPException(status_code=404, detail="尚未完成评估，暂无行为画像")
-    return result
+    """获取当前用户的健康档案 (users.profile JSON + 基本信息)"""
+    uid = current_user.id
+
+    # 从 users 表读取 profile JSON 和基本字段
+    row = db.execute(text("""
+        SELECT username, full_name, gender, date_of_birth, profile
+        FROM users WHERE id = :uid
+    """), {"uid": uid}).mappings().first()
+
+    stored = {}
+    if row and row["profile"]:
+        raw = row["profile"]
+        stored = raw if isinstance(raw, dict) else (json.loads(raw) if isinstance(raw, str) else {})
+
+    # 计算年龄
+    age = stored.get("age")
+    if not age and row and row["date_of_birth"]:
+        from datetime import date
+        dob = row["date_of_birth"]
+        today = date.today()
+        age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+
+    return {
+        "user_id": uid,
+        "username": (row["username"] if row else "") or "",
+        "display_name": stored.get("display_name") or (row["full_name"] if row else "") or getattr(current_user, "username", ""),
+        "gender": stored.get("gender") or (row["gender"] if row else None),
+        "age": age,
+        "height": stored.get("height"),
+        "weight": stored.get("weight"),
+        "diagnosis": stored.get("diagnosis"),
+        "diagnoses": stored.get("diagnoses", []),
+        "diagnosis_date": stored.get("diagnosis_date"),
+        "medical_notes": stored.get("medical_notes"),
+        "medications": stored.get("medications", []),
+        "allergies": stored.get("allergies", []),
+        "emergency_contact": stored.get("emergency_contact"),
+        "assessment_status": "completed" if stored.get("diagnosis") else "pending",
+        "avatar_url": getattr(current_user, "avatar_url", None) or "",
+    }
+
+
+class HealthProfileUpdate(BaseModel):
+    """健康档案更新请求"""
+    display_name: Optional[str] = None
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    height: Optional[str] = None
+    weight: Optional[str] = None
+    diagnosis: Optional[str] = None
+    diagnoses: Optional[List[str]] = None
+    diagnosis_date: Optional[str] = None
+    medical_notes: Optional[str] = None
+    medications: Optional[List[Dict[str, Any]]] = None
+    allergies: Optional[List[str]] = None
+    emergency_contact: Optional[Dict[str, str]] = None
+
+
+@router.put("/profile/me")
+async def update_my_health_profile(
+    body: HealthProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """保存用户健康档案到 users.profile JSON"""
+    uid = current_user.id
+
+    # 读取现有 profile
+    row = db.execute(text("SELECT profile FROM users WHERE id = :uid"), {"uid": uid}).mappings().first()
+    existing = {}
+    if row and row["profile"]:
+        raw = row["profile"]
+        existing = raw if isinstance(raw, dict) else (json.loads(raw) if isinstance(raw, str) else {})
+
+    # 合并更新 (只覆盖前端发送的非None字段)
+    update_data = body.dict(exclude_none=True)
+    existing.update(update_data)
+
+    # 写回 users.profile
+    db.execute(
+        text("UPDATE users SET profile = CAST(:prof AS json), updated_at = NOW() WHERE id = :uid"),
+        {"prof": json.dumps(existing, ensure_ascii=False), "uid": uid},
+    )
+
+    # 同步基本字段到 users 表列 (gender, full_name)
+    if body.gender:
+        db.execute(text("UPDATE users SET gender = :g WHERE id = :uid"), {"g": body.gender, "uid": uid})
+    if body.display_name:
+        db.execute(text("UPDATE users SET full_name = :n WHERE id = :uid"), {"n": body.display_name, "uid": uid})
+
+    db.commit()
+
+    return {"success": True, "message": "健康档案已保存"}
 
 
 @router.get("/profile/{user_id}")

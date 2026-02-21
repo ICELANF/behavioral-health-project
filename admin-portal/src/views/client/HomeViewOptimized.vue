@@ -7,8 +7,8 @@
           <div class="greeting-time">{{ greetingText }}</div>
           <div class="greeting-name">{{ userName }} 👋</div>
         </div>
-        <a-avatar :size="60" class="user-avatar">
-          <template #icon><UserOutlined /></template>
+        <a-avatar :size="60" class="user-avatar" @click="router.push('/client/my/profile')">
+          {{ avatarText }}
         </a-avatar>
       </div>
 
@@ -26,93 +26,110 @@
 
     <!-- 2. 主内容区 -->
     <div class="main-content">
-      <!-- 今日重点任务 - 使用 TaskList 组件 -->
-      <div v-if="priorityTasks.length > 0" class="section-card">
+      <!-- 今日重点任务 -->
+      <div class="section-card">
+        <div class="task-section-header">
+          <h3 class="section-title" style="margin:0">✨ 今天要做的事</h3>
+          <a-button type="link" size="small" @click="showCatalog = true" style="font-size:14px">
+            <PlusCircleOutlined /> 添加任务
+          </a-button>
+        </div>
         <TaskList
+          v-if="priorityTasks.length > 0"
           :tasks="priorityTasks"
-          title="✨ 今天要做的事"
-          :show-header="true"
-          :show-progress="true"
-          :show-encouragement="true"
-          encouragement-text="太棒了！今日任务全部完成"
+          :show-header="false"
+          :show-progress="false"
+          :show-progress-ring="true"
+          :show-source-badge="true"
+          :show-delete-button="true"
+          :collapsible="true"
+          :max-uncompleted="5"
+          :show-encouragement="false"
           @toggle="toggleTask"
+          @delete="deleteTask"
         />
-      </div>
-
-      <!-- 3. 健康快照 - 使用 HealthMetricCard 组件 -->
-      <div class="section-card health-snapshot">
-        <h3 class="section-title">📊 健康快照</h3>
-
-        <div class="snapshot-grid">
-          <HealthMetricCard
-            icon="🩸"
-            label="血糖"
-            :value="bloodGlucose.fasting"
-            :status="bloodGlucose.status"
-            :status-text="getStatusText(bloodGlucose.status)"
-            theme="glucose"
-            @click="goToDetail('glucose')"
-          />
-
-          <HealthMetricCard
-            icon="⚖️"
-            label="体重"
-            :value="weight.current"
-            :status="weight.status"
-            :status-text="getStatusText(weight.status)"
-            theme="weight"
-            @click="goToDetail('weight')"
-          />
-
-          <HealthMetricCard
-            icon="🏃"
-            label="运动(分钟)"
-            :value="exercise.weeklyMinutes"
-            :progress="Math.min(100, (exercise.weeklyMinutes / exercise.targetMinutes) * 100)"
-            :show-progress="true"
-            :progress-text="`目标 ${exercise.targetMinutes} 分钟`"
-            theme="exercise"
-            @click="goToDetail('exercise')"
-          />
-
-          <HealthMetricCard
-            icon="💊"
-            label="今日用药"
-            :value="todayMedCount"
-            :badge="`${takenMedCount}/${todayMedCount}`"
-            theme="medication"
-            @click="goToDetail('medication')"
-          />
+        <div v-else class="empty-tasks">
+          <div class="empty-icon">📋</div>
+          <div class="empty-text">今天还没有任务</div>
+          <a-button type="primary" size="small" @click="showCatalog = true">选择任务</a-button>
         </div>
       </div>
 
-      <!-- 4. 快速入口 - 4个核心功能 -->
-      <div class="section-card quick-actions">
-        <h3 class="section-title">⚡ 快速入口</h3>
-
-        <div class="action-grid">
-          <div class="action-btn" @click="router.push('/client/data-input')">
-            <div class="action-icon">📝</div>
-            <div class="action-label">记录数据</div>
-            <div class="action-desc">血糖、体重等</div>
+      <!-- 完成庆祝覆盖层 -->
+      <Teleport to="body">
+        <Transition name="celebrate-fade">
+          <div v-if="celebrationVisible" class="celebrate-overlay" @click="celebrationVisible = false">
+            <div class="celebrate-card" @click.stop>
+              <div class="celebrate-emoji">{{ celebrationData.emoji }}</div>
+              <div class="celebrate-title">{{ celebrationData.title }}</div>
+              <div class="celebrate-msg">{{ celebrationData.message }}</div>
+              <div v-if="celebrationData.points" class="celebrate-points">+{{ celebrationData.points }} 积分</div>
+              <div class="celebrate-remaining">还剩 {{ celebrationData.remaining }} 项任务</div>
+            </div>
           </div>
+        </Transition>
+      </Teleport>
 
-          <div class="action-btn" @click="router.push('/client/chat-v2')">
-            <div class="action-icon">💬</div>
-            <div class="action-label">AI助手</div>
-            <div class="action-desc">健康咨询</div>
+      <!-- 3. 关注指标趋势 — 7天迷你曲线 -->
+      <div class="section-card health-trends">
+        <div class="trends-header">
+          <h3 class="section-title" style="margin:0">📊 我的关注指标</h3>
+          <a class="trends-more" @click="router.push('/client/progress')">详细分析 ›</a>
+        </div>
+
+        <div class="trend-cards">
+          <div
+            v-for="m in activeMetrics"
+            :key="m.key"
+            class="trend-card"
+            :style="{ borderLeftColor: m.color }"
+            @click="router.push('/client/progress')"
+          >
+            <div class="trend-card-top">
+              <span class="trend-icon">{{ m.icon }}</span>
+              <span class="trend-label">{{ m.label }}</span>
+              <span class="trend-arrow" :class="m.trendDir">{{ m.trendArrow }}</span>
+            </div>
+            <div class="trend-card-mid">
+              <span class="trend-latest">{{ m.latest }}</span>
+              <span class="trend-unit">{{ m.unit }}</span>
+            </div>
+            <div class="trend-sparkline">
+              <TrendChart
+                type="line"
+                :data="m.data"
+                :labels="m.labels"
+                :line-color="m.color"
+                :height="50"
+                :width="280"
+                :show-grid="false"
+                :show-area="true"
+                :show-dots="false"
+                :show-labels="false"
+                :show-stats="false"
+                :stroke-width="2"
+                :compact="true"
+              />
+            </div>
+            <div class="trend-card-foot">{{ m.trendText }}</div>
           </div>
+        </div>
+      </div>
 
-          <div class="action-btn" @click="router.push('/client/progress')">
-            <div class="action-icon">📈</div>
-            <div class="action-label">我的进展</div>
-            <div class="action-desc">查看趋势</div>
+      <!-- 4. 快速入口 — 紧凑行 -->
+      <div class="section-card quick-row">
+        <div class="quick-items">
+          <div class="quick-item" @click="router.push('/client/data-input')">
+            <span class="quick-icon">📝</span><span>记录</span>
           </div>
-
-          <div class="action-btn" @click="showMoreDrawer = true">
-            <div class="action-icon">🎯</div>
-            <div class="action-label">更多功能</div>
-            <div class="action-desc">学习、课程</div>
+          <div class="quick-item" @click="router.push('/client/chat-v2')">
+            <span class="quick-icon">💬</span><span>AI助手</span>
+          </div>
+          <div class="quick-item" @click="router.push('/client/progress')">
+            <span class="quick-icon">📈</span><span>进展</span>
+          </div>
+          <div class="quick-item" @click="showMoreDrawer = true">
+            <span class="quick-icon">🎯</span><span>更多</span>
           </div>
         </div>
       </div>
@@ -154,6 +171,34 @@
       </div>
     </div>
 
+    <!-- 任务目录抽屉 -->
+    <a-drawer
+      v-model:open="showCatalog"
+      title="选择今日任务"
+      placement="bottom"
+      :height="'75vh'"
+    >
+      <div class="catalog-groups">
+        <div v-for="group in catalogGroups" :key="group.label" class="catalog-group">
+          <div class="catalog-group-label">{{ group.label }}</div>
+          <div class="catalog-items">
+            <div
+              v-for="item in group.items"
+              :key="item.id"
+              class="catalog-item"
+              :class="{ 'catalog-item-added': addedCatalogIds.has(item.id) }"
+              @click="addCatalogTask(item)"
+            >
+              <span class="catalog-icon">{{ item.icon }}</span>
+              <span class="catalog-title">{{ item.title }}</span>
+              <span v-if="addedCatalogIds.has(item.id)" class="catalog-check">✓</span>
+              <PlusOutlined v-else class="catalog-plus" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </a-drawer>
+
     <!-- 更多功能抽屉 -->
     <a-drawer
       v-model:open="showMoreDrawer"
@@ -191,11 +236,14 @@ import {
   HomeOutlined,
   LineChartOutlined,
   MessageOutlined,
-  ReadOutlined
+  ReadOutlined,
+  PlusCircleOutlined,
+  PlusOutlined,
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { healthApi } from '@/api/health'
-import { HealthScoreCircle, TaskList, HealthMetricCard } from '@/components/health'
+import { profileApi } from '@/api/index'
+import { HealthScoreCircle, TaskList, TrendChart } from '@/components/health'
 import type { Task } from '@/components/health'
 
 const router = useRouter()
@@ -205,6 +253,12 @@ const userName = ref(localStorage.getItem('admin_name') || localStorage.getItem(
 const healthScore = ref(0)
 const streakDays = ref(0)
 const loading = ref(true)
+
+// 头像显示文字（取名字最后两个字）
+const avatarText = computed(() => {
+  const name = userName.value || ''
+  return name.length > 2 ? name.slice(-2) : name || '?'
+})
 
 // patientId no longer needed — real endpoints are JWT-scoped
 
@@ -230,57 +284,213 @@ const healthScoreText = computed(() => {
 // 今日重点任务（最多3个）
 const priorityTasks = ref<Task[]>([])
 
+// 庆祝覆盖层
+const celebrationVisible = ref(false)
+const celebrationData = ref({
+  emoji: '🎉',
+  title: '太棒了！',
+  message: '',
+  points: 0,
+  remaining: 0,
+})
+
 const toggleTask = async (task: Task) => {
-  task.completed = !task.completed
-  if (task.completed) {
-    try {
-      await healthApi.completeTask(String(task.id))
-      message.success({
-        content: '🎉 太棒了！任务完成 +10积分',
-        duration: 2
-      })
-    } catch (e) {
+  if (task.completed) return
+  task.completed = true
+  try {
+    const res = await healthApi.completeTask(String(task.id))
+    // 后端返回个性化反馈: { emoji, message, points_earned, streak_days }
+    const fb = res || {}
+    const remaining = priorityTasks.value.filter(t => !t.completed).length
+    celebrationData.value = {
+      emoji: fb.emoji || '🎉',
+      title: '太棒了！',
+      message: fb.message || '继续加油！',
+      points: fb.points_earned || 10,
+      remaining,
+    }
+    // 延迟300ms后弹出庆祝
+    setTimeout(() => {
+      celebrationVisible.value = true
+      // 2.5s后自动关闭
+      setTimeout(() => { celebrationVisible.value = false }, 2500)
+    }, 300)
+  } catch (e: any) {
+    if (e?.response?.status === 409) {
+      // 已打卡，忽略
+    } else {
+      task.completed = false
       console.error('完成任务失败:', e)
     }
   }
 }
 
-// 健康指标
-const bloodGlucose = ref({ fasting: '--', status: 'good' as const })
-const weight = ref({ current: '--', status: 'good' as const })
-const exercise = ref({ weeklyMinutes: 0, targetMinutes: 150 })
-const todayMedCount = ref(0)
-const takenMedCount = ref(0)
-
-const getStatusText = (status: string) => {
-  const map: Record<string, string> = {
-    good: '正常',
-    normal: '正常',
-    warning: '注意',
-    danger: '偏高'
+const deleteTask = async (task: Task) => {
+  try {
+    await healthApi.removeTask(String(task.id))
+    const idx = priorityTasks.value.findIndex(t => t.id === task.id)
+    if (idx !== -1) priorityTasks.value.splice(idx, 1)
+    message.success('任务已删除')
+  } catch (e: any) {
+    const msg = e?.response?.data?.detail || '删除失败'
+    message.warning(msg)
   }
-  return map[status] || '正常'
+}
+
+// ═══════════════════════════════════════════════════
+// 关注指标趋势 — 7天迷你曲线
+// ═══════════════════════════════════════════════════
+
+interface MetricTrend {
+  key: string
+  icon: string
+  label: string
+  color: string
+  unit: string
+  latest: string
+  data: number[]
+  labels: string[]
+  trendArrow: string
+  trendDir: string
+  trendText: string
+}
+
+// All possible metrics
+const glucoseTrend = ref<MetricTrend>({
+  key: 'glucose', icon: '🩸', label: '血糖', color: '#ef4444', unit: 'mmol/L',
+  latest: '--', data: [], labels: [], trendArrow: '→', trendDir: 'stable', trendText: '暂无数据',
+})
+const weightTrend = ref<MetricTrend>({
+  key: 'weight', icon: '⚖️', label: '体重', color: '#8b5cf6', unit: 'kg',
+  latest: '--', data: [], labels: [], trendArrow: '→', trendDir: 'stable', trendText: '暂无数据',
+})
+const exerciseTrend = ref<MetricTrend>({
+  key: 'exercise', icon: '🏃', label: '运动', color: '#10b981', unit: '分钟',
+  latest: '--', data: [], labels: [], trendArrow: '→', trendDir: 'stable', trendText: '暂无数据',
+})
+const bpTrend = ref<MetricTrend>({
+  key: 'bp', icon: '💉', label: '血压', color: '#f59e0b', unit: 'mmHg',
+  latest: '--', data: [], labels: [], trendArrow: '→', trendDir: 'stable', trendText: '暂无数据',
+})
+const sleepTrend = ref<MetricTrend>({
+  key: 'sleep', icon: '😴', label: '睡眠', color: '#6366f1', unit: '分',
+  latest: '--', data: [], labels: [], trendArrow: '→', trendDir: 'stable', trendText: '暂无数据',
+})
+
+// User's diagnoses → which metrics to show
+const userDiagnoses = ref<string[]>([])
+
+const activeMetrics = computed<MetricTrend[]>(() => {
+  const diags = userDiagnoses.value.map(d => d.toLowerCase())
+  const metrics: MetricTrend[] = []
+
+  // Always show glucose if diabetic, or as default primary
+  const hasDiabetes = diags.some(d => d.includes('糖尿'))
+  const hasHypertension = diags.some(d => d.includes('高血压'))
+  const hasOrtho = diags.some(d => d.includes('椎') || d.includes('关节') || d.includes('骨') || d.includes('肩'))
+
+  if (hasDiabetes || diags.length === 0) metrics.push(glucoseTrend.value)
+  if (hasHypertension) metrics.push(bpTrend.value)
+  metrics.push(weightTrend.value)
+  metrics.push(exerciseTrend.value)
+  if (hasOrtho) metrics.push(sleepTrend.value)
+
+  // Ensure at least 3, at most 4
+  const all = [glucoseTrend.value, weightTrend.value, exerciseTrend.value, bpTrend.value, sleepTrend.value]
+  for (const m of all) {
+    if (metrics.length >= 4) break
+    if (!metrics.includes(m)) metrics.push(m)
+  }
+  return metrics.slice(0, 4)
+})
+
+function computeTrend(data: number[]): { arrow: string; dir: string; text: string } {
+  if (data.length < 2) return { arrow: '→', dir: 'stable', text: '数据不足' }
+  const recent = data.slice(-3)
+  const earlier = data.slice(0, 3)
+  const avgRecent = recent.reduce((s, v) => s + v, 0) / recent.length
+  const avgEarlier = earlier.reduce((s, v) => s + v, 0) / earlier.length
+  const diff = avgRecent - avgEarlier
+  const pct = avgEarlier > 0 ? Math.abs(diff / avgEarlier * 100).toFixed(1) : '0'
+  if (diff > 0.1) return { arrow: '↗', dir: 'up', text: `较前升高 ${pct}%` }
+  if (diff < -0.1) return { arrow: '↘', dir: 'down', text: `较前下降 ${pct}%` }
+  return { arrow: '→', dir: 'stable', text: '保持稳定' }
 }
 
 // 每日提示
 const dailyTip = ref<{ icon: string; title: string; content: string } | null>(null)
 
-// 更多功能
-const showMoreDrawer = ref(false)
+// 任务目录
+const showCatalog = ref(false)
+const catalogItems = ref<any[]>([])
+const addedCatalogIds = ref(new Set<string>())
 
-const goToDetail = (type: string) => {
-  const routes: Record<string, string> = {
-    glucose: '/client/data-input',
-    weight: '/client/data-input',
-    exercise: '/client/data-input',
-    medication: '/client/my/profile'
+interface CatalogGroup {
+  label: string
+  items: any[]
+}
+const catalogGroups = computed<CatalogGroup[]>(() => {
+  const groups: Record<string, any[]> = {}
+  for (const item of catalogItems.value) {
+    const tag = item.tag || '其他'
+    if (!groups[tag]) groups[tag] = []
+    groups[tag].push(item)
   }
-  if (routes[type]) {
-    router.push(routes[type])
-  } else {
-    router.push('/client')
+  return Object.entries(groups).map(([label, items]) => ({ label, items }))
+})
+
+const loadCatalog = async () => {
+  try {
+    const data = await healthApi.getTaskCatalog()
+    catalogItems.value = data.catalog || []
+  } catch (e) {
+    console.error('加载任务目录失败:', e)
   }
 }
+
+const addCatalogTask = async (item: any) => {
+  if (addedCatalogIds.value.has(item.id)) {
+    message.info('今天已添加过该任务')
+    return
+  }
+  try {
+    const res = await healthApi.addTaskFromCatalog(item.id)
+    addedCatalogIds.value.add(item.id)
+    message.success(res.message || '任务已添加')
+    // Reload tasks
+    await loadTasks()
+  } catch (e: any) {
+    const msg = e?.response?.data?.detail || '添加失败'
+    message.warning(msg)
+    if (msg.includes('已添加')) addedCatalogIds.value.add(item.id)
+  }
+}
+
+const loadTasks = async () => {
+  try {
+    const rawTasks = await healthApi.getDailyTasks()
+    const taskList = rawTasks?.tasks || (Array.isArray(rawTasks) ? rawTasks : [])
+    const emojiMap: Record<string, string> = {
+      glucose: '🩸', weight: '⚖️', exercise: '🏃', 监测: '🩸',
+      mood: '😊', assessment: '📋', nutrition: '🍎', 营养: '🍎',
+      emotion: '💛', sleep: '😴', 睡眠: '😴', 运动: '🏃',
+      情绪: '💛', 学习: '📖', 用药: '💊',
+    }
+    priorityTasks.value = taskList.map((t: any) => ({
+      id: t.id,
+      name: t.title || t.tag || '任务',
+      hint: t.time_hint ? `建议时间: ${t.time_hint}` : undefined,
+      emoji: emojiMap[t.type || t.tag] || '📝',
+      completed: t.completed ?? t.done ?? false,
+      source: t.source || 'rx',
+    }))
+  } catch (e) {
+    console.error('加载任务失败:', e)
+  }
+}
+
+// 更多功能
+const showMoreDrawer = ref(false)
 
 const goToPage = (path: string) => {
   router.push(path)
@@ -292,66 +502,142 @@ const loadData = async () => {
   try {
     loading.value = true
 
-    // 并行加载多个数据（JWT-scoped, no patientId）
-    const [scoreData, snapshotData, tasksData, summaryData] = await Promise.allSettled([
+    // 并行加载: 评分 + 任务 + AI提示 + 7天趋势 + 用户档案
+    const [scoreData, tasksData, summaryData, gluRes, wtRes, exRes, bpRes, profileRes] = await Promise.allSettled([
       healthApi.getHealthScore(),
-      healthApi.getHealthSnapshot(),
       healthApi.getDailyTasks(),
       healthApi.getAISummary(),
+      healthApi.getGlucoseHistory({ period: '7d' }),
+      healthApi.getWeightHistory({ period: '7d' }),
+      healthApi.getExerciseHistory({ period: '7d' }),
+      healthApi.getBloodPressureHistory({ limit: 7 }),
+      profileApi.getProfile(),
     ])
 
-    // 更新健康评分
+    // 健康数据摘要 → 用于下面计算综合评分
+    let summaryGlucose = 0
+    let summarySteps = 0
     if (scoreData.status === 'fulfilled' && scoreData.value) {
       const sd = scoreData.value
-      healthScore.value = sd.overall_score ?? sd.overall ?? sd.score ?? 0
-      streakDays.value = sd.streak_days ?? sd.streakDays ?? 0
+      summaryGlucose = sd.latest_glucose?.value ?? 0
+      summarySteps = sd.steps_today ?? 0
     }
 
-    // 更新健康快照 (dashboard/today response shape)
-    if (snapshotData.status === 'fulfilled' && snapshotData.value) {
-      const snap = snapshotData.value
-      if (snap.glucose_latest != null || snap.glucose?.value != null) {
-        bloodGlucose.value = {
-          fasting: String(snap.glucose_latest ?? snap.glucose?.value ?? '--'),
-          status: (snap.glucose?.status) || 'good',
-        }
-      }
-      if (snap.weight_latest != null || snap.weight?.value != null) {
-        weight.value = {
-          current: String(snap.weight_latest ?? snap.weight?.value ?? '--'),
-          status: 'good',
-        }
-      }
-      if (snap.exercise || snap.activity) {
-        const ex = snap.exercise || snap.activity || {}
-        exercise.value = {
-          weeklyMinutes: (ex.todayMinutes ?? ex.today_minutes ?? 0) * 7,
-          targetMinutes: ex.weeklyGoal ?? ex.weekly_goal ?? 150,
-        }
+    // 用户诊断 → 动态选择指标
+    if (profileRes.status === 'fulfilled' && profileRes.value) {
+      const pf = profileRes.value
+      userDiagnoses.value = pf.diagnoses || (pf.diagnosis ? [pf.diagnosis] : [])
+    }
+
+    // Helper: deduplicate by day (keep first per day) and sort ascending (oldest→newest)
+    const dedup = (arr: any[], dateKey: string) => {
+      const seen = new Set<string>()
+      const unique = arr.filter((r: any) => {
+        const day = (r[dateKey] || '').slice(0, 10)
+        if (!day || seen.has(day)) return false
+        seen.add(day)
+        return true
+      })
+      unique.sort((a: any, b: any) => (a[dateKey] || '').localeCompare(b[dateKey] || ''))
+      return unique.slice(-7)
+    }
+
+    // 7天血糖趋势 — backend returns { readings: [{value, recorded_at, ...}], statistics, period }
+    if (gluRes.status === 'fulfilled' && gluRes.value) {
+      const raw = gluRes.value.readings || gluRes.value.records || gluRes.value.data || (Array.isArray(gluRes.value) ? gluRes.value : [])
+      const records = dedup(raw, 'recorded_at')
+      if (records.length > 0) {
+        const vals = records.map((r: any) => r.value || r.glucose || 0)
+        const lbls = records.map((r: any) => (r.recorded_at || '').slice(5, 10))
+        const latest = vals[vals.length - 1]
+        const t = computeTrend(vals)
+        glucoseTrend.value = { ...glucoseTrend.value, data: vals, labels: lbls, latest: latest.toFixed(1), trendArrow: t.arrow, trendDir: t.dir, trendText: t.text }
       }
     }
 
-    // 更新任务列表（只显示前3个高优先级任务）
-    const rawTasks = tasksData.status === 'fulfilled' ? tasksData.value : null
-    const taskList = rawTasks?.tasks || (Array.isArray(rawTasks) ? rawTasks : [])
-    if (taskList.length > 0) {
+    // 7天体重趋势 — backend returns { records: [{weight_kg, bmi, recorded_at, ...}], trend, total }
+    if (wtRes.status === 'fulfilled' && wtRes.value) {
+      const raw = wtRes.value.records || wtRes.value.data || (Array.isArray(wtRes.value) ? wtRes.value : [])
+      const records = dedup(raw, 'recorded_at')
+      if (records.length > 0) {
+        const vals = records.map((r: any) => r.weight_kg || r.value || r.weight || 0)
+        const lbls = records.map((r: any) => (r.recorded_at || '').slice(5, 10))
+        const latest = vals[vals.length - 1]
+        const t = computeTrend(vals)
+        weightTrend.value = { ...weightTrend.value, data: vals, labels: lbls, latest: latest.toFixed(1), trendArrow: t.arrow, trendDir: t.dir, trendText: t.text }
+      }
+    }
+
+    // 7天运动趋势 — backend returns { records: [{date, steps, active_minutes, ...}], total }
+    if (exRes.status === 'fulfilled' && exRes.value) {
+      const raw = exRes.value.records || exRes.value.items || (Array.isArray(exRes.value) ? exRes.value : [])
+      // Activity uses 'date' field, already one-per-day; sort ascending
+      const records = [...raw].sort((a: any, b: any) => (a.date || '').localeCompare(b.date || '')).slice(-7)
+      if (records.length > 0) {
+        const vals = records.map((r: any) => r.active_minutes || r.duration || r.minutes || 0)
+        const lbls = records.map((r: any) => (r.date || '').slice(5, 10))
+        const total = vals.reduce((s: number, v: number) => s + v, 0)
+        const t = computeTrend(vals)
+        exerciseTrend.value = { ...exerciseTrend.value, data: vals, labels: lbls, latest: String(total), trendArrow: t.arrow, trendDir: t.dir, trendText: `7天共 ${total} 分钟` }
+      }
+    }
+
+    // 血压趋势 — backend returns { records: [{systolic, diastolic, recorded_at, ...}], statistics, total }
+    if (bpRes.status === 'fulfilled' && bpRes.value) {
+      const raw = bpRes.value.records || (Array.isArray(bpRes.value) ? bpRes.value : [])
+      const records = dedup(raw, 'recorded_at')
+      if (records.length > 0) {
+        const vals = records.map((r: any) => r.systolic || 0)
+        const lbls = records.map((r: any) => (r.recorded_at || '').slice(5, 10))
+        const latestRec = records[records.length - 1]
+        const latestStr = `${latestRec.systolic || '--'}/${latestRec.diastolic || '--'}`
+        const t = computeTrend(vals)
+        bpTrend.value = { ...bpTrend.value, data: vals, labels: lbls, latest: latestStr, trendArrow: t.arrow, trendDir: t.dir, trendText: t.text }
+      }
+    }
+
+    // 任务列表 + 连续天数 + 完成率
+    let taskCompletionPct = 0
+    if (tasksData.status === 'fulfilled' && tasksData.value) {
+      const rawTasks = tasksData.value
+      const taskList = rawTasks?.tasks || (Array.isArray(rawTasks) ? rawTasks : [])
+      taskCompletionPct = rawTasks?.completion_pct ?? 0
+      streakDays.value = rawTasks?.streak_days ?? 0
       const emojiMap: Record<string, string> = {
-        glucose: '🩸', weight: '⚖️', exercise: '🏃',
-        mood: '😊', assessment: '📋', nutrition: '🍎',
-        emotion: '💛', sleep: '😴',
+        glucose: '🩸', weight: '⚖️', exercise: '🏃', 监测: '🩸',
+        mood: '😊', assessment: '📋', nutrition: '🍎', 营养: '🍎',
+        emotion: '💛', sleep: '😴', 睡眠: '😴', 运动: '🏃',
+        情绪: '💛', 学习: '📖', 用药: '💊',
       }
-      priorityTasks.value = taskList
-        .slice(0, 3)
-        .map((t: any) => ({
-          id: t.id,
-          name: t.title || t.tag || '任务',
-          hint: t.dueTime ? `建议在 ${t.dueTime} 前完成` : undefined,
-          emoji: emojiMap[t.type || t.tag] || '📝',
-          completed: t.completed ?? t.done ?? false,
-        }))
+      priorityTasks.value = taskList.map((t: any) => ({
+        id: t.id,
+        name: t.title || t.tag || '任务',
+        hint: t.time_hint ? `建议时间: ${t.time_hint}` : undefined,
+        emoji: emojiMap[t.type || t.tag] || '📝',
+        completed: t.completed ?? t.done ?? false,
+        source: t.source || 'rx',
+      }))
     }
 
-    // 更新每日提示
+    // 综合健康评分 = 任务完成(35) + 血糖达标(25) + 运动(20) + 连续打卡(20)
+    {
+      let score = 0
+      // 1. 任务完成度 → 最高 35 分
+      score += Math.round(taskCompletionPct * 0.35)
+      // 2. 血糖达标 → 最高 25 分 (空腹 4~7 优秀, 7~10 一般)
+      if (summaryGlucose > 0) {
+        if (summaryGlucose >= 4 && summaryGlucose <= 7) score += 25
+        else if (summaryGlucose <= 10) score += 15
+        else score += 5
+      }
+      // 3. 运动量 → 最高 20 分 (步数/8000 * 20, 上限20)
+      score += Math.min(20, Math.round((summarySteps / 8000) * 20))
+      // 4. 连续打卡 → 最高 20 分 (每天 +4, 上限20)
+      score += Math.min(20, streakDays.value * 4)
+      healthScore.value = Math.min(100, score)
+    }
+
+    // AI 每日提示
     if (summaryData.status === 'fulfilled' && summaryData.value) {
       const tip = summaryData.value
       const tipText = tip.tip || tip.summary || tip.content || ''
@@ -370,6 +656,7 @@ const loadData = async () => {
 
 onMounted(() => {
   loadData()
+  loadCatalog()
 })
 </script>
 
@@ -407,8 +694,17 @@ onMounted(() => {
 }
 
 .user-avatar {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.25) !important;
   border: 3px solid rgba(255,255,255,0.5);
+  color: #fff !important;
+  font-size: 20px !important;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.user-avatar:hover {
+  transform: scale(1.05);
 }
 
 .health-score-wrapper {
@@ -444,53 +740,101 @@ onMounted(() => {
   margin: 0 0 16px 0;
 }
 
-/* 健康快照 */
-.snapshot-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+/* 关注指标趋势 */
+.health-trends { padding-bottom: 8px; }
+.trends-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
 }
-
-/* 快速入口 */
-.action-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-.action-btn {
-  background: #f9fafb;
-  padding: 20px 16px;
-  border-radius: 16px;
+.trends-more {
+  font-size: 13px;
+  color: #10b981;
   cursor: pointer;
-  transition: all 0.3s;
-  text-align: center;
-  border: 2px solid transparent;
+  font-weight: 500;
 }
-
-.action-btn:hover {
+.trend-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.trend-card {
+  background: #f9fafb;
+  border-radius: 14px;
+  padding: 12px 14px 6px;
+  cursor: pointer;
+  border-left: 4px solid #10b981;
+  transition: all 0.2s;
+}
+.trend-card:hover {
   background: #f3f4f6;
-  border-color: #10b981;
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(16,185,129,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
-
-.action-icon {
-  font-size: 40px;
-  margin-bottom: 10px;
+.trend-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
 }
-
-.action-label {
-  font-size: 15px;
-  font-weight: 600;
+.trend-icon { font-size: 16px; }
+.trend-label { font-size: 13px; color: #6b7280; font-weight: 500; }
+.trend-arrow {
+  margin-left: auto;
+  font-size: 16px;
+  font-weight: 700;
+}
+.trend-arrow.up { color: #ef4444; }
+.trend-arrow.down { color: #10b981; }
+.trend-arrow.stable { color: #9ca3af; }
+.trend-card-mid {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-bottom: 2px;
+}
+.trend-latest {
+  font-size: 24px;
+  font-weight: 700;
   color: #1f2937;
-  margin-bottom: 4px;
+}
+.trend-unit {
+  font-size: 12px;
+  color: #9ca3af;
+}
+.trend-sparkline {
+  height: 50px;
+  overflow: hidden;
+  margin: 0 -4px;
+}
+.trend-card-foot {
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: right;
+  padding-bottom: 4px;
 }
 
-.action-desc {
+/* 快速入口紧凑行 */
+.quick-row { padding: 10px 16px; }
+.quick-items {
+  display: flex;
+  justify-content: space-around;
+}
+.quick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
   font-size: 12px;
   color: #6b7280;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 10px;
+  transition: background 0.2s;
 }
+.quick-item:hover { background: #f3f4f6; }
+.quick-icon { font-size: 24px; }
 
 /* 每日提示 */
 .daily-tip {
@@ -614,5 +958,174 @@ onMounted(() => {
   font-size: 14px;
   font-weight: 500;
   color: #1f2937;
+}
+
+/* 任务区域头部 */
+.task-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* 空任务状态 */
+.empty-tasks {
+  text-align: center;
+  padding: 24px 0;
+}
+.empty-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+.empty-text {
+  color: #9ca3af;
+  margin-bottom: 12px;
+}
+
+/* 目录分组 */
+.catalog-groups {
+  padding-bottom: 20px;
+}
+.catalog-group {
+  margin-bottom: 16px;
+}
+.catalog-group-label {
+  font-weight: 600;
+  font-size: 15px;
+  color: #374151;
+  margin-bottom: 8px;
+  padding-left: 4px;
+}
+.catalog-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.catalog-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+.catalog-item:hover {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+.catalog-item-added {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #059669;
+}
+.catalog-icon {
+  font-size: 16px;
+}
+.catalog-title {
+  flex: 1;
+}
+.catalog-plus {
+  color: #9ca3af;
+  font-size: 12px;
+}
+.catalog-check {
+  color: #10b981;
+  font-weight: 600;
+}
+
+/* 庆祝覆盖层 */
+.celebrate-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+}
+
+.celebrate-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 36px 32px 28px;
+  text-align: center;
+  max-width: 300px;
+  width: 80%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  animation: celebratePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes celebratePop {
+  0% {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.celebrate-emoji {
+  font-size: 64px;
+  margin-bottom: 12px;
+  animation: celebrateBounce 0.6s ease 0.3s;
+}
+
+@keyframes celebrateBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+.celebrate-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+}
+
+.celebrate-msg {
+  font-size: 15px;
+  color: #4b5563;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.celebrate-points {
+  display: inline-block;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  font-size: 18px;
+  font-weight: 700;
+  padding: 6px 20px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+}
+
+.celebrate-remaining {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* 庆祝动画过渡 */
+.celebrate-fade-enter-active {
+  transition: opacity 0.3s ease;
+}
+
+.celebrate-fade-leave-active {
+  transition: opacity 0.4s ease;
+}
+
+.celebrate-fade-enter-from,
+.celebrate-fade-leave-to {
+  opacity: 0;
 }
 </style>

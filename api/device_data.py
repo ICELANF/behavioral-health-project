@@ -13,7 +13,7 @@ Phase 1 实现：
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date, timedelta
 from fastapi import APIRouter, HTTPException, Depends, Query, Header
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator, root_validator
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from loguru import logger
@@ -64,19 +64,34 @@ class DeviceBindRequest(BaseModel):
     serial_number: Optional[str] = None
 
 
+VALID_MEAL_TAGS = {
+    'fasting', 'before_meal', 'after_meal', 'bedtime',
+    'before_breakfast', 'after_breakfast',
+    'before_lunch', 'after_lunch',
+    'before_dinner', 'after_dinner',
+}
+
+
 class GlucoseReadingInput(BaseModel):
     """血糖录入"""
     value: float = Field(..., ge=1.0, le=35.0, description="血糖值 mmol/L")
     unit: str = Field(default="mmol/L")
-    meal_tag: Optional[str] = Field(None, description="餐标: fasting/before_meal/after_meal/bedtime")
+    meal_tag: Optional[str] = Field(None, description="餐标: fasting/before_meal/after_meal/bedtime + 细分餐标")
     timestamp: Optional[datetime] = None
+    measurement_time: Optional[str] = Field(None, description="前端兼容: ISO时间字符串")
     notes: Optional[str] = None
 
     @validator('meal_tag')
     def validate_meal_tag(cls, v):
-        if v and v not in ['fasting', 'before_meal', 'after_meal', 'bedtime']:
-            raise ValueError('Invalid meal_tag')
+        if v and v not in VALID_MEAL_TAGS:
+            raise ValueError(f'Invalid meal_tag: {v}')
         return v
+
+    @root_validator(pre=True)
+    def normalize_fields(cls, values):
+        if not values.get('timestamp') and values.get('measurement_time'):
+            values['timestamp'] = values['measurement_time']
+        return values
 
 
 class GlucoseReadingResponse(BaseModel):
@@ -108,10 +123,22 @@ class GlucoseStatistics(BaseModel):
 
 class WeightInput(BaseModel):
     """体重录入"""
-    weight_kg: float = Field(..., ge=20.0, le=300.0)
+    weight_kg: Optional[float] = Field(None, ge=20.0, le=300.0)
+    value: Optional[float] = Field(None, ge=20.0, le=300.0, description="前端兼容字段(等同weight_kg)")
     body_fat_percent: Optional[float] = Field(None, ge=3.0, le=60.0)
     muscle_mass_kg: Optional[float] = None
     timestamp: Optional[datetime] = None
+    measurement_time: Optional[str] = Field(None, description="前端兼容: ISO时间字符串")
+
+    @root_validator(pre=True)
+    def normalize_fields(cls, values):
+        # value → weight_kg
+        if not values.get('weight_kg') and values.get('value') is not None:
+            values['weight_kg'] = values['value']
+        # measurement_time → timestamp
+        if not values.get('timestamp') and values.get('measurement_time'):
+            values['timestamp'] = values['measurement_time']
+        return values
 
 
 class WeightResponse(BaseModel):
@@ -130,6 +157,13 @@ class BloodPressureInput(BaseModel):
     diastolic: int = Field(..., ge=40, le=150, description="舒张压")
     pulse: Optional[int] = Field(None, ge=30, le=200)
     timestamp: Optional[datetime] = None
+    measurement_time: Optional[str] = Field(None, description="前端兼容: ISO时间字符串")
+
+    @root_validator(pre=True)
+    def normalize_fields(cls, values):
+        if not values.get('timestamp') and values.get('measurement_time'):
+            values['timestamp'] = values['measurement_time']
+        return values
 
 
 class DashboardResponse(BaseModel):

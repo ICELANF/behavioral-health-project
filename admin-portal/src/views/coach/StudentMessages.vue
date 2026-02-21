@@ -4,7 +4,7 @@
 
     <a-row :gutter="16">
       <!-- 左侧：学员列表 -->
-      <a-col :span="8">
+      <a-col :xs="24" :md="8" v-if="!isCompact || !showChat">
         <a-card title="学员列表" size="small">
           <a-spin :spinning="loadingStudents">
             <div class="student-list">
@@ -29,8 +29,11 @@
       </a-col>
 
       <!-- 右侧：消息历史 -->
-      <a-col :span="16">
+      <a-col :xs="24" :md="16" v-if="!isCompact || showChat">
         <a-card :title="selectedStudent ? `与 ${selectedStudent.student_name} 的消息` : '选择一个学员'" size="small">
+          <template #extra>
+            <a-button v-if="isCompact" type="link" @click="showChat = false">&larr; 返回</a-button>
+          </template>
           <template v-if="selectedStudent">
             <!-- 消息列表 -->
             <div class="message-list" ref="messageListRef">
@@ -133,6 +136,10 @@ import { ref, reactive, onMounted, nextTick } from 'vue'
 import { message } from 'ant-design-vue'
 import { ClockCircleOutlined } from '@ant-design/icons-vue'
 import axios from 'axios'
+import { useResponsive } from '@/composables/useResponsive'
+
+const { isCompact } = useResponsive()
+const showChat = ref(false)
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const token = localStorage.getItem('admin_token')
@@ -181,6 +188,7 @@ async function loadStudents() {
 
 async function selectStudent(s: any) {
   selectedStudent.value = s
+  showChat.value = true
   try {
     const res = await axios.get(`${API_BASE}/v1/coach/messages/${s.student_id}`, { headers })
     messages.value = res.data.messages || []
@@ -355,5 +363,12 @@ onMounted(loadStudents)
 .reminder-section {
   margin-top: 12px;
   text-align: right;
+}
+
+@media (max-width: 768px) {
+  .message-list {
+    height: calc(100vh - 120px);
+    max-height: none;
+  }
 }
 </style>

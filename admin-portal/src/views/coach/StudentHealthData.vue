@@ -22,7 +22,7 @@
 
       <a-row :gutter="16">
         <!-- 血糖趋势 -->
-        <a-col :span="12">
+        <a-col :xs="24" :md="12">
           <a-card title="血糖趋势" size="small" style="margin-bottom: 16px">
             <template #extra>
               <a-tag color="blue">{{ glucoseData.length }} 条记录</a-tag>
@@ -54,7 +54,7 @@
         </a-col>
 
         <!-- 睡眠评分 -->
-        <a-col :span="12">
+        <a-col :xs="24" :md="12">
           <a-card title="睡眠评分" size="small" style="margin-bottom: 16px">
             <template #extra>
               <a-tag color="purple">{{ sleepData.length }} 条记录</a-tag>
@@ -84,7 +84,7 @@
         </a-col>
 
         <!-- 运动步数 -->
-        <a-col :span="12">
+        <a-col :xs="24" :md="12">
           <a-card title="运动步数" size="small" style="margin-bottom: 16px">
             <template #extra>
               <a-tag color="green">{{ activityData.length }} 条记录</a-tag>
@@ -114,7 +114,7 @@
         </a-col>
 
         <!-- 体重变化 -->
-        <a-col :span="12">
+        <a-col :xs="24" :md="12">
           <a-card title="体重变化" size="small" style="margin-bottom: 16px">
             <template #extra>
               <a-tag color="orange">{{ vitalsData.length }} 条记录</a-tag>

@@ -8,6 +8,7 @@ import './style.css'
 import '@/styles/react-components.css'
 import './styles/bhp-design-tokens.css'
 import './styles/antd-overrides.css'
+import './styles/responsive.css'
 
 const app = createApp(App)
 

@@ -29,22 +29,22 @@
 
     <!-- Statistics panel -->
     <a-row :gutter="16" style="margin-bottom: 16px">
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card size="small">
           <a-statistic title="题目总数" :value="stats.total" />
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card size="small">
           <a-statistic title="本月新增" :value="stats.monthNew" value-style="color: #3f8600" />
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card size="small">
           <a-statistic title="平均使用次数" :value="stats.avgUse" :precision="1" />
         </a-card>
       </a-col>
-      <a-col :span="6">
+      <a-col :xs="24" :sm="12" :lg="6">
         <a-card size="small">
           <a-statistic title="被引用考试数" :value="stats.examCount" />
         </a-card>
@@ -63,20 +63,19 @@
           </a-select>
         </a-col>
         <a-col :span="4">
-          <a-select v-model:value="filters.level" placeholder="认证等级" allowClear style="width: 100%">
-            <a-select-option value="L0">L0</a-select-option>
-            <a-select-option value="L1">L1</a-select-option>
-            <a-select-option value="L2">L2</a-select-option>
-            <a-select-option value="L3">L3</a-select-option>
+          <a-select v-model:value="filters.domain" placeholder="领域" allowClear style="width: 100%">
+            <a-select-option value="行为健康">行为健康</a-select-option>
+            <a-select-option value="营养学">营养学</a-select-option>
+            <a-select-option value="运动科学">运动科学</a-select-option>
+            <a-select-option value="心理学">心理学</a-select-option>
+            <a-select-option value="慢病管理">慢病管理</a-select-option>
           </a-select>
         </a-col>
         <a-col :span="4">
           <a-select v-model:value="filters.difficulty" placeholder="难度" allowClear style="width: 100%">
-            <a-select-option :value="1">简单</a-select-option>
-            <a-select-option :value="2">较易</a-select-option>
-            <a-select-option :value="3">中等</a-select-option>
-            <a-select-option :value="4">较难</a-select-option>
-            <a-select-option :value="5">困难</a-select-option>
+            <a-select-option value="easy">简单</a-select-option>
+            <a-select-option value="medium">中等</a-select-option>
+            <a-select-option value="hard">困难</a-select-option>
           </a-select>
         </a-col>
         <a-col :span="4">
@@ -107,13 +106,13 @@
             </a>
           </template>
           <template v-if="column.key === 'type'">
-            <a-tag :color="typeColors[record.type]">{{ typeLabels[record.type] }}</a-tag>
+            <a-tag :color="typeColors[record.question_type]">{{ typeLabels[record.question_type] }}</a-tag>
           </template>
           <template v-if="column.key === 'tags'">
             <a-tag v-for="tag in (record.tags || [])" :key="tag" size="small" style="margin-bottom: 2px">{{ tag }}</a-tag>
           </template>
           <template v-if="column.key === 'difficulty'">
-            <a-rate :value="record.difficulty" disabled :count="5" style="font-size: 12px" />
+            <a-tag :color="difficultyColors[record.difficulty]">{{ difficultyLabels[record.difficulty] || record.difficulty }}</a-tag>
           </template>
           <template v-if="column.key === 'action'">
             <a-space>
@@ -133,11 +132,11 @@
       <div v-if="previewQuestion" class="preview-content">
         <a-descriptions :column="2" bordered size="small">
           <a-descriptions-item label="题目类型">
-            <a-tag :color="typeColors[previewQuestion.type]">{{ typeLabels[previewQuestion.type] }}</a-tag>
+            <a-tag :color="typeColors[previewQuestion.question_type]">{{ typeLabels[previewQuestion.question_type] }}</a-tag>
           </a-descriptions-item>
-          <a-descriptions-item label="认证等级">{{ previewQuestion.level }}</a-descriptions-item>
+          <a-descriptions-item label="领域">{{ previewQuestion.domain || '--' }}</a-descriptions-item>
           <a-descriptions-item label="难度" :span="2">
-            <a-rate :value="previewQuestion.difficulty" disabled :count="5" />
+            <a-tag :color="difficultyColors[previewQuestion.difficulty]">{{ difficultyLabels[previewQuestion.difficulty] || previewQuestion.difficulty }}</a-tag>
           </a-descriptions-item>
           <a-descriptions-item label="题目内容" :span="2">
             <p style="white-space: pre-wrap; margin: 0">{{ previewQuestion.content }}</p>
@@ -197,8 +196,8 @@ const loading = ref(false)
 
 const filters = reactive({
   type: undefined as string | undefined,
-  level: undefined as string | undefined,
-  difficulty: undefined as number | undefined,
+  domain: undefined as string | undefined,
+  difficulty: undefined as string | undefined,
   tag: undefined as string | undefined,
   keyword: ''
 })
@@ -217,22 +216,34 @@ const typeColors: Record<string, string> = {
   short_answer: 'purple'
 }
 
+const difficultyLabels: Record<string, string> = {
+  easy: '简单',
+  medium: '中等',
+  hard: '困难'
+}
+
+const difficultyColors: Record<string, string> = {
+  easy: 'green',
+  medium: 'blue',
+  hard: 'red'
+}
+
 const allTags = ['行为健康基础', 'TTM模型', '动机访谈', '认知行为', '压力管理', '营养学', '运动科学', '睡眠医学', '慢病管理', '心理学基础']
 
 const columns = [
   { title: '题目内容', key: 'content', width: 260 },
   { title: '类型', key: 'type', width: 80 },
-  { title: '等级', dataIndex: 'level', width: 60 },
+  { title: '领域', dataIndex: 'domain', width: 80 },
   { title: '标签', key: 'tags', width: 160 },
-  { title: '难度', key: 'difficulty', width: 130 },
-  { title: '使用次数', dataIndex: 'use_count', width: 90, sorter: (a: any, b: any) => a.use_count - b.use_count },
+  { title: '难度', key: 'difficulty', width: 80 },
+  { title: '使用次数', dataIndex: 'use_count', width: 90, sorter: (a: any, b: any) => (a.use_count || 0) - (b.use_count || 0) },
   { title: '操作', key: 'action', width: 140 }
 ]
 
 const importPreviewColumns = [
   { title: '内容', dataIndex: 'content', ellipsis: true },
-  { title: '类型', dataIndex: 'type', width: 80 },
-  { title: '等级', dataIndex: 'level', width: 60 },
+  { title: '类型', dataIndex: 'question_type', width: 80 },
+  { title: '领域', dataIndex: 'domain', width: 80 },
 ]
 
 const questions = computed(() => questionStore.questions)
@@ -269,9 +280,9 @@ const stats = computed(() => ({
 }))
 
 const filteredQuestions = computed(() => {
-  return questions.value.filter(q => {
-    if (filters.type && q.type !== filters.type) return false
-    if (filters.level && q.level !== filters.level) return false
+  return questions.value.filter((q: any) => {
+    if (filters.type && q.question_type !== filters.type) return false
+    if (filters.domain && q.domain !== filters.domain) return false
     if (filters.difficulty && q.difficulty !== filters.difficulty) return false
     if (filters.tag && !(q.tags || []).includes(filters.tag)) return false
     if (filters.keyword && !q.content.includes(filters.keyword)) return false
@@ -285,7 +296,7 @@ const handleSearch = () => { /* computed filteredQuestions handles it */ }
 
 const resetFilters = () => {
   filters.type = undefined
-  filters.level = undefined
+  filters.domain = undefined
   filters.difficulty = undefined
   filters.tag = undefined
   filters.keyword = ''
@@ -353,7 +364,8 @@ const handleImport = async () => {
   importing.value = true
   try {
     const res = await questionApi.bulkImport(importPreview.value)
-    const imported = res.data?.data?.imported || importPreview.value.length
+    const body = res.data as any
+    const imported = body?.imported || body?.data?.imported || importPreview.value.length
     showImportModal.value = false
     importFileList.value = []
     importPreview.value = []

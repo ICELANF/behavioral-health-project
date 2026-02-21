@@ -166,3 +166,37 @@ def social_proof(
     from core.referral_engine import ReferralEngine
     engine = ReferralEngine(db)
     return engine.get_platform_social_proof()
+
+
+@router.get("/referral/qrcode")
+def referral_qrcode(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Generate a QR code PNG for the user's referral link."""
+    import io
+    import os
+    from fastapi.responses import StreamingResponse
+
+    try:
+        import qrcode
+    except ImportError:
+        from fastapi import HTTPException
+        raise HTTPException(500, "qrcode library not installed")
+
+    domain = os.getenv("BHP_DOMAIN", "localhost:5173")
+    scheme = "https" if "localhost" not in domain else "http"
+    ref_code = str(current_user.public_id)[:8] if hasattr(current_user, "public_id") and current_user.public_id else str(current_user.id)
+    url = f"{scheme}://{domain}/register?ref={ref_code}"
+
+    qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_M, box_size=8, border=2)
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="image/png", headers={
+        "Content-Disposition": f"inline; filename=bhp_referral_{ref_code}.png"
+    })

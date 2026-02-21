@@ -100,7 +100,8 @@ def get_companion_stats(
             text("SELECT * FROM v_companion_stats WHERE mentor_id = :mid"),
             {"mid": current_user.id}
         ).mappings().first()
-    except Exception:
+    except Exception as e:
+        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
         db.rollback()
         return _empty
 
