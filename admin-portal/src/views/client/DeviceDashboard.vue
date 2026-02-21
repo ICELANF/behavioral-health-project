@@ -176,6 +176,10 @@ function periodDays() {
 }
 
 async function loadDeviceData() {
+  if (!localStorage.getItem('admin_token')) {
+    loading.value = false
+    return
+  }
   loading.value = true
   const days = periodDays()
   const [summaryR, glucoseR, heartR, sleepR, stepsR] = await Promise.allSettled([

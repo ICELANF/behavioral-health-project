@@ -143,6 +143,13 @@ class SleepOut(BaseModel):
     min_spo2: Optional[float] = None
     created_at: datetime
 
+    @validator(
+        "awake_min", "light_min", "deep_min", "rem_min", "awakenings",
+        pre=True, always=True,
+    )
+    def none_to_zero(cls, v):
+        return v if v is not None else 0
+
     class Config:
         from_attributes = True
 
@@ -165,6 +172,15 @@ class ActivityOut(BaseModel):
     moderate_active_min: int = 0
     vigorous_active_min: int = 0
     created_at: datetime
+
+    @validator(
+        "steps", "distance_m", "floors_climbed", "calories_total",
+        "calories_active", "sedentary_min", "light_active_min",
+        "moderate_active_min", "vigorous_active_min",
+        pre=True, always=True,
+    )
+    def none_to_zero(cls, v):
+        return v if v is not None else 0
 
     class Config:
         from_attributes = True

@@ -499,6 +499,7 @@ const goToPage = (path: string) => {
 
 // 加载数据
 const loadData = async () => {
+  if (!localStorage.getItem('admin_token')) return
   try {
     loading.value = true
 

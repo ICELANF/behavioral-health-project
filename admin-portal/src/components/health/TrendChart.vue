@@ -256,7 +256,7 @@ const areaPath = computed(() => {
 const barsArray = computed(() => {
   if (props.data.length === 0) return []
 
-  const maxVal = Math.max(...props.data)
+  const maxVal = Math.max(...props.data) || 1
   const barWidth = (props.width / props.data.length) * 0.7
   const gap = (props.width / props.data.length) * 0.3
 
@@ -270,8 +270,7 @@ const barsArray = computed(() => {
 })
 
 const getBarColor = (value: number) => {
-  // 可以根据值的大小返回不同颜色
-  const maxVal = Math.max(...props.data)
+  const maxVal = Math.max(...props.data) || 1
   const ratio = value / maxVal
 
   if (ratio >= 0.8) return props.barColor
