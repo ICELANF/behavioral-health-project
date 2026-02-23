@@ -442,12 +442,40 @@ const handleQuickReviewConfirm = async () => {
   }
 }
 
+function mapApplication(raw: any): PromotionApplication {
+  return {
+    application_id: String(raw.application_id ?? raw.id ?? ''),
+    coach_id: String(raw.user_id ?? raw.coach_id ?? ''),
+    coach_name: raw.coach_name || raw.full_name || raw.username || '',
+    coach_phone: raw.coach_phone || raw.phone || '',
+    current_level: raw.current_level || raw.from_role || '',
+    target_level: raw.target_level || raw.to_role || '',
+    applied_at: raw.applied_at || raw.created_at || '',
+    status: raw.status || 'pending',
+    requirements_met: raw.requirements_met || {
+      courses_completed: false,
+      exams_passed: false,
+      cases_count: false,
+      mentoring_hours: false,
+    },
+    course_stats: raw.course_stats || { completed: 0, required: 0 },
+    exam_stats: raw.exam_stats || { passed: 0, required: 0 },
+    case_stats: raw.case_stats || { count: 0, required: 0 },
+    mentoring_stats: raw.mentoring_stats || { hours: 0, required: 0 },
+    materials: raw.materials || [],
+    reviewer: raw.reviewer || raw.reviewer_name || '',
+    reviewed_at: raw.reviewed_at || '',
+    review_comment: raw.review_comment || raw.reviewer_comment || '',
+  }
+}
+
 const loadApplications = async () => {
   loading.value = true
   error.value = ''
   try {
     const { data } = await request.get('/v1/promotion/applications', { params: { status: statusFilter.value !== 'all' ? statusFilter.value : undefined } })
-    applications.value = data.applications || data.items || data || []
+    const raw = data.applications || data.items || data || []
+    applications.value = (Array.isArray(raw) ? raw : []).map(mapApplication)
     pagination.total = applications.value.length
   } catch (e: any) {
     console.error('加载晋级申请失败:', e)

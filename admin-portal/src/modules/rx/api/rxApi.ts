@@ -36,7 +36,7 @@ export function clearRxCache(): void { cache.clear() }
 // ── API 方法 (改用 http 实例, 路径前缀 /rx) ──
 
 export async function computeRx(req: ComputeRxRequest): Promise<ComputeRxResponse> {
-  const { data } = await http.post<ComputeRxResponse>('/rx/compute', req)
+  const { data } = await http.post<ComputeRxResponse>('/v1/rx/compute', req)
   if (data.prescription?.rx_id) setCache(`rx:${data.prescription.rx_id}`, data.prescription)
   return data
 }
@@ -44,13 +44,13 @@ export async function computeRx(req: ComputeRxRequest): Promise<ComputeRxRespons
 export async function getRx(rxId: string): Promise<RxPrescriptionDTO> {
   const cached = getCached<RxPrescriptionDTO>(`rx:${rxId}`)
   if (cached) return cached
-  const { data } = await http.get<RxPrescriptionDTO>(`/rx/${rxId}`)
+  const { data } = await http.get<RxPrescriptionDTO>(`/v1/rx/${rxId}`)
   setCache(`rx:${rxId}`, data)
   return data
 }
 
 export async function getUserRxHistory(userId: string, page = 1, pageSize = 20): Promise<RxListResponse> {
-  const { data } = await http.get<RxListResponse>(`/rx/user/${userId}`, { params: { page, page_size: pageSize } })
+  const { data } = await http.get<RxListResponse>(`/v1/rx/user/${userId}`, { params: { page, page_size: pageSize } })
   return data
 }
 
@@ -58,23 +58,23 @@ export async function getStrategies(stage?: number): Promise<StrategyTemplateRes
   const key = `strategies:${stage ?? 'all'}`
   const cached = getCached<StrategyTemplateResponse>(key)
   if (cached) return cached
-  const { data } = await http.get<StrategyTemplateResponse>('/rx/strategies', { params: stage !== undefined ? { stage } : {} })
+  const { data } = await http.get<StrategyTemplateResponse>('/v1/rx/strategies', { params: stage !== undefined ? { stage } : {} })
   setCache(key, data, 15 * 60 * 1000)
   return data
 }
 
 export async function initiateHandoff(req: HandoffRequest): Promise<HandoffResponse> {
-  const { data } = await http.post<HandoffResponse>('/rx/handoff', req)
+  const { data } = await http.post<HandoffResponse>('/v1/rx/handoff', req)
   return data
 }
 
 export async function getHandoffLog(userId: string, limit = 50): Promise<HandoffListResponse> {
-  const { data } = await http.get<HandoffListResponse>(`/rx/handoff/${userId}`, { params: { limit } })
+  const { data } = await http.get<HandoffListResponse>(`/v1/rx/handoff/${userId}`, { params: { limit } })
   return data
 }
 
 export async function collaborate(req: CollaborateRequest): Promise<CollaborateResponse> {
-  const { data } = await http.post<CollaborateResponse>('/rx/collaborate', req)
+  const { data } = await http.post<CollaborateResponse>('/v1/rx/collaborate', req)
   return data
 }
 
@@ -82,7 +82,7 @@ export async function getAgentStatus(): Promise<AgentStatusResponse> {
   const key = 'agents:status'
   const cached = getCached<AgentStatusResponse>(key)
   if (cached) return cached
-  const { data } = await http.get<AgentStatusResponse>('/rx/agents/status')
+  const { data } = await http.get<AgentStatusResponse>('/v1/rx/agents/status')
   setCache(key, data, 30 * 1000)
   return data
 }

@@ -21,7 +21,7 @@ from sqlalchemy import text as sa_text
 from sqlalchemy.orm import Session
 
 from core.database import get_db
-from api.dependencies import get_current_user, require_admin
+from api.dependencies import get_current_user, require_admin, require_coach_or_admin
 from core.models import User
 
 router = APIRouter(prefix="/api/v1/admin/bindings", tags=["admin_bindings"])
@@ -89,7 +89,7 @@ def _audit(db: Session, actor_id, action: str, detail: dict):
 @router.post("")
 def create_binding(
     req: BindingCreate,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
     """创建教练-学员绑定"""
@@ -148,7 +148,7 @@ def create_binding(
 
 @router.get("")
 def list_bindings(
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
     coach_id: Optional[int] = None,
     student_id: Optional[int] = None,
@@ -213,7 +213,7 @@ def list_bindings(
 
 @router.get("/stats/overview")
 def binding_stats(
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
     """绑定统计总览"""
@@ -241,7 +241,7 @@ def binding_stats(
 
 @router.get("/stats/coach-load")
 def coach_load(
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
     min_students: int = 0,
 ):
@@ -265,7 +265,7 @@ def coach_load(
 @router.get("/{binding_id}")
 def get_binding(
     binding_id: str,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
     """获取单个绑定详情"""
@@ -293,7 +293,7 @@ def get_binding(
 def update_binding(
     binding_id: str,
     req: BindingUpdate,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
     """更新绑定（权限/类型/状态）"""
@@ -342,7 +342,7 @@ def update_binding(
 @router.delete("/{binding_id}")
 def unbind(
     binding_id: str,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
     """解绑（软删除，保留记录）"""
@@ -374,7 +374,7 @@ def unbind(
 @router.post("/batch")
 def batch_bind(
     req: BatchBindRequest,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
     """批量绑定学员到教练"""
@@ -434,7 +434,7 @@ def batch_bind(
 @router.post("/batch-unbind")
 def batch_unbind(
     req: BatchUnbindRequest,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
     """批量解绑"""
