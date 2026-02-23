@@ -5077,6 +5077,28 @@ class AbTestEvent(Base):
 
 def register_external_models():
     """Import all ORM models defined outside this file to ensure Base.metadata is complete."""
+# ============================================
+# Prompt 模板管理
+# ============================================
+
+class PromptTemplate(Base):
+    """Prompt 模板 — 管理 AI 对话中使用的 Prompt 模板"""
+    __tablename__ = "prompt_templates"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(100), nullable=False)
+    description = Column(String(500), nullable=True)
+    category = Column(String(30), nullable=False, index=True)
+    content = Column(Text, nullable=False)
+    variables = Column(JSON, server_default="[]")
+    ttm_stage = Column(String(30), nullable=True, index=True)
+    trigger_domain = Column(String(30), nullable=True, index=True)
+    is_active = Column(Boolean, server_default=sa_text("true"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+    updated_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+
+
     import importlib
     for mod in [
         'core.reflection_service',       # ReflectionJournal

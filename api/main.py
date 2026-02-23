@@ -543,6 +543,14 @@ try:
 except ImportError as e:
     print(f"[API] AI推送建议路由注册失败: {e}")
 
+# 注册Prompt模板路由
+try:
+    from api.prompt_api import router as prompt_router
+    app.include_router(prompt_router)
+    print("[API] Prompt模板路由已注册")
+except ImportError as e:
+    print(f"[API] Prompt模板路由注册失败: {e}")
+
 # 注册挑战/打卡活动路由
 try:
     from api.challenge_api import router as challenge_router
