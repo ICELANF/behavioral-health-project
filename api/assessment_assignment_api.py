@@ -563,26 +563,34 @@ async def push_reviewed_result(
             detail=f"还有 {len(pending_items)} 条未审核内容，请先完成审核"
         )
 
-    # 更新状态
-    assignment.status = "pushed"
-    assignment.pushed_at = datetime.utcnow()
+    # 更新状态为已审核（实际推送在审批通过后执行）
+    assignment.status = "reviewed"
 
-    # 创建通知消息
+    # 进入审批队列（AI→审核→推送原则，不直接创建 CoachMessage）
     student = db.query(User).filter(User.id == assignment.student_id).first()
     approved_count = len([i for i in items if i.status in ("approved", "modified")])
-    db.add(CoachMessage(
+
+    from core.coach_push_queue_service import create_queue_item
+    create_queue_item(
+        db=db,
         coach_id=current_user.id,
         student_id=assignment.student_id,
-        content=f"您的行为评估已完成审核，共 {approved_count} 条管理方案已推送，请查看。",
-        message_type="advice",
-    ))
+        source_type="assessment_push",
+        title="评估结果通知",
+        content=f"您的行为评估已完成审核，共 {approved_count} 条管理方案待推送，请查看。",
+        content_extra={
+            "assignment_id": assignment_id,
+            "approved_count": approved_count,
+        },
+        priority="normal",
+    )
 
     db.commit()
 
     return {
         "success": True,
         "assignment_id": assignment_id,
-        "message": f"已推送审核结果给 {student.full_name or student.username if student else '学员'}",
+        "message": f"评估结果已提交审批队列，审批通过后将推送给 {student.full_name or student.username if student else '学员'}",
     }
 
 

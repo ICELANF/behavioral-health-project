@@ -219,6 +219,8 @@ def deliver_item(db: Session, item: CoachPushQueue):
 
     - coach_message: 创建 CoachMessage (保留原始 message_type)
     - coach_reminder: 创建 Reminder (带 cron_expr/next_fire_at)
+    - assessment_push: 更新 AssessmentAssignment.status="pushed" + 创建 CoachMessage
+    - micro_action_assign: 创建 MicroActionTask
     - 其他: 创建 CoachMessage + 通用 Reminder (原有逻辑)
 
     注意：此方法不 commit，由调用方统一 commit
@@ -261,6 +263,56 @@ def deliver_item(db: Session, item: CoachPushQueue):
             student_id=item.student_id,
             content=item.content or "",
             message_type=extra.get("message_type", "text"),
+        )
+        db.add(msg)
+
+    elif item.source_type == "assessment_push":
+        # 评估结果推送: 更新 assignment 状态 + 创建通知消息
+        assignment_id = extra.get("assignment_id")
+        if assignment_id:
+            from core.models import AssessmentAssignment
+            assignment = db.query(AssessmentAssignment).filter(
+                AssessmentAssignment.id == assignment_id
+            ).first()
+            if assignment:
+                assignment.status = "pushed"
+                assignment.pushed_at = now
+
+        msg = CoachMessage(
+            coach_id=item.coach_id,
+            student_id=item.student_id,
+            content=item.content or "",
+            message_type="advice",
+        )
+        db.add(msg)
+
+    elif item.source_type == "micro_action_assign":
+        # 微行动指派: 创建 MicroActionTask
+        from core.models import MicroActionTask
+        from datetime import date as _date
+        task_title = extra.get("task_title", item.title)
+        duration_days = extra.get("duration_days", 7)
+        today_str = _date.today().strftime("%Y-%m-%d")
+
+        task = MicroActionTask(
+            user_id=item.student_id,
+            domain=extra.get("domain", "exercise"),
+            title=task_title,
+            description=extra.get("task_description", item.content or ""),
+            difficulty="easy",
+            source="coach",
+            source_id=str(item.coach_id),
+            status="pending",
+            scheduled_date=today_str,
+        )
+        db.add(task)
+
+        # 同时发一条通知消息
+        msg = CoachMessage(
+            coach_id=item.coach_id,
+            student_id=item.student_id,
+            content=f"教练为你指派了新的微行动: {task_title}",
+            message_type="push",
         )
         db.add(msg)
 
@@ -395,6 +447,8 @@ def _source_label(source_type: str) -> str:
         "system": "系统",
         "coach_message": "教练消息",
         "coach_reminder": "教练提醒",
+        "assessment_push": "评估结果",
+        "micro_action_assign": "微行动指派",
     }
     return labels.get(source_type, source_type)
 

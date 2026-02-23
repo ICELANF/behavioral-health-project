@@ -10,8 +10,9 @@ MicroAction API - 微行动任务管理
 - GET  /api/v1/micro-actions/history    — 历史记录(分页)
 - GET  /api/v1/micro-actions/stats      — 统计数据
 - GET  /api/v1/micro-actions/facts      — 行为事实
+- POST /api/v1/micro-actions/coach-assign — 教练为学员指派微行动(审批队列)
 """
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -21,7 +22,7 @@ from loguru import logger
 from core.database import get_db
 from core.micro_action_service import MicroActionTaskService
 from core.behavior_facts_service import BehaviorFactsService
-from api.dependencies import get_current_user
+from api.dependencies import get_current_user, require_coach_or_admin
 
 router = APIRouter(prefix="/api/v1/micro-actions", tags=["微行动"])
 
@@ -39,6 +40,15 @@ class CompleteRequest(BaseModel):
 
 class SkipRequest(BaseModel):
     note: Optional[str] = Field(None, max_length=500, description="跳过原因")
+
+
+class CoachAssignMicroActionRequest(BaseModel):
+    student_id: int = Field(..., description="学员ID")
+    title: str = Field(..., min_length=1, max_length=200, description="微行动标题")
+    description: str = Field("", max_length=1000, description="任务描述")
+    domain: str = Field("exercise", description="领域: nutrition/exercise/sleep/emotion/stress/cognitive/social")
+    frequency: str = Field("每天", description="频次: 每天/每周")
+    duration_days: int = Field(7, ge=1, le=90, description="持续天数")
 
 
 # ============ 端点 ============
@@ -153,3 +163,48 @@ async def get_behavior_facts(
     """获取行为事实（供 StageRuntime 使用）"""
     facts = facts_service.get_facts(db, current_user.id)
     return facts.to_dict()
+
+
+# ============ 教练端端点 ============
+
+@router.post("/coach-assign", tags=["教练微行动"])
+async def coach_assign_micro_action(
+    body: CoachAssignMicroActionRequest,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """教练为学员指派微行动 → 审批队列（AI→审核→推送原则）"""
+    from core.models import User
+    student = db.query(User).filter(User.id == body.student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="学员不存在")
+
+    valid_domains = {"nutrition", "exercise", "sleep", "emotion", "stress", "cognitive", "social"}
+    if body.domain not in valid_domains:
+        raise HTTPException(status_code=400, detail=f"无效领域，可选: {', '.join(valid_domains)}")
+
+    from core.coach_push_queue_service import create_queue_item
+    queue_item = create_queue_item(
+        db=db,
+        coach_id=current_user.id,
+        student_id=body.student_id,
+        source_type="micro_action_assign",
+        title=f"微行动: {body.title}",
+        content=body.description or body.title,
+        content_extra={
+            "task_title": body.title,
+            "task_description": body.description,
+            "domain": body.domain,
+            "frequency": body.frequency,
+            "duration_days": body.duration_days,
+        },
+        priority="normal",
+    )
+    db.commit()
+
+    return {
+        "success": True,
+        "queue_item_id": queue_item.id,
+        "status": "pending_review",
+        "message": "微行动已提交审批队列，审批通过后将为学员创建任务",
+    }

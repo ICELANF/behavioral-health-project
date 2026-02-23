@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-教练AI消息/提醒建议生成服务
+教练AI建议生成服务（消息/提醒/测评/微行动）
 Coach AI Suggestion Service
 
-为教练消息和提醒生成AI建议，复用 copilot_prescription_service 的模式:
+为教练消息、提醒、测评推荐、微行动推荐生成AI建议，复用 copilot_prescription_service 的模式:
 采集学员数据 → 规则引擎生成基线建议 → LLM增强(可选) → 返回建议列表
 
 遵循「AI→审核→推送」原则：AI生成建议 → 教练选择/修改 → 进入审批队列
@@ -92,6 +92,64 @@ REMINDER_TYPE_TEMPLATES = {
     "assessment": [
         {"title": "健康数据记录提醒", "content": "今天记得记录你的健康数据（血糖/血压/体重），数据是改善的基础。", "cron_time": "08:30", "reason": "规律的自我监测是行为改变的关键"},
         {"title": "周评估提醒", "content": "新的一周开始了，花几分钟回顾上周的进步和这周的目标吧。", "cron_time": "09:00", "reason": "周期性自我评估促进反思和调整"},
+    ],
+}
+
+# ── 测评量表推荐模板 ─────────────────────────────────────────
+ASSESSMENT_SCALE_TEMPLATES = {
+    "initial": [
+        {"scale": "hf20", "title": "HF-20 行为健康快速筛查", "reason": "学员尚无评估记录，建议先做初筛了解整体状态"},
+        {"scale": "ttm7", "title": "TTM-7 变化阶段评估", "reason": "判断学员当前行为改变阶段，制定针对性干预"},
+        {"scale": "capacity", "title": "行为能力评估", "reason": "了解学员薄弱能力维度，优先改善短板"},
+    ],
+    "high_risk": [
+        {"scale": "hf50", "title": "HF-50 行为健康全面评估", "reason": "学员风险较高，需全面深度评估"},
+        {"scale": "bpt6", "title": "BPT-6 行为人格类型评估", "reason": "了解行为人格特征，优化干预策略"},
+        {"scale": "spi", "title": "SPI 自我践行指数评估", "reason": "评估自我管理能力，识别干预切入点"},
+    ],
+    "reassessment": [
+        {"scale": "ttm7", "title": "TTM-7 阶段复评", "reason": "距上次评估已有一段时间，建议复评阶段变化"},
+        {"scale": "capacity", "title": "能力维度复评", "reason": "对比前次评估，追踪能力提升"},
+        {"scale": "hf20", "title": "HF-20 周期性筛查", "reason": "定期筛查维持健康管理质量"},
+    ],
+}
+
+# ── 微行动推荐模板（按阶段分级） ─────────────────────────────
+MICRO_ACTION_STAGE_TEMPLATES = {
+    "S0": [
+        {"title": "每天记录一次体重", "description": "早起后空腹称重并记录，培养自我监测意识", "domain": "nutrition", "frequency": "每天", "duration_days": 7, "reason": "认知觉醒期，从最简单的记录开始"},
+        {"title": "阅读一篇健康小知识", "description": "每天花3分钟阅读平台推荐的健康知识", "domain": "cognitive", "frequency": "每天", "duration_days": 7, "reason": "激发健康意识，降低改变门槛"},
+        {"title": "深呼吸练习1分钟", "description": "找一个安静的地方，做10次深呼吸", "domain": "emotion", "frequency": "每天", "duration_days": 7, "reason": "极低门槛的放松练习，建立行为习惯"},
+    ],
+    "S1": [
+        {"title": "饭后站立5分钟", "description": "午饭或晚饭后站立5分钟，不要马上坐下", "domain": "exercise", "frequency": "每天", "duration_days": 7, "reason": "抗拒期，最小行动先破冰"},
+        {"title": "喝一杯温水", "description": "早起后喝一杯250ml温水", "domain": "nutrition", "frequency": "每天", "duration_days": 7, "reason": "简单易行，无压力的健康习惯"},
+        {"title": "记录今天的心情", "description": "用一个词描述今天的心情状态", "domain": "emotion", "frequency": "每天", "duration_days": 7, "reason": "培养情绪觉察能力"},
+    ],
+    "S2": [
+        {"title": "饭后散步10分钟", "description": "午饭或晚饭后慢走10分钟", "domain": "exercise", "frequency": "每天", "duration_days": 14, "reason": "已有承诺，推动实际行动"},
+        {"title": "记录三餐内容", "description": "简单记录每餐吃了什么", "domain": "nutrition", "frequency": "每天", "duration_days": 14, "reason": "增强饮食自我意识"},
+        {"title": "睡前放下手机", "description": "睡前30分钟将手机放到卧室外", "domain": "sleep", "frequency": "每天", "duration_days": 14, "reason": "改善睡眠质量的第一步"},
+    ],
+    "S3": [
+        {"title": "快走20分钟", "description": "每天进行20分钟的快走运动", "domain": "exercise", "frequency": "每天", "duration_days": 14, "reason": "已开始行动，逐步增加运动量"},
+        {"title": "一餐健康饮食", "description": "每天至少有一餐按照健康食谱执行", "domain": "nutrition", "frequency": "每天", "duration_days": 14, "reason": "固化健康饮食习惯"},
+        {"title": "练习正念冥想5分钟", "description": "找一段正念引导音频，跟着练习5分钟", "domain": "emotion", "frequency": "每天", "duration_days": 14, "reason": "增强情绪管理能力"},
+    ],
+    "S4": [
+        {"title": "30分钟有氧运动", "description": "慢跑、骑行或游泳30分钟", "domain": "exercise", "frequency": "每天", "duration_days": 21, "reason": "主动尝试期，建立规律运动习惯"},
+        {"title": "控制碳水摄入", "description": "午餐主食减半，用蔬菜和蛋白质补充", "domain": "nutrition", "frequency": "每天", "duration_days": 21, "reason": "精细化饮食管理"},
+        {"title": "睡眠日记", "description": "记录入睡时间、醒来时间和睡眠质量评分", "domain": "sleep", "frequency": "每天", "duration_days": 21, "reason": "量化追踪睡眠改善"},
+    ],
+    "S5": [
+        {"title": "综合健康打卡", "description": "运动+饮食+睡眠三维度每日打卡", "domain": "exercise", "frequency": "每天", "duration_days": 30, "reason": "规律践行期，维持多维度健康习惯"},
+        {"title": "分享健康心得", "description": "在平台上分享一条自己的健康管理经验", "domain": "social", "frequency": "每周", "duration_days": 30, "reason": "通过分享巩固内化"},
+        {"title": "带动身边人一起运动", "description": "邀请家人或朋友一起散步或运动", "domain": "social", "frequency": "每周", "duration_days": 30, "reason": "社交支持增强行为持续性"},
+    ],
+    "S6": [
+        {"title": "制定本周健康计划", "description": "每周一规划本周的运动、饮食和休息安排", "domain": "cognitive", "frequency": "每周", "duration_days": 30, "reason": "内化为常，自主规划"},
+        {"title": "健康知识分享", "description": "为平台其他学员撰写一篇经验分享", "domain": "social", "frequency": "每周", "duration_days": 30, "reason": "榜样角色，帮助他人"},
+        {"title": "指导新学员", "description": "为新加入的学员提供一次经验交流", "domain": "social", "frequency": "每周", "duration_days": 30, "reason": "导师角色转化，社会价值实现"},
     ],
 }
 
@@ -189,6 +247,81 @@ class CoachAISuggestionService:
             student_data, reminder_type
         )
 
+        suggestions = llm_suggestions if llm_suggestions else rule_suggestions
+
+        return {
+            "suggestions": suggestions[:3],
+            "student_summary": self._build_student_summary(student_data),
+            "meta": {"source": "llm" if llm_suggestions else "rules"},
+        }
+
+    # ── 测评建议 ──────────────────────────────────────────────
+
+    def generate_assessment_suggestions(
+        self,
+        db: Session,
+        student_id: int,
+        coach_id: int,
+    ) -> Dict[str, Any]:
+        """
+        AI建议: 推荐评估量表 + 理由
+
+        Returns:
+            {
+              "suggestions": [{"scale": "hf20", "title": "...", "reason": "..."}],
+              "student_summary": "...",
+              "meta": {"source": "llm"|"rules"}
+            }
+        """
+        student_data = self._gather_student_data(db, student_id)
+        if student_data is None:
+            return {
+                "suggestions": ASSESSMENT_SCALE_TEMPLATES["initial"],
+                "student_summary": "学员不存在",
+                "meta": {"source": "error"},
+            }
+
+        rule_suggestions = self._build_rule_assessment_suggestions(db, student_data)
+
+        llm_suggestions = self._call_llm_assessment_suggestions(student_data)
+        suggestions = llm_suggestions if llm_suggestions else rule_suggestions
+
+        return {
+            "suggestions": suggestions[:3],
+            "student_summary": self._build_student_summary(student_data),
+            "meta": {"source": "llm" if llm_suggestions else "rules"},
+        }
+
+    # ── 微行动建议 ────────────────────────────────────────────
+
+    def generate_micro_action_suggestions(
+        self,
+        db: Session,
+        student_id: int,
+        coach_id: int,
+    ) -> Dict[str, Any]:
+        """
+        AI建议: 推荐微行动任务
+
+        Returns:
+            {
+              "suggestions": [{"title": "...", "description": "...", "domain": "...",
+                               "frequency": "每天", "duration_days": 7, "reason": "..."}],
+              "student_summary": "...",
+              "meta": {"source": "llm"|"rules"}
+            }
+        """
+        student_data = self._gather_student_data(db, student_id)
+        if student_data is None:
+            return {
+                "suggestions": MICRO_ACTION_STAGE_TEMPLATES["S1"],
+                "student_summary": "学员不存在",
+                "meta": {"source": "error"},
+            }
+
+        rule_suggestions = self._build_rule_micro_action_suggestions(db, student_data)
+
+        llm_suggestions = self._call_llm_micro_action_suggestions(student_data)
         suggestions = llm_suggestions if llm_suggestions else rule_suggestions
 
         return {
@@ -362,6 +495,213 @@ class CoachAISuggestionService:
             })
 
         return suggestions[:3]
+
+    # ── 规则引擎: 测评 ───────────────────────────────────────
+
+    def _build_rule_assessment_suggestions(
+        self, db: Session, data: Dict
+    ) -> List[Dict]:
+        stage = data["stage"]
+        risk = data["risk_level"]
+
+        # 查最近评估
+        last_assessment = (
+            db.query(Assessment)
+            .filter(Assessment.user_id == data["user"].id)
+            .order_by(desc(Assessment.created_at))
+            .first()
+        )
+
+        # 查最近评估指派
+        from core.models import AssessmentAssignment
+        last_assignment = (
+            db.query(AssessmentAssignment)
+            .filter(AssessmentAssignment.student_id == data["user"].id)
+            .order_by(AssessmentAssignment.created_at.desc())
+            .first()
+        )
+
+        has_any_assessment = last_assessment is not None or last_assignment is not None
+
+        if not has_any_assessment:
+            return list(ASSESSMENT_SCALE_TEMPLATES["initial"])
+        elif risk in ("crisis", "high"):
+            return list(ASSESSMENT_SCALE_TEMPLATES["high_risk"])
+        else:
+            return list(ASSESSMENT_SCALE_TEMPLATES["reassessment"])
+
+    # ── 规则引擎: 微行动 ─────────────────────────────────────
+
+    def _build_rule_micro_action_suggestions(
+        self, db: Session, data: Dict
+    ) -> List[Dict]:
+        stage = data["stage"]
+
+        # 查已有任务完成率
+        from core.models import MicroActionTask
+        from datetime import date
+        recent_tasks = (
+            db.query(MicroActionTask)
+            .filter(
+                MicroActionTask.user_id == data["user"].id,
+                MicroActionTask.scheduled_date >= (datetime.utcnow() - timedelta(days=14)).strftime("%Y-%m-%d"),
+            )
+            .all()
+        )
+        total = len(recent_tasks)
+        completed = sum(1 for t in recent_tasks if t.status == "completed")
+        completion_rate = completed / total if total > 0 else 0
+
+        # 根据阶段选择模板
+        templates = MICRO_ACTION_STAGE_TEMPLATES.get(stage, MICRO_ACTION_STAGE_TEMPLATES["S1"])
+        suggestions = list(templates)
+
+        # 完成率低时降级难度
+        if completion_rate < 0.3 and stage not in ("S0", "S1"):
+            lower_stage = f"S{max(int(stage[1]) - 1, 0)}"
+            lower_templates = MICRO_ACTION_STAGE_TEMPLATES.get(lower_stage, templates)
+            suggestions = [
+                {**s, "reason": s["reason"] + "（完成率较低，适当降低难度）"}
+                for s in lower_templates
+            ]
+
+        return suggestions[:3]
+
+    # ── LLM 增强: 测评 ───────────────────────────────────────
+
+    def _call_llm_assessment_suggestions(
+        self, data: Dict
+    ) -> Optional[List[Dict]]:
+        global _llm_last_fail_time
+
+        now = _time.time()
+        if _llm_last_fail_time > 0 and (now - _llm_last_fail_time) < _LLM_COOLDOWN:
+            return None
+
+        try:
+            from core.llm_client import get_llm_client
+            client = get_llm_client()
+            cloud_has_key = (
+                hasattr(client, "_cloud")
+                and client._cloud is not None
+                and getattr(client._cloud, "api_key", None)
+            )
+            local_ok = hasattr(client, "_local_available") and client._local_available()
+            if not cloud_has_key and not local_ok:
+                return None
+        except Exception:
+            return None
+
+        system_prompt = (
+            "你是行为健康教练的AI助手。根据学员画像推荐3个最合适的评估量表。\n"
+            "返回纯JSON数组，不要markdown代码块。每条格式:\n"
+            '[{"scale": "量表代号(hf20/hf50/ttm7/big5/bpt6/capacity/spi)", '
+            '"title": "量表中文名", "reason": "推荐理由(30-50字)"}]\n'
+            "可用量表: hf20(快速筛查20题), hf50(全面评估50题), ttm7(变化阶段), "
+            "big5(大五人格), bpt6(行为人格类型), capacity(行为能力), spi(自我践行指数)"
+        )
+
+        user_prompt = (
+            f"学员: {data['student_name']}, 阶段: {data['stage']}({data['stage_name']})\n"
+            f"风险: {data['risk_level']}, 活跃度: {data['activity']}\n"
+            f"薄弱能力: {', '.join(data['capacity_weak']) if data['capacity_weak'] else '无'}\n"
+            f"\n请推荐3个最合适的评估量表。"
+        )
+
+        try:
+            resp = client.chat(system=system_prompt, user=user_prompt, temperature=0.5, timeout=15.0)
+            if not resp.success:
+                _llm_last_fail_time = _time.time()
+                return None
+
+            content = resp.content.strip()
+            content = re.sub(r"^```(?:json)?\s*", "", content)
+            content = re.sub(r"\s*```$", "", content)
+
+            parsed = json.loads(content)
+            if isinstance(parsed, list) and len(parsed) >= 2:
+                return [
+                    {"scale": s.get("scale", ""), "title": s.get("title", ""), "reason": s.get("reason", "")}
+                    for s in parsed[:3]
+                    if s.get("scale")
+                ]
+            return None
+        except Exception as e:
+            logger.warning(f"[coach-ai-suggest] LLM 测评建议失败: {e}")
+            _llm_last_fail_time = _time.time()
+            return None
+
+    # ── LLM 增强: 微行动 ─────────────────────────────────────
+
+    def _call_llm_micro_action_suggestions(
+        self, data: Dict
+    ) -> Optional[List[Dict]]:
+        global _llm_last_fail_time
+
+        now = _time.time()
+        if _llm_last_fail_time > 0 and (now - _llm_last_fail_time) < _LLM_COOLDOWN:
+            return None
+
+        try:
+            from core.llm_client import get_llm_client
+            client = get_llm_client()
+            cloud_has_key = (
+                hasattr(client, "_cloud")
+                and client._cloud is not None
+                and getattr(client._cloud, "api_key", None)
+            )
+            local_ok = hasattr(client, "_local_available") and client._local_available()
+            if not cloud_has_key and not local_ok:
+                return None
+        except Exception:
+            return None
+
+        system_prompt = (
+            "你是行为健康教练的AI助手。根据学员画像推荐3个合适的微行动任务。\n"
+            "返回纯JSON数组，不要markdown代码块。每条格式:\n"
+            '[{"title": "任务标题(10-20字)", "description": "任务描述(30-80字)", '
+            '"domain": "领域(nutrition/exercise/sleep/emotion/stress/cognitive/social)", '
+            '"frequency": "每天|每周", "duration_days": 7|14|21|30, '
+            '"reason": "推荐理由(20-40字)"}]\n'
+            "要求: 匹配学员阶段、循序渐进、具体可操作。"
+        )
+
+        user_prompt = (
+            f"学员: {data['student_name']}, 阶段: {data['stage']}({data['stage_name']})\n"
+            f"风险: {data['risk_level']}, 活跃度: {data['activity']}\n"
+            f"薄弱能力: {', '.join(data['capacity_weak']) if data['capacity_weak'] else '无'}\n"
+            f"\n请推荐3个合适的微行动任务。"
+        )
+
+        try:
+            resp = client.chat(system=system_prompt, user=user_prompt, temperature=0.7, timeout=15.0)
+            if not resp.success:
+                _llm_last_fail_time = _time.time()
+                return None
+
+            content = resp.content.strip()
+            content = re.sub(r"^```(?:json)?\s*", "", content)
+            content = re.sub(r"\s*```$", "", content)
+
+            parsed = json.loads(content)
+            if isinstance(parsed, list) and len(parsed) >= 2:
+                return [
+                    {
+                        "title": s.get("title", ""),
+                        "description": s.get("description", ""),
+                        "domain": s.get("domain", "exercise"),
+                        "frequency": s.get("frequency", "每天"),
+                        "duration_days": s.get("duration_days", 7),
+                        "reason": s.get("reason", ""),
+                    }
+                    for s in parsed[:3]
+                    if s.get("title")
+                ]
+            return None
+        except Exception as e:
+            logger.warning(f"[coach-ai-suggest] LLM 微行动建议失败: {e}")
+            _llm_last_fail_time = _time.time()
+            return None
 
     # ── LLM 增强: 消息 ───────────────────────────────────────
 

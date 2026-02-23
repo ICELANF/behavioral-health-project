@@ -88,6 +88,30 @@ async def get_message_suggestions(
     )
 
 
+@router.get("/api/v1/coach/assessment/ai-suggestions/{student_id}")
+async def get_assessment_suggestions(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """获取AI测评建议: 推荐评估量表 + 理由"""
+    from core.coach_ai_suggestion_service import CoachAISuggestionService
+    service = CoachAISuggestionService()
+    return service.generate_assessment_suggestions(db, student_id, current_user.id)
+
+
+@router.get("/api/v1/coach/micro-actions/ai-suggestions/{student_id}")
+async def get_micro_action_suggestions(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """获取AI微行动建议: 推荐微行动任务 + 理由"""
+    from core.coach_ai_suggestion_service import CoachAISuggestionService
+    service = CoachAISuggestionService()
+    return service.generate_micro_action_suggestions(db, student_id, current_user.id)
+
+
 @router.get("/api/v1/coach/messages/{student_id}")
 async def get_conversation(
     student_id: int,
