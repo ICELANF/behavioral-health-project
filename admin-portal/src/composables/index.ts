@@ -16,3 +16,5 @@ export {
   type UserPreferences,
   type RecentItem,
 } from './useStatePersistence';
+export { useSearchScope } from './useSearchScope';
+export { useVoiceInput } from './useVoiceInput';

@@ -218,6 +218,9 @@
           <van-button type="primary" block round @click="$router.push('/my-stage')">
             查看我的行为状态
           </van-button>
+          <van-button plain block round @click="$router.push('/my-plan')">
+            查看我的改变计划
+          </van-button>
           <van-button plain block round @click="$router.push('/')">
             返回首页
           </van-button>

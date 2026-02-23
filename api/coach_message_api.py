@@ -114,13 +114,16 @@ async def get_assessment_suggestions(
 @router.get("/api/v1/coach/micro-actions/ai-suggestions/{student_id}")
 async def get_micro_action_suggestions(
     student_id: int,
+    domain: str = Query("", description="干预领域: nutrition/exercise/sleep/emotion/stress/cognitive/social"),
     db: Session = Depends(get_db),
     current_user=Depends(require_coach_or_admin),
 ):
-    """获取AI微行动建议: 推荐微行动任务 + 理由"""
+    """获取AI微行动建议: 按干预领域推荐微行动任务 + 理由"""
     from core.coach_ai_suggestion_service import CoachAISuggestionService
     service = CoachAISuggestionService()
-    return service.generate_micro_action_suggestions(db, student_id, current_user.id)
+    return service.generate_micro_action_suggestions(
+        db, student_id, current_user.id, domain=domain or None
+    )
 
 
 @router.get("/api/v1/coach/messages/{student_id}")

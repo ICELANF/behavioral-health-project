@@ -255,11 +255,18 @@ class DeviceAlertService:
             logger.debug(f"预警去重: {dedup_key}")
             return None
 
-        # 查找教练
+        # 查找教练 (权威源: coach_student_bindings)
         user = db.query(User).filter(User.id == user_id).first()
         coach_id = None
-        if user and user.profile and isinstance(user.profile, dict):
-            coach_id = user.profile.get("coach_id")
+        try:
+            from sqlalchemy import text as sa_text
+            row = db.execute(sa_text(
+                "SELECT coach_id FROM coach_schema.coach_student_bindings "
+                "WHERE student_id = :sid AND is_active = true LIMIT 1"
+            ), {"sid": user_id}).first()
+            coach_id = row[0] if row else None
+        except Exception:
+            pass
 
         # 创建 DeviceAlert
         alert = DeviceAlert(

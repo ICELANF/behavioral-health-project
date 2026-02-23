@@ -226,10 +226,10 @@ def get_metric_definitions(current_user: User = Depends(get_current_user)):
 
 @router.get("/dashboard")
 def get_governance_dashboard(
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
-    """治理健康仪表盘 (管理员)"""
+    """治理健康仪表盘 (教练及以上可见)"""
     from core.responsibility_tracker import ResponsibilityTracker
     tracker = ResponsibilityTracker()
     health = tracker.get_all_registry_stats()
@@ -279,10 +279,10 @@ class ViolationRequest(BaseModel):
 @router.post("/violations/record")
 def record_violation(
     req: ViolationRequest,
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
-    """记录治理违规 (管理员)"""
+    """记录治理违规 (教练及以上)"""
     # Check 3-month protection period
     user = db.query(User).filter(User.id == req.user_id).first()
     if not user:

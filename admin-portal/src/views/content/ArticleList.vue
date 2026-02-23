@@ -53,82 +53,72 @@
     </div>
 
     <!-- 文章列表 -->
-    <a-table
-      :columns="columns"
-      :data-source="articles"
-      :loading="loading"
-      :pagination="pagination"
-      :row-selection="{ selectedRowKeys: selectedKeys, onChange: onSelectChange }"
-      row-key="article_id"
-      @change="handleTableChange"
-    >
-      <!-- 标题列 -->
-      <template #title="{ record }">
-        <div class="article-title-cell">
-          <img v-if="record.cover_url" :src="record.cover_url" class="article-cover" />
-          <div class="article-info">
-            <div class="title">{{ record.title }}</div>
-            <div class="meta">
-              <a-tag :color="getSourceColor(record.source)">{{ getSourceLabel(record.source) }}</a-tag>
-              <span class="domain">{{ getDomainLabel(record.domain) }}</span>
-              <span class="stats">{{ record.word_count }}字 · {{ record.read_time }}分钟</span>
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <a-empty v-if="articles.length === 0 && !loading" description="暂无文章" />
+        <ListCard v-for="record in articles" :key="record.article_id">
+          <template #avatar>
+            <a-checkbox
+              :checked="selectedKeys.includes(record.article_id)"
+              @change="(e: any) => toggleArticleSelect(record.article_id, e.target.checked)"
+              @click.stop
+              style="margin-right: 4px"
+            />
+            <img v-if="record.cover_url" :src="record.cover_url" class="article-cover" />
+            <a-avatar v-else :size="48" shape="square" style="background: #f0f0f0; color: #999">文</a-avatar>
+          </template>
+          <template #title>
+            <span>{{ record.title }}</span>
+            <a-tag :color="getStatusColor(record.status)" size="small" style="margin-left: 8px">{{ getStatusLabel(record.status) }}</a-tag>
+            <a-tag v-if="record.review_status === 'pending'" color="orange" size="small">待审核</a-tag>
+          </template>
+          <template #subtitle>
+            <a-tag :color="getSourceColor(record.source)" size="small">{{ getSourceLabel(record.source) }}</a-tag>
+            <span style="color: #666">{{ getDomainLabel(record.domain) }}</span>
+            <span style="color: #999">{{ record.word_count }}字 · {{ record.read_time }}分钟</span>
+          </template>
+          <template #meta>
+            <div class="author-cell">
+              <a-avatar :src="record.author_avatar" :size="20">{{ record.author_name?.charAt(0) }}</a-avatar>
+              <span class="author-name">{{ record.author_name }}</span>
+              <CheckCircleFilled v-if="record.author_verified" class="verified-icon" />
             </div>
-          </div>
-        </div>
-      </template>
-
-      <!-- 作者列 -->
-      <template #author="{ record }">
-        <div class="author-cell">
-          <a-avatar :src="record.author_avatar" size="small">
-            {{ record.author_name?.charAt(0) }}
-          </a-avatar>
-          <span class="author-name">{{ record.author_name }}</span>
-          <CheckCircleFilled v-if="record.author_verified" class="verified-icon" />
-        </div>
-      </template>
-
-      <!-- 状态列 -->
-      <template #status="{ record }">
-        <a-tag :color="getStatusColor(record.status)">{{ getStatusLabel(record.status) }}</a-tag>
-        <a-tag v-if="record.review_status === 'pending'" color="orange">待审核</a-tag>
-      </template>
-
-      <!-- 数据列 -->
-      <template #stats="{ record }">
-        <div class="stats-cell">
-          <span><EyeOutlined /> {{ formatNumber(record.view_count) }}</span>
-          <span><LikeOutlined /> {{ formatNumber(record.like_count) }}</span>
-          <span><StarOutlined /> {{ formatNumber(record.collect_count) }}</span>
-        </div>
-      </template>
-
-      <!-- 操作列 -->
-      <template #action="{ record }">
-        <a-space>
-          <a @click="handleView(record)">查看</a>
-          <a @click="handleEdit(record)">编辑</a>
-          <a-dropdown>
-            <a>更多 <DownOutlined /></a>
-            <template #overlay>
-              <a-menu>
-                <a-menu-item v-if="record.status === 'draft'" @click="handleSubmitReview(record)">
-                  提交审核
-                </a-menu-item>
-                <a-menu-item v-if="record.status === 'published'" @click="handleOffline(record)">
-                  下架
-                </a-menu-item>
-                <a-menu-item v-if="record.status === 'offline'" @click="handlePublish(record)">
-                  重新发布
-                </a-menu-item>
-                <a-menu-divider />
-                <a-menu-item danger @click="handleDelete(record)">删除</a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
-        </a-space>
-      </template>
-    </a-table>
+            <div class="stats-cell">
+              <span><EyeOutlined /> {{ formatNumber(record.view_count) }}</span>
+              <span><LikeOutlined /> {{ formatNumber(record.like_count) }}</span>
+              <span><StarOutlined /> {{ formatNumber(record.collect_count) }}</span>
+            </div>
+            <span v-if="record.published_at" style="color: #999">{{ new Date(record.published_at).toLocaleDateString() }}</span>
+          </template>
+          <template #actions>
+            <a-button type="link" size="small" @click="handleView(record)">查看</a-button>
+            <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
+            <a-dropdown>
+              <a-button type="link" size="small">更多 <DownOutlined /></a-button>
+              <template #overlay>
+                <a-menu>
+                  <a-menu-item v-if="record.status === 'draft'" @click="handleSubmitReview(record)">提交审核</a-menu-item>
+                  <a-menu-item v-if="record.status === 'published'" @click="handleOffline(record)">下架</a-menu-item>
+                  <a-menu-item v-if="record.status === 'offline'" @click="handlePublish(record)">重新发布</a-menu-item>
+                  <a-menu-divider />
+                  <a-menu-item danger @click="handleDelete(record)">删除</a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+          </template>
+        </ListCard>
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="pagination.current"
+        v-model:pageSize="pagination.pageSize"
+        :total="pagination.total"
+        show-size-changer
+        :show-total="(total: number) => `共 ${total} 条`"
+        @change="onPaginationChange"
+      />
+    </div>
 
     <!-- 创建/编辑弹窗 -->
     <a-modal
@@ -213,6 +203,7 @@ import request from '@/api/request'
 import type { ArticleContent, ContentSource, ContentStatus } from '@/types/content'
 import { CONTENT_SOURCE_CONFIG } from '@/types/content'
 import { TRIGGER_DOMAINS } from '@/constants'
+import ListCard from '@/components/core/ListCard.vue'
 
 const router = useRouter()
 
@@ -251,50 +242,26 @@ const editForm = reactive({
   visibility: 'public' as string
 })
 
-// 表格列配置
-const columns = [
-  {
-    title: '文章信息',
-    dataIndex: 'title',
-    key: 'title',
-    width: 400,
-    slots: { customRender: 'title' }
-  },
-  {
-    title: '作者',
-    dataIndex: 'author_name',
-    key: 'author',
-    width: 150,
-    slots: { customRender: 'author' }
-  },
-  {
-    title: '状态',
-    dataIndex: 'status',
-    key: 'status',
-    width: 120,
-    slots: { customRender: 'status' }
-  },
-  {
-    title: '数据',
-    key: 'stats',
-    width: 180,
-    slots: { customRender: 'stats' }
-  },
-  {
-    title: '发布时间',
-    dataIndex: 'published_at',
-    key: 'published_at',
-    width: 120,
-    customRender: ({ text }: { text: string }) => text ? new Date(text).toLocaleDateString() : '-'
-  },
-  {
-    title: '操作',
-    key: 'action',
-    width: 150,
-    fixed: 'right',
-    slots: { customRender: 'action' }
+// columns removed — now using ListCard layout
+
+function toggleArticleSelect(id: string, checked: boolean) {
+  if (checked) {
+    if (!selectedKeys.value.includes(id)) {
+      selectedKeys.value.push(id)
+      const row = articles.value.find(a => a.article_id === id)
+      if (row) selectedRows.value.push(row)
+    }
+  } else {
+    selectedKeys.value = selectedKeys.value.filter(k => k !== id)
+    selectedRows.value = selectedRows.value.filter(r => r.article_id !== id)
   }
-]
+}
+
+const onPaginationChange = (page: number, pageSize: number) => {
+  pagination.current = page
+  pagination.pageSize = pageSize
+  fetchArticles()
+}
 
 // 辅助函数
 const getSourceLabel = (source: ContentSource) => CONTENT_SOURCE_CONFIG[source]?.label || source
@@ -348,10 +315,7 @@ const handleTableChange = (pag: any) => {
   fetchArticles()
 }
 
-const onSelectChange = (keys: string[], rows: ArticleContent[]) => {
-  selectedKeys.value = keys
-  selectedRows.value = rows
-}
+// onSelectChange removed — now using toggleArticleSelect with ListCard checkboxes
 
 const handleCreate = () => {
   editingArticle.value = null
@@ -546,6 +510,12 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
+.list-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .action-bar {
   margin-bottom: 16px;
   display: flex;
@@ -558,40 +528,12 @@ onMounted(() => {
   font-size: 14px;
 }
 
-.article-title-cell {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-}
-
 .article-cover {
-  width: 80px;
-  height: 60px;
+  width: 48px;
+  height: 48px;
   object-fit: cover;
   border-radius: 4px;
   background: #f5f5f5;
-}
-
-.article-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.article-info .title {
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 4px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.article-info .meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #999;
 }
 
 .author-cell {

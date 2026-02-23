@@ -3,9 +3,11 @@
 
 提供 ContentItem 的 CRUD 和批量发布功能。
 """
+import os
+import uuid
 from datetime import datetime
 from typing import Optional, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from loguru import logger
@@ -165,6 +167,39 @@ def list_content(
     return {"total": total, "items": [_item_to_dict(i) for i in items]}
 
 
+@router.get("/detail/{item_id}")
+def get_content_detail(
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """获取单个内容详情（编辑用，返回完整body）"""
+    item = db.query(ContentItem).filter(ContentItem.id == item_id).first()
+    if not item:
+        raise HTTPException(404, "内容不存在")
+    return {
+        "id": item.id,
+        "content_type": item.content_type,
+        "title": item.title,
+        "body": item.body,
+        "cover_url": item.cover_url,
+        "media_url": item.media_url,
+        "domain": item.domain,
+        "level": item.level,
+        "author_id": item.author_id,
+        "tenant_id": item.tenant_id,
+        "status": item.status,
+        "view_count": item.view_count,
+        "like_count": item.like_count,
+        "comment_count": item.comment_count,
+        "collect_count": item.collect_count,
+        "has_quiz": item.has_quiz,
+        "tags": [],
+        "created_at": item.created_at.isoformat() if item.created_at else None,
+        "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+    }
+
+
 @router.put("/{item_id}")
 def update_content(
     item_id: int,
@@ -288,3 +323,47 @@ def delete_content(
         logger.warning("审计日志写入失败")
     db.commit()
     return {"message": "已归档"}
+
+
+# ── 内容图片上传 ──────────────────────────────────────
+
+CONTENT_UPLOAD_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "static", "uploads", "content_images",
+)
+CONTENT_MAX_SIZE = 10 * 1024 * 1024  # 10MB
+CONTENT_ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+
+
+@router.post("/upload")
+async def upload_content_image(
+    file: UploadFile = File(...),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """
+    上传内容封面/图片
+
+    - 限制: 10MB, image/jpeg|png|webp|gif
+    - 存储: static/uploads/content_images/{userId}_{timestamp}_{uuid8}.{ext}
+    - 返回: { url, filename }
+    """
+    if file.content_type not in CONTENT_ALLOWED_TYPES:
+        raise HTTPException(400, f"不支持的文件类型: {file.content_type}，仅支持 JPEG/PNG/WebP/GIF")
+
+    content = await file.read()
+    if len(content) > CONTENT_MAX_SIZE:
+        raise HTTPException(400, f"文件过大 (最大 10MB，当前 {len(content) / 1024 / 1024:.1f}MB)")
+
+    ext_map = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}
+    ext = ext_map.get(file.content_type, "jpg")
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+    short_uuid = uuid.uuid4().hex[:8]
+    filename = f"{current_user.id}_{timestamp}_{short_uuid}.{ext}"
+
+    os.makedirs(CONTENT_UPLOAD_DIR, exist_ok=True)
+    filepath = os.path.join(CONTENT_UPLOAD_DIR, filename)
+    with open(filepath, "wb") as f:
+        f.write(content)
+
+    url = f"/api/static/uploads/content_images/{filename}"
+    return {"url": url, "file_url": url, "filename": filename}

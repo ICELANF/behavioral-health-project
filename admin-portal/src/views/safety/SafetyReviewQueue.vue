@@ -17,36 +17,40 @@
       </a-col>
     </a-row>
 
-    <!-- 表格 -->
-    <a-table
-      :dataSource="items"
-      :columns="columns"
-      :pagination="pagination"
-      :loading="loading"
-      rowKey="id"
-      @change="handleTableChange"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'severity'">
-          <a-tag :color="severityColor(record.severity)">{{ record.severity }}</a-tag>
-        </template>
-        <template v-if="column.key === 'event_type'">
-          <a-tag>{{ eventTypeLabel(record.event_type) }}</a-tag>
-        </template>
-        <template v-if="column.key === 'input_text'">
-          <a-tooltip :title="record.input_text">
-            <span>{{ (record.input_text || '').substring(0, 60) }}{{ (record.input_text || '').length > 60 ? '...' : '' }}</span>
-          </a-tooltip>
-        </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a-button size="small" type="primary" @click="showDetail(record)">查看</a-button>
-            <a-button size="small" @click="resolve(record.id, 'resolved')">审核通过</a-button>
-            <a-button size="small" danger @click="resolve(record.id, 'false_positive')">误报</a-button>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+    <!-- 列表 -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <ListCard v-for="record in items" :key="record.id">
+          <template #title>
+            <span>#{{ record.id }}</span>
+            <a-tag :color="severityColor(record.severity)" style="margin-left: 8px">{{ record.severity }}</a-tag>
+            <a-tag style="margin-left: 4px">{{ eventTypeLabel(record.event_type) }}</a-tag>
+          </template>
+          <template #subtitle>
+            用户ID: {{ record.user_id || '-' }} | {{ record.created_at }}
+          </template>
+          <template #meta>
+            <a-tooltip :title="record.input_text">
+              <span>{{ (record.input_text || '').substring(0, 80) }}{{ (record.input_text || '').length > 80 ? '...' : '' }}</span>
+            </a-tooltip>
+          </template>
+          <template #actions>
+            <a-space direction="vertical" size="small">
+              <a-button size="small" type="primary" @click="showDetail(record)">查看</a-button>
+              <a-button size="small" @click="resolve(record.id, 'resolved')">审核通过</a-button>
+              <a-button size="small" danger @click="resolve(record.id, 'false_positive')">误报</a-button>
+            </a-space>
+          </template>
+        </ListCard>
+      </div>
+    </a-spin>
+    <a-pagination
+      v-model:current="pagination.current"
+      :total="pagination.total"
+      :pageSize="pagination.pageSize"
+      style="margin-top: 16px; text-align: right"
+      @change="(page: number) => { pagination.current = page; fetchData() }"
+    />
 
     <!-- 详情弹窗 -->
     <a-modal v-model:open="detailVisible" title="安全事件详情" width="700px" :footer="null">
@@ -85,6 +89,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import request from '@/api/request'
+import ListCard from '@/components/core/ListCard.vue'
 
 const items = ref<any[]>([])
 const loading = ref(false)
@@ -101,15 +106,7 @@ const pagination = reactive({
   total: 0,
 })
 
-const columns = [
-  { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-  { title: '用户', dataIndex: 'user_id', key: 'user_id', width: 70 },
-  { title: '类型', key: 'event_type', width: 110 },
-  { title: '严重级', key: 'severity', width: 90 },
-  { title: '输入摘要', key: 'input_text' },
-  { title: '时间', dataIndex: 'created_at', key: 'created_at', width: 160 },
-  { title: '操作', key: 'action', width: 220 },
-]
+// columns removed — replaced by ListCard layout
 
 const severityColor = (s: string) => {
   const map: Record<string, string> = { critical: 'red', high: 'orange', medium: 'gold', low: 'green' }
@@ -145,11 +142,7 @@ const fetchData = async () => {
   }
 }
 
-const handleTableChange = (pag: any) => {
-  pagination.current = pag.current
-  pagination.pageSize = pag.pageSize
-  fetchData()
-}
+// table change handler removed — standalone a-pagination handles page changes
 
 const showDetail = async (record: any) => {
   try {
@@ -178,4 +171,5 @@ onMounted(fetchData)
 .safety-review h2 {
   margin-bottom: 16px;
 }
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 </style>

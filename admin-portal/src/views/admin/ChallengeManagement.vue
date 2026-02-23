@@ -56,31 +56,19 @@
       </a-row>
     </a-card>
 
-    <!-- Challenge Table -->
-    <a-card>
-      <a-table
-        :dataSource="challenges"
-        :columns="columns"
-        rowKey="id"
-        size="small"
-        :loading="loading"
-        :pagination="{
-          current: pagination.page,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          showTotal: (total: number) => `共 ${total} 个挑战`,
-          onChange: onPageChange,
-        }"
-        :customRow="(record: any) => ({ onClick: () => openPushDrawer(record) })"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'title'">
-            <a style="font-weight: 500">{{ record.title }}</a>
+    <!-- Challenge List -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <ListCard
+          v-for="record in challenges"
+          :key="record.id"
+          @click="openPushDrawer(record)"
+        >
+          <template #title>
+            <span style="font-weight: 500">{{ record.title }}</span>
           </template>
-          <template v-if="column.key === 'category'">
-            {{ CATEGORY_MAP[record.category] || record.category }}
-          </template>
-          <template v-if="column.key === 'status'">
+          <template #subtitle>
+            <a-tag>{{ CATEGORY_MAP[record.category] || record.category }}</a-tag>
             <a-tag :color="STATUS_MAP[record.status]?.color || 'default'">
               {{ STATUS_MAP[record.status]?.label || record.status }}
             </a-tag>
@@ -101,10 +89,12 @@
               </a-tooltip>
             </template>
           </template>
-          <template v-if="column.key === 'enrollment_count'">
-            {{ record.enrollment_count ?? 0 }}
+          <template #meta>
+            <span>{{ record.duration_days }} 天</span>
+            <span class="meta-divider">|</span>
+            <span>报名 {{ record.enrollment_count ?? 0 }}</span>
           </template>
-          <template v-if="column.key === 'action'">
+          <template #actions>
             <a-space @click.stop>
               <a @click="editChallenge(record)">编辑</a>
               <a @click="openPushDrawer(record)">推送内容</a>
@@ -128,9 +118,22 @@
               </template>
             </a-space>
           </template>
-        </template>
-      </a-table>
-    </a-card>
+        </ListCard>
+      </div>
+      <div v-if="challenges.length === 0 && !loading" style="text-align: center; padding: 40px; color: #999">
+        暂无挑战数据
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="pagination.page"
+        v-model:pageSize="pagination.pageSize"
+        :total="pagination.total"
+        show-size-changer
+        :show-total="(total: number) => `共 ${total} 个挑战`"
+        @change="onPageChange"
+      />
+    </div>
 
     <!-- Create/Edit Challenge Modal -->
     <a-modal
@@ -487,6 +490,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, ImportOutlined, DeleteOutlined } from '@ant-design/icons-vue'
 import request from '@/api/request'
+import ListCard from '@/components/core/ListCard.vue'
 
 // ========== Type Definitions ==========
 
@@ -663,14 +667,7 @@ const importing = ref(false)
 
 // ========== Table Columns ==========
 
-const columns = [
-  { title: '标题', key: 'title', width: 200, ellipsis: true },
-  { title: '分类', key: 'category', width: 100 },
-  { title: '天数', dataIndex: 'duration_days', width: 70, align: 'center' as const },
-  { title: '状态', key: 'status', width: 260 },
-  { title: '报名人数', key: 'enrollment_count', width: 90, align: 'center' as const },
-  { title: '操作', key: 'action', width: 260 },
-]
+// columns removed — now using ListCard layout
 
 // ========== Computed ==========
 
@@ -1146,6 +1143,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.list-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .challenge-management {
   padding: 0;
 }
@@ -1164,6 +1167,11 @@ onMounted(() => {
 .header-actions {
   display: flex;
   gap: 8px;
+}
+
+.meta-divider {
+  color: #d9d9d9;
+  margin: 0 4px;
 }
 
 /* Push drawer layout */
@@ -1261,8 +1269,5 @@ onMounted(() => {
   background: #fafafa;
 }
 
-/* Table row cursor */
-:deep(.ant-table-row) {
-  cursor: pointer;
-}
+/* ListCard items are already clickable */
 </style>

@@ -24,7 +24,7 @@ from core.models import (
     MicroActionTask,
     ChallengeTemplate, ChallengeEnrollment, EnrollmentStatus,
 )
-from api.dependencies import require_admin
+from api.dependencies import require_admin, require_coach_or_admin
 
 router = APIRouter(prefix="/api/v1/analytics/admin", tags=["Admin分析"])
 
@@ -49,9 +49,9 @@ _ROLE_LABEL = {
 @router.get("/overview")
 def get_overview(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
-    """平台概览 KPI"""
+    """平台概览 KPI (教练及以上可见)"""
     total_users = db.query(func.count(User.id)).scalar() or 0
     active_users = db.query(func.count(User.id)).filter(User.is_active == True).scalar() or 0
     coach_count = db.query(func.count(User.id)).filter(
@@ -157,7 +157,7 @@ def get_overview(
 def get_user_growth(
     months: int = Query(12, ge=3, le=24),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
     """用户增长趋势 (bar + line)"""
     since = datetime.utcnow() - timedelta(days=months * 30)
@@ -190,7 +190,7 @@ def get_user_growth(
 @router.get("/role-distribution")
 def get_role_distribution(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
     """角色分布 (pie)"""
     rows = (
@@ -213,7 +213,7 @@ def get_role_distribution(
 @router.get("/stage-distribution")
 def get_stage_distribution(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
     """全平台行为阶段分布 (bar)"""
     rows = (
@@ -235,7 +235,7 @@ def get_stage_distribution(
 @router.get("/risk-distribution")
 def get_risk_distribution(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
     """风险等级分布 (donut) — 取每用户最新评估"""
     from sqlalchemy import and_
@@ -273,9 +273,9 @@ def get_risk_distribution(
 def get_coach_leaderboard(
     limit: int = Query(10, ge=5, le=20),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
-    """教练绩效排行 (horizontal bar)"""
+    """教练绩效排行 (教练及以上可见)"""
     coaches = (
         db.query(User)
         .filter(
@@ -330,7 +330,7 @@ def get_coach_leaderboard(
 @router.get("/challenge-effectiveness")
 def get_challenge_effectiveness(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
     """挑战活动效果 (grouped bar)"""
     rows = (

@@ -45,77 +45,44 @@
     </a-row>
 
     <!-- 申请列表 -->
-    <a-card>
-      <a-table
-        :dataSource="filteredApplications"
-        :columns="columns"
-        :loading="loading"
-        :pagination="pagination"
-        rowKey="application_id"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'coach'">
-            <div class="coach-info">
-              <a-avatar :size="40">{{ record.coach_name?.[0] }}</a-avatar>
-              <div class="coach-detail">
-                <div class="coach-name">{{ record.coach_name }}</div>
-                <div class="coach-phone">{{ record.coach_phone }}</div>
-              </div>
-            </div>
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <a-empty v-if="filteredApplications.length === 0 && !loading" description="暂无晋级申请" />
+        <ListCard v-for="record in filteredApplications" :key="record.application_id" @click="viewApplication(record)">
+          <template #avatar>
+            <a-avatar :size="40">{{ record.coach_name?.[0] }}</a-avatar>
           </template>
-
-          <template v-else-if="column.key === 'level'">
+          <template #title>
+            <span>{{ record.coach_name }}</span>
+            <a-tag :color="statusColors[record.status]" size="small" style="margin-left: 8px">{{ statusLabels[record.status] }}</a-tag>
+          </template>
+          <template #subtitle>
             <div class="level-change">
-              <a-tag :color="levelColors[record.current_level]">{{ record.current_level }}</a-tag>
-              <ArrowRightOutlined style="margin: 0 8px; color: #999" />
-              <a-tag :color="levelColors[record.target_level]">{{ record.target_level }}</a-tag>
+              <a-tag :color="levelColors[record.current_level]" size="small">{{ record.current_level }}</a-tag>
+              <ArrowRightOutlined style="margin: 0 4px; color: #999; font-size: 11px" />
+              <a-tag :color="levelColors[record.target_level]" size="small">{{ record.target_level }}</a-tag>
             </div>
+            <span style="color: #999; margin-left: 8px">{{ record.coach_phone }}</span>
           </template>
-
-          <template v-else-if="column.key === 'requirements'">
+          <template #meta>
             <div class="requirements-check">
-              <a-tooltip title="课程完成">
-                <span :class="['req-item', { met: record.requirements_met.courses_completed }]">
-                  <BookOutlined />
-                </span>
-              </a-tooltip>
-              <a-tooltip title="考试通过">
-                <span :class="['req-item', { met: record.requirements_met.exams_passed }]">
-                  <FileTextOutlined />
-                </span>
-              </a-tooltip>
-              <a-tooltip title="案例数量">
-                <span :class="['req-item', { met: record.requirements_met.cases_count }]">
-                  <SolutionOutlined />
-                </span>
-              </a-tooltip>
-              <a-tooltip title="督导时长">
-                <span :class="['req-item', { met: record.requirements_met.mentoring_hours }]">
-                  <TeamOutlined />
-                </span>
-              </a-tooltip>
+              <a-tooltip title="课程完成"><span :class="['req-item', { met: record.requirements_met.courses_completed }]"><BookOutlined /></span></a-tooltip>
+              <a-tooltip title="考试通过"><span :class="['req-item', { met: record.requirements_met.exams_passed }]"><FileTextOutlined /></span></a-tooltip>
+              <a-tooltip title="案例数量"><span :class="['req-item', { met: record.requirements_met.cases_count }]"><SolutionOutlined /></span></a-tooltip>
+              <a-tooltip title="督导时长"><span :class="['req-item', { met: record.requirements_met.mentoring_hours }]"><TeamOutlined /></span></a-tooltip>
             </div>
+            <span style="color: #999">{{ record.applied_at }}</span>
           </template>
-
-          <template v-else-if="column.key === 'status'">
-            <a-tag :color="statusColors[record.status]">
-              {{ statusLabels[record.status] }}
-            </a-tag>
+          <template #actions>
+            <a-button type="link" size="small" @click.stop="viewApplication(record)">查看</a-button>
+            <template v-if="record.status === 'pending'">
+              <a-button type="link" size="small" style="color: #52c41a" @click.stop="handleApprove(record)">通过</a-button>
+              <a-button type="link" size="small" danger @click.stop="handleReject(record)">拒绝</a-button>
+            </template>
           </template>
-
-          <template v-else-if="column.key === 'action'">
-            <a-space>
-              <a @click="viewApplication(record)">查看</a>
-              <template v-if="record.status === 'pending'">
-                <a-divider type="vertical" />
-                <a style="color: #52c41a" @click="handleApprove(record)">通过</a>
-                <a style="color: #ff4d4f" @click="handleReject(record)">拒绝</a>
-              </template>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
-    </a-card>
+        </ListCard>
+      </div>
+    </a-spin>
 
     <!-- 申请详情弹窗 -->
     <a-modal
@@ -301,6 +268,7 @@ import {
   FileOutlined
 } from '@ant-design/icons-vue'
 import request from '@/api/request'
+import ListCard from '@/components/core/ListCard.vue'
 
 // 接口定义
 interface PromotionApplication {
@@ -347,15 +315,7 @@ const pagination = reactive({
   showTotal: (total: number) => `共 ${total} 条记录`
 })
 
-// 表格列
-const columns = [
-  { title: '申请人', key: 'coach', width: 180 },
-  { title: '等级变更', key: 'level', width: 180 },
-  { title: '条件满足', key: 'requirements', width: 140 },
-  { title: '申请时间', dataIndex: 'applied_at', width: 120 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '操作', key: 'action', width: 150, fixed: 'right' }
-]
+// columns removed — using ListCard layout
 
 // 常量
 const levelColors: Record<string, string> = {
@@ -507,6 +467,8 @@ onMounted(() => {
 .promotion-review {
   padding: 0;
 }
+
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 
 .page-header {
   display: flex;

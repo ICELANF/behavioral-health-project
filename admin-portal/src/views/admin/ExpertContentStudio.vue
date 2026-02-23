@@ -48,73 +48,66 @@
         </div>
 
         <!-- 文档列表 -->
-        <a-table
-          :dataSource="documents"
-          :columns="docColumns"
-          :loading="docLoading"
-          :pagination="false"
-          rowKey="id"
-          size="small"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'evidence_tier'">
-              <a-tag :color="tierColor(record.evidence_tier)">{{ record.evidence_tier || 'T3' }}</a-tag>
-            </template>
-            <template v-if="column.key === 'status'">
-              <a-tag :color="statusColor(record.status)">{{ statusLabel(record.status) }}</a-tag>
-            </template>
-            <template v-if="column.key === 'domain_id'">
-              {{ domainLabel(record.domain_id) }}
-            </template>
-            <template v-if="column.key === 'created_at'">
-              {{ formatDate(record.created_at) }}
-            </template>
-            <template v-if="column.key === 'actions'">
-              <a-space>
-                <a-button size="small" @click="openEditModal(record)">编辑</a-button>
-                <a-button
-                  v-if="record.status === 'draft' || record.status === 'error'"
-                  size="small"
-                  type="primary"
-                  :loading="publishingId === record.id"
-                  @click="onPublish(record)"
-                >发布</a-button>
-                <a-button
-                  v-if="record.status === 'ready'"
-                  size="small"
-                  @click="onUnpublish(record)"
-                >撤回</a-button>
-                <a-popconfirm title="确定删除此文档？" @confirm="onDelete(record)">
-                  <a-button size="small" danger>删除</a-button>
-                </a-popconfirm>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
+        <a-spin :spinning="docLoading">
+          <div class="list-card-container">
+            <ListCard v-for="record in documents" :key="record.id">
+              <template #title>
+                <span>{{ record.title }}</span>
+                <a-tag :color="tierColor(record.evidence_tier)" style="margin-left: 8px">{{ record.evidence_tier || 'T3' }}</a-tag>
+                <a-tag :color="statusColor(record.status)" style="margin-left: 4px">{{ statusLabel(record.status) }}</a-tag>
+              </template>
+              <template #subtitle>
+                领域: {{ domainLabel(record.domain_id) }} | 块数: {{ record.chunk_count }}
+              </template>
+              <template #meta>
+                <span>创建: {{ formatDate(record.created_at) }}</span>
+              </template>
+              <template #actions>
+                <a-space wrap>
+                  <a-button size="small" @click="openEditModal(record)">编辑</a-button>
+                  <a-button
+                    v-if="record.status === 'draft' || record.status === 'error'"
+                    size="small"
+                    type="primary"
+                    :loading="publishingId === record.id"
+                    @click="onPublish(record)"
+                  >发布</a-button>
+                  <a-button
+                    v-if="record.status === 'ready'"
+                    size="small"
+                    @click="onUnpublish(record)"
+                  >撤回</a-button>
+                  <a-popconfirm title="确定删除此文档？" @confirm="onDelete(record)">
+                    <a-button size="small" danger>删除</a-button>
+                  </a-popconfirm>
+                </a-space>
+              </template>
+            </ListCard>
+          </div>
+        </a-spin>
       </a-tab-pane>
 
       <!-- Tab 2: 挑战活动 -->
       <a-tab-pane key="challenges" tab="挑战活动">
-        <a-table
-          :dataSource="challenges"
-          :columns="challengeColumns"
-          :loading="challengeLoading"
-          :pagination="false"
-          rowKey="id"
-          size="small"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'status'">
-              <a-tag :color="challengeStatusColor(record.status)">{{ record.status }}</a-tag>
-            </template>
-            <template v-if="column.key === 'created_at'">
-              {{ formatDate(record.created_at) }}
-            </template>
-            <template v-if="column.key === 'actions'">
-              <a-button size="small" @click="goToChallenge(record.id)">查看详情</a-button>
-            </template>
-          </template>
-        </a-table>
+        <a-spin :spinning="challengeLoading">
+          <div class="list-card-container">
+            <ListCard v-for="record in challenges" :key="record.id">
+              <template #title>
+                <span>{{ record.title }}</span>
+                <a-tag :color="challengeStatusColor(record.status)" style="margin-left: 8px">{{ record.status }}</a-tag>
+              </template>
+              <template #subtitle>
+                类别: {{ record.category }} | {{ record.duration_days }}天 | 报名: {{ record.enrollment_count }}人
+              </template>
+              <template #meta>
+                <span>创建: {{ formatDate(record.created_at) }}</span>
+              </template>
+              <template #actions>
+                <a-button size="small" @click="goToChallenge(record.id)">查看详情</a-button>
+              </template>
+            </ListCard>
+          </div>
+        </a-spin>
       </a-tab-pane>
     </a-tabs>
 
@@ -211,6 +204,7 @@ import 'md-editor-v3/lib/style.css'
 import dayjs from 'dayjs'
 import type { Dayjs } from 'dayjs'
 import { expertContentAPI } from '../../api/expert-content'
+import ListCard from '@/components/core/ListCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -246,15 +240,7 @@ const documents = ref<any[]>([])
 const docLoading = ref(false)
 const docFilters = reactive({ keyword: '', status: undefined as string | undefined, domain: undefined as string | undefined })
 
-const docColumns = [
-  { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
-  { title: '证据', key: 'evidence_tier', width: 70 },
-  { title: '领域', key: 'domain_id', width: 80 },
-  { title: '状态', key: 'status', width: 80 },
-  { title: '块数', dataIndex: 'chunk_count', key: 'chunk_count', width: 60 },
-  { title: '创建时间', key: 'created_at', width: 120 },
-  { title: '操作', key: 'actions', width: 230 },
-]
+// docColumns removed — replaced by ListCard layout
 
 const domainOptions = [
   { value: 'nutrition', label: '营养' },
@@ -449,15 +435,7 @@ async function onDelete(record: any) {
 const challenges = ref<any[]>([])
 const challengeLoading = ref(false)
 
-const challengeColumns = [
-  { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
-  { title: '类别', dataIndex: 'category', key: 'category', width: 120 },
-  { title: '天数', dataIndex: 'duration_days', key: 'duration_days', width: 60 },
-  { title: '状态', key: 'status', width: 80 },
-  { title: '报名数', dataIndex: 'enrollment_count', key: 'enrollment_count', width: 80 },
-  { title: '创建时间', key: 'created_at', width: 120 },
-  { title: '操作', key: 'actions', width: 100 },
-]
+// challengeColumns removed — replaced by ListCard layout
 
 async function loadChallenges() {
   challengeLoading.value = true
@@ -520,4 +498,6 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 16px;
 }
+
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 </style>

@@ -34,18 +34,20 @@ _STAGE_LABEL = {
 
 
 def _get_student_ids(db: Session, coach_user: User) -> list[int]:
-    """获取教练的学员 ID 列表"""
+    """获取教练的学员 ID 列表（权威源: coach_student_bindings）"""
     if coach_user.role == UserRole.ADMIN:
         rows = db.query(User.id).filter(
             User.role.in_([UserRole.OBSERVER, UserRole.GROWER, UserRole.SHARER]),
             User.is_active == True,
         ).all()
+        return [r[0] for r in rows]
     else:
-        rows = db.query(User.id).filter(
-            User.role.in_([UserRole.OBSERVER, UserRole.GROWER, UserRole.SHARER]),
-            User.is_active == True,
-        ).all()
-    return [r[0] for r in rows]
+        from sqlalchemy import text as sa_text
+        binding_rows = db.execute(sa_text(
+            "SELECT student_id FROM coach_schema.coach_student_bindings "
+            "WHERE coach_id = :cid AND is_active = true"
+        ), {"cid": coach_user.id}).fetchall()
+        return [r[0] for r in binding_rows]
 
 
 @router.get("/risk-trend")

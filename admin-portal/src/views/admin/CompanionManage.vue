@@ -21,30 +21,48 @@
       </a-row>
     </a-card>
 
-    <!-- 表格 -->
-    <a-table
-      :columns="columns"
-      :data-source="relations"
-      :loading="loading"
-      :pagination="{ current: page, pageSize, total, onChange: onPageChange }"
-      row-key="id"
-      size="small"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'status'">
-          <a-tag :color="statusColor(record.status)">{{ statusLabel(record.status) }}</a-tag>
-        </template>
-        <template v-if="column.key === 'quality_score'">
-          {{ record.quality_score ? record.quality_score.toFixed(1) : '-' }}
-        </template>
-      </template>
-    </a-table>
+    <!-- 列表 -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <a-empty v-if="relations.length === 0 && !loading" description="暂无同道者关系" />
+        <ListCard v-for="r in relations" :key="r.id">
+          <template #avatar>
+            <a-avatar :size="40" style="background: #1890ff">{{ (r.mentor_name || '?')[0] }}</a-avatar>
+          </template>
+          <template #title>
+            <span>{{ r.mentor_name || `ID ${r.mentor_id}` }}</span>
+            <span style="color: #999; margin: 0 6px">→</span>
+            <span>{{ r.mentee_name || `ID ${r.mentee_id}` }}</span>
+          </template>
+          <template #subtitle>
+            导师角色: {{ r.mentor_role || '-' }} · 学员角色: {{ r.mentee_role || '-' }}
+          </template>
+          <template #meta>
+            <a-tag :color="statusColor(r.status)">{{ statusLabel(r.status) }}</a-tag>
+            <span>质量分: {{ r.quality_score ? r.quality_score.toFixed(1) : '-' }}</span>
+            <span style="color: #999">开始: {{ r.started_at || '-' }}</span>
+            <span v-if="r.graduated_at" style="color: #999">毕业: {{ r.graduated_at }}</span>
+          </template>
+        </ListCard>
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="page"
+        :page-size="pageSize"
+        :total="total"
+        show-size-changer
+        :show-total="(t: number) => `共 ${t} 条`"
+        @change="onPageChange"
+      />
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { companionApi } from '@/api/credit-promotion'
+import ListCard from '@/components/core/ListCard.vue'
 
 const loading = ref(false)
 const relations = ref<any[]>([])
@@ -57,18 +75,7 @@ const filters = reactive({
   mentor_id: undefined as number | undefined,
 })
 
-const columns = [
-  { title: '导师ID', dataIndex: 'mentor_id', key: 'mentor_id', width: 80 },
-  { title: '导师', dataIndex: 'mentor_name', key: 'mentor_name' },
-  { title: '学员ID', dataIndex: 'mentee_id', key: 'mentee_id', width: 80 },
-  { title: '学员', dataIndex: 'mentee_name', key: 'mentee_name' },
-  { title: '导师角色', dataIndex: 'mentor_role', key: 'mentor_role', width: 100 },
-  { title: '学员角色', dataIndex: 'mentee_role', key: 'mentee_role', width: 100 },
-  { title: '状态', key: 'status', width: 90 },
-  { title: '质量分', key: 'quality_score', width: 80 },
-  { title: '开始时间', dataIndex: 'started_at', key: 'started_at', width: 160 },
-  { title: '毕业时间', dataIndex: 'graduated_at', key: 'graduated_at', width: 160 },
-]
+// columns removed — now using ListCard layout
 
 function statusColor(s: string) {
   return s === 'active' ? 'blue' : s === 'graduated' ? 'green' : 'red'
@@ -107,4 +114,5 @@ onMounted(loadRelations)
 <style scoped>
 .companion-manage { padding: 16px; }
 .mb-4 { margin-bottom: 16px; }
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 </style>

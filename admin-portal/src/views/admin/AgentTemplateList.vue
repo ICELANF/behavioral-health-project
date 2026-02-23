@@ -31,46 +31,49 @@
     </a-card>
 
     <!-- 列表 -->
-    <a-card :bordered="false" style="margin-top: 16px">
-      <a-table
-        :dataSource="templates"
-        :columns="columns"
-        :loading="loading"
-        :pagination="{ total, current: page, pageSize: 20, onChange: onPageChange }"
-        rowKey="agent_id"
-        size="middle"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'display_name'">
-            <a @click="$router.push(`/admin/agent-templates/edit/${record.agent_id}`)">{{ record.display_name }}</a>
-            <div style="color: #999; font-size: 12px">{{ record.agent_id }}</div>
-          </template>
-          <template v-if="column.key === 'agent_type'">
-            <a-tag :color="typeColor(record.agent_type)">{{ record.agent_type }}</a-tag>
-          </template>
-          <template v-if="column.key === 'is_preset'">
-            <a-tag v-if="record.is_preset" color="blue">预置</a-tag>
-            <a-tag v-else color="green">自定义</a-tag>
-          </template>
-          <template v-if="column.key === 'is_enabled'">
-            <a-switch :checked="record.is_enabled" @change="handleToggle(record)" size="small" />
-          </template>
-          <template v-if="column.key === 'keywords'">
-            <a-tag v-for="kw in (record.keywords || []).slice(0, 3)" :key="kw" size="small">{{ kw }}</a-tag>
-            <span v-if="(record.keywords || []).length > 3" style="color: #999">+{{ record.keywords.length - 3 }}</span>
-          </template>
-          <template v-if="column.key === 'actions'">
-            <a-space>
-              <a-button type="link" size="small" @click="$router.push(`/admin/agent-templates/edit/${record.agent_id}`)">编辑</a-button>
-              <a-button type="link" size="small" @click="handleClone(record)">克隆</a-button>
-              <a-popconfirm v-if="!record.is_preset" title="确定删除?" @confirm="handleDelete(record)">
-                <a-button type="link" size="small" danger>删除</a-button>
+    <div style="margin-top: 16px">
+      <a-spin :spinning="loading">
+        <div class="list-card-container">
+          <a-empty v-if="templates.length === 0 && !loading" description="暂无 Agent 模板" />
+          <ListCard v-for="t in templates" :key="t.agent_id" @click="$router.push(`/admin/agent-templates/edit/${t.agent_id}`)">
+            <template #avatar>
+              <a-avatar :size="40" :style="{ background: typeColor(t.agent_type) }">{{ (t.display_name || '?')[0] }}</a-avatar>
+            </template>
+            <template #title>
+              <span>{{ t.display_name }}</span>
+              <span style="color: #999; font-size: 12px; margin-left: 8px">{{ t.agent_id }}</span>
+            </template>
+            <template #subtitle>
+              <a-tag :color="typeColor(t.agent_type)" size="small">{{ t.agent_type }}</a-tag>
+              <a-tag v-if="t.is_preset" color="blue" size="small">预置</a-tag>
+              <a-tag v-else color="green" size="small">自定义</a-tag>
+              <span style="margin-left: 8px; color: #666; font-size: 12px">优先级: {{ t.priority }} · 权重: {{ t.base_weight }}</span>
+            </template>
+            <template #meta>
+              <a-tag v-for="kw in (t.keywords || []).slice(0, 4)" :key="kw" size="small">{{ kw }}</a-tag>
+              <span v-if="(t.keywords || []).length > 4" style="color: #999">+{{ t.keywords.length - 4 }}</span>
+            </template>
+            <template #actions>
+              <a-switch :checked="t.is_enabled" @change.stop="handleToggle(t)" size="small" />
+              <a-button type="link" size="small" @click.stop="$router.push(`/admin/agent-templates/edit/${t.agent_id}`)">编辑</a-button>
+              <a-button type="link" size="small" @click.stop="handleClone(t)">克隆</a-button>
+              <a-popconfirm v-if="!t.is_preset" title="确定删除?" @confirm="handleDelete(t)">
+                <a-button type="link" size="small" danger @click.stop>删除</a-button>
               </a-popconfirm>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
-    </a-card>
+            </template>
+          </ListCard>
+        </div>
+      </a-spin>
+      <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+        <a-pagination
+          v-model:current="page"
+          :page-size="20"
+          :total="total"
+          :show-total="(t: number) => `共 ${t} 条`"
+          @change="onPageChange"
+        />
+      </div>
+    </div>
 
     <!-- 克隆对话框 -->
     <a-modal v-model:open="cloneModal.visible" title="克隆 Agent 模板" @ok="doClone" :confirmLoading="cloneModal.loading">
@@ -89,6 +92,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { ReloadOutlined, PlusOutlined } from '@ant-design/icons-vue'
 import { agentTemplateApi } from '../../api/agent-template'
+import ListCard from '@/components/core/ListCard.vue'
 
 const loading = ref(false)
 const refreshing = ref(false)
@@ -97,16 +101,7 @@ const total = ref(0)
 const page = ref(1)
 const filters = reactive<{ agent_type?: string; is_enabled?: boolean }>({})
 
-const columns = [
-  { title: '名称', key: 'display_name', width: 180 },
-  { title: '类型', key: 'agent_type', dataIndex: 'agent_type', width: 120 },
-  { title: '优先级', dataIndex: 'priority', width: 80, sorter: (a: any, b: any) => a.priority - b.priority },
-  { title: '权重', dataIndex: 'base_weight', width: 80 },
-  { title: '关键词', key: 'keywords', width: 200 },
-  { title: '预置', key: 'is_preset', width: 80 },
-  { title: '状态', key: 'is_enabled', width: 80 },
-  { title: '操作', key: 'actions', width: 180 },
-]
+// columns removed — now using ListCard layout
 
 const cloneModal = reactive({ visible: false, loading: false, sourceId: '', newId: '' })
 
@@ -198,4 +193,5 @@ onMounted(() => loadData())
 <style scoped>
 .agent-template-list { padding: 0; }
 .filter-card { margin-top: 16px; }
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 </style>

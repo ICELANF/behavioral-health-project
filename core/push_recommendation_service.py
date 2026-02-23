@@ -60,19 +60,23 @@ class PushRecommendationService:
         """为教练生成所有学员的推送建议"""
         recommendations = []
 
-        # 查找教练的所有学员
-        students = db.query(User).filter(
-            User.profile.isnot(None),
-        ).all()
+        # 查找教练的所有学员 (权威源: coach_student_bindings)
+        from sqlalchemy import text as sa_text
+        binding_rows = db.execute(sa_text(
+            "SELECT student_id FROM coach_schema.coach_student_bindings "
+            "WHERE coach_id = :cid AND is_active = true"
+        ), {"cid": coach_id}).fetchall()
+        bound_student_ids = {r[0] for r in binding_rows}
 
-        # Filter students whose coach_id matches
         coach_students = []
-        for s in students:
-            if isinstance(s.profile, dict) and s.profile.get("coach_id") == coach_id:
-                coach_students.append(s)
+        if bound_student_ids:
+            coach_students = db.query(User).filter(
+                User.id.in_(bound_student_ids),
+                User.is_active == True,
+            ).all()
 
         if not coach_students:
-            # Fallback: if no students via profile, check recent assignments
+            # Fallback: check recent assignments
             recent_student_ids = (
                 db.query(AssessmentAssignment.student_id)
                 .filter(AssessmentAssignment.coach_id == coach_id)

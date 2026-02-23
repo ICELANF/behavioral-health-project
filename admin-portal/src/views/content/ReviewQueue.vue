@@ -45,66 +45,62 @@
       </a-row>
     </a-card>
 
-    <!-- 审核队列表格 -->
-    <a-table
-      :dataSource="queue"
-      :columns="columns"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      rowKey="content_id"
-    >
-      <template #bodyCell="{ column, record }">
-        <!-- 内容信息 -->
-        <template v-if="column.key === 'content'">
-          <div class="content-info">
-            <div class="content-title">{{ record.title }}</div>
-            <div class="content-meta">
-              <a-tag :color="CONTENT_TYPE_CONFIG[record.type]?.color || '#8c8c8c'">
-                {{ CONTENT_TYPE_CONFIG[record.type]?.label || record.type }}
-              </a-tag>
-              <a-tag v-if="record.domain" size="small">
-                {{ TRIGGER_DOMAINS[record.domain]?.label || record.domain }}
-              </a-tag>
-            </div>
-          </div>
-        </template>
-
-        <!-- 来源 -->
-        <template v-if="column.key === 'source'">
-          <a-tag :color="CONTENT_SOURCE_CONFIG[record.source]?.color || '#8c8c8c'">
-            {{ CONTENT_SOURCE_CONFIG[record.source]?.badge || record.source }}
-          </a-tag>
-          <div class="author-name">{{ record.author_name }}</div>
-        </template>
-
-        <!-- 优先级 -->
-        <template v-if="column.key === 'priority'">
-          <a-badge
-            :status="priorityStatus[record.priority]"
-            :text="priorityLabels[record.priority]"
-          />
-        </template>
-
-        <!-- 提交时间 -->
-        <template v-if="column.key === 'submitted_at'">
-          <div>{{ formatDate(record.submitted_at) }}</div>
-          <div class="wait-time">等待 {{ getWaitTime(record.submitted_at) }}</div>
-        </template>
-
-        <!-- 操作 -->
-        <template v-if="column.key === 'action'">
-          <a-space>
+    <!-- 审核队列列表 -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <ListCard
+          v-for="record in queue"
+          :key="record.content_id"
+        >
+          <template #title>
+            <span>{{ record.title }}</span>
+          </template>
+          <template #subtitle>
+            <a-tag :color="CONTENT_TYPE_CONFIG[record.type]?.color || '#8c8c8c'" size="small">
+              {{ CONTENT_TYPE_CONFIG[record.type]?.label || record.type }}
+            </a-tag>
+            <a-tag :color="CONTENT_SOURCE_CONFIG[record.source]?.color || '#8c8c8c'" size="small">
+              {{ CONTENT_SOURCE_CONFIG[record.source]?.badge || record.source }}
+            </a-tag>
+            <a-tag v-if="record.domain" size="small">
+              {{ TRIGGER_DOMAINS[record.domain]?.label || record.domain }}
+            </a-tag>
+          </template>
+          <template #meta>
+            <a-badge
+              :status="priorityStatus[record.priority]"
+              :text="priorityLabels[record.priority]"
+            />
+            <span class="meta-divider">|</span>
+            <span>{{ record.author_name }}</span>
+            <span class="meta-divider">|</span>
+            <span>{{ formatDate(record.submitted_at) }}</span>
+            <span class="wait-time">(等待 {{ getWaitTime(record.submitted_at) }})</span>
+          </template>
+          <template #actions>
             <a-button type="primary" size="small" @click="openReview(record)">
               审核
             </a-button>
             <a-button size="small" @click="previewContent(record)">
               预览
             </a-button>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+          </template>
+        </ListCard>
+      </div>
+      <div v-if="queue.length === 0 && !loading" style="text-align: center; padding: 40px; color: #999">
+        暂无待审核内容
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="pagination.current"
+        v-model:pageSize="pagination.pageSize"
+        :total="pagination.total"
+        show-size-changer
+        :show-total="(total: number) => `共 ${total} 条`"
+        @change="onPaginationChange"
+      />
+    </div>
 
     <!-- 审核弹窗 -->
     <a-modal
@@ -202,6 +198,7 @@ import request from '@/api/request'
 import { TRIGGER_DOMAINS } from '../../constants'
 import { CONTENT_TYPE_CONFIG, CONTENT_SOURCE_CONFIG } from '../../types/content'
 import type { ReviewQueueItem, ReviewChecklist } from '../../types/content'
+import ListCard from '@/components/core/ListCard.vue'
 
 const loading = ref(false)
 const reviewModalVisible = ref(false)
@@ -247,13 +244,7 @@ const priorityStatus: Record<string, string> = {
   low: 'default'
 }
 
-const columns = [
-  { title: '内容信息', key: 'content', width: 300 },
-  { title: '来源/作者', key: 'source', width: 150 },
-  { title: '优先级', key: 'priority', width: 100 },
-  { title: '提交时间', key: 'submitted_at', width: 150 },
-  { title: '操作', key: 'action', width: 150, fixed: 'right' }
-]
+// columns removed — now using ListCard layout
 
 const queue = ref<(ReviewQueueItem & { summary?: string })[]>([])
 
@@ -299,6 +290,12 @@ const fetchQueue = async () => {
 const handleTableChange = (pag: any) => {
   pagination.current = pag.current
   pagination.pageSize = pag.pageSize
+  fetchQueue()
+}
+
+const onPaginationChange = (page: number, pageSize: number) => {
+  pagination.current = page
+  pagination.pageSize = pageSize
   fetchQueue()
 }
 
@@ -415,6 +412,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.list-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -431,31 +434,15 @@ onMounted(() => {
   gap: 8px;
 }
 
-.content-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.content-title {
-  font-weight: 500;
-  color: #1f1f1f;
-}
-
-.content-meta {
-  display: flex;
-  gap: 4px;
-}
-
-.author-name {
-  font-size: 12px;
-  color: #666;
-  margin-top: 4px;
+.meta-divider {
+  color: #d9d9d9;
+  margin: 0 4px;
 }
 
 .wait-time {
   font-size: 12px;
   color: #999;
+  margin-left: 4px;
 }
 
 .review-modal {

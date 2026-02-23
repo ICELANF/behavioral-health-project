@@ -61,70 +61,72 @@
     </a-card>
 
     <!-- 内容列表 -->
-    <a-card :bordered="false">
-      <a-table
-        :dataSource="contentList"
-        :columns="columns"
-        :loading="tableLoading"
-        :pagination="{
-          current: pagination.current,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          showSizeChanger: true,
-          showTotal: (t: number) => `共 ${t} 条`,
-        }"
-        :row-selection="{ selectedRowKeys, onChange: onSelectChange }"
-        rowKey="id"
-        size="small"
-        @change="handleTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'content_type'">
-            <a-tag :color="typeColor(record.content_type)">{{ typeLabel(record.content_type) }}</a-tag>
+    <a-spin :spinning="tableLoading">
+      <div class="list-card-container">
+        <ListCard
+          v-for="record in contentList"
+          :key="record.id"
+        >
+          <template #title>
+            <a-checkbox
+              :checked="selectedRowKeys.includes(record.id)"
+              @change="toggleSelectItem(record.id)"
+              @click.stop
+              style="margin-right: 8px"
+            />
+            <span>{{ record.title }}</span>
           </template>
-          <template v-if="column.key === 'status'">
+          <template #subtitle>
+            <a-tag :color="typeColor(record.content_type)">{{ typeLabel(record.content_type) }}</a-tag>
+            <a-tag v-if="record.domain">{{ domainLabel(record.domain) }}</a-tag>
             <a-badge
               :status="record.status === 'published' ? 'success' : record.status === 'archived' ? 'default' : 'processing'"
               :text="statusLabel(record.status)"
             />
           </template>
-          <template v-if="column.key === 'domain'">
-            {{ domainLabel(record.domain) }}
+          <template #meta>
+            <span>浏览 {{ record.view_count ?? 0 }}</span>
+            <span class="meta-divider">|</span>
+            <span>点赞 {{ record.like_count ?? 0 }}</span>
+            <span class="meta-divider">|</span>
+            <span>{{ formatDate(record.created_at) }}</span>
           </template>
-          <template v-if="column.key === 'view_count'">
-            {{ record.view_count ?? 0 }}
+          <template #actions>
+            <a-button size="small" @click="openEditModal(record)">编辑</a-button>
+            <a-button
+              v-if="record.status === 'draft'"
+              size="small"
+              type="primary"
+              :loading="publishingId === record.id"
+              @click="handlePublish(record)"
+            >
+              发布
+            </a-button>
+            <a-popconfirm
+              title="确定删除此内容？"
+              @confirm="handleDelete(record)"
+              okText="删除"
+              cancelText="取消"
+            >
+              <a-button size="small" danger>删除</a-button>
+            </a-popconfirm>
           </template>
-          <template v-if="column.key === 'like_count'">
-            {{ record.like_count ?? 0 }}
-          </template>
-          <template v-if="column.key === 'created_at'">
-            {{ formatDate(record.created_at) }}
-          </template>
-          <template v-if="column.key === 'actions'">
-            <a-space>
-              <a-button size="small" @click="openEditModal(record)">编辑</a-button>
-              <a-button
-                v-if="record.status === 'draft'"
-                size="small"
-                type="primary"
-                :loading="publishingId === record.id"
-                @click="handlePublish(record)"
-              >
-                发布
-              </a-button>
-              <a-popconfirm
-                title="确定删除此内容？"
-                @confirm="handleDelete(record)"
-                okText="删除"
-                cancelText="取消"
-              >
-                <a-button size="small" danger>删除</a-button>
-              </a-popconfirm>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
-    </a-card>
+        </ListCard>
+      </div>
+      <div v-if="contentList.length === 0 && !tableLoading" style="text-align: center; padding: 40px; color: #999">
+        暂无内容数据
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="pagination.current"
+        v-model:pageSize="pagination.pageSize"
+        :total="pagination.total"
+        show-size-changer
+        :show-total="(t: number) => `共 ${t} 条`"
+        @change="onPaginationChange"
+      />
+    </div>
 
     <!-- 创建/编辑弹窗 -->
     <a-modal
@@ -202,6 +204,7 @@ import { message } from 'ant-design-vue'
 import type { TablePaginationConfig } from 'ant-design-vue'
 import request from '@/api/request'
 import { PlusOutlined } from '@ant-design/icons-vue'
+import ListCard from '@/components/core/ListCard.vue'
 
 // ============ 类型定义 ============
 
@@ -261,17 +264,7 @@ const pagination = reactive({
   total: 0,
 })
 
-const columns = [
-  { title: 'ID', dataIndex: 'id', key: 'id', width: 60 },
-  { title: '类型', key: 'content_type', width: 90 },
-  { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
-  { title: '领域', key: 'domain', width: 80 },
-  { title: '状态', key: 'status', width: 90 },
-  { title: '浏览', key: 'view_count', width: 70, sorter: true },
-  { title: '点赞', key: 'like_count', width: 70, sorter: true },
-  { title: '创建时间', key: 'created_at', width: 170 },
-  { title: '操作', key: 'actions', width: 200, fixed: 'right' as const },
-]
+// columns removed — now using ListCard layout
 
 const loadContent = async () => {
   tableLoading.value = true
@@ -303,6 +296,21 @@ const handleTableChange = (pag: TablePaginationConfig) => {
 
 const onSelectChange = (keys: number[]) => {
   selectedRowKeys.value = keys
+}
+
+const toggleSelectItem = (id: number) => {
+  const idx = selectedRowKeys.value.indexOf(id)
+  if (idx >= 0) {
+    selectedRowKeys.value.splice(idx, 1)
+  } else {
+    selectedRowKeys.value.push(id)
+  }
+}
+
+const onPaginationChange = (page: number, pageSize: number) => {
+  pagination.current = page
+  pagination.pageSize = pageSize
+  loadContent()
 }
 
 // ============ 创建/编辑弹窗 ============
@@ -475,6 +483,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.list-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .content-manage {
   padding: 0;
 }
@@ -484,6 +498,11 @@ onMounted(() => {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.meta-divider {
+  color: #d9d9d9;
+  margin: 0 4px;
 }
 
 :deep(.ant-page-header) {

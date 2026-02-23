@@ -24,7 +24,7 @@ from core.database import get_db
 from api.dependencies import get_current_user, require_admin
 from core.models import User
 
-router = APIRouter(prefix="/v1/admin/bindings", tags=["admin_bindings"])
+router = APIRouter(prefix="/api/v1/admin/bindings", tags=["admin_bindings"])
 
 
 # ═══════════════════════════════════════════════════════════

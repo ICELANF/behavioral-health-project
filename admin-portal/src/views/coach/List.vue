@@ -117,73 +117,55 @@
       </a-row>
     </a-card>
 
-    <!-- 教练表格 -->
-    <a-card>
-      <a-table
-        :dataSource="filteredCoaches"
-        :columns="columns"
-        :loading="loading"
-        :pagination="pagination"
-        rowKey="coach_id"
-        @change="handleTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'coach'">
-            <div class="coach-info">
-              <a-avatar :size="40" :src="record.avatar">
-                <template #icon v-if="!record.avatar">
-                  {{ record.name?.[0] || 'U' }}
-                </template>
-              </a-avatar>
-              <div class="coach-detail">
-                <div class="coach-name">{{ record.name }}</div>
-                <div class="coach-phone">{{ record.phone }}</div>
-              </div>
-            </div>
+    <!-- 教练列表 -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <ListCard
+          v-for="record in filteredCoaches"
+          :key="record.coach_id"
+          @click="viewCoach(record)"
+        >
+          <template #avatar>
+            <a-avatar :size="40" :src="record.avatar">
+              <template #icon v-if="!record.avatar">
+                {{ record.name?.[0] || 'U' }}
+              </template>
+            </a-avatar>
           </template>
-
-          <template v-else-if="column.key === 'level'">
+          <template #title>
+            <span>{{ record.name }}</span>
+          </template>
+          <template #subtitle>
+            <span style="color: #999; font-size: 12px">{{ record.phone }}</span>
+          </template>
+          <template #meta>
             <a-tag :color="levelColors[record.level]">
               {{ levelLabels[record.level] }}
             </a-tag>
-          </template>
-
-          <template v-else-if="column.key === 'specialty'">
             <template v-if="record.specialty?.length > 0">
               <a-tag v-for="s in record.specialty.slice(0, 2)" :key="s" color="blue">
                 {{ specialtyLabels[s] || s }}
               </a-tag>
-              <a-tooltip v-if="record.specialty.length > 2" :title="record.specialty.slice(2).map(s => specialtyLabels[s]).join(', ')">
+              <a-tooltip v-if="record.specialty.length > 2" :title="record.specialty.slice(2).map((s: string) => specialtyLabels[s]).join(', ')">
                 <a-tag>+{{ record.specialty.length - 2 }}</a-tag>
               </a-tooltip>
             </template>
-            <span v-else style="color: #999">-</span>
-          </template>
-
-          <template v-else-if="column.key === 'stats'">
-            <div class="stats-cell">
-              <span><UserOutlined /> {{ record.student_count }} 学员</span>
-              <span><FileTextOutlined /> {{ record.case_count }} 案例</span>
-            </div>
-          </template>
-
-          <template v-else-if="column.key === 'status'">
+            <span class="meta-divider">|</span>
+            <span><UserOutlined /> {{ record.student_count }} 学员</span>
+            <span><FileTextOutlined /> {{ record.case_count }} 案例</span>
+            <span class="meta-divider">|</span>
             <a-badge
               :status="statusBadges[record.status]"
               :text="statusLabels[record.status]"
             />
+            <span style="color: #999; font-size: 12px">{{ formatTime(record.last_active) }}</span>
           </template>
-
-          <template v-else-if="column.key === 'lastActive'">
-            <span>{{ formatTime(record.last_active) }}</span>
-          </template>
-
-          <template v-else-if="column.key === 'action'">
+          <template #actions>
             <a-space>
-              <a @click="viewCoach(record)">详情</a>
-              <a @click="editCoach(record)">编辑</a>
+              <a @click.stop="viewCoach(record)">详情</a>
+              <a @click.stop="editCoach(record)">编辑</a>
               <a-dropdown>
-                <a>更多 <DownOutlined /></a>
+                <a @click.stop>更多 <DownOutlined /></a>
                 <template #overlay>
                   <a-menu>
                     <a-menu-item @click="applyPromotion(record)">
@@ -204,9 +186,23 @@
               </a-dropdown>
             </a-space>
           </template>
-        </template>
-      </a-table>
-    </a-card>
+        </ListCard>
+      </div>
+      <div v-if="filteredCoaches.length === 0 && !loading" style="text-align: center; padding: 40px; color: #999">
+        暂无教练数据
+      </div>
+    </a-spin>
+    <div v-if="filteredCoaches.length > 0" style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="pagination.current"
+        v-model:pageSize="pagination.pageSize"
+        :total="pagination.total"
+        show-size-changer
+        show-quick-jumper
+        :show-total="(total: number) => `共 ${total} 条记录`"
+        @change="onPaginationChange"
+      />
+    </div>
 
     <!-- 添加/编辑教练弹窗 -->
     <a-modal
@@ -319,6 +315,7 @@ import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/zh-cn'
 import request from '@/api/request'
+import ListCard from '@/components/core/ListCard.vue'
 
 dayjs.extend(relativeTime)
 dayjs.locale('zh-cn')
@@ -368,16 +365,7 @@ const pagination = reactive({
   showTotal: (total: number) => `共 ${total} 条记录`
 })
 
-// 表格列
-const columns = [
-  { title: '教练信息', key: 'coach', width: 200 },
-  { title: '等级', key: 'level', width: 120 },
-  { title: '专业方向', key: 'specialty', width: 200 },
-  { title: '数据统计', key: 'stats', width: 180 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '最后活跃', key: 'lastActive', width: 120 },
-  { title: '操作', key: 'action', width: 150, fixed: 'right' }
-]
+// columns removed — now using ListCard layout
 
 // 常量映射
 const levelColors: Record<string, string> = {
@@ -429,11 +417,15 @@ const _ROLE_LEVEL: Record<string, string> = {
 }
 
 function mapBackendCoach(raw: any): Coach {
-  const levelFromProfile = (raw.level || '').replace(/\s.*/, '')  // "L2 中级" → "L2"
+  // level can be int (1,2,3) or string ("L2 中级") — normalise to "L0"–"L5"
+  const rawLevel = raw.level
+  const levelFromProfile = typeof rawLevel === 'number'
+    ? `L${rawLevel}`
+    : String(rawLevel || '').replace(/\s.*/, '')
   return {
     coach_id: String(raw.id),
     name: raw.name || raw.full_name || raw.username,
-    avatar: '',
+    avatar: raw.avatar || '',
     phone: raw.phone || '',
     email: raw.email || '',
     level: (levelFromProfile || _ROLE_LEVEL[raw.role] || 'L0') as Coach['level'],
@@ -525,6 +517,11 @@ const resetFilters = () => {
 const handleTableChange = (pag: any) => {
   pagination.current = pag.current
   pagination.pageSize = pag.pageSize
+}
+
+const onPaginationChange = (page: number, pageSize: number) => {
+  pagination.current = page
+  pagination.pageSize = pageSize
 }
 
 const formatTime = (time: string) => {
@@ -680,6 +677,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.list-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .coach-list {
   padding: 0;
 }
@@ -736,38 +739,9 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-.coach-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.coach-detail {
-  display: flex;
-  flex-direction: column;
-}
-
-.coach-name {
-  font-weight: 500;
-}
-
-.coach-phone {
-  font-size: 12px;
-  color: #999;
-}
-
-.stats-cell {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 13px;
-  color: #666;
-}
-
-.stats-cell span {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.meta-divider {
+  color: #d9d9d9;
+  margin: 0 4px;
 }
 
 .avatar-upload {

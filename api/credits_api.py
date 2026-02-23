@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from loguru import logger
 
 from core.database import get_db
-from api.dependencies import get_current_user, require_admin
+from api.dependencies import get_current_user, require_admin, require_coach_or_admin
 from core.models import User, CourseModule, UserCredit
 
 router = APIRouter(prefix="/api/v1/credits", tags=["学分管理"])
@@ -154,9 +154,9 @@ def admin_list_modules(
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
-    """管理员查看所有课程模块（含停用）"""
+    """查看所有课程模块 (教练及以上)"""
     q = db.query(CourseModule)
     if not include_inactive:
         q = q.filter(CourseModule.is_active == True)
@@ -259,9 +259,9 @@ def admin_delete_module(
 @router.get("/admin/stats")
 def admin_credit_stats(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
-    """管理员学分统计概览"""
+    """学分统计概览 (教练及以上)"""
     # 总模块数
     total_modules = db.query(CourseModule).filter(CourseModule.is_active == True).count()
 

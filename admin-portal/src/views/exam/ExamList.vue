@@ -69,87 +69,70 @@
       </a-row>
     </a-card>
 
-    <!-- 考试表格 -->
-    <a-card :bordered="false">
-      <a-table
-        :dataSource="examList"
-        :columns="columns"
-        :loading="loading"
-        :pagination="pagination"
-        rowKey="exam_id"
-        @change="handleTableChange"
-      >
-        <!-- 考试名称 -->
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'exam_name'">
-            <div class="exam-name-cell">
-              <a-tag :color="levelColors[record.level as CertificationLevel]">{{ record.level }}</a-tag>
-              <span class="exam-name">{{ record.exam_name }}</span>
-            </div>
+    <!-- 考试列表 -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <a-empty v-if="examList.length === 0 && !loading" description="暂无考试" />
+        <ListCard v-for="record in examList" :key="record.exam_id" @click="handleEdit(record)">
+          <template #title>
+            <a-tag :color="levelColors[record.level as CertificationLevel]" size="small">{{ record.level }}</a-tag>
+            <span class="exam-name" style="margin-left: 6px">{{ record.exam_name }}</span>
           </template>
-
-          <!-- 考试类型 -->
-          <template v-else-if="column.key === 'exam_type'">
-            <a-tag :color="examTypeColors[record.exam_type as ExamType]">
+          <template #subtitle>
+            <a-tag :color="examTypeColors[record.exam_type as ExamType]" size="small">
               {{ examTypeLabels[record.exam_type as ExamType] }}
             </a-tag>
-          </template>
-
-          <!-- 题目数量 -->
-          <template v-else-if="column.key === 'questions_count'">
-            {{ record.questions_count || record.question_ids?.length || 0 }} 题
-          </template>
-
-          <!-- 及格分数 -->
-          <template v-else-if="column.key === 'passing_score'">
-            {{ record.passing_score }} 分
-          </template>
-
-          <!-- 时长 -->
-          <template v-else-if="column.key === 'duration_minutes'">
-            {{ record.duration_minutes ? `${record.duration_minutes} 分钟` : '不限时' }}
-          </template>
-
-          <!-- 状态 -->
-          <template v-else-if="column.key === 'status'">
             <a-badge
               :status="statusBadges[record.status] as any"
               :text="statusLabels[record.status]"
+              style="margin-left: 8px"
             />
           </template>
-
-          <!-- 操作 -->
-          <template v-else-if="column.key === 'action'">
-            <a-space>
-              <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
-              <a-button type="link" size="small" @click="handleViewResults(record)">成绩</a-button>
-              <a-dropdown>
-                <a-button type="link" size="small">
-                  更多 <DownOutlined />
-                </a-button>
-                <template #overlay>
-                  <a-menu @click="({ key }) => handleMenuClick(key, record)">
-                    <a-menu-item v-if="record.status === 'draft'" key="publish">
-                      <CheckCircleOutlined /> 发布
-                    </a-menu-item>
-                    <a-menu-item v-if="record.status === 'published'" key="archive">
-                      <StopOutlined /> 下架
-                    </a-menu-item>
-                    <a-menu-item key="copy">
-                      <CopyOutlined /> 复制
-                    </a-menu-item>
-                    <a-menu-divider />
-                    <a-menu-item key="delete" danger>
-                      <DeleteOutlined /> 删除
-                    </a-menu-item>
-                  </a-menu>
-                </template>
-              </a-dropdown>
-            </a-space>
+          <template #meta>
+            <span>{{ record.questions_count || record.question_ids?.length || 0 }} 题</span>
+            <span>及格 {{ record.passing_score }} 分</span>
+            <span>{{ record.duration_minutes ? `${record.duration_minutes} 分钟` : '不限时' }}</span>
           </template>
-        </template>
-      </a-table>
-    </a-card>
+          <template #actions>
+            <a-button type="link" size="small" @click.stop="handleEdit(record)">编辑</a-button>
+            <a-button type="link" size="small" @click.stop="handleViewResults(record)">成绩</a-button>
+            <a-dropdown>
+              <a-button type="link" size="small" @click.stop>
+                更多 <DownOutlined />
+              </a-button>
+              <template #overlay>
+                <a-menu @click="({ key }) => handleMenuClick(key, record)">
+                  <a-menu-item v-if="record.status === 'draft'" key="publish">
+                    <CheckCircleOutlined /> 发布
+                  </a-menu-item>
+                  <a-menu-item v-if="record.status === 'published'" key="archive">
+                    <StopOutlined /> 下架
+                  </a-menu-item>
+                  <a-menu-item key="copy">
+                    <CopyOutlined /> 复制
+                  </a-menu-item>
+                  <a-menu-divider />
+                  <a-menu-item key="delete" danger>
+                    <DeleteOutlined /> 删除
+                  </a-menu-item>
+                </a-menu>
+              </template>
+            </a-dropdown>
+          </template>
+        </ListCard>
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="filters.page"
+        v-model:pageSize="filters.page_size"
+        :total="examStore.total || examStore.exams.length"
+        show-size-changer
+        show-quick-jumper
+        :show-total="(total: number) => `共 ${total} 条`"
+        @change="onPaginationChange"
+      />
+    </div>
   </div>
 </template>
 
@@ -179,6 +162,7 @@ import {
   statusLabels,
   statusBadges,
 } from '../../types/exam';
+import ListCard from '@/components/core/ListCard.vue';
 
 const router = useRouter();
 const examStore = useExamStore();
@@ -199,58 +183,16 @@ const loading = computed(() => examStore.loading);
 // 考试列表
 const examList = computed(() => examStore.exams);
 
-// 分页配置
-const pagination = computed(() => ({
-  current: filters.page,
-  pageSize: filters.page_size,
-  total: examStore.total || examStore.exams.length,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total: number) => `共 ${total} 条`,
-}));
+// pagination computed removed — now using direct a-pagination
 
-// 表格列定义
-const columns = [
-  {
-    title: '考试名称',
-    key: 'exam_name',
-    width: 280,
-  },
-  {
-    title: '类型',
-    key: 'exam_type',
-    width: 120,
-  },
-  {
-    title: '题目数',
-    key: 'questions_count',
-    width: 80,
-    align: 'center' as const,
-  },
-  {
-    title: '及格分',
-    key: 'passing_score',
-    width: 80,
-    align: 'center' as const,
-  },
-  {
-    title: '时长',
-    key: 'duration_minutes',
-    width: 100,
-    align: 'center' as const,
-  },
-  {
-    title: '状态',
-    key: 'status',
-    width: 100,
-  },
-  {
-    title: '操作',
-    key: 'action',
-    width: 180,
-    fixed: 'right' as const,
-  },
-];
+// columns removed — now using ListCard layout
+
+// 分页变化
+const onPaginationChange = (page: number, pageSize: number) => {
+  filters.page = page;
+  filters.page_size = pageSize;
+  examStore.fetchExams(filters);
+};
 
 // 搜索
 const handleSearch = () => {
@@ -386,10 +328,10 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.exam-name-cell {
+.list-card-container {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .exam-name {

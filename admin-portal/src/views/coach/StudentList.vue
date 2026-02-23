@@ -20,58 +20,45 @@
         </a-col>
       </a-row>
 
-      <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-          <tr style="border-bottom: 2px solid #f0f0f0; background: #fafafa;">
-            <th style="text-align: left; padding: 12px;">学员信息</th>
-            <th style="text-align: left; padding: 12px;">身份证号</th>
-            <th style="text-align: left; padding: 12px;">专业背景</th>
-            <th style="text-align: left; padding: 12px;">当前等级</th>
-            <th style="text-align: left; padding: 12px;">学习进度</th>
-            <th style="text-align: left; padding: 12px;">状态</th>
-            <th style="text-align: left; padding: 12px;">操作</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="student in students" :key="student.id" style="border-bottom: 1px solid #f0f0f0;">
-            <td style="padding: 12px;">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <a-avatar :size="40" :src="student.avatar">
-                  <template #icon v-if="!student.avatar">{{ student.name[0] }}</template>
-                </a-avatar>
-                <div>
-                  <div style="font-weight: 500;">{{ student.name }}</div>
-                  <div style="font-size: 12px; color: #999;">{{ student.phone }}</div>
-                </div>
-              </div>
-            </td>
-            <td style="padding: 12px;">
-              <span v-if="student.idCard">{{ maskIdCard(student.idCard) }}</span>
-              <span v-else style="color: #999;">-</span>
-            </td>
-            <td style="padding: 12px;">
-              <a-tag v-if="student.background">{{ student.background }}</a-tag>
-              <span v-else style="color: #999;">-</span>
-            </td>
-            <td style="padding: 12px;">
-              <a-tag :color="getLevelColor(student.level)">L{{ student.level }}</a-tag>
-            </td>
-            <td style="padding: 12px;">
-              <a-progress :percent="student.progress" size="small" style="width: 100px;" />
-            </td>
-            <td style="padding: 12px;">
-              <a-badge :status="student.active ? 'success' : 'default'" :text="student.active ? '活跃' : '未活跃'" />
-            </td>
-            <td style="padding: 12px;">
-              <a-space>
-                <a @click="viewStudent(student)">详情</a>
-                <a @click="editStudent(student)">编辑</a>
-                <a @click="messageStudent(student)">消息</a>
-              </a-space>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- 搜索条 -->
+      <a-input-search
+        v-model:value="searchKeyword"
+        placeholder="搜索学员姓名、手机号..."
+        allow-clear
+        style="margin-bottom: 16px"
+      />
+
+      <a-empty v-if="filteredStudents.length === 0" description="暂无学员数据" />
+
+      <div class="student-card-list">
+        <ListCard
+          v-for="student in filteredStudents"
+          :key="student.id"
+          @click="viewStudent(student)"
+        >
+          <template #avatar>
+            <a-avatar :size="44" :src="student.avatar">
+              {{ student.name?.[0] }}
+            </a-avatar>
+          </template>
+          <template #title>
+            <span>{{ student.name }}</span>
+            <a-tag :color="getLevelColor(student.level)" style="margin-left: 8px" size="small">L{{ student.level }}</a-tag>
+            <a-badge :status="student.active ? 'success' : 'default'" style="margin-left: 4px" />
+          </template>
+          <template #subtitle>{{ student.phone || '-' }}</template>
+          <template #meta>
+            <a-tag v-if="student.background" size="small">{{ student.background }}</a-tag>
+            <span v-if="student.idCard" style="font-size: 12px; color: #999">{{ maskIdCard(student.idCard) }}</span>
+            <a-progress :percent="student.progress" size="small" style="width: 80px; display: inline-flex" />
+          </template>
+          <template #actions>
+            <a-button size="small" type="link" @click.stop="viewStudent(student)">详情</a-button>
+            <a-button size="small" type="link" @click.stop="editStudent(student)">编辑</a-button>
+            <a-button size="small" type="link" @click.stop="messageStudent(student)">消息</a-button>
+          </template>
+        </ListCard>
+      </div>
     </a-card>
 
     <!-- 添加/编辑学员弹窗 -->
@@ -282,6 +269,7 @@ import { message } from 'ant-design-vue'
 import { UserOutlined, UploadOutlined, PlusOutlined, FileOutlined } from '@ant-design/icons-vue'
 import request from '../../api/request'
 import type { UploadFile } from 'ant-design-vue'
+import ListCard from '@/components/core/ListCard.vue'
 
 interface CertFile {
   uid: string
@@ -312,6 +300,17 @@ interface Student {
 }
 
 const students = ref<Student[]>([])
+const searchKeyword = ref('')
+
+const filteredStudents = computed(() => {
+  if (!searchKeyword.value.trim()) return students.value
+  const kw = searchKeyword.value.trim().toLowerCase()
+  return students.value.filter(s =>
+    (s.name || '').toLowerCase().includes(kw) ||
+    (s.phone || '').toLowerCase().includes(kw) ||
+    (s.background || '').toLowerCase().includes(kw)
+  )
+})
 
 const loadStudents = async () => {
   try {
@@ -591,14 +590,17 @@ const getLevelColor = (level: number) => {
   border-radius: 8px;
 }
 
+.student-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 @media (max-width: 640px) {
   .student-list { padding: 8px !important; }
   .student-list :deep(.ant-card) { padding: 8px; }
   .ant-btn { min-height: 44px; }
   h2 { font-size: 16px; }
-  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-  thead th { white-space: nowrap; padding: 8px !important; font-size: 12px; }
-  tbody td { padding: 8px !important; font-size: 13px; }
   .ant-modal { max-width: 95vw !important; }
 }
 </style>

@@ -14,12 +14,18 @@
         <span class="greeting-time">{{ greetingText }}</span>
         <h1 class="user-name">{{ userName }}</h1>
       </div>
-      <div class="streak-badge" v-if="streakDays > 0">
-        <span class="streak-fire">🔥</span>
-        <span class="streak-num">{{ streakDays }}</span>
-        <span class="streak-label">天</span>
+      <div class="header-right">
+        <div class="streak-badge" v-if="streakDays > 0">
+          <span class="streak-fire">🔥</span>
+          <span class="streak-num">{{ streakDays }}</span>
+          <span class="streak-label">天</span>
+        </div>
+        <NotificationBell />
       </div>
     </div>
+
+    <!-- ═══ 全局搜索 ═══ -->
+    <GlobalSearch />
 
     <!-- ═══ 今日进度环 ═══ -->
     <div class="progress-hero">
@@ -130,6 +136,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/index'
 import { useUserStore } from '@/stores/user'
+import NotificationBell from '@/components/common/NotificationBell.vue'
+import GlobalSearch from '@/components/common/GlobalSearch.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -295,6 +303,7 @@ onMounted(async () => {
 }
 .greeting-time { font-size: 13px; color: #9ca3af; }
 .user-name { font-size: 22px; font-weight: 800; color: #111827; margin: 2px 0 0; }
+.header-right { display: flex; align-items: center; gap: 8px; }
 .streak-badge {
   display: flex; align-items: baseline; gap: 2px;
   background: #fef3c7; border-radius: 20px; padding: 6px 12px;

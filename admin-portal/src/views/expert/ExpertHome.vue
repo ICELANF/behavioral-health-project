@@ -376,10 +376,11 @@ async function loadExpertData() {
   ])
 
   if (coachesResult.status === 'fulfilled') {
-    const coaches = coachesResult.value.data?.items || coachesResult.value.data || []
+    const raw = coachesResult.value.data
+    const coaches = raw?.items || raw?.coaches || (Array.isArray(raw) ? raw : [])
     supervisedCoaches.value = (Array.isArray(coaches) ? coaches : []).slice(0, 10).map((c: any) => ({
-      id: c.id, name: c.full_name || c.username || '', avatar: c.avatar || '', level: `L${c.level || 0}`,
-      studentCount: c.student_count ?? 0,
+      id: c.id, name: c.full_name || c.name || c.username || '', avatar: c.avatar || '', level: `L${c.level ?? 0}`,
+      studentCount: c.student_count ?? c.currentLoad ?? 0,
       caseCount: c.case_count ?? 0,
     }))
     overviewStats.coachesSupervised = supervisedCoaches.value.length

@@ -103,13 +103,27 @@
           </div>
         </div>
 
+        <!-- 微行动: 干预类别在AI生成之前（切换类别自动重新生成） -->
+        <div v-if="activeToolKey === 'micro_action'" class="drawer-section">
+          <div class="drawer-label">干预类别 <span class="label-hint">（切换后AI自动重新生成）</span></div>
+          <a-select v-model:value="microDomain" style="width: 100%" @change="onDomainChange">
+            <a-select-option value="nutrition">营养管理</a-select-option>
+            <a-select-option value="exercise">运动管理</a-select-option>
+            <a-select-option value="sleep">睡眠管理</a-select-option>
+            <a-select-option value="emotion">情绪管理</a-select-option>
+            <a-select-option value="stress">压力管理</a-select-option>
+            <a-select-option value="cognitive">认知管理</a-select-option>
+            <a-select-option value="social">社交管理</a-select-option>
+          </a-select>
+        </div>
+
         <!-- AI 生成中 -->
         <div v-if="suggestionsLoading" class="drawer-section" style="text-align: center; padding: 24px 0">
           <a-spin tip="AI正在生成推送内容..." />
         </div>
 
         <template v-if="!suggestionsLoading">
-          <!-- 工具特定字段 (测评/微行动在内容编辑前) -->
+          <!-- 工具特定字段 (提醒/测评在内容编辑前) -->
           <div v-if="activeToolKey === 'reminder'" class="drawer-section">
             <div class="drawer-label">提醒设置</div>
             <a-input v-model:value="reminderTitle" placeholder="提醒标题" style="margin-bottom: 8px" />
@@ -129,18 +143,10 @@
             </a-select>
           </div>
 
+          <!-- 微行动: 任务设置（标题/频次/天数）在内容编辑区之前 -->
           <div v-if="activeToolKey === 'micro_action'" class="drawer-section">
             <div class="drawer-label">微行动设置</div>
             <a-input v-model:value="microTitle" placeholder="任务标题" style="margin-bottom: 8px" />
-            <a-select v-model:value="microDomain" placeholder="领域" style="width: 100%; margin-bottom: 8px">
-              <a-select-option value="nutrition">营养管理</a-select-option>
-              <a-select-option value="exercise">运动管理</a-select-option>
-              <a-select-option value="sleep">睡眠管理</a-select-option>
-              <a-select-option value="emotion">情绪管理</a-select-option>
-              <a-select-option value="stress">压力管理</a-select-option>
-              <a-select-option value="cognitive">认知管理</a-select-option>
-              <a-select-option value="social">社交管理</a-select-option>
-            </a-select>
             <a-row :gutter="8">
               <a-col :span="12">
                 <a-select v-model:value="microFrequency" style="width: 100%">
@@ -367,6 +373,12 @@ const onStudentChange = () => {
   }
 }
 
+const onDomainChange = () => {
+  if (selectedStudentId.value) {
+    loadAndAutoFill()
+  }
+}
+
 const loadAndAutoFill = async () => {
   if (!selectedStudentId.value || !activeToolKey.value) return
 
@@ -384,7 +396,7 @@ const loadAndAutoFill = async () => {
     } else if (key === 'assessment') {
       url = `/v1/coach/assessment/ai-suggestions/${selectedStudentId.value}`
     } else if (key === 'micro_action') {
-      url = `/v1/coach/micro-actions/ai-suggestions/${selectedStudentId.value}`
+      url = `/v1/coach/micro-actions/ai-suggestions/${selectedStudentId.value}?domain=${microDomain.value}`
     }
     if (!url) return
 
@@ -431,7 +443,7 @@ const selectSuggestion = (idx: number) => {
   } else if (key === 'micro_action') {
     microTitle.value = sug.title || ''
     editContent.value = sug.description || ''
-    microDomain.value = sug.domain || 'exercise'
+    // domain 不覆盖 — 由促进师在干预类别选择器中控制
     microFrequency.value = sug.frequency || '每天'
     microDays.value = sug.duration_days || 7
   }

@@ -35,7 +35,7 @@ from core.models import (
     PointTransaction, AssessmentAssignment,
 )
 from core.auth import hash_password
-from api.dependencies import get_current_user, require_admin
+from api.dependencies import get_current_user, require_admin, require_coach_or_admin
 
 router = APIRouter(prefix="/api/v1/admin", tags=["Admin - User Management"])
 
@@ -80,10 +80,16 @@ def list_users(
     search: Optional[str] = None,
     role: Optional[str] = None,
     is_active: Optional[bool] = None,
+    risk: Optional[str] = Query(None, description="风险等级过滤(学员)"),
+    activity: Optional[str] = Query(None, description="活跃度过滤(学员)"),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    """用户列表 - 支持分页、搜索、角色和状态过滤"""
+    """用户列表 - 支持分页、搜索、角色/状态/风险/活跃度过滤"""
+    from core.student_classification_service import (
+        classify_students_batch, classification_to_dict,
+    )
+
     query = db.query(User)
 
     if search:
@@ -105,10 +111,37 @@ def list_users(
     if is_active is not None:
         query = query.filter(User.is_active == is_active)
 
-    total = query.count()
-    users = query.order_by(User.created_at.desc()).offset(
-        (page - 1) * page_size
-    ).limit(page_size).all()
+    _student_roles = [UserRole.OBSERVER, UserRole.GROWER, UserRole.SHARER]
+    need_classification = bool(risk or activity)
+
+    if need_classification:
+        # Classification filters require in-memory post-filtering on student-role users
+        query = query.filter(User.role.in_(_student_roles))
+        all_users = query.order_by(User.created_at.desc()).all()
+
+        student_ids = [u.id for u in all_users]
+        classifications = classify_students_batch(db, student_ids) if student_ids else {}
+
+        if risk:
+            vals = set(risk.split(","))
+            all_users = [u for u in all_users if classifications.get(u.id) and classifications[u.id].risk in vals]
+        if activity:
+            vals = set(activity.split(","))
+            all_users = [u for u in all_users if classifications.get(u.id) and classifications[u.id].activity in vals]
+
+        total = len(all_users)
+        start = (page - 1) * page_size
+        users = all_users[start:start + page_size]
+    else:
+        # Normal path: DB-level pagination (no full-table load)
+        total = query.count()
+        users = query.order_by(User.created_at.desc()).offset(
+            (page - 1) * page_size
+        ).limit(page_size).all()
+
+        # Classify student-role users in this page only
+        student_ids = [u.id for u in users if u.role in _student_roles]
+        classifications = classify_students_batch(db, student_ids) if student_ids else {}
 
     return {
         "users": [
@@ -122,6 +155,7 @@ def list_users(
                 "is_active": u.is_active,
                 "created_at": u.created_at.isoformat() if u.created_at else None,
                 "last_login_at": u.last_login_at.isoformat() if getattr(u, 'last_login_at', None) else None,
+                "classification": classification_to_dict(classifications[u.id]) if u.id in classifications else None,
             }
             for u in users
         ],
@@ -495,36 +529,58 @@ def get_stats(
 
 @router.get("/coaches")
 def list_coaches(
+    role: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
-    """教练列表(含负载)"""
-    coaches = db.query(User).filter(
-        User.role.in_([UserRole.COACH, UserRole.SUPERVISOR]),
+    """教练/成员列表(含负载)"""
+    if role:
+        try:
+            target_roles = [UserRole(role)]
+        except ValueError:
+            target_roles = [UserRole.COACH, UserRole.SUPERVISOR]
+    else:
+        target_roles = [
+            UserRole.OBSERVER, UserRole.GROWER, UserRole.SHARER,
+            UserRole.COACH, UserRole.SUPERVISOR, UserRole.PROMOTER,
+        ]
+
+    members = db.query(User).filter(
+        User.role.in_(target_roles),
         User.is_active == True,
-    ).all()
+    ).order_by(User.created_at.desc()).limit(50).all()
 
     all_growers = db.query(User).filter(
         User.role == UserRole.GROWER, User.is_active == True
     ).all()
 
+    role_level_map = {
+        UserRole.OBSERVER: 0, UserRole.GROWER: 1, UserRole.SHARER: 2,
+        UserRole.COACH: 3, UserRole.PROMOTER: 4, UserRole.SUPERVISOR: 4,
+        UserRole.MASTER: 5, UserRole.ADMIN: 99,
+    }
+
     result = []
-    for coach in coaches:
-        assigned = [g for g in all_growers if (g.profile or {}).get('coach_id') == coach.id]
-        profile = coach.profile or {}
+    for m in members:
+        assigned = [g for g in all_growers if (g.profile or {}).get('coach_id') == m.id]
+        profile = m.profile or {}
+        lv = role_level_map.get(m.role, 0)
         result.append({
-            "id": coach.id,
-            "name": coach.full_name or coach.username,
-            "username": coach.username,
-            "role": coach.role.value,
-            "level": profile.get("level", "L2 中级"),
+            "id": m.id,
+            "name": m.full_name or m.username,
+            "full_name": m.full_name or m.username,
+            "username": m.username,
+            "role": m.role.value if m.role else "observer",
+            "level": lv,
             "currentLoad": len(assigned),
             "maxLoad": profile.get("max_load", 20),
+            "student_count": len(assigned),
+            "case_count": profile.get("case_count", 0),
             "domains": profile.get("specializations", []),
-            "color": "#722ed1" if coach.role == UserRole.SUPERVISOR else "#1890ff",
+            "avatar": getattr(m, "avatar_url", None) or "",
         })
 
-    return {"coaches": result}
+    return {"items": result, "coaches": result, "total": len(result)}
 
 
 @router.get("/distribution/pending")

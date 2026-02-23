@@ -13,32 +13,32 @@
     </a-card>
 
     <!-- 申请列表 -->
-    <a-table
-      :columns="columns"
-      :data-source="applications"
-      :loading="loading"
-      row-key="id"
-      size="small"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'transition'">
-          {{ record.from_role }} → {{ record.to_role }}
-        </template>
-        <template v-if="column.key === 'status'">
-          <a-tag :color="statusColor(record.status)">{{ statusLabel(record.status) }}</a-tag>
-        </template>
-        <template v-if="column.key === 'action'">
-          <a-space v-if="record.status === 'pending'">
-            <a @click="openDetail(record)">查看详情</a>
-            <a-popconfirm title="确认通过?" @confirm="handleReview(record.id, 'approved')">
-              <a style="color:green">通过</a>
-            </a-popconfirm>
-            <a style="color:red" @click="openReject(record)">拒绝</a>
-          </a-space>
-          <a v-else @click="openDetail(record)">查看详情</a>
-        </template>
-      </template>
-    </a-table>
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <ListCard v-for="record in applications" :key="record.id">
+          <template #title>
+            <span>{{ record.username }}</span>
+            <a-tag :color="statusColor(record.status)" style="margin-left: 8px">{{ statusLabel(record.status) }}</a-tag>
+          </template>
+          <template #subtitle>
+            晋级路径: {{ record.from_role }} → {{ record.to_role }}
+          </template>
+          <template #meta>
+            <span>申请时间: {{ record.created_at }}</span>
+          </template>
+          <template #actions>
+            <a-space v-if="record.status === 'pending'">
+              <a-button type="link" size="small" @click="openDetail(record)">查看详情</a-button>
+              <a-popconfirm title="确认通过?" @confirm="handleReview(record.id, 'approved')">
+                <a-button type="link" size="small" style="color:green">通过</a-button>
+              </a-popconfirm>
+              <a-button type="link" size="small" danger @click="openReject(record)">拒绝</a-button>
+            </a-space>
+            <a-button v-else type="link" size="small" @click="openDetail(record)">查看详情</a-button>
+          </template>
+        </ListCard>
+      </div>
+    </a-spin>
 
     <!-- 详情抽屉 -->
     <a-drawer v-model:open="drawerVisible" title="晋级申请详情" width="520">
@@ -80,6 +80,7 @@
 import { ref, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { promotionApi } from '@/api/credit-promotion'
+import ListCard from '@/components/core/ListCard.vue'
 
 const loading = ref(false)
 const applications = ref<any[]>([])
@@ -90,13 +91,7 @@ const selectedApp = ref<any>(null)
 const rejectComment = ref('')
 const rejectingId = ref('')
 
-const columns = [
-  { title: '申请人', dataIndex: 'username', key: 'username' },
-  { title: '晋级路径', key: 'transition' },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '申请时间', dataIndex: 'created_at', key: 'created_at', width: 180 },
-  { title: '操作', key: 'action', width: 200 },
-]
+// columns removed — replaced by ListCard layout
 
 function statusColor(s: string) {
   return s === 'pending' ? 'orange' : s === 'approved' ? 'green' : 'red'
@@ -159,6 +154,7 @@ onMounted(loadApplications)
 <style scoped>
 .promotion-review { padding: 16px; }
 .mb-4 { margin-bottom: 16px; }
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 .snapshot {
   background: #f5f5f5;
   padding: 8px 12px;

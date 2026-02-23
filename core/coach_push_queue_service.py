@@ -78,7 +78,7 @@ def create_and_deliver(
         db=db, coach_id=coach_id, student_id=student_id,
         source_type=source_type, source_id=source_id,
         title=title, content=content, content_extra=content_extra,
-        suggested_time=suggested_time, priority=priority,
+        suggested_time=scheduled_time, priority=priority,
     )
 
     now = datetime.utcnow()

@@ -231,7 +231,7 @@ onMounted(async () => {
   await loadCourseOptions()
   if (isEdit.value) {
     try {
-      const { data } = await request.get(`/v1/content-manage/${route.params.id}`)
+      const { data } = await request.get(`/v1/content-manage/detail/${route.params.id}`)
       if (data) {
         formState.title = data.title || ''
         formState.description = data.body || ''
@@ -239,6 +239,9 @@ onMounted(async () => {
         formState.category = data.domain || 'knowledge'
         formState.tags = data.tags || []
         formState.status = data.status || 'draft'
+        if (data.cover_url) {
+          coverFileList.value = [{ uid: '-1', name: 'cover', status: 'done', url: data.cover_url }]
+        }
       }
     } catch (e) {
       console.error('Load course failed:', e)
@@ -281,12 +284,14 @@ const handleCoverPreview = (file: any) => {
 const handleSubmit = async () => {
   submitting.value = true
   try {
+    const coverUrl = coverFileList.value[0]?.url || coverFileList.value[0]?.response?.url || undefined
     const payload = {
       content_type: 'course',
       title: formState.title,
       body: formState.description,
       domain: formState.category,
       level: formState.level,
+      cover_url: coverUrl,
     }
     if (isEdit.value) {
       await request.put(`/v1/content-manage/${route.params.id}`, payload)

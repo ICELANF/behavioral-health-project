@@ -15,58 +15,59 @@
             <a-select-option value="tcm">中医</a-select-option>
           </a-select>
         </div>
-        <a-table
-          :dataSource="marketplaceList"
-          :columns="marketplaceColumns"
-          :loading="marketplaceLoading"
-          :pagination="marketplacePagination"
-          @change="handleMarketplaceTableChange"
-          rowKey="id"
-          size="middle"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'tags'">
-              <a-tag v-for="t in (record.tags || [])" :key="t" size="small">{{ t }}</a-tag>
-            </template>
-            <template v-if="column.key === 'status'">
-              <a-tag :color="statusColor(record.status)">{{ statusLabel(record.status) }}</a-tag>
-            </template>
-            <template v-if="column.key === 'install_action'">
-              <a-popconfirm
-                v-if="myTenantId && record.status === 'published'"
-                :title="`安装 '${record.title}' 到我的工作室?`"
-                @confirm="handleInstallTemplate(record.id)"
-              >
-                <a-button type="link" size="small" :loading="installingId === record.id">安装</a-button>
-              </a-popconfirm>
-              <span v-else-if="!myTenantId" style="color: #999; font-size: 12px">无租户</span>
-            </template>
-          </template>
-        </a-table>
+        <a-spin :spinning="marketplaceLoading">
+          <div class="list-card-container">
+            <a-empty v-if="marketplaceList.length === 0 && !marketplaceLoading" description="暂无模板" />
+            <ListCard v-for="record in marketplaceList" :key="record.id">
+              <template #title>{{ record.title }}</template>
+              <template #subtitle>
+                <a-tag size="small">{{ record.category }}</a-tag>
+                <a-tag :color="statusColor(record.status)" size="small">{{ statusLabel(record.status) }}</a-tag>
+                <span style="color: #999; font-size: 12px">安装 {{ record.install_count }} 次</span>
+              </template>
+              <template #meta>
+                <a-tag v-for="t in (record.tags || []).slice(0,4)" :key="t" size="small">{{ t }}</a-tag>
+                <span style="color: #999; font-size: 12px">{{ record.created_at }}</span>
+              </template>
+              <template #actions>
+                <a-popconfirm v-if="myTenantId && record.status === 'published'" :title="`安装 '${record.title}'?`" @confirm="handleInstallTemplate(record.id)">
+                  <a-button type="link" size="small" :loading="installingId === record.id">安装</a-button>
+                </a-popconfirm>
+                <span v-else-if="!myTenantId" style="color: #999; font-size: 12px">无租户</span>
+              </template>
+            </ListCard>
+          </div>
+        </a-spin>
+        <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+          <a-pagination v-model:current="marketplacePagination.current" :page-size="marketplacePagination.pageSize" :total="marketplacePagination.total" @change="() => loadMarketplace()" />
+        </div>
       </a-tab-pane>
 
       <!-- 待审核 -->
       <a-tab-pane key="pending" tab="待审核" v-if="isAdmin">
-        <a-table
-          :dataSource="pendingList"
-          :columns="pendingColumns"
-          :loading="pendingLoading"
-          rowKey="id"
-          size="middle"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'action'">
-              <a-space>
+        <a-spin :spinning="pendingLoading">
+          <div class="list-card-container">
+            <a-empty v-if="pendingList.length === 0 && !pendingLoading" description="暂无待审核" />
+            <ListCard v-for="record in pendingList" :key="record.id">
+              <template #title>
+                <span>{{ record.title }}</span>
+                <a-tag size="small" style="margin-left: 8px">{{ record.category }}</a-tag>
+              </template>
+              <template #subtitle>
+                <span style="color: #666; font-size: 12px">租户: {{ record.tenant_id }}</span>
+                <span style="color: #999; font-size: 12px; margin-left: 8px">{{ record.created_at }}</span>
+              </template>
+              <template #actions>
                 <a-popconfirm title="确认通过?" @confirm="handleApproveListing(record.id)">
                   <a-button type="link" size="small" style="color: #52c41a">通过</a-button>
                 </a-popconfirm>
                 <a-popconfirm title="确认拒绝?" @confirm="handleRejectListing(record.id)">
                   <a-button type="link" size="small" danger>拒绝</a-button>
                 </a-popconfirm>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
+              </template>
+            </ListCard>
+          </div>
+        </a-spin>
       </a-tab-pane>
 
       <!-- 组合编排 -->
@@ -74,24 +75,26 @@
         <div style="margin-bottom: 16px">
           <a-button type="primary" @click="showCompositionCreate = true">创建组合</a-button>
         </div>
-        <a-table
-          :dataSource="compositionList"
-          :columns="compositionColumns"
-          :loading="compositionLoading"
-          rowKey="id"
-          size="middle"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'pipeline'">
-              <a-tag v-for="step in (record.pipeline || [])" :key="step.agent_id" color="blue">
-                {{ step.order }}. {{ step.agent_id }}
-              </a-tag>
-            </template>
-            <template v-if="column.key === 'is_enabled'">
-              <a-tag :color="record.is_enabled ? 'green' : 'default'">{{ record.is_enabled ? '启用' : '停用' }}</a-tag>
-            </template>
-          </template>
-        </a-table>
+        <a-spin :spinning="compositionLoading">
+          <div class="list-card-container">
+            <a-empty v-if="compositionList.length === 0 && !compositionLoading" description="暂无组合" />
+            <ListCard v-for="record in compositionList" :key="record.id">
+              <template #title>
+                <span>{{ record.name }}</span>
+                <a-tag :color="record.is_enabled ? 'green' : 'default'" size="small" style="margin-left: 8px">{{ record.is_enabled ? '启用' : '停用' }}</a-tag>
+              </template>
+              <template #subtitle>
+                <span style="color: #666">{{ record.description }}</span>
+                <span style="color: #999; font-size: 12px; margin-left: 8px">策略: {{ record.merge_strategy }}</span>
+              </template>
+              <template #meta>
+                <a-tag v-for="step in (record.pipeline || [])" :key="step.agent_id" color="blue" size="small">
+                  {{ step.order }}. {{ step.agent_id }}
+                </a-tag>
+              </template>
+            </ListCard>
+          </div>
+        </a-spin>
       </a-tab-pane>
 
       <!-- 成长积分 -->
@@ -140,6 +143,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import request from '../../api/request'
+import ListCard from '@/components/core/ListCard.vue'
 
 const activeTab = ref('marketplace')
 const isAdmin = computed(() => {
@@ -177,34 +181,9 @@ const pointsConfig = ref<any[]>([])
 // 我的租户
 const myTenantId = ref('')
 
-const marketplaceColumns = [
-  { title: 'ID', dataIndex: 'id', width: 50 },
-  { title: '标题', dataIndex: 'title', ellipsis: true },
-  { title: '分类', dataIndex: 'category', width: 80 },
-  { title: '标签', key: 'tags', width: 200 },
-  { title: '安装数', dataIndex: 'install_count', width: 70 },
-  { title: '状态', key: 'status', width: 80 },
-  { title: '发布时间', dataIndex: 'created_at', width: 150 },
-  { title: '操作', key: 'install_action', width: 100 },
-]
+// marketplaceColumns removed — using ListCard layout
 
-const pendingColumns = [
-  { title: 'ID', dataIndex: 'id', width: 50 },
-  { title: '标题', dataIndex: 'title', ellipsis: true },
-  { title: '租户', dataIndex: 'tenant_id', width: 140 },
-  { title: '分类', dataIndex: 'category', width: 80 },
-  { title: '时间', dataIndex: 'created_at', width: 150 },
-  { title: '操作', key: 'action', width: 130 },
-]
-
-const compositionColumns = [
-  { title: 'ID', dataIndex: 'id', width: 50 },
-  { title: '名称', dataIndex: 'name', width: 140 },
-  { title: '描述', dataIndex: 'description', ellipsis: true },
-  { title: '流水线', key: 'pipeline', width: 300 },
-  { title: '策略', dataIndex: 'merge_strategy', width: 120 },
-  { title: '状态', key: 'is_enabled', width: 70 },
-]
+// pendingColumns + compositionColumns removed — using ListCard layout
 
 const configColumns = [
   { title: '事件类型', dataIndex: 'event_type' },
@@ -335,10 +314,7 @@ function handleTabChange(key: string) {
   else if (key === 'growth') loadGrowth()
 }
 
-function handleMarketplaceTableChange(p: any) {
-  marketplacePagination.current = p.current
-  loadMarketplace()
-}
+// handleMarketplaceTableChange removed — standalone a-pagination handles page changes
 
 onMounted(() => {
   loadMarketplace()
@@ -348,4 +324,5 @@ onMounted(() => {
 
 <style scoped>
 .agent-marketplace { padding: 0; }
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 </style>

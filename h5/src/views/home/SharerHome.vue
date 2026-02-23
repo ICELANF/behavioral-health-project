@@ -23,8 +23,12 @@
           <span class="streak-num">{{ streakDays }}</span>
           <span class="streak-label">天</span>
         </div>
+        <NotificationBell />
       </div>
     </div>
+
+    <!-- ═══ 全局搜索 ═══ -->
+    <GlobalSearch />
 
     <!-- ═══ 今日进度环 (复用Grower) ═══ -->
     <div class="progress-hero">
@@ -194,6 +198,8 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/index'
 import { useUserStore } from '@/stores/user'
+import NotificationBell from '@/components/common/NotificationBell.vue'
+import GlobalSearch from '@/components/common/GlobalSearch.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

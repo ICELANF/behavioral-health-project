@@ -36,29 +36,42 @@
       </a-row>
     </a-card>
 
-    <!-- 表格 -->
-    <a-table
-      :columns="columns"
-      :data-source="modules"
-      :loading="loading"
-      :pagination="{ current: page, pageSize, total, onChange: onPageChange }"
-      row-key="id"
-      size="small"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'is_active'">
-          <a-tag :color="record.is_active ? 'green' : 'red'">{{ record.is_active ? '启用' : '停用' }}</a-tag>
-        </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="openEdit(record)">编辑</a>
-            <a-popconfirm title="确认停用?" @confirm="handleDelete(record.id)">
-              <a style="color:red" v-if="record.is_active">停用</a>
+    <!-- 列表 -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <a-empty v-if="modules.length === 0 && !loading" description="暂无课程模块" />
+        <ListCard v-for="m in modules" :key="m.id">
+          <template #title>
+            <span style="font-family: monospace; color: #1890ff">{{ m.code }}</span>
+            <span style="margin-left: 8px">{{ m.title }}</span>
+          </template>
+          <template #subtitle>{{ m.description || '暂无描述' }}</template>
+          <template #meta>
+            <a-tag color="blue" size="small">{{ m.module_type }}</a-tag>
+            <a-tag v-if="m.tier" size="small">{{ m.tier }}</a-tag>
+            <a-tag v-if="m.target_role" color="purple" size="small">{{ m.target_role }}</a-tag>
+            <span>{{ m.credit_value }} 学分</span>
+            <a-tag :color="m.is_active ? 'green' : 'red'" size="small">{{ m.is_active ? '启用' : '停用' }}</a-tag>
+          </template>
+          <template #actions>
+            <a-button type="link" size="small" @click="openEdit(m)">编辑</a-button>
+            <a-popconfirm v-if="m.is_active" title="确认停用?" @confirm="handleDelete(m.id)">
+              <a-button type="link" size="small" danger>停用</a-button>
             </a-popconfirm>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+          </template>
+        </ListCard>
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="page"
+        :page-size="pageSize"
+        :total="total"
+        show-size-changer
+        :show-total="(t: number) => `共 ${t} 条`"
+        @change="onPageChange"
+      />
+    </div>
 
     <!-- 创建/编辑弹窗 -->
     <a-modal
@@ -148,6 +161,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { creditApi } from '@/api/credit-promotion'
+import ListCard from '@/components/core/ListCard.vue'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -179,16 +193,7 @@ const form = reactive({
   sort_order: 0,
 })
 
-const columns = [
-  { title: '编码', dataIndex: 'code', key: 'code', width: 120 },
-  { title: '名称', dataIndex: 'title', key: 'title' },
-  { title: '类型', dataIndex: 'module_type', key: 'module_type', width: 120 },
-  { title: '层级', dataIndex: 'tier', key: 'tier', width: 120 },
-  { title: '角色', dataIndex: 'target_role', key: 'target_role', width: 100 },
-  { title: '学分', dataIndex: 'credit_value', key: 'credit_value', width: 70 },
-  { title: '状态', key: 'is_active', width: 80 },
-  { title: '操作', key: 'action', width: 120 },
-]
+// columns removed — now using ListCard layout
 
 async function loadModules() {
   loading.value = true
@@ -282,4 +287,5 @@ onMounted(loadModules)
 <style scoped>
 .module-manage { padding: 16px; }
 .mb-4 { margin-bottom: 16px; }
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 </style>

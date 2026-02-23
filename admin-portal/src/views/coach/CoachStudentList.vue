@@ -4,8 +4,29 @@
       <a-button type="text" @click="$router.push('/coach-portal')">
         <LeftOutlined /> 返回工作台
       </a-button>
-      <h2>待跟进学员 ({{ students.length }})</h2>
+      <h2>待跟进学员 ({{ filteredStudents.length }})</h2>
     </div>
+
+    <!-- 搜索条 -->
+    <a-input-search
+      v-model:value="keyword"
+      :placeholder="searchScope.placeholder.value"
+      allow-clear
+      style="margin-bottom: 12px"
+      @search="() => {}"
+    />
+
+    <!-- 紧凑分类过滤 (预设 + 风险 + 活跃度) -->
+    <ClassificationFilterBar
+      :filters="clsFilters.activeFilters.value"
+      :active-preset="clsFilters.activePreset.value"
+      :sort-by="clsFilters.filters.sort_by"
+      :visible-dimensions="['risk', 'activity']"
+      @preset="onPreset"
+      @filter="onFilter"
+      @sort="onSort"
+      @clear="onClear"
+    />
 
     <div v-if="loading" style="text-align:center;padding:60px 0">
       <a-spin size="large" tip="加载学员数据..." />
@@ -13,69 +34,82 @@
 
     <a-alert v-else-if="error" type="error" :message="error" show-icon style="margin-bottom: 16px" />
 
-    <a-empty v-else-if="students.length === 0" description="暂无待跟进学员" />
+    <a-empty v-else-if="filteredStudents.length === 0" description="暂无待跟进学员" />
 
     <div v-else class="list-container">
-      <div
-        v-for="student in students"
+      <ListCard
+        v-for="student in filteredStudents"
         :key="student.id"
-        class="student-card"
         @click="openDetail(student)"
       >
-        <div class="student-avatar">
-          <a-avatar :size="48" :src="student.avatar">
-            {{ student.name?.charAt(0) }}
-          </a-avatar>
-          <span class="stage-badge" :class="student.stage">
-            {{ stageLabel(student.stage) }}
+        <template #avatar>
+          <div class="avatar-wrap">
+            <a-avatar :size="48" :src="student.avatar">
+              {{ student.name?.charAt(0) }}
+            </a-avatar>
+            <span class="stage-badge" :class="student.stage">
+              {{ stageLabel(student.stage) }}
+            </span>
+          </div>
+        </template>
+        <template #title>{{ student.name }}</template>
+        <template #subtitle>{{ student.condition }}</template>
+        <template #meta>
+          <span class="meta-item">
+            <ClockCircleOutlined /> {{ student.lastContact }}
           </span>
-        </div>
-        <div class="student-info">
-          <div class="student-name">{{ student.name }}</div>
-          <div class="student-condition">{{ student.condition }}</div>
-          <div class="student-meta">
-            <span class="meta-item">
-              <ClockCircleOutlined /> {{ student.lastContact }}
-            </span>
-            <span class="meta-item" v-if="student.microAction7d">
-              微行动 {{ student.microAction7d.completed }}/{{ student.microAction7d.total }}
-            </span>
-            <a-tag v-if="student.priority === 'high'" color="red" size="small">紧急</a-tag>
-            <a-tag v-else-if="student.priority === 'medium'" color="orange" size="small">重要</a-tag>
-          </div>
-          <div class="student-health" v-if="student.healthData">
-            <a-tag v-if="student.healthData.fastingGlucose" size="small">
-              空腹 {{ student.healthData.fastingGlucose }} mmol/L
-            </a-tag>
-            <a-tag v-if="student.healthData.exerciseMinutes" size="small" color="green">
-              运动 {{ student.healthData.exerciseMinutes }} 分钟
-            </a-tag>
-          </div>
-        </div>
-        <div class="student-actions">
+          <a-tag v-if="student.classification" :color="getTagColor('risk', student.classification.risk)" size="small">
+            {{ getValueLabel('risk', student.classification.risk) }}
+          </a-tag>
+          <a-tag v-if="student.classification" :color="getTagColor('activity', student.classification.activity)" size="small">
+            {{ getValueLabel('activity', student.classification.activity) }}
+          </a-tag>
+          <a-tag v-if="student.priority === 'urgent'" color="red" size="small">紧急</a-tag>
+          <a-tag v-else-if="student.priority === 'important'" color="orange" size="small">重要</a-tag>
+          <a-tag v-if="student.healthData?.fastingGlucose" size="small">
+            空腹 {{ student.healthData.fastingGlucose }} mmol/L
+          </a-tag>
+        </template>
+        <template #actions>
           <a-button type="primary" size="small" @click.stop="$router.push(`/coach/student-assessment/${student.id}`)">
             查看测评
           </a-button>
           <a-button size="small" @click.stop="$router.push(`/coach/student-profile/${student.id}`)">
             行为画像
           </a-button>
-        </div>
-      </div>
+        </template>
+      </ListCard>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { LeftOutlined, ClockCircleOutlined } from '@ant-design/icons-vue'
 import request from '@/api/request'
+import ListCard from '@/components/core/ListCard.vue'
+import ClassificationFilterBar from '@/components/coach/ClassificationFilterBar.vue'
+import { useSearchScope } from '@/composables/useSearchScope'
+import { useStudentClassification, getTagColor, getValueLabel } from '@/composables/useStudentClassification'
 
 const router = useRouter()
+const searchScope = useSearchScope()
+const clsFilters = useStudentClassification()
 
 const loading = ref(false)
 const error = ref('')
 const students = ref<any[]>([])
+const keyword = ref('')
+
+const filteredStudents = computed(() => {
+  if (!keyword.value.trim()) return students.value
+  const kw = keyword.value.trim().toLowerCase()
+  return students.value.filter(s =>
+    (s.name || '').toLowerCase().includes(kw) ||
+    (s.condition || '').toLowerCase().includes(kw)
+  )
+})
 
 const stageLabels: Record<string, string> = {
   S0: '觉醒期', S1: '松动期', S2: '探索期', S3: '准备期',
@@ -87,28 +121,55 @@ function openDetail(student: any) {
   router.push(`/coach/student-assessment/${student.id}`)
 }
 
-onMounted(async () => {
+// ── Filter event handlers ──
+function onPreset(preset: any) {
+  clsFilters.applyPreset(preset)
+  fetchStudents()
+}
+function onFilter(dimension: string, value: string) {
+  clsFilters.setFilter(dimension, value)
+  fetchStudents()
+}
+function onSort(val: string) {
+  clsFilters.filters.sort_by = val
+  fetchStudents()
+}
+function onClear() {
+  clsFilters.clearFilters()
+  fetchStudents()
+}
+
+async function fetchStudents() {
   loading.value = true
   error.value = ''
   try {
-    const res = await request.get('/v1/coach/dashboard')
+    // Use /v1/coach/students with classification filters
+    const params: any = { sort_by: clsFilters.filters.sort_by }
+    if (clsFilters.filters.risk) params.risk = clsFilters.filters.risk
+    if (clsFilters.filters.activity) params.activity = clsFilters.filters.activity
+    if (clsFilters.filters.behavior) params.behavior = clsFilters.filters.behavior
+    if (clsFilters.filters.needs) params.needs = clsFilters.filters.needs
+    if (clsFilters.filters.priority) params.priority = clsFilters.filters.priority
+
+    const res = await request.get('/v1/coach/students', { params })
     const data = res.data
     students.value = (data.students || []).map((st: any) => ({
       id: st.id,
-      name: st.name,
-      avatar: st.avatar || '',
-      condition: st.condition || '行为健康管理',
-      stage: st.stage || 'unknown',
-      lastContact: st.last_contact || '未知',
-      priority: st.priority || 'low',
+      name: st.full_name || st.username,
+      avatar: (st.profile || {}).avatar || '',
+      condition: (st.profile || {}).condition || '行为健康管理',
+      stage: st.current_stage || 'unknown',
+      lastContact: st.last_active ? new Date(st.last_active).toLocaleDateString('zh-CN') : '未知',
+      priority: st.classification?.priority_bucket || 'normal',
       healthData: {
-        fastingGlucose: st.health_data?.fasting_glucose ?? null,
-        postprandialGlucose: st.health_data?.postprandial_glucose ?? null,
-        weight: st.health_data?.weight ?? null,
-        exerciseMinutes: st.health_data?.exercise_minutes ?? 0,
+        fastingGlucose: (st.profile || {}).fasting_glucose ?? null,
+        postprandialGlucose: (st.profile || {}).postprandial_glucose ?? null,
+        weight: (st.profile || {}).weight ?? null,
+        exerciseMinutes: (st.profile || {}).exercise_minutes ?? 0,
       },
-      microAction7d: st.micro_action_7d || { completed: 0, total: 0 },
-      riskFlags: st.risk_flags || [],
+      microAction7d: { completed: 0, total: 0 },
+      riskFlags: st.classification?.risk_flags || [],
+      classification: st.classification || null,
     }))
   } catch (e: any) {
     error.value = '加载学员数据失败，请稍后重试'
@@ -116,6 +177,10 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+onMounted(() => {
+  fetchStudents()
 })
 </script>
 
@@ -140,23 +205,8 @@ onMounted(async () => {
   flex-direction: column;
   gap: 10px;
 }
-.student-card {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 16px;
-  background: #fff;
-  border-radius: 10px;
-  border: 1px solid #f0f0f0;
-  cursor: pointer;
-  transition: box-shadow 0.2s;
-}
-.student-card:hover {
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-}
-.student-avatar {
+.avatar-wrap {
   position: relative;
-  flex-shrink: 0;
 }
 .stage-badge {
   position: absolute;
@@ -174,43 +224,8 @@ onMounted(async () => {
 .stage-badge.S2, .stage-badge.S3 { background: #faad14; }
 .stage-badge.S4, .stage-badge.S5 { background: #52c41a; }
 .stage-badge.S6 { background: #1890ff; }
-.student-info {
-  flex: 1;
-  min-width: 0;
-}
-.student-name {
-  font-size: 15px;
-  font-weight: 600;
-}
-.student-condition {
+.meta-item {
   font-size: 12px;
   color: #999;
-  margin-top: 2px;
-}
-.student-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 4px;
-  font-size: 12px;
-  color: #999;
-}
-.student-health {
-  display: flex;
-  gap: 4px;
-  margin-top: 6px;
-}
-.student-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-@media (max-width: 640px) {
-  .student-card { flex-direction: column !important; align-items: flex-start !important; }
-  .student-actions { width: 100%; flex-direction: row; gap: 8px; margin-top: 8px; }
-  .student-actions .ant-btn { flex: 1; }
-  .student-avatar { display: flex; align-items: center; gap: 10px; }
 }
 </style>

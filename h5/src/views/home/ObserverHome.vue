@@ -5,6 +5,15 @@
     替换: h5/src/views/home/index.vue (当Observer角色时渲染此组件)
   -->
   <div class="observer-home">
+    <!-- ═══ 顶部右侧通知 ═══ -->
+    <div class="observer-top-bar">
+      <span></span>
+      <NotificationBell />
+    </div>
+
+    <!-- ═══ 全局搜索 ═══ -->
+    <GlobalSearch />
+
     <!-- ═══ 顶部: 今日剩余额度 (紧迫感) ═══ -->
     <div class="quota-banner" :class="{ 'quota-low': remaining <= 1, 'quota-zero': remaining <= 0 }">
       <div class="quota-inner">
@@ -163,6 +172,8 @@ import { useRouter } from 'vue-router'
 import api from '@/api/index'
 import { isWechat, shareToWechat } from '@/utils/wechat'
 import { useFeatureFlag } from '@/composables/useFeatureFlag'
+import NotificationBell from '@/components/common/NotificationBell.vue'
+import GlobalSearch from '@/components/common/GlobalSearch.vue'
 
 const router = useRouter()
 const { variant: homeVariant } = useFeatureFlag('observer_home_variant')
@@ -271,6 +282,12 @@ onMounted(async () => {
   min-height: 100vh;
   background: linear-gradient(180deg, #ecfdf5 0%, #ffffff 40%);
   padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* ── 顶部通知栏 ── */
+.observer-top-bar {
+  display: flex; justify-content: flex-end; align-items: center;
+  padding: 8px 16px 0;
 }
 
 /* ── 额度横幅 ── */

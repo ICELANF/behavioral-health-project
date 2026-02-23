@@ -91,40 +91,39 @@
         </a-col>
       </a-row>
 
-      <!-- Table -->
-      <a-table
-        :dataSource="filteredQuestions"
-        :columns="columns"
-        rowKey="question_id"
-        :row-selection="{ selectedRowKeys, onChange: onSelectChange }"
-        :pagination="{ pageSize: 10, showTotal: (total) => `共 ${total} 题` }"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'content'">
-            <a class="question-content" @click="showPreview(record)">
-              {{ record.content.substring(0, 50) }}{{ record.content.length > 50 ? '...' : '' }}
-            </a>
+      <!-- 题目列表 -->
+      <div class="list-card-container">
+        <a-empty v-if="filteredQuestions.length === 0" description="暂无题目" />
+        <ListCard v-for="record in filteredQuestions" :key="record.question_id" @click="showPreview(record)">
+          <template #avatar>
+            <a-checkbox
+              :checked="selectedRowKeys.includes(record.question_id)"
+              @change="(e: any) => toggleQuestionSelect(record.question_id, e.target.checked)"
+              @click.stop
+            />
           </template>
-          <template v-if="column.key === 'type'">
-            <a-tag :color="typeColors[record.question_type]">{{ typeLabels[record.question_type] }}</a-tag>
+          <template #title>
+            <span class="question-content">{{ record.content.substring(0, 60) }}{{ record.content.length > 60 ? '...' : '' }}</span>
           </template>
-          <template v-if="column.key === 'tags'">
-            <a-tag v-for="tag in (record.tags || [])" :key="tag" size="small" style="margin-bottom: 2px">{{ tag }}</a-tag>
+          <template #subtitle>
+            <a-tag :color="typeColors[record.question_type]" size="small">{{ typeLabels[record.question_type] }}</a-tag>
+            <a-tag :color="difficultyColors[record.difficulty]" size="small">{{ difficultyLabels[record.difficulty] || record.difficulty }}</a-tag>
+            <span v-if="record.domain" style="color: #666; font-size: 12px">{{ record.domain }}</span>
           </template>
-          <template v-if="column.key === 'difficulty'">
-            <a-tag :color="difficultyColors[record.difficulty]">{{ difficultyLabels[record.difficulty] || record.difficulty }}</a-tag>
+          <template #meta>
+            <a-tag v-for="tag in (record.tags || []).slice(0, 3)" :key="tag" size="small">{{ tag }}</a-tag>
+            <span v-if="(record.tags || []).length > 3" style="color: #999">+{{ record.tags.length - 3 }}</span>
+            <span style="color: #999">使用 {{ record.use_count || 0 }} 次</span>
           </template>
-          <template v-if="column.key === 'action'">
-            <a-space>
-              <a @click="showPreview(record)">预览</a>
-              <a @click="editQuestion(record)">编辑</a>
-              <a-popconfirm title="确定删除？" @confirm="deleteQuestion(record)">
-                <a style="color: #ff4d4f">删除</a>
-              </a-popconfirm>
-            </a-space>
+          <template #actions>
+            <a-button type="link" size="small" @click.stop="showPreview(record)">预览</a-button>
+            <a-button type="link" size="small" @click.stop="editQuestion(record)">编辑</a-button>
+            <a-popconfirm title="确定删除？" @confirm="deleteQuestion(record)">
+              <a-button type="link" size="small" danger @click.stop>删除</a-button>
+            </a-popconfirm>
           </template>
-        </template>
-      </a-table>
+        </ListCard>
+      </div>
     </a-card>
 
     <!-- Preview Modal -->
@@ -189,6 +188,7 @@ import { message, Modal } from 'ant-design-vue'
 import { PlusOutlined, UploadOutlined, DownOutlined, InboxOutlined } from '@ant-design/icons-vue'
 import { useQuestionStore } from '../../stores/question'
 import { questionApi } from '../../api/question'
+import ListCard from '@/components/core/ListCard.vue'
 
 const router = useRouter()
 const questionStore = useQuestionStore()
@@ -230,15 +230,7 @@ const difficultyColors: Record<string, string> = {
 
 const allTags = ['行为健康基础', 'TTM模型', '动机访谈', '认知行为', '压力管理', '营养学', '运动科学', '睡眠医学', '慢病管理', '心理学基础']
 
-const columns = [
-  { title: '题目内容', key: 'content', width: 260 },
-  { title: '类型', key: 'type', width: 80 },
-  { title: '领域', dataIndex: 'domain', width: 80 },
-  { title: '标签', key: 'tags', width: 160 },
-  { title: '难度', key: 'difficulty', width: 80 },
-  { title: '使用次数', dataIndex: 'use_count', width: 90, sorter: (a: any, b: any) => (a.use_count || 0) - (b.use_count || 0) },
-  { title: '操作', key: 'action', width: 140 }
-]
+// columns removed — using ListCard layout
 
 const importPreviewColumns = [
   { title: '内容', dataIndex: 'content', ellipsis: true },
@@ -290,7 +282,13 @@ const filteredQuestions = computed(() => {
   })
 })
 
-const onSelectChange = (keys: string[]) => { selectedRowKeys.value = keys }
+function toggleQuestionSelect(id: string, checked: boolean) {
+  if (checked) {
+    if (!selectedRowKeys.value.includes(id)) selectedRowKeys.value.push(id)
+  } else {
+    selectedRowKeys.value = selectedRowKeys.value.filter(k => k !== id)
+  }
+}
 
 const handleSearch = () => { /* computed filteredQuestions handles it */ }
 
@@ -391,6 +389,8 @@ const handleImport = async () => {
   display: flex;
   gap: 8px;
 }
+
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 
 .question-content {
   max-width: 260px;

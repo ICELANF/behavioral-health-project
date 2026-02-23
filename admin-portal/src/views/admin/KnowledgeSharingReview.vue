@@ -22,30 +22,39 @@
     <a-tabs v-model:activeKey="activeTab" @change="handleTabChange">
       <!-- 待审核 -->
       <a-tab-pane key="pending" tab="待审核">
-        <a-table
-          :dataSource="pendingList"
-          :columns="reviewColumns"
-          :loading="loading"
-          :pagination="pagination"
-          @change="handleTableChange"
-          rowKey="id"
-          size="middle"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'status'">
-              <a-tag :color="statusColor(record.status)">{{ statusLabel(record.status) }}</a-tag>
-            </template>
-            <template v-if="column.key === 'action'">
-              <a-space>
-                <a-button type="link" size="small" @click="showDetail(record)">详情</a-button>
-                <a-popconfirm title="确认通过?" @confirm="handleApprove(record.id)">
-                  <a-button type="link" size="small" style="color: #52c41a">通过</a-button>
-                </a-popconfirm>
-                <a-button type="link" size="small" danger @click="showReject(record)">拒绝</a-button>
-              </a-space>
-            </template>
-          </template>
-        </a-table>
+        <a-spin :spinning="loading">
+          <div class="list-card-container">
+            <ListCard v-for="record in pendingList" :key="record.id">
+              <template #title>
+                <span>{{ record.document_title }}</span>
+                <a-tag :color="statusColor(record.status)" style="margin-left: 8px">{{ statusLabel(record.status) }}</a-tag>
+              </template>
+              <template #subtitle>
+                租户: {{ record.tenant_id }} | 领域: {{ record.domain_id }}
+              </template>
+              <template #meta>
+                <span v-if="record.reason">理由: {{ record.reason }}</span>
+                <span>提交: {{ record.created_at }}</span>
+              </template>
+              <template #actions>
+                <a-space>
+                  <a-button type="link" size="small" @click="showDetail(record)">详情</a-button>
+                  <a-popconfirm title="确认通过?" @confirm="handleApprove(record.id)">
+                    <a-button type="link" size="small" style="color: #52c41a">通过</a-button>
+                  </a-popconfirm>
+                  <a-button type="link" size="small" danger @click="showReject(record)">拒绝</a-button>
+                </a-space>
+              </template>
+            </ListCard>
+          </div>
+        </a-spin>
+        <a-pagination
+          v-model:current="pagination.current"
+          :total="pagination.total"
+          :pageSize="pagination.pageSize"
+          style="margin-top: 16px; text-align: right"
+          @change="(page: number) => { pagination.current = page; loadPendingList() }"
+        />
       </a-tab-pane>
 
       <!-- 领域共享池 -->
@@ -60,21 +69,28 @@
             @change="loadDomainPool"
           />
         </div>
-        <a-table
-          :dataSource="poolList"
-          :columns="poolColumns"
-          :loading="poolLoading"
-          :pagination="poolPagination"
-          @change="handlePoolTableChange"
-          rowKey="id"
-          size="middle"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'evidence_tier'">
-              <a-tag :color="tierColor(record.evidence_tier)">{{ record.evidence_tier }}</a-tag>
-            </template>
-          </template>
-        </a-table>
+        <a-spin :spinning="poolLoading">
+          <div class="list-card-container">
+            <ListCard v-for="record in poolList" :key="record.id">
+              <template #title>{{ record.title }}</template>
+              <template #subtitle>
+                领域: {{ record.domain_id }} | 来源租户: {{ record.tenant_id }}
+                <a-tag :color="tierColor(record.evidence_tier)" style="margin-left: 8px">{{ record.evidence_tier }}</a-tag>
+              </template>
+              <template #meta>
+                <span>分片数: {{ record.chunk_count }}</span>
+                <span>更新: {{ record.updated_at }}</span>
+              </template>
+            </ListCard>
+          </div>
+        </a-spin>
+        <a-pagination
+          v-model:current="poolPagination.current"
+          :total="poolPagination.total"
+          :pageSize="poolPagination.pageSize"
+          style="margin-top: 16px; text-align: right"
+          @change="(page: number) => { poolPagination.current = page; loadDomainPool() }"
+        />
       </a-tab-pane>
 
       <!-- 全部记录 -->
@@ -97,21 +113,30 @@
             @change="loadAllContributions"
           />
         </div>
-        <a-table
-          :dataSource="allList"
-          :columns="allColumns"
-          :loading="allLoading"
-          :pagination="allPagination"
-          @change="handleAllTableChange"
-          rowKey="id"
-          size="middle"
-        >
-          <template #bodyCell="{ column, record }">
-            <template v-if="column.key === 'status'">
-              <a-tag :color="statusColor(record.status)">{{ statusLabel(record.status) }}</a-tag>
-            </template>
-          </template>
-        </a-table>
+        <a-spin :spinning="allLoading">
+          <div class="list-card-container">
+            <ListCard v-for="record in allList" :key="record.id">
+              <template #title>
+                <span>{{ record.document_title }}</span>
+                <a-tag :color="statusColor(record.status)" style="margin-left: 8px">{{ statusLabel(record.status) }}</a-tag>
+              </template>
+              <template #subtitle>
+                租户: {{ record.tenant_id }} | 领域: {{ record.domain_id }}
+              </template>
+              <template #meta>
+                <span v-if="record.review_comment">审核意见: {{ record.review_comment }}</span>
+                <span>提交: {{ record.created_at }}</span>
+              </template>
+            </ListCard>
+          </div>
+        </a-spin>
+        <a-pagination
+          v-model:current="allPagination.current"
+          :total="allPagination.total"
+          :pageSize="allPagination.pageSize"
+          style="margin-top: 16px; text-align: right"
+          @change="(page: number) => { allPagination.current = page; loadAllContributions() }"
+        />
       </a-tab-pane>
     </a-tabs>
 
@@ -146,6 +171,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import request from '../../api/request'
+import ListCard from '@/components/core/ListCard.vue'
 
 const activeTab = ref('pending')
 const loading = ref(false)
@@ -190,36 +216,7 @@ const statusOptions = [
   { label: '已撤回', value: 'revoked' },
 ]
 
-const reviewColumns = [
-  { title: 'ID', dataIndex: 'id', width: 60 },
-  { title: '文档', dataIndex: 'document_title', ellipsis: true },
-  { title: '租户', dataIndex: 'tenant_id', width: 140 },
-  { title: '领域', dataIndex: 'domain_id', width: 100 },
-  { title: '理由', dataIndex: 'reason', ellipsis: true, width: 200 },
-  { title: '状态', key: 'status', width: 80 },
-  { title: '提交时间', dataIndex: 'created_at', width: 160 },
-  { title: '操作', key: 'action', width: 180 },
-]
-
-const poolColumns = [
-  { title: 'ID', dataIndex: 'id', width: 60 },
-  { title: '标题', dataIndex: 'title', ellipsis: true },
-  { title: '领域', dataIndex: 'domain_id', width: 100 },
-  { title: '来源租户', dataIndex: 'tenant_id', width: 140 },
-  { title: '证据层级', key: 'evidence_tier', width: 90 },
-  { title: '分片数', dataIndex: 'chunk_count', width: 70 },
-  { title: '更新时间', dataIndex: 'updated_at', width: 160 },
-]
-
-const allColumns = [
-  { title: 'ID', dataIndex: 'id', width: 60 },
-  { title: '文档', dataIndex: 'document_title', ellipsis: true },
-  { title: '租户', dataIndex: 'tenant_id', width: 140 },
-  { title: '领域', dataIndex: 'domain_id', width: 100 },
-  { title: '状态', key: 'status', width: 80 },
-  { title: '审核意见', dataIndex: 'review_comment', ellipsis: true, width: 200 },
-  { title: '提交时间', dataIndex: 'created_at', width: 160 },
-]
+// columns removed — replaced by ListCard layout
 
 function statusColor(s: string) {
   return { pending: 'orange', approved: 'green', rejected: 'red', revoked: 'default' }[s] || 'default'
@@ -328,20 +325,7 @@ function handleTabChange(key: string) {
   else if (key === 'all') loadAllContributions()
 }
 
-function handleTableChange(p: any) {
-  pagination.current = p.current
-  loadPendingList()
-}
-
-function handlePoolTableChange(p: any) {
-  poolPagination.current = p.current
-  loadDomainPool()
-}
-
-function handleAllTableChange(p: any) {
-  allPagination.current = p.current
-  loadAllContributions()
-}
+// table change handlers removed — standalone a-pagination handles page changes
 
 onMounted(() => {
   loadStats()
@@ -352,4 +336,5 @@ onMounted(() => {
 
 <style scoped>
 .knowledge-sharing { padding: 0; }
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 </style>

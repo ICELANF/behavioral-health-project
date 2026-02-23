@@ -71,85 +71,67 @@
     </a-row>
 
     <!-- 案例列表 -->
-    <a-table
-      :columns="columns"
-      :data-source="cases"
-      :loading="loading"
-      :pagination="pagination"
-      row-key="case_id"
-      @change="handleTableChange"
-    >
-      <!-- 案例信息 -->
-      <template #caseInfo="{ record }">
-        <div class="case-info-cell">
-          <div class="case-title">
-            {{ record.title }}
-            <a-tag v-if="record.is_anonymous" size="small">匿名</a-tag>
-          </div>
-          <div class="case-meta">
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <ListCard v-for="record in cases" :key="record.case_id">
+          <template #title>
+            <span>{{ record.title }}</span>
+            <a-tag v-if="record.is_anonymous" size="small" style="margin-left: 6px">匿名</a-tag>
+            <a-tag :color="getReviewStatusColor(record.review_status)" style="margin-left: 6px">
+              {{ getReviewStatusLabel(record.review_status) }}
+            </a-tag>
+          </template>
+          <template #subtitle>
             <a-tag :color="getSourceColor(record.source)" size="small">{{ getSourceLabel(record.source) }}</a-tag>
-            <span class="domain-tag">{{ getDomainLabel(record.domain) }}</span>
-          </div>
-          <div class="case-excerpt">
-            {{ truncate(record.challenge, 60) }}
-          </div>
-        </div>
-      </template>
-
-      <!-- 作者 -->
-      <template #author="{ record }">
-        <div class="author-cell">
-          <span class="display-name">{{ record.display_name }}</span>
-          <div class="author-role">{{ record.author_role }}</div>
-        </div>
-      </template>
-
-      <!-- 审核状态 -->
-      <template #reviewStatus="{ record }">
-        <a-tag :color="getReviewStatusColor(record.review_status)">
-          {{ getReviewStatusLabel(record.review_status) }}
-        </a-tag>
-        <div v-if="record.reviewed_at" class="review-time">
-          {{ formatDate(record.reviewed_at) }}
-        </div>
-      </template>
-
-      <!-- 互动数据 -->
-      <template #interactions="{ record }">
-        <div class="interaction-cell">
-          <span><LikeOutlined /> {{ record.like_count }}</span>
-          <span><CheckCircleOutlined /> {{ record.helpful_count }}</span>
-          <span><MessageOutlined /> {{ record.comment_count }}</span>
-        </div>
-      </template>
-
-      <!-- 操作 -->
-      <template #action="{ record }">
-        <a-space>
-          <a @click="handleView(record)">查看</a>
-          <a v-if="record.review_status === 'pending'" @click="handleReview(record)" style="color: #faad14">
-            审核
-          </a>
-          <a-dropdown>
-            <a>更多 <DownOutlined /></a>
-            <template #overlay>
-              <a-menu>
-                <a-menu-item v-if="record.status === 'published'" @click="handleFeature(record)">
-                  <StarOutlined /> 设为精选
-                </a-menu-item>
-                <a-menu-item v-if="record.status === 'published'" @click="handleOffline(record)">
-                  下架
-                </a-menu-item>
-                <a-menu-divider />
-                <a-menu-item danger @click="handleDelete(record)">
-                  删除
-                </a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
-        </a-space>
-      </template>
-    </a-table>
+            <span class="domain-tag" style="margin-left: 4px">{{ getDomainLabel(record.domain) }}</span>
+            <span style="margin-left: 8px">{{ record.display_name }} ({{ record.author_role }})</span>
+          </template>
+          <template #meta>
+            <span class="case-excerpt">{{ truncate(record.challenge, 80) }}</span>
+            <span class="interaction-cell">
+              <LikeOutlined /> {{ record.like_count }}
+              <CheckCircleOutlined style="margin-left: 8px" /> {{ record.helpful_count }}
+              <MessageOutlined style="margin-left: 8px" /> {{ record.comment_count }}
+            </span>
+            <span>{{ formatDate(record.created_at) }}</span>
+          </template>
+          <template #actions>
+            <a-space>
+              <a-button type="link" size="small" @click="handleView(record)">查看</a-button>
+              <a-button v-if="record.review_status === 'pending'" type="link" size="small" style="color: #faad14" @click="handleReview(record)">
+                审核
+              </a-button>
+              <a-dropdown>
+                <a-button type="link" size="small">更多 <DownOutlined /></a-button>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item v-if="record.status === 'published'" @click="handleFeature(record)">
+                      <StarOutlined /> 设为精选
+                    </a-menu-item>
+                    <a-menu-item v-if="record.status === 'published'" @click="handleOffline(record)">
+                      下架
+                    </a-menu-item>
+                    <a-menu-divider />
+                    <a-menu-item danger @click="handleDelete(record)">
+                      删除
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
+            </a-space>
+          </template>
+        </ListCard>
+      </div>
+    </a-spin>
+    <a-pagination
+      v-model:current="pagination.current"
+      :total="pagination.total"
+      :pageSize="pagination.pageSize"
+      :showSizeChanger="true"
+      :showTotal="(total: number) => `共 ${total} 条`"
+      style="margin-top: 16px; text-align: right"
+      @change="(page: number, pageSize: number) => { pagination.current = page; pagination.pageSize = pageSize; fetchCases() }"
+    />
 
     <!-- 查看/审核弹窗 -->
     <a-modal
@@ -242,6 +224,7 @@ import request from '@/api/request'
 import type { CaseShare, ContentSource, ReviewStatus } from '@/types/content'
 import { CONTENT_SOURCE_CONFIG } from '@/types/content'
 import { TRIGGER_DOMAINS } from '@/constants'
+import ListCard from '@/components/core/ListCard.vue'
 
 // 筛选
 const filters = reactive({
@@ -289,47 +272,7 @@ const checklistOptions = [
   { label: '质量达标', value: 'quality' }
 ]
 
-// 列配置
-const columns = [
-  {
-    title: '案例信息',
-    key: 'caseInfo',
-    width: 350,
-    slots: { customRender: 'caseInfo' }
-  },
-  {
-    title: '作者',
-    key: 'author',
-    width: 120,
-    slots: { customRender: 'author' }
-  },
-  {
-    title: '审核状态',
-    key: 'reviewStatus',
-    width: 120,
-    slots: { customRender: 'reviewStatus' }
-  },
-  {
-    title: '互动',
-    key: 'interactions',
-    width: 150,
-    slots: { customRender: 'interactions' }
-  },
-  {
-    title: '提交时间',
-    dataIndex: 'created_at',
-    key: 'created_at',
-    width: 110,
-    customRender: ({ text }: { text: string }) => formatDate(text)
-  },
-  {
-    title: '操作',
-    key: 'action',
-    width: 140,
-    fixed: 'right',
-    slots: { customRender: 'action' }
-  }
-]
+// columns removed — replaced by ListCard layout
 
 // 辅助函数
 const getSourceLabel = (source: ContentSource) => CONTENT_SOURCE_CONFIG[source]?.label || source
@@ -373,11 +316,7 @@ const handleReset = () => {
   handleSearch()
 }
 
-const handleTableChange = (pag: any) => {
-  pagination.current = pag.current
-  pagination.pageSize = pag.pageSize
-  fetchCases()
-}
+// table change handler removed — standalone a-pagination handles page changes
 
 const handleView = (record: CaseShare) => {
   currentCase.value = record
@@ -477,6 +416,8 @@ onMounted(() => {
 .case-list {
   padding: 24px;
 }
+
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 
 .filter-card {
   margin-bottom: 16px;

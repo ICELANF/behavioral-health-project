@@ -133,10 +133,13 @@ class MicroActionTaskService:
     def _create_queue_summary(self, db: Session, user_id: int, tasks: List[MicroActionTask]):
         """若用户有教练，为今日微行动创建一条汇总 CoachPushQueue 条目"""
         try:
-            user = db.query(User).filter(User.id == user_id).first()
-            if not user or not user.profile or not isinstance(user.profile, dict):
-                return
-            coach_id = user.profile.get("coach_id")
+            # 查找教练 (权威源: coach_student_bindings)
+            from sqlalchemy import text as sa_text
+            row = db.execute(sa_text(
+                "SELECT coach_id FROM coach_schema.coach_student_bindings "
+                "WHERE student_id = :sid AND is_active = true LIMIT 1"
+            ), {"sid": user_id}).first()
+            coach_id = row[0] if row else None
             if not coach_id:
                 return
 

@@ -3,6 +3,8 @@
 Assessment API Endpoints
 
 提供评估数据的CRUD操作
+
+DEPRECATED: 旧版评估API，新流程请用 assessment_pipeline_api.py
 """
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session

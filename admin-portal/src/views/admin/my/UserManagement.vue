@@ -29,6 +29,20 @@
             <a-select-option value="inactive">停用</a-select-option>
           </a-select>
         </a-col>
+        <a-col :span="4">
+          <a-select v-model:value="filters.riskFilter" placeholder="风险等级" allowClear style="width: 100%" @change="loadUsers">
+            <a-select-option v-for="opt in RISK_OPTIONS" :key="opt.value" :value="opt.value">
+              <a-badge :color="opt.color" :text="opt.label" />
+            </a-select-option>
+          </a-select>
+        </a-col>
+        <a-col :span="4">
+          <a-select v-model:value="filters.activityFilter" placeholder="活跃度" allowClear style="width: 100%" @change="loadUsers">
+            <a-select-option v-for="opt in ACTIVITY_OPTIONS" :key="opt.value" :value="opt.value">
+              <a-badge :color="opt.color" :text="opt.label" />
+            </a-select-option>
+          </a-select>
+        </a-col>
         <a-col :span="3">
           <a-button @click="resetFilters">重置</a-button>
         </a-col>
@@ -43,42 +57,43 @@
       <a-col :span="6"><a-card size="small"><a-statistic title="成长者" :value="stats.grower_count" :loading="statsLoading" /></a-card></a-col>
     </a-row>
 
-    <!-- User Table -->
-    <a-card>
-      <a-table
-        :dataSource="users"
-        :columns="columns"
-        rowKey="id"
-        size="small"
-        :loading="loading"
-        :pagination="{
-          current: pagination.page,
-          pageSize: pagination.pageSize,
-          total: pagination.total,
-          showTotal: (total: number) => `共 ${total} 用户`,
-          onChange: onPageChange,
-        }"
-        :customRow="(record: any) => ({ onClick: () => openProfile(record.id), style: { cursor: 'pointer' } })"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'name'">
-            <div style="display: flex; align-items: center; gap: 8px">
-              <a-avatar :size="28" :style="{ background: roleColor(record.role) }">
-                {{ (record.full_name || record.username)[0] }}
-              </a-avatar>
-              <div>
-                <div style="font-weight: 500">{{ record.full_name || record.username }}</div>
-                <div style="font-size: 11px; color: #999">{{ record.username }}</div>
-              </div>
-            </div>
+    <!-- User List -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <ListCard
+          v-for="record in users"
+          :key="record.id"
+          @click="openProfile(record.id)"
+        >
+          <template #avatar>
+            <a-avatar :size="36" :style="{ background: roleColor(record.role) }">
+              {{ (record.full_name || record.username)[0] }}
+            </a-avatar>
           </template>
-          <template v-if="column.key === 'role'">
+          <template #title>
+            <span>{{ record.full_name || record.username }}</span>
+            <span style="font-size: 11px; color: #999; margin-left: 8px">{{ record.username }}</span>
+          </template>
+          <template #subtitle>
             <a-tag :color="roleColor(record.role)">{{ roleLabel(record.role) }}</a-tag>
-          </template>
-          <template v-if="column.key === 'status'">
             <a-badge :status="record.is_active ? 'success' : 'error'" :text="record.is_active ? '正常' : '停用'" />
+            <template v-if="record.classification && ['observer','grower','sharer'].includes(record.role)">
+              <a-tag :color="getTagColor('risk', record.classification.risk)" size="small">
+                {{ getValueLabel('risk', record.classification.risk) }}
+              </a-tag>
+              <a-tag :color="getTagColor('activity', record.classification.activity)" size="small">
+                {{ getValueLabel('activity', record.classification.activity) }}
+              </a-tag>
+            </template>
           </template>
-          <template v-if="column.key === 'action'">
+          <template #meta>
+            <span v-if="record.email">{{ record.email }}</span>
+            <span v-if="record.phone" class="meta-divider">|</span>
+            <span v-if="record.phone">{{ record.phone }}</span>
+            <span class="meta-divider">|</span>
+            <span>{{ record.created_at ? new Date(record.created_at).toLocaleDateString('zh-CN') : '-' }}</span>
+          </template>
+          <template #actions>
             <a-space @click.stop>
               <a @click="openProfile(record.id)">查看</a>
               <a @click="editUser(record)">编辑</a>
@@ -88,9 +103,22 @@
               </a-popconfirm>
             </a-space>
           </template>
-        </template>
-      </a-table>
-    </a-card>
+        </ListCard>
+      </div>
+      <div v-if="users.length === 0 && !loading" style="text-align: center; padding: 40px; color: #999">
+        暂无用户数据
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="pagination.page"
+        v-model:pageSize="pagination.pageSize"
+        :total="pagination.total"
+        show-size-changer
+        :show-total="(total: number) => `共 ${total} 用户`"
+        @change="onPageChange"
+      />
+    </div>
 
     <!-- Create/Edit Modal -->
     <a-modal v-model:open="showCreateModal" :title="editingUser ? '编辑用户' : '创建用户'" @ok="saveUser" okText="保存" :confirmLoading="saving">
@@ -142,6 +170,8 @@ import { message } from 'ant-design-vue'
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import request from '@/api/request'
 import UserRoleProfileDrawer from '@/components/UserRoleProfileDrawer.vue'
+import ListCard from '@/components/core/ListCard.vue'
+import { RISK_OPTIONS, ACTIVITY_OPTIONS, getTagColor, getValueLabel } from '@/composables/useStudentClassification'
 
 const showCreateModal = ref(false)
 const showImportModal = ref(false)
@@ -161,6 +191,8 @@ const filters = reactive({
   keyword: '',
   role: undefined as string | undefined,
   status: undefined as string | undefined,
+  riskFilter: undefined as string | undefined,
+  activityFilter: undefined as string | undefined,
 })
 
 const pagination = reactive({ page: 1, pageSize: 10, total: 0 })
@@ -186,15 +218,7 @@ const formData = reactive({
 
 const users = ref<any[]>([])
 
-const columns = [
-  { title: '用户', key: 'name', width: 200 },
-  { title: '角色', key: 'role', width: 100 },
-  { title: '状态', key: 'status', width: 80 },
-  { title: '邮箱', dataIndex: 'email', width: 180, ellipsis: true },
-  { title: '手机', dataIndex: 'phone', width: 130 },
-  { title: '创建时间', dataIndex: 'created_at', width: 120, customRender: ({ text }: any) => text ? new Date(text).toLocaleDateString('zh-CN') : '-' },
-  { title: '操作', key: 'action', width: 200 },
-]
+// columns removed — now using ListCard layout
 
 const roleLabel = (role: string) => {
   const map: Record<string, string> = {
@@ -226,6 +250,8 @@ const loadUsers = async () => {
     if (filters.keyword) params.search = filters.keyword
     if (filters.role) params.role = filters.role
     if (filters.status) params.is_active = filters.status === 'active'
+    if (filters.riskFilter) params.risk = filters.riskFilter
+    if (filters.activityFilter) params.activity = filters.activityFilter
 
     const { data } = await request.get('/v1/admin/users', { params })
     users.value = data.users || []
@@ -349,6 +375,8 @@ const resetFilters = () => {
   filters.keyword = ''
   filters.role = undefined
   filters.status = undefined
+  filters.riskFilter = undefined
+  filters.activityFilter = undefined
   pagination.page = 1
   loadUsers()
 }
@@ -365,7 +393,18 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.list-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .page-header h2 { margin: 0; }
 .header-actions { display: flex; gap: 8px; }
+
+.meta-divider {
+  color: #d9d9d9;
+  margin: 0 4px;
+}
 </style>

@@ -299,9 +299,14 @@ class CoachAISuggestionService:
         db: Session,
         student_id: int,
         coach_id: int,
+        domain: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        AI建议: 推荐微行动任务
+        AI建议: 推荐微行动任务（可按干预领域过滤）
+
+        Args:
+            domain: 干预领域 (nutrition/exercise/sleep/emotion/stress/cognitive/social)
+                    为空时返回综合建议
 
         Returns:
             {
@@ -319,9 +324,9 @@ class CoachAISuggestionService:
                 "meta": {"source": "error"},
             }
 
-        rule_suggestions = self._build_rule_micro_action_suggestions(db, student_data)
+        rule_suggestions = self._build_rule_micro_action_suggestions(db, student_data, domain=domain)
 
-        llm_suggestions = self._call_llm_micro_action_suggestions(student_data)
+        llm_suggestions = self._call_llm_micro_action_suggestions(student_data, domain=domain)
         suggestions = llm_suggestions if llm_suggestions else rule_suggestions
 
         return {
@@ -533,13 +538,12 @@ class CoachAISuggestionService:
     # ── 规则引擎: 微行动 ─────────────────────────────────────
 
     def _build_rule_micro_action_suggestions(
-        self, db: Session, data: Dict
+        self, db: Session, data: Dict, domain: Optional[str] = None
     ) -> List[Dict]:
         stage = data["stage"]
 
         # 查已有任务完成率
         from core.models import MicroActionTask
-        from datetime import date
         recent_tasks = (
             db.query(MicroActionTask)
             .filter(
@@ -553,17 +557,31 @@ class CoachAISuggestionService:
         completion_rate = completed / total if total > 0 else 0
 
         # 根据阶段选择模板
-        templates = MICRO_ACTION_STAGE_TEMPLATES.get(stage, MICRO_ACTION_STAGE_TEMPLATES["S1"])
-        suggestions = list(templates)
-
-        # 完成率低时降级难度
+        effective_stage = stage
         if completion_rate < 0.3 and stage not in ("S0", "S1"):
-            lower_stage = f"S{max(int(stage[1]) - 1, 0)}"
-            lower_templates = MICRO_ACTION_STAGE_TEMPLATES.get(lower_stage, templates)
-            suggestions = [
+            effective_stage = f"S{max(int(stage[1]) - 1, 0)}"
+
+        templates = MICRO_ACTION_STAGE_TEMPLATES.get(effective_stage, MICRO_ACTION_STAGE_TEMPLATES["S1"])
+
+        if effective_stage != stage:
+            templates = [
                 {**s, "reason": s["reason"] + "（完成率较低，适当降低难度）"}
-                for s in lower_templates
+                for s in templates
             ]
+
+        # 按干预领域过滤
+        if domain:
+            domain_filtered = [s for s in templates if s.get("domain") == domain]
+            if domain_filtered:
+                suggestions = domain_filtered
+            else:
+                # 该阶段没有此领域的模板，从所有阶段中找
+                all_domain = []
+                for stg_key, stg_templates in MICRO_ACTION_STAGE_TEMPLATES.items():
+                    all_domain.extend([s for s in stg_templates if s.get("domain") == domain])
+                suggestions = all_domain if all_domain else list(templates)
+        else:
+            suggestions = list(templates)
 
         return suggestions[:3]
 
@@ -634,7 +652,7 @@ class CoachAISuggestionService:
     # ── LLM 增强: 微行动 ─────────────────────────────────────
 
     def _call_llm_micro_action_suggestions(
-        self, data: Dict
+        self, data: Dict, domain: Optional[str] = None
     ) -> Optional[List[Dict]]:
         global _llm_last_fail_time
 
@@ -666,10 +684,17 @@ class CoachAISuggestionService:
             "要求: 匹配学员阶段、循序渐进、具体可操作。"
         )
 
+        domain_labels = {
+            "nutrition": "营养管理", "exercise": "运动管理", "sleep": "睡眠管理",
+            "emotion": "情绪管理", "stress": "压力管理", "cognitive": "认知管理", "social": "社交管理",
+        }
+        domain_hint = f"\n干预领域: {domain_labels.get(domain, domain)}（所有建议必须属于此领域）" if domain else ""
+
         user_prompt = (
             f"学员: {data['student_name']}, 阶段: {data['stage']}({data['stage_name']})\n"
             f"风险: {data['risk_level']}, 活跃度: {data['activity']}\n"
-            f"薄弱能力: {', '.join(data['capacity_weak']) if data['capacity_weak'] else '无'}\n"
+            f"薄弱能力: {', '.join(data['capacity_weak']) if data['capacity_weak'] else '无'}"
+            f"{domain_hint}\n"
             f"\n请推荐3个合适的微行动任务。"
         )
 

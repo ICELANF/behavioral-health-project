@@ -25,39 +25,35 @@
       <a-tab-pane key="all" tab="全部" />
     </a-tabs>
 
-    <!-- 表格 -->
-    <a-table
-      :columns="columns"
-      :data-source="applications"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      row-key="tenant_id"
-      size="middle"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'brand'">
-          <div style="display: flex; align-items: center; gap: 8px">
-            <span style="font-size: 20px">{{ record.brand_avatar }}</span>
-            <div>
-              <div style="font-weight: 600">{{ record.brand_name }}</div>
-              <div style="font-size: 12px; color: #999">{{ record.tenant_id }}</div>
-            </div>
-          </div>
-        </template>
-        <template v-if="column.key === 'specialties'">
-          <a-tag v-for="s in (record.expert_specialties || []).slice(0, 3)" :key="s" size="small">{{ s }}</a-tag>
-        </template>
-        <template v-if="column.key === 'status'">
-          <a-tag :color="statusColor(record.application_status)">{{ statusLabel(record.application_status) }}</a-tag>
-        </template>
-        <template v-if="column.key === 'actions'">
-          <a-space>
-            <a-button type="link" size="small" @click="openDetail(record)">详情</a-button>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+    <!-- 列表 -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <a-empty v-if="applications.length === 0 && !loading" description="暂无申请" />
+        <ListCard v-for="record in applications" :key="record.tenant_id" @click="openDetail(record)">
+          <template #avatar>
+            <span style="font-size: 28px">{{ record.brand_avatar }}</span>
+          </template>
+          <template #title>
+            <span style="font-weight: 600">{{ record.brand_name }}</span>
+            <a-tag :color="statusColor(record.application_status)" size="small" style="margin-left: 8px">{{ statusLabel(record.application_status) }}</a-tag>
+          </template>
+          <template #subtitle>
+            <span style="color: #666">{{ record.expert_title }}</span>
+            <span style="color: #999; margin-left: 8px">{{ record.domain_id }}</span>
+          </template>
+          <template #meta>
+            <a-tag v-for="s in (record.expert_specialties || []).slice(0, 3)" :key="s" size="small">{{ s }}</a-tag>
+            <span style="color: #999; font-size: 12px">{{ record.applied_at }}</span>
+          </template>
+          <template #actions>
+            <a-button type="link" size="small" @click.stop="openDetail(record)">详情</a-button>
+          </template>
+        </ListCard>
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination v-model:current="pagination.current" :page-size="pagination.pageSize" :total="pagination.total" @change="(p: number) => { pagination.current = p; fetchApplications() }" />
+    </div>
 
     <!-- 详情弹窗 -->
     <a-modal
@@ -117,6 +113,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import request from '../../api/request'
+import ListCard from '@/components/core/ListCard.vue'
 
 const activeTab = ref('pending_review')
 const loading = ref(false)
@@ -132,15 +129,7 @@ const rejectReason = ref('')
 const approving = ref(false)
 const rejecting = ref(false)
 
-const columns = [
-  { title: '工作室', key: 'brand', width: 220 },
-  { title: '头衔', dataIndex: 'expert_title', ellipsis: true },
-  { title: '领域', dataIndex: 'domain_id', width: 100 },
-  { title: '专长', key: 'specialties', width: 200 },
-  { title: '申请时间', dataIndex: 'applied_at', width: 160 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '操作', key: 'actions', width: 80 },
-]
+// columns removed — using ListCard layout
 
 function statusColor(s: string) {
   return { pending_review: 'orange', approved: 'green', rejected: 'red' }[s] || 'default'
@@ -233,10 +222,7 @@ async function handleReject(tenantId: string) {
   }
 }
 
-function handleTableChange(p: any) {
-  pagination.current = p.current
-  fetchApplications()
-}
+// handleTableChange removed — standalone a-pagination handles page changes
 
 onMounted(() => {
   fetchApplications()
@@ -247,4 +233,6 @@ onMounted(() => {
 .expert-application-review {
   padding: 0;
 }
+
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 </style>

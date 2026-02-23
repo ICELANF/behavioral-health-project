@@ -641,6 +641,20 @@ const routes: RouteRecordRaw[] = [
           }
         ]
       },
+      // ============ 绑定管理 ============
+      {
+        path: 'admin/bindings',
+        name: 'AdminBindings',
+        component: () => import('./views/admin/BindingManage.vue'),
+        meta: { title: '绑定管理' }
+      },
+      // ============ 推送队列管理 ============
+      {
+        path: 'coach/push-queue',
+        name: 'PushQueueManage',
+        component: () => import('./views/coach/PushQueueManage.vue'),
+        meta: { title: '推送队列' }
+      },
       // ============ 专家入驻审核 ============
       {
         path: 'admin/expert-applications',

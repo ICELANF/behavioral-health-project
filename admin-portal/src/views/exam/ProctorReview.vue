@@ -54,78 +54,40 @@
     </a-row>
 
     <!-- 审核列表 -->
-    <a-card class="review-table-card">
-      <a-table
-        :columns="columns"
-        :data-source="sessions"
-        :loading="loading"
-        :pagination="pagination"
-        row-key="id"
-        @change="handleTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'coach'">
-            <div class="coach-info">
-              <a-avatar size="small">{{ record.coach_name?.charAt(0) }}</a-avatar>
-              <span>{{ record.coach_name }}</span>
-            </div>
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <a-empty v-if="sessions.length === 0 && !loading" description="暂无监考记录" />
+        <ListCard v-for="record in sessions" :key="record.id" @click="showDetail(record)">
+          <template #avatar>
+            <a-avatar :size="40">{{ record.coach_name?.charAt(0) }}</a-avatar>
           </template>
-
-          <template v-else-if="column.key === 'exam'">
-            <div>
-              <div>{{ record.exam_name }}</div>
-              <a-tag :color="levelColors[record.level]" size="small">
-                {{ levelLabels[record.level] }}
-              </a-tag>
-            </div>
+          <template #title>
+            <span>{{ record.coach_name }}</span>
+            <a-tag :color="reviewStatusColors[record.review_status]" size="small" style="margin-left: 8px">{{ reviewStatusLabels[record.review_status] }}</a-tag>
           </template>
-
-          <template v-else-if="column.key === 'score'">
-            <span :class="{ 'score-passed': record.status === 'passed', 'score-failed': record.status === 'failed' }">
-              {{ record.score }}
-            </span>
+          <template #subtitle>
+            <span>{{ record.exam_name }}</span>
+            <a-tag :color="levelColors[record.level]" size="small" style="margin-left: 6px">{{ levelLabels[record.level] }}</a-tag>
           </template>
-
-          <template v-else-if="column.key === 'violations'">
-            <a-badge
-              :count="record.violation_count"
-              :number-style="{ backgroundColor: record.violation_count > 3 ? '#ff4d4f' : '#fa8c16' }"
-            />
+          <template #meta>
+            <span :class="{ 'score-passed': record.status === 'passed', 'score-failed': record.status === 'failed' }">{{ record.score }} 分</span>
+            <a-badge :count="record.violation_count" :number-style="{ backgroundColor: record.violation_count > 3 ? '#ff4d4f' : '#fa8c16' }" />
+            <span style="color: #999; font-size: 12px">诚信 {{ record.integrity_score }}%</span>
+            <span style="color: #999; font-size: 12px">{{ record.submitted_at }}</span>
           </template>
-
-          <template v-else-if="column.key === 'integrity'">
-            <a-progress
-              :percent="record.integrity_score"
-              :size="60"
-              type="circle"
-              :status="record.integrity_score >= 80 ? 'success' : record.integrity_score >= 60 ? 'normal' : 'exception'"
-            />
+          <template #actions>
+            <a-button size="small" type="link" @click.stop="showDetail(record)">详情</a-button>
+            <template v-if="record.review_status === 'flagged'">
+              <a-button size="small" type="link" style="color: #52c41a" @click.stop="approveSession(record)">通过</a-button>
+              <a-button size="small" type="link" danger @click.stop="invalidateSession(record)">作废</a-button>
+            </template>
           </template>
-
-          <template v-else-if="column.key === 'review_status'">
-            <a-tag :color="reviewStatusColors[record.review_status]">
-              {{ reviewStatusLabels[record.review_status] }}
-            </a-tag>
-          </template>
-
-          <template v-else-if="column.key === 'action'">
-            <a-space>
-              <a-button size="small" type="link" @click="showDetail(record)">
-                <EyeOutlined /> 详情
-              </a-button>
-              <template v-if="record.review_status === 'flagged'">
-                <a-button size="small" type="link" style="color: #52c41a" @click="approveSession(record)">
-                  <CheckOutlined /> 通过
-                </a-button>
-                <a-button size="small" type="link" danger @click="invalidateSession(record)">
-                  <CloseOutlined /> 作废
-                </a-button>
-              </template>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
-    </a-card>
+        </ListCard>
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination v-model:current="pagination.current" v-model:pageSize="pagination.pageSize" :total="pagination.total" :show-total="(t: any) => `共 ${t} 条`" @change="onPaginationChange" />
+    </div>
 
     <!-- 详情弹窗 -->
     <a-modal
@@ -262,6 +224,7 @@ import {
 import type { CertificationLevel, ExamResult } from '@/types/exam';
 import { levelLabels, levelColors } from '@/types/exam';
 import request from '@/api/request';
+import ListCard from '@/components/core/ListCard.vue';
 
 interface ProctorSession extends ExamResult {
   coach_name: string;
@@ -366,17 +329,7 @@ const snapshotTriggerLabels: Record<string, string> = {
   manual: '手动',
 };
 
-// 表格列
-const columns: TableColumnsType = [
-  { title: '考生', key: 'coach', dataIndex: 'coach_name', width: 150 },
-  { title: '考试', key: 'exam', dataIndex: 'exam_name', width: 200 },
-  { title: '得分', key: 'score', dataIndex: 'score', width: 80, align: 'center' },
-  { title: '违规次数', key: 'violations', dataIndex: 'violation_count', width: 100, align: 'center' },
-  { title: '诚信分', key: 'integrity', dataIndex: 'integrity_score', width: 100, align: 'center' },
-  { title: '审核状态', key: 'review_status', dataIndex: 'review_status', width: 100 },
-  { title: '提交时间', key: 'submitted_at', dataIndex: 'submitted_at', width: 180 },
-  { title: '操作', key: 'action', width: 200, fixed: 'right' },
-];
+// main columns removed — using ListCard layout
 
 const violationColumns: TableColumnsType = [
   { title: '类型', key: 'type', dataIndex: 'type', width: 120 },
@@ -412,8 +365,9 @@ const handleFilterChange = () => {
   fetchSessions();
 };
 
-const handleTableChange = (pag: TablePaginationConfig) => {
-  pagination.value = pag;
+const onPaginationChange = (page: number, pageSize: number) => {
+  pagination.value.current = page;
+  pagination.value.pageSize = pageSize;
   fetchSessions();
 };
 
@@ -496,6 +450,8 @@ onMounted(() => {
 .proctor-review {
   padding: 24px;
 }
+
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 
 .stats-row {
   margin-bottom: 24px;

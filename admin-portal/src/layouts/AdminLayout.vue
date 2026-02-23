@@ -114,6 +114,12 @@
           <span>学员管理</span>
         </a-menu-item>
 
+        <!-- 教练及以上可见 - 推送队列 -->
+        <a-menu-item v-if="isCoach" key="coach-push-queue" @click="$router.push('/coach/push-queue')">
+          <template #icon><BellOutlined /></template>
+          <span>推送队列</span>
+        </a-menu-item>
+
         <!-- Prompt管理 - 专家及以上可见 -->
         <a-sub-menu v-if="isExpert" key="prompts">
           <template #icon><EditOutlined /></template>
@@ -146,8 +152,14 @@
           <span>分配管理</span>
         </a-menu-item>
 
-        <!-- 管理员可见 - 数据分析 -->
-        <a-menu-item v-if="isAdmin" key="admin-analytics" @click="$router.push('/admin/analytics')">
+        <!-- 专家及以上可见 - 绑定管理 -->
+        <a-menu-item v-if="isExpert" key="admin-bindings" @click="$router.push('/admin/bindings')">
+          <template #icon><LinkOutlined /></template>
+          <span>绑定管理</span>
+        </a-menu-item>
+
+        <!-- 专家及以上可见 - 数据分析 -->
+        <a-menu-item v-if="isExpert" key="admin-analytics" @click="$router.push('/admin/analytics')">
           <template #icon><BarChartOutlined /></template>
           <span>数据分析</span>
         </a-menu-item>
@@ -329,19 +341,89 @@
                     <span class="search-item-main">{{ item.content }}</span>
                   </div>
                 </div>
+                <!-- 行为处方 -->
+                <div v-if="searchResults.prescriptions?.length" class="search-category">
+                  <div class="search-category-title"><ReadOutlined /> 行为处方</div>
+                  <div
+                    v-for="item in searchResults.prescriptions"
+                    :key="'rx-' + item.id"
+                    class="search-result-item"
+                    @mousedown.prevent="goToResult('prescription', item)"
+                  >
+                    <span class="search-item-main">{{ item.title || item.name }}</span>
+                    <span class="search-item-tag">{{ item.status || item.category }}</span>
+                  </div>
+                </div>
+                <!-- 每日任务 -->
+                <div v-if="searchResults.tasks?.length" class="search-category">
+                  <div class="search-category-title"><CheckCircleOutlined /> 每日任务</div>
+                  <div
+                    v-for="item in searchResults.tasks"
+                    :key="'task-' + item.id"
+                    class="search-result-item"
+                    @mousedown.prevent="goToResult('task', item)"
+                  >
+                    <span class="search-item-main">{{ item.title || item.name }}</span>
+                    <span class="search-item-tag">{{ item.status }}</span>
+                  </div>
+                </div>
+                <!-- 打卡记录 -->
+                <div v-if="searchResults.checkins?.length" class="search-category">
+                  <div class="search-category-title"><CheckCircleOutlined /> 打卡记录</div>
+                  <div
+                    v-for="item in searchResults.checkins"
+                    :key="'ci-' + item.id"
+                    class="search-result-item"
+                    @mousedown.prevent="goToResult('checkin', item)"
+                  >
+                    <span class="search-item-main">{{ item.title || item.description || item.name }}</span>
+                    <span class="search-item-tag">{{ item.date || item.created_at }}</span>
+                  </div>
+                </div>
+                <!-- 学习内容 -->
+                <div v-if="searchResults.content?.length" class="search-category">
+                  <div class="search-category-title"><ReadOutlined /> 学习内容</div>
+                  <div
+                    v-for="item in searchResults.content"
+                    :key="'ct-' + item.id"
+                    class="search-result-item"
+                    @mousedown.prevent="goToResult('content', item)"
+                  >
+                    <span class="search-item-main">{{ item.title }}</span>
+                    <span class="search-item-tag">{{ item.type || item.category }}</span>
+                  </div>
+                </div>
+                <!-- 图片识别结果 -->
+                <div v-if="imageAnalysisResult" class="search-category">
+                  <div class="search-category-title"><CameraOutlined /> 图片识别</div>
+                  <div class="search-result-item">
+                    <span class="search-item-main">{{ imageAnalysisResult }}</span>
+                  </div>
+                </div>
               </div>
             </template>
             <a-input-search
               v-model:value="searchQuery"
-              placeholder="搜索用户、挑战、内容..."
-              :style="{ width: isCompact ? '100%' : '320px' }"
+              :placeholder="searchScope.placeholder.value"
+              :style="{ width: isCompact ? '100%' : '380px' }"
               allow-clear
               @search="doSearch"
               @blur="handleSearchBlur"
               @focus="handleSearchFocus"
             >
               <template #prefix><SearchOutlined /></template>
+              <template #addonAfter>
+                <div class="search-addon-btns">
+                  <AudioOutlined
+                    v-if="voiceInput.isSupported"
+                    :class="{ 'voice-active': voiceInput.isRecording.value }"
+                    @click="toggleVoice"
+                  />
+                  <CameraOutlined @click="triggerImageSearch" />
+                </div>
+              </template>
             </a-input-search>
+            <input ref="imageInputRef" type="file" accept="image/*" style="display:none" @change="onImageSelected" />
           </a-popover>
         </div>
         <div class="header-right">
@@ -400,10 +482,18 @@ import {
   FileAddOutlined,
   LineChartOutlined,
   AppstoreOutlined,
-  ExperimentOutlined
+  ExperimentOutlined,
+  LinkOutlined,
+  BellOutlined,
+  AudioOutlined,
+  CameraOutlined,
+  ReadOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons-vue'
 import request from '../api/request'
 import { UserAvatarPopover } from '@/components/health'
+import { useSearchScope } from '@/composables/useSearchScope'
+import { useVoiceInput } from '@/composables/useVoiceInput'
 
 const route = useRoute()
 const router = useRouter()
@@ -492,6 +582,10 @@ watch(() => route.path, (path) => {
     selectedKeys.value = ['admin-user-management']
   } else if (path === '/admin/distribution') {
     selectedKeys.value = ['admin-distribution']
+  } else if (path.includes('/admin/bindings')) {
+    selectedKeys.value = ['admin-bindings']
+  } else if (path.includes('push-queue')) {
+    selectedKeys.value = ['coach-push-queue']
   } else if (path === '/admin/analytics') {
     selectedKeys.value = ['admin-analytics']
   } else if (path.startsWith('/course')) {
@@ -541,6 +635,11 @@ watch(() => route.path, (path) => {
 }, { immediate: true })
 
 // ====== 全平台搜索 ======
+const searchScope = useSearchScope()
+const voiceInput = useVoiceInput()
+const imageInputRef = ref<HTMLInputElement | null>(null)
+const imageAnalysisResult = ref('')
+
 const searchQuery = ref('')
 const searchResults = ref<Record<string, any[]>>({})
 const searchTotal = ref(0)
@@ -559,13 +658,55 @@ watch(searchQuery, (val) => {
   searchTimer = setTimeout(() => doSearch(), 300)
 })
 
+// Watch voice transcript → auto-fill search query
+watch(() => voiceInput.transcript.value, (text) => {
+  if (text) {
+    searchQuery.value = text
+  }
+})
+
+const toggleVoice = () => {
+  voiceInput.toggleRecording()
+}
+
+const triggerImageSearch = () => {
+  imageInputRef.value?.click()
+}
+
+const onImageSelected = async (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  target.value = ''
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  searchLoading.value = true
+  searchPopoverOpen.value = true
+  imageAnalysisResult.value = ''
+  try {
+    const res = await request.post('v1/food/recognize', formData)
+    const data = res.data
+    imageAnalysisResult.value = data.description || data.result || JSON.stringify(data)
+    searchTotal.value = 1
+  } catch {
+    imageAnalysisResult.value = '图片识别失败'
+  } finally {
+    searchLoading.value = false
+  }
+}
+
 const doSearch = async () => {
   const q = searchQuery.value?.trim()
   if (!q) return
   searchLoading.value = true
   searchPopoverOpen.value = true
+  imageAnalysisResult.value = ''
   try {
-    const res = await request.get('v1/search', { params: { q, limit: 20 } })
+    const res = await request.get('v1/search', {
+      params: { q, modules: searchScope.modules.value.join(','), limit: 20 }
+    })
     const data = res.data
     searchResults.value = data.results || {}
     searchTotal.value = data.total || 0
@@ -590,6 +731,7 @@ const handleSearchFocus = () => {
 const goToResult = (type: string, item: any) => {
   searchPopoverOpen.value = false
   searchQuery.value = ''
+  imageAnalysisResult.value = ''
   switch (type) {
     case 'user':
       router.push('/admin/user-management')
@@ -605,6 +747,18 @@ const goToResult = (type: string, item: any) => {
       break
     case 'message':
       router.push('/coach/messages')
+      break
+    case 'prescription':
+      router.push('/rx/dashboard')
+      break
+    case 'task':
+      router.push('/coach/my/students')
+      break
+    case 'checkin':
+      router.push('/coach/my/students')
+      break
+    case 'content':
+      router.push('/admin/content-manage')
       break
   }
 }
@@ -730,6 +884,30 @@ const onMenuClick = () => {
 }
 .sider-mobile-open {
   transform: translateX(0);
+}
+
+/* ── 搜索附加按钮 ── */
+.search-addon-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #666;
+}
+.search-addon-btns > span {
+  transition: color 0.2s;
+}
+.search-addon-btns > span:hover {
+  color: var(--bhp-brand-primary, #10b981);
+}
+.voice-active {
+  color: #ff4d4f !important;
+  animation: voice-pulse 1s infinite;
+}
+@keyframes voice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
 
 @media (max-width: 768px) {

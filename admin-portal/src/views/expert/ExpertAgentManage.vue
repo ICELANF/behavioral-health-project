@@ -23,42 +23,31 @@
     </a-card>
 
     <!-- Agent 列表 -->
-    <a-table
-      :columns="columns"
-      :data-source="agents"
-      :loading="loading"
-      row-key="agent_id"
-      :pagination="false"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'display_name'">
-          <div>
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <a-empty v-if="agents.length === 0 && !loading" description="暂无 Agent" />
+        <ListCard v-for="record in agents" :key="record.agent_id">
+          <template #title>
             <span style="font-weight: 600">{{ record.display_name }}</span>
-            <a-tag v-if="record.is_preset" color="blue" style="margin-left: 8px">预置</a-tag>
-            <a-tag v-else color="green" style="margin-left: 8px">自建</a-tag>
-          </div>
-          <div style="color: #999; font-size: 12px">{{ record.agent_id }}</div>
-        </template>
-        <template v-if="column.key === 'keywords'">
-          <a-tag v-for="kw in (record.custom_keywords || []).slice(0, 5)" :key="kw" size="small">{{ kw }}</a-tag>
-          <span v-if="(record.custom_keywords || []).length > 5" style="color: #999">+{{ record.custom_keywords.length - 5 }}</span>
-        </template>
-        <template v-if="column.key === 'is_enabled'">
-          <a-switch
-            :checked="record.is_enabled"
-            :disabled="record.agent_id === 'crisis'"
-            @change="handleToggle(record)"
-            :loading="toggleLoading === record.agent_id"
-          />
-        </template>
-        <template v-if="column.key === 'actions'">
-          <a-space>
+            <a-tag v-if="record.is_preset" color="blue" size="small" style="margin-left: 8px">预置</a-tag>
+            <a-tag v-else color="green" size="small" style="margin-left: 8px">自建</a-tag>
+            <span style="color: #999; font-size: 12px; margin-left: 8px">{{ record.agent_id }}</span>
+          </template>
+          <template #subtitle>
+            <span style="color: #666; font-size: 12px">优先级: {{ record.priority }} · 类型: {{ record.agent_type }}</span>
+          </template>
+          <template #meta>
+            <a-tag v-for="kw in (record.custom_keywords || []).slice(0, 5)" :key="kw" size="small">{{ kw }}</a-tag>
+            <span v-if="(record.custom_keywords || []).length > 5" style="color: #999">+{{ record.custom_keywords.length - 5 }}</span>
+          </template>
+          <template #actions>
+            <a-switch :checked="record.is_enabled" :disabled="record.agent_id === 'crisis'" @change="handleToggle(record)" :loading="toggleLoading === record.agent_id" />
             <a-button size="small" @click="openEdit(record)">编辑</a-button>
             <a-button v-if="!record.is_preset" size="small" danger @click="handleDelete(record)">删除</a-button>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+          </template>
+        </ListCard>
+      </div>
+    </a-spin>
 
     <!-- 路由测试面板 -->
     <a-card title="路由测试" style="margin-top: 24px" v-if="tenantId">
@@ -183,6 +172,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import request from '../../api/request'
+import ListCard from '@/components/core/ListCard.vue'
 
 // 租户 ID (从用户关联信息获取)
 const tenantId = ref('')
@@ -193,14 +183,7 @@ const tenantSlug = computed(() => {
 const loading = ref(false)
 const agents = ref<any[]>([])
 
-const columns = [
-  { title: '名称', key: 'display_name', dataIndex: 'display_name' },
-  { title: '关键词', key: 'keywords' },
-  { title: '优先级', dataIndex: 'priority', key: 'priority', width: 80 },
-  { title: '类型', dataIndex: 'agent_type', key: 'agent_type', width: 100 },
-  { title: '启用', key: 'is_enabled', width: 80 },
-  { title: '操作', key: 'actions', width: 160 },
-]
+// columns removed — using ListCard layout
 
 const correlationOptions = computed(() => {
   return agents.value.map(a => ({ label: a.display_name, value: a.agent_id }))
@@ -393,4 +376,6 @@ onMounted(async () => {
 .expert-agent-manage {
   padding: 0;
 }
+
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 </style>

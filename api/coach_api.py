@@ -61,6 +61,21 @@ _STAGE_PRIORITY = {
 _STUDENT_ROLES = [UserRole.OBSERVER, UserRole.GROWER, UserRole.SHARER]
 
 
+def _get_my_student_ids(db: Session, current_user: User) -> list:
+    """获取当前教练绑定的学员ID列表（权威源: coach_student_bindings）"""
+    from sqlalchemy import text as sa_text
+    if current_user.role.value == "admin":
+        rows = db.query(User.id).filter(
+            User.is_active == True, User.role.in_(_STUDENT_ROLES)
+        ).all()
+        return [r[0] for r in rows]
+    rows = db.execute(sa_text(
+        "SELECT student_id FROM coach_schema.coach_student_bindings "
+        "WHERE coach_id = :cid AND is_active = true"
+    ), {"cid": current_user.id}).fetchall()
+    return [r[0] for r in rows]
+
+
 @router.get("/dashboard")
 def get_coach_dashboard(
     db: Session = Depends(get_db),
@@ -245,11 +260,22 @@ def get_coach_dashboard(
 @router.get("/students")
 def list_my_students(
     search: Optional[str] = None,
+    behavior: Optional[str] = Query(None, description="行为阶段过滤"),
+    needs: Optional[str] = Query(None, description="需求类型过滤"),
+    risk: Optional[str] = Query(None, description="风险等级过滤"),
+    activity: Optional[str] = Query(None, description="活跃度过滤"),
+    priority: Optional[str] = Query(None, description="优先级桶: urgent/important/normal/routine"),
+    sort_by: str = Query("priority", description="排序: priority/name/risk/activity/stage"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(50, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_coach_or_admin),
 ):
-    """获取当前教练的学员列表 — 基于 coach_student_bindings 表"""
+    """获取当前教练的学员列表 — 基于 coach_student_bindings 表，含4维分类"""
     from sqlalchemy import text as sa_text
+    from core.student_classification_service import (
+        classify_students_batch, build_classification_summary, classification_to_dict,
+    )
 
     if current_user.role.value == 'admin':
         # 管理员看全部学员角色用户
@@ -265,32 +291,66 @@ def list_my_students(
         ), {"cid": current_user.id}).fetchall()
         student_ids = [r[0] for r in rows]
         if not student_ids:
-            return {"students": [], "total": 0}
+            return {"students": [], "total": 0, "classification_summary": {}}
         bound_users = db.query(User).filter(
             User.id.in_(student_ids),
             User.is_active == True,
             User.role.in_(_STUDENT_ROLES),
         ).all()
 
+    # 文本搜索过滤
+    if search:
+        bound_users = [
+            g for g in bound_users
+            if search in (g.full_name or '') or search in (g.username or '')
+        ]
+
+    # 批量分类 (8次SQL, 非N+1)
+    all_ids = [g.id for g in bound_users]
+    classifications = classify_students_batch(db, all_ids)
+
+    # 生成全量 summary (过滤前)
+    classification_summary = build_classification_summary(classifications)
+
+    # 维度过滤
+    if behavior:
+        vals = set(behavior.split(","))
+        bound_users = [g for g in bound_users if classifications[g.id].behavior in vals]
+    if needs:
+        vals = set(needs.split(","))
+        bound_users = [g for g in bound_users if classifications[g.id].needs in vals]
+    if risk:
+        vals = set(risk.split(","))
+        bound_users = [g for g in bound_users if classifications[g.id].risk in vals]
+    if activity:
+        vals = set(activity.split(","))
+        bound_users = [g for g in bound_users if classifications[g.id].activity in vals]
+    if priority:
+        vals = set(priority.split(","))
+        bound_users = [g for g in bound_users if classifications[g.id].priority_bucket in vals]
+
+    # 排序
+    _risk_order = {"crisis": 4, "high": 3, "moderate": 2, "low": 1, "normal": 0}
+    _activity_order = {"dormant": 4, "inactive": 3, "moderate": 2, "active": 1, "highly_active": 0}
+    if sort_by == "priority":
+        bound_users.sort(key=lambda g: -classifications[g.id].priority_score)
+    elif sort_by == "risk":
+        bound_users.sort(key=lambda g: -_risk_order.get(classifications[g.id].risk, 0))
+    elif sort_by == "activity":
+        bound_users.sort(key=lambda g: -_activity_order.get(classifications[g.id].activity, 0))
+    elif sort_by == "name":
+        bound_users.sort(key=lambda g: g.full_name or g.username or "")
+    elif sort_by == "stage":
+        bound_users.sort(key=lambda g: classifications[g.id].behavior)
+
+    # 分页
+    total = len(bound_users)
+    start = (page - 1) * page_size
+    bound_users = bound_users[start:start + page_size]
+
     students = []
     for g in bound_users:
-        if search and search not in (g.full_name or '') and search not in (g.username or ''):
-            continue
-
-        # 获取最近的评估
-        latest_assessment = db.query(Assessment).filter(
-            Assessment.user_id == g.id
-        ).order_by(Assessment.created_at.desc()).first()
-
-        risk_level = None
-        if latest_assessment and latest_assessment.risk_level:
-            risk_level = latest_assessment.risk_level.value
-
-        active_days = 0
-        if latest_assessment and latest_assessment.created_at:
-            days_since = (datetime.utcnow() - latest_assessment.created_at).days
-            active_days = max(0, 7 - days_since)
-
+        cls = classifications.get(g.id)
         students.append({
             "id": g.id,
             "username": g.username,
@@ -300,13 +360,20 @@ def list_my_students(
             "current_stage": g.current_stage,
             "profile": getattr(g, 'profile', None) or {},
             "adherence_rate": getattr(g, 'adherence_rate', 0) or 0,
-            "latest_risk": risk_level,
-            "active_days": active_days,
-            "last_active": latest_assessment.created_at.isoformat() if latest_assessment and latest_assessment.created_at else None,
+            "latest_risk": cls.risk if cls else None,
+            "active_days": 0,
+            "last_active": g.last_login_at.isoformat() if g.last_login_at else None,
             "created_at": g.created_at.isoformat() if g.created_at else None,
+            "classification": classification_to_dict(cls) if cls else None,
         })
 
-    return {"students": students, "total": len(students)}
+    return {
+        "students": students,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "classification_summary": classification_summary,
+    }
 
 
 @router.get("/students/{student_id}")
@@ -359,13 +426,11 @@ def get_my_performance(
     current_user: User = Depends(require_coach_or_admin),
 ):
     """获取教练绩效数据"""
-    # 统计负载的学员数
-    growers = db.query(User).filter(
-        User.role == UserRole.GROWER,
-        User.is_active == True,
-    ).all()
-
-    my_students = [g for g in growers if (g.profile or {}).get('coach_id') == current_user.id]
+    # 统计负载的学员数 (权威源: coach_student_bindings)
+    student_ids = _get_my_student_ids(db, current_user)
+    my_students = db.query(User).filter(
+        User.id.in_(student_ids), User.is_active == True
+    ).all() if student_ids else []
     total_students = len(my_students)
 
     # 学员风险分布
@@ -818,15 +883,11 @@ def get_my_certification(
     detail = _LEVEL_DETAIL.get(level_code, _LEVEL_DETAIL["L0"])
 
     # ── 统计真实数据 ──
-    # 1. 学员数
-    growers = db.query(User).filter(
-        User.role == UserRole.GROWER, User.is_active == True,
-    ).all()
-    is_admin = current_user.role.value == "admin"
-    my_students = [
-        g for g in growers
-        if is_admin or (g.profile or {}).get("coach_id") == current_user.id
-    ]
+    # 1. 学员数 (权威源: coach_student_bindings)
+    student_ids = _get_my_student_ids(db, current_user)
+    my_students = db.query(User).filter(
+        User.id.in_(student_ids), User.is_active == True
+    ).all() if student_ids else []
     student_count = len(my_students)
 
     # 2. 消息数
@@ -932,15 +993,8 @@ def get_my_tools_stats(
     )
     msg_map = {t: c for t, c in msg_counts}
 
-    # ── 2. 学员评估浏览 (代理: 教练的学员有多少新评估) ──
-    growers = db.query(User).filter(
-        User.role == UserRole.GROWER, User.is_active == True,
-    ).all()
-    is_admin = current_user.role.value == "admin"
-    student_ids = [
-        g.id for g in growers
-        if is_admin or (g.profile or {}).get("coach_id") == current_user.id
-    ]
+    # ── 2. 学员评估浏览 (权威源: coach_student_bindings) ──
+    student_ids = _get_my_student_ids(db, current_user)
     assessment_count = 0
     if student_ids:
         assessment_count = db.query(func.count(Assessment.id)).filter(
@@ -1333,9 +1387,9 @@ def coach_directory(
 def list_promotion_applications(
     status_filter: Optional[str] = Query(None, alias="status"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
-    """查询晋级申请列表"""
+    """查询晋级申请列表 (教练及以上)"""
     from core.models import PromotionApplication
 
     query = db.query(PromotionApplication).order_by(PromotionApplication.created_at.desc())
@@ -1379,9 +1433,9 @@ def list_promotion_applications(
 def approve_promotion_application(
     app_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
-    """批准晋级申请"""
+    """批准晋级申请 (促进师及以上)"""
     from core.models import PromotionApplication
     import uuid as _uuid
 
@@ -1420,9 +1474,9 @@ def reject_promotion_application(
     app_id: str,
     body: dict = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin),
+    current_user: User = Depends(require_coach_or_admin),
 ):
-    """拒绝晋级申请"""
+    """拒绝晋级申请 (促进师及以上)"""
     from core.models import PromotionApplication
     import uuid as _uuid
 

@@ -93,31 +93,29 @@
       </a-col>
     </a-row>
 
-    <!-- 课程表格 -->
-    <a-table
-      :dataSource="filteredCourses"
-      :columns="columns"
-      :loading="loading"
-      :pagination="pagination"
-      @change="handleTableChange"
-      rowKey="course_id"
-      :rowClassName="(record: any) => record.access_status && !record.access_status.accessible ? 'locked-row' : ''"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'cover'">
-          <div class="cover-wrapper">
-            <a-image :src="record.cover_url || defaultCover" :width="80" :preview="false" />
-            <div v-if="record.access_status && !record.access_status.accessible" class="lock-overlay" @click="showLockTip(record)">
-              <LockOutlined class="lock-icon" />
+    <!-- 课程列表 -->
+    <a-spin :spinning="loading">
+      <div class="list-card-container">
+        <ListCard
+          v-for="record in filteredCourses"
+          :key="record.course_id"
+          :class="{ 'locked-card': record.access_status && !record.access_status.accessible }"
+        >
+          <template #avatar>
+            <div class="cover-wrapper">
+              <a-image :src="record.cover_url || defaultCover" :width="80" :preview="false" style="border-radius: 6px" />
+              <div v-if="record.access_status && !record.access_status.accessible" class="lock-overlay" @click="showLockTip(record)">
+                <LockOutlined class="lock-icon" />
+              </div>
             </div>
-          </div>
-        </template>
-        <template v-if="column.key === 'title'">
-          <div>
-            <div class="course-title">
+          </template>
+          <template #title>
+            <span>
               {{ record.title }}
               <LockOutlined v-if="record.access_status && !record.access_status.accessible" style="color: #faad14; margin-left: 4px; font-size: 12px" />
-            </div>
+            </span>
+          </template>
+          <template #subtitle>
             <div class="course-tags">
               <a-tag :color="audienceColors[record.audience]" size="small">
                 {{ audienceLabels[record.audience] || '未设置' }}
@@ -132,67 +130,69 @@
               <a-tag size="small">{{ categoryLabels[record.category] }}</a-tag>
               <a-tag v-if="record.domain" size="small" color="cyan">{{ getDomainLabel(record.domain) }}</a-tag>
             </div>
-          </div>
-        </template>
-        <template v-if="column.key === 'author'">
-          <div class="author-cell">
-            <a-avatar :src="record.author_avatar" size="small">
-              {{ record.author_name?.charAt(0) }}
-            </a-avatar>
-            <div class="author-info">
+          </template>
+          <template #meta>
+            <div class="author-cell">
+              <a-avatar :src="record.author_avatar" :size="20">
+                {{ record.author_name?.charAt(0) }}
+              </a-avatar>
               <span class="author-name">{{ record.author_name }}</span>
               <CheckCircleFilled v-if="record.author_verified" class="verified-icon" />
-              <div class="author-title" v-if="record.author_title">{{ record.author_title }}</div>
             </div>
-          </div>
-        </template>
-        <template v-if="column.key === 'stats'">
-          <div class="course-stats">
+            <span class="meta-divider">|</span>
             <span><BookOutlined /> {{ record.chapter_count || 0 }} 章节</span>
             <span><ClockCircleOutlined /> {{ record.duration_minutes || 0 }} 分钟</span>
-          </div>
-          <div class="course-stats">
             <span><EyeOutlined /> {{ formatNumber(record.view_count || 0) }}</span>
             <span><UserOutlined /> {{ formatNumber(record.enroll_count || 0) }}</span>
             <span v-if="record.avg_rating"><StarFilled style="color: #faad14" /> {{ record.avg_rating }}</span>
-          </div>
-        </template>
-        <template v-if="column.key === 'status'">
-          <a-badge
-            :status="statusMap[record.status]?.badge"
-            :text="statusMap[record.status]?.text"
-          />
-          <div v-if="record.review_status === 'pending'" style="margin-top: 4px">
-            <a-tag color="orange" size="small">待审核</a-tag>
-          </div>
-        </template>
-        <template v-if="column.key === 'action'">
-          <a-space>
-            <a @click="$router.push(`/course/chapters/${record.course_id}`)">章节</a>
-            <a @click="$router.push(`/course/edit/${record.course_id}`)">编辑</a>
-            <a-dropdown>
-              <a>更多</a>
-              <template #overlay>
-                <a-menu>
-                  <a-menu-item v-if="record.status === 'draft'" @click="handlePublish(record)">
-                    上架
-                  </a-menu-item>
-                  <a-menu-item v-if="record.status === 'published'" @click="handleOffline(record)">
-                    下架
-                  </a-menu-item>
-                  <a-menu-item v-if="record.review_status === 'pending'" @click="handleReview(record)">
-                    <span style="color: #faad14">审核</span>
-                  </a-menu-item>
-                  <a-menu-item @click="handlePreview(record)">预览</a-menu-item>
-                  <a-menu-divider />
-                  <a-menu-item danger @click="handleDelete(record)">删除</a-menu-item>
-                </a-menu>
-              </template>
-            </a-dropdown>
-          </a-space>
-        </template>
-      </template>
-    </a-table>
+            <span class="meta-divider">|</span>
+            <a-badge
+              :status="statusMap[record.status]?.badge"
+              :text="statusMap[record.status]?.text"
+            />
+            <a-tag v-if="record.review_status === 'pending'" color="orange" size="small">待审核</a-tag>
+          </template>
+          <template #actions>
+            <a-space>
+              <a @click="$router.push(`/course/chapters/${record.course_id}`)">章节</a>
+              <a @click="$router.push(`/course/edit/${record.course_id}`)">编辑</a>
+              <a-dropdown>
+                <a>更多</a>
+                <template #overlay>
+                  <a-menu>
+                    <a-menu-item v-if="record.status === 'draft'" @click="handlePublish(record)">
+                      上架
+                    </a-menu-item>
+                    <a-menu-item v-if="record.status === 'published'" @click="handleOffline(record)">
+                      下架
+                    </a-menu-item>
+                    <a-menu-item v-if="record.review_status === 'pending'" @click="handleReview(record)">
+                      <span style="color: #faad14">审核</span>
+                    </a-menu-item>
+                    <a-menu-item @click="handlePreview(record)">预览</a-menu-item>
+                    <a-menu-divider />
+                    <a-menu-item danger @click="handleDelete(record)">删除</a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
+            </a-space>
+          </template>
+        </ListCard>
+      </div>
+      <div v-if="filteredCourses.length === 0 && !loading" style="text-align: center; padding: 40px; color: #999">
+        暂无课程数据
+      </div>
+    </a-spin>
+    <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="pagination.current"
+        v-model:pageSize="pagination.pageSize"
+        :total="pagination.total"
+        show-size-changer
+        :show-total="(total: number) => `共 ${total} 个课程`"
+        @change="onPaginationChange"
+      />
+    </div>
   </div>
 </template>
 
@@ -215,12 +215,13 @@ import type { ContentSource } from '@/types/content'
 import { TRIGGER_DOMAINS } from '@/constants'
 import { useAuthStore } from '@/stores/auth'
 import { fetchContentList } from '@/api/course'
+import ListCard from '@/components/core/ListCard.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const loading = ref(false)
 const onlyAccessible = ref(false)
-const defaultCover = ''
+const defaultCover = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="160" height="90" fill="none"><rect width="160" height="90" rx="4" fill="#f0f2f5"/><text x="80" y="50" text-anchor="middle" fill="#bfbfbf" font-size="14" font-family="sans-serif">暂无封面</text></svg>')
 
 const filters = reactive({
   audience: undefined as string | undefined,
@@ -284,15 +285,7 @@ const statusMap: Record<string, { badge: string; text: string }> = {
   offline: { badge: 'error', text: '已下架' }
 }
 
-const columns = [
-  { title: '封面', key: 'cover', width: 100 },
-  { title: '课程信息', key: 'title', width: 280 },
-  { title: '作者', key: 'author', width: 150 },
-  { title: '数据统计', key: 'stats', width: 180 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '更新时间', dataIndex: 'updated_at', width: 120 },
-  { title: '操作', key: 'action', width: 140, fixed: 'right' }
-]
+// columns removed — now using ListCard layout
 
 // 辅助函数
 const getSourceLabel = (source: ContentSource) => CONTENT_SOURCE_CONFIG[source]?.label || source
@@ -368,7 +361,7 @@ const fetchCourses = async () => {
       is_free: item.is_free,
       access_status: item.access_status,
       status: 'published',
-      cover_url: '',
+      cover_url: item.cover_url || '',
       chapter_count: item.chapter_count || item.sections?.length || 0,
       duration_minutes: item.duration ? Math.round(item.duration / 60) : 0,
       enroll_count: item.enroll_count || item.collect_count || 0,
@@ -403,6 +396,12 @@ const showLockTip = (record: any) => {
 const handleTableChange = (pag: any) => {
   pagination.current = pag.current
   pagination.pageSize = pag.pageSize
+  fetchCourses()
+}
+
+const onPaginationChange = (page: number, pageSize: number) => {
+  pagination.current = page
+  pagination.pageSize = pageSize
   fetchCourses()
 }
 
@@ -457,6 +456,12 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.list-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .page-header {
   display: flex;
   justify-content: space-between;
@@ -468,11 +473,6 @@ onMounted(() => {
   margin: 0;
 }
 
-.course-title {
-  font-weight: 500;
-  margin-bottom: 6px;
-}
-
 .course-tags {
   display: flex;
   flex-wrap: wrap;
@@ -482,11 +482,7 @@ onMounted(() => {
 .author-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.author-info {
-  line-height: 1.4;
+  gap: 6px;
 }
 
 .author-name {
@@ -496,25 +492,15 @@ onMounted(() => {
 .verified-icon {
   color: #1890ff;
   font-size: 12px;
-  margin-left: 4px;
+  margin-left: 2px;
 }
 
-.author-title {
-  font-size: 11px;
-  color: #999;
+.meta-divider {
+  color: #d9d9d9;
+  margin: 0 4px;
 }
 
-.course-stats {
-  color: #666;
-  font-size: 12px;
-  margin-bottom: 4px;
-}
-
-.course-stats span {
-  margin-right: 10px;
-}
-
-/* 锁定相关样式 */
+/* Lock styles */
 .cover-wrapper {
   position: relative;
   display: inline-block;
@@ -531,7 +517,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .lock-icon {
@@ -539,7 +525,7 @@ onMounted(() => {
   font-size: 24px;
 }
 
-:deep(.locked-row) {
+.locked-card {
   opacity: 0.7;
 }
 </style>

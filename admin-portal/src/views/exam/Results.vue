@@ -102,74 +102,33 @@
         </a-col>
       </a-row>
 
-      <!-- 成绩表格 -->
-      <a-table
-        :dataSource="resultList"
-        :columns="columns"
-        :loading="loading"
-        :pagination="pagination"
-        rowKey="id"
-        @change="handleTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <!-- 考生姓名 -->
-          <template v-if="column.key === 'user_name'">
-            <span>{{ record.user_name || record.coach_id }}</span>
-          </template>
-
-          <!-- 得分 -->
-          <template v-else-if="column.key === 'score'">
-            <span :style="{ color: record.status === 'passed' ? '#52c41a' : '#ff4d4f', fontWeight: 'bold' }">
-              {{ record.score }} 分
-            </span>
-          </template>
-
-          <!-- 状态 -->
-          <template v-else-if="column.key === 'status'">
-            <a-tag :color="record.status === 'passed' ? 'success' : 'error'">
-              {{ record.status === 'passed' ? '通过' : '未通过' }}
-            </a-tag>
-          </template>
-
-          <!-- 用时 -->
-          <template v-else-if="column.key === 'duration'">
-            {{ formatDuration(record.duration_seconds) }}
-          </template>
-
-          <!-- 提交时间 -->
-          <template v-else-if="column.key === 'submitted_at'">
-            {{ formatDate(record.submitted_at) }}
-          </template>
-
-          <!-- 诚信分 -->
-          <template v-else-if="column.key === 'integrity_score'">
-            <a-progress
-              :percent="record.integrity_score"
-              :size="50"
-              type="circle"
-              :status="record.integrity_score >= 80 ? 'success' : record.integrity_score >= 60 ? 'normal' : 'exception'"
-            />
-          </template>
-
-          <!-- 操作 -->
-          <template v-else-if="column.key === 'action'">
-            <a-space>
-              <a-button type="link" size="small" @click="handleViewDetail(record)">
-                查看详情
-              </a-button>
-              <a-button
-                v-if="record.review_status === 'flagged'"
-                type="link"
-                size="small"
-                danger
-                @click="handleInvalidate(record)"
-              >
-                作废
-              </a-button>
-            </a-space>
-          </template>
-        </template>
-      </a-table>
+      <!-- 成绩列表 -->
+      <a-spin :spinning="loading">
+        <div class="list-card-container">
+          <a-empty v-if="resultList.length === 0 && !loading" description="暂无成绩记录" />
+          <ListCard v-for="record in resultList" :key="record.id" @click="handleViewDetail(record)">
+            <template #title>
+              <span>{{ record.user_name || record.coach_id }}</span>
+              <a-tag :color="record.status === 'passed' ? 'success' : 'error'" size="small" style="margin-left: 8px">{{ record.status === 'passed' ? '通过' : '未通过' }}</a-tag>
+            </template>
+            <template #subtitle>
+              <span :style="{ color: record.status === 'passed' ? '#52c41a' : '#ff4d4f', fontWeight: 'bold' }">{{ record.score }} 分</span>
+              <span style="margin-left: 12px; color: #666">用时 {{ formatDuration(record.duration_seconds) }}</span>
+            </template>
+            <template #meta>
+              <span style="color: #999; font-size: 12px">诚信 {{ record.integrity_score }}%</span>
+              <span style="color: #999; font-size: 12px">{{ formatDate(record.submitted_at) }}</span>
+            </template>
+            <template #actions>
+              <a-button type="link" size="small" @click.stop="handleViewDetail(record)">详情</a-button>
+              <a-button v-if="record.review_status === 'flagged'" type="link" size="small" danger @click.stop="handleInvalidate(record)">作废</a-button>
+            </template>
+          </ListCard>
+        </div>
+      </a-spin>
+      <div style="display: flex; justify-content: flex-end; margin-top: 16px">
+        <a-pagination v-model:current="filters.page" v-model:pageSize="filters.page_size" :total="resultList.length" show-size-changer :show-total="(t: number) => `共 ${t} 条`" @change="onResultPageChange" />
+      </div>
     </a-card>
 
     <!-- 成绩详情弹窗 -->
@@ -256,6 +215,7 @@ import { useExamStore } from '../../stores/exam';
 import { resultApi } from '../../api/result';
 import type { ExamResult, ExamStatistics, ResultListParams } from '../../types/exam';
 import dayjs from 'dayjs';
+import ListCard from '@/components/core/ListCard.vue';
 
 const route = useRoute();
 const examStore = useExamStore();
@@ -299,26 +259,7 @@ const dateRange = ref<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 const resultList = ref<ExamResult[]>([]);
 
 
-// 分页配置
-const pagination = computed(() => ({
-  current: filters.page,
-  pageSize: filters.page_size,
-  total: resultList.value.length,
-  showSizeChanger: true,
-  showQuickJumper: true,
-  showTotal: (total: number) => `共 ${total} 条`,
-}));
-
-// 表格列定义
-const columns = [
-  { title: '考生', key: 'user_name', width: 150 },
-  { title: '得分', key: 'score', width: 100, align: 'center' as const },
-  { title: '状态', key: 'status', width: 100, align: 'center' as const },
-  { title: '用时', key: 'duration', width: 100, align: 'center' as const },
-  { title: '提交时间', key: 'submitted_at', width: 180 },
-  { title: '诚信分', key: 'integrity_score', width: 100, align: 'center' as const },
-  { title: '操作', key: 'action', width: 150 },
-];
+// columns + pagination computed removed — using ListCard layout
 
 // 答题详情列定义
 const answerColumns = [
@@ -388,10 +329,8 @@ const handleReset = () => {
   loadResults();
 };
 
-// 表格变化
-const handleTableChange = (pag: any) => {
-  filters.page = pag.current;
-  filters.page_size = pag.pageSize;
+const onResultPageChange = (page: number) => {
+  filters.page = page;
   loadResults();
 };
 
@@ -483,6 +422,8 @@ onMounted(() => {
 .exam-results {
   padding: 0;
 }
+
+.list-card-container { display: flex; flex-direction: column; gap: 10px; }
 
 .page-header {
   display: flex;

@@ -89,84 +89,75 @@
     </a-card>
 
     <!-- 直播列表 -->
-    <a-card>
+    <a-spin :spinning="loading">
       <a-empty v-if="!loading && lives.length === 0" description="直播功能即将上线，敬请期待" style="padding: 60px 0" />
-      <a-table
-        v-else
-        :dataSource="filteredLives"
-        :columns="columns"
-        :loading="loading"
-        :pagination="pagination"
-        rowKey="live_id"
-        @change="handleTableChange"
-      >
-        <template #bodyCell="{ column, record }">
-          <template v-if="column.key === 'title'">
-            <div class="live-title-cell">
-              <div class="live-cover">
-                <img v-if="record.cover_url" :src="record.cover_url" alt="封面" />
-                <div v-else class="cover-placeholder">
-                  <VideoCameraOutlined />
-                </div>
-                <div v-if="record.status === 'live'" class="live-badge">
-                  <span class="live-dot"></span> 直播中
-                </div>
+      <div v-else class="list-card-container">
+        <ListCard
+          v-for="record in filteredLives"
+          :key="record.live_id"
+          @click="viewLive(record)"
+        >
+          <template #avatar>
+            <div class="live-cover">
+              <img v-if="record.cover_url" :src="record.cover_url" alt="封面" />
+              <div v-else class="cover-placeholder">
+                <VideoCameraOutlined />
               </div>
-              <div class="live-info">
-                <div class="live-title">{{ record.title }}</div>
-                <div class="live-meta">
-                  <ClockCircleOutlined /> {{ formatDateTime(record.scheduled_at) }}
-                  <span style="margin-left: 12px">
-                    <FieldTimeOutlined /> {{ record.duration_minutes }}分钟
-                  </span>
-                </div>
+              <div v-if="record.status === 'live'" class="live-badge">
+                <span class="live-dot"></span> 直播中
               </div>
             </div>
           </template>
-
-          <template v-else-if="column.key === 'instructor'">
+          <template #title>
+            <span>{{ record.title }}</span>
+          </template>
+          <template #subtitle>
             <div class="instructor-cell">
-              <a-avatar :size="32">{{ record.instructor_name?.[0] }}</a-avatar>
+              <a-avatar :size="20">{{ record.instructor_name?.[0] }}</a-avatar>
               <span>{{ record.instructor_name }}</span>
             </div>
           </template>
-
-          <template v-else-if="column.key === 'level'">
+          <template #meta>
             <a-tag :color="levelColors[record.level]">{{ record.level }}</a-tag>
-          </template>
-
-          <template v-else-if="column.key === 'status'">
             <a-badge :status="statusBadges[record.status]" :text="statusLabels[record.status]" />
-          </template>
-
-          <template v-else-if="column.key === 'viewers'">
+            <span class="meta-divider">|</span>
+            <span><ClockCircleOutlined /> {{ formatDateTime(record.scheduled_at) }}</span>
+            <span><FieldTimeOutlined /> {{ record.duration_minutes }}分钟</span>
             <span v-if="record.status === 'live' || record.status === 'ended'">
               <EyeOutlined /> {{ record.viewer_count || 0 }}
             </span>
-            <span v-else style="color: #999">-</span>
           </template>
-
-          <template v-else-if="column.key === 'action'">
+          <template #actions>
             <a-space>
-              <a @click="viewLive(record)">详情</a>
+              <a @click.stop="viewLive(record)">详情</a>
               <template v-if="record.status === 'scheduled'">
-                <a @click="editLive(record)">编辑</a>
-                <a style="color: #ff4d4f" @click="cancelLive(record)">取消</a>
+                <a @click.stop="editLive(record)">编辑</a>
+                <a style="color: #ff4d4f" @click.stop="cancelLive(record)">取消</a>
               </template>
               <template v-else-if="record.status === 'live'">
-                <a style="color: #52c41a" @click="enterLiveRoom(record)">进入直播间</a>
+                <a style="color: #52c41a" @click.stop="enterLiveRoom(record)">进入直播间</a>
               </template>
               <template v-else-if="record.status === 'ended'">
-                <a v-if="record.replay_url" @click="viewReplay(record)">查看回放</a>
+                <a v-if="record.replay_url" @click.stop="viewReplay(record)">查看回放</a>
                 <a-popconfirm title="确定删除该直播记录吗？" @confirm="deleteLive(record)">
-                  <a style="color: #ff4d4f">删除</a>
+                  <a style="color: #ff4d4f" @click.stop>删除</a>
                 </a-popconfirm>
               </template>
             </a-space>
           </template>
-        </template>
-      </a-table>
-    </a-card>
+        </ListCard>
+      </div>
+    </a-spin>
+    <div v-if="filteredLives.length > 0" style="display: flex; justify-content: flex-end; margin-top: 16px">
+      <a-pagination
+        v-model:current="pagination.current"
+        v-model:pageSize="pagination.pageSize"
+        :total="pagination.total"
+        show-size-changer
+        :show-total="(total: number) => `共 ${total} 条记录`"
+        @change="onPaginationChange"
+      />
+    </div>
 
     <!-- 直播详情弹窗 -->
     <a-modal
@@ -239,6 +230,7 @@ import {
   PlaySquareOutlined
 } from '@ant-design/icons-vue'
 import dayjs from 'dayjs'
+import ListCard from '@/components/core/ListCard.vue'
 
 const router = useRouter()
 
@@ -281,15 +273,7 @@ const pagination = reactive({
   showTotal: (total: number) => `共 ${total} 条记录`
 })
 
-// 表格列
-const columns = [
-  { title: '直播信息', key: 'title', width: 350 },
-  { title: '讲师', key: 'instructor', width: 140 },
-  { title: '等级', key: 'level', width: 80 },
-  { title: '状态', key: 'status', width: 100 },
-  { title: '观看人数', key: 'viewers', width: 100 },
-  { title: '操作', key: 'action', width: 180, fixed: 'right' }
-]
+// columns removed — now using ListCard layout
 
 // 常量
 const levelColors: Record<string, string> = {
@@ -403,6 +387,11 @@ const handleTableChange = (pag: any) => {
   pagination.pageSize = pag.pageSize
 }
 
+const onPaginationChange = (page: number, pageSize: number) => {
+  pagination.current = page
+  pagination.pageSize = pageSize
+}
+
 const viewLive = (record: LiveSession) => {
   currentLive.value = record
   detailVisible.value = true
@@ -458,6 +447,12 @@ const deleteLive = async (record: LiveSession) => {
 </script>
 
 <style scoped>
+.list-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .live-list {
   padding: 0;
 }
@@ -491,11 +486,6 @@ const deleteLive = async (record: LiveSession) => {
   0% { opacity: 1; }
   50% { opacity: 0.5; }
   100% { opacity: 1; }
-}
-
-.live-title-cell {
-  display: flex;
-  gap: 12px;
 }
 
 .live-cover {
@@ -550,27 +540,15 @@ const deleteLive = async (record: LiveSession) => {
   animation: pulse 1s infinite;
 }
 
-.live-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.live-title {
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.live-meta {
-  font-size: 12px;
-  color: #999;
+.meta-divider {
+  color: #d9d9d9;
+  margin: 0 4px;
 }
 
 .instructor-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .live-detail-header {
