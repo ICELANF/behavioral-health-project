@@ -160,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { ClockCircleOutlined, RobotOutlined } from '@ant-design/icons-vue'
@@ -185,6 +185,7 @@ const messageListRef = ref<HTMLElement>()
 const inputMessage = ref('')
 const messageType = ref('text')
 const sending = ref(false)
+const autoLoadAi = ref(false)  // 工具箱跳转时自动加载AI建议
 
 // AI 消息建议
 const aiSuggestions = ref<any[]>([])
@@ -230,6 +231,11 @@ async function selectStudent(s: any) {
     scrollToBottom()
   } catch {
     messages.value = []
+  }
+  // 工具箱跳转: 选中学员后自动加载AI建议
+  if (autoLoadAi.value) {
+    autoLoadAi.value = false
+    loadAiSuggestions()
   }
 }
 
@@ -336,8 +342,25 @@ async function createReminder() {
   }
 }
 
+// 切换消息类型时，如果已有学员选中，自动刷新AI建议
+watch(messageType, () => {
+  if (selectedStudent.value && aiSuggestions.value.length > 0) {
+    loadAiSuggestions()
+  }
+})
+
 onMounted(async () => {
+  // 从工具箱跳转: ?tool=encouragement&ai=1
+  const toolType = route.query.tool as string
+  if (toolType) {
+    messageType.value = toolType
+  }
+  if (route.query.ai === '1') {
+    autoLoadAi.value = true
+  }
+
   await loadStudents()
+
   // 从 query 参数自动选中学员
   const qid = route.query.student_id
   if (qid && students.value.length) {

@@ -121,11 +121,20 @@ const loadData = async () => {
 }
 
 const useTool = (tool: any) => {
+  // message/encouragement/advice/reminder → 跳转消息页并传递工具类型，自动触发AI建议
+  const messageTools = ['message', 'encouragement', 'advice', 'reminder']
+  if (messageTools.includes(tool.key)) {
+    const typeMap: Record<string, string> = {
+      message: 'text',
+      encouragement: 'encouragement',
+      advice: 'advice',
+      reminder: 'reminder',
+    }
+    router.push({ path: '/coach/messages', query: { tool: typeMap[tool.key] || 'text', ai: '1' } })
+    return
+  }
+
   const routes: Record<string, string> = {
-    message: '/coach/messages',
-    encouragement: '/coach/messages',
-    advice: '/coach/messages',
-    reminder: '/coach/messages',
     assessment: '/coach/home',
     micro_action: '/coach/home',
   }
