@@ -551,6 +551,14 @@ try:
 except ImportError as e:
     print(f"[API] Prompt模板路由注册失败: {e}")
 
+# 注册干预包路由
+try:
+    from api.intervention_api import router as intervention_router
+    app.include_router(intervention_router)
+    print("[API] 干预包路由已注册")
+except ImportError as e:
+    print(f"[API] 干预包路由注册失败: {e}")
+
 # 注册挑战/打卡活动路由
 try:
     from api.challenge_api import router as challenge_router

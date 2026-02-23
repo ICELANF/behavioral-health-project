@@ -1,0 +1,686 @@
+[
+  {
+    "pack_id": "IP-GLU-001",
+    "name": "高血糖紧急干预包",
+    "description": "针对血糖持续偏高的学员，通过行为实验和自我监测帮助建立血糖管理意识",
+    "trigger_tags": ["high_glucose", "glucose_spike"],
+    "applicable_stages": ["precontemplation", "contemplation", "preparation"],
+    "behavior_stage": "contemplation",
+    "risk_levels": ["high", "mid"],
+    "trigger_domain": "glucose",
+    "coach_level_min": "L1",
+    "tasks": [
+      {
+        "task_id": "T-GLU-001-1",
+        "title": "餐后血糖自我监测",
+        "description": "记录三餐后2小时血糖值，连续7天建立基线数据",
+        "type": "monitoring",
+        "category": "self_monitoring",
+        "priority": 1,
+        "duration_minutes": 10,
+        "resources": ["血糖监测指南", "记录模板"],
+        "behavior_stage": ["precontemplation", "contemplation", "preparation"]
+      },
+      {
+        "task_id": "T-GLU-001-2",
+        "title": "主食替换实验",
+        "description": "选择一餐将精制碳水替换为粗粮，观察餐后血糖变化",
+        "type": "action",
+        "category": "behavior_experiment",
+        "priority": 2,
+        "duration_minutes": 30,
+        "resources": ["低GI食物清单"],
+        "behavior_stage": ["contemplation", "preparation"]
+      },
+      {
+        "task_id": "T-GLU-001-3",
+        "title": "餐后散步15分钟",
+        "description": "每餐后进行15分钟轻度步行，观察对血糖的影响",
+        "type": "action",
+        "category": "activation",
+        "priority": 3,
+        "duration_minutes": 15,
+        "resources": [],
+        "behavior_stage": ["preparation"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-GLU-001-1",
+        "title": "血糖数据解读对话",
+        "description": "与学员一起查看血糖监测数据，分析波动规律和诱因",
+        "category": "education",
+        "script": "我注意到您这周的血糖数据有些波动。我们一起来看看，哪些时间段血糖偏高？您觉得可能跟什么有关？",
+        "tips": ["避免使用'你做得不好'等否定性语言", "引导学员自己发现规律而非直接告知", "关注学员的情绪反应"],
+        "required_level": "L1",
+        "behavior_stage": ["precontemplation", "contemplation"]
+      },
+      {
+        "action_id": "A-GLU-001-2",
+        "title": "行为实验方案共创",
+        "description": "与学员共同设计一个简单的饮食调整实验",
+        "category": "guidance",
+        "script": "既然我们发现午餐后血糖经常偏高，您愿不愿意这周试试一个小实验？比如有两天午餐把白米饭换成糙米，看看血糖会不会有变化？",
+        "tips": ["让学员自主选择实验方案", "设定可量化的观察指标", "降低门槛，从最小改变开始"],
+        "required_level": "L1",
+        "behavior_stage": ["contemplation", "preparation"]
+      },
+      {
+        "action_id": "A-GLU-001-3",
+        "title": "动机强化访谈",
+        "description": "使用动机访谈技巧探索学员对血糖管理的内在动机",
+        "category": "coaching",
+        "script": "如果血糖一直这样不稳定，最让您担心的是什么？您觉得把血糖管理好，对您的生活会有什么改变？",
+        "tips": ["使用开放式提问", "反映和总结学员的话", "发展矛盾感，引发改变动机"],
+        "required_level": "L2",
+        "behavior_stage": ["precontemplation", "contemplation"]
+      }
+    ],
+    "priority": 1,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "pack_id": "IP-GLU-002",
+    "name": "低血糖预防与应对包",
+    "description": "针对出现低血糖风险信号的学员，建立预防和应急处理能力",
+    "trigger_tags": ["low_glucose"],
+    "applicable_stages": ["contemplation", "preparation", "action"],
+    "behavior_stage": "preparation",
+    "risk_levels": ["high"],
+    "trigger_domain": "glucose",
+    "coach_level_min": "L1",
+    "tasks": [
+      {
+        "task_id": "T-GLU-002-1",
+        "title": "低血糖预警信号识别",
+        "description": "学习识别低血糖早期症状：手抖、出汗、心慌、头晕等",
+        "type": "education",
+        "category": "skill_training",
+        "priority": 1,
+        "duration_minutes": 15,
+        "resources": ["低血糖应急指南", "症状自查表"],
+        "behavior_stage": ["contemplation", "preparation", "action"]
+      },
+      {
+        "task_id": "T-GLU-002-2",
+        "title": "应急食品准备",
+        "description": "随身携带15g快速升糖食品（如葡萄糖片、果汁）",
+        "type": "action",
+        "category": "activation",
+        "priority": 1,
+        "duration_minutes": 5,
+        "resources": ["快速升糖食物清单"],
+        "behavior_stage": ["preparation", "action"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-GLU-002-1",
+        "title": "低血糖应急演练",
+        "description": "与学员模拟低血糖场景，练习正确的应对流程",
+        "category": "guidance",
+        "script": "低血糖发生时不要慌张。我们来练习一下：先吃15克糖，等15分钟再测血糖。您现在随身带了升糖食品吗？",
+        "tips": ["确认学员家属也了解应急方法", "建议设置血糖预警提醒"],
+        "required_level": "L1",
+        "behavior_stage": ["preparation", "action"]
+      },
+      {
+        "action_id": "A-GLU-002-2",
+        "title": "安全感建立",
+        "description": "帮助学员减少对低血糖的恐惧，建立自信应对能力",
+        "category": "support",
+        "script": "我理解低血糖让您很紧张。但现在您已经知道怎么处理了，随身也带着应急食品，是不是安心多了？",
+        "tips": ["承认学员的恐惧是合理的", "强调已具备的应对能力"],
+        "required_level": "L1",
+        "behavior_stage": ["contemplation", "preparation"]
+      }
+    ],
+    "priority": 1,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "pack_id": "IP-GLU-003",
+    "name": "血糖波动管理包",
+    "description": "针对血糖波动大的学员，通过系统监测和行为调整实现血糖平稳",
+    "trigger_tags": ["glucose_fluctuation", "glucose_spike"],
+    "applicable_stages": ["preparation", "action", "maintenance"],
+    "behavior_stage": "action",
+    "risk_levels": ["mid", "low"],
+    "trigger_domain": "glucose",
+    "coach_level_min": "L2",
+    "tasks": [
+      {
+        "task_id": "T-GLU-003-1",
+        "title": "血糖-饮食-运动三维记录",
+        "description": "同时记录血糖值、进食内容和运动情况，寻找关联模式",
+        "type": "monitoring",
+        "category": "self_monitoring",
+        "priority": 1,
+        "duration_minutes": 15,
+        "resources": ["三维记录模板", "食物GI值表"],
+        "behavior_stage": ["preparation", "action"]
+      },
+      {
+        "task_id": "T-GLU-003-2",
+        "title": "个性化饮食方案执行",
+        "description": "根据记录数据制定个性化饮食方案并执行一周",
+        "type": "action",
+        "category": "behavior_experiment",
+        "priority": 2,
+        "duration_minutes": 30,
+        "resources": ["个性化饮食方案模板"],
+        "behavior_stage": ["action", "maintenance"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-GLU-003-1",
+        "title": "数据模式分析辅导",
+        "description": "帮助学员从三维记录中发现血糖波动的个人化模式",
+        "category": "coaching",
+        "script": "看您这周的记录，我发现一个有趣的模式。每次吃完面食后血糖都会明显升高，但吃米饭配蔬菜的时候就平稳很多。您自己有注意到吗？",
+        "tips": ["用数据说话而非主观判断", "让学员参与分析过程", "肯定记录的坚持"],
+        "required_level": "L2",
+        "behavior_stage": ["preparation", "action"]
+      },
+      {
+        "action_id": "A-GLU-003-2",
+        "title": "方案微调指导",
+        "description": "根据执行反馈协助学员微调饮食运动方案",
+        "category": "guidance",
+        "script": "这周的方案执行得怎么样？有哪些容易做到的？有没有什么地方觉得太难了想调整一下？",
+        "tips": ["尊重学员的反馈", "小步迭代优于大幅调整"],
+        "required_level": "L2",
+        "behavior_stage": ["action", "maintenance"]
+      }
+    ],
+    "priority": 2,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "pack_id": "IP-DIET-001",
+    "name": "暴饮暴食行为干预包",
+    "description": "针对暴饮暴食行为的学员，通过情绪觉察和替代行为训练改善饮食模式",
+    "trigger_tags": ["overeating"],
+    "applicable_stages": ["precontemplation", "contemplation", "preparation", "action"],
+    "behavior_stage": "contemplation",
+    "risk_levels": ["high", "mid"],
+    "trigger_domain": "diet",
+    "coach_level_min": "L2",
+    "tasks": [
+      {
+        "task_id": "T-DIET-001-1",
+        "title": "饮食情绪日记",
+        "description": "记录每次进食前后的情绪状态，识别情绪性进食触发因素",
+        "type": "monitoring",
+        "category": "self_monitoring",
+        "priority": 1,
+        "duration_minutes": 10,
+        "resources": ["情绪日记模板", "情绪识别卡"],
+        "behavior_stage": ["precontemplation", "contemplation", "preparation"]
+      },
+      {
+        "task_id": "T-DIET-001-2",
+        "title": "替代行为练习",
+        "description": "学习3种替代暴食的行为：深呼吸、散步、打电话给朋友",
+        "type": "action",
+        "category": "skill_training",
+        "priority": 2,
+        "duration_minutes": 20,
+        "resources": ["放松技巧指南"],
+        "behavior_stage": ["preparation", "action"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-DIET-001-1",
+        "title": "情绪触发探索",
+        "description": "与学员一起探索暴饮暴食背后的情绪触发因素",
+        "category": "coaching",
+        "script": "我注意到您在压力大的时候更容易吃很多。能跟我说说那时候的感受吗？您觉得吃东西是在填饱肚子，还是在处理某种情绪？",
+        "tips": ["避免评判", "表达理解和共情", "注意可能的心理健康问题信号"],
+        "required_level": "L2",
+        "behavior_stage": ["precontemplation", "contemplation"]
+      },
+      {
+        "action_id": "A-DIET-001-2",
+        "title": "正念饮食引导",
+        "description": "教导学员正念饮食技巧，提高对进食过程的觉察",
+        "category": "education",
+        "script": "下次吃饭时，试试这样：先看看食物的颜色，闻闻它的香味，吃第一口时慢慢咀嚼，感受味道的变化。不急，慢慢来。",
+        "tips": ["从一顿饭的一小部分开始练习", "不要求完美，重在体验"],
+        "required_level": "L2",
+        "behavior_stage": ["contemplation", "preparation", "action"]
+      },
+      {
+        "action_id": "A-DIET-001-3",
+        "title": "情感支持与鼓励",
+        "description": "在学员挣扎时提供情感支持",
+        "category": "support",
+        "script": "改变饮食习惯真的不容易。您能意识到问题并且愿意尝试，已经很了不起了。一次没做到不代表失败，我们一起想想下次可以怎么应对。",
+        "tips": ["强调进步而非完美", "正常化偶尔的失控"],
+        "required_level": "L1",
+        "behavior_stage": ["precontemplation", "contemplation", "preparation", "action"]
+      }
+    ],
+    "priority": 2,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "pack_id": "IP-DIET-002",
+    "name": "高碳水饮食调整包",
+    "description": "针对碳水摄入过高的学员，通过渐进式饮食结构调整降低碳水比例",
+    "trigger_tags": ["high_carb", "irregular_meals"],
+    "applicable_stages": ["contemplation", "preparation", "action"],
+    "behavior_stage": "preparation",
+    "risk_levels": ["mid", "low"],
+    "trigger_domain": "diet",
+    "coach_level_min": "L1",
+    "tasks": [
+      {
+        "task_id": "T-DIET-002-1",
+        "title": "每日碳水摄入记录",
+        "description": "记录每餐碳水化合物来源和大致分量，建立摄入基线",
+        "type": "monitoring",
+        "category": "self_monitoring",
+        "priority": 1,
+        "duration_minutes": 10,
+        "resources": ["碳水食物图鉴", "估量工具"],
+        "behavior_stage": ["contemplation", "preparation"]
+      },
+      {
+        "task_id": "T-DIET-002-2",
+        "title": "碳水减半实验",
+        "description": "选择一餐将主食量减半，增加蛋白质和蔬菜",
+        "type": "action",
+        "category": "behavior_experiment",
+        "priority": 2,
+        "duration_minutes": 20,
+        "resources": ["均衡餐盘指南", "低碳食谱"],
+        "behavior_stage": ["preparation", "action"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-DIET-002-1",
+        "title": "饮食结构教育",
+        "description": "帮助学员理解碳水、蛋白质、脂肪的合理比例",
+        "category": "education",
+        "script": "您知道吗，一碗白米饭大约含60克碳水。如果把一半换成鸡胸肉和西兰花，血糖上升会缓慢很多，而且更有饱腹感。",
+        "tips": ["用具体食物举例", "不要否定学员的饮食偏好", "提供可操作的替代方案"],
+        "required_level": "L1",
+        "behavior_stage": ["contemplation", "preparation"]
+      },
+      {
+        "action_id": "A-DIET-002-2",
+        "title": "渐进式调整指导",
+        "description": "协助学员制定分阶段的饮食调整计划",
+        "category": "guidance",
+        "script": "我们不需要一下子全改。第一周试试把晚餐的主食减三分之一。下周再看情况调整午餐。您觉得从哪顿饭开始比较容易？",
+        "tips": ["循序渐进，避免激进改变", "让学员自主选择起始点"],
+        "required_level": "L1",
+        "behavior_stage": ["preparation", "action"]
+      }
+    ],
+    "priority": 3,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "pack_id": "IP-EXR-001",
+    "name": "久坐行为干预包",
+    "description": "针对久坐行为的学员，通过碎片化运动和环境设计打破久坐模式",
+    "trigger_tags": ["sedentary", "low_activity"],
+    "applicable_stages": ["precontemplation", "contemplation", "preparation", "action"],
+    "behavior_stage": "contemplation",
+    "risk_levels": ["mid", "low"],
+    "trigger_domain": "exercise",
+    "coach_level_min": "L1",
+    "tasks": [
+      {
+        "task_id": "T-EXR-001-1",
+        "title": "久坐时间记录",
+        "description": "使用手表或APP记录每天连续坐超过60分钟的次数",
+        "type": "monitoring",
+        "category": "self_monitoring",
+        "priority": 1,
+        "duration_minutes": 5,
+        "resources": ["久坐提醒APP推荐"],
+        "behavior_stage": ["precontemplation", "contemplation"]
+      },
+      {
+        "task_id": "T-EXR-001-2",
+        "title": "每小时起身活动",
+        "description": "设定每小时提醒，起身活动2-5分钟（伸展、走动、上下楼梯）",
+        "type": "action",
+        "category": "activation",
+        "priority": 1,
+        "duration_minutes": 5,
+        "resources": ["办公室拉伸动作图", "站立会议指南"],
+        "behavior_stage": ["preparation", "action"]
+      },
+      {
+        "task_id": "T-EXR-001-3",
+        "title": "步行通勤实验",
+        "description": "将部分通勤改为步行（如提前一站下车），每天增加2000步",
+        "type": "action",
+        "category": "behavior_experiment",
+        "priority": 2,
+        "duration_minutes": 20,
+        "resources": [],
+        "behavior_stage": ["preparation", "action"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-EXR-001-1",
+        "title": "久坐风险教育",
+        "description": "帮助学员了解久坐对代谢和心血管的影响",
+        "category": "education",
+        "script": "研究发现每天坐超过8小时会增加心血管风险。但好消息是，每隔一小时起来动2分钟就能显著降低这个风险。",
+        "tips": ["用积极的语言框架", "强调小改变的大影响"],
+        "required_level": "L1",
+        "behavior_stage": ["precontemplation", "contemplation"]
+      },
+      {
+        "action_id": "A-EXR-001-2",
+        "title": "环境设计指导",
+        "description": "帮助学员改造工作和生活环境以减少久坐",
+        "category": "guidance",
+        "script": "您的办公环境能不能做些小调整？比如把水杯放远一点需要走过去拿，或者把打印机设在走廊那头？",
+        "tips": ["利用环境线索促进行为改变", "关注工作场景的可行性"],
+        "required_level": "L1",
+        "behavior_stage": ["preparation", "action"]
+      }
+    ],
+    "priority": 3,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "pack_id": "IP-MED-001",
+    "name": "用药依从性提升包",
+    "description": "针对漏服药物或用药不规律的学员，通过习惯绑定和提醒系统提升依从性",
+    "trigger_tags": ["missed_medication", "irregular_medication"],
+    "applicable_stages": ["contemplation", "preparation", "action", "maintenance"],
+    "behavior_stage": "preparation",
+    "risk_levels": ["high", "mid"],
+    "trigger_domain": "medication",
+    "coach_level_min": "L1",
+    "tasks": [
+      {
+        "task_id": "T-MED-001-1",
+        "title": "服药情况记录",
+        "description": "每天记录服药时间和是否按时，持续14天",
+        "type": "monitoring",
+        "category": "self_monitoring",
+        "priority": 1,
+        "duration_minutes": 3,
+        "resources": ["服药记录表", "药盒推荐"],
+        "behavior_stage": ["contemplation", "preparation", "action"]
+      },
+      {
+        "task_id": "T-MED-001-2",
+        "title": "服药习惯绑定",
+        "description": "将服药行为与已有日常习惯绑定（如刷牙后服药）",
+        "type": "action",
+        "category": "activation",
+        "priority": 1,
+        "duration_minutes": 5,
+        "resources": ["习惯堆叠指南"],
+        "behavior_stage": ["preparation", "action", "maintenance"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-MED-001-1",
+        "title": "用药意义探讨",
+        "description": "帮助学员理解药物在健康管理中的角色",
+        "category": "education",
+        "script": "有些人觉得吃药意味着'我有病'。但换个角度想，药物是帮助您身体恢复平衡的工具，就像近视的人戴眼镜一样自然。",
+        "tips": ["不要强调'必须吃药'", "探索学员对药物的信念和顾虑", "尊重学员的自主权"],
+        "required_level": "L1",
+        "behavior_stage": ["contemplation", "preparation"]
+      },
+      {
+        "action_id": "A-MED-001-2",
+        "title": "依从性问题排查",
+        "description": "系统排查影响用药依从性的障碍并逐一解决",
+        "category": "coaching",
+        "script": "漏服药物可能有很多原因——忘记了、觉得不需要、担心副作用。您最常遇到的是哪种情况？",
+        "tips": ["逐一排查障碍", "提供针对性解决方案", "涉及副作用问题建议咨询医生"],
+        "required_level": "L2",
+        "behavior_stage": ["contemplation", "preparation", "action"]
+      }
+    ],
+    "priority": 2,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "pack_id": "IP-SLP-001",
+    "name": "睡眠质量改善包",
+    "description": "针对睡眠质量差或失眠的学员，通过睡眠卫生和行为调整改善睡眠",
+    "trigger_tags": ["poor_sleep", "insomnia"],
+    "applicable_stages": ["contemplation", "preparation", "action", "maintenance"],
+    "behavior_stage": "preparation",
+    "risk_levels": ["mid", "low"],
+    "trigger_domain": "sleep",
+    "coach_level_min": "L1",
+    "tasks": [
+      {
+        "task_id": "T-SLP-001-1",
+        "title": "睡眠日记",
+        "description": "记录上床时间、入睡时间、醒来次数、起床时间，持续14天",
+        "type": "monitoring",
+        "category": "self_monitoring",
+        "priority": 1,
+        "duration_minutes": 5,
+        "resources": ["睡眠日记模板", "睡眠质量评估表"],
+        "behavior_stage": ["contemplation", "preparation", "action"]
+      },
+      {
+        "task_id": "T-SLP-001-2",
+        "title": "睡前放松仪式",
+        "description": "建立固定的睡前30分钟放松仪式：远离屏幕、温水泡脚、深呼吸",
+        "type": "action",
+        "category": "skill_training",
+        "priority": 2,
+        "duration_minutes": 30,
+        "resources": ["放松技巧音频", "4-7-8呼吸法指南"],
+        "behavior_stage": ["preparation", "action"]
+      },
+      {
+        "task_id": "T-SLP-001-3",
+        "title": "固定作息实验",
+        "description": "连续7天保持相同的上床和起床时间（包括周末）",
+        "type": "action",
+        "category": "behavior_experiment",
+        "priority": 2,
+        "duration_minutes": 0,
+        "resources": [],
+        "behavior_stage": ["preparation", "action", "maintenance"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-SLP-001-1",
+        "title": "睡眠卫生教育",
+        "description": "帮助学员建立科学的睡眠认知和睡眠环境",
+        "category": "education",
+        "script": "好的睡眠需要好的环境。您的卧室够暗吗？温度适合吗？睡前一小时还会看手机吗？我们来看看有什么可以改善的。",
+        "tips": ["不要一次给太多建议", "让学员选择最容易执行的开始"],
+        "required_level": "L1",
+        "behavior_stage": ["contemplation", "preparation"]
+      },
+      {
+        "action_id": "A-SLP-001-2",
+        "title": "睡眠焦虑疏导",
+        "description": "帮助学员处理因失眠产生的焦虑情绪",
+        "category": "support",
+        "script": "越担心睡不着反而越睡不着，这是很正常的。我们换个角度想：即使今晚睡不太好，明天也一样可以过。放松对结果的执着，反而更容易入睡。",
+        "tips": ["正常化失眠体验", "认知重构：减少对失眠的灾难化思维", "严重失眠建议专业评估"],
+        "required_level": "L2",
+        "behavior_stage": ["contemplation", "preparation", "action"]
+      }
+    ],
+    "priority": 3,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "pack_id": "IP-STR-001",
+    "name": "压力与焦虑管理包",
+    "description": "针对高压力和焦虑状态的学员，通过认知重构和放松技术缓解压力",
+    "trigger_tags": ["high_stress", "anxiety"],
+    "applicable_stages": ["precontemplation", "contemplation", "preparation", "action"],
+    "behavior_stage": "contemplation",
+    "risk_levels": ["high", "mid"],
+    "trigger_domain": "stress",
+    "coach_level_min": "L2",
+    "tasks": [
+      {
+        "task_id": "T-STR-001-1",
+        "title": "压力源觉察记录",
+        "description": "每天记录3个压力事件及应对方式，持续7天",
+        "type": "monitoring",
+        "category": "self_monitoring",
+        "priority": 1,
+        "duration_minutes": 10,
+        "resources": ["压力日记模板", "压力水平评估量表"],
+        "behavior_stage": ["precontemplation", "contemplation"]
+      },
+      {
+        "task_id": "T-STR-001-2",
+        "title": "渐进式肌肉放松",
+        "description": "学习并每天练习一次渐进式肌肉放松（PMR），每次15分钟",
+        "type": "action",
+        "category": "skill_training",
+        "priority": 2,
+        "duration_minutes": 15,
+        "resources": ["PMR引导音频", "肌肉放松步骤图"],
+        "behavior_stage": ["preparation", "action"]
+      },
+      {
+        "task_id": "T-STR-001-3",
+        "title": "认知重构练习",
+        "description": "识别自动化消极思维，练习用更平衡的视角看问题",
+        "type": "education",
+        "category": "skill_training",
+        "priority": 3,
+        "duration_minutes": 20,
+        "resources": ["思维记录表", "认知扭曲类型卡"],
+        "behavior_stage": ["preparation", "action"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-STR-001-1",
+        "title": "压力源分析",
+        "description": "帮助学员系统分析压力来源，区分可控和不可控因素",
+        "category": "coaching",
+        "script": "让我们一起梳理一下您的压力来源。哪些是您能改变的？哪些是目前改变不了的？对于改变不了的，我们可以改变应对方式。",
+        "tips": ["使用压力分类矩阵", "先处理可控因素增强效能感", "注意抑郁信号需要专业转介"],
+        "required_level": "L2",
+        "behavior_stage": ["precontemplation", "contemplation"]
+      },
+      {
+        "action_id": "A-STR-001-2",
+        "title": "放松技术教学",
+        "description": "教授学员2-3种实用放松技术",
+        "category": "guidance",
+        "script": "我教您一个随时可以用的方法——4-7-8呼吸法：吸气4秒，屏住7秒，慢慢呼气8秒。我们现在就试一次？",
+        "tips": ["现场示范和练习", "让学员选择适合自己的方法", "鼓励在日常小压力时先练习"],
+        "required_level": "L1",
+        "behavior_stage": ["contemplation", "preparation", "action"]
+      },
+      {
+        "action_id": "A-STR-001-3",
+        "title": "情绪共情与支持",
+        "description": "在高压力时期提供情感支持和陪伴",
+        "category": "support",
+        "script": "听起来您最近真的很辛苦。谢谢您愿意跟我分享这些。您不需要一个人扛着，我们可以一起想办法。",
+        "tips": ["先共情再给建议", "不要急于解决问题", "允许学员表达情绪"],
+        "required_level": "L1",
+        "behavior_stage": ["precontemplation", "contemplation", "preparation", "action"]
+      }
+    ],
+    "priority": 2,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  },
+  {
+    "pack_id": "IP-EXR-002",
+    "name": "运动习惯养成包",
+    "description": "针对活动量不足的学员，通过循序渐进的运动处方培养运动习惯",
+    "trigger_tags": ["low_activity"],
+    "applicable_stages": ["preparation", "action", "maintenance"],
+    "behavior_stage": "action",
+    "risk_levels": ["low", "normal"],
+    "trigger_domain": "exercise",
+    "coach_level_min": "L1",
+    "tasks": [
+      {
+        "task_id": "T-EXR-002-1",
+        "title": "每日步数挑战",
+        "description": "从当前步数基础上每周增加1000步，目标8000步/天",
+        "type": "action",
+        "category": "activation",
+        "priority": 1,
+        "duration_minutes": 30,
+        "resources": ["步行路线推荐"],
+        "behavior_stage": ["preparation", "action"]
+      },
+      {
+        "task_id": "T-EXR-002-2",
+        "title": "运动时间锚定",
+        "description": "选择固定时间段进行运动（如晨起或晚饭后），连续21天",
+        "type": "action",
+        "category": "behavior_experiment",
+        "priority": 2,
+        "duration_minutes": 30,
+        "resources": ["居家运动视频"],
+        "behavior_stage": ["action", "maintenance"]
+      }
+    ],
+    "coach_actions": [
+      {
+        "action_id": "A-EXR-002-1",
+        "title": "运动方案共创",
+        "description": "根据学员偏好和身体条件共同制定运动计划",
+        "category": "guidance",
+        "script": "您以前有什么运动是特别喜欢的？或者现在有什么运动您觉得可以试试看？我们一起制定一个适合您的计划。",
+        "tips": ["从学员喜欢的活动出发", "考虑身体限制和安全", "设定短期可达目标"],
+        "required_level": "L1",
+        "behavior_stage": ["preparation", "action"]
+      },
+      {
+        "action_id": "A-EXR-002-2",
+        "title": "进步回顾与鼓励",
+        "description": "定期回顾运动数据，肯定进步并调整目标",
+        "category": "support",
+        "script": "看您这周的步数，平均每天已经达到6500步了！上周才5000步。这个进步很棒！下周我们要不要挑战7000步？",
+        "tips": ["用数据展示进步", "即使进步很小也要肯定", "不要拿学员和别人比较"],
+        "required_level": "L1",
+        "behavior_stage": ["action", "maintenance"]
+      }
+    ],
+    "priority": 3,
+    "is_active": true,
+    "created_at": "2026-02-20T10:00:00Z",
+    "updated_at": "2026-02-20T10:00:00Z"
+  }
+]
