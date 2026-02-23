@@ -1,13 +1,14 @@
-# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.2.4)
+# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.2.5)
 
 > 本文件由 Claude Code 自动加载，指导 AI 如何在本项目中工作。
+> **V5.2.5 变更**: 2026-02-24 Rx仪表盘数据修复(Agent状态+策略模板字段转换) + 干预包后端(10包3端点) + 绑定管理权限修复 + 专家工作台iframe端口修复
 > **V5.2.4 变更**: 2026-02-23 AI行为处方生成(839行服务+LLM/规则引擎双路径+5标签页全接入) + 教练学员角色过滤修复(_STUDENT_ROLES白名单)
 > **V5.2.3 变更**: 2026-02-22 教练端三合一增强 — 种子业务数据(6角色全量) + 教练双重身份(CoachSelfHealthSummary) + 教练端13页响应式
 > **V5.2.2 变更**: 2026-02-22 头像/退出/WeChat同步(13文件) + 统一个人中心(8文件) + 六级累进任务目录(1文件, 42项)
 > **V5.2.1 变更**: 2026-02-22 预发布审计全绿 (56P/0F) + CI修复 (register_external_models) + 多模态单元测试 (28 tests)
 > **V5.2.0 变更**: 2026-02-21 P7 Smart Hub 多模态采集中心 (4模式底部面板) + ASR语音转文字服务 (cloud_first策略, 2端点)
 >
-> 上游契约: `E:\注册表更新文件\行健平台-契约注册表-V5_1_9-CONSOLIDATED.md` (已升级为 V5.2.4)
+> 上游契约: `E:\注册表更新文件\行健平台-契约注册表-V5_1_9-CONSOLIDATED.md` (已升级为 V5.2.5)
 > Agent配置清单: `agent_multimodal_host_config.md` (47+ Agent类 · 15预设模板 · 4层安全 · 6模态)
 
 ---
@@ -16,8 +17,15 @@
 
 BHP（Behavioral Health Platform）是一个行为健康数字化管理平台，服务于慢病逆转与行为改变领域。平台包含 Observer(观察者)、Grower(成长者)、Coach(教练)、Expert(专家)、Admin(管理员) 五种用户角色，集成了评估引擎、AI Agent 系统、RAG 知识库、多模态交互引擎、智能监测方案及微信生态对接能力。
 
-**规模**: 76+ 路由模块 · 650+ API 端点 · 130+ 数据模型 · 50 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **32页Admin响应式** · **全mock=0** · **预发布审计56P/0F** · **CI 4-stage全绿** · **六级累进任务目录(42项)** · **统一个人中心(3共享组件)** · **教练端全量种子数据** · **教练双重身份健康面板** · **AI行为处方(LLM+规则引擎双路径)** · **学员角色白名单过滤**
+**规模**: 76+ 路由模块 · 650+ API 端点 · 130+ 数据模型 · 50 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **32页Admin响应式** · **全mock=0** · **预发布审计56P/0F** · **CI 4-stage全绿** · **六级累进任务目录(42项)** · **统一个人中心(3共享组件)** · **教练端全量种子数据** · **教练双重身份健康面板** · **AI行为处方(LLM+规则引擎双路径)** · **学员角色白名单过滤** · **干预包管理(10包3端点)** · **Rx仪表盘全数据联通**
 
+> ⚠️ **V5.2.5 变更** (2026-02-24):
+> - **干预包管理后端**: `configs/intervention_packs.json`(10个干预包, 6域) + `api/intervention_api.py`(3端点: list/match/detail, JSON配置只读)
+> - **Rx仪表盘数据联通**: `behavior_rx/rx_routes.py` — agents/status端点返回富AgentStatusEntry[](名称/能力/域/处方统计, DB实时查询) + strategies端点包装{strategies,total}+字段名转换(ttm_stage_range→applicable_stages等)
+> - **绑定管理权限修复**: `admin_bindings_api.py` require_admin→require_coach_or_admin(9处), 促进师/教练可访问
+> - **Rx API路径修复**: `rxApi.ts` 8端点路径添加/v1前缀; `RxDashboard.vue` 路由感知Tab切换(useRoute+routeTabMap)
+> - **专家工作台修复**: `UI2BridgePage.vue` iframe端口5177→8501(匹配bhp-expert-workbench容器)
+>
 > ⚠️ **V5.2.4 变更** (2026-02-23):
 > - **AI行为处方生成**: `core/copilot_prescription_service.py`(839行) — CopilotPrescriptionService; 数据采集(8维度7天窗口) → LLM分析(UnifiedLLMClient, TTM/BPT-6/CAPACITY/SPI prompt, timeout=20s) → 规则引擎降级(CAPACITY→六因素, 阶段→处方) → 合并补齐; 返回 diagnosis+prescription+ai_suggestions+health_summary+intervention_plan+meta; `POST /copilot/generate-prescription`; CoachHome 5标签页全接入
 > - **教练学员角色过滤**: `api/coach_api.py` — `_STUDENT_ROLES=[OBSERVER,GROWER,SHARER]` 白名单; `/dashboard`+`/students`查询添加`User.role.in_(_STUDENT_ROLES)`; DB清理: promoter/supervisor绑定标记is_active=false; 角色规则: 学员层(L1-L3)被辅导 ← 辅导层(L4+)向下跟进
@@ -742,7 +750,7 @@ cd miniprogram && npm run dev:weapp
 | 架构总览 | `platform-architecture-overview.md` | 完整路由/模型/服务/数据流 |
 | 核心业务逻辑 | `behavioral-prescription-core-logic-supplemented.md` | 26章, 2367行 |
 | **Agent Host 配置** *(V5.0.1)* | **`agent_multimodal_host_config.md`** | **47+ Agent · LLM配置 · 多模态 · 安全管道** |
-| **契约注册表** *(V5.2.3)* | **`E:\注册表更新文件\行健平台-契约注册表-V5_1_9-CONSOLIDATED.md`** | **V5.2.3 唯一权威版 (含教练三合一增强+头像/个人中心/六级任务目录)** |
+| **契约注册表** *(V5.2.5)* | **`E:\注册表更新文件\行健平台-契约注册表-V5_1_9-CONSOLIDATED.md`** | **V5.2.5 唯一权威版 (含干预包+Rx仪表盘+权限修复+专家工作台)** |
 | 多模态消息协议 | `core/multimodal/protocol.py` | 10种模态定义 |
 
 ---
