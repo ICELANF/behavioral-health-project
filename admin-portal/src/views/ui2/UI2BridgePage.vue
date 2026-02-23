@@ -42,7 +42,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 
-const UI2_BASE = 'http://localhost:5177'
+const UI2_BASE = 'http://localhost:8501'
 
 const tabs = [
   { path: '/expert', label: '专家工作台', icon: '🔬' },
