@@ -77,6 +77,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { message } from 'ant-design-vue'
 import request from '@/api/request'
 
 const route = useRoute()
@@ -161,7 +162,7 @@ const selectOption = (optionIndex: number) => {
 
 const saveDraft = () => {
   localStorage.setItem(`assessment_draft_${assessmentId}`, JSON.stringify({ answers: answers.value, currentIndex: currentIndex.value }))
-  alert('草稿已保存')
+  message.success('草稿已保存')
 }
 
 const submitAssessment = async () => {

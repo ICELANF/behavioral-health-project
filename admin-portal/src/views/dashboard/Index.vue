@@ -60,8 +60,14 @@
       </a-col>
       <a-col :span="8">
         <a-card title="待处理事项">
-          <div v-for="(todo, idx) in pendingTodos" :key="idx" :style="{ padding: '8px 0', borderBottom: idx < pendingTodos.length - 1 ? '1px solid #f0f0f0' : 'none' }">
+          <div
+            v-for="(todo, idx) in pendingTodos" :key="idx"
+            class="todo-item"
+            :style="{ borderBottom: idx < pendingTodos.length - 1 ? '1px solid #f0f0f0' : 'none' }"
+            @click="openTodoDetail(todo)"
+          >
             <a-badge :status="todo.status" :text="todo.text" />
+            <span class="todo-arrow">›</span>
           </div>
           <a-empty v-if="pendingTodos.length === 0" description="暂无待处理事项" />
         </a-card>
@@ -80,6 +86,31 @@
         </a-card>
       </a-col>
     </a-row>
+
+    <!-- 待处理事项详情抽屉 -->
+    <a-drawer
+      v-model:open="drawerVisible"
+      :title="drawerTitle"
+      width="520"
+      placement="right"
+    >
+      <a-empty v-if="drawerItems.length === 0" description="暂无详细记录" />
+
+      <div v-for="(item, idx) in drawerItems" :key="idx" class="drawer-item">
+        <div class="drawer-item-header">
+          <a-tag :color="item.tagColor" size="small">{{ item.tag }}</a-tag>
+          <span class="drawer-item-date">{{ item.date }}</span>
+        </div>
+        <div class="drawer-item-title">{{ item.title }}</div>
+        <div v-if="item.content" class="drawer-item-content">{{ item.content }}</div>
+      </div>
+
+      <template #footer>
+        <a-button v-if="drawerLink" type="primary" block @click="$router.push(drawerLink); drawerVisible = false">
+          前往处理页面
+        </a-button>
+      </template>
+    </a-drawer>
   </div>
 </template>
 
@@ -93,23 +124,41 @@ import {
 } from '@ant-design/icons-vue'
 import request from '@/api/request'
 
-// 角色映射
+// 角色映射 (六级体系 + 向后兼容旧角色名)
 const roleLabels: Record<string, string> = {
   ADMIN: '系统管理员',
+  MASTER: '大师',
+  SUPERVISOR: '督导',
+  PROMOTER: '促进师',
+  COACH: '教练',
+  SHARER: '分享者',
+  GROWER: '成长者',
+  OBSERVER: '观察员',
+  // 向后兼容
   EXPERT: '专家',
   COACH_SENIOR: '教练',
   COACH_INTERMEDIATE: '分享者',
   COACH_JUNIOR: '成长者',
-  USER: '学员'
+  PATIENT: '学员',
+  USER: '学员',
 }
 
 const roleColors: Record<string, string> = {
   ADMIN: 'red',
+  MASTER: 'volcano',
+  SUPERVISOR: 'purple',
+  PROMOTER: 'magenta',
+  COACH: 'gold',
+  SHARER: 'blue',
+  GROWER: 'green',
+  OBSERVER: 'cyan',
+  // 向后兼容
   EXPERT: 'purple',
   COACH_SENIOR: 'gold',
   COACH_INTERMEDIATE: 'blue',
   COACH_JUNIOR: 'green',
-  USER: 'default'
+  PATIENT: 'default',
+  USER: 'default',
 }
 
 // 从 localStorage 读取用户信息
@@ -136,7 +185,39 @@ const levelGradients = [
 ]
 const levelDistribution = ref<{ level: string; count: number; height: number; gradient: string }[]>([])
 
-const pendingTodos = ref<{ status: string; text: string }[]>([])
+// ── 待处理事项 ──
+interface TodoItem {
+  status: string
+  text: string
+  link?: string
+  /** 明细数据 key，指向 detailStore 中的具体列表 */
+  detailKey?: string
+}
+interface DetailItem {
+  tag: string
+  tagColor: string
+  title: string
+  content: string
+  date: string
+}
+
+const pendingTodos = ref<TodoItem[]>([])
+/** 按分类存储原始明细，点击时读取 */
+const detailStore = ref<Record<string, DetailItem[]>>({})
+
+// 抽屉状态
+const drawerVisible = ref(false)
+const drawerTitle = ref('')
+const drawerLink = ref('')
+const drawerItems = ref<DetailItem[]>([])
+
+const openTodoDetail = (todo: TodoItem) => {
+  drawerTitle.value = todo.text
+  drawerLink.value = todo.link || ''
+  drawerItems.value = todo.detailKey ? (detailStore.value[todo.detailKey] || []) : []
+  drawerVisible.value = true
+}
+
 const recentExams = ref<any[]>([])
 const recentPromotions = ref<any[]>([])
 
@@ -152,6 +233,13 @@ const promotionColumns = [
   { title: '申请等级', dataIndex: 'targetLevel' },
   { title: '申请日期', dataIndex: 'appliedAt' },
 ]
+
+const statusLabelMap: Record<string, [string, string]> = {
+  pending: ['待审核', 'orange'],
+  approved: ['已审核', 'cyan'],
+  sent: ['已发送', 'green'],
+  rejected: ['已拒绝', 'red'],
+}
 
 const loadDashboard = async () => {
   try {
@@ -169,11 +257,84 @@ const loadDashboard = async () => {
       height: Math.max(Math.round((Number(count) / maxCount) * 200), 10),
       gradient: levelGradients[i % levelGradients.length],
     }))
-    // Pending todos
-    const todos = d.pending_todos || d.pendingTodos || []
-    pendingTodos.value = todos.map((t: any) => ({
-      status: t.status || 'default', text: t.text || t.label || '',
+
+    // Pending todos (from overview API)
+    const todos: TodoItem[] = (d.pending_todos || d.pendingTodos || []).map((t: any) => ({
+      status: t.status || 'default', text: t.text || t.label || '', link: t.link || '',
     }))
+    pendingTodos.value = todos
+    const store: Record<string, DetailItem[]> = {}
+
+    // Supplement: fetch pending promotion applications
+    try {
+      const supRes = await request.get('v1/promotion/applications', { params: { status: 'pending' } })
+      const apps = supRes.data?.applications || []
+      if (apps.length > 0) {
+        store['promotion'] = apps.map((a: any) => ({
+          tag: '晋级申请', tagColor: 'purple',
+          title: `${a.full_name || a.username || ''}: ${a.current_level} → ${a.target_level}`,
+          content: a.reviewer_comment || '',
+          date: a.applied_at || '',
+        }))
+        pendingTodos.value.push({
+          status: 'warning',
+          text: `${apps.length} 条督导/晋级申请待审核`,
+          link: '/expert/my/supervision',
+          detailKey: 'promotion',
+        })
+      }
+    } catch { /* optional */ }
+
+    // Supplement: fetch pending push queue items (includes supervision schedules)
+    try {
+      const queueRes = await request.get('v1/coach/push-queue', { params: { status: 'pending', page_size: 50 } })
+      const queueItems: any[] = queueRes.data?.items || []
+      const queueTotal: number = queueRes.data?.total || 0
+
+      const supervisionItems = queueItems.filter((i: any) => i.content?.startsWith('[督导安排]'))
+      const otherItems = queueItems.filter((i: any) => !i.content?.startsWith('[督导安排]'))
+      const otherCount = queueTotal - supervisionItems.length
+
+      if (supervisionItems.length > 0) {
+        store['supervision'] = supervisionItems.map((item: any) => {
+          const lines = (item.content || '').split('\n')
+          const [sl] = statusLabelMap[item.status] || ['待处理', 'blue']
+          return {
+            tag: sl, tagColor: (statusLabelMap[item.status] || [])[1] || 'blue',
+            title: lines[0].replace('[督导安排] ', ''),
+            content: lines.slice(1).join('\n'),
+            date: item.created_at || '',
+          }
+        })
+        pendingTodos.value.push({
+          status: 'warning',
+          text: `${supervisionItems.length} 条督导安排待处理`,
+          link: '/expert/my/supervision',
+          detailKey: 'supervision',
+        })
+      }
+
+      if (otherCount > 0) {
+        store['pushQueue'] = otherItems.map((item: any) => {
+          const [sl] = statusLabelMap[item.status] || ['待处理', 'blue']
+          return {
+            tag: sl, tagColor: (statusLabelMap[item.status] || [])[1] || 'blue',
+            title: item.title || '推送消息',
+            content: item.content || '',
+            date: item.created_at || '',
+          }
+        })
+        pendingTodos.value.push({
+          status: 'processing',
+          text: `${otherCount} 条推送消息待审核`,
+          link: '/coach/push-queue',
+          detailKey: 'pushQueue',
+        })
+      }
+    } catch { /* optional */ }
+
+    detailStore.value = store
+
     // Recent exams
     recentExams.value = (d.recent_exams || d.recentExams || []).map((e: any) => ({
       name: e.name || e.title || '', participants: e.participants ?? 0,
@@ -198,5 +359,48 @@ onMounted(loadDashboard)
 <style scoped>
 .dashboard :deep(.ant-card) {
   border-radius: 8px;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.todo-item:hover {
+  background: #fafafa;
+}
+.todo-arrow {
+  color: #999;
+  font-size: 16px;
+  font-weight: 700;
+  padding-left: 8px;
+}
+
+.drawer-item {
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+.drawer-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.drawer-item-date {
+  font-size: 12px;
+  color: #999;
+}
+.drawer-item-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+.drawer-item-content {
+  font-size: 13px;
+  color: #666;
+  white-space: pre-line;
 }
 </style>

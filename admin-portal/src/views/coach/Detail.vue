@@ -218,7 +218,7 @@
                     </a-list-item-meta>
                     <template #actions>
                       <span>{{ item.date }}</span>
-                      <a>查看详情</a>
+                      <a @click="showCaseDetail(item)">查看详情</a>
                     </template>
                   </a-list-item>
                 </template>
@@ -263,6 +263,19 @@
           <a-textarea v-model:value="messageForm.content" placeholder="请输入消息内容" :rows="4" />
         </a-form-item>
       </a-form>
+    </a-modal>
+
+    <!-- 案例详情弹窗 -->
+    <a-modal v-model:open="caseDetailVisible" :title="selectedCase?.title || '案例详情'" :footer="null" width="520px">
+      <template v-if="selectedCase">
+        <a-descriptions :column="1" bordered size="small">
+          <a-descriptions-item label="类型">
+            <a-tag :color="caseTypeColors[selectedCase.type]">{{ caseTypeLabels[selectedCase.type] || selectedCase.type }}</a-tag>
+          </a-descriptions-item>
+          <a-descriptions-item label="日期">{{ selectedCase.date }}</a-descriptions-item>
+          <a-descriptions-item label="描述">{{ selectedCase.description || '无' }}</a-descriptions-item>
+        </a-descriptions>
+      </template>
     </a-modal>
   </div>
 </template>
@@ -420,6 +433,12 @@ const studentColumns = [
 
 // 案例记录
 const cases = ref<any[]>([])
+const caseDetailVisible = ref(false)
+const selectedCase = ref<any>(null)
+const showCaseDetail = (item: any) => {
+  selectedCase.value = item
+  caseDetailVisible.value = true
+}
 
 // 督导记录
 const mentoringRecords = ref<any[]>([])

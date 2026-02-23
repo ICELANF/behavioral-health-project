@@ -22,7 +22,10 @@
               <span class="content-icon">📚</span>
               <div class="content-info">
                 <span class="content-name">{{ item.title }}</span>
-                <span class="content-meta">{{ item.chapters }} 章节 · {{ item.duration }}</span>
+                <span class="content-meta">
+                  <a-tag v-if="item.domain" size="small" color="blue">{{ item.domain }}</a-tag>
+                  {{ item.subtitle }}
+                </span>
               </div>
               <span v-if="selectedContent?.id === item.id" class="check-mark">✓</span>
             </div>
@@ -33,7 +36,10 @@
               <span class="content-icon">📄</span>
               <div class="content-info">
                 <span class="content-name">{{ item.title }}</span>
-                <span class="content-meta">{{ item.readTime }} 阅读</span>
+                <span class="content-meta">
+                  <a-tag v-if="item.domain" size="small" color="green">{{ item.domain }}</a-tag>
+                  {{ item.subtitle }}
+                </span>
               </div>
               <span v-if="selectedContent?.id === item.id" class="check-mark">✓</span>
             </div>
@@ -44,7 +50,9 @@
               <span class="content-icon">📦</span>
               <div class="content-info">
                 <span class="content-name">{{ item.title }}</span>
-                <span class="content-meta">{{ item.taskCount }} 个任务 · {{ item.domain }}</span>
+                <span class="content-meta">
+                  {{ item.totalDays }} 天 · <a-tag size="small" color="orange">{{ item.domain }}</a-tag>
+                </span>
               </div>
               <span v-if="selectedContent?.id === item.id" class="check-mark">✓</span>
             </div>
@@ -56,16 +64,19 @@
     <!-- Step 2: Select Students -->
     <div v-if="currentStep === 1">
       <a-card title="选择接收学员">
-        <a-empty v-if="students.length === 0" description="暂无学员数据" />
+        <a-spin v-if="loadingStudents" tip="加载学员..." />
+        <a-empty v-else-if="students.length === 0" description="暂无学员数据" />
         <template v-else>
         <a-input-search v-model:value="studentSearch" placeholder="搜索学员" style="margin-bottom: 12px" />
+        <div style="margin-bottom: 8px; color: #999; font-size: 12px">
+          已选 {{ selectedStudentIds.length }} / {{ students.length }} 人
+        </div>
         <a-checkbox-group v-model:value="selectedStudentIds" style="width: 100%">
           <div v-for="s in filteredStudents" :key="s.id" class="student-check-item">
             <a-checkbox :value="s.id">
               <div class="student-check-info">
-                <a-avatar :size="28">{{ s.name[0] }}</a-avatar>
+                <a-avatar :size="28">{{ (s.name || '?')[0] }}</a-avatar>
                 <span>{{ s.name }}</span>
-                <a-tag size="small">{{ s.stage }}</a-tag>
               </div>
             </a-checkbox>
           </div>
@@ -78,23 +89,55 @@
       </a-card>
     </div>
 
-    <!-- Step 3: Personalize Message -->
+    <!-- Step 3: Personalize Message (AI→审核→推送) -->
     <div v-if="currentStep === 2">
       <a-card title="个性化消息">
-        <a-form layout="vertical">
-          <a-form-item label="附言">
-            <a-textarea v-model:value="personalMessage" :rows="4" placeholder="给学员的个性化消息..." />
-          </a-form-item>
-          <a-form-item label="发送方式">
-            <a-radio-group v-model:value="sendMode">
-              <a-radio value="now">立即发送</a-radio>
-              <a-radio value="scheduled">定时发送</a-radio>
-            </a-radio-group>
-          </a-form-item>
-          <a-form-item v-if="sendMode === 'scheduled'" label="发送时间">
-            <a-date-picker v-model:value="scheduledTime" show-time placeholder="选择发送时间" style="width: 100%" />
-          </a-form-item>
-        </a-form>
+        <a-alert
+          type="info"
+          show-icon
+          style="margin-bottom: 16px"
+          message="AI 已根据所选内容和学员情况生成推荐消息，请审核修改后发送"
+        />
+
+        <a-spin v-if="loadingAiSuggestions" tip="AI 正在生成个性化建议...">
+          <div style="min-height: 120px" />
+        </a-spin>
+
+        <template v-else>
+          <div v-if="aiStudentSummary" style="margin-bottom: 12px; color: #666; font-size: 13px">
+            {{ aiStudentSummary }}
+          </div>
+
+          <a-form layout="vertical">
+            <a-form-item label="推送消息（请审核后修改）">
+              <a-textarea v-model:value="personalMessage" :rows="5" placeholder="请编辑要发送给学员的消息..." />
+            </a-form-item>
+          </a-form>
+
+          <!-- Alternative suggestions -->
+          <a-collapse v-if="aiAlternatives.length > 0" ghost style="margin-bottom: 16px">
+            <a-collapse-panel key="1" header="换一种表达方式">
+              <div
+                v-for="(alt, idx) in aiAlternatives"
+                :key="idx"
+                class="ai-alt-item"
+                @click="personalMessage = `[内容分享] ${selectedContent?.title}\n${alt.content}`"
+              >
+                <div class="ai-alt-content">{{ alt.content }}</div>
+                <div v-if="alt.reason" class="ai-alt-reason">{{ alt.reason }}</div>
+              </div>
+            </a-collapse-panel>
+          </a-collapse>
+
+          <a-form layout="vertical">
+            <a-form-item label="发送方式">
+              <a-radio-group v-model:value="sendMode">
+                <a-radio value="now">立即发送（审核通过，直接推送）</a-radio>
+                <a-radio value="queue">存入待推送队列（进入审批流程）</a-radio>
+              </a-radio-group>
+            </a-form-item>
+          </a-form>
+        </template>
       </a-card>
     </div>
 
@@ -104,34 +147,46 @@
         <a-descriptions :column="1" bordered>
           <a-descriptions-item label="内容">{{ selectedContent?.title }}</a-descriptions-item>
           <a-descriptions-item label="接收学员">{{ selectedStudentIds.length }} 人</a-descriptions-item>
-          <a-descriptions-item label="附言">{{ personalMessage || '无' }}</a-descriptions-item>
-          <a-descriptions-item label="发送方式">{{ sendMode === 'now' ? '立即发送' : '定时发送' }}</a-descriptions-item>
+          <a-descriptions-item label="推送消息">
+            <pre style="white-space: pre-wrap; margin: 0; font-family: inherit">{{ personalMessage || '无' }}</pre>
+          </a-descriptions-item>
+          <a-descriptions-item label="发送方式">
+            <a-tag :color="sendMode === 'now' ? 'green' : 'orange'">
+              {{ sendMode === 'now' ? '立即推送' : '待推送队列' }}
+            </a-tag>
+          </a-descriptions-item>
         </a-descriptions>
       </a-card>
 
       <!-- Tracking status after send -->
-      <a-card v-if="sent" title="阅读追踪" style="margin-top: 16px">
+      <a-card v-if="sent" title="发送状态追踪" style="margin-top: 16px">
         <div v-for="s in trackingData" :key="s.id" class="tracking-item">
-          <a-avatar :size="24">{{ s.name[0] }}</a-avatar>
+          <a-avatar :size="24">{{ (s.name || '?')[0] }}</a-avatar>
           <span class="tracking-name">{{ s.name }}</span>
-          <a-tag :color="s.sent ? 'green' : 'red'" size="small">{{ s.sent ? '已发送' : '发送失败' }}</a-tag>
+          <a-tag v-if="sendMode === 'now'" :color="s.sent ? 'green' : 'red'" size="small">
+            {{ s.sent ? '已推送' : '推送失败' }}
+          </a-tag>
+          <a-tag v-else :color="s.sent ? 'blue' : 'red'" size="small">
+            {{ s.sent ? '已入列' : '入列失败' }}
+          </a-tag>
         </div>
       </a-card>
     </div>
 
     <!-- Navigation -->
     <div class="step-actions">
-      <a-button v-if="currentStep > 0" @click="currentStep--">上一步</a-button>
-      <a-button v-if="currentStep < 3" type="primary" :disabled="!canNext" @click="currentStep++">下一步</a-button>
+      <a-button v-if="currentStep > 0 && !sent" @click="goBack">上一步</a-button>
+      <a-button v-if="currentStep < 3" type="primary" :disabled="!canNext" @click="goNext">下一步</a-button>
       <a-button v-if="currentStep === 3 && !sent" type="primary" :loading="sending" @click="sendContent">
-        {{ sendMode === 'now' ? '立即发送' : '确认定时' }}
+        {{ sendMode === 'now' ? '确认推送' : '提交审批队列' }}
       </a-button>
+      <a-button v-if="sent" @click="resetWizard">新建分享</a-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import request from '@/api/request'
 import { useResponsive } from '@/composables/useResponsive'
@@ -149,16 +204,17 @@ const scheduledTime = ref(null)
 const sent = ref(false)
 const sending = ref(false)
 const loadingContent = ref(false)
+const loadingStudents = ref(false)
+const loadingAiSuggestions = ref(false)
 
 const courses = ref<any[]>([])
 const articles = ref<any[]>([])
 const interventions = ref<any[]>([])
 const students = ref<any[]>([])
 
-const STAGE_LABELS: Record<string, string> = {
-  S0: '觉醒期', S1: '松动期', S2: '探索期', S3: '准备期',
-  S4: '行动期', S5: '坚持期', S6: '融入期',
-}
+// AI suggestions state
+const aiAlternatives = ref<any[]>([])
+const aiStudentSummary = ref('')
 
 async function loadContent() {
   loadingContent.value = true
@@ -171,14 +227,15 @@ async function loadContent() {
       id: item.id,
       title: item.title,
       type: 'course',
-      chapters: item.chapter_count || '--',
-      duration: item.duration || '--',
+      subtitle: item.subtitle || '',
+      domain: item.domain || '',
     }))
     articles.value = (articleRes.data.items || []).map((item: any) => ({
       id: item.id,
       title: item.title,
       type: 'article',
-      readTime: item.read_time || '5分钟',
+      subtitle: item.subtitle || '',
+      domain: item.domain || '',
     }))
     // Load intervention packs from program templates
     try {
@@ -187,8 +244,8 @@ async function loadContent() {
         id: t.id,
         title: t.name || t.title,
         type: 'intervention',
-        taskCount: t.task_count || t.steps?.length || '--',
-        domain: t.domain || t.category || '综合',
+        totalDays: t.total_days || '--',
+        domain: t.category || '综合',
       }))
     } catch {
       interventions.value = []
@@ -202,15 +259,53 @@ async function loadContent() {
 }
 
 async function loadStudents() {
+  loadingStudents.value = true
   try {
-    const res = await request.get('/v1/coach/dashboard')
+    const res = await request.get('/v1/coach/students-with-messages')
     students.value = (res.data.students || []).map((s: any) => ({
-      id: String(s.id),
-      name: s.name,
-      stage: STAGE_LABELS[s.stage] || s.stage || '未评估',
+      id: String(s.student_id),
+      name: s.student_name || '未知',
     }))
   } catch (e) {
     console.error('加载学员列表失败:', e)
+  } finally {
+    loadingStudents.value = false
+  }
+}
+
+async function loadAiSuggestions() {
+  if (!selectedContent.value || selectedStudentIds.value.length === 0) return
+
+  loadingAiSuggestions.value = true
+  aiAlternatives.value = []
+  aiStudentSummary.value = ''
+  try {
+    const firstStudentId = selectedStudentIds.value[0]
+    const contentTitle = selectedContent.value.title || ''
+    const res = await request.get(`/v1/coach/messages/ai-suggestions/${firstStudentId}`, {
+      params: {
+        message_type: 'advice',
+        context: `内容分享:${contentTitle}`,
+      },
+    })
+    const data = res.data
+    const suggestions: any[] = data.suggestions || []
+    aiStudentSummary.value = data.student_summary || ''
+
+    // First suggestion auto-fills the message editor
+    if (suggestions.length > 0) {
+      personalMessage.value = `[内容分享] ${contentTitle}\n${suggestions[0].content}`
+      // Remaining suggestions as alternatives
+      aiAlternatives.value = suggestions.slice(1)
+    } else {
+      personalMessage.value = `[内容分享] ${contentTitle}`
+    }
+  } catch (e) {
+    console.error('AI建议加载失败:', e)
+    // Fallback: use a simple template
+    personalMessage.value = `[内容分享] ${selectedContent.value.title}`
+  } finally {
+    loadingAiSuggestions.value = false
   }
 }
 
@@ -222,6 +317,7 @@ const filteredStudents = computed(() => {
 const canNext = computed(() => {
   if (currentStep.value === 0) return !!selectedContent.value
   if (currentStep.value === 1) return selectedStudentIds.value.length > 0
+  if (currentStep.value === 2) return !!personalMessage.value.trim()
   return true
 })
 
@@ -230,37 +326,65 @@ const trackingData = ref<any[]>([])
 const selectContent = (item: any) => { selectedContent.value = item }
 const selectAllStudents = () => { selectedStudentIds.value = students.value.map(s => s.id) }
 
+function goBack() {
+  currentStep.value--
+}
+
+function goNext() {
+  const next = currentStep.value + 1
+  currentStep.value = next
+  // Entering Step 3: trigger AI suggestion loading
+  if (next === 2) {
+    loadAiSuggestions()
+  }
+}
+
 const sendContent = async () => {
   sending.value = true
   try {
-    const content = selectedContent.value
-    const msgContent = personalMessage.value
-      ? `[内容分享] ${content.title}\n${personalMessage.value}`
-      : `[内容分享] ${content.title}`
+    const msgContent = personalMessage.value.trim()
+    const autoApprove = sendMode.value === 'now'
 
-    // 逐个发送消息给选中学员
     const results = await Promise.allSettled(
       selectedStudentIds.value.map(id =>
         request.post('/v1/coach/messages', {
           student_id: Number(id),
           content: msgContent,
           message_type: 'advice',
+          auto_approve: autoApprove,
         })
       )
     )
     const successCount = results.filter(r => r.status === 'fulfilled').length
     sent.value = true
-    trackingData.value = selectedStudentIds.value.map(id => {
+    trackingData.value = selectedStudentIds.value.map((id, idx) => {
       const s = students.value.find(st => st.id === id)
-      const succeeded = results[selectedStudentIds.value.indexOf(id)]?.status === 'fulfilled'
-      return { id, name: s?.name || '', read: false, sent: succeeded, readTime: '' }
+      const succeeded = results[idx]?.status === 'fulfilled'
+      return { id, name: s?.name || '', sent: succeeded }
     })
-    message.success(`已发送给 ${successCount}/${selectedStudentIds.value.length} 位学员`)
+
+    if (autoApprove) {
+      message.success(`已推送给 ${successCount}/${selectedStudentIds.value.length} 位学员`)
+    } else {
+      message.success(`已提交 ${successCount}/${selectedStudentIds.value.length} 条至审批队列`)
+    }
   } catch (e) {
     message.error('发送失败')
   } finally {
     sending.value = false
   }
+}
+
+function resetWizard() {
+  currentStep.value = 0
+  selectedContent.value = null
+  selectedStudentIds.value = []
+  personalMessage.value = ''
+  sendMode.value = 'now'
+  sent.value = false
+  trackingData.value = []
+  aiAlternatives.value = []
+  aiStudentSummary.value = ''
 }
 
 onMounted(() => {
@@ -279,15 +403,19 @@ onMounted(() => {
 .content-icon { font-size: 24px; }
 .content-info { flex: 1; }
 .content-name { display: block; font-size: 14px; font-weight: 500; }
-.content-meta { font-size: 12px; color: #999; }
+.content-meta { font-size: 12px; color: #999; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .check-mark { color: #1890ff; font-size: 18px; font-weight: 700; }
 
 .student-check-item { padding: 8px 0; border-bottom: 1px solid #f5f5f5; }
 .student-check-info { display: inline-flex; align-items: center; gap: 8px; }
 
+.ai-alt-item { padding: 10px 12px; margin-bottom: 8px; border: 1px solid #f0f0f0; border-radius: 6px; cursor: pointer; transition: border-color 0.2s; }
+.ai-alt-item:hover { border-color: #1890ff; background: #fafafa; }
+.ai-alt-content { font-size: 13px; line-height: 1.6; }
+.ai-alt-reason { font-size: 12px; color: #999; margin-top: 4px; }
+
 .tracking-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f5; }
 .tracking-name { flex: 1; font-size: 13px; }
-.tracking-time { font-size: 12px; color: #999; }
 
 .step-actions { margin-top: 20px; display: flex; gap: 8px; justify-content: flex-end; }
 

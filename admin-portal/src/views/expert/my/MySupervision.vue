@@ -34,8 +34,8 @@
           </template>
           <template v-if="column.key === 'action'">
             <a-space>
-              <a>查看详情</a>
-              <a>安排督导</a>
+              <a @click="viewCoachDetail(record)">查看详情</a>
+              <a @click="openScheduleFor(record)">安排督导</a>
             </a-space>
           </template>
         </template>
@@ -44,16 +44,64 @@
 
     <!-- Supervision Sessions -->
     <a-card title="督导会话记录">
+      <a-empty v-if="sessions.length === 0" description="暂无督导记录" />
       <div v-for="session in sessions" :key="session.id" class="session-item">
         <div class="session-header">
           <span class="session-coach">{{ session.coach }}</span>
-          <a-tag :color="session.status === '已完成' ? 'green' : 'blue'">{{ session.status }}</a-tag>
+          <a-tag :color="sessionTagColor(session.status)">{{ session.status }}</a-tag>
           <span class="session-date">{{ session.date }}</span>
         </div>
         <p class="session-topic">主题: {{ session.topic }}</p>
         <p v-if="session.notes" class="session-notes">备注: {{ session.notes }}</p>
       </div>
     </a-card>
+
+    <!-- Coach Detail Drawer -->
+    <a-drawer
+      v-model:open="showDetailDrawer"
+      :title="`教练详情 — ${detailCoach?.name || ''}`"
+      width="480"
+      placement="right"
+    >
+      <template v-if="detailCoach">
+        <div style="text-align: center; margin-bottom: 20px">
+          <a-avatar :size="64" :style="{ background: detailCoach.color, fontSize: '28px' }">
+            {{ detailCoach.name[0] }}
+          </a-avatar>
+          <h3 style="margin: 8px 0 4px">{{ detailCoach.name }}</h3>
+          <a-tag>{{ detailCoach.level }}</a-tag>
+        </div>
+
+        <a-descriptions :column="1" bordered size="small">
+          <a-descriptions-item label="学员数">{{ detailCoach.studentCount }} 人</a-descriptions-item>
+          <a-descriptions-item label="干预成功率">
+            <a-progress :percent="detailCoach.successRate" size="small" style="width: 120px" />
+          </a-descriptions-item>
+          <a-descriptions-item label="留存率">{{ detailCoach.retention }}%</a-descriptions-item>
+          <a-descriptions-item label="综合评分">
+            <a-rate :value="detailCoach.score" disabled allow-half :count="5" style="font-size: 14px" />
+          </a-descriptions-item>
+        </a-descriptions>
+
+        <a-divider>相关督导记录</a-divider>
+
+        <a-empty v-if="coachSessions.length === 0" description="暂无该教练的督导记录" />
+        <div v-for="s in coachSessions" :key="s.id" class="session-item">
+          <div class="session-header">
+            <a-tag :color="sessionTagColor(s.status)" size="small">{{ s.status }}</a-tag>
+            <span class="session-date">{{ s.date }}</span>
+          </div>
+          <p class="session-topic">{{ s.topic }}</p>
+          <p v-if="s.notes" class="session-notes">{{ s.notes }}</p>
+        </div>
+
+        <div style="margin-top: 16px">
+          <a-button type="primary" block @click="openScheduleFor(detailCoach); showDetailDrawer = false">
+            安排督导
+          </a-button>
+        </div>
+      </template>
+    </a-drawer>
 
     <!-- Schedule Modal -->
     <a-modal v-model:open="showScheduleModal" title="安排新督导" @ok="scheduleSupervision" okText="确认">
@@ -83,6 +131,8 @@ import { message } from 'ant-design-vue'
 import request from '@/api/request'
 
 const showScheduleModal = ref(false)
+const showDetailDrawer = ref(false)
+const detailCoach = ref<CoachItem | null>(null)
 const newSession = reactive({ coachId: undefined as string | undefined, topic: '', date: null as any, notes: '' })
 
 interface CoachItem {
@@ -102,7 +152,7 @@ const coachColumns = [
 ]
 
 interface SessionItem {
-  id: string; coach: string; status: string; date: string; topic: string; notes: string;
+  id: string; coach: string; coachId: string; status: string; date: string; topic: string; notes: string;
 }
 
 const sessions = ref<SessionItem[]>([])
@@ -112,15 +162,46 @@ const avgCoachScore = computed(() => {
   if (coaches.value.length === 0) return 0
   return coaches.value.reduce((sum, c) => sum + c.score, 0) / coaches.value.length
 })
-const pendingCount = computed(() => sessions.value.filter(s => s.status === '待进行').length)
+const pendingCount = computed(() => sessions.value.filter(s => s.status !== '已完成' && s.status !== '已拒绝').length)
+
+// Sessions filtered for the detail drawer
+const coachSessions = computed(() => {
+  if (!detailCoach.value) return []
+  return sessions.value.filter(s => s.coachId === detailCoach.value!.id || s.coach === detailCoach.value!.name)
+})
 
 const levelColors = ['#1890ff', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96', '#13c2c2']
 
+const sessionTagColor = (status: string) => {
+  const map: Record<string, string> = {
+    '已完成': 'green', '已审核': 'cyan', '待审核': 'orange',
+    '待进行': 'blue', '已拒绝': 'red',
+  }
+  return map[status] || 'blue'
+}
+
+// "查看详情" — open detail drawer
+const viewCoachDetail = (coach: CoachItem) => {
+  detailCoach.value = coach
+  showDetailDrawer.value = true
+}
+
+// "安排督导" — open schedule modal pre-filled with the coach
+const openScheduleFor = (coach: CoachItem) => {
+  newSession.coachId = coach.id
+  newSession.topic = ''
+  newSession.date = null
+  newSession.notes = ''
+  showScheduleModal.value = true
+}
+
 const loadSupervisionData = async () => {
   try {
-    const [coachesRes, sessionsRes] = await Promise.allSettled([
-      request.get('v1/admin/coaches'),  // real admin coaches endpoint
+    const [coachesRes, promotionRes, queueRes] = await Promise.allSettled([
+      request.get('v1/admin/coaches'),
       request.get('v1/promotion/applications', { params: { status: 'pending' } }),
+      // 从推送审批队列获取督导安排记录（source_type=coach_message，内容含[督导安排]）
+      request.get('v1/coach/push-queue', { params: { source_type: 'coach_message', page_size: 50 } }),
     ])
     if (coachesRes.status === 'fulfilled') {
       const items = coachesRes.value.data?.items || coachesRes.value.data || []
@@ -135,18 +216,49 @@ const loadSupervisionData = async () => {
     } else {
       console.error('加载教练列表失败:', coachesRes.reason)
     }
-    if (sessionsRes.status === 'fulfilled') {
-      // Map promotion applications as supervision queue items
-      const apps = sessionsRes.value.data?.applications || []
-      sessions.value = apps.map((s: any) => ({
-        id: String(s.application_id), coach: s.full_name || s.username || '',
-        status: s.status === 'pending' ? '待进行' : '已完成',
-        date: s.applied_at || '', topic: `${s.current_level} → ${s.target_level} 晋级审核`,
-        notes: s.reviewer_comment || '',
-      }))
-    } else {
-      console.error('加载督导会话失败:', sessionsRes.reason)
+
+    // 合并两个数据源到 sessions
+    const allSessions: SessionItem[] = []
+
+    // 来源1: 晋级申请（原有逻辑）
+    if (promotionRes.status === 'fulfilled') {
+      const apps = promotionRes.value.data?.applications || []
+      for (const s of apps) {
+        allSessions.push({
+          id: `promo-${s.application_id}`,
+          coach: s.full_name || s.username || '',
+          coachId: String(s.user_id || s.applicant_id || ''),
+          status: s.status === 'pending' ? '待进行' : '已完成',
+          date: s.applied_at || '',
+          topic: `${s.current_level} → ${s.target_level} 晋级审核`,
+          notes: s.reviewer_comment || '',
+        })
+      }
     }
+
+    // 来源2: 推送队列中的督导安排
+    if (queueRes.status === 'fulfilled') {
+      const queueItems = queueRes.value.data?.items || []
+      for (const item of queueItems) {
+        // 只取内容以 [督导安排] 开头的记录
+        if (!item.content?.startsWith('[督导安排]')) continue
+        const coachObj = coaches.value.find(c => c.id === String(item.student_id))
+        const statusMap: Record<string, string> = {
+          pending: '待审核', approved: '已审核', sent: '已完成', rejected: '已拒绝',
+        }
+        allSessions.push({
+          id: `queue-${item.id}`,
+          coach: coachObj?.name || `学员#${item.student_id}`,
+          coachId: String(item.student_id),
+          status: statusMap[item.status] || item.status,
+          date: item.created_at || '',
+          topic: item.content.replace('[督导安排] ', '').split('\n')[0],
+          notes: item.content.split('\n').slice(1).join('\n'),
+        })
+      }
+    }
+
+    sessions.value = allSessions
   } catch (e) {
     console.error('加载督导数据失败:', e)
   }
@@ -160,7 +272,6 @@ const scheduleSupervision = async () => {
     return
   }
   try {
-    // Send supervision scheduling as a coach message
     await request.post('v1/coach/messages', {
       student_id: Number(newSession.coachId),
       content: `[督导安排] ${newSession.topic}${newSession.date ? '\n时间: ' + (newSession.date.format?.('YYYY-MM-DD HH:mm') || '') : ''}${newSession.notes ? '\n备注: ' + newSession.notes : ''}`,
