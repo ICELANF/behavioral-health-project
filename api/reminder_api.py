@@ -52,6 +52,7 @@ class CoachReminderRequest(BaseModel):
     content: Optional[str] = Field(None, max_length=1000)
     cron_expr: Optional[str] = None
     next_fire_at: Optional[str] = None
+    auto_approve: bool = Field(False, description="促进师已审核，直接推送")
 
 
 # ============ 用户端端点 ============
@@ -171,13 +172,13 @@ async def create_coach_reminder(
     db: Session = Depends(get_db),
     current_user=Depends(require_coach_or_admin),
 ):
-    """教练为学员创建提醒 — 进入审批队列（AI→审核→推送原则）"""
+    """教练为学员创建提醒 — AI→审核→推送"""
     student = db.query(User).filter(User.id == body.student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="学员不存在")
 
-    from core.coach_push_queue_service import create_queue_item
-    queue_item = create_queue_item(
+    from core.coach_push_queue_service import create_queue_item, create_and_deliver
+    kwargs = dict(
         db=db,
         coach_id=current_user.id,
         student_id=body.student_id,
@@ -191,14 +192,25 @@ async def create_coach_reminder(
         },
         priority="normal",
     )
-    db.commit()
 
-    return {
-        "success": True,
-        "queue_item_id": queue_item.id,
-        "status": "pending_review",
-        "message": "提醒已提交审批队列",
-    }
+    if body.auto_approve:
+        queue_item = create_and_deliver(**kwargs)
+        db.commit()
+        return {
+            "success": True,
+            "queue_item_id": queue_item.id,
+            "status": "sent",
+            "message": "提醒已推送给学员",
+        }
+    else:
+        queue_item = create_queue_item(**kwargs)
+        db.commit()
+        return {
+            "success": True,
+            "queue_item_id": queue_item.id,
+            "status": "pending_review",
+            "message": "提醒已提交审批队列",
+        }
 
 
 @router.get("/api/v1/coach/reminders/ai-suggestions/{student_id}")

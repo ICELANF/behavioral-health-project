@@ -56,6 +56,46 @@ def create_queue_item(
     return item
 
 
+def create_and_deliver(
+    db: Session,
+    coach_id: int,
+    student_id: int,
+    source_type: str,
+    source_id: Optional[str] = None,
+    title: str = "",
+    content: Optional[str] = None,
+    content_extra: Optional[dict] = None,
+    scheduled_time: Optional[datetime] = None,
+    priority: str = "normal",
+) -> CoachPushQueue:
+    """
+    创建队列条目 + 立即/定时投递（一步完成）
+
+    促进师在工具箱抽屉中已完成审核修订，此方法跳过 pending 状态，
+    直接 approved→sent，保留完整审计记录。
+    """
+    item = create_queue_item(
+        db=db, coach_id=coach_id, student_id=student_id,
+        source_type=source_type, source_id=source_id,
+        title=title, content=content, content_extra=content_extra,
+        suggested_time=suggested_time, priority=priority,
+    )
+
+    now = datetime.utcnow()
+    item.reviewed_at = now
+    item.coach_note = "促进师工具箱直接审核推送"
+
+    if scheduled_time and scheduled_time > now:
+        item.scheduled_time = scheduled_time
+        item.status = "approved"
+        logger.info(f"[PushQueue] 定时投递: id={item.id} scheduled={scheduled_time}")
+    else:
+        item.status = "approved"
+        deliver_item(db, item)
+
+    return item
+
+
 def get_pending_items(
     db: Session,
     coach_id: int,

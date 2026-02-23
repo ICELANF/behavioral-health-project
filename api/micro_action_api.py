@@ -48,6 +48,7 @@ class CoachAssignMicroActionRequest(BaseModel):
     description: str = Field("", max_length=1000, description="任务描述")
     domain: str = Field("exercise", description="领域: nutrition/exercise/sleep/emotion/stress/cognitive/social")
     frequency: str = Field("每天", description="频次: 每天/每周")
+    auto_approve: bool = Field(False, description="促进师已审核，直接推送")
     duration_days: int = Field(7, ge=1, le=90, description="持续天数")
 
 
@@ -173,7 +174,7 @@ async def coach_assign_micro_action(
     db: Session = Depends(get_db),
     current_user=Depends(require_coach_or_admin),
 ):
-    """教练为学员指派微行动 → 审批队列（AI→审核→推送原则）"""
+    """教练为学员指派微行动 — AI→审核→推送"""
     from core.models import User
     student = db.query(User).filter(User.id == body.student_id).first()
     if not student:
@@ -183,8 +184,8 @@ async def coach_assign_micro_action(
     if body.domain not in valid_domains:
         raise HTTPException(status_code=400, detail=f"无效领域，可选: {', '.join(valid_domains)}")
 
-    from core.coach_push_queue_service import create_queue_item
-    queue_item = create_queue_item(
+    from core.coach_push_queue_service import create_queue_item, create_and_deliver
+    kwargs = dict(
         db=db,
         coach_id=current_user.id,
         student_id=body.student_id,
@@ -200,11 +201,22 @@ async def coach_assign_micro_action(
         },
         priority="normal",
     )
-    db.commit()
 
-    return {
-        "success": True,
-        "queue_item_id": queue_item.id,
-        "status": "pending_review",
-        "message": "微行动已提交审批队列，审批通过后将为学员创建任务",
-    }
+    if body.auto_approve:
+        queue_item = create_and_deliver(**kwargs)
+        db.commit()
+        return {
+            "success": True,
+            "queue_item_id": queue_item.id,
+            "status": "sent",
+            "message": "微行动已推送给学员",
+        }
+    else:
+        queue_item = create_queue_item(**kwargs)
+        db.commit()
+        return {
+            "success": True,
+            "queue_item_id": queue_item.id,
+            "status": "pending_review",
+            "message": "微行动已提交审批队列",
+        }

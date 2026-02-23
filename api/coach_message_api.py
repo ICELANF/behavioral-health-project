@@ -29,6 +29,7 @@ class SendMessageRequest(BaseModel):
     student_id: int = Field(..., description="学员ID")
     content: str = Field(..., min_length=1, max_length=2000, description="消息内容")
     message_type: str = Field("text", description="消息类型: text/encouragement/reminder/advice")
+    auto_approve: bool = Field(False, description="促进师已审核，直接推送")
 
 
 # ============ 教练端端点 ============
@@ -45,14 +46,13 @@ async def send_message(
     db: Session = Depends(get_db),
     current_user=Depends(require_coach_or_admin),
 ):
-    """教练发消息给学员 — 进入审批队列（AI→审核→推送原则）"""
-    # 验证学员存在
+    """教练发消息给学员 — AI→审核→推送"""
     student = db.query(User).filter(User.id == body.student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="学员不存在")
 
-    from core.coach_push_queue_service import create_queue_item
-    queue_item = create_queue_item(
+    from core.coach_push_queue_service import create_queue_item, create_and_deliver
+    kwargs = dict(
         db=db,
         coach_id=current_user.id,
         student_id=body.student_id,
@@ -62,14 +62,25 @@ async def send_message(
         content_extra={"message_type": body.message_type},
         priority="normal",
     )
-    db.commit()
 
-    return {
-        "success": True,
-        "queue_item_id": queue_item.id,
-        "status": "pending_review",
-        "message": "消息已提交审批队列，请在推送管理中审核后发送",
-    }
+    if body.auto_approve:
+        queue_item = create_and_deliver(**kwargs)
+        db.commit()
+        return {
+            "success": True,
+            "queue_item_id": queue_item.id,
+            "status": "sent",
+            "message": "消息已推送给学员",
+        }
+    else:
+        queue_item = create_queue_item(**kwargs)
+        db.commit()
+        return {
+            "success": True,
+            "queue_item_id": queue_item.id,
+            "status": "pending_review",
+            "message": "消息已提交审批队列",
+        }
 
 
 @router.get("/api/v1/coach/messages/ai-suggestions/{student_id}")
