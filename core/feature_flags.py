@@ -59,7 +59,7 @@ class FeatureFlagService:
             return rollout >= 50  # default for anonymous
 
         # Deterministic hash (not for security — just bucketing)
-        h = hashlib.md5(f"{user_id}:{flag_key}".encode(), usedforsecurity=False).hexdigest()
+        h = hashlib.md5(f"{user_id}:{flag_key}".encode(), usedforsecurity=False).hexdigest()  # nosec B303
         bucket = int(h[:8], 16) % 100
         return bucket < rollout
 
@@ -81,7 +81,7 @@ class FeatureFlagService:
             return "control"
 
         # Deterministic assignment (not for security — just bucketing)
-        h = hashlib.md5(f"{user_id}:{experiment_key}".encode(), usedforsecurity=False).hexdigest()
+        h = hashlib.md5(f"{user_id}:{experiment_key}".encode(), usedforsecurity=False).hexdigest()  # nosec B303
         idx = int(h[:8], 16) % len(variants)
         return variants[idx]
 
