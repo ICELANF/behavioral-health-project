@@ -165,7 +165,8 @@ jobs:
               conn.execute(text('CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"'))
               conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
               conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
-          from core.models import Base
+          from core.models import Base, register_external_models
+          register_external_models()
           Base.metadata.create_all(engine)
           print('✅ All tables created from ORM')
           "
@@ -297,7 +298,8 @@ jobs:
               conn.execute(text('CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"'))
               conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
               conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
-          from core.models import Base
+          from core.models import Base, register_external_models
+          register_external_models()
           Base.metadata.create_all(engine)
           "
           alembic stamp head
@@ -404,7 +406,8 @@ jobs:
               conn.execute(text('CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"'))
               conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
               conn.execute(text('CREATE SCHEMA IF NOT EXISTS coach_schema'))
-          from core.models import Base
+          from core.models import Base, register_external_models
+          register_external_models()
           Base.metadata.create_all(engine)
           "
           alembic stamp head

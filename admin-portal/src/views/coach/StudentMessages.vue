@@ -371,4 +371,17 @@ onMounted(loadStudents)
     max-height: none;
   }
 }
+
+@media (max-width: 640px) {
+  .student-messages { padding: 8px !important; }
+  .message-bubble { max-width: 95%; padding: 8px 10px; }
+  .message-input { flex-direction: column; gap: 6px; }
+  .message-input .ant-select { width: 100% !important; }
+  .message-input .ant-btn { min-height: 44px; width: 100%; }
+  .quick-templates { gap: 4px; }
+  .quick-templates .template-tag { font-size: 11px; }
+  .student-item { padding: 8px 4px; }
+  .reminder-section .ant-btn { min-height: 44px; }
+  h2 { font-size: 16px; }
+}
 </style>

@@ -7,9 +7,7 @@
           <div class="greeting-time">{{ greetingText }}</div>
           <div class="greeting-name">{{ userName }} 👋</div>
         </div>
-        <a-avatar :size="60" class="user-avatar" @click="router.push('/client/my/profile')">
-          {{ avatarText }}
-        </a-avatar>
+        <UserAvatarPopover :size="60" theme="dark" />
       </div>
 
       <!-- 健康评分 - 使用组件 -->
@@ -96,6 +94,7 @@
             </div>
             <div class="trend-sparkline">
               <TrendChart
+                v-if="m.data.length > 0"
                 type="line"
                 :data="m.data"
                 :labels="m.labels"
@@ -110,6 +109,9 @@
                 :stroke-width="2"
                 :compact="true"
               />
+              <div v-else class="trend-empty">
+                <span>暂无记录，请手动输入或同步设备</span>
+              </div>
             </div>
             <div class="trend-card-foot">{{ m.trendText }}</div>
           </div>
@@ -156,7 +158,7 @@
         <LineChartOutlined />
         <span>数据</span>
       </div>
-      <div class="nav-item center-btn" @click="router.push('/client/chat-v2')">
+      <div class="nav-item center-btn" @click="showQuickHub = true">
         <div class="center-icon">
           <MessageOutlined />
         </div>
@@ -225,6 +227,9 @@
         </div>
       </div>
     </a-drawer>
+
+    <!-- 快速采集中心 -->
+    <QuickInputHub v-model:open="showQuickHub" @data-submitted="handleDataSubmitted" />
   </div>
 </template>
 
@@ -232,33 +237,28 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import {
-  UserOutlined,
   HomeOutlined,
   LineChartOutlined,
   MessageOutlined,
   ReadOutlined,
   PlusCircleOutlined,
   PlusOutlined,
+  UserOutlined,
 } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
 import { healthApi } from '@/api/health'
 import { profileApi } from '@/api/index'
-import { HealthScoreCircle, TaskList, TrendChart } from '@/components/health'
+import { HealthScoreCircle, TaskList, TrendChart, QuickInputHub, UserAvatarPopover } from '@/components/health'
+import { useCurrentUser } from '@/composables/useCurrentUser'
 import type { Task } from '@/components/health'
 
 const router = useRouter()
 
-// 用户信息
-const userName = ref(localStorage.getItem('admin_name') || localStorage.getItem('admin_username') || '')
+// 用户信息 — 由 useCurrentUser composable 提供
+const { userName } = useCurrentUser()
 const healthScore = ref(0)
 const streakDays = ref(0)
 const loading = ref(true)
-
-// 头像显示文字（取名字最后两个字）
-const avatarText = computed(() => {
-  const name = userName.value || ''
-  return name.length > 2 ? name.slice(-2) : name || '?'
-})
 
 // patientId no longer needed — real endpoints are JWT-scoped
 
@@ -489,6 +489,14 @@ const loadTasks = async () => {
   }
 }
 
+// 快速采集中心
+const showQuickHub = ref(false)
+const handleDataSubmitted = async () => {
+  showQuickHub.value = false
+  message.success('数据已记录')
+  await loadData()
+}
+
 // 更多功能
 const showMoreDrawer = ref(false)
 
@@ -694,20 +702,6 @@ onMounted(() => {
   font-weight: 700;
 }
 
-.user-avatar {
-  background: rgba(255,255,255,0.25) !important;
-  border: 3px solid rgba(255,255,255,0.5);
-  color: #fff !important;
-  font-size: 20px !important;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.user-avatar:hover {
-  transform: scale(1.05);
-}
-
 .health-score-wrapper {
   background: rgba(255,255,255,0.15);
   backdrop-filter: blur(10px);
@@ -813,6 +807,16 @@ onMounted(() => {
   color: #9ca3af;
   text-align: right;
   padding-bottom: 4px;
+}
+.trend-empty {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d1d5db;
+  font-size: 12px;
+  border: 1px dashed #e5e7eb;
+  border-radius: 6px;
 }
 
 /* 快速入口紧凑行 */

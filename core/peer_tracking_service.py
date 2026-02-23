@@ -80,8 +80,8 @@ class PeerTrackingService:
         Returns: [{"user_id": int, "score": float, "reasons": [...]}]
         """
         from core.models import (
-            User, JourneyStageV4, BehavioralStage,
-            CompanionStatus, UserActivityLog,
+            User, JourneyState,
+            CompanionRelation, UserActivityLog,
         )
 
         # 获取当前用户画像
@@ -114,7 +114,7 @@ class PeerTrackingService:
             )
             scored.append({
                 "user_id": candidate.id,
-                "display_name": candidate.display_name or f"用户{candidate.id}",
+                "display_name": getattr(candidate, 'nickname', None) or candidate.username or f"用户{candidate.id}",
                 "score": round(score, 3),
                 "reasons": reasons,
                 "stage": cand_profile.get("stage", "unknown"),
@@ -125,25 +125,27 @@ class PeerTrackingService:
 
     def _build_user_profile(self, user_id: int) -> Optional[dict]:
         """构建用户匹配画像"""
-        from core.models import User, JourneyStageV4
+        from core.models import User, JourneyState
 
         user = self.db.get(User, user_id)
         if not user:
             return None
 
         stage_result = self.db.execute(
-            select(JourneyStageV4).where(
-                JourneyStageV4.user_id == user_id
-            ).order_by(JourneyStageV4.updated_at.desc()).limit(1)
+            select(JourneyState).where(
+                JourneyState.user_id == user_id
+            ).limit(1)
         )
-        stage = stage_result.scalar_one_or_none()
+        js = stage_result.scalar_one_or_none()
+
+        # Extract stage code (e.g. "s2_trial" → "S2")
+        raw_stage = js.journey_stage if js else "s0_authorization"
+        stage_code = raw_stage.split("_")[0].upper() if raw_stage else "S0"
 
         return {
             "user_id": user_id,
-            "stage": stage.current_stage if stage else "S0",
-            "stage_numeric": self._stage_to_numeric(
-                stage.current_stage if stage else "S0"
-            ),
+            "stage": stage_code,
+            "stage_numeric": self._stage_to_numeric(stage_code),
             "role": user.role,
             "bpt_type": getattr(user, "bpt_type", None),
             "goals": getattr(user, "goals", []) or [],
@@ -169,16 +171,26 @@ class PeerTrackingService:
         return min((count or 0) / 50.0, 1.0)  # 50次/周为满分
 
     def _get_existing_companion_ids(self, user_id: int) -> list[int]:
-        from core.models import CompanionStatus
-        result = self.db.execute(
-            select(CompanionStatus.companion_id).where(
+        from core.models import CompanionRelation
+        # Get all companion IDs where user is mentor or mentee, in non-dissolved states
+        result_mentor = self.db.execute(
+            select(CompanionRelation.mentee_id).where(
                 and_(
-                    CompanionStatus.user_id == user_id,
-                    CompanionStatus.status.in_(["pending", "active", "cooling"]),
+                    CompanionRelation.mentor_id == user_id,
+                    CompanionRelation.status.in_(["pending", "active", "cooling"]),
                 )
             )
         )
-        return [r[0] for r in result.all()]
+        result_mentee = self.db.execute(
+            select(CompanionRelation.mentor_id).where(
+                and_(
+                    CompanionRelation.mentee_id == user_id,
+                    CompanionRelation.status.in_(["pending", "active", "cooling"]),
+                )
+            )
+        )
+        ids = [r[0] for r in result_mentor.all()] + [r[0] for r in result_mentee.all()]
+        return ids
 
     def _compute_match_score(
         self, profile_a: dict, profile_b: dict,
@@ -249,23 +261,21 @@ class PeerTrackingService:
 
         状态机: pending→active→cooling→dormant→dissolved
         """
-        from core.models import CompanionStatus
+        from core.models import CompanionRelation
         now = datetime.utcnow()
         stats = {"cooling": 0, "dormant": 0, "dissolved": 0, "reactivated": 0}
 
         # 获取所有活跃关系
         result = self.db.execute(
-            select(CompanionStatus).where(
-                CompanionStatus.status.in_(["active", "cooling", "dormant"])
+            select(CompanionRelation).where(
+                CompanionRelation.status.in_(["active", "cooling", "dormant"])
             )
         )
         relationships = result.scalars().all()
 
         for rel in relationships:
-            last_interaction = rel.last_interaction_at or rel.created_at
-            days_silent = (now - last_interaction).days
-
-            old_state = rel.status
+            last_interaction = rel.last_interaction_at or rel.started_at
+            days_silent = (now - last_interaction).days if last_interaction else 999
 
             if rel.status == "active" and days_silent >= self.COOLING_THRESHOLD_DAYS:
                 rel.status = "cooling"
@@ -305,19 +315,19 @@ class PeerTrackingService:
         interaction_type: message | reaction | challenge_collab | milestone_cheer
         quality_score: 0.0~1.0 (AI评估互动质量)
         """
-        from core.models import CompanionStatus
+        from core.models import CompanionRelation
         now = datetime.utcnow()
 
         result = self.db.execute(
-            select(CompanionStatus).where(
+            select(CompanionRelation).where(
                 and_(
                     or_(
-                        and_(CompanionStatus.user_id == user_id,
-                             CompanionStatus.companion_id == companion_id),
-                        and_(CompanionStatus.user_id == companion_id,
-                             CompanionStatus.companion_id == user_id),
+                        and_(CompanionRelation.mentor_id == user_id,
+                             CompanionRelation.mentee_id == companion_id),
+                        and_(CompanionRelation.mentor_id == companion_id,
+                             CompanionRelation.mentee_id == user_id),
                     ),
-                    CompanionStatus.status.in_(["active", "cooling", "dormant"]),
+                    CompanionRelation.status.in_(["active", "cooling", "dormant"]),
                 )
             )
         )
@@ -334,8 +344,8 @@ class PeerTrackingService:
             n = rel.interaction_count
             rel.avg_quality_score = old_avg + (quality_score - old_avg) / n
 
-        # 互惠性检查: 记录谁发起
-        if user_id == rel.user_id:
+        # 互惠性检查: 记录谁发起 (mentor=a, mentee=b)
+        if user_id == rel.mentor_id:
             rel.initiator_count_a = (rel.initiator_count_a or 0) + 1
         else:
             rel.initiator_count_b = (rel.initiator_count_b or 0) + 1

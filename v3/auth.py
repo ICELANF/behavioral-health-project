@@ -17,7 +17,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import Column, Integer, String, DateTime, Boolean, Text
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import func
@@ -260,12 +260,19 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+_ROLE_LEVELS = {
+    "observer": 1, "grower": 2, "sharer": 3, "coach": 4,
+    "promoter": 5, "supervisor": 5, "master": 6, "admin": 99,
+}
+
+
 class UserProfile(BaseModel):
     id: int
     phone: str | None = None
     username: str | None = None
     nickname: str
     role: str
+    role_level: int = 1
     current_stage: str
     growth_level: str
     health_competency_level: str
@@ -274,6 +281,20 @@ class UserProfile(BaseModel):
 
     class Config:
         from_attributes = True
+
+    @model_validator(mode="before")
+    @classmethod
+    def _fill_role_level(cls, values):
+        if isinstance(values, dict):
+            role = (values.get("role") or "observer").lower()
+            values.setdefault("role_level", _ROLE_LEVELS.get(role, 1))
+        elif hasattr(values, "role"):
+            # ORM object — extract role and inject role_level as attr
+            role_raw = values.role
+            role_str = role_raw.value if hasattr(role_raw, "value") else str(role_raw or "observer")
+            if not hasattr(values, "role_level") or values.role_level is None:
+                object.__setattr__(values, "role_level", _ROLE_LEVELS.get(role_str.lower(), 1))
+        return values
 
 
 class ChangePasswordRequest(BaseModel):

@@ -221,7 +221,7 @@ const route = useRoute()
 const studentId = route.params.id as string
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-const token = localStorage.getItem('token') || ''
+const token = localStorage.getItem('admin_token') || ''
 const authHeaders: Record<string, string> = {
   'Content-Type': 'application/json',
   ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -450,4 +450,19 @@ onMounted(loadData)
 .send-followup { margin-top: 8px; }
 .send-followup h4 { margin: 0 0 8px; }
 .quick-templates { display: flex; flex-wrap: wrap; gap: 4px; }
+
+@media (max-width: 640px) {
+  .student-assessment { padding: 8px !important; }
+  .student-overview { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .student-stats { margin-left: 0; width: 100%; justify-content: space-between; }
+  .record-header { flex-wrap: wrap; }
+  .record-card { padding: 12px; }
+  .ant-btn { min-height: 44px; }
+  h2, h3 { font-size: 16px; }
+  .compare-item { font-size: 12px; }
+  .followup-item { flex-wrap: wrap; gap: 4px; }
+  .quick-templates { gap: 4px; }
+  .quick-templates .ant-btn { min-height: 36px; font-size: 12px; }
+  .send-followup { padding: 0 4px; }
+}
 </style>

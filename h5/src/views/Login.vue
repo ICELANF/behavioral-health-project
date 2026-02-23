@@ -113,6 +113,13 @@ async function handleLogin() {
         id: String(res.user.id),
         name: res.user.full_name || res.user.username,
       })
+      // 写入角色等级 — 路由守卫依赖此值分流Observer/Grower首页
+      const ROLE_LEVELS: Record<string, number> = {
+        observer: 1, grower: 2, sharer: 3, coach: 4,
+        promoter: 5, supervisor: 5, master: 6, admin: 99
+      }
+      const userRole = (res.user.role || 'observer').toLowerCase()
+      localStorage.setItem('bhp_role_level', String(res.user.role_level || ROLE_LEVELS[userRole] || 1))
     }
 
     closeToast()

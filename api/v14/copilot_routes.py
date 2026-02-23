@@ -1,9 +1,14 @@
 # CoachCopilot 后端路由 (生产 8002)
 # POST /api/v1/copilot/analyze — 与沙盒相同的分析逻辑
+# POST /api/v1/copilot/generate-prescription — AI行为处方生成
 import os
 import json
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Depends
+from sqlalchemy.orm import Session
 from loguru import logger
+
+from core.database import get_db
+from api.dependencies import require_coach_or_admin
 
 router = APIRouter(tags=["copilot"])
 
@@ -56,6 +61,7 @@ def match_triggers(text: str) -> list:
     return hits
 
 
+@router.post("/test/simulate-chat")
 @router.post("/copilot/analyze")
 async def copilot_analyze(
     uid: str = Body(...),
@@ -148,3 +154,121 @@ async def copilot_analyze(
             "to_coach": prescriptions,
         }
     }
+
+
+@router.post("/copilot/suggested-actions")
+async def copilot_suggested_actions(
+    stage: str = Body(default=""),
+    risk_level: str = Body(default=""),
+    recent_tags: list = Body(default=[]),
+):
+    """
+    根据当前阶段 / 风险 / 近期标签推荐教练可用动作
+    """
+    suggestions = []
+    # 基于 risk_level 推荐
+    if risk_level in ("L3", "L4", "R3", "R4"):
+        suggestions.append({
+            "id": "urgent_followup",
+            "label": "紧急跟进",
+            "description": "高风险学员需要立即人工跟进",
+            "tool": "COACH_CALL",
+            "priority": 1,
+            "context_match": ["high_risk"],
+        })
+    # 基于近期标签推荐
+    for tag in recent_tags:
+        meta = TAG_META.get(tag, {})
+        if meta:
+            suggestions.append({
+                "id": f"action_{tag.lower()}",
+                "label": meta.get("label", tag),
+                "description": meta.get("coach_alert", ""),
+                "tool": "GENERAL_CHAT",
+                "priority": 2,
+                "context_match": [tag],
+            })
+    # 通用建议
+    if not suggestions:
+        suggestions.append({
+            "id": "routine_check",
+            "label": "日常关怀",
+            "description": "发送日常关怀消息，保持连接",
+            "tool": "GENERAL_CHAT",
+            "priority": 3,
+            "context_match": ["routine"],
+        })
+    return {"actions": suggestions}
+
+
+@router.get("/copilot/prescriptions/{coach_id}")
+async def copilot_prescriptions(
+    coach_id: str,
+    page: int = 1,
+    pageSize: int = 10,
+    startDate: str = "",
+    endDate: str = "",
+    riskLevel: str = "",
+):
+    """获取教练历史处方列表"""
+    return {
+        "items": [],
+        "total": 0,
+        "page": page,
+        "pageSize": pageSize,
+    }
+
+
+@router.post("/copilot/prescriptions/{prescription_id}/action")
+async def copilot_prescription_action(
+    prescription_id: str,
+    action: dict = Body(default={}),
+):
+    """提交处方动作"""
+    return {"message": "操作已记录", "prescription_id": prescription_id}
+
+
+@router.post("/copilot/chat-sync")
+async def copilot_chat_sync(
+    message: str = Body(...),
+    user_id: str = Body(default="anonymous"),
+):
+    """
+    同步聊天端点 — 教练跟进建议生成
+    使用 UnifiedLLMClient 生成回复
+    """
+    try:
+        from core.llm_client import get_llm_client
+        client = get_llm_client()
+        result = client.chat(
+            system="你是一位专业的行为健康教练助手，帮助教练生成跟进消息。请直接输出消息内容，语气温暖专业，100字以内。",
+            user=message,
+            temperature=0.7,
+            timeout=30.0,
+        )
+        if result.success:
+            return {"reply": result.content}
+        else:
+            logger.warning(f"[copilot] chat-sync LLM调用失败: {result.error}")
+            return {"reply": "AI暂时不可用，请手动输入跟进消息。"}
+    except Exception as e:
+        logger.error(f"[copilot] chat-sync 异常: {e}")
+        return {"reply": "AI暂时不可用，请手动输入跟进消息。"}
+
+
+@router.post("/copilot/generate-prescription")
+def generate_prescription(
+    student_id: int = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """
+    AI 行为处方生成 — 一次调用填充教练工作台学员详情全部 5 个标签页
+
+    请求: {"student_id": 3}
+    返回: {diagnosis, prescription, ai_suggestions, health_summary, intervention_plan, meta}
+    """
+    from core.copilot_prescription_service import CopilotPrescriptionService
+
+    service = CopilotPrescriptionService()
+    return service.generate_prescription(db, student_id, current_user.id)

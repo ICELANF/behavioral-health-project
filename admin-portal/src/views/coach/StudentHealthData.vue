@@ -364,4 +364,16 @@ onMounted(() => {
   text-overflow: ellipsis;
   max-width: 100%;
 }
+
+@media (max-width: 640px) {
+  .student-health-data { padding: 8px !important; }
+  .bar-chart { height: 100px; gap: 4px; }
+  .bar { max-width: 18px; }
+  .bar-value { font-size: 9px; }
+  .bar-label { font-size: 8px; }
+  .ant-btn { min-height: 44px; }
+  h2 { font-size: 16px; }
+  .ant-card { margin-bottom: 12px !important; }
+  .empty-hint { padding: 20px 0; font-size: 13px; }
+}
 </style>

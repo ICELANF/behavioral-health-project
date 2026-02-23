@@ -164,6 +164,156 @@ class TestPeerTracking:
 
 
 # ═══════════════════════════════════════════════════════
+# CR-28 增强: 生命周期转换 + 互动记录 + 枚举完整性
+# ═══════════════════════════════════════════════════════
+
+class TestPeerTrackingLifecycle:
+    """CR-28 增强: 生命周期状态机完整性测试"""
+
+    def test_companion_status_enum_has_lifecycle_states(self):
+        """CompanionStatus 枚举应包含完整生命周期状态"""
+        from core.models import CompanionStatus
+        required = {"pending", "active", "cooling", "dormant", "dissolved", "graduated", "dropped"}
+        actual = {s.value for s in CompanionStatus}
+        assert required.issubset(actual), f"缺少状态: {required - actual}"
+
+    def test_lifecycle_state_enum_matches_service(self):
+        """服务层 CompanionLifecycleState 应与 ORM 枚举对齐"""
+        from core.peer_tracking_service import CompanionLifecycleState
+        from core.models import CompanionStatus
+        for state in CompanionLifecycleState:
+            assert state.value in {s.value for s in CompanionStatus}, \
+                f"服务状态 {state.value} 不在 ORM 枚举中"
+
+    @pytest.fixture
+    def lifecycle_service(self):
+        from core.peer_tracking_service import PeerTrackingService
+        db = MagicMock()
+        return PeerTrackingService(db)
+
+    def test_lifecycle_active_to_cooling(self, lifecycle_service):
+        """7天无互动应从 active 转为 cooling"""
+        from core.models import CompanionRelation
+        now = datetime.utcnow()
+        rel = MagicMock(spec=CompanionRelation)
+        rel.status = "active"
+        rel.last_interaction_at = now - timedelta(days=8)
+        rel.started_at = now - timedelta(days=30)
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [rel]
+        lifecycle_service.db.execute.return_value = mock_result
+
+        stats = lifecycle_service.update_lifecycle_states()
+        assert rel.status == "cooling"
+        assert stats["cooling"] >= 1
+
+    def test_lifecycle_cooling_to_dormant(self, lifecycle_service):
+        """14天无互动应从 cooling 转为 dormant"""
+        from core.models import CompanionRelation
+        now = datetime.utcnow()
+        rel = MagicMock(spec=CompanionRelation)
+        rel.status = "cooling"
+        rel.last_interaction_at = now - timedelta(days=15)
+        rel.started_at = now - timedelta(days=30)
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [rel]
+        lifecycle_service.db.execute.return_value = mock_result
+
+        stats = lifecycle_service.update_lifecycle_states()
+        assert rel.status == "dormant"
+        assert stats["dormant"] >= 1
+
+    def test_lifecycle_dormant_to_dissolved(self, lifecycle_service):
+        """30天休眠应自动解除"""
+        from core.models import CompanionRelation
+        now = datetime.utcnow()
+        rel = MagicMock(spec=CompanionRelation)
+        rel.status = "dormant"
+        rel.last_interaction_at = now - timedelta(days=31)
+        rel.started_at = now - timedelta(days=60)
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [rel]
+        lifecycle_service.db.execute.return_value = mock_result
+
+        stats = lifecycle_service.update_lifecycle_states()
+        assert rel.status == "dissolved"
+        assert rel.dissolve_reason == "auto_timeout"
+        assert stats["dissolved"] >= 1
+
+    def test_lifecycle_reactivation(self, lifecycle_service):
+        """冷却期内有新互动应重激活"""
+        from core.models import CompanionRelation
+        now = datetime.utcnow()
+        rel = MagicMock(spec=CompanionRelation)
+        rel.status = "cooling"
+        rel.last_interaction_at = now - timedelta(days=3)  # < 7 days
+        rel.started_at = now - timedelta(days=30)
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = [rel]
+        lifecycle_service.db.execute.return_value = mock_result
+
+        stats = lifecycle_service.update_lifecycle_states()
+        assert rel.status == "active"
+        assert stats["reactivated"] >= 1
+
+    def test_record_interaction_updates_metrics(self, lifecycle_service):
+        """互动记录应更新计数/质量/互惠性"""
+        from core.models import CompanionRelation
+        rel = MagicMock(spec=CompanionRelation)
+        rel.mentor_id = 1
+        rel.mentee_id = 2
+        rel.status = "active"
+        rel.interaction_count = 5
+        rel.avg_quality_score = 0.7
+        rel.initiator_count_a = 3
+        rel.initiator_count_b = 2
+        rel.last_interaction_at = None
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = rel
+        lifecycle_service.db.execute.return_value = mock_result
+
+        ok = lifecycle_service.record_interaction(1, 2, "message", 0.9)
+        assert ok is True
+        assert rel.interaction_count == 6
+        assert rel.initiator_count_a == 4  # mentor initiated
+
+    def test_record_interaction_reactivates_cooling(self, lifecycle_service):
+        """互动应重激活冷却中的关系"""
+        from core.models import CompanionRelation
+        rel = MagicMock(spec=CompanionRelation)
+        rel.mentor_id = 1
+        rel.mentee_id = 2
+        rel.status = "cooling"
+        rel.interaction_count = 3
+        rel.avg_quality_score = 0.5
+        rel.initiator_count_a = 1
+        rel.initiator_count_b = 2
+        rel.last_interaction_at = None
+
+        mock_result = MagicMock()
+        mock_result.scalar_one_or_none.return_value = rel
+        lifecycle_service.db.execute.return_value = mock_result
+
+        ok = lifecycle_service.record_interaction(2, 1, "message")
+        assert ok is True
+        assert rel.status == "active"
+
+    def test_match_strategy_options(self):
+        """应支持4种匹配策略"""
+        from core.peer_tracking_service import CompanionMatchStrategy
+        strategies = [s.value for s in CompanionMatchStrategy]
+        assert "stage_proximity" in strategies
+        assert "behavior_similarity" in strategies
+        assert "goal_alignment" in strategies
+        assert "complementary" in strategies
+
+
+# ═══════════════════════════════════════════════════════
 # C4: 字段同步守卫 测试
 # ═══════════════════════════════════════════════════════
 

@@ -6,17 +6,23 @@
         <span class="font-bold text-lg">主动健康·吃动守恒</span>
         <a-tag color="green" class="!text-xs">v16.2.0</a-tag>
       </div>
-      <a-tabs v-model:activeKey="activeTab" class="expert-nav-tabs" size="small">
-        <a-tab-pane key="audit" tab="待审队列" />
-        <a-tab-pane key="trace" tab="决策回溯" />
-        <a-tab-pane key="brain" tab="规则引擎" />
-      </a-tabs>
+      <div class="flex items-center gap-4">
+        <a-tabs v-model:activeKey="activeTab" class="expert-nav-tabs" size="small">
+          <a-tab-pane key="audit" tab="待审队列" />
+          <a-tab-pane key="trace" tab="决策回溯" />
+          <a-tab-pane key="brain" tab="规则引擎" />
+          <a-tab-pane key="profile" tab="个人档案" />
+          <a-tab-pane key="contributions" tab="我的分享" />
+          <a-tab-pane key="benefits" tab="我的权益" />
+        </a-tabs>
+        <UserAvatarPopover :size="36" theme="dark" />
+      </div>
     </div>
 
     <!-- Content -->
     <div class="flex h-[calc(100vh-64px)]">
-      <!-- Left: Patient queue -->
-      <div class="w-60 bg-white border-r border-slate-200 overflow-y-auto p-4">
+      <!-- Left: Patient queue (only for audit tab) -->
+      <div v-if="activeTab === 'audit'" class="w-60 bg-white border-r border-slate-200 overflow-y-auto p-4">
         <div class="mb-3">
           <a-select v-model:value="riskFilter" placeholder="风险等级筛选" allow-clear class="w-full" size="small">
             <a-select-option value="CRITICAL">🔴 CRITICAL</a-select-option>
@@ -45,11 +51,20 @@
       </div>
 
       <!-- Right: Detail panel -->
-      <div class="flex-1 p-4 overflow-hidden">
+      <div class="flex-1 overflow-hidden">
         <DualSignPanel v-if="selectedCase && activeTab === 'audit'" :audit-case="selectedCase" />
         <LogicFlowBridge v-else-if="activeTab === 'trace'" />
         <div v-else-if="activeTab === 'brain'" class="flex items-center justify-center h-full text-slate-400">
           规则引擎功能开发中...
+        </div>
+        <div v-else-if="activeTab === 'profile'" class="personal-tab-wrap">
+          <PersonalHealthProfile :embedded="true" />
+        </div>
+        <div v-else-if="activeTab === 'contributions'" class="personal-tab-wrap">
+          <MyContributions />
+        </div>
+        <div v-else-if="activeTab === 'benefits'" class="personal-tab-wrap">
+          <MyBenefits />
         </div>
         <div v-else class="flex items-center justify-center h-full text-slate-400">
           ← 请选择一个待审案例
@@ -64,6 +79,7 @@ import { ref, computed, onMounted } from 'vue'
 import DualSignPanel from './DualSignPanel.vue'
 import LogicFlowBridge from '@/components/expert/LogicFlowBridge.vue'
 import { fetchAuditQueue, type AuditCase } from '@/api/expert'
+import { UserAvatarPopover, PersonalHealthProfile, MyContributions, MyBenefits } from '@/components/health'
 
 const activeTab = ref('audit')
 const riskFilter = ref<string>()
@@ -105,4 +121,14 @@ onMounted(async () => {
 .expert-nav-tabs .ant-tabs-tab-active { color: #fff !important; }
 .expert-nav-tabs .ant-tabs-ink-bar { background: #22c55e !important; }
 .expert-nav-tabs .ant-tabs-nav::before { border-bottom: none !important; }
+</style>
+
+<style scoped>
+.personal-tab-wrap {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  overflow-y: auto;
+  height: 100%;
+}
 </style>

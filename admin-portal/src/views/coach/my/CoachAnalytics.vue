@@ -298,4 +298,12 @@ onUnmounted(() => disposeCharts())
   width: 100%;
   height: 320px;
 }
+
+@media (max-width: 640px) {
+  .coach-analytics { padding: 8px !important; }
+  .chart-box { height: 240px; }
+  .ant-btn { min-height: 44px; }
+  h2 { font-size: 16px; }
+  .ant-card { margin-bottom: 12px !important; }
+}
 </style>

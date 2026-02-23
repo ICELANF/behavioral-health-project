@@ -19,6 +19,20 @@ from core.models import User, CompanionRelation, CompanionStatus
 
 router = APIRouter(prefix="/api/v1/companions", tags=["同道者关系"])
 
+# 角色→等级映射
+_ROLE_LEVELS = {
+    "observer": 1, "grower": 2, "sharer": 3, "coach": 4,
+    "promoter": 5, "supervisor": 5, "master": 6, "admin": 99,
+}
+
+
+def _require_grower_or_above(user: User):
+    """写操作需要 Grower(L2) 及以上角色"""
+    role_str = user.role.value if hasattr(user.role, 'value') else str(user.role)
+    level = _ROLE_LEVELS.get(role_str.lower(), 0)
+    if level < 2:
+        raise HTTPException(403, "需要成长者及以上角色才能执行此操作")
+
 
 @router.get("/my-mentees")
 def get_my_mentees(
@@ -114,7 +128,8 @@ def invite_mentee(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """邀请同道者(建立带教关系)"""
+    """邀请同道者(建立带教关系) — 需要Grower+"""
+    _require_grower_or_above(current_user)
     if mentee_id == current_user.id:
         raise HTTPException(400, "不能带教自己")
 
@@ -131,8 +146,8 @@ def invite_mentee(
     if existing:
         raise HTTPException(409, "带教关系已存在")
 
-    mentor_role = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
-    mentee_role_str = mentee.role.value if hasattr(mentee.role, 'value') else str(mentee.role)
+    mentor_role = (current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)).upper()
+    mentee_role_str = (mentee.role.value if hasattr(mentee.role, 'value') else str(mentee.role)).upper()
 
     cr = CompanionRelation(
         mentor_id=current_user.id,
@@ -266,7 +281,8 @@ def record_companion_interaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """记录一次同道者互动（消息/视频/线下等）"""
+    """记录一次同道者互动（消息/视频/线下等） — 需要Grower+"""
+    _require_grower_or_above(current_user)
     service = PeerTrackingService(db)
     ok = service.record_interaction(
         current_user.id, companion_id, interaction_type, quality_score,

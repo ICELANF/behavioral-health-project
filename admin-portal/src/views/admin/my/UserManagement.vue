@@ -58,6 +58,7 @@
           showTotal: (total: number) => `共 ${total} 用户`,
           onChange: onPageChange,
         }"
+        :customRow="(record: any) => ({ onClick: () => openProfile(record.id), style: { cursor: 'pointer' } })"
       >
         <template #bodyCell="{ column, record }">
           <template v-if="column.key === 'name'">
@@ -78,7 +79,8 @@
             <a-badge :status="record.is_active ? 'success' : 'error'" :text="record.is_active ? '正常' : '停用'" />
           </template>
           <template v-if="column.key === 'action'">
-            <a-space>
+            <a-space @click.stop>
+              <a @click="openProfile(record.id)">查看</a>
               <a @click="editUser(record)">编辑</a>
               <a @click="toggleStatus(record)">{{ record.is_active ? '停用' : '启用' }}</a>
               <a-popconfirm title="确定删除?" @confirm="deleteUser(record)">
@@ -128,6 +130,9 @@
         <p>点击或拖拽文件到此区域</p>
       </a-upload-dragger>
     </a-modal>
+
+    <!-- Role Profile Drawer -->
+    <UserRoleProfileDrawer v-model:open="profileDrawerOpen" :userId="profileUserId" />
   </div>
 </template>
 
@@ -136,6 +141,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import { PlusOutlined, UploadOutlined } from '@ant-design/icons-vue'
 import request from '@/api/request'
+import UserRoleProfileDrawer from '@/components/UserRoleProfileDrawer.vue'
 
 const showCreateModal = ref(false)
 const showImportModal = ref(false)
@@ -143,6 +149,13 @@ const editingUser = ref<any>(null)
 const loading = ref(false)
 const saving = ref(false)
 const statsLoading = ref(false)
+const profileDrawerOpen = ref(false)
+const profileUserId = ref<number | null>(null)
+
+const openProfile = (userId: number) => {
+  profileUserId.value = userId
+  profileDrawerOpen.value = true
+}
 
 const filters = reactive({
   keyword: '',
@@ -180,7 +193,7 @@ const columns = [
   { title: '邮箱', dataIndex: 'email', width: 180, ellipsis: true },
   { title: '手机', dataIndex: 'phone', width: 130 },
   { title: '创建时间', dataIndex: 'created_at', width: 120, customRender: ({ text }: any) => text ? new Date(text).toLocaleDateString('zh-CN') : '-' },
-  { title: '操作', key: 'action', width: 160 },
+  { title: '操作', key: 'action', width: 200 },
 ]
 
 const roleLabel = (role: string) => {

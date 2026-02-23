@@ -178,11 +178,18 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+_ROLE_LEVELS = {
+    "observer": 1, "grower": 2, "sharer": 3, "coach": 4,
+    "promoter": 5, "supervisor": 5, "master": 6, "admin": 99,
+}
+
+
 class UserProfile(BaseModel):
     id: int
     phone: str = ""
     nickname: str = ""
     role: str = ""
+    role_level: int = 1
     is_active: bool = True
     created_at: datetime | None = None
 
@@ -199,6 +206,7 @@ class UserProfile(BaseModel):
                 phone=obj.phone or "",
                 nickname=getattr(obj, "full_name", None) or "",
                 role=role_val,
+                role_level=_ROLE_LEVELS.get(role_val.lower(), 1),
                 is_active=obj.is_active if obj.is_active is not None else True,
                 created_at=getattr(obj, "created_at", None),
             )

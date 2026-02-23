@@ -377,4 +377,16 @@ onMounted(loadProfile)
   color: #666;
   flex-shrink: 0;
 }
+
+@media (max-width: 640px) {
+  .student-behavioral-profile { padding: 8px !important; }
+  .stage-current { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .stage-badge { width: 48px; height: 48px; font-size: 16px; }
+  .stage-progress { flex-wrap: wrap; gap: 4px; justify-content: flex-start; }
+  .step-label { font-size: 10px; }
+  .ant-btn { min-height: 44px; }
+  h2, h3 { font-size: 16px; }
+  .ant-card { margin-bottom: 12px !important; }
+  .dim-label { width: 60px; font-size: 11px; }
+}
 </style>

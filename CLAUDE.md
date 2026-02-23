@@ -1,9 +1,13 @@
-# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.1.9)
+# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.2.4)
 
 > 本文件由 Claude Code 自动加载，指导 AI 如何在本项目中工作。
-> **V5.1.9 变更**: 2026-02-20 P2-P5 + Admin响应式 + P6A搜索 + P6B周报 + 全mock清零(87页真实/0全mock) + H5周报页
+> **V5.2.4 变更**: 2026-02-23 AI行为处方生成(839行服务+LLM/规则引擎双路径+5标签页全接入) + 教练学员角色过滤修复(_STUDENT_ROLES白名单)
+> **V5.2.3 变更**: 2026-02-22 教练端三合一增强 — 种子业务数据(6角色全量) + 教练双重身份(CoachSelfHealthSummary) + 教练端13页响应式
+> **V5.2.2 变更**: 2026-02-22 头像/退出/WeChat同步(13文件) + 统一个人中心(8文件) + 六级累进任务目录(1文件, 42项)
+> **V5.2.1 变更**: 2026-02-22 预发布审计全绿 (56P/0F) + CI修复 (register_external_models) + 多模态单元测试 (28 tests)
+> **V5.2.0 变更**: 2026-02-21 P7 Smart Hub 多模态采集中心 (4模式底部面板) + ASR语音转文字服务 (cloud_first策略, 2端点)
 >
-> 上游契约: `E:\注册表更新文件\契约注册表更新_2026-02-20_v3.md`
+> 上游契约: `E:\注册表更新文件\行健平台-契约注册表-V5_1_9-CONSOLIDATED.md` (已升级为 V5.2.4)
 > Agent配置清单: `agent_multimodal_host_config.md` (47+ Agent类 · 15预设模板 · 4层安全 · 6模态)
 
 ---
@@ -12,8 +16,22 @@
 
 BHP（Behavioral Health Platform）是一个行为健康数字化管理平台，服务于慢病逆转与行为改变领域。平台包含 Observer(观察者)、Grower(成长者)、Coach(教练)、Expert(专家)、Admin(管理员) 五种用户角色，集成了评估引擎、AI Agent 系统、RAG 知识库、多模态交互引擎、智能监测方案及微信生态对接能力。
 
-**规模**: 76+ 路由模块 · 650+ API 端点 · 130+ 数据模型 · 49 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **19页Admin响应式** · **全mock=0**
+**规模**: 76+ 路由模块 · 650+ API 端点 · 130+ 数据模型 · 50 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **32页Admin响应式** · **全mock=0** · **预发布审计56P/0F** · **CI 4-stage全绿** · **六级累进任务目录(42项)** · **统一个人中心(3共享组件)** · **教练端全量种子数据** · **教练双重身份健康面板** · **AI行为处方(LLM+规则引擎双路径)** · **学员角色白名单过滤**
 
+> ⚠️ **V5.2.4 变更** (2026-02-23):
+> - **AI行为处方生成**: `core/copilot_prescription_service.py`(839行) — CopilotPrescriptionService; 数据采集(8维度7天窗口) → LLM分析(UnifiedLLMClient, TTM/BPT-6/CAPACITY/SPI prompt, timeout=20s) → 规则引擎降级(CAPACITY→六因素, 阶段→处方) → 合并补齐; 返回 diagnosis+prescription+ai_suggestions+health_summary+intervention_plan+meta; `POST /copilot/generate-prescription`; CoachHome 5标签页全接入
+> - **教练学员角色过滤**: `api/coach_api.py` — `_STUDENT_ROLES=[OBSERVER,GROWER,SHARER]` 白名单; `/dashboard`+`/students`查询添加`User.role.in_(_STUDENT_ROLES)`; DB清理: promoter/supervisor绑定标记is_active=false; 角色规则: 学员层(L1-L3)被辅导 ← 辅导层(L4+)向下跟进
+>
+> ⚠️ **V5.2.3 变更** (2026-02-22):
+> - **Phase 1 种子业务数据**: `scripts/seed_test_business_data.py` (400行, 幂等, --dry-run); 6角色全量数据: 385任务+244打卡+103血糖+28睡眠+28活动+8会话26消息+36学习+2教练绑定+8推送队列+7教练消息+3同道者关系
+> - **Phase 2 教练双重身份**: `CoachSelfHealthSummary.vue` (120行, 4指标+任务进度); 嵌入CoachHome KPI卡和学员列表之间; export from health/index.ts
+> - **Phase 3 教练端响应式**: CoachHome(+20CSS)+CoachAiReview(+15)+CoachWorkbench(+12)+10页批量响应式; 合计13页coach新增@640px移动端断点
+>
+> ⚠️ **V5.2.2 变更** (2026-02-22):
+> - **头像/退出/WeChat同步 (13文件)**: useCurrentUser.ts组合式(登出+WeChat信息) + UserAvatarPopover.vue(头像气泡卡片) + 5个工作台集成 + Login.vue角色分流修复 + auth_api/wechat_auth_api后端同步
+> - **统一个人中心 (8文件)**: PersonalHealthProfile.vue(健康档案) + MyContributions.vue(我的分享) + MyBenefits.vue(我的权益) 3个共享组件; MyProfile.vue→3折叠面板统一页; SharerWorkbench(1077→170行)/CoachWorkbench/ExpertWorkbench集成
+> - **六级累进任务目录 (1文件)**: TASK_CATALOG 21→42项 + ROLE_TO_LEVEL映射 + min_level过滤; L0(5) L1(21) L2(29) L3(35) L4(39) L5(42); 前端零修改(catalogGroups按tag自动分组)
+>
 > ⚠️ **V5.1.9 变更** (2026-02-20):
 > - **P2 深耕 (V5.1.4)**: R1 Checkin→TrustScore管道 · R2 Admin 86页mock审计(-2675行) · R3 食物AI→自动签到 · R4 设备→自动签到 · R5 H5 3页实装 · R6 Admin+Expert飞轮16端点live · R7 死代码清理(-1224行)
 > - **P3 自动化运维 (V5.1.5)**: R8 处方→任务生成Job(06:15) · R9 信任监控+断连重连Job(22:00) · R10 教练自动上报Job(08:00)
@@ -26,6 +44,14 @@ BHP（Behavioral Health Platform）是一个行为健康数字化管理平台，
 > - **H5周报页 (V5.1.9)**: WeeklyReport.vue(报告展示+历史切换) · MyLearning入口 · 路由注册
 > - asyncpg CAST语法修复 · Chat Ollama fallback正常工作
 > - **全平台测试: 96/96 + 5/5 chains · CI 4-stage门禁**
+> - **P7 Smart Hub (V5.2.0)**: QuickInputHub.vue(4模式采集面板: 快速记录/拍一拍/说一说/问AI) · health.ts+recognizeFood · HomeViewOptimized中心按钮→弹出Hub
+> - **ASR服务 (V5.2.0)**: core/asr_service.py(cloud_first: OpenAI Whisper→本地8090) · api/audio_api.py(transcribe+status) · config 6项
+> - **H5 QuickInputHub (V5.2.0)**: h5/TabBar中心FAB+QuickInputHub.vue(Vant popup 4模式) · h5/api/health.ts(8方法)
+> - **语音ASR升级 (V5.2.0)**: 双端QuickInputHub "说一说"模式 — Web Speech API(主) + MediaRecorder→服务端ASR(fallback)
+> - **VLM服务层 (V5.2.0)**: core/vlm_service.py(ollama_first: Ollama qwen2.5vl→Cloud VLM) · config 6项 · food_recognition重构
+> - **预发布审计 (V5.2.1)**: pre_launch_verify.py Docker兼容重构(56P/0F/2S/10W) · Dockerfile+postgresql-client · db_backup.sh凭据修复
+> - **多模态单测 (V5.2.1)**: tests/test_multimodal_services.py(28 tests: ASR/VLM/食物解析/Audio API)
+> - **CI修复 (V5.2.1)**: core/models.py+register_external_models() · CI create_all()前注册外部ORM模型 · M16_Reflection 500→200
 
 ---
 
@@ -127,8 +153,17 @@ behavioral-health-project/
 │       └── tcm_ortho_expert_agents.py  # 中医骨科教练层 (3个)
 ├── gateway/
 │   └── bridge.py                   # V4.1兼容桥接 (含catch-all, 必须最后注册)
-├── admin-portal/                   # Vue 3 管理后台 (:5174) — Coach + Admin (19页响应式)
-│   └── src/composables/useResponsive.ts  # 响应式断点组合式 (<640/768/1024/1280)
+├── admin-portal/                   # Vue 3 管理后台 (:5174) — Coach + Admin (32页响应式)
+│   └── src/composables/
+│       ├── useResponsive.ts              # 响应式断点组合式 (<640/768/1024/1280)
+│       └── useCurrentUser.ts             # V5.2.2: 当前用户组合式 (logout/wechat info)
+│   └── src/components/health/
+│       ├── index.ts                      # 统一导出 (UserAvatarPopover + 3共享组件 + CoachSelfHealthSummary)
+│       ├── UserAvatarPopover.vue         # V5.2.2: 头像气泡卡片 (size/theme props)
+│       ├── PersonalHealthProfile.vue     # V5.2.2: 健康档案共享组件 (~580行)
+│       ├── MyContributions.vue           # V5.2.2: 我的分享共享组件 (~420行)
+│       ├── MyBenefits.vue                # V5.2.2: 我的权益共享组件 (~350行)
+│       └── CoachSelfHealthSummary.vue    # V5.2.3: 教练自身健康概览 (4指标+任务进度)
 ├── h5/                             # Vue 3 移动端 (:5173) — Observer + Grower
 ├── miniprogram/                    # V5.0: 微信小程序 (Taro 3)
 ├── knowledge/                      # 知识库 (Markdown)
@@ -393,7 +428,7 @@ target_behavior(目标行为) + frequency_dose(频次剂量) + time_place(时间
 | 模块 | 端点数 | 核心功能 | 关键技术点 |
 |------|--------|---------|-----------|
 | R2 scheduler_agent | 2 | 处方→每日任务生成 | 融入已有daily_task_generation, 不注册并行job |
-| R3 grower_flywheel | 5 | 今日任务/打卡/streak/周报/coach-tip | 个性化反馈: 里程碑→全完成→上下文→标签→通用 |
+| R3 grower_flywheel | 5 | 今日任务/打卡/streak/周报/coach-tip | 六级累进任务目录(42项, ROLE_TO_LEVEL过滤); 个性化反馈 |
 | R4 role_upgrade | 2 | 评估完成→角色升级 | 用ROLE_LEVEL_STR字典判断等级, 非role_level列 |
 | R5 observer_flywheel | 3 | 试用墙额度/评估进度/升级触发 | 每日3次对话+3次食物识别 |
 | R6 coach_flywheel | 4 | 审核队列/批准/拒绝/统计 | Query(pattern=), 非regex= |
@@ -412,7 +447,7 @@ target_behavior(目标行为) + frequency_dose(频次剂量) + time_place(时间
 | R6 | Admin+Expert飞轮live (16端点) | admin_flywheel_api + expert_flywheel_api |
 | R7 | 死代码清理 (-1224行) | 删除4个mock文件 |
 
-**活跃飞轮文件**: `r3_grower_flywheel_api_live.py`, `r5_observer_flywheel_api_live.py`, `r6_coach_flywheel_api_live.py`, `admin_flywheel_api.py`, `expert_flywheel_api.py`
+**活跃飞轮文件**: `r3_grower_flywheel_api_live.py` (含TASK_CATALOG 42项+ROLE_TO_LEVEL), `r5_observer_flywheel_api_live.py`, `r6_coach_flywheel_api_live.py`, `admin_flywheel_api.py`, `expert_flywheel_api.py`
 
 ### 6.10 P3 自动化运维 (V5.1.5, R8-R10)
 
@@ -520,7 +555,69 @@ target_behavior(目标行为) + frequency_dose(频次剂量) + time_place(时间
 
 **API调用**: `GET /v1/weekly-reports/latest` + `GET /v1/weekly-reports` + `GET /v1/weekly-reports/{week_start}`
 
-### 6.18-6.21 (与V5.0版保持一致)
+### 6.18 头像/退出/WeChat同步 (V5.2.2)
+
+**新建组件**:
+- `admin-portal/src/composables/useCurrentUser.ts` — handleLogout + loadWeChatInfo
+- `admin-portal/src/components/health/UserAvatarPopover.vue` — 头像气泡(用户名/角色/微信/退出), props: size/theme
+
+**集成**: AdminLayout + HomeViewOptimized + SharerWorkbench + CoachWorkbench + ExpertWorkbench — 统一使用 UserAvatarPopover
+
+### 6.19 统一个人中心 (V5.2.2)
+
+**3个共享组件** (admin-portal/src/components/health/):
+- `PersonalHealthProfile.vue` (~580行) — 健康档案(头像/基本信息/诊断/用药/过敏/紧急联系人), props: `embedded`
+- `MyContributions.vue` (~420行) — 等级进度+投稿记录+同道者
+- `MyBenefits.vue` (~350行) — 权益网格+积分指南+晋级条件
+
+**统一入口**: `MyProfile.vue` → 3折叠面板(个人健康档案[展开]+我的分享[L3+]+我的权益[L3+])
+
+**各工作台集成**:
+- SharerWorkbench: 3 tab(我的分享/我的权益/个人档案)
+- CoachWorkbench: 4 tab(审核工作台/个人档案/我的分享/我的权益)
+- ExpertWorkbench: 6 tab(待审队列/决策回溯/规则引擎/个人档案/我的分享/我的权益)
+
+### 6.20 六级累进任务目录 (V5.2.2)
+
+**文件**: `api/r3_grower_flywheel_api_live.py`
+
+**ROLE_TO_LEVEL 映射**: OBSERVER→0, GROWER→1, SHARER→2, COACH→3, PROMOTER/SUPERVISOR→4, MASTER→5, ADMIN→99
+
+**TASK_CATALOG**: 42项(原21项+新增21项), 每项含 `min_level` 字段
+
+| 角色 | 任务数 | 新增分类 |
+|------|--------|----------|
+| L0 观察员 | 5 | 监测(3)+情绪(1)+学习(1) |
+| L1 成长者 | 21 | +运动(7)+营养(4)+睡眠(2)+用药(1) |
+| L2 分享者 | 29 | +分享(4)+同道者(4) |
+| L3 教练 | 35 | +教练管理(6) |
+| L4 促进师 | 39 | +培训督导(4) |
+| L5 大师 | 42 | +平台治理(3) |
+
+**端点**: `GET /api/v1/daily-tasks/catalog` — 按用户角色等级过滤返回
+
+**前端零修改**: `catalogGroups` 按 `tag` 自动分组，新分类自动展示
+
+### 6.21 教练端三合一增强 (V5.2.3)
+
+**Phase 1 种子业务数据**: `scripts/seed_test_business_data.py` (幂等, --dry-run)
+- 6角色数据: observer(gp=15) grower(gp=120,S2) sharer(gp=500,S3) coach(gp=800,S4) promoter(gp=1500,S5) master(gp=3000,S6)
+- 教练绑定: coach→grower + coach→sharer | 同道者: sharer→grower + sharer→observer
+- 推送队列: 8条(3pending/2approved/2sent/1rejected) | 教练消息: 7条
+- 运行: `docker exec bhp-api python scripts/seed_test_business_data.py`
+
+**Phase 2 教练双重身份**: `components/health/CoachSelfHealthSummary.vue`
+- 4指标网格(血糖/睡眠/步数/体重) + 今日任务进度条
+- 嵌入CoachHome.vue: KPI卡和待跟进学员之间
+- API: `/v1/device/health-data/summary` + `/v1/grower/daily-tasks/today`
+
+**Phase 3 教练端响应式**: 13页新增 `@media (max-width: 640px)` 断点
+- CoachHome: 操作按钮换行+工具网格2列+安全区
+- CoachAiReview: 按钮全宽44px+文本域16px
+- CoachWorkbench: 队列50vh+操作48px+统计2列
+- 10页批量: StudentAssessment/StudentBehavioralProfile/StudentHealthData/MyCertification/MyPerformance/MyTools/CoachAnalytics/CoachCopilot/StudentMessages/StudentList
+
+### 6.22-6.25 (与V5.0版保持一致)
 
 > 改变动因6×24 · 四阶段养成 · 证据分层T1-T4 · 推送审批网关 · 六种隐式数据源+MULTIMODAL ·
 > 四维用户状态(S+L+G+Lv) · 健康能力Lv0-Lv5 · 成长等级G0-G5 ·
@@ -613,6 +710,9 @@ cd miniprogram && npm run dev:weapp
 - ~~event_tracking_api `::json` cast 失败~~ → ✅ V5.1.7 改为 `CAST(:detail AS json)`
 - ~~feature_flag_api `::jsonb` cast 失败~~ → ✅ V5.1.7 改为 `CAST(... AS jsonb)` (4处)
 - ~~Admin 86页 mock 数据~~ → ✅ V5.1.4 P2-R2 全部接入真实API (-2675行)
+- ~~CI M16_Reflection 500~~ → ✅ V5.2.1 register_external_models() + reflection_api.py加固
+- ~~pre_launch_verify 12 FAIL~~ → ✅ V5.2.1 Docker环境自动检测 + SQLAlchemy直连DB + Redis AUTH
+- ~~db_backup.sh 旧凭据~~ → ✅ V5.2.1 bhp_user→postgres, bhp_db→health_platform
 
 ---
 
@@ -642,7 +742,7 @@ cd miniprogram && npm run dev:weapp
 | 架构总览 | `platform-architecture-overview.md` | 完整路由/模型/服务/数据流 |
 | 核心业务逻辑 | `behavioral-prescription-core-logic-supplemented.md` | 26章, 2367行 |
 | **Agent Host 配置** *(V5.0.1)* | **`agent_multimodal_host_config.md`** | **47+ Agent · LLM配置 · 多模态 · 安全管道** |
-| **契约注册表** *(V5.1.9)* | **`E:\注册表更新文件\契约注册表更新_2026-02-20_v3.md`** | **V5.1.9 全量更新 (P2-P6+响应式+全mock清零+H5周报)** |
+| **契约注册表** *(V5.2.3)* | **`E:\注册表更新文件\行健平台-契约注册表-V5_1_9-CONSOLIDATED.md`** | **V5.2.3 唯一权威版 (含教练三合一增强+头像/个人中心/六级任务目录)** |
 | 多模态消息协议 | `core/multimodal/protocol.py` | 10种模态定义 |
 
 ---
@@ -686,6 +786,33 @@ python scripts/test_platform_full.py --json reports/platform_test_report.json
 
 **CI 门禁**: `.github/workflows/ci-security.yml` Stage 2.5 `platform-full-test` — 任一测试失败阻断部署。
 
+### 13.2.2 预发布验证 *(V5.2.1 重构)*
+
+```bash
+# Docker容器内运行 (自动检测环境)
+docker exec bhp-api python scripts/pre_launch_verify.py
+
+# 11维度: API健康/认证/角色/页面/Redis+Ollama/安全/DB/调度/前端/备份/种子账号
+# 结果: 56 PASS / 0 FAIL / 2 SKIP / 10 WARN = PASS
+```
+
+### 13.2.3 多模态单元测试 *(V5.2.1 新增)*
+
+```bash
+python -m pytest tests/test_multimodal_services.py -v
+# 28 tests: ASR(7) + VLM(8) + 食物解析(8) + AudioAPI(4) + 食物端点(1)
+```
+
+### 13.2.4 CI外部模型注册 *(V5.2.1 新增)*
+
+CI `create_all()` 前必须调用 `register_external_models()` 以确保所有ORM模型的表被创建:
+
+```python
+from core.models import Base, register_external_models
+register_external_models()  # 注册 reflection_journals, script_templates 等
+Base.metadata.create_all(engine)
+```
+
 ### 13.3 API 契约锁定
 - 不变更现有端点URL/方法/请求体
 - 不删除返回字段 (可新增)
@@ -714,6 +841,15 @@ python scripts/test_platform_full.py --json reports/platform_test_report.json
 | **P6B周报** *(V5.1.9)* | **Migration 049 + weekly_report_service(8维度) + 4端点 + scheduler(Sun 21:00)** | **✅完成** |
 | **全mock清零** *(V5.1.9)* | **QuestionBank(6项mismatch+bulk) + CoachStudentList/StudentAssessment(确认已有API) → 0全mock** | **✅完成** |
 | **H5周报页** *(V5.1.9)* | **WeeklyReport.vue + MyLearning入口 + 路由注册** | **✅完成** |
+| **预发布审计** *(V5.2.1)* | **pre_launch_verify.py Docker重构(56P/0F) + Dockerfile(postgresql-client) + db_backup.sh凭据修复** | **✅完成** |
+| **多模态单测** *(V5.2.1)* | **test_multimodal_services.py 28 tests (ASR/VLM/食物解析/AudioAPI)** | **✅完成** |
+| **CI外部模型** *(V5.2.1)* | **register_external_models() + CI create_all 3处修复 + reflection_api加固** | **✅完成** |
+| **头像/退出** *(V5.2.2)* | **useCurrentUser组合式 + UserAvatarPopover + 5工作台集成 + Login角色分流** | **✅完成** |
+| **统一个人中心** *(V5.2.2)* | **3共享组件(PersonalHealthProfile/MyContributions/MyBenefits) + MyProfile折叠面板 + 3工作台集成** | **✅完成** |
+| **六级任务目录** *(V5.2.2)* | **TASK_CATALOG 21→42项 + ROLE_TO_LEVEL + min_level过滤 (L0:5→L5:42累进)** | **✅完成** |
+| **种子业务数据** *(V5.2.3)* | **seed_test_business_data.py: 6角色全量业务数据(385任务+教练绑定+推送队列+同道者)** | **✅完成** |
+| **教练双重身份** *(V5.2.3)* | **CoachSelfHealthSummary.vue: 4指标+任务进度, 嵌入CoachHome** | **✅完成** |
+| **教练端响应式** *(V5.2.3)* | **13页coach @640px移动端断点 (19→32页总Admin响应式)** | **✅完成** |
 
 ---
 
@@ -724,6 +860,8 @@ python scripts/test_platform_full.py --json reports/platform_test_report.json
 | §6.5 Agent体系 | Agent完整清单 | 47+ Agent类; 分层路由 |
 | §6.8 飞轮实装 | 飞轮实装契约 | 14端点+3 job; R2-R8交叉引用 |
 | §6.9-6.17 P2-P6 | 契约注册表v3 §二-§六+§十一 | R1-R14+046-049迁移+响应式+搜索+周报+全mock清零+H5周报 |
+| §6.18-6.20 V5.2.2 | 契约注册表 §2.2 V5.2.2 | 头像/退出+统一个人中心(3共享组件)+六级任务目录(42项) |
+| §6.21 V5.2.3 | 契约注册表 §2.2 V5.2.3 | 种子业务数据+教练双重身份+教练端13页响应式 |
 | §6.17 多模态 | 多模态AI交互 | 10模态; 角色权限; S1-S6 |
 | §6.19 微信 | 微信生态对接 | 3通道; C1-C8合规 |
 | §十六 代码契约 | 代码契约 (新Sheet) | 5条import铁律; 认证签名; 角色判断; asyncpg CAST |

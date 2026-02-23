@@ -10,97 +10,7 @@
 
       <!-- 登录卡片 -->
       <div class="login-card">
-        <!-- 步骤一：选择身份 -->
-        <div v-if="step === 'role'" class="step-content">
-          <h2 class="step-title">选择您的身份</h2>
-          <p class="step-desc">请选择您要登录的身份类型</p>
-
-          <div class="role-grid">
-            <div
-              class="role-card"
-              :class="{ selected: selectedRole === 'grower' }"
-              @click="selectRole('grower')"
-            >
-              <div class="role-icon grower">🌱</div>
-              <div class="role-info">
-                <div class="role-name">成长者</div>
-                <div class="role-desc">管理个人健康，完成任务打卡</div>
-              </div>
-              <div class="role-check" v-if="selectedRole === 'grower'">
-                <CheckCircleFilled />
-              </div>
-            </div>
-
-            <div
-              class="role-card"
-              :class="{ selected: selectedRole === 'coach' }"
-              @click="selectRole('coach')"
-            >
-              <div class="role-icon coach">🧑‍⚕️</div>
-              <div class="role-info">
-                <div class="role-name">健康教练</div>
-                <div class="role-desc">管理学员，执行干预，跟进健康</div>
-              </div>
-              <div class="role-check" v-if="selectedRole === 'coach'">
-                <CheckCircleFilled />
-              </div>
-            </div>
-
-            <div
-              class="role-card"
-              :class="{ selected: selectedRole === 'supervisor' }"
-              @click="selectRole('supervisor')"
-            >
-              <div class="role-icon supervisor">👨‍🔬</div>
-              <div class="role-info">
-                <div class="role-name">促进师</div>
-                <div class="role-desc">督导教练，审核晋级，培训直播</div>
-              </div>
-              <div class="role-check" v-if="selectedRole === 'supervisor'">
-                <CheckCircleFilled />
-              </div>
-            </div>
-
-            <div
-              class="role-card"
-              :class="{ selected: selectedRole === 'admin' }"
-              @click="selectRole('admin')"
-            >
-              <div class="role-icon admin">⚙️</div>
-              <div class="role-info">
-                <div class="role-name">系统管理</div>
-                <div class="role-desc">平台配置，用户管理，数据统计</div>
-              </div>
-              <div class="role-check" v-if="selectedRole === 'admin'">
-                <CheckCircleFilled />
-              </div>
-            </div>
-          </div>
-
-          <a-button
-            type="primary"
-            size="large"
-            block
-            :disabled="!selectedRole"
-            @click="goToLogin"
-          >
-            下一步
-          </a-button>
-        </div>
-
-        <!-- 步骤二：登录表单 -->
-        <div v-else class="step-content">
-          <div class="login-header">
-            <a class="back-link" @click="step = 'role'">
-              <ArrowLeftOutlined /> 返回选择身份
-            </a>
-            <div class="current-role">
-              <span class="role-badge" :class="selectedRole">
-                {{ getRoleIcon(selectedRole) }} {{ getRoleName(selectedRole) }}
-              </span>
-            </div>
-          </div>
-
+        <div class="step-content">
           <h2 class="step-title">账号登录</h2>
 
           <a-form :model="formState" @finish="handleLogin" layout="vertical">
@@ -176,15 +86,12 @@ import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import {
   UserOutlined,
-  LockOutlined,
-  CheckCircleFilled,
-  ArrowLeftOutlined
+  LockOutlined
 } from '@ant-design/icons-vue'
 import request from '@/api/request'
 
 const router = useRouter()
 const loading = ref(false)
-const step = ref<'role' | 'login'>('role')
 const selectedRole = ref<string>('')
 const rememberMe = ref(true)
 
@@ -222,14 +129,6 @@ const getRoleName = (role: string) => {
   return names[role] || '用户'
 }
 
-const selectRole = (role: string) => {
-  selectedRole.value = role
-}
-
-const goToLogin = () => {
-  step.value = 'login'
-}
-
 const fillDemo = (role: string) => {
   selectedRole.value = role
   formState.username = role
@@ -265,6 +164,9 @@ const handleLogin = async () => {
       saveLoginState(data.access_token, formState.username, data.user?.role || selectedRole.value, data.user?.level || 0, data.user?.full_name || data.user?.username || formState.username, data.user?.id)
       if (data.refresh_token) {
         localStorage.setItem('admin_refresh_token', data.refresh_token)
+      }
+      if (data.user?.avatar_url) {
+        localStorage.setItem('admin_avatar', data.user.avatar_url)
       }
       navigateToHome(data.user?.role || selectedRole.value)
     } else {
@@ -354,118 +256,6 @@ const navigateToHome = (role: string) => {
   color: #1f2937;
   margin-bottom: 8px;
   text-align: center;
-}
-
-.step-desc {
-  color: #6b7280;
-  font-size: 14px;
-  text-align: center;
-  margin-bottom: 24px;
-}
-
-/* 角色选择网格 */
-.role-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.role-card {
-  position: relative;
-  padding: 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-}
-
-.role-card:hover {
-  border-color: #667eea;
-  background: #f8faff;
-}
-
-.role-card.selected {
-  border-color: #667eea;
-  background: linear-gradient(135deg, #f0f5ff 0%, #e8efff 100%);
-}
-
-.role-icon {
-  font-size: 32px;
-  margin-bottom: 8px;
-}
-
-.role-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 4px;
-}
-
-.role-desc {
-  font-size: 11px;
-  color: #6b7280;
-  line-height: 1.4;
-}
-
-.role-check {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  color: #667eea;
-  font-size: 18px;
-}
-
-/* 登录表单 */
-.login-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.back-link {
-  color: #6b7280;
-  font-size: 13px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.back-link:hover {
-  color: #667eea;
-}
-
-.role-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.role-badge.grower {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.role-badge.coach {
-  background: #e0f2fe;
-  color: #0369a1;
-}
-
-.role-badge.supervisor {
-  background: #f3e8ff;
-  color: #9333ea;
-}
-
-.role-badge.admin {
-  background: #fef3c7;
-  color: #d97706;
 }
 
 .form-actions {

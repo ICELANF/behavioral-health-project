@@ -2799,10 +2799,14 @@ class AssessmentEvidenceType(str, enum.Enum):
     EXAM = "exam"               # 正式考试
 
 class CompanionStatus(str, enum.Enum):
-    """同道者关系状�"""
-    ACTIVE = "active"
-    GRADUATED = "graduated"
-    DROPPED = "dropped"
+    """同道者关系状态 (CR-28 完整生命周期)"""
+    PENDING = "pending"       # 待确认
+    ACTIVE = "active"         # 活跃中
+    COOLING = "cooling"       # 冷却期(7天无互动)
+    DORMANT = "dormant"       # 休眠(14天无互动)
+    DISSOLVED = "dissolved"   # 已解除(30天休眠自动/手动)
+    GRADUATED = "graduated"   # 已毕业
+    DROPPED = "dropped"       # 已退出
 
 class PromotionStatus(str, enum.Enum):
     """晋级申�状�"""
@@ -5065,3 +5069,21 @@ class AbTestEvent(Base):
     event_type = Column(String(50), nullable=False)
     event_data = Column(JSON, server_default=sa_text("'{}'::jsonb"))
     created_at = Column(DateTime, server_default=sa_text("now()"))
+
+
+# ── Register external ORM models with Base.metadata ──────────
+# Models defined in other files need to be imported so that
+# Base.metadata.create_all() can create their tables (critical for CI).
+
+def register_external_models():
+    """Import all ORM models defined outside this file to ensure Base.metadata is complete."""
+    import importlib
+    for mod in [
+        'core.reflection_service',       # ReflectionJournal
+        'core.script_library_service',   # ScriptTemplate
+        'behavior_rx.core.rx_models',    # RxPrescription, RxStrategyTemplate, AgentHandoffLog
+    ]:
+        try:
+            importlib.import_module(mod)
+        except ImportError:
+            pass

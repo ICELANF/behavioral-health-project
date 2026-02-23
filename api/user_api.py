@@ -5,6 +5,7 @@ Admin User Management API
 Endpoints:
 - GET    /api/v1/admin/users              - List users (paginated, filterable)
 - GET    /api/v1/admin/users/{user_id}    - Get user details
+- GET    /api/v1/admin/users/{user_id}/role-profile - User role profile (aggregated)
 - POST   /api/v1/admin/users              - Create user (admin only)
 - PUT    /api/v1/admin/users/{user_id}    - Update user info
 - PUT    /api/v1/admin/users/{user_id}/status - Toggle active/inactive
@@ -17,7 +18,7 @@ Endpoints:
 - POST   /api/v1/admin/distribution/transfers/{id}/approve
 - POST   /api/v1/admin/distribution/transfers/{id}/reject
 """
-from datetime import datetime
+from datetime import datetime, date, timedelta
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -27,7 +28,12 @@ from sqlalchemy.orm import Session
 from loguru import logger
 
 from core.database import get_db
-from core.models import User, UserRole, Assessment
+from core.models import (
+    User, UserRole, Assessment, ROLE_LEVEL,
+    UserLearningStats, DailyTask, UserStreak, ExamResult,
+    KnowledgeDocument, KnowledgeContribution, CompanionRelation,
+    PointTransaction, AssessmentAssignment,
+)
 from core.auth import hash_password
 from api.dependencies import get_current_user, require_admin
 
@@ -122,6 +128,209 @@ def list_users(
         "total": total,
         "page": page,
         "page_size": page_size,
+    }
+
+
+@router.get("/users/{user_id}/role-profile")
+def get_user_role_profile(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """用户角色画像聚合端点 — 按角色等级条件填充数据"""
+    from api.paths_api import _compute_user_level, _LEVEL_THRESHOLDS, _LEVEL_META, _COMPANION_REQS
+    from core.learning_service import get_or_create_stats, _count_companions
+
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    role_val = user.role.value if user.role else "observer"
+    role_level = ROLE_LEVEL.get(user.role, 1) - 1  # convert 1-indexed to L0-L5
+
+    # === basic ===
+    basic = {
+        "id": user.id,
+        "username": user.username,
+        "full_name": user.full_name,
+        "role": role_val,
+        "role_label": {
+            "admin": "管理员", "supervisor": "督导", "promoter": "促进师",
+            "master": "大师", "coach": "教练", "sharer": "分享者",
+            "grower": "成长者", "observer": "观察员",
+        }.get(role_val, role_val),
+        "role_level": role_level,
+        "avatar_url": getattr(user, 'avatar_url', None),
+        "email": user.email,
+        "phone": getattr(user, 'phone', None),
+        "is_active": user.is_active,
+        "created_at": user.created_at.isoformat() if user.created_at else None,
+        "last_login_at": user.last_login_at.isoformat() if getattr(user, 'last_login_at', None) else None,
+    }
+
+    # === points & level_progress ===
+    stats = get_or_create_stats(db, user.id)
+    computed_level = _compute_user_level(stats)
+    next_level = min(computed_level + 1, 5)
+    is_max = computed_level >= 5
+
+    points = {
+        "growth": stats.growth_points or 0,
+        "contribution": stats.contribution_points or 0,
+        "influence": stats.influence_points or 0,
+    }
+
+    next_req = _LEVEL_THRESHOLDS.get(next_level) if not is_max else None
+    cur_meta = _LEVEL_META.get(computed_level, _LEVEL_META[0])
+    nxt_meta = _LEVEL_META.get(next_level, _LEVEL_META[0]) if not is_max else None
+
+    comp_req = _COMPANION_REQS.get(next_level)
+    comp_graduated = 0
+    comp_required = 0
+    comp_target = None
+    if comp_req and not is_max:
+        comp_required, comp_target, comp_target_role = comp_req
+        comp_graduated = _count_companions(db, user.id, comp_target_role)
+
+    level_progress = {
+        "current_level": computed_level,
+        "current_name": cur_meta["name"],
+        "next_level": next_level if not is_max else None,
+        "next_name": nxt_meta["name"] if nxt_meta else None,
+        "requirements": {
+            "growth": {"current": points["growth"], "required": next_req["min_growth"] if next_req else 0},
+            "contribution": {"current": points["contribution"], "required": next_req["min_contribution"] if next_req else 0},
+            "influence": {"current": points["influence"], "required": next_req["min_influence"] if next_req else 0},
+        } if not is_max else None,
+        "companions": {
+            "graduated": comp_graduated,
+            "required": comp_required,
+            "target": comp_target,
+        } if comp_required > 0 else None,
+    }
+
+    # === grower_data (role_level >= 1, i.e. grower+) ===
+    grower_data = None
+    if role_level >= 1:
+        streak = db.query(UserStreak).filter(UserStreak.user_id == user.id).first()
+        today = date.today()
+        week_start = today - timedelta(days=today.weekday())
+
+        today_tasks = db.query(DailyTask).filter(
+            DailyTask.user_id == user.id,
+            DailyTask.task_date == today,
+        ).all()
+        today_total = len(today_tasks)
+        today_done = sum(1 for t in today_tasks if t.done)
+
+        week_tasks = db.query(DailyTask).filter(
+            DailyTask.user_id == user.id,
+            DailyTask.task_date >= week_start,
+            DailyTask.task_date <= today,
+        ).all()
+        week_total = len(week_tasks)
+        week_done = sum(1 for t in week_tasks if t.done)
+        weekly_rate = round(week_done / week_total * 100, 1) if week_total > 0 else 0.0
+
+        exam_total = db.query(func.count(ExamResult.id)).filter(ExamResult.user_id == user.id).scalar() or 0
+        exam_passed = db.query(func.count(ExamResult.id)).filter(
+            ExamResult.user_id == user.id, ExamResult.status == "passed"
+        ).scalar() or 0
+
+        grower_data = {
+            "current_streak": streak.current_streak if streak else (stats.current_streak or 0),
+            "longest_streak": streak.longest_streak if streak else (stats.longest_streak or 0),
+            "total_learning_minutes": stats.total_minutes or 0,
+            "daily_tasks_today": {"total": today_total, "done": today_done},
+            "weekly_completion_rate": weekly_rate,
+            "exams": {"total": exam_total, "passed": exam_passed},
+        }
+
+    # === sharer_data (role_level >= 2, i.e. sharer+) ===
+    sharer_data = None
+    if role_level >= 2:
+        contribs = db.query(KnowledgeContribution).filter(
+            KnowledgeContribution.contributor_id == user.id
+        ).all()
+        contrib_total = len(contribs)
+        contrib_pending = sum(1 for c in contribs if c.status == "pending")
+        contrib_approved = sum(1 for c in contribs if c.status == "approved")
+        contrib_rejected = sum(1 for c in contribs if c.status == "rejected")
+
+        contribution_list = []
+        for c in contribs[:10]:
+            doc = db.query(KnowledgeDocument).filter(KnowledgeDocument.id == c.document_id).first()
+            contribution_list.append({
+                "id": c.id,
+                "title": doc.title if doc else "(已删除)",
+                "status": c.status,
+                "evidence_tier": doc.evidence_tier if doc else None,
+                "created_at": c.created_at.isoformat() if c.created_at else None,
+            })
+
+        mentees = db.query(CompanionRelation).filter(
+            CompanionRelation.mentor_id == user.id
+        ).all()
+        mentee_list = []
+        for m in mentees:
+            mentee_user = db.query(User).filter(User.id == m.mentee_id).first()
+            mentee_list.append({
+                "mentee_id": m.mentee_id,
+                "mentee_name": (mentee_user.full_name or mentee_user.username) if mentee_user else "未知",
+                "mentee_role": mentee_user.role.value if mentee_user and mentee_user.role else "observer",
+                "status": m.status or "active",
+                "quality_score": m.quality_score,
+                "started_at": m.started_at.isoformat() if m.started_at else None,
+            })
+
+        influence_txns = db.query(PointTransaction).filter(
+            PointTransaction.user_id == user.id,
+            PointTransaction.point_type == "influence",
+        ).all()
+        inf_total = sum(t.amount for t in influence_txns)
+        inf_likes = sum(t.amount for t in influence_txns if t.action == "like")
+        inf_saves = sum(t.amount for t in influence_txns if t.action == "save")
+        inf_official = inf_total - inf_likes - inf_saves
+
+        sharer_data = {
+            "contributions": {
+                "total": contrib_total,
+                "pending": contrib_pending,
+                "published": contrib_approved,
+                "rejected": contrib_rejected,
+            },
+            "contribution_list": contribution_list,
+            "mentees": mentee_list,
+            "influence": {
+                "total": points["influence"],
+                "likes": inf_likes,
+                "saves": inf_saves,
+                "official": max(0, inf_official),
+            },
+        }
+
+    # === coach_data (role_level >= 3, i.e. coach+) ===
+    coach_data = None
+    if role_level >= 3:
+        student_count = db.query(func.count(func.distinct(AssessmentAssignment.student_id))).filter(
+            AssessmentAssignment.coach_id == user.id
+        ).scalar() or 0
+        case_count = db.query(func.count(AssessmentAssignment.id)).filter(
+            AssessmentAssignment.coach_id == user.id
+        ).scalar() or 0
+
+        coach_data = {
+            "student_count": student_count,
+            "case_count": case_count,
+        }
+
+    return {
+        "basic": basic,
+        "points": points,
+        "level_progress": level_progress,
+        "grower_data": grower_data,
+        "sharer_data": sharer_data,
+        "coach_data": coach_data,
     }
 
 

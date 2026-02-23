@@ -303,13 +303,14 @@ def enroll(db: Session, user: User, challenge_id: int, coach_id: Optional[int] =
         )
     ).first()
     if existing:
-        raise ValueError("已报名该挑战")
+        return existing  # 幂等: 已报名则返回现有记录
 
     enrollment = ChallengeEnrollment(
         user_id=user.id,
         challenge_id=challenge_id,
         coach_id=coach_id,
         status=EnrollmentStatus.ENROLLED,
+        enrolled_at=datetime.utcnow(),
     )
     db.add(enrollment)
 

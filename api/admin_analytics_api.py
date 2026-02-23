@@ -79,11 +79,77 @@ def get_overview(
         .scalar()
     ) or 0
 
+    # ── 补充 Dashboard 所需字段 ──
+    from core.models import ContentItem, LearningTimeLog
+    from datetime import date
+
+    total_courses = 0
+    try:
+        total_courses = db.query(func.count(ContentItem.id)).filter(
+            ContentItem.content_type == "course"
+        ).scalar() or 0
+    except Exception:
+        pass
+
+    today_learning = 0
+    try:
+        today_learning = db.query(func.count(distinct(LearningTimeLog.user_id))).filter(
+            func.date(LearningTimeLog.created_at) == date.today()
+        ).scalar() or 0
+    except Exception:
+        pass
+
+    # 等级分布 (按 role 统计)
+    level_distribution = {}
+    try:
+        role_rows = (
+            db.query(User.role, func.count().label("cnt"))
+            .filter(User.is_active == True)
+            .group_by(User.role)
+            .all()
+        )
+        for r in role_rows:
+            level_distribution[_ROLE_LABEL.get(r.role.value, r.role.value)] = int(r.cnt)
+    except Exception:
+        pass
+
+    # 待处理事项
+    pending_todos = []
+    if high_risk_count > 0:
+        pending_todos.append({"status": "error", "text": f"{high_risk_count} 名高风险学员需要关注"})
+
+    # 近期晋级申请
+    recent_promotions = []
+    try:
+        from sqlalchemy import text as sa_text
+        promo_rows = db.execute(sa_text("""
+            SELECT pa.id, u.username as coach_name, pa.from_role, pa.to_role, pa.created_at
+            FROM promotion_applications pa
+            LEFT JOIN users u ON u.id = pa.user_id
+            ORDER BY pa.created_at DESC LIMIT 5
+        """)).mappings().all()
+        for p in promo_rows:
+            recent_promotions.append({
+                "id": p["id"], "coach_name": p.get("coach_name", ""),
+                "current_level": p.get("from_role", ""),
+                "target_level": p.get("to_role", ""),
+                "applied_at": str(p.get("created_at", "")),
+            })
+    except Exception:
+        pass
+
     return {
         "total_users": total_users,
         "active_users": active_users,
         "coach_count": coach_count,
+        "total_coaches": coach_count,
         "high_risk_count": high_risk_count,
+        "total_courses": total_courses,
+        "today_learning": today_learning,
+        "level_distribution": level_distribution,
+        "pending_todos": pending_todos,
+        "recent_exams": [],
+        "recent_promotions": recent_promotions,
     }
 
 

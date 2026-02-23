@@ -232,6 +232,23 @@ def approve(
     """审核通过投稿 (coach+)"""
     try:
         doc = approve_document(db, doc_id, current_user.id)
+        # 给作者 +10 贡献积分
+        if doc.contributor_id:
+            try:
+                from core.models import PointTransaction, UserLearningStats
+                db.add(PointTransaction(
+                    user_id=doc.contributor_id,
+                    action="contribution_approved",
+                    point_type="contribution",
+                    amount=10,
+                ))
+                stats = db.query(UserLearningStats).filter(
+                    UserLearningStats.user_id == doc.contributor_id).first()
+                if stats:
+                    stats.contribution_points = (stats.contribution_points or 0) + 10
+                db.commit()
+            except Exception as e:
+                logger.warning(f"审批加分失败: {e}")
         return {"success": True, "data": _doc_to_dict(doc), "message": "审核通过"}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

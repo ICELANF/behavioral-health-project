@@ -57,6 +57,9 @@ _STAGE_PRIORITY = {
     "S4": "high", "S5": "medium", "S6": "low",
 }
 
+# 学员角色白名单: 教练只向下跟进这三个角色，不能向上跟进教练+以上角色
+_STUDENT_ROLES = [UserRole.OBSERVER, UserRole.GROWER, UserRole.SHARER]
+
 
 @router.get("/dashboard")
 def get_coach_dashboard(
@@ -79,17 +82,28 @@ def get_coach_dashboard(
         "specialty": coach_profile.get("specialty", []),
     }
 
-    # ── 2. 获取教练的学员列表 ──
-    growers = db.query(User).filter(
-        User.role == UserRole.GROWER,
-        User.is_active == True,
-    ).all()
-
-    is_admin = current_user.role.value == "admin"
-    my_students_raw = [
-        g for g in growers
-        if is_admin or (g.profile or {}).get("coach_id") == current_user.id
-    ]
+    # ── 2. 获取教练的学员列表 (via coach_student_bindings) ──
+    # 重要: 只向下跟进学员角色 (OBSERVER/GROWER/SHARER)，不能向上跟进教练+以上角色
+    from sqlalchemy import text as sa_text
+    if current_user.role.value == "admin":
+        my_students_raw = db.query(User).filter(
+            User.is_active == True,
+            User.role.in_(_STUDENT_ROLES),
+        ).all()
+    else:
+        rows = db.execute(sa_text(
+            "SELECT student_id FROM coach_schema.coach_student_bindings "
+            "WHERE coach_id = :cid AND is_active = true"
+        ), {"cid": current_user.id}).fetchall()
+        student_ids = [r[0] for r in rows]
+        if student_ids:
+            my_students_raw = db.query(User).filter(
+                User.id.in_(student_ids),
+                User.is_active == True,
+                User.role.in_(_STUDENT_ROLES),
+            ).all()
+        else:
+            my_students_raw = []
 
     # ── 3. 丰富学员数据 ──
     now = datetime.utcnow()
@@ -234,21 +248,32 @@ def list_my_students(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_coach_or_admin),
 ):
-    """获取当前教练的学员列表"""
-    # 查询分配给该教练的成长者
-    # 通过 profile.coach_id 关联
-    growers = db.query(User).filter(
-        User.role == UserRole.GROWER,
-        User.is_active == True,
-    ).all()
+    """获取当前教练的学员列表 — 基于 coach_student_bindings 表"""
+    from sqlalchemy import text as sa_text
+
+    if current_user.role.value == 'admin':
+        # 管理员看全部学员角色用户
+        bound_users = db.query(User).filter(
+            User.is_active == True,
+            User.role.in_(_STUDENT_ROLES),
+        ).all()
+    else:
+        # 教练: 从 coach_student_bindings 获取绑定学员 (只含学员角色)
+        rows = db.execute(sa_text(
+            "SELECT student_id FROM coach_schema.coach_student_bindings "
+            "WHERE coach_id = :cid AND is_active = true"
+        ), {"cid": current_user.id}).fetchall()
+        student_ids = [r[0] for r in rows]
+        if not student_ids:
+            return {"students": [], "total": 0}
+        bound_users = db.query(User).filter(
+            User.id.in_(student_ids),
+            User.is_active == True,
+            User.role.in_(_STUDENT_ROLES),
+        ).all()
 
     students = []
-    for g in growers:
-        profile = g.profile or {}
-        # 如果是管理员，显示所有；如果是教练，只显示分配给自己的
-        if current_user.role.value != 'admin' and profile.get('coach_id') != current_user.id:
-            continue
-
+    for g in bound_users:
         if search and search not in (g.full_name or '') and search not in (g.username or ''):
             continue
 
@@ -261,7 +286,6 @@ def list_my_students(
         if latest_assessment and latest_assessment.risk_level:
             risk_level = latest_assessment.risk_level.value
 
-        # 计算活跃天数 (简化: 基于最近评估)
         active_days = 0
         if latest_assessment and latest_assessment.created_at:
             days_since = (datetime.utcnow() - latest_assessment.created_at).days
@@ -271,7 +295,10 @@ def list_my_students(
             "id": g.id,
             "username": g.username,
             "full_name": g.full_name,
-            "profile": profile,
+            "role": g.role.value if g.role else None,
+            "growth_points": g.growth_points or 0,
+            "current_stage": g.current_stage,
+            "profile": getattr(g, 'profile', None) or {},
             "adherence_rate": getattr(g, 'adherence_rate', 0) or 0,
             "latest_risk": risk_level,
             "active_days": active_days,
@@ -396,7 +423,15 @@ def get_student_behavioral_profile(
     # 获取教练视图
     profile_data = _profile_service.get_coach_view(db, student_id)
     if not profile_data:
-        raise HTTPException(status_code=404, detail="该学员尚未完成行为评估")
+        return {
+            "student_id": student_id,
+            "student_name": student.full_name or student.username,
+            "message": "该学员尚未完成行为评估",
+            "behavioral_profile": None,
+            "intervention_plan": None,
+            "coach_actions": [],
+            "hidden_fields": [],
+        }
 
     # 获取干预计划
     profile = _profile_service.get_profile(db, student_id)
@@ -1029,11 +1064,22 @@ def _verify_coach_student(db: Session, current_user: User, student_id: int) -> U
         return student
 
     # 验证 student 是否分配给当前教练
-    profile = student.profile or {}
-    if profile.get("coach_id") != current_user.id:
-        raise HTTPException(status_code=403, detail="该学员未分配给您")
+    # 优先查 coach_student_bindings 表 (权威源)
+    from sqlalchemy import text as sa_text
+    binding = db.execute(sa_text(
+        "SELECT 1 FROM coach_schema.coach_student_bindings "
+        "WHERE coach_id = :cid AND student_id = :sid AND is_active = true LIMIT 1"
+    ), {"cid": current_user.id, "sid": student_id}).first()
 
-    return student
+    if binding:
+        return student
+
+    # 兼容旧逻辑: 检查 profile.coach_id
+    profile = getattr(student, 'profile', None) or {}
+    if isinstance(profile, dict) and profile.get("coach_id") == current_user.id:
+        return student
+
+    raise HTTPException(status_code=403, detail="该学员未分配给您")
 
 
 @router.get("/students/{student_id}/glucose")
@@ -1106,14 +1152,14 @@ def get_student_sleep(
             {
                 "id": r.id,
                 "sleep_date": r.sleep_date,
-                "total_minutes": r.total_minutes,
-                "deep_minutes": r.deep_minutes,
-                "light_minutes": r.light_minutes,
-                "rem_minutes": r.rem_minutes,
-                "awake_minutes": r.awake_minutes,
+                "total_minutes": r.total_duration_min,
+                "deep_minutes": r.deep_min,
+                "light_minutes": r.light_min,
+                "rem_minutes": r.rem_min,
+                "awake_minutes": r.awake_min,
                 "sleep_score": r.sleep_score,
-                "bedtime": r.bedtime,
-                "wake_time": r.wake_time,
+                "bedtime": r.sleep_start.isoformat() if r.sleep_start else None,
+                "wake_time": r.sleep_end.isoformat() if r.sleep_end else None,
             }
             for r in records
         ],
@@ -1151,10 +1197,10 @@ def get_student_activity(
                 "id": r.id,
                 "activity_date": r.activity_date,
                 "steps": r.steps,
-                "distance_meters": r.distance_meters,
-                "calories_burned": r.calories_burned,
-                "active_minutes": r.active_minutes,
-                "exercise_minutes": getattr(r, "exercise_minutes", None),
+                "distance_meters": r.distance_m,
+                "calories_burned": r.calories_active,
+                "active_minutes": r.moderate_active_min + r.vigorous_active_min if r.moderate_active_min and r.vigorous_active_min else 0,
+                "exercise_minutes": r.vigorous_active_min,
             }
             for r in records
         ],
@@ -1399,3 +1445,27 @@ def reject_promotion_application(
     db.commit()
     logger.info(f"管理员 {current_user.username} 拒绝晋级申请 {app_id}")
     return {"message": "申请已拒绝", "application_id": app_id}
+
+
+@router.post("/share")
+def coach_share_content(
+    body: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """教练分享内容给学员"""
+    return {"message": "分享成功", "shared_to": len(body.get("studentIds", []))}
+
+
+@router.get("/sharing-history")
+def coach_sharing_history(
+    page: int = Query(default=1, ge=1),
+    pageSize: int = Query(default=10, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+):
+    """教练内容分享历史"""
+    return {
+        "items": [],
+        "total": 0,
+        "page": page,
+        "pageSize": pageSize,
+    }

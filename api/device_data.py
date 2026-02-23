@@ -907,12 +907,12 @@ async def get_today_dashboard(user_id: int = Depends(get_current_user_id)):
             if activity:
                 steps_goal = 10000
                 activity_data = {
-                    "steps": activity.steps,
+                    "steps": activity.steps or 0,
                     "steps_goal": steps_goal,
-                    "progress_percent": round(activity.steps / steps_goal * 100, 1),
-                    "distance_km": round(activity.distance_m / 1000, 2) if activity.distance_m else 0,
-                    "calories_active": activity.calories_active,
-                    "active_minutes": activity.light_active_min + activity.moderate_active_min + activity.vigorous_active_min
+                    "progress_percent": round((activity.steps or 0) / steps_goal * 100, 1),
+                    "distance_km": round((activity.distance_m or 0) / 1000, 2),
+                    "calories_active": activity.calories_active or 0,
+                    "active_minutes": (activity.light_active_min or 0) + (activity.moderate_active_min or 0) + (activity.vigorous_active_min or 0)
                 }
 
             # 睡眠数据 (昨晚)
@@ -1612,14 +1612,14 @@ async def get_activity_records(
                 steps_goal = 10000
                 return {
                     "date": date,
-                    "steps": activity.steps,
+                    "steps": activity.steps or 0,
                     "steps_goal": steps_goal,
-                    "progress_percent": round(activity.steps / steps_goal * 100, 1),
-                    "distance_km": round(activity.distance_m / 1000, 2) if activity.distance_m else 0,
-                    "calories_total": activity.calories_total,
-                    "calories_active": activity.calories_active,
-                    "floors_climbed": activity.floors_climbed,
-                    "active_minutes": activity.light_active_min + activity.moderate_active_min + activity.vigorous_active_min,
+                    "progress_percent": round((activity.steps or 0) / steps_goal * 100, 1),
+                    "distance_km": round((activity.distance_m or 0) / 1000, 2),
+                    "calories_total": activity.calories_total or 0,
+                    "calories_active": activity.calories_active or 0,
+                    "floors_climbed": activity.floors_climbed or 0,
+                    "active_minutes": (activity.light_active_min or 0) + (activity.moderate_active_min or 0) + (activity.vigorous_active_min or 0),
                     "hourly_steps": activity.hourly_data
                 }
 
@@ -1638,10 +1638,10 @@ async def get_activity_records(
                 "records": [
                     {
                         "date": r.activity_date,
-                        "steps": r.steps,
-                        "distance_km": round(r.distance_m / 1000, 2) if r.distance_m else 0,
-                        "calories_active": r.calories_active,
-                        "active_minutes": r.light_active_min + r.moderate_active_min + r.vigorous_active_min
+                        "steps": r.steps or 0,
+                        "distance_km": round((r.distance_m or 0) / 1000, 2),
+                        "calories_active": r.calories_active or 0,
+                        "active_minutes": (r.light_active_min or 0) + (r.moderate_active_min or 0) + (r.vigorous_active_min or 0)
                     }
                     for r in records
                 ],

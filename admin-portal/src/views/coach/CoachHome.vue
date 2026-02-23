@@ -89,6 +89,9 @@
       </div>
     </div>
 
+    <!-- 教练自身健康概览 -->
+    <CoachSelfHealthSummary v-if="!loading" :compact="isMobile" />
+
     <!-- 待跟进学员列表 -->
     <div v-if="!loading" class="students-section">
       <div class="section-header">
@@ -886,7 +889,9 @@
 
           <a-tabs>
             <a-tab-pane key="health" tab="健康数据">
-              <div class="health-metrics">
+              <a-spin v-if="prescriptionLoading" tip="AI 正在分析学员数据..." style="display:block;text-align:center;padding:40px 0" />
+              <div v-else class="health-metrics">
+                <a-tag v-if="prescriptionMeta.has_real_data && !prescriptionMeta.has_real_data.glucose" color="orange" style="margin-bottom:8px">模拟数据</a-tag>
                 <div class="metric-item">
                   <div class="metric-label">空腹血糖</div>
                   <div class="metric-value">{{ currentStudent.healthData?.fastingGlucose ?? '--' }} mmol/L</div>
@@ -903,6 +908,17 @@
                   <div class="metric-label">本周运动</div>
                   <div class="metric-value">{{ currentStudent.healthData?.exerciseMinutes || 0 }} 分钟</div>
                 </div>
+                <div v-if="currentStudent.healthData?.sleepHours" class="metric-item">
+                  <div class="metric-label">日均睡眠</div>
+                  <div class="metric-value">{{ currentStudent.healthData.sleepHours }} 小时</div>
+                </div>
+                <div v-if="currentStudent.healthData?.heartRate" class="metric-item">
+                  <div class="metric-label">心率</div>
+                  <div class="metric-value">{{ currentStudent.healthData.heartRate }} bpm</div>
+                </div>
+              </div>
+              <div v-if="!prescriptionLoading && currentStudent.healthData?.highlights?.length" style="margin-top:8px">
+                <a-tag v-for="h in currentStudent.healthData.highlights" :key="h" color="red">{{ h }}</a-tag>
               </div>
             </a-tab-pane>
             <a-tab-pane key="records" tab="跟进记录">
@@ -918,18 +934,41 @@
               </div>
             </a-tab-pane>
             <a-tab-pane key="intervention" tab="干预方案">
-              <div class="intervention-plan">
+              <a-spin v-if="prescriptionLoading" tip="AI 正在生成干预方案..." style="display:block;text-align:center;padding:40px 0" />
+              <div v-else class="intervention-plan">
                 <a-empty v-if="!currentStudent.interventionPlan" description="暂无干预方案" />
                 <div v-else>
                   <h4>{{ currentStudent.interventionPlan.name }}</h4>
                   <p>{{ currentStudent.interventionPlan.description }}</p>
+                  <div v-if="currentStudent.interventionPlan.domains?.length" style="margin-top:8px">
+                    <a-tag v-for="d in currentStudent.interventionPlan.domains" :key="d" color="blue">{{ d }}</a-tag>
+                  </div>
+                  <div v-if="currentStudent.interventionPlan.tone" style="margin-top:8px;color:#888">
+                    语气风格: {{ currentStudent.interventionPlan.tone }}
+                  </div>
+                  <div v-if="currentStudent.interventionPlan.scripts" style="margin-top:12px">
+                    <a-collapse>
+                      <a-collapse-panel key="opening" header="开场白">
+                        <p>{{ currentStudent.interventionPlan.scripts.opening }}</p>
+                      </a-collapse-panel>
+                      <a-collapse-panel key="motivation" header="动机激发">
+                        <p>{{ currentStudent.interventionPlan.scripts.motivation }}</p>
+                      </a-collapse-panel>
+                      <a-collapse-panel key="closing" header="结束语">
+                        <p>{{ currentStudent.interventionPlan.scripts.closing }}</p>
+                      </a-collapse-panel>
+                    </a-collapse>
+                  </div>
                 </div>
               </div>
             </a-tab-pane>
 
             <!-- 诊断评估 -->
             <a-tab-pane key="diagnosis" tab="诊断评估">
-              <div class="dx-grid">
+              <a-spin v-if="prescriptionLoading" tip="AI 正在诊断评估..." style="display:block;text-align:center;padding:40px 0" />
+              <a-alert v-if="!prescriptionLoading && prescriptionError" :message="prescriptionError" type="error" show-icon style="margin-bottom:12px" />
+              <a-tag v-if="!prescriptionLoading && prescriptionMeta.has_real_data && !prescriptionMeta.has_real_data.profile" color="orange" style="margin-bottom:8px">模拟数据</a-tag>
+              <div v-if="!prescriptionLoading && !prescriptionError" class="dx-grid">
                 <!-- 左：行为诊断 -->
                 <div class="dx-card">
                   <h4 class="dx-card-title">行为诊断</h4>
@@ -937,34 +976,36 @@
                   <div class="info-box">
                     <div class="info-row">
                       <span class="info-label">问题</span>
-                      <span class="info-value">{{ diagnosisData.problem }}</span>
+                      <span class="info-value">{{ diagnosisData.problem || '等待分析' }}</span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">困难度</span>
-                      <span class="info-value">{{ getDifficultyStars(diagnosisData.difficulty) }}</span>
+                      <span class="info-value">
+                        <span v-for="n in 5" :key="n" class="diff-dot" :class="{ active: n <= diagnosisData.difficulty }" @click="diagnosisData.difficulty = n">{{ n <= diagnosisData.difficulty ? '●' : '○' }}</span>
+                        <span style="margin-left:4px;color:#888;font-size:12px">{{ diagnosisData.difficulty }}/5</span>
+                      </span>
                     </div>
                     <div class="info-row">
                       <span class="info-label">目的</span>
-                      <span class="info-value">{{ diagnosisData.purpose }}</span>
+                      <span class="info-value">{{ diagnosisData.purpose || '等待分析' }}</span>
                     </div>
                   </div>
 
                   <a-divider style="margin: 12px 0" />
 
-                  <div class="dx-subtitle">六类原因分析</div>
-                  <div class="bar-container">
-                    <div v-for="reason in diagnosisData.sixReasons" :key="reason.name" class="bar-source">
-                      <div class="bar-label">
-                        <span>{{ reason.name }}</span>
-                        <span :style="{ color: reason.isWeak ? '#ff4d4f' : '#52c41a' }">{{ reason.score }}/{{ reason.max }}</span>
+                  <div class="dx-subtitle">六类原因分析 (CAPACITY)</div>
+                  <div v-if="diagnosisData.sixReasons.length === 0" style="color:#999;padding:8px 0">等待 AI 分析...</div>
+                  <div v-else class="capacity-grid">
+                    <div v-for="reason in diagnosisData.sixReasons" :key="reason.name" class="capacity-item" :class="{ weak: reason.isWeak }">
+                      <div class="capacity-name">{{ reason.name }}</div>
+                      <div class="num-picker">
+                        <span v-for="level in [0, 20, 40, 60, 80, 100]" :key="level"
+                          class="num-btn"
+                          :class="{ selected: reason.score === level, weak: reason.isWeak && reason.score === level, good: !reason.isWeak && reason.score === level }"
+                          @click="reason.score = level"
+                        >{{ level }}</span>
                       </div>
-                      <a-progress
-                        :percent="reason.score"
-                        :stroke-color="getBarColor(reason.score, reason.max, reason.isWeak)"
-                        :show-info="false"
-                        size="small"
-                      />
-                      <a-tag v-if="reason.isWeak" color="red" size="small" style="margin-top: 2px">薄弱项</a-tag>
+                      <a-tag v-if="reason.isWeak" color="red" size="small" style="margin-left:4px">弱</a-tag>
                     </div>
                   </div>
 
@@ -980,7 +1021,8 @@
                   <a-divider style="margin: 12px 0" />
 
                   <div class="dx-subtitle">循证依据</div>
-                  <div class="evidence-list">
+                  <div v-if="diagnosisData.evidence.length === 0" style="color:#999;padding:8px 0">等待 AI 分析...</div>
+                  <div v-else class="evidence-list">
                     <div v-for="ev in diagnosisData.evidence" :key="ev.label" class="evidence-item">
                       <span class="evidence-label">{{ ev.label }}</span>
                       <span class="evidence-value" :class="'ev-' + ev.status">{{ ev.value }}</span>
@@ -992,17 +1034,37 @@
                 <div class="dx-card">
                   <h4 class="dx-card-title">SPI 评估</h4>
 
-                  <div class="spi-circle-wrap">
-                    <div class="spi-circle" :class="diagnosisData.spiScore >= 80 ? 'spi-good' : diagnosisData.spiScore >= 60 ? 'spi-mid' : 'spi-low'">
-                      <div class="spi-number">{{ diagnosisData.spiScore }}</div>
-                      <div class="spi-label">SPI</div>
+                  <div class="spi-select-wrap">
+                    <div class="spi-select-label">SPI 分值 (点击选择)</div>
+                    <div class="num-picker num-picker-centered">
+                      <span
+                        v-for="v in [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]"
+                        :key="v"
+                        class="num-btn num-btn-lg"
+                        :class="{ selected: Math.abs(diagnosisData.spiScore - v) < 5, danger: Math.abs(diagnosisData.spiScore - v) < 5 && diagnosisData.spiScore < 60, warning: Math.abs(diagnosisData.spiScore - v) < 5 && diagnosisData.spiScore >= 60 && diagnosisData.spiScore < 80, good: Math.abs(diagnosisData.spiScore - v) < 5 && diagnosisData.spiScore >= 80 }"
+                        @click="diagnosisData.spiScore = v"
+                      >{{ v }}</span>
+                    </div>
+                    <div class="spi-current-value" :style="{ color: diagnosisData.spiScore >= 80 ? '#52c41a' : diagnosisData.spiScore >= 60 ? '#faad14' : '#ff4d4f' }">
+                      当前: {{ diagnosisData.spiScore }}
                     </div>
                   </div>
 
                   <div class="info-box" style="margin-top: 16px">
                     <div class="info-row">
                       <span class="info-label">成功率</span>
-                      <span class="info-value">{{ diagnosisData.successRate }}%</span>
+                      <span class="info-value">
+                        <span class="num-picker num-picker-inline">
+                          <span
+                            v-for="v in [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]"
+                            :key="v"
+                            class="num-btn num-btn-sm"
+                            :class="{ selected: Math.abs(diagnosisData.successRate - v) < 5 }"
+                            @click="diagnosisData.successRate = v"
+                          >{{ v }}</span>
+                        </span>
+                        <span style="margin-left:6px;color:#667eea;font-weight:600">{{ diagnosisData.successRate }}%</span>
+                      </span>
                     </div>
                   </div>
 
@@ -1028,55 +1090,65 @@
 
             <!-- 行为处方 -->
             <a-tab-pane key="prescription" tab="行为处方">
-              <div class="dx-grid">
+              <a-spin v-if="prescriptionLoading" tip="AI 正在生成行为处方..." style="display:block;text-align:center;padding:40px 0" />
+              <div v-if="!prescriptionLoading" class="dx-grid">
                 <!-- 左：当前处方 -->
                 <div class="dx-card">
                   <h4 class="dx-card-title">当前处方</h4>
 
                   <div class="dx-subtitle">干预阶段</div>
-                  <div class="phase-tags">
-                    <a-tag
-                      v-for="p in prescriptionData.phaseTags"
-                      :key="p.label"
-                      :color="p.active ? 'blue' : p.done ? 'green' : 'default'"
-                    >
-                      {{ p.done && !p.active ? '✓ ' : '' }}{{ p.label }}
-                    </a-tag>
-                  </div>
-                  <div class="phase-info">
-                    {{ prescriptionData.phase.current }} · {{ prescriptionData.phase.week }} / {{ prescriptionData.phase.total }}
-                  </div>
+                  <div v-if="prescriptionData.phaseTags.length === 0" style="color:#999;padding:8px 0">等待 AI 生成...</div>
+                  <template v-else>
+                    <div class="phase-tags">
+                      <a-tag
+                        v-for="p in prescriptionData.phaseTags"
+                        :key="p.label"
+                        :color="p.active ? 'blue' : p.done ? 'green' : 'default'"
+                      >
+                        {{ p.done && !p.active ? '✓ ' : '' }}{{ p.label }}
+                      </a-tag>
+                    </div>
+                    <div class="phase-info">
+                      {{ prescriptionData.phase.current }} · 第{{ prescriptionData.phase.week }}周 / 共{{ prescriptionData.phase.total }}周
+                    </div>
+                  </template>
 
                   <a-divider style="margin: 12px 0" />
 
                   <div class="dx-subtitle">目标行为</div>
-                  <div class="task-list">
+                  <div v-if="prescriptionData.targetBehaviors.length === 0" style="color:#999;padding:8px 0">等待 AI 生成...</div>
+                  <div v-else class="task-list">
                     <div v-for="task in prescriptionData.targetBehaviors" :key="task.name" class="task-item">
                       <div class="task-header">
                         <span class="task-name">{{ task.name }}</span>
                         <span class="task-days" :style="{ color: getTaskColor(task.progress) }">{{ task.currentDays }}天</span>
                       </div>
-                      <a-progress
-                        :percent="task.progress"
-                        :stroke-color="getTaskColor(task.progress)"
-                        size="small"
-                      />
-                      <div class="task-target">目标：{{ task.target }}</div>
+                      <div class="num-picker">
+                        <span
+                          v-for="v in [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]"
+                          :key="v"
+                          class="num-btn"
+                          :class="{ selected: task.progress === v, danger: task.progress === v && task.progress < 40, warning: task.progress === v && task.progress >= 40 && task.progress < 70, good: task.progress === v && task.progress >= 70 }"
+                          @click="task.progress = v"
+                        >{{ v }}</span>
+                      </div>
+                      <div class="task-target">目标: {{ task.target }}</div>
                     </div>
                   </div>
 
                   <a-divider style="margin: 12px 0" />
 
                   <div class="dx-subtitle">干预策略</div>
-                  <div class="strategy-tags">
+                  <div v-if="prescriptionData.strategies.length === 0" style="color:#999;padding:8px 0">等待 AI 生成...</div>
+                  <div v-else class="strategy-tags">
                     <a-tag v-for="s in prescriptionData.strategies" :key="s.label" :color="s.type">
                       {{ s.label }}
                     </a-tag>
                   </div>
 
                   <div style="margin-top: 16px; display: flex; gap: 8px">
-                    <a-button type="primary" size="small">调整处方</a-button>
-                    <a-button size="small">查看历史</a-button>
+                    <a-button type="primary" size="small" @click="prescriptionAdjustVisible = true">调整处方</a-button>
+                    <a-button size="small" @click="prescriptionHistoryVisible = true">查看历史</a-button>
                   </div>
                 </div>
 
@@ -1084,12 +1156,13 @@
                 <div class="dx-card">
                   <h4 class="dx-card-title">AI 诊断建议</h4>
 
-                  <div class="suggestion-list">
+                  <div v-if="aiDiagnosisSuggestions.length === 0" style="color:#999;padding:16px 0;text-align:center">等待 AI 生成建议...</div>
+                  <div v-else class="suggestion-list">
                     <div v-for="sug in aiDiagnosisSuggestions" :key="sug.id" class="suggestion-card" :class="'sug-' + sug.priority">
                       <div class="suggestion-header">
                         <span class="suggestion-title">{{ sug.title }}</span>
-                        <a-tag :color="sug.priority === 'high' ? 'red' : 'blue'" size="small">
-                          {{ sug.priority === 'high' ? '高优' : '中优' }}
+                        <a-tag :color="sug.priority === 'high' ? 'red' : sug.priority === 'low' ? 'green' : 'blue'" size="small">
+                          {{ sug.priority === 'high' ? '高优' : sug.priority === 'low' ? '参考' : '中优' }}
                         </a-tag>
                       </div>
                       <div class="suggestion-message">{{ sug.content }}</div>
@@ -1135,13 +1208,13 @@
               <div v-for="(item, idx) in copilotState.prescriptions" :key="idx"
                    class="copilot-rx-card">
                 <div class="rx-header">
-                  <span class="rx-dot" :class="'risk-' + item.risk_level"></span>
-                  <span class="rx-risk">{{ item.risk_level }}</span>
+                  <a-tag :color="item.risk_level === 'L3' ? 'red' : item.risk_level === 'L2' ? 'orange' : 'green'" size="small">
+                    {{ item.risk_level }}
+                  </a-tag>
                 </div>
                 <p class="rx-instruction">{{ item.instruction }}</p>
                 <div class="rx-tool-area">
-                  <p class="rx-tool-label">建议工具: {{ item.suggested_tool }}</p>
-                  <!-- 动态工具组件 -->
+                  <!-- 动态工具组件（已注册） -->
                   <component
                     :is="toolMapper[item.suggested_tool]"
                     v-if="toolMapper[item.suggested_tool]"
@@ -1149,8 +1222,16 @@
                     class="dynamic-tool-wrapper"
                     @action="handleCopilotToolAction"
                   />
-                  <div v-else class="rx-tool-fallback">
-                    工具组件未定义: {{ item.suggested_tool }}
+                  <!-- 通用对话/未注册工具 — 显示操作按钮 -->
+                  <div v-else class="rx-tool-actions">
+                    <a-space>
+                      <a-button size="small" type="primary" @click="handleCopilotToolAction({ action: 'adopt', tool: item.suggested_tool, instruction: item.instruction })">
+                        采纳建议
+                      </a-button>
+                      <a-button size="small" @click="handleCopilotToolAction({ action: 'ignore', tool: item.suggested_tool })">
+                        暂不处理
+                      </a-button>
+                    </a-space>
                   </div>
                 </div>
               </div>
@@ -1214,7 +1295,7 @@
               <div class="suggestion-text">{{ aiFollowupSuggestion }}</div>
               <div class="suggestion-actions">
                 <a-button size="small" type="primary" @click="followupText = aiFollowupSuggestion">采用此建议</a-button>
-                <a-button size="small" @click="generateFollowup(currentStudent!)">重新生成</a-button>
+                <a-button size="small" @click="generateFollowup(currentStudent)">重新生成</a-button>
               </div>
             </div>
 
@@ -1242,10 +1323,10 @@
                 rows="4"
               ></textarea>
               <div class="compose-actions">
-                <a-button @click="generateFollowup(currentStudent!)">
+                <a-button @click="generateFollowup(currentStudent)">
                   <RobotOutlined /> AI 生成
                 </a-button>
-                <a-button type="primary" :disabled="!followupText.trim()" @click="sendFollowup(currentStudent!)">
+                <a-button type="primary" :disabled="!followupText.trim()" @click="sendFollowup(currentStudent)">
                   发送跟进消息
                 </a-button>
               </div>
@@ -1263,18 +1344,84 @@
           </div>
 
           <div class="detail-actions">
-            <a-button v-if="!followupMode" type="primary" block @click="startFollowup(currentStudent!)">
+            <a-button v-if="!followupMode" type="primary" block @click="startFollowup(currentStudent)">
               开始跟进对话
             </a-button>
             <a-button v-else block @click="followupMode = false; followupHistory = []">
               结束跟进
             </a-button>
-            <a-button style="margin-top:8px" block @click="openChallengeAssignDrawer(currentStudent!)">
+            <a-button style="margin-top:8px" block @click="openChallengeAssignDrawer(currentStudent)">
               分配挑战
             </a-button>
           </div>
         </div>
       </template>
+    </a-drawer>
+
+    <!-- 处方调整模态 -->
+    <a-modal
+      v-model:open="prescriptionAdjustVisible"
+      title="调整行为处方"
+      :width="600"
+      @ok="prescriptionAdjustVisible = false"
+      okText="保存调整"
+      cancelText="取消"
+    >
+      <div style="padding: 12px 0">
+        <a-form layout="vertical">
+          <a-form-item label="当前干预阶段">
+            <a-select v-model:value="prescriptionData.phase.current" style="width:100%">
+              <a-select-option value="认知唤醒">认知唤醒</a-select-option>
+              <a-select-option value="动机激发">动机激发</a-select-option>
+              <a-select-option value="行为塑造">行为塑造</a-select-option>
+              <a-select-option value="习惯强化">习惯强化</a-select-option>
+              <a-select-option value="自主维持">自主维持</a-select-option>
+            </a-select>
+          </a-form-item>
+          <a-form-item label="目标行为 (可编辑)">
+            <div v-for="(task, idx) in prescriptionData.targetBehaviors" :key="'tb-'+idx" style="margin-bottom: 8px; display:flex; gap:6px; align-items:center">
+              <a-input v-model:value="task.name" :placeholder="'目标行为 ' + (idx + 1)" style="flex:1" />
+              <a-button size="small" danger type="text" @click="prescriptionData.targetBehaviors.splice(idx, 1)">删除</a-button>
+            </div>
+            <a-button type="dashed" block size="small" @click="prescriptionData.targetBehaviors.push({ name: '', progress: 0, target: '每日坚持', currentDays: 0 })">
+              + 添加目标行为
+            </a-button>
+          </a-form-item>
+          <a-form-item label="干预策略标签">
+            <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px">
+              <a-tag v-for="s in prescriptionData.strategies" :key="s.label" :color="s.type" closable @close="prescriptionData.strategies = prescriptionData.strategies.filter(x => x.label !== s.label)">
+                {{ s.label }}
+              </a-tag>
+              <span v-if="prescriptionData.strategies.length === 0" style="color:#999;font-size:12px">暂无策略标签</span>
+            </div>
+            <div style="display:flex;gap:6px">
+              <a-input v-model:value="newStrategyLabel" placeholder="输入策略名称" size="small" style="flex:1" @pressEnter="addStrategy" />
+              <a-select v-model:value="newStrategyColor" size="small" style="width:90px">
+                <a-select-option value="blue">蓝色</a-select-option>
+                <a-select-option value="green">绿色</a-select-option>
+                <a-select-option value="orange">橙色</a-select-option>
+                <a-select-option value="purple">紫色</a-select-option>
+                <a-select-option value="cyan">青色</a-select-option>
+              </a-select>
+              <a-button size="small" type="primary" @click="addStrategy">添加</a-button>
+            </div>
+          </a-form-item>
+        </a-form>
+      </div>
+    </a-modal>
+
+    <!-- 处方历史抽屉 -->
+    <a-drawer
+      v-model:open="prescriptionHistoryVisible"
+      title="处方历史"
+      placement="right"
+      :width="480"
+    >
+      <a-empty description="暂无历史处方记录">
+        <template #description>
+          <span>处方历史将在教练多次调整后自动累积</span>
+        </template>
+      </a-empty>
     </a-drawer>
   </div>
 </template>
@@ -1284,6 +1431,7 @@ import { ref, reactive, onMounted, computed, watch, defineAsyncComponent, markRa
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useResponsive } from '@/composables/useResponsive'
+import { CoachSelfHealthSummary } from '@/components/health'
 import {
   BellOutlined,
   CalendarOutlined,
@@ -1304,11 +1452,21 @@ import {
 } from '@ant-design/icons-vue'
 
 const router = useRouter()
-const { isCompact, modalWidth } = useResponsive()
+const { isMobile, isCompact, modalWidth } = useResponsive()
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
 const token = localStorage.getItem('admin_token')
 const authHeaders = { Authorization: `Bearer ${token}` }
+
+// 401 guard: token 失效时自动跳转登录
+function handle401(res: Response) {
+  if (res.status === 401) {
+    localStorage.removeItem('admin_token')
+    router.push('/login')
+    return true
+  }
+  return false
+}
 
 const loading = ref(false)
 
@@ -1363,8 +1521,135 @@ const prescriptionData = reactive({
   strategies: [] as { label: string; type: string }[]
 })
 
+// 策略标签添加
+const newStrategyLabel = ref('')
+const newStrategyColor = ref('blue')
+const addStrategy = () => {
+  const label = newStrategyLabel.value.trim()
+  if (!label) return
+  if (prescriptionData.strategies.some(s => s.label === label)) {
+    message.warning('该策略已存在')
+    return
+  }
+  prescriptionData.strategies.push({ label, type: newStrategyColor.value })
+  newStrategyLabel.value = ''
+}
+
 // AI诊断建议
 const aiDiagnosisSuggestions = ref<{ id: string; title: string; content: string; type: string; priority: string }[]>([])
+
+// AI 处方加载状态
+const prescriptionLoading = ref(false)
+const prescriptionError = ref('')
+const prescriptionMeta = ref<{ has_real_data?: Record<string, boolean> }>({})
+
+// 处方历史抽屉
+const prescriptionHistoryVisible = ref(false)
+// 处方调整模态
+const prescriptionAdjustVisible = ref(false)
+
+// 加载 AI 处方（单次调用填充全部 5 个 tab）
+async function loadAIPrescription(studentId: number) {
+  if (!studentId) {
+    console.warn('[copilot-rx] studentId 为空, 跳过')
+    return
+  }
+  prescriptionLoading.value = true
+  prescriptionError.value = ''
+  console.log('[copilot-rx] 开始加载, studentId=', studentId)
+  try {
+    const url = `${API_BASE}/v1/copilot/generate-prescription`
+    const body = JSON.stringify({ student_id: studentId })
+    console.log('[copilot-rx] POST', url, body)
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body,
+    })
+    console.log('[copilot-rx] 响应状态:', res.status)
+    if (handle401(res)) return
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.detail || `请求失败 (${res.status})`)
+    }
+    const data = await res.json()
+    console.log('[copilot-rx] 响应数据 keys:', Object.keys(data))
+
+    // meta
+    prescriptionMeta.value = data.meta || {}
+
+    // diagnosis → diagnosisData
+    const d = data.diagnosis || {}
+    diagnosisData.spiScore = typeof d.spiScore === 'number' ? d.spiScore : 0
+    diagnosisData.successRate = typeof d.successRate === 'number' ? d.successRate : 0
+    diagnosisData.problem = d.problem || ''
+    diagnosisData.difficulty = typeof d.difficulty === 'number' ? d.difficulty : 0
+    diagnosisData.purpose = d.purpose || ''
+    diagnosisData.interventionAlert = d.interventionAlert || ''
+    if (Array.isArray(d.sixReasons) && d.sixReasons.length > 0) {
+      diagnosisData.sixReasons.splice(0, diagnosisData.sixReasons.length, ...d.sixReasons)
+    }
+    if (Array.isArray(d.evidence) && d.evidence.length > 0) {
+      diagnosisData.evidence.splice(0, diagnosisData.evidence.length, ...d.evidence)
+    }
+    console.log('[copilot-rx] diagnosis mapped: spi=', diagnosisData.spiScore, 'reasons=', diagnosisData.sixReasons.length, 'evidence=', diagnosisData.evidence.length)
+
+    // prescription → prescriptionData (use splice for Vue reactivity)
+    const p = data.prescription || {}
+    if (p.phase && typeof p.phase === 'object') {
+      prescriptionData.phase.current = p.phase.current || ''
+      prescriptionData.phase.week = String(p.phase.week || '')
+      prescriptionData.phase.total = String(p.phase.total || '')
+    }
+    if (Array.isArray(p.phaseTags) && p.phaseTags.length > 0) {
+      prescriptionData.phaseTags.splice(0, prescriptionData.phaseTags.length, ...p.phaseTags)
+    }
+    if (Array.isArray(p.targetBehaviors) && p.targetBehaviors.length > 0) {
+      prescriptionData.targetBehaviors.splice(0, prescriptionData.targetBehaviors.length, ...p.targetBehaviors)
+    }
+    if (Array.isArray(p.strategies) && p.strategies.length > 0) {
+      prescriptionData.strategies.splice(0, prescriptionData.strategies.length, ...p.strategies)
+    }
+    console.log('[copilot-rx] prescription mapped: phase=', prescriptionData.phase.current, 'behaviors=', prescriptionData.targetBehaviors.length, 'strategies=', prescriptionData.strategies.length)
+
+    // ai_suggestions
+    if (Array.isArray(data.ai_suggestions) && data.ai_suggestions.length > 0) {
+      aiDiagnosisSuggestions.value = [...data.ai_suggestions]
+    }
+
+    // health_summary → currentStudent.healthData
+    if (data.health_summary && currentStudent.value) {
+      currentStudent.value = {
+        ...currentStudent.value,
+        healthData: {
+          ...(currentStudent.value.healthData || {}),
+          fastingGlucose: data.health_summary.fastingGlucose,
+          postprandialGlucose: data.health_summary.postprandialGlucose,
+          weight: data.health_summary.weight,
+          exerciseMinutes: data.health_summary.exerciseMinutes,
+          sleepHours: data.health_summary.sleepHours,
+          heartRate: data.health_summary.heartRate,
+          highlights: data.health_summary.highlights || [],
+        },
+      }
+    }
+
+    // intervention_plan → currentStudent.interventionPlan
+    if (data.intervention_plan && currentStudent.value) {
+      currentStudent.value = {
+        ...currentStudent.value,
+        interventionPlan: data.intervention_plan,
+      }
+    }
+
+    console.log('[copilot-rx] 数据映射完成')
+  } catch (e: any) {
+    prescriptionError.value = e.message || 'AI 分析失败'
+    console.error('[copilot-rx] 错误:', e)
+  } finally {
+    prescriptionLoading.value = false
+  }
+}
 
 // ── AI 教练共驾台 (CoachCopilot 双模式) ──
 import copilotApi from '../../api/copilot'
@@ -1438,7 +1723,17 @@ const triggerCopilotTest = async () => {
 }
 
 const handleCopilotToolAction = (data: any) => {
-  message.success('工具动作: ' + JSON.stringify(data))
+  if (data.action === 'adopt') {
+    message.success('已采纳建议，可在跟进对话中使用')
+    // 将建议内容填入跟进文本
+    if (data.instruction) {
+      followupText.value = data.instruction
+    }
+  } else if (data.action === 'ignore') {
+    message.info('已标记为暂不处理')
+  } else {
+    message.success('操作已执行')
+  }
 }
 
 // AI 推荐（含审核状态，从学员列表同步生成）
@@ -1609,6 +1904,7 @@ const getStageColor = (stage: string) => {
 const openStudentDetail = (student: typeof pendingStudents.value[0]) => {
   currentStudent.value = student
   studentDrawerVisible.value = true
+  loadAIPrescription(student.id)
 }
 
 // 跟进对话
@@ -1627,8 +1923,14 @@ const followupTemplates = [
 ]
 
 const startFollowup = (student: typeof pendingStudents.value[0]) => {
+  const s = student || currentStudent.value
+  if (!s) {
+    message.warning('请先选择学员')
+    return
+  }
+  console.log('[followup] startFollowup:', s.id, s.name)
   if (!studentDrawerVisible.value) {
-    currentStudent.value = student
+    currentStudent.value = s
     studentDrawerVisible.value = true
   }
   followupMode.value = true
@@ -1636,35 +1938,51 @@ const startFollowup = (student: typeof pendingStudents.value[0]) => {
   aiFollowupSuggestion.value = ''
   followupHistory.value = []
   // 自动生成AI建议
-  generateFollowup(student)
+  generateFollowup(s)
 }
 
 const generateFollowup = async (student: typeof pendingStudents.value[0]) => {
+  const s = student || currentStudent.value
+  if (!s) return
   aiFollowupLoading.value = true
   aiFollowupSuggestion.value = ''
 
-  const prompt = `你是一位专业的行为健康教练，请根据以下学员数据生成一条简短的跟进消息（100字以内），语气温暖专业：
-学员：${student.name}
-病情：${student.condition}
-行为阶段：${getStageLabel(student.stage)}
-空腹血糖：${student.healthData.fastingGlucose} mmol/L
-餐后血糖：${student.healthData.postprandialGlucose} mmol/L
-体重：${student.healthData.weight} kg
-本周运动：${student.healthData.exerciseMinutes} 分钟
-最近联系：${student.lastContact}
-请直接输出跟进消息内容，不要加任何前缀。`
+  const hd = s.healthData || {}
+  const glucose = hd.fastingGlucose ?? '--'
+  const postGlucose = hd.postprandialGlucose ?? '--'
+  const weight = hd.weight ?? '--'
+  const exercise = hd.exerciseMinutes ?? 0
 
+  const prompt = [
+    '你是一位专业的行为健康教练，请根据以下学员数据生成一条简短的跟进消息（100字以内），语气温暖专业：',
+    `学员：${s.name || '未知'}`,
+    `病情：${s.condition || '行为健康管理'}`,
+    `行为阶段：${getStageLabel(s.stage)}`,
+    `空腹血糖：${glucose} mmol/L`,
+    `餐后血糖：${postGlucose} mmol/L`,
+    `体重：${weight} kg`,
+    `本周运动：${exercise} 分钟`,
+    `最近联系：${s.lastContact || '未知'}`,
+    '请直接输出跟进消息内容，不要加任何前缀。',
+  ].join('\n')
+
+  console.log('[followup] generateFollowup for', s.name)
   try {
-    const engineBase = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:8002'
-    const res = await fetch(`${engineBase}/chat_sync`, {
+    const res = await fetch(`${API_BASE}/v1/copilot/chat-sync`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: prompt, user_id: 'coach001' })
+      headers: { ...authHeaders, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: prompt, user_id: String(s.id || 'coach') })
     })
+    if (!res.ok) {
+      console.warn('[followup] chat-sync HTTP', res.status)
+      throw new Error(`HTTP ${res.status}`)
+    }
     const data = await res.json()
+    console.log('[followup] AI reply:', data.reply?.substring(0, 50))
     aiFollowupSuggestion.value = data.reply || '无法生成建议，请手动输入'
-  } catch (e) {
-    aiFollowupSuggestion.value = `${student.name}您好，注意到您最近的健康数据有些变化，想了解一下您的近况。有什么需要帮助的吗？`
+  } catch (e: any) {
+    console.error('[followup] generateFollowup error:', e)
+    aiFollowupSuggestion.value = `${s.name || ''}您好，注意到您最近的健康数据有些变化，想了解一下您的近况。有什么需要帮助的吗？`
   }
   aiFollowupLoading.value = false
 }
@@ -2027,6 +2345,7 @@ async function loadDashboard() {
   loading.value = true
   try {
     const res = await fetch(`${API_BASE}/v1/coach/dashboard`, { headers: authHeaders })
+    if (handle401(res)) return
     if (!res.ok) throw new Error('Dashboard API failed')
     const data = await res.json()
 
@@ -2198,7 +2517,7 @@ async function loadStudentChallenges(studentId: number) {
     const res = await fetch(`${API_BASE}/v1/coach/challenges/students/${studentId}`, { headers: authHeaders })
     if (res.ok) {
       const data = await res.json()
-      studentChallenges.value = data.enrollments || []
+      studentChallenges.value = data.items || data.enrollments || []
     } else {
       studentChallenges.value = []
     }
@@ -2216,7 +2535,7 @@ async function loadPublishedChallenges() {
     const res = await fetch(`${API_BASE}/v1/challenges?status=published`, { headers: authHeaders })
     if (res.ok) {
       const data = await res.json()
-      publishedChallenges.value = data.challenges || data || []
+      publishedChallenges.value = data.items || data.challenges || []
     }
   } catch { /* ignore */ }
   finally { loadingPublishedChallenges.value = false }
@@ -3044,6 +3363,28 @@ onMounted(() => {
     height: 34px;
     font-size: 15px;
   }
+  /* Phase 3: 学员卡片操作按钮换行 */
+  .student-card { flex-wrap: wrap; }
+  .student-info { min-width: 0; flex: 1; }
+  .student-card .ant-btn { min-height: 44px; }
+  /* AI审核按钮全宽堆叠 */
+  .rec-actions { flex-wrap: wrap; gap: 6px; }
+  .rec-actions .ant-btn { flex: 1; min-width: 80px; min-height: 44px; }
+  /* 工具网格3列 → 2列 */
+  .intervention-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  /* 底部导航安全区 */
+  .bottom-nav { padding-bottom: env(safe-area-inset-bottom, 0); }
+  /* 标题缩小 */
+  .section-title { font-size: 14px; }
+  .section-header { padding: 0 4px; }
+  /* 抽屉 / Modal 全宽 */
+  .students-section { padding: 0; }
+  .rec-card { padding: 10px 12px; }
+  .rec-title { font-size: 13px; }
+  /* 学习/工具卡片紧凑 */
+  .tool-card { padding: 10px 8px; }
+  .tool-icon { font-size: 20px; }
+  .tool-name { font-size: 11px; }
 }
 
 .dx-card {
@@ -3120,7 +3461,7 @@ onMounted(() => {
   margin-top: 4px;
 }
 
-/* 柱状条 */
+/* 柱状条 (legacy) */
 .bar-container {
   display: flex;
   flex-direction: column;
@@ -3137,6 +3478,136 @@ onMounted(() => {
   font-size: 12px;
   color: #374151;
   margin-bottom: 2px;
+}
+
+/* CAPACITY 六因素点选网格 */
+.capacity-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.capacity-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f9fafb;
+  transition: background 0.2s;
+}
+
+.capacity-item.weak {
+  background: #fff2f0;
+}
+
+.capacity-name {
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 32px;
+  color: #374151;
+}
+
+/* 数字选择器 — 统一 num-picker 样式 */
+.num-picker {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin: 4px 0;
+}
+.num-picker-centered {
+  justify-content: center;
+}
+.num-picker-inline {
+  display: inline-flex;
+  gap: 3px;
+}
+.num-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 26px;
+  padding: 0 4px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #666;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+.num-btn:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+  background: #e6f7ff;
+}
+.num-btn.selected {
+  color: #fff;
+  background: #1890ff;
+  border-color: #1890ff;
+  transform: scale(1.1);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.35);
+}
+.num-btn.selected.danger {
+  background: #ff4d4f;
+  border-color: #ff4d4f;
+  box-shadow: 0 2px 6px rgba(255, 77, 79, 0.35);
+}
+.num-btn.selected.warning {
+  background: #faad14;
+  border-color: #faad14;
+  box-shadow: 0 2px 6px rgba(250, 173, 20, 0.35);
+}
+.num-btn.selected.good {
+  background: #52c41a;
+  border-color: #52c41a;
+  box-shadow: 0 2px 6px rgba(82, 196, 26, 0.35);
+}
+.num-btn.selected.weak {
+  background: #ff4d4f;
+  border-color: #ff4d4f;
+  box-shadow: 0 2px 6px rgba(255, 77, 79, 0.35);
+}
+.num-btn-lg {
+  min-width: 36px;
+  height: 32px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+.num-btn-sm {
+  min-width: 24px;
+  height: 20px;
+  font-size: 10px;
+  padding: 0 2px;
+  border-radius: 4px;
+}
+
+.capacity-value {
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* 困难度点选 */
+.diff-dot {
+  cursor: pointer;
+  font-size: 16px;
+  color: #d9d9d9;
+  transition: color 0.15s;
+  padding: 0 1px;
+}
+
+.diff-dot.active {
+  color: #faad14;
+}
+
+.diff-dot:hover {
+  color: #fa8c16;
 }
 
 /* 信息框 */
@@ -3260,6 +3731,24 @@ onMounted(() => {
 .task-days {
   font-size: 13px;
   font-weight: 600;
+}
+
+/* (score-pills removed — replaced by num-picker) */
+
+/* SPI 可选择区域 */
+.spi-select-wrap {
+  text-align: center;
+  padding: 12px 0;
+}
+.spi-select-label {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 8px;
+}
+.spi-current-value {
+  font-size: 28px;
+  font-weight: 700;
+  margin-top: 8px;
 }
 
 .task-target {
@@ -3395,8 +3884,7 @@ onMounted(() => {
 .rx-risk { font-size: 12px; font-weight: 600; }
 .rx-instruction { font-size: 13px; color: #333; margin: 4px 0 8px; }
 .rx-tool-area { border-top: 1px dashed #e8e8e8; padding-top: 8px; }
-.rx-tool-label { font-size: 11px; color: #999; margin-bottom: 6px; }
-.rx-tool-fallback { font-size: 11px; color: #fa8c16; background: #fff7e6; padding: 6px; border-radius: 4px; }
+.rx-tool-actions { margin-top: 4px; }
 .copilot-transition { margin-bottom: 12px; }
 .copilot-test {
   border-top: 1px solid #e8e8e8;

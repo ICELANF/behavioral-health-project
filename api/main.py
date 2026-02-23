@@ -599,6 +599,14 @@ try:
 except ImportError as e:
     print(f"[API] 食物识别路由注册失败: {e}")
 
+# ========== 注册音频处理路由 (V5.2.0 ASR) ==========
+try:
+    from api.audio_api import router as audio_router
+    app.include_router(audio_router)
+    print("[API] 音频处理路由已注册")
+except ImportError as e:
+    print(f"[API] 音频处理路由注册失败: {e}")
+
 # ============================================
 # 注册 v3 路由 (诊断管道/Coach对话/渐进评估/效果追踪/激励积分/知识库)
 # ============================================
@@ -1504,6 +1512,36 @@ except ImportError as e:
     print(f"[API] v16 Admin行为配置路由注册失败: {e}")
 
 # ============================================================================
+# CoachCopilot 路由 (copilot/analyze + copilot/suggested-actions)
+# ============================================================================
+try:
+    from api.v14.copilot_routes import router as copilot_router
+    app.include_router(copilot_router, prefix="/api/v1")
+    print("[API] CoachCopilot路由已注册")
+except ImportError as e:
+    print(f"[API] CoachCopilot路由注册失败: {e}")
+
+# ============================================================================
+# Patient 档案路由
+# ============================================================================
+try:
+    from api.patient_api import router as patient_router
+    app.include_router(patient_router)
+    print("[API] Patient路由已注册")
+except ImportError as e:
+    print(f"[API] Patient路由注册失败: {e}")
+
+# ============================================================================
+# Recommendation 推荐系统路由
+# ============================================================================
+try:
+    from api.recommendation_api import router as recommendation_router
+    app.include_router(recommendation_router)
+    print("[API] Recommendation路由已注册")
+except ImportError as e:
+    print(f"[API] Recommendation路由注册失败: {e}")
+
+# ============================================================================
 # [v16-NEW] 注册专家白标租户路由
 # ============================================================================
 try:
@@ -1917,6 +1955,13 @@ try:
     print("[API] P5C Feature Flags路由已注册 (6 endpoints)")
 except ImportError as e:
     print(f"[API] P5C Feature Flags路由注册失败: {e}")
+
+try:
+    from api.sharer_flywheel_api import router as sharer_flywheel_router
+    app.include_router(sharer_flywheel_router)
+    print("[API] Sharer飞轮API已注册 (3 endpoints)")
+except Exception as e:
+    print(f"[API] Sharer飞轮API: {e}")
 
 
 # (R2-R8 已移到 bridge 之前注册, 见上方)

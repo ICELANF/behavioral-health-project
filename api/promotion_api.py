@@ -390,9 +390,9 @@ async def list_promotion_applications(
 ):
     """列出晋级申请 — 供教练/管理员审核"""
     try:
-        from core.database import get_async_session
+        from core.database import get_async_db_session
         from sqlalchemy import text as sa_text
-        async with get_async_session() as db:
+        async with get_async_db_session() as db:
             conditions = ["1=1"]
             params: dict = {}
             if status and status != "all":
@@ -402,13 +402,14 @@ async def list_promotion_applications(
                     params["status"] = status_map[status]
             where = " AND ".join(conditions)
             r = await db.execute(sa_text(f"""
-                SELECT pa.id as application_id, pa.user_id, pa.current_level, pa.target_level,
-                       pa.status, pa.applied_at, pa.reviewed_at, pa.reviewer_comment,
+                SELECT pa.id as application_id, pa.user_id,
+                       pa.from_role, pa.to_role,
+                       pa.status, pa.created_at, pa.reviewed_at, pa.review_comment,
                        u.username, u.full_name
                 FROM promotion_applications pa
                 LEFT JOIN users u ON u.id = pa.user_id
                 WHERE {where}
-                ORDER BY pa.applied_at DESC LIMIT 100
+                ORDER BY pa.created_at DESC LIMIT 100
             """), params)
             items = []
             for row in r.mappings():
@@ -417,12 +418,12 @@ async def list_promotion_applications(
                     "user_id": row["user_id"],
                     "username": row.get("username", ""),
                     "full_name": row.get("full_name", ""),
-                    "current_level": row.get("current_level", ""),
-                    "target_level": row.get("target_level", ""),
+                    "current_level": row.get("from_role", ""),
+                    "target_level": row.get("to_role", ""),
                     "status": row.get("status", "pending"),
-                    "applied_at": str(row.get("applied_at", "")),
+                    "applied_at": str(row.get("created_at", "")),
                     "reviewed_at": str(row.get("reviewed_at", "")) if row.get("reviewed_at") else None,
-                    "reviewer_comment": row.get("reviewer_comment", ""),
+                    "reviewer_comment": row.get("review_comment", ""),
                 })
             return {"applications": items, "total": len(items)}
     except Exception as e:
@@ -443,9 +444,9 @@ async def review_promotion(
 ):
     """审核晋级申请"""
     try:
-        from core.database import get_async_session
+        from core.database import get_async_db_session
         from sqlalchemy import text as sa_text
-        async with get_async_session() as db:
+        async with get_async_db_session() as db:
             new_status = "approved" if decision.approved else "rejected"
             await db.execute(sa_text("""
                 UPDATE promotion_applications

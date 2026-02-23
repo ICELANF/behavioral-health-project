@@ -54,8 +54,19 @@ class UpgradeExecuteResponse(BaseModel):
     old_role: str
     new_role: str
     new_level: int
+    new_role_level: int = 2
     message: str
-    redirect_to: str = "/grower/today"  # 前端跳转目标
+    redirect_to: str = "/onboarding/grower"  # 前端跳转: 引导页
+
+
+class SharerUpgradeCheckResponse(BaseModel):
+    """Grower→Sharer 升级检查结果"""
+    eligible: bool
+    growth_points: int = 0
+    contribution_points: int = 0
+    growth_required: int = 500
+    contribution_required: int = 50
+    reason: str = ""
 
 
 # ═══════════════════════════════════════════════════
@@ -238,8 +249,9 @@ async def execute_upgrade(
         old_role=old_role,
         new_role="grower",
         new_level=2,
+        new_role_level=2,
         message="恭喜！您已完成健康评估，正式成为行健平台的成长者。从今天开始，我们为您定制了每日健康行动计划！",
-        redirect_to="/grower/today",
+        redirect_to="/onboarding/grower",
     )
 
 
@@ -384,3 +396,132 @@ async def _generate_default_prescription(db: AsyncSession, user_id: int, max_tas
             "domain": rx["domain"],
             "diff": rx["difficulty_level"],
         })
+
+
+# ═══════════════════════════════════════════════════
+# Grower → Sharer 升级
+# ═══════════════════════════════════════════════════
+
+async def check_sharer_eligibility(
+    db: AsyncSession, user_id: int
+) -> SharerUpgradeCheckResponse:
+    """
+    检查 Grower→Sharer 升级条件:
+    - growth_points >= 500
+    - contribution_points >= 50
+    """
+    # 查询用户角色
+    user_result = await db.execute(
+        text("SELECT id, role FROM users WHERE id = :uid"), {"uid": user_id}
+    )
+    user = user_result.mappings().first()
+    if not user:
+        return SharerUpgradeCheckResponse(eligible=False, reason="用户不存在")
+
+    current_role = (user["role"] or "observer").lower()
+    current_level = ROLE_LEVEL_MAP.get(current_role, 1)
+
+    if current_level >= 3:
+        return SharerUpgradeCheckResponse(
+            eligible=False, growth_points=999, contribution_points=999,
+            reason="已经是分享者或更高角色",
+        )
+    if current_level < 2:
+        return SharerUpgradeCheckResponse(
+            eligible=False, reason="需要先成为成长者(Grower)",
+        )
+
+    # 查询积分
+    growth = contribution = 0
+    try:
+        stats_result = await db.execute(text("""
+            SELECT COALESCE(growth_points, 0) AS gp,
+                   COALESCE(contribution_points, 0) AS cp
+            FROM user_learning_stats WHERE user_id = :uid
+        """), {"uid": user_id})
+        row = stats_result.mappings().first()
+        if row:
+            growth = row["gp"] or 0
+            contribution = row["cp"] or 0
+    except Exception:
+        pass
+
+    # 补充: 从 users.growth_points 获取 (可能更准确)
+    if growth == 0:
+        try:
+            gp_result = await db.execute(
+                text("SELECT COALESCE(growth_points, 0) AS gp FROM users WHERE id = :uid"),
+                {"uid": user_id},
+            )
+            gp_row = gp_result.mappings().first()
+            if gp_row:
+                growth = max(growth, gp_row["gp"] or 0)
+        except Exception:
+            pass
+
+    eligible = growth >= 500 and contribution >= 50
+    if eligible:
+        reason = "满足升级条件: 成长积分和贡献积分均已达标"
+    else:
+        parts = []
+        if growth < 500:
+            parts.append(f"成长积分 {growth}/500")
+        if contribution < 50:
+            parts.append(f"贡献积分 {contribution}/50")
+        reason = f"尚未达标: {', '.join(parts)}"
+
+    return SharerUpgradeCheckResponse(
+        eligible=eligible,
+        growth_points=growth,
+        contribution_points=contribution,
+        reason=reason,
+    )
+
+
+async def execute_sharer_upgrade(
+    db: AsyncSession, user_id: int
+) -> UpgradeExecuteResponse:
+    """执行 Grower → Sharer 升级"""
+    check = await check_sharer_eligibility(db, user_id)
+    if not check.eligible:
+        return UpgradeExecuteResponse(
+            success=False, old_role="grower", new_role="grower",
+            new_level=2, new_role_level=2,
+            message=f"升级失败: {check.reason}",
+        )
+
+    await db.execute(text("""
+        UPDATE users SET role = 'sharer', updated_at = NOW()
+        WHERE id = :uid
+    """), {"uid": user_id})
+    await db.commit()
+
+    logger.info(f"用户 {user_id}: grower → sharer 升级完成")
+
+    return UpgradeExecuteResponse(
+        success=True,
+        old_role="grower",
+        new_role="sharer",
+        new_level=3,
+        new_role_level=3,
+        message="恭喜晋升为分享者！您现在可以引领同道者、分享健康经验，积累影响力了。",
+        redirect_to="/onboarding/sharer",
+    )
+
+
+@router.get("/promotion/sharer-check", response_model=SharerUpgradeCheckResponse)
+async def api_check_sharer_upgrade(
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """检查当前用户是否满足 Grower→Sharer 升级条件"""
+    return await check_sharer_eligibility(db, current_user.id)
+
+
+@router.post("/promotion/upgrade-to-sharer", response_model=UpgradeExecuteResponse)
+async def api_upgrade_to_sharer(
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """执行 Grower→Sharer 升级"""
+    return await execute_sharer_upgrade(db, current_user.id)

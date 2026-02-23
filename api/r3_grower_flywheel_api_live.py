@@ -287,7 +287,15 @@ async def get_coach_tip_today(
     total, done = result["total"] or 0, result["done_count"] or 0
     streak = await _get_streak_days(db, user_id)
 
-    if total == 0:
+    # 检查用户角色: 分享者返回带教导向的提示
+    user_role = (getattr(current_user, 'role', None) or 'grower')
+    if hasattr(user_role, 'value'):
+        user_role = user_role.value
+    user_role = user_role.lower()
+
+    if user_role == 'sharer':
+        tip, tip_type = await _build_sharer_tip(db, user_id, total, done, streak, today)
+    elif total == 0:
         tip, tip_type = "今天还没有任务安排，要不要和我聊聊您的健康目标？", "suggestion"
     elif done == total:
         tip, tip_type = f"太棒了！今天的任务全部完成，已经连续坚持{streak}天了！", "celebration"
@@ -299,6 +307,47 @@ async def get_coach_tip_today(
         tip, tip_type = "新的一天开始了，从第一个小任务开始吧，一步一步来。", "suggestion"
 
     return CoachTipResponse(tip=tip, tip_type=tip_type, agent_id="behavior_coach")
+
+
+async def _build_sharer_tip(
+    db: AsyncSession, user_id: int,
+    total: int, done: int, streak: int, today: date,
+) -> tuple[str, str]:
+    """为分享者生成带教导向的教练提示"""
+    # 查询同道者今日情况
+    try:
+        mentee_result = await db.execute(text("""
+            SELECT u.username,
+                   (SELECT COUNT(*) FROM daily_tasks dt
+                    WHERE dt.user_id = cr.mentee_id AND dt.task_date = :today AND dt.done = true) AS done_cnt,
+                   (SELECT COUNT(*) FROM daily_tasks dt
+                    WHERE dt.user_id = cr.mentee_id AND dt.task_date = :today) AS total_cnt
+            FROM companion_relations cr
+            JOIN users u ON u.id = cr.mentee_id
+            WHERE cr.mentor_id = :uid AND cr.status = 'active'
+            LIMIT 4
+        """), {"uid": user_id, "today": today})
+        mentees = mentee_result.mappings().all()
+    except Exception:
+        mentees = []
+
+    # 找到还没完成任务的同道者
+    lagging = [m for m in mentees if (m["total_cnt"] or 0) > 0 and (m["done_cnt"] or 0) == 0]
+    all_done_mentees = [m for m in mentees if (m["total_cnt"] or 0) > 0 and (m["done_cnt"] or 0) >= (m["total_cnt"] or 1)]
+
+    if lagging:
+        name = lagging[0]["username"] or "你的同道者"
+        return f"你的同道者{name}今天还没打卡，发条消息鼓励一下？", "mentoring"
+    if all_done_mentees and done == total and total > 0:
+        cnt = len(all_done_mentees)
+        return f"今天你和{cnt}位同道者都完成了全部任务，团队的力量！", "celebration"
+    if done == total and total > 0:
+        return f"自己的任务全部完成了！看看同道者们需不需要帮助？", "mentoring"
+    if done > 0:
+        return f"已完成{done}/{total}个任务，继续加油！分享者要以身作则哦。", "encouragement"
+    if streak >= 7:
+        return f"连续{streak}天了！你的坚持是同道者们最好的榜样。", "encouragement"
+    return "新的一天，作为分享者，先完成自己的任务，再带动团队！", "suggestion"
 
 
 # ═══════════════════════════════════════════════════
@@ -532,43 +581,84 @@ async def quick_checkin(
 
 
 # ═══════════════════════════════════════════════════
-# GET /daily-tasks/catalog — 可选任务目录
+# GET /daily-tasks/catalog — 可选任务目录 (六级累进)
 # ═══════════════════════════════════════════════════
 
+ROLE_TO_LEVEL = {
+    "OBSERVER": 0, "GROWER": 1, "SHARER": 2, "COACH": 3,
+    "PROMOTER": 4, "SUPERVISOR": 4, "MASTER": 5, "ADMIN": 99,
+}
+
 TASK_CATALOG = [
+    # ── L0 观察员 (5项基础) ──
+    {"id": "cat_glucose",   "title": "测量空腹血糖",     "tag": "监测", "tag_color": "#3b82f6", "domain": "glucose",       "input_mode": "device", "quick_label": "记录", "icon": "🩸", "min_level": 0},
+    {"id": "cat_bp",        "title": "测量血压",         "tag": "监测", "tag_color": "#3b82f6", "domain": "blood_pressure","input_mode": "device", "quick_label": "记录", "icon": "💉", "min_level": 0},
+    {"id": "cat_weight",    "title": "称体重",           "tag": "监测", "tag_color": "#3b82f6", "domain": "weight",        "input_mode": "device", "quick_label": "记录", "icon": "⚖️",  "min_level": 0},
+    {"id": "cat_mood",      "title": "记录今天心情",      "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",       "input_mode": "text",   "quick_label": "记录", "icon": "😊", "min_level": 0},
+    {"id": "cat_learn",     "title": "阅读健康知识10分钟", "tag": "学习", "tag_color": "#ec4899", "domain": "learning",      "input_mode": "text",   "quick_label": "打卡", "icon": "📖", "min_level": 0},
+
+    # ── L1 成长者 (再加19项，累计24) ──
     # 运动类
-    {"id": "cat_walk_30",   "title": "步行30分钟",    "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🚶"},
-    {"id": "cat_walk_60",   "title": "步行60分钟",    "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🚶‍♂️"},
-    {"id": "cat_yoga",      "title": "瑜伽/拉伸15分钟", "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🧘"},
-    {"id": "cat_tai_chi",   "title": "太极拳20分钟",   "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🥋"},
-    {"id": "cat_swim",      "title": "游泳30分钟",     "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🏊"},
-    {"id": "cat_cycle",     "title": "骑行30分钟",     "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🚴"},
-    {"id": "cat_baduanjin", "title": "八段锦一套",     "tag": "运动", "tag_color": "#10b981", "domain": "exercise", "input_mode": "text",   "quick_label": "打卡", "icon": "🏋️"},
+    {"id": "cat_walk_30",   "title": "步行30分钟",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🚶",   "min_level": 1},
+    {"id": "cat_walk_60",   "title": "步行60分钟",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🚶‍♂️", "min_level": 1},
+    {"id": "cat_yoga",      "title": "瑜伽/拉伸15分钟",   "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🧘",   "min_level": 1},
+    {"id": "cat_tai_chi",   "title": "太极拳20分钟",     "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🥋",   "min_level": 1},
+    {"id": "cat_swim",      "title": "游泳30分钟",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🏊",   "min_level": 1},
+    {"id": "cat_cycle",     "title": "骑行30分钟",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🚴",   "min_level": 1},
+    {"id": "cat_baduanjin", "title": "八段锦一套",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🏋️",  "min_level": 1},
     # 营养类
-    {"id": "cat_meal_photo","title": "拍照记录一餐",    "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition","input_mode": "photo",  "quick_label": "拍照", "icon": "📸"},
-    {"id": "cat_water",     "title": "喝水8杯",        "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition","input_mode": "text",   "quick_label": "打卡", "icon": "💧"},
-    {"id": "cat_veggie",    "title": "吃够300g蔬菜",   "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition","input_mode": "text",   "quick_label": "打卡", "icon": "🥦"},
-    {"id": "cat_no_sugar",  "title": "今日无含糖饮料",   "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition","input_mode": "text",   "quick_label": "打卡", "icon": "🚫"},
-    # 监测类
-    {"id": "cat_glucose",   "title": "测量空腹血糖",    "tag": "监测", "tag_color": "#3b82f6", "domain": "glucose",  "input_mode": "device", "quick_label": "记录", "icon": "🩸"},
-    {"id": "cat_bp",        "title": "测量血压",        "tag": "监测", "tag_color": "#3b82f6", "domain": "blood_pressure","input_mode": "device","quick_label": "记录","icon": "💉"},
-    {"id": "cat_weight",    "title": "称体重",         "tag": "监测", "tag_color": "#3b82f6", "domain": "weight",   "input_mode": "device", "quick_label": "记录", "icon": "⚖️"},
-    # 情绪/睡眠类
-    {"id": "cat_mood",      "title": "记录今天心情",     "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",  "input_mode": "text",   "quick_label": "记录", "icon": "😊"},
-    {"id": "cat_journal",   "title": "写感恩日记",      "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",  "input_mode": "text",   "quick_label": "记录", "icon": "📝"},
-    {"id": "cat_breathe",   "title": "腹式呼吸5分钟",   "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",  "input_mode": "text",   "quick_label": "打卡", "icon": "🌬️"},
-    {"id": "cat_sleep",     "title": "记录睡眠",        "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",    "input_mode": "text",   "quick_label": "打卡", "icon": "😴"},
-    {"id": "cat_early_bed", "title": "22:30前入睡",     "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",    "input_mode": "text",   "quick_label": "打卡", "icon": "🌙"},
-    # 学习类
-    {"id": "cat_learn",     "title": "阅读健康知识10分钟","tag": "学习", "tag_color": "#ec4899", "domain": "learning", "input_mode": "text",   "quick_label": "打卡", "icon": "📖"},
-    {"id": "cat_medication","title": "按时服药",        "tag": "用药", "tag_color": "#ef4444", "domain": "medication","input_mode": "text",   "quick_label": "打卡", "icon": "💊"},
+    {"id": "cat_meal_photo","title": "拍照记录一餐",      "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition", "input_mode": "photo",  "quick_label": "拍照", "icon": "📸",   "min_level": 1},
+    {"id": "cat_water",     "title": "喝水8杯",          "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition", "input_mode": "text",   "quick_label": "打卡", "icon": "💧",   "min_level": 1},
+    {"id": "cat_veggie",    "title": "吃够300g蔬菜",     "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition", "input_mode": "text",   "quick_label": "打卡", "icon": "🥦",   "min_level": 1},
+    {"id": "cat_no_sugar",  "title": "今日无含糖饮料",    "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition", "input_mode": "text",   "quick_label": "打卡", "icon": "🚫",   "min_level": 1},
+    # 情绪/睡眠 (余下)
+    {"id": "cat_journal",   "title": "写感恩日记",       "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",   "input_mode": "text",   "quick_label": "记录", "icon": "📝",   "min_level": 1},
+    {"id": "cat_breathe",   "title": "腹式呼吸5分钟",    "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",   "input_mode": "text",   "quick_label": "打卡", "icon": "🌬️",  "min_level": 1},
+    {"id": "cat_sleep",     "title": "记录睡眠",         "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",     "input_mode": "text",   "quick_label": "打卡", "icon": "😴",   "min_level": 1},
+    {"id": "cat_early_bed", "title": "22:30前入睡",      "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",     "input_mode": "text",   "quick_label": "打卡", "icon": "🌙",   "min_level": 1},
+    # 用药
+    {"id": "cat_medication","title": "按时服药",         "tag": "用药", "tag_color": "#ef4444", "domain": "medication","input_mode": "text",   "quick_label": "打卡", "icon": "💊",   "min_level": 1},
+
+    # ── L2 分享者 (再加8项，累计32) ──
+    # 分享类
+    {"id": "cat_write_share",   "title": "撰写经验分享文章", "tag": "分享", "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "✍️",  "min_level": 2},
+    {"id": "cat_case_story",    "title": "提交案例故事",     "tag": "分享", "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "📖",  "min_level": 2},
+    {"id": "cat_answer_question","title": "回答社区问题(1个)","tag": "分享", "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "💬",  "min_level": 2},
+    {"id": "cat_review_share",  "title": "审阅他人分享内容", "tag": "分享", "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "👀",  "min_level": 2},
+    # 同道者类
+    {"id": "cat_contact_peer",  "title": "联系同道者(1次)",  "tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion", "input_mode": "text", "quick_label": "打卡", "icon": "🤝",  "min_level": 2},
+    {"id": "cat_mentor_peer",   "title": "辅导同道者(15分钟)","tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion", "input_mode": "text", "quick_label": "打卡", "icon": "🎓",  "min_level": 2},
+    {"id": "cat_check_peer",    "title": "检查同道者进度",    "tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion", "input_mode": "text", "quick_label": "打卡", "icon": "📊",  "min_level": 2},
+    {"id": "cat_invite_peer",   "title": "邀请新同道者",     "tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion", "input_mode": "text", "quick_label": "打卡", "icon": "📨",  "min_level": 2},
+
+    # ── L3 教练 (再加6项，累计38) ──
+    {"id": "cat_review_rx",     "title": "审核学员处方",      "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📋",  "min_level": 3},
+    {"id": "cat_followup",      "title": "完成学员跟进(1人)", "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📞",  "min_level": 3},
+    {"id": "cat_view_data",     "title": "查看学员健康数据",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📈",  "min_level": 3},
+    {"id": "cat_motivate",      "title": "发送学员激励消息",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "💪",  "min_level": 3},
+    {"id": "cat_coach_course",  "title": "完成教练进修课程",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "🎯",  "min_level": 3},
+    {"id": "cat_case_report",   "title": "撰写学员案例报告",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📝",  "min_level": 3},
+
+    # ── L4 促进师 (再加4项，累计42) ──
+    {"id": "cat_audit_coach",   "title": "审核教练工作质量",   "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "🔍",  "min_level": 4},
+    {"id": "cat_design_course", "title": "设计培训课程模块",   "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "📐",  "min_level": 4},
+    {"id": "cat_region_data",   "title": "分析区域健康数据",   "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "🗺️", "min_level": 4},
+    {"id": "cat_workshop",      "title": "组织工作坊/研讨会",  "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "🏫",  "min_level": 4},
+
+    # ── L5 大师 (再加3项，累计45) ──
+    {"id": "cat_audit_content", "title": "审核课程内容质量",   "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "✅",  "min_level": 5},
+    {"id": "cat_review_policy", "title": "制定/审阅平台政策",  "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "📜",  "min_level": 5},
+    {"id": "cat_platform_build","title": "参与平台共建讨论",   "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "🌐",  "min_level": 5},
 ]
 
 
 @router.get("/daily-tasks/catalog")
 async def get_task_catalog(current_user=Depends(get_current_user)):
-    """返回可选任务目录 — 用户可从中挑选添加到今日任务"""
-    return {"catalog": TASK_CATALOG, "total": len(TASK_CATALOG)}
+    """返回可选任务目录 — 按用户角色等级过滤，累进可见"""
+    user_role = (getattr(current_user, 'role', None) or 'grower').upper()
+    level = ROLE_TO_LEVEL.get(user_role, 1)
+    filtered = [c for c in TASK_CATALOG if c.get("min_level", 1) <= level]
+    return {"catalog": filtered, "total": len(filtered)}
 
 
 # ═══════════════════════════════════════════════════

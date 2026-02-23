@@ -1,3 +1,4 @@
+export { useCurrentUser } from './useCurrentUser';
 export { useScreenDetection, type ScreenViolation } from './useScreenDetection';
 export { useFullscreen } from './useFullscreen';
 export { useProctorCamera, type Snapshot, type SnapshotConfig } from './useProctorCamera';

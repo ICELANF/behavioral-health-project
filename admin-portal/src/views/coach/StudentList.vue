@@ -590,4 +590,15 @@ const getLevelColor = (level: number) => {
 .student-list :deep(.ant-card) {
   border-radius: 8px;
 }
+
+@media (max-width: 640px) {
+  .student-list { padding: 8px !important; }
+  .student-list :deep(.ant-card) { padding: 8px; }
+  .ant-btn { min-height: 44px; }
+  h2 { font-size: 16px; }
+  table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  thead th { white-space: nowrap; padding: 8px !important; font-size: 12px; }
+  tbody td { padding: 8px !important; font-size: 13px; }
+  .ant-modal { max-width: 95vw !important; }
+}
 </style>

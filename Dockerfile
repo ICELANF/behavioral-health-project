@@ -35,6 +35,11 @@ RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple --tru
 # --------------- Production Stage ---------------
 FROM base AS production
 
+# Install postgresql-client for pg_dump (backup/DR)
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends postgresql-client && \
+    rm -rf /var/lib/apt/lists/*
+
 # Copy installed packages from dependencies stage
 COPY --from=dependencies /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=dependencies /usr/local/bin /usr/local/bin
@@ -61,6 +66,7 @@ COPY gateway/ ./gateway/
 COPY v3/ ./v3/
 COPY migrations/ ./migrations/
 COPY data/ ./data/
+COPY scripts/ ./scripts/
 COPY config.yaml ./
 COPY alembic.ini ./
 COPY main.py ./

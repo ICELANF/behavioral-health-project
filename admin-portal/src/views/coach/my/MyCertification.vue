@@ -149,4 +149,16 @@ onMounted(loadData)
 .req-check { font-size: 14px; min-width: 20px; }
 .req-label { flex: 1; }
 .req-value { font-weight: 500; }
+
+@media (max-width: 640px) {
+  .my-certification { padding: 8px !important; }
+  .current-level { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .level-badge { width: 48px; height: 48px; font-size: 18px; }
+  .level-info h3 { font-size: 16px; }
+  .upgrade-section { padding: 12px; }
+  .req-item { font-size: 12px; gap: 6px; }
+  .ant-btn { min-height: 44px; }
+  h2 { font-size: 16px; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
 </style>

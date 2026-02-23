@@ -45,6 +45,12 @@ ROLE_MIGRATION_MAP = {
     "provider": "coach",      # 医疗提供者 → 健康教练
 }
 
+# 角色→等级映射 (与前端路由守卫同步)
+ROLE_LEVELS = {
+    "observer": 1, "grower": 2, "sharer": 3, "coach": 4,
+    "promoter": 5, "supervisor": 5, "master": 6, "admin": 99,
+}
+
 
 def normalize_role(role: str) -> str:
     """规范化角色名称，将旧角色映射到新角色"""
@@ -241,8 +247,10 @@ def register(request: RegisterRequest, req: Request = None, db: Session = Depend
             "username": new_user.username,
             "email": new_user.email,
             "role": normalized_role,
+            "role_level": ROLE_LEVELS.get(normalized_role, 1),
             "full_name": new_user.full_name,
-            "intervention_stage": getattr(new_user, 'intervention_stage', None)
+            "intervention_stage": getattr(new_user, 'intervention_stage', None),
+            "avatar_url": getattr(new_user, 'avatar_url', None) or "",
         }
     )
 
@@ -338,8 +346,10 @@ async def login(request: Request, db: Session = Depends(get_db)):
                 "username": user.username,
                 "email": user.email,
                 "role": normalized_role,
+                "role_level": ROLE_LEVELS.get(normalized_role, 1),
                 "full_name": user.full_name,
-                "intervention_stage": getattr(user, 'intervention_stage', None)
+                "intervention_stage": getattr(user, 'intervention_stage', None),
+                "avatar_url": getattr(user, 'avatar_url', None) or "",
             }
         )
 
@@ -369,6 +379,7 @@ async def get_current_user_info(current_user: User = Depends(get_current_user)):
         "username": current_user.username,
         "email": current_user.email,
         "role": normalized_role,
+        "role_level": ROLE_LEVELS.get(normalized_role, 1),
         "full_name": current_user.full_name,
         "is_active": current_user.is_active,
         "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
@@ -416,6 +427,7 @@ def refresh_token_endpoint(
             "username": user.username,
             "email": user.email,
             "role": normalized_role,
+            "role_level": ROLE_LEVELS.get(normalized_role, 1),
             "full_name": user.full_name,
         }
     )

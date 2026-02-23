@@ -17,8 +17,8 @@ set -euo pipefail
 # --------------- 配置 ---------------
 DB_HOST="${DB_HOST:-localhost}"
 DB_PORT="${DB_PORT:-5432}"
-DB_NAME="${DB_NAME:-bhp_db}"
-DB_USER="${DB_USER:-bhp_user}"
+DB_NAME="${DB_NAME:-health_platform}"
+DB_USER="${DB_USER:-postgres}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
 TIMESTAMP=$(date '+%Y%m%d_%H%M%S')
@@ -55,7 +55,7 @@ do_pg_dump() {
         docker exec "$PG_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" \
             --no-owner --no-privileges --clean --if-exists 2>/dev/null | gzip
     else
-        PGPASSWORD="${PGPASSWORD:-bhp_password}" pg_dump \
+        PGPASSWORD="${PGPASSWORD:-difyai123456}" pg_dump \
             -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
             --no-owner --no-privileges --clean --if-exists 2>/dev/null | gzip
     fi
@@ -66,7 +66,7 @@ do_pg_restore() {
     if [[ "$PG_VIA_DOCKER" == true ]]; then
         gunzip -c "$file" | docker exec -i dify-db-1 psql -U "$DB_USER" -d "$DB_NAME" 2>/dev/null
     else
-        PGPASSWORD="${PGPASSWORD:-bhp_password}" gunzip -c "$file" | \
+        PGPASSWORD="${PGPASSWORD:-difyai123456}" gunzip -c "$file" | \
             psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" 2>/dev/null
     fi
 }

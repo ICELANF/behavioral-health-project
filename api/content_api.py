@@ -32,6 +32,7 @@ from core.models import (
     User, ContentItem, ContentLike, ContentBookmark, ContentComment,
     UserActivityLog, LearningProgress, LearningTimeLog, LearningPointsLog,
     UserLearningStats, ExamDefinition, QuestionBank, ExamResult,
+    PointTransaction,
 )
 
 router = APIRouter(prefix="/api/v1/content", tags=["内容管理"])
@@ -1127,6 +1128,17 @@ def like_content(
             user_id=current_user.id, activity_type="like",
             detail={"content_id": content_id}, created_at=datetime.utcnow(),
         ))
+        # 给内容作者 +1 影响力积分 (不给自己点赞加分)
+        if item.author_id and item.author_id != current_user.id:
+            try:
+                db.add(PointTransaction(user_id=item.author_id, action="content_liked",
+                                        point_type="influence", amount=1))
+                stats = db.query(UserLearningStats).filter(
+                    UserLearningStats.user_id == item.author_id).first()
+                if stats:
+                    stats.influence_points = (stats.influence_points or 0) + 1
+            except Exception:
+                pass
         db.commit()
         return {"liked": True, "like_count": item.like_count}
 
@@ -1155,6 +1167,17 @@ def collect_content(
     else:
         db.add(ContentBookmark(user_id=current_user.id, content_id=content_id, created_at=datetime.utcnow()))
         item.collect_count = (item.collect_count or 0) + 1
+        # 给内容作者 +2 影响力积分 (收藏比点赞权重更高)
+        if item.author_id and item.author_id != current_user.id:
+            try:
+                db.add(PointTransaction(user_id=item.author_id, action="content_collected",
+                                        point_type="influence", amount=2))
+                stats = db.query(UserLearningStats).filter(
+                    UserLearningStats.user_id == item.author_id).first()
+                if stats:
+                    stats.influence_points = (stats.influence_points or 0) + 2
+            except Exception:
+                pass
         db.commit()
         return {"collected": True, "collect_count": item.collect_count}
 

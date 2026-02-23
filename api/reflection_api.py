@@ -51,8 +51,11 @@ def create_reflection(
         )
         db.commit()
     except Exception as e:
-        logger.warning(f"DB object missing ({e.__class__.__name__}), returning empty fallback")
-        db.rollback()
+        logger.warning(f"reflection create failed ({e.__class__.__name__}): {e}")
+        try:
+            db.rollback()
+        except Exception:
+            pass
         result = {"id": 0, "content": req.content, "title": req.title, "status": "pending"}
 
     try:
@@ -66,6 +69,10 @@ def create_reflection(
         db.commit()
     except Exception as e:
         logger.warning(f"积分记录失败: {e}")
+        try:
+            db.rollback()
+        except Exception:
+            pass
 
     return result
 

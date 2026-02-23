@@ -34,19 +34,21 @@
 
         <div class="question-card">
           <p class="question-text">{{ currentQuestion.text }}</p>
-          <div class="slider-wrapper">
-            <div class="slider-labels">
+          <div class="num-select-wrapper">
+            <div class="num-select-labels">
               <span>{{ currentQuestion.minLabel }}</span>
               <span>{{ currentQuestion.maxLabel }}</span>
             </div>
-            <input
-              type="range"
-              :min="0"
-              :max="10"
-              :value="answers[currentIndex]"
-              class="score-slider"
-              @input="updateAnswer($event)"
-            />
+            <div class="num-select-row">
+              <span
+                v-for="v in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]"
+                :key="v"
+                class="num-select-btn"
+                :class="{ selected: answers[currentIndex] === v }"
+                :style="answers[currentIndex] === v ? { background: scoreColor(v), borderColor: scoreColor(v), color: '#fff' } : {}"
+                @click="answers[currentIndex] = v"
+              >{{ v }}</span>
+            </div>
             <div class="score-display">
               <span class="score-value" :style="{ color: scoreColor(answers[currentIndex]) }">
                 {{ answers[currentIndex] }}
@@ -253,9 +255,17 @@ onBeforeUnmount(() => { if (timer) clearInterval(timer) })
 
 .question-card { background: #fff; border-radius: 6px; padding: 12px; border: 1px solid #fecaca; }
 .question-text { font-size: 13px; color: #333; font-weight: 500; margin-bottom: 12px; }
-.slider-wrapper { margin-top: 8px; }
-.slider-labels { display: flex; justify-content: space-between; font-size: 11px; color: #999; margin-bottom: 4px; }
-.score-slider { width: 100%; accent-color: #dc2626; cursor: pointer; }
+.num-select-wrapper { margin-top: 8px; }
+.num-select-labels { display: flex; justify-content: space-between; font-size: 11px; color: #999; margin-bottom: 6px; }
+.num-select-row { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; }
+.num-select-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; height: 32px; border: 1.5px solid #e0e0e0; border-radius: 6px;
+  font-size: 13px; font-weight: 500; color: #666; background: #fafafa;
+  cursor: pointer; transition: all 0.15s; user-select: none;
+}
+.num-select-btn:hover { border-color: #dc2626; color: #dc2626; background: #fff5f5; }
+.num-select-btn.selected { transform: scale(1.12); font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
 .score-display { text-align: center; margin-top: 4px; }
 .score-value { font-size: 24px; font-weight: 700; }
 .score-label { font-size: 12px; color: #999; }

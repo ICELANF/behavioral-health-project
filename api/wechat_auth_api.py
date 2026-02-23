@@ -104,7 +104,27 @@ async def wechat_callback(
         user_row = result.mappings().first()
 
     if user_row:
-        # Existing user — issue token
+        # Existing user — sync latest WeChat profile (avatar/nickname)
+        try:
+            wx_info = await get_user_info(token_data["access_token"], openid) or {}
+            wx_nick = wx_info.get("nickname", "")
+            wx_avatar = wx_info.get("avatar", "")
+            if wx_nick or wx_avatar:
+                await db.execute(
+                    text("""
+                        UPDATE users
+                        SET nickname   = COALESCE(NULLIF(:nick, ''), nickname),
+                            avatar_url = COALESCE(NULLIF(:av, ''), avatar_url),
+                            updated_at = NOW()
+                        WHERE id = :uid
+                    """),
+                    {"nick": wx_nick, "av": wx_avatar, "uid": user_row["id"]},
+                )
+                await db.commit()
+        except Exception as e:
+            logger.warning(f"WeChat profile sync failed for user {user_row['id']}: {e}")
+
+        # Issue token
         jwt_token = _create_token(user_row["id"], user_row["username"], user_row["role"])
         return RedirectResponse(f"/?token={jwt_token}")
 
@@ -168,14 +188,27 @@ async def wechat_bind(
     if existing.first():
         raise HTTPException(409, "This WeChat account is already bound to another user")
 
+    # Get WeChat profile for nickname/avatar sync
+    wx_nick = ""
+    wx_avatar = ""
+    try:
+        from gateway.channels.wx_gateway import get_user_info
+        wx_info = await get_user_info(token_data["access_token"], openid) or {}
+        wx_nick = wx_info.get("nickname", "")
+        wx_avatar = wx_info.get("avatar", "")
+    except Exception:
+        pass
+
     await db.execute(
         text("""
             UPDATE users SET wx_openid = :oid, union_id = :uid,
+                             nickname = COALESCE(NULLIF(:nick, ''), nickname),
+                             avatar_url = COALESCE(NULLIF(:av, ''), avatar_url),
                              preferred_channel = COALESCE(preferred_channel, 'wechat'),
                              updated_at = NOW()
             WHERE id = :id
         """),
-        {"oid": openid, "uid": unionid, "id": current_user.id},
+        {"oid": openid, "uid": unionid, "nick": wx_nick, "av": wx_avatar, "id": current_user.id},
     )
     await db.commit()
     return {"success": True, "openid": openid[:8] + "****"}

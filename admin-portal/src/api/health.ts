@@ -221,6 +221,18 @@ export const healthApi = {
     const res = await request.delete(`/v1/daily-tasks/${taskId}`)
     return res.data
   },
+
+  // ── Food Recognition ──
+  async recognizeFood(formData: FormData) {
+    const res = await request.post('/v1/food/recognize', formData, { timeout: 120000 })
+    return res.data
+  },
+
+  // ── 语音转文字 (ASR) ──
+  async transcribeAudio(formData: FormData) {
+    const res = await request.post('/v1/audio/transcribe', formData, { timeout: 60000 })
+    return res.data
+  },
 }
 
 export default healthApi

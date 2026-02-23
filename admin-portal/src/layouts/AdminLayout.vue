@@ -345,21 +345,7 @@
           </a-popover>
         </div>
         <div class="header-right">
-          <a-dropdown>
-            <a class="user-dropdown">
-              <a-avatar :size="32" style="background-color: #1890ff">
-                <template #icon><UserOutlined /></template>
-              </a-avatar>
-              <span class="username hide-compact">{{ username }}</span>
-            </a>
-            <template #overlay>
-              <a-menu>
-                <a-menu-item key="profile">个人设置</a-menu-item>
-                <a-menu-divider />
-                <a-menu-item key="logout" @click="handleLogout">退出登录</a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
+          <UserAvatarPopover :size="32" />
         </div>
       </a-layout-header>
 
@@ -417,6 +403,7 @@ import {
   ExperimentOutlined
 } from '@ant-design/icons-vue'
 import request from '../api/request'
+import { UserAvatarPopover } from '@/components/health'
 
 const route = useRoute()
 const router = useRouter()
@@ -438,8 +425,7 @@ watch(isCompact, (compact) => {
   if (!compact) mobileDrawerVisible.value = false
 })
 
-// 从 localStorage 读取用户信息
-const username = ref(localStorage.getItem('admin_username') || '管理员')
+// 从 localStorage 读取用户角色
 const userRole = ref(localStorage.getItem('admin_role') || 'ADMIN')
 
 // 权限判断（v18统一角色名称: GROWER/COACH/SUPERVISOR/PROMOTER/MASTER/ADMIN）
@@ -628,15 +614,6 @@ const onMenuClick = () => {
   if (isCompact.value) mobileDrawerVisible.value = false
 }
 
-const handleLogout = () => {
-  localStorage.removeItem('admin_token')
-  localStorage.removeItem('admin_refresh_token')
-  localStorage.removeItem('admin_username')
-  localStorage.removeItem('admin_role')
-  localStorage.removeItem('admin_level')
-  message.success('已退出登录')
-  router.push('/login')
-}
 </script>
 
 <style scoped>
@@ -667,17 +644,6 @@ const handleLogout = () => {
 .header-right {
   display: flex;
   align-items: center;
-}
-
-.user-dropdown {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-}
-
-.username {
-  margin-left: 8px;
-  color: #333;
 }
 
 .content {

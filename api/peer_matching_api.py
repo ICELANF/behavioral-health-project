@@ -72,18 +72,28 @@ def accept_peer(
 
 @router.get("/my-peer")
 def my_peer_relations(
+    include_lifecycle: bool = Query(True, description="包含冷却/休眠状态关系"),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """我的同伴关系 (作为mentee和mentor)"""
+    """我的同伴关系 (作为mentee和mentor), 含生命周期状态"""
+    # CR-28: 包含 active + cooling + dormant (非dissolved/dropped/graduated)
+    active_states = [
+        CompanionStatus.ACTIVE.value,
+        *(
+            [CompanionStatus.COOLING.value, CompanionStatus.DORMANT.value]
+            if include_lifecycle else []
+        ),
+    ]
+
     as_mentee = db.query(CompanionRelation).filter(
         CompanionRelation.mentee_id == current_user.id,
-        CompanionRelation.status == CompanionStatus.ACTIVE.value,
+        CompanionRelation.status.in_(active_states),
     ).all()
 
     as_mentor = db.query(CompanionRelation).filter(
         CompanionRelation.mentor_id == current_user.id,
-        CompanionRelation.status == CompanionStatus.ACTIVE.value,
+        CompanionRelation.status.in_(active_states),
     ).all()
 
     def _rel_dict(r, perspective: str):
@@ -98,6 +108,10 @@ def my_peer_relations(
             "status": r.status,
             "quality_score": float(r.quality_score) if r.quality_score else None,
             "started_at": str(r.started_at) if r.started_at else None,
+            # CR-28 lifecycle fields
+            "last_interaction_at": str(r.last_interaction_at) if r.last_interaction_at else None,
+            "interaction_count": r.interaction_count or 0,
+            "reciprocity_score": round(float(r.reciprocity_score), 2) if r.reciprocity_score else None,
         }
 
     return {

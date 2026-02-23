@@ -166,4 +166,17 @@ onMounted(loadData)
 .chart-bar-bg { flex: 1; height: 16px; background: #f5f5f5; border-radius: 4px; overflow: hidden; }
 .chart-bar { height: 100%; border-radius: 4px; transition: width 0.3s; }
 .chart-count { min-width: 30px; text-align: right; font-size: 13px; color: #999; }
+
+@media (max-width: 640px) {
+  .my-tools { padding: 8px !important; }
+  .page-header h2 { font-size: 16px; }
+  .tools-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .tool-card { padding: 12px; gap: 8px; }
+  .tool-icon { width: 36px; height: 36px; font-size: 18px; }
+  .tool-name { font-size: 13px; }
+  .stat-num { font-size: 16px; }
+  .ant-btn { min-height: 44px; }
+  .chart-label { min-width: 70px; font-size: 12px; }
+  .usage-item { flex-wrap: wrap; gap: 6px; }
+}
 </style>

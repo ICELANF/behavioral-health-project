@@ -321,4 +321,14 @@ defineExpose({ pushPrescription })
 @media (min-width: 769px) and (max-width: 1024px) {
   .coach-copilot { width: 300px !important; }
 }
+
+@media (max-width: 640px) {
+  .coach-copilot { padding: 0 !important; }
+  .tab-btn { min-height: 44px; font-size: 14px; }
+  .action-btn { min-height: 40px; padding: 6px 14px; font-size: 13px; }
+  .history-card { padding: 12px; }
+  .connect-btn { min-height: 44px; padding: 8px 20px; font-size: 14px; }
+  .load-more-btn { min-height: 44px; }
+  h2 { font-size: 16px; }
+}
 </style>

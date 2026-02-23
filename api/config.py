@@ -33,3 +33,19 @@ LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2048"))
 SAFETY_ENABLED = os.getenv("SAFETY_ENABLED", "true").lower() in ("true", "1", "yes")
 SAFETY_LOG_PII = os.getenv("SAFETY_LOG_PII", "false").lower() in ("true", "1", "yes")
 SAFETY_STRICT_MODE = os.getenv("SAFETY_STRICT_MODE", "false").lower() in ("true", "1", "yes")
+
+# ── ASR 语音识别配置 (V5.2.0) ──
+ASR_PROVIDER = os.getenv("ASR_PROVIDER", "cloud_first")       # cloud_first / openai / ollama / disabled
+ASR_OPENAI_API_KEY = os.getenv("ASR_OPENAI_API_KEY", "") or CLOUD_LLM_API_KEY  # 复用LLM key
+ASR_OPENAI_BASE_URL = os.getenv("ASR_OPENAI_BASE_URL", "https://api.openai.com/v1")
+ASR_OPENAI_MODEL = os.getenv("ASR_OPENAI_MODEL", "whisper-1")
+ASR_LANGUAGE = os.getenv("ASR_LANGUAGE", "zh")                 # zh / en / auto
+ASR_TIMEOUT = float(os.getenv("ASR_TIMEOUT", "60.0"))
+
+# ── VLM 视觉模型配置 (V5.2.0) ──
+VLM_PROVIDER = os.getenv("VLM_PROVIDER", "ollama_first")      # ollama_first / ollama / cloud / disabled
+VLM_OLLAMA_MODEL = os.getenv("VLM_OLLAMA_MODEL", "qwen2.5vl:7b")
+VLM_CLOUD_API_KEY = os.getenv("VLM_CLOUD_API_KEY", "") or CLOUD_LLM_API_KEY
+VLM_CLOUD_BASE_URL = os.getenv("VLM_CLOUD_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+VLM_CLOUD_MODEL = os.getenv("VLM_CLOUD_MODEL", "qwen-vl-plus")
+VLM_TIMEOUT = float(os.getenv("VLM_TIMEOUT", "120.0"))

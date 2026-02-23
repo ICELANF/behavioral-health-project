@@ -230,4 +230,20 @@ onMounted(async () => {
 .result-text.approved { color: #52c41a; }
 .result-text.modified { color: #1890ff; }
 .result-text.rejected { color: #ff4d4f; }
+
+/* ── Mobile responsive ── */
+@media (max-width: 640px) {
+  .coach-ai-review-page { padding: 12px 8px; }
+  .page-header { flex-wrap: wrap; gap: 8px; }
+  .page-header h2 { font-size: 16px; }
+  .recommendation-card { padding: 12px; }
+  .rec-header { flex-wrap: wrap; }
+  .rec-student { font-size: 13px; }
+  .rec-content { font-size: 14px; }
+  .rec-actions { flex-wrap: wrap; gap: 6px; }
+  .rec-actions .ant-btn { flex: 1; min-width: 80px; min-height: 44px; font-size: 14px; }
+  .modify-actions { flex-wrap: wrap; }
+  .modify-actions .ant-btn { flex: 1; min-height: 44px; }
+  .rec-modify-area :deep(.ant-input) { font-size: 16px; }
+}
 </style>

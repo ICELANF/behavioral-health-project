@@ -48,7 +48,7 @@ class UpdateItemBody(BaseModel):
 # 端点
 # ============================================
 
-@router.get("/")
+@router.get("")
 def list_queue_items(
     student_id: Optional[int] = Query(None),
     source_type: Optional[str] = Query(None),

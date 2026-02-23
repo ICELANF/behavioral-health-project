@@ -184,4 +184,16 @@ onMounted(() => {
 .risk-item { display: flex; align-items: center; gap: 8px; }
 .risk-label { min-width: 50px; font-size: 13px; color: #333; }
 .risk-count { min-width: 40px; text-align: right; font-size: 12px; color: #999; }
+
+@media (max-width: 640px) {
+  .my-performance { padding: 8px !important; }
+  .page-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .page-header h2 { font-size: 16px; }
+  .ant-btn { min-height: 44px; }
+  .chart-row { flex-direction: column; gap: 4px; }
+  .chart-month { min-width: unset; font-size: 12px; }
+  .tool-stat-item { flex-wrap: wrap; }
+  .tool-name { min-width: 60px; font-size: 12px; }
+  .risk-label { min-width: 40px; font-size: 12px; }
+}
 </style>

@@ -132,6 +132,12 @@ const routes: RouteRecordRaw[] = [
     meta: { title: '教练工作台', requiresAuth: true }
   },
   {
+    path: '/sharer/workbench',
+    name: 'SharerWorkbench',
+    component: () => import('./views/sharer/SharerWorkbench.vue'),
+    meta: { title: '分享者工作台', requiresAuth: true }
+  },
+  {
     path: '/expert/audit',
     name: 'ExpertAuditWorkbench',
     component: () => import('./views/expert/ExpertAuditWorkbench.vue'),
@@ -751,7 +757,7 @@ router.beforeEach((to, from, next) => {
 
   // 飞轮角色分流: 访问 /dashboard 时按角色跳转 (2026-02-17)
   if (to.path === '/dashboard' && token) {
-    const roleLevel = parseInt(localStorage.getItem('bhp_role_level') || '0', 10)
+    const roleLevel = parseInt(localStorage.getItem('admin_level') || '0', 10)
     if (roleLevel >= 99) {
       next('/admin/command-center')
       return
@@ -760,6 +766,9 @@ router.beforeEach((to, from, next) => {
       return
     } else if (roleLevel >= 4) {
       next('/coach/workbench')
+      return
+    } else if (roleLevel >= 3) {
+      next('/sharer/workbench')
       return
     }
   }

@@ -3,157 +3,183 @@
     Coach 效率工作台
     飞轮目标: 效率 — 处方一键化 + AI审核快捷键(A/R/N)，单学员处理时间从5分钟降到30秒
     核心设计:
-      ❌ 旧版: 表格列表→点进→看详情→手动编写处方→保存返回 (5步, 5分钟/人)
-      ✅ 新版: 学员流(类似Tinder) → AI预填处方 → 快捷键A/R/N → 下一个 (1步, 30秒/人)
+      旧版: 表格列表→点进→看详情→手动编写处方→保存返回 (5步, 5分钟/人)
+      新版: 学员流(类似Tinder) → AI预填处方 → 快捷键A/R/N → 下一个 (1步, 30秒/人)
     位置: admin-portal/src/views/coach/CoachWorkbench.vue
   -->
   <div class="coach-workbench" @keydown="handleKeydown">
-    <!-- ═══ 顶部统计 ═══ -->
-    <div class="stats-bar">
-      <div class="stat">
-        <span class="stat-num urgent">{{ pendingCount }}</span>
-        <span class="stat-label">待处理</span>
+    <!-- ═══ 顶部Tab栏 ═══ -->
+    <div class="top-tab-bar">
+      <div class="top-tabs">
+        <button class="top-tab" :class="{ active: activeTopTab === 'review' }" @click="activeTopTab = 'review'">审核工作台</button>
+        <button class="top-tab" :class="{ active: activeTopTab === 'profile' }" @click="activeTopTab = 'profile'">个人档案</button>
+        <button class="top-tab" :class="{ active: activeTopTab === 'contributions' }" @click="activeTopTab = 'contributions'">我的分享</button>
+        <button class="top-tab" :class="{ active: activeTopTab === 'benefits' }" @click="activeTopTab = 'benefits'">我的权益</button>
       </div>
-      <div class="stat">
-        <span class="stat-num">{{ todayReviewed }}</span>
-        <span class="stat-label">今日已审</span>
+      <UserAvatarPopover :size="36" />
+    </div>
+
+    <!-- ═══ Tab: 审核工作台 ═══ -->
+    <div v-show="activeTopTab === 'review'" class="review-content">
+      <!-- 统计栏 -->
+      <div class="stats-bar">
+        <div class="stat">
+          <span class="stat-num urgent">{{ pendingCount }}</span>
+          <span class="stat-label">待处理</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">{{ todayReviewed }}</span>
+          <span class="stat-label">今日已审</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">{{ avgSeconds }}s</span>
+          <span class="stat-label">平均耗时</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">{{ myStudentCount }}</span>
+          <span class="stat-label">我的学员</span>
+        </div>
       </div>
-      <div class="stat">
-        <span class="stat-num">{{ avgSeconds }}s</span>
-        <span class="stat-label">平均耗时</span>
-      </div>
-      <div class="stat">
-        <span class="stat-num">{{ myStudentCount }}</span>
-        <span class="stat-label">我的学员</span>
+
+      <div class="workbench-body">
+        <!-- 左侧: 待审队列 -->
+        <div class="queue-panel">
+          <div class="queue-header">
+            <h3>审核队列</h3>
+            <div class="queue-filters">
+              <button v-for="f in filters" :key="f.key"
+                class="filter-btn" :class="{ active: activeFilter === f.key }"
+                @click="activeFilter = f.key">
+                {{ f.label }}
+                <span class="filter-count" v-if="f.count > 0">{{ f.count }}</span>
+              </button>
+            </div>
+          </div>
+          <div class="queue-list">
+            <div v-for="item in filteredQueue" :key="item.id"
+              class="queue-item" :class="{ selected: currentItem?.id === item.id, urgent: item.priority === 'urgent' }"
+              @click="selectItem(item)">
+              <div class="item-avatar">{{ item.name[0] }}</div>
+              <div class="item-info">
+                <span class="item-name">{{ item.name }}</span>
+                <span class="item-type">{{ item.typeLabel }}</span>
+              </div>
+              <div class="item-badges">
+                <span class="badge-stage" :style="{ background: stageColor(item.stage) }">
+                  {{ item.stage }}
+                </span>
+                <span class="badge-time">{{ item.waitTime }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧: 审核工作区 -->
+        <div class="review-panel" v-if="currentItem">
+          <!-- 学员卡片 -->
+          <div class="student-card">
+            <div class="student-header">
+              <div class="student-avatar-lg">{{ currentItem.name[0] }}</div>
+              <div class="student-meta">
+                <h2 class="student-name">{{ currentItem.name }}</h2>
+                <div class="student-tags">
+                  <span class="tag stage">{{ currentItem.stage }}</span>
+                  <span class="tag level">{{ currentItem.level }}</span>
+                  <span class="tag bpt">{{ currentItem.bptType }}</span>
+                  <span class="tag streak" v-if="currentItem.streakDays > 0">
+                    🔥{{ currentItem.streakDays }}天
+                  </span>
+                </div>
+              </div>
+              <div class="risk-indicator" :class="currentItem.riskLevel">
+                {{ riskLabel(currentItem.riskLevel) }}
+              </div>
+            </div>
+
+            <!-- AI摘要 -->
+            <div class="ai-summary">
+              <span class="ai-badge">🤖 AI摘要</span>
+              <p>{{ currentItem.aiSummary }}</p>
+            </div>
+          </div>
+
+          <!-- AI预填处方 -->
+          <div class="prescription-area">
+            <div class="rx-header">
+              <h3>{{ currentItem.typeLabel }}</h3>
+              <span class="rx-source">AI预填 · 可修改</span>
+            </div>
+
+            <div class="rx-fields" v-if="currentItem.type === 'prescription'">
+              <div class="rx-field" v-for="field in rxFields" :key="field.key">
+                <label>{{ field.label }}</label>
+                <textarea v-model="field.value" :rows="field.rows || 1"
+                  class="rx-input" :placeholder="field.placeholder" />
+              </div>
+            </div>
+
+            <div class="ai-reply-preview" v-if="currentItem.type === 'ai_reply'">
+              <div class="preview-label">AI拟回复:</div>
+              <div class="preview-content">{{ currentItem.aiDraft }}</div>
+              <textarea v-model="editedReply" class="edit-area" placeholder="修改回复内容..." />
+            </div>
+
+            <div class="push-preview" v-if="currentItem.type === 'push'">
+              <div class="preview-label">待推送内容:</div>
+              <div class="push-card-preview">
+                <span class="push-type">{{ currentItem.pushType }}</span>
+                <p>{{ currentItem.pushContent }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 快捷操作栏 -->
+          <div class="action-bar">
+            <div class="shortcut-hint">
+              快捷键: <kbd>A</kbd> 通过 · <kbd>R</kbd> 驳回 · <kbd>N</kbd> 跳过 · <kbd>E</kbd> 编辑
+            </div>
+            <div class="action-buttons">
+              <button class="action-btn reject" @click="handleReject" title="驳回 (R)">
+                <span class="btn-icon">✕</span>
+                <span class="btn-label">驳回</span>
+                <kbd>R</kbd>
+              </button>
+              <button class="action-btn skip" @click="handleSkip" title="跳过 (N)">
+                <span class="btn-icon">→</span>
+                <span class="btn-label">跳过</span>
+                <kbd>N</kbd>
+              </button>
+              <button class="action-btn approve" @click="handleApprove" title="通过 (A)">
+                <span class="btn-icon">✓</span>
+                <span class="btn-label">通过并发送</span>
+                <kbd>A</kbd>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 空状态 -->
+        <div class="empty-state" v-else>
+          <div class="empty-icon">🎉</div>
+          <h3>全部处理完成</h3>
+          <p>暂无待审核内容，休息一下吧</p>
+        </div>
       </div>
     </div>
 
-    <div class="workbench-body">
-      <!-- ═══ 左侧: 待审队列 ═══ -->
-      <div class="queue-panel">
-        <div class="queue-header">
-          <h3>审核队列</h3>
-          <div class="queue-filters">
-            <button v-for="f in filters" :key="f.key"
-              class="filter-btn" :class="{ active: activeFilter === f.key }"
-              @click="activeFilter = f.key">
-              {{ f.label }}
-              <span class="filter-count" v-if="f.count > 0">{{ f.count }}</span>
-            </button>
-          </div>
-        </div>
-        <div class="queue-list">
-          <div v-for="item in filteredQueue" :key="item.id"
-            class="queue-item" :class="{ selected: currentItem?.id === item.id, urgent: item.priority === 'urgent' }"
-            @click="selectItem(item)">
-            <div class="item-avatar">{{ item.name[0] }}</div>
-            <div class="item-info">
-              <span class="item-name">{{ item.name }}</span>
-              <span class="item-type">{{ item.typeLabel }}</span>
-            </div>
-            <div class="item-badges">
-              <span class="badge-stage" :style="{ background: stageColor(item.stage) }">
-                {{ item.stage }}
-              </span>
-              <span class="badge-time">{{ item.waitTime }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- ═══ Tab: 个人档案 ═══ -->
+    <div v-show="activeTopTab === 'profile'" class="personal-tab-wrap">
+      <PersonalHealthProfile :embedded="true" />
+    </div>
 
-      <!-- ═══ 右侧: 审核工作区 ═══ -->
-      <div class="review-panel" v-if="currentItem">
-        <!-- 学员卡片 -->
-        <div class="student-card">
-          <div class="student-header">
-            <div class="student-avatar-lg">{{ currentItem.name[0] }}</div>
-            <div class="student-meta">
-              <h2 class="student-name">{{ currentItem.name }}</h2>
-              <div class="student-tags">
-                <span class="tag stage">{{ currentItem.stage }}</span>
-                <span class="tag level">{{ currentItem.level }}</span>
-                <span class="tag bpt">{{ currentItem.bptType }}</span>
-                <span class="tag streak" v-if="currentItem.streakDays > 0">
-                  🔥{{ currentItem.streakDays }}天
-                </span>
-              </div>
-            </div>
-            <div class="risk-indicator" :class="currentItem.riskLevel">
-              {{ riskLabel(currentItem.riskLevel) }}
-            </div>
-          </div>
+    <!-- ═══ Tab: 我的分享 ═══ -->
+    <div v-show="activeTopTab === 'contributions'" class="personal-tab-wrap">
+      <MyContributions />
+    </div>
 
-          <!-- AI摘要 (一段话，不是一屏数据) -->
-          <div class="ai-summary">
-            <span class="ai-badge">🤖 AI摘要</span>
-            <p>{{ currentItem.aiSummary }}</p>
-          </div>
-        </div>
-
-        <!-- AI预填处方 (核心效率区) -->
-        <div class="prescription-area">
-          <div class="rx-header">
-            <h3>{{ currentItem.typeLabel }}</h3>
-            <span class="rx-source">AI预填 · 可修改</span>
-          </div>
-
-          <!-- 处方六要素 (预填，可快速编辑) -->
-          <div class="rx-fields" v-if="currentItem.type === 'prescription'">
-            <div class="rx-field" v-for="field in rxFields" :key="field.key">
-              <label>{{ field.label }}</label>
-              <textarea v-model="field.value" :rows="field.rows || 1" 
-                class="rx-input" :placeholder="field.placeholder" />
-            </div>
-          </div>
-
-          <!-- AI对话审核 (AI回复预览) -->
-          <div class="ai-reply-preview" v-if="currentItem.type === 'ai_reply'">
-            <div class="preview-label">AI拟回复:</div>
-            <div class="preview-content">{{ currentItem.aiDraft }}</div>
-            <textarea v-model="editedReply" class="edit-area" placeholder="修改回复内容..." />
-          </div>
-
-          <!-- 推送审核 (推送内容预览) -->
-          <div class="push-preview" v-if="currentItem.type === 'push'">
-            <div class="preview-label">待推送内容:</div>
-            <div class="push-card-preview">
-              <span class="push-type">{{ currentItem.pushType }}</span>
-              <p>{{ currentItem.pushContent }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- ═══ 快捷操作栏 (核心: A/R/N) ═══ -->
-        <div class="action-bar">
-          <div class="shortcut-hint">
-            快捷键: <kbd>A</kbd> 通过 · <kbd>R</kbd> 驳回 · <kbd>N</kbd> 跳过 · <kbd>E</kbd> 编辑
-          </div>
-          <div class="action-buttons">
-            <button class="action-btn reject" @click="handleReject" title="驳回 (R)">
-              <span class="btn-icon">✕</span>
-              <span class="btn-label">驳回</span>
-              <kbd>R</kbd>
-            </button>
-            <button class="action-btn skip" @click="handleSkip" title="跳过 (N)">
-              <span class="btn-icon">→</span>
-              <span class="btn-label">跳过</span>
-              <kbd>N</kbd>
-            </button>
-            <button class="action-btn approve" @click="handleApprove" title="通过 (A)">
-              <span class="btn-icon">✓</span>
-              <span class="btn-label">通过并发送</span>
-              <kbd>A</kbd>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- 空状态 -->
-      <div class="empty-state" v-else>
-        <div class="empty-icon">🎉</div>
-        <h3>全部处理完成</h3>
-        <p>暂无待审核内容，休息一下吧</p>
-      </div>
+    <!-- ═══ Tab: 我的权益 ═══ -->
+    <div v-show="activeTopTab === 'benefits'" class="personal-tab-wrap">
+      <MyBenefits />
     </div>
   </div>
 </template>
@@ -161,6 +187,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { coachFlywheelApi, type ReviewQueueItem } from '@/api/coach-api'
+import { UserAvatarPopover, PersonalHealthProfile, MyContributions, MyBenefits } from '@/components/health'
+
+// ── Top-level tab ──
+const activeTopTab = ref('review')
 
 // ── 数据 ──
 const pendingCount = ref(0)
@@ -188,7 +218,7 @@ async function loadData() {
     todayReviewed.value = s.todayReviewed
     pendingCount.value = s.pendingCount
     avgSeconds.value = s.avgSeconds
-    myStudentCount.value = s.streakDays // reuse for display
+    myStudentCount.value = s.streakDays
   } else {
     console.warn('Failed to load coach stats:', statsResult.reason)
   }
@@ -269,7 +299,6 @@ async function handleReject() {
 }
 
 function handleSkip() {
-  // 跳到下一个, 当前保留在队列
   const idx = queue.value.findIndex(q => q.id === currentItem.value?.id)
   if (idx >= 0 && idx < queue.value.length - 1) {
     currentItem.value = queue.value[idx + 1] ?? null
@@ -285,8 +314,10 @@ function removeCurrentAndNext() {
 }
 
 function handleKeydown(e: KeyboardEvent) {
+  // Only respond to shortcuts when on review tab
+  if (activeTopTab.value !== 'review') return
   if (!currentItem.value) return
-  if (document.activeElement?.tagName === 'TEXTAREA') return // 编辑中不响应
+  if (document.activeElement?.tagName === 'TEXTAREA') return
   switch (e.key.toLowerCase()) {
     case 'a': e.preventDefault(); handleApprove(); break
     case 'r': e.preventDefault(); handleReject(); break
@@ -298,10 +329,54 @@ function handleKeydown(e: KeyboardEvent) {
 <style scoped>
 .coach-workbench { height: 100vh; display: flex; flex-direction: column; background: #f8fafc; }
 
+/* ── 顶部Tab栏 ── */
+.top-tab-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 52px;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+.top-tabs {
+  display: flex;
+  gap: 4px;
+}
+.top-tab {
+  padding: 8px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.top-tab:hover {
+  color: #374151;
+  background: #f3f4f6;
+}
+.top-tab.active {
+  background: #3b82f6;
+  color: #fff;
+}
+
+/* ── Review Content ── */
+.review-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* ── 统计栏 ── */
 .stats-bar {
   display: flex; gap: 24px; padding: 16px 24px;
   background: #fff; border-bottom: 1px solid #e5e7eb;
+  align-items: center;
 }
 .stat { text-align: center; }
 .stat-num { display: block; font-size: 24px; font-weight: 800; color: #111827; }
@@ -408,7 +483,7 @@ function handleKeydown(e: KeyboardEvent) {
   border-radius: 8px; font-size: 13px; resize: vertical; min-height: 60px; font-family: inherit;
 }
 
-/* ── 快捷操作栏 (固定底部) ── */
+/* ── 快捷操作栏 ── */
 .action-bar {
   padding: 12px 24px 16px; background: #fff;
   border-top: 1px solid #e5e7eb; box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
@@ -440,13 +515,37 @@ function handleKeydown(e: KeyboardEvent) {
 .empty-state h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 8px; }
 .empty-state p { font-size: 14px; color: #6b7280; }
 
+/* ── Personal tab wrapper ── */
+.personal-tab-wrap {
+  flex: 1;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px;
+  overflow-y: auto;
+  height: calc(100vh - 52px);
+  width: 100%;
+}
+
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .workbench-body { flex-direction: column !important; }
   .queue-panel { width: 100% !important; max-height: 200px; overflow-y: auto; }
   .stats-bar { flex-wrap: wrap; }
+  .top-tabs { overflow-x: auto; }
 }
 @media (min-width: 769px) and (max-width: 1024px) {
   .queue-panel { width: 240px !important; }
+}
+@media (max-width: 640px) {
+  .queue-panel { max-height: 50vh !important; }
+  .action-buttons { flex-wrap: wrap; }
+  .action-btn { min-height: 48px; font-size: 15px; }
+  .action-btn.approve { flex: 1 1 100%; }
+  .stats-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .top-tabs { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+  .top-tabs :deep(.ant-tabs-tab) { scroll-snap-align: start; min-height: 44px; }
+  .personal-tab-wrap { padding: 12px; height: calc(100vh - 52px - env(safe-area-inset-bottom, 0px)); }
+  .edit-area { font-size: 16px; }
+  .shortcut-hint { display: none; }
 }
 </style>

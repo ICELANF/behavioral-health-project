@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 食物拍照识别 + 营养指导 API
-使用 Ollama qwen2.5-vl:7b 视觉模型
+使用 VLMService (ollama_first: Ollama qwen2.5vl → Cloud VLM fallback)
 """
 
 import os
@@ -23,8 +23,6 @@ from loguru import logger
 from core.database import get_db, get_db_session
 from core.models import FoodAnalysis, DailyTask, TaskCheckin
 from api.dependencies import get_current_user
-from api.config import OLLAMA_API_URL
-
 router = APIRouter(prefix="/api/v1/food", tags=["食物识别"])
 
 # 上传目录
@@ -35,9 +33,6 @@ os.makedirs(FOOD_IMAGE_DIR, exist_ok=True)
 # 文件限制
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
-
-# 视觉模型
-VL_MODEL = os.getenv("OLLAMA_VL_MODEL", "qwen2.5vl:7b")
 
 FOOD_ANALYSIS_PROMPT = """你是一位专业营养师。请分析图片中的食物，以JSON格式返回：
 {
@@ -228,31 +223,20 @@ async def recognize_food(
     # 3. Base64 编码
     b64_data = base64.b64encode(contents).decode("utf-8")
 
-    # 4. 调用 Ollama 视觉模型
-    payload = {
-        "model": VL_MODEL,
-        "messages": [
-            {
-                "role": "user",
-                "content": FOOD_ANALYSIS_PROMPT,
-                "images": [b64_data],
-            }
-        ],
-        "stream": False,
-        "options": {"temperature": 0.3},
-    }
-
+    # 4. 调用 VLM 视觉模型 (ollama_first: Ollama → Cloud fallback)
     raw_text = ""
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            resp = await client.post(f"{OLLAMA_API_URL}/api/chat", json=payload)
-            resp.raise_for_status()
-            data = resp.json()
-            raw_text = data.get("message", {}).get("content", "")
+        from core.vlm_service import VLMService
+        vlm = VLMService()
+        result = await vlm.analyze_image(b64_data, FOOD_ANALYSIS_PROMPT, temperature=0.3)
+        raw_text = result.get("text", "")
+        logger.info(f"[Food] VLM provider: {result.get('provider')}")
     except httpx.TimeoutException:
         raise HTTPException(status_code=504, detail="AI 模型响应超时，请稍后重试")
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
-        logger.error(f"[Food] Ollama 调用失败: {e}")
+        logger.error(f"[Food] VLM 调用失败: {e}")
         raise HTTPException(status_code=502, detail="AI 模型服务不可用")
 
     # 5. 解析响应
@@ -367,4 +351,16 @@ async def food_history(
             }
             for r in records
         ],
+    }
+
+
+@router.get("/vlm-status")
+async def vlm_status(current_user=Depends(get_current_user)):
+    """检查 VLM 视觉模型服务可用性"""
+    from core.vlm_service import VLMService
+    svc = VLMService()
+    return {
+        "code": 0,
+        "message": "success",
+        "data": svc.is_available(),
     }

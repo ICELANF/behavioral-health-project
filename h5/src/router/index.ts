@@ -10,7 +10,7 @@ const router = createRouter({
       component: () => import('@/views/Login.vue'),
       meta: { public: true }
     },
-    // ═══ 飞轮首页: 按角色分流 (2026-02-17) ═══
+    // ═══ 飞轮首页: 按角色分流 (2026-02-22 三分支: Observer/Grower/Sharer+) ═══
     {
       path: '/',
       name: 'home',
@@ -22,8 +22,10 @@ const router = createRouter({
         const roleLevel = parseInt(localStorage.getItem('bhp_role_level') || '0', 10)
         if (roleLevel <= 1) {
           next({ path: '/home/observer', replace: true })
+        } else if (roleLevel === 3) {
+          next({ path: '/home/sharer', replace: true })   // Sharer专属
         } else {
-          next({ path: '/home/today', replace: true })
+          next({ path: '/home/today', replace: true })     // Grower(2) + Coach(4)+
         }
       }
     },
@@ -32,6 +34,18 @@ const router = createRouter({
       name: 'onboarding',
       component: () => import('@/views/onboarding/OnboardingGuide.vue'),
       meta: { title: '欢迎' }
+    },
+    {
+      path: '/onboarding/grower',
+      name: 'grower-onboarding',
+      component: () => import('@/views/onboarding/GrowerOnboarding.vue'),
+      meta: { title: '完善健康档案' }
+    },
+    {
+      path: '/onboarding/sharer',
+      name: 'sharer-onboarding',
+      component: () => import('@/views/onboarding/SharerOnboarding.vue'),
+      meta: { title: '欢迎成为分享者' }
     },
     {
       path: '/home/observer',
@@ -50,7 +64,27 @@ const router = createRouter({
       path: '/home/today',
       name: 'grower-today',
       component: () => import('@/views/home/GrowerTodayHome.vue'),
-      meta: { title: '今日行动' }
+      meta: { title: '今日行动' },
+      beforeEnter: (_to, _from, next) => {
+        if (!localStorage.getItem('bhp_grower_onboarding_done')) {
+          next({ path: '/onboarding/grower', replace: true })
+        } else {
+          next()
+        }
+      }
+    },
+    {
+      path: '/home/sharer',
+      name: 'sharer-home',
+      component: () => import('@/views/home/SharerHome.vue'),
+      meta: { title: '分享者首页' },
+      beforeEnter: (_to, _from, next) => {
+        if (!localStorage.getItem('bhp_sharer_onboarding_done')) {
+          next({ path: '/onboarding/sharer', replace: true })
+        } else {
+          next()
+        }
+      }
     },
     {
       path: '/chat',

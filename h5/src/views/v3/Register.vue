@@ -35,6 +35,8 @@ async function onRegister() {
     if (res?.data) {
       localStorage.setItem('access_token', res.data.tokens.access_token)
       localStorage.setItem('refresh_token', res.data.tokens.refresh_token)
+      // 新注册用户默认Observer(level=1)
+      localStorage.setItem('bhp_role_level', String(res.data.user?.role_level || 1))
       showToast('注册成功')
       router.push('/')
     } else {
