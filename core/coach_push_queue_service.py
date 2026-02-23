@@ -215,32 +215,75 @@ def batch_approve(
 
 def deliver_item(db: Session, item: CoachPushQueue):
     """
-    实际投递：创建 CoachMessage + Reminder
+    实际投递：根据 source_type 差异化创建记录
+
+    - coach_message: 创建 CoachMessage (保留原始 message_type)
+    - coach_reminder: 创建 Reminder (带 cron_expr/next_fire_at)
+    - 其他: 创建 CoachMessage + 通用 Reminder (原有逻辑)
 
     注意：此方法不 commit，由调用方统一 commit
     """
     now = datetime.utcnow()
+    extra = item.content_extra or {}
 
-    # 创建 CoachMessage (type="push")
-    msg = CoachMessage(
-        coach_id=item.coach_id,
-        student_id=item.student_id,
-        content=f"[{_source_label(item.source_type)}] {item.title}\n{item.content or ''}".strip(),
-        message_type="push",
-    )
-    db.add(msg)
+    if item.source_type == "coach_reminder":
+        # 教练提醒: 只创建 Reminder
+        next_fire = None
+        if extra.get("next_fire_at"):
+            try:
+                next_fire = datetime.fromisoformat(extra["next_fire_at"])
+            except (ValueError, TypeError):
+                pass
+        elif extra.get("cron_expr"):
+            try:
+                from core.reminder_service import ReminderService
+                next_fire = ReminderService().calc_next_fire(extra["cron_expr"])
+            except Exception:
+                pass
 
-    # 创建 Reminder (source="coach")
-    reminder = Reminder(
-        user_id=item.student_id,
-        type="push",
-        title=item.title,
-        content=item.content or "",
-        source="coach",
-        created_by=item.coach_id,
-        is_active=True,
-    )
-    db.add(reminder)
+        reminder = Reminder(
+            user_id=item.student_id,
+            type=extra.get("reminder_type", "behavior"),
+            title=item.title,
+            content=item.content or "",
+            cron_expr=extra.get("cron_expr"),
+            next_fire_at=next_fire,
+            source="coach",
+            created_by=item.coach_id,
+            is_active=True,
+        )
+        db.add(reminder)
+
+    elif item.source_type == "coach_message":
+        # 教练消息: 只创建 CoachMessage (保留原始类型)
+        msg = CoachMessage(
+            coach_id=item.coach_id,
+            student_id=item.student_id,
+            content=item.content or "",
+            message_type=extra.get("message_type", "text"),
+        )
+        db.add(msg)
+
+    else:
+        # 默认路径: 创建 CoachMessage + 通用 Reminder (原有逻辑)
+        msg = CoachMessage(
+            coach_id=item.coach_id,
+            student_id=item.student_id,
+            content=f"[{_source_label(item.source_type)}] {item.title}\n{item.content or ''}".strip(),
+            message_type="push",
+        )
+        db.add(msg)
+
+        reminder = Reminder(
+            user_id=item.student_id,
+            type="push",
+            title=item.title,
+            content=item.content or "",
+            source="coach",
+            created_by=item.coach_id,
+            is_active=True,
+        )
+        db.add(reminder)
 
     item.status = "sent"
     item.sent_at = now
@@ -350,6 +393,8 @@ def _source_label(source_type: str) -> str:
         "micro_action": "微行动",
         "ai_recommendation": "AI建议",
         "system": "系统",
+        "coach_message": "教练消息",
+        "coach_reminder": "教练提醒",
     }
     return labels.get(source_type, source_type)
 

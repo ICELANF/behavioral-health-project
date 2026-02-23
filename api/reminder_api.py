@@ -171,35 +171,49 @@ async def create_coach_reminder(
     db: Session = Depends(get_db),
     current_user=Depends(require_coach_or_admin),
 ):
-    """教练为学员创建提醒"""
+    """教练为学员创建提醒 — 进入审批队列（AI→审核→推送原则）"""
     student = db.query(User).filter(User.id == body.student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="学员不存在")
 
-    next_fire = None
-    if body.next_fire_at:
-        try:
-            next_fire = datetime.fromisoformat(body.next_fire_at)
-        except ValueError:
-            raise HTTPException(status_code=400, detail="next_fire_at 格式无效")
-    elif body.cron_expr:
-        next_fire = reminder_service.calc_next_fire(body.cron_expr)
-
-    reminder = Reminder(
-        user_id=body.student_id,
-        type=body.type,
+    from core.coach_push_queue_service import create_queue_item
+    queue_item = create_queue_item(
+        db=db,
+        coach_id=current_user.id,
+        student_id=body.student_id,
+        source_type="coach_reminder",
         title=body.title,
         content=body.content,
-        cron_expr=body.cron_expr,
-        next_fire_at=next_fire,
-        source="coach",
-        created_by=current_user.id,
+        content_extra={
+            "reminder_type": body.type,
+            "cron_expr": body.cron_expr,
+            "next_fire_at": body.next_fire_at,
+        },
+        priority="normal",
     )
-    db.add(reminder)
     db.commit()
-    db.refresh(reminder)
 
-    return {"success": True, "reminder": _reminder_to_dict(reminder)}
+    return {
+        "success": True,
+        "queue_item_id": queue_item.id,
+        "status": "pending_review",
+        "message": "提醒已提交审批队列",
+    }
+
+
+@router.get("/api/v1/coach/reminders/ai-suggestions/{student_id}")
+async def get_reminder_suggestions(
+    student_id: int,
+    reminder_type: str = Query("behavior", description="提醒类型: behavior/medication/visit/assessment"),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """获取AI提醒建议"""
+    from core.coach_ai_suggestion_service import CoachAISuggestionService
+    service = CoachAISuggestionService()
+    return service.generate_reminder_suggestions(
+        db, student_id, current_user.id, reminder_type
+    )
 
 
 def _reminder_to_dict(r: Reminder) -> dict:

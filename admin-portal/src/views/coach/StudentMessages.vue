@@ -57,17 +57,26 @@
               <a-empty v-if="messages.length === 0" description="暂无消息记录" />
             </div>
 
-            <!-- 快捷鼓励模板 -->
-            <div class="quick-templates">
-              <span class="template-label">快捷:</span>
-              <a-tag
-                v-for="(tpl, idx) in quickTemplates"
-                :key="idx"
-                class="template-tag"
-                @click="inputMessage = tpl"
-              >
-                {{ tpl }}
-              </a-tag>
+            <!-- AI建议区域 -->
+            <div class="ai-suggestion-area">
+              <div class="ai-suggestion-header">
+                <a-button size="small" @click="loadAiSuggestions" :loading="loadingSuggestions">
+                  <template #icon><robot-outlined /></template>
+                  AI建议
+                </a-button>
+                <span v-if="studentSummary" class="student-summary">{{ studentSummary }}</span>
+              </div>
+              <div v-if="aiSuggestions.length" class="suggestion-list">
+                <div
+                  v-for="(s, idx) in aiSuggestions"
+                  :key="idx"
+                  class="suggestion-item"
+                  @click="applySuggestion(s)"
+                >
+                  <div class="suggestion-content">{{ s.content }}</div>
+                  <div class="suggestion-reason">{{ s.reason }}</div>
+                </div>
+              </div>
             </div>
 
             <!-- 消息输入 -->
@@ -80,12 +89,12 @@
               </a-select>
               <a-textarea
                 v-model:value="inputMessage"
-                placeholder="输入消息..."
+                placeholder="输入消息内容，或点击上方AI建议自动填入..."
                 :auto-size="{ minRows: 1, maxRows: 4 }"
                 @pressEnter="sendMessage"
               />
               <a-button type="primary" @click="sendMessage" :loading="sending">
-                发送
+                提交审核
               </a-button>
             </div>
 
@@ -107,6 +116,7 @@
       title="为学员创建提醒"
       @ok="createReminder"
       :confirm-loading="creatingReminder"
+      ok-text="提交审核"
     >
       <a-form layout="vertical">
         <a-form-item label="提醒类型">
@@ -116,6 +126,24 @@
             <a-select-option value="visit">随访提醒</a-select-option>
             <a-select-option value="assessment">评估提醒</a-select-option>
           </a-select>
+        </a-form-item>
+        <!-- AI提醒建议 -->
+        <a-form-item>
+          <a-button size="small" @click="loadReminderAiSuggestions" :loading="loadingReminderSuggestions">
+            <template #icon><robot-outlined /></template>
+            AI提醒建议
+          </a-button>
+          <div v-if="reminderAiSuggestions.length" class="suggestion-list" style="margin-top: 8px">
+            <div
+              v-for="(s, idx) in reminderAiSuggestions"
+              :key="idx"
+              class="suggestion-item"
+              @click="applyReminderSuggestion(s)"
+            >
+              <div class="suggestion-content"><strong>{{ s.title }}</strong> ({{ s.cron_time }})</div>
+              <div class="suggestion-reason">{{ s.content }}</div>
+            </div>
+          </div>
         </a-form-item>
         <a-form-item label="提醒标题">
           <a-input v-model:value="reminderForm.title" placeholder="例如：记得今天散步10分钟" />
@@ -133,10 +161,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, nextTick } from 'vue'
+import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { ClockCircleOutlined } from '@ant-design/icons-vue'
+import { ClockCircleOutlined, RobotOutlined } from '@ant-design/icons-vue'
 import axios from 'axios'
 import { useResponsive } from '@/composables/useResponsive'
+
+const route = useRoute()
 
 const { isCompact } = useResponsive()
 const showChat = ref(false)
@@ -155,13 +186,14 @@ const inputMessage = ref('')
 const messageType = ref('text')
 const sending = ref(false)
 
-const quickTemplates = [
-  '加油，你做得很好！',
-  '今天记得完成微行动哦',
-  '坚持就是胜利！',
-  '有什么困难随时跟我说',
-  '你的进步我都看到了',
-]
+// AI 消息建议
+const aiSuggestions = ref<any[]>([])
+const loadingSuggestions = ref(false)
+const studentSummary = ref('')
+
+// AI 提醒建议
+const reminderAiSuggestions = ref<any[]>([])
+const loadingReminderSuggestions = ref(false)
 
 function typeLabel(type: string) {
   return { encouragement: '鼓励', reminder: '提醒', advice: '建议', text: '消息' }[type] || type
@@ -189,6 +221,8 @@ async function loadStudents() {
 async function selectStudent(s: any) {
   selectedStudent.value = s
   showChat.value = true
+  aiSuggestions.value = []
+  studentSummary.value = ''
   try {
     const res = await axios.get(`${API_BASE}/v1/coach/messages/${s.student_id}`, { headers })
     messages.value = res.data.messages || []
@@ -209,10 +243,10 @@ async function sendMessage() {
       message_type: messageType.value,
     }, { headers })
     inputMessage.value = ''
-    message.success('发送成功')
-    await selectStudent(selectedStudent.value)
+    aiSuggestions.value = []
+    message.success('已提交审批队列，请在推送管理中审核')
   } catch {
-    message.error('发送失败')
+    message.error('提交失败')
   } finally {
     sending.value = false
   }
@@ -222,6 +256,51 @@ function scrollToBottom() {
   if (messageListRef.value) {
     messageListRef.value.scrollTop = messageListRef.value.scrollHeight
   }
+}
+
+// AI 消息建议
+async function loadAiSuggestions() {
+  if (!selectedStudent.value) return
+  loadingSuggestions.value = true
+  try {
+    const res = await axios.get(
+      `${API_BASE}/v1/coach/messages/ai-suggestions/${selectedStudent.value.student_id}`,
+      { params: { message_type: messageType.value }, headers }
+    )
+    aiSuggestions.value = res.data.suggestions || []
+    studentSummary.value = res.data.student_summary || ''
+  } catch {
+    message.error('获取AI建议失败')
+  } finally {
+    loadingSuggestions.value = false
+  }
+}
+
+function applySuggestion(s: any) {
+  inputMessage.value = s.content
+}
+
+// AI 提醒建议
+async function loadReminderAiSuggestions() {
+  if (!selectedStudent.value) return
+  loadingReminderSuggestions.value = true
+  try {
+    const res = await axios.get(
+      `${API_BASE}/v1/coach/reminders/ai-suggestions/${selectedStudent.value.student_id}`,
+      { params: { reminder_type: reminderForm.type }, headers }
+    )
+    reminderAiSuggestions.value = res.data.suggestions || []
+  } catch {
+    message.error('获取AI提醒建议失败')
+  } finally {
+    loadingReminderSuggestions.value = false
+  }
+}
+
+function applyReminderSuggestion(s: any) {
+  reminderForm.title = s.title
+  reminderForm.content = s.content
+  if (s.cron_time) reminderForm.cron_time = s.cron_time
 }
 
 // 提醒
@@ -245,18 +324,27 @@ async function createReminder() {
       content: reminderForm.content,
       cron_expr: reminderForm.cron_time || null,
     }, { headers })
-    message.success('提醒创建成功')
+    message.success('提醒已提交审批队列')
     showReminderModal.value = false
     reminderForm.title = ''
     reminderForm.content = ''
+    reminderAiSuggestions.value = []
   } catch {
-    message.error('创建失败')
+    message.error('提交失败')
   } finally {
     creatingReminder.value = false
   }
 }
 
-onMounted(loadStudents)
+onMounted(async () => {
+  await loadStudents()
+  // 从 query 参数自动选中学员
+  const qid = route.query.student_id
+  if (qid && students.value.length) {
+    const target = students.value.find((s: any) => String(s.student_id) === String(qid))
+    if (target) selectStudent(target)
+  }
+})
 </script>
 
 <style scoped>
@@ -333,21 +421,56 @@ onMounted(loadStudents)
   }
 }
 
-.quick-templates {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
+.ai-suggestion-area {
   margin: 10px 0;
+  padding: 8px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px dashed #d9d9d9;
 
-  .template-label {
+  .ai-suggestion-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .student-summary {
     font-size: 12px;
     color: #999;
   }
+}
 
-  .template-tag {
-    cursor: pointer;
-    &:hover { color: #1890ff; }
+.suggestion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.suggestion-item {
+  padding: 8px 10px;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: #1890ff;
+    background: #f0f7ff;
+  }
+
+  .suggestion-content {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #333;
+  }
+
+  .suggestion-reason {
+    font-size: 11px;
+    color: #999;
+    margin-top: 2px;
   }
 }
 
@@ -378,8 +501,8 @@ onMounted(loadStudents)
   .message-input { flex-direction: column; gap: 6px; }
   .message-input .ant-select { width: 100% !important; }
   .message-input .ant-btn { min-height: 44px; width: 100%; }
-  .quick-templates { gap: 4px; }
-  .quick-templates .template-tag { font-size: 11px; }
+  .ai-suggestion-area { padding: 6px; }
+  .suggestion-item { padding: 6px 8px; }
   .student-item { padding: 8px 4px; }
   .reminder-section .ant-btn { min-height: 44px; }
   h2 { font-size: 16px; }

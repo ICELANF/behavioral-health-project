@@ -33,32 +33,59 @@ class SendMessageRequest(BaseModel):
 
 # ============ 教练端端点 ============
 
+TYPE_LABELS = {
+    "text": "文字", "encouragement": "鼓励",
+    "reminder": "提醒", "advice": "建议",
+}
+
+
 @router.post("/api/v1/coach/messages")
 async def send_message(
     body: SendMessageRequest,
     db: Session = Depends(get_db),
     current_user=Depends(require_coach_or_admin),
 ):
-    """教练发消息给学员"""
+    """教练发消息给学员 — 进入审批队列（AI→审核→推送原则）"""
     # 验证学员存在
     student = db.query(User).filter(User.id == body.student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="学员不存在")
 
-    msg = CoachMessage(
+    from core.coach_push_queue_service import create_queue_item
+    queue_item = create_queue_item(
+        db=db,
         coach_id=current_user.id,
         student_id=body.student_id,
+        source_type="coach_message",
+        title=f"教练消息({TYPE_LABELS.get(body.message_type, '文字')})",
         content=body.content,
-        message_type=body.message_type,
+        content_extra={"message_type": body.message_type},
+        priority="normal",
     )
-    db.add(msg)
     db.commit()
-    db.refresh(msg)
 
     return {
         "success": True,
-        "message": _msg_to_dict(msg),
+        "queue_item_id": queue_item.id,
+        "status": "pending_review",
+        "message": "消息已提交审批队列，请在推送管理中审核后发送",
     }
+
+
+@router.get("/api/v1/coach/messages/ai-suggestions/{student_id}")
+async def get_message_suggestions(
+    student_id: int,
+    message_type: str = Query("text", description="消息类型: text/encouragement/reminder/advice"),
+    context: str = Query("", description="教练补充上下文"),
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """获取AI消息建议"""
+    from core.coach_ai_suggestion_service import CoachAISuggestionService
+    service = CoachAISuggestionService()
+    return service.generate_message_suggestions(
+        db, student_id, current_user.id, message_type, context
+    )
 
 
 @router.get("/api/v1/coach/messages/{student_id}")
@@ -98,54 +125,52 @@ async def get_students_with_messages(
     db: Session = Depends(get_db),
     current_user=Depends(require_coach_or_admin),
 ):
-    """获取教练的学员列表（带最近消息和未读数）"""
-    # 获取该教练发过消息的所有学员
-    student_ids = (
-        db.query(CoachMessage.student_id)
-        .filter(CoachMessage.coach_id == current_user.id)
-        .distinct()
-        .all()
-    )
-    student_ids = [s[0] for s in student_ids]
+    """获取教练的学员列表（带最近消息和未读数）— 权威源: coach_student_bindings"""
+    from sqlalchemy import text as sa_text
+    from core.models import UserRole
 
+    _STUDENT_ROLES = [UserRole.OBSERVER, UserRole.GROWER, UserRole.SHARER]
+
+    # 1. 获取绑定学员（权威源）
+    if current_user.role.value == "admin":
+        bound_students = db.query(User).filter(
+            User.is_active == True,
+            User.role.in_(_STUDENT_ROLES),
+        ).all()
+    else:
+        rows = db.execute(sa_text(
+            "SELECT student_id FROM coach_schema.coach_student_bindings "
+            "WHERE coach_id = :cid AND is_active = true"
+        ), {"cid": current_user.id}).fetchall()
+        sids = [r[0] for r in rows]
+        bound_students = db.query(User).filter(
+            User.id.in_(sids)
+        ).all() if sids else []
+
+    # 2. 为每个学员查消息（可能为空）
     result = []
-    for sid in student_ids:
-        student = db.query(User).filter(User.id == sid).first()
-        if not student:
-            continue
+    for student in bound_students:
+        last_msg = db.query(CoachMessage).filter(
+            CoachMessage.coach_id == current_user.id,
+            CoachMessage.student_id == student.id,
+        ).order_by(desc(CoachMessage.created_at)).first()
 
-        # 最近消息
-        last_msg = (
-            db.query(CoachMessage)
-            .filter(
-                CoachMessage.coach_id == current_user.id,
-                CoachMessage.student_id == sid,
-            )
-            .order_by(desc(CoachMessage.created_at))
-            .first()
-        )
-
-        # 未读数（学员未读的消息）
-        unread = (
-            db.query(func.count(CoachMessage.id))
-            .filter(
-                CoachMessage.student_id == sid,
-                CoachMessage.coach_id == current_user.id,
-                CoachMessage.is_read == False,
-            )
-            .scalar() or 0
-        )
+        unread = db.query(func.count(CoachMessage.id)).filter(
+            CoachMessage.student_id == student.id,
+            CoachMessage.coach_id == current_user.id,
+            CoachMessage.is_read == False,
+        ).scalar() or 0
 
         result.append({
-            "student_id": sid,
+            "student_id": student.id,
             "student_name": student.full_name or student.username,
             "last_message": last_msg.content[:50] if last_msg else "",
             "last_message_at": last_msg.created_at.isoformat() if last_msg else None,
             "unread_count": unread,
         })
 
-    # 按最近消息时间排序
-    result.sort(key=lambda x: x["last_message_at"] or "", reverse=True)
+    # 有消息的排前面，无消息的按名字排
+    result.sort(key=lambda x: (x["last_message_at"] or "", x["student_name"]), reverse=True)
     return {"students": result}
 
 
