@@ -243,17 +243,53 @@ class CollaborateResponse(BaseModel):
     primary_rx: Optional[RxPrescriptionDTO] = None
 
 
+class AgentStatusEntryDTO(BaseModel):
+    """单个 Agent 状态条目"""
+    agent_type: str
+    name: str
+    status: str = "active"
+    capabilities: List[str] = []
+    handled_domains: List[str] = []
+    active_sessions: int = 0
+    total_prescriptions: int = 0
+    avg_confidence: float = 0.0
+    last_active: str = ""
+
+
+# Agent 静态元数据
+_AGENT_META: Dict[str, Dict[str, Any]] = {
+    "behavior_coach": {
+        "name": "行为教练 Agent",
+        "capabilities": ["TTM阶段评估", "行为策略匹配", "沟通风格适配", "微行动生成"],
+        "handled_domains": ["behavior_change", "motivation", "habit_formation"],
+    },
+    "metabolic_expert": {
+        "name": "代谢专家 Agent",
+        "capabilities": ["血糖管理", "代谢指标分析", "营养建议", "用药提醒"],
+        "handled_domains": ["glucose", "metabolism", "nutrition"],
+    },
+    "cardiac_expert": {
+        "name": "心脏康复专家 Agent",
+        "capabilities": ["心率分析", "运动处方", "心脏康复计划", "风险评估"],
+        "handled_domains": ["cardiac", "exercise", "rehabilitation"],
+    },
+    "adherence_expert": {
+        "name": "依从性专家 Agent",
+        "capabilities": ["用药依从性", "复诊提醒", "行为坚持", "横切介入"],
+        "handled_domains": ["medication", "appointments", "adherence"],
+    },
+}
+
+
 class AgentStatusResponse(BaseModel):
-    """Agent注册状态响应"""
-    registered_agents: List[str]
-    total: int
-    fully_operational: bool
-    required_agents: List[str] = [
-        "behavior_coach",
-        "metabolic_expert",
-        "cardiac_expert",
-        "adherence_expert",
-    ]
+    """Agent 集群状态响应"""
+    agents: List[AgentStatusEntryDTO] = []
+    orchestrator_status: str = "ready"
+    registered_scenarios: List[str] = []
+    # 保留向后兼容字段
+    registered_agents: List[str] = []
+    total: int = 0
+    fully_operational: bool = True
 
 
 # =====================================================================
@@ -313,7 +349,6 @@ async def compute_rx(
 
 @router.get(
     "/strategies",
-    response_model=List[Dict[str, Any]],
     summary="获取行为策略模板列表",
 )
 async def list_strategy_templates(
@@ -328,10 +363,44 @@ async def list_strategy_templates(
     公开端点, 无需认证。
     """
     try:
-        templates = engine.get_strategy_templates(
+        raw = engine.get_strategy_templates(
             domain=domain, enabled_only=enabled_only
         )
-        return templates
+        # 转换为前端 StrategyTemplate 格式
+        strategies = []
+        for t in raw:
+            stage_range = t.get("ttm_stage_range", [0, 6])
+            applicable_stages = list(range(stage_range[0], stage_range[1] + 1)) if len(stage_range) == 2 else [0,1,2,3,4,5,6]
+            # 人格亲和度: 从 personality_modifiers 提取简要描述
+            mods = t.get("personality_modifiers", {})
+            affinity = {}
+            for key, val in mods.items():
+                trait = key.replace("high_", "").replace("low_", "").upper()
+                if isinstance(val, dict) and val.get("note"):
+                    affinity[trait] = val["note"]
+            # 微行动模板
+            raw_actions = t.get("default_micro_actions", [])
+            micro_actions = []
+            for a in raw_actions:
+                micro_actions.append({
+                    "action_id": a.get("action", "")[:8],
+                    "title": a.get("action", ""),
+                    "description": a.get("action", ""),
+                    "difficulty": a.get("difficulty", 0.5),
+                    "duration_minutes": a.get("duration_min", 5),
+                    "frequency": a.get("frequency", "每日"),
+                    "trigger_cue": a.get("trigger", ""),
+                })
+            strategies.append({
+                "strategy_type": t.get("strategy_type"),
+                "name_zh": t.get("name_zh", ""),
+                "name_en": t.get("name", ""),
+                "description": t.get("core_mechanism", ""),
+                "applicable_stages": applicable_stages,
+                "personality_affinity": affinity,
+                "micro_action_templates": micro_actions,
+            })
+        return {"strategies": strategies, "total": len(strategies)}
     except Exception as e:
         logger.error(f"List strategies failed: {e}")
         raise HTTPException(
@@ -351,14 +420,66 @@ async def list_strategy_templates(
 )
 async def get_agents_status(
     orchestrator: AgentCollaborationOrchestrator = Depends(get_orchestrator),
+    db: Session = Depends(get_db),
     _user=Depends(get_current_coach()),
 ):
-    """获取 4 款专家 Agent 的注册状态"""
+    """获取 4 款专家 Agent 的注册状态 (含统计和元数据)"""
+    from sqlalchemy import func
+
     registered = orchestrator.get_registered_agents()
+    fully_op = orchestrator.is_fully_operational()
+
+    # 查询每个 Agent 的处方统计
+    agent_stats: Dict[str, Dict[str, Any]] = {}
+    try:
+        rows = (
+            db.query(
+                RxPrescription.agent_type,
+                func.count(RxPrescription.id).label("total"),
+                func.avg(RxPrescription.effectiveness_score).label("avg_eff"),
+                func.max(RxPrescription.created_at).label("last_active"),
+            )
+            .group_by(RxPrescription.agent_type)
+            .all()
+        )
+        for row in rows:
+            # agent_type 可能是 enum 对象或字符串
+            key = row.agent_type.value if hasattr(row.agent_type, 'value') else str(row.agent_type)
+            agent_stats[key] = {
+                "total_prescriptions": row.total or 0,
+                "avg_confidence": round(float(row.avg_eff or 0), 3),
+                "last_active": row.last_active.isoformat() if row.last_active else "",
+            }
+    except Exception as e:
+        logger.warning(f"Query agent stats failed (table may be empty): {e}")
+
+    # 构建富 Agent 条目
+    agents = []
+    for agent_key in registered:
+        meta = _AGENT_META.get(agent_key, {})
+        stats = agent_stats.get(agent_key, {})
+        agents.append(AgentStatusEntryDTO(
+            agent_type=agent_key,
+            name=meta.get("name", agent_key),
+            status="active",
+            capabilities=meta.get("capabilities", []),
+            handled_domains=meta.get("handled_domains", []),
+            active_sessions=0,
+            total_prescriptions=stats.get("total_prescriptions", 0),
+            avg_confidence=stats.get("avg_confidence", 0.0),
+            last_active=stats.get("last_active", datetime.utcnow().isoformat()),
+        ))
+
+    # 协作场景列表
+    scenarios = [s.value for s in CollaborationScenario]
+
     return AgentStatusResponse(
+        agents=agents,
+        orchestrator_status="ready" if fully_op else "degraded",
+        registered_scenarios=scenarios,
         registered_agents=registered,
         total=len(registered),
-        fully_operational=orchestrator.is_fully_operational(),
+        fully_operational=fully_op,
     )
 
 

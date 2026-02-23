@@ -230,7 +230,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   RobotOutlined,
   MedicineBoxOutlined,
@@ -252,12 +253,29 @@ import type { ComputeRxResponse, StrategyTemplate, AgentStatusEntry } from '../t
 
 const store = useRxStore()
 const fmt = useRxFormatter()
+const route = useRoute()
 
 // 启动 Agent 状态轮询
 useAgentPolling(30000)
 
-// Tab 状态
-const activeTab = ref('current')
+// 路由名称 → Tab key 映射
+const routeTabMap: Record<string, string> = {
+  RxDashboard: 'current',
+  RxCompute: 'current',
+  RxHistory: 'history',
+  RxDetail: 'current',
+  RxAgents: 'agents',
+  RxStrategies: 'strategies',
+}
+
+// Tab 状态: 根据路由自动选择
+const activeTab = ref(routeTabMap[route.name as string] || 'current')
+
+// 监听路由变化（同组件复用时触发）
+watch(() => route.name, (name) => {
+  const tab = routeTabMap[name as string]
+  if (tab) activeTab.value = tab
+})
 
 // 当前操作用户 (从路由或 props 获取, 这里示例用固定值)
 const currentUserId = ref('00000000-0000-0000-0000-000000000001')
