@@ -1,6 +1,6 @@
 # 行健平台 — 规则体系完整参考文档
 
-**版本:** V5.2.6-complete
+**版本:** V5.2.7-complete
 **更新时间:** 2026-02-24
 **适用范围:** 行为健康数字平台全部规则性内容的唯一权威参考
 **代码库:** `D:\behavioral-health-project`
@@ -50,6 +50,14 @@
 - [七、治理与同道者规则 (V4.0)](#七治理与同道者规则-v40)
 - [八、干预包规则](#八干预包规则)
 - [九、干预策略树](#九干预策略树)
+- [十、督导与专家平台规则](#十督导与专家平台规则)
+  - [10.1 SUPERVISOR vs PROMOTER 角色分化](#101-supervisor-vs-promoter-角色分化)
+  - [10.2 专家平台注册工作流](#102-专家平台注册工作流)
+  - [10.3 ExpertTenant 租户生命周期](#103-experttenant-租户生命周期)
+  - [10.4 自定义 Agent 管理规则](#104-自定义-agent-管理规则)
+  - [10.5 专家内容工作室治理](#105-专家内容工作室治理)
+  - [10.6 租户路由增强机制](#106-租户路由增强机制)
+  - [10.7 督导会议记录模型 (CoachSupervisionRecord)](#107-督导会议记录模型-coachsupervisionrecord)
 
 ---
 
@@ -69,7 +77,7 @@
 | L1 | 成长者 | 🌱 | GROWER | 2 |
 | L2 | 分享者 | 💬 | SHARER | 3 |
 | L3 | 行为健康教练 | 🎯 | COACH | 4 |
-| L4 | 行为健康促进师 | ⭐ | PROMOTER / SUPERVISOR | 5 |
+| L4 | 促进师 / 督导专家 | ⭐ | PROMOTER / SUPERVISOR (横向对等) | 5 |
 | L5 | 行为健康促进大师 | 👑 | MASTER | 6 |
 | — | 系统管理员 | — | ADMIN | 99 |
 
@@ -1792,6 +1800,262 @@ Stage Authority (C3 审计修复): 阶段晋级需要治理引擎授权, 防止�
 
 ---
 
+## 十、督导与专家平台规则
+
+### 10.1 SUPERVISOR vs PROMOTER 角色分化
+
+> **权威来源:** `core/models.py` UserRole 枚举 + `core/access_control.py` + `core/learning_service.py`
+
+#### 角色定义
+
+SUPERVISOR 和 PROMOTER 是 L4 级**横向对等角色**（lateral peers），权限级别完全一致，功能侧重不同:
+
+| 维度 | PROMOTER (促进师) | SUPERVISOR (督导专家) |
+|------|-------------------|----------------------|
+| role_level | 5 (1-indexed) | 5 (同) |
+| 功能重心 | 成长推广: 课程开发、师资培训、团队扩展 | 质量督导: 教练督导、合规审查、质量保障 |
+| 晋级来源 | 自动晋级 (coach → promoter, ROLE_PROGRESSION_RULES) | **管理员手动指定** (无自动晋级路径) |
+| 伦理条款 | PROMOTER_7_CLAUSES (C1-C5 + P6 + P7) | 共用 PROMOTER_7_CLAUSES (supervisor_7clause 分支) |
+| 数据访问 | 限自己学员 (需 coach-student 关系) | **全局访问** (与 ADMIN 同等, 绕过学员关系检查) |
+
+#### RBAC 权限细节
+
+```
+require_coach_or_admin():
+  允许角色: coach, supervisor, promoter, master, admin
+  SUPERVISOR 和 PROMOTER 均包含在内, 无独立 require_supervisor()
+
+core/access_control.py (数据访问):
+  admin / supervisor → 放行所有用户数据 (不检查 coach-student 关系)
+  coach / promoter / master → 仅限自己学员 (三表检查: assessment_assignments → coach_messages)
+
+core/observer_access_middleware.py (特殊):
+  supervisor = 98 (接近 admin=99 的访问权限, 用于中间件层级计算)
+```
+
+#### 晋级路径说明
+
+ROLE_PROGRESSION_RULES 只有 `coach → promoter` 路径。SUPERVISOR 角色由**管理员手动分配**，适用于以下场景:
+- 高级教练转型为专职督导
+- 机构指定质量管理负责人
+- 临床督导持证者入驻
+
+#### 显示名一致性规则
+
+| 上下文 | 显示名 | 来源 |
+|--------|--------|------|
+| 角色列表 (_ROLE_LEVEL_MAP) | "督导专家" | `coach_api.py:45` |
+| 教练目录 (role_title_map) | "督导专家" | `coach_api.py:1349` |
+| 用户详情 (role_label) | "督导" | `user_api.py:193` |
+| 用户分层 (ROLE_DISPLAY_NAMES) | "督导专家" | `user_segments.py` |
+| 分析看板 (admin_analytics) | "督导" | `admin_analytics_api.py:42` |
+
+---
+
+### 10.2 专家平台注册工作流
+
+> **权威来源:** `api/expert_registration_api.py` (8 端点)
+
+#### 注册流程
+
+```
+用户(L1+)提交申请 → pending_review → Admin审核
+  ├─ 批准 → TenantStatus.trial + 用户自动升级至 COACH(若低于)
+  └─ 拒绝 → application_status="rejected" (允许重新申请)
+```
+
+#### API 端点
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/expert-registration/domains` | GET | 可注册领域列表 |
+| `/expert-registration/apply` | POST | 提交申请 |
+| `/expert-registration/my-application` | GET | 查看自己的申请状态 |
+| `/expert-registration/my-application` | PUT | 修改申请 (仅 pending_review 状态) |
+| `/expert-registration/upload-credential` | POST | 上传资质证明 |
+| `/expert-registration/admin/applications` | GET | 管理员查看所有申请 |
+| `/expert-registration/admin/applications/{tid}/approve` | POST | 批准 |
+| `/expert-registration/admin/applications/{tid}/reject` | POST | 拒绝 |
+
+#### 关键规则
+
+1. **唯一性**: 一个用户只能有一个 ExpertTenant (已有非 rejected 状态时返回 409)
+2. **重新申请**: rejected 状态允许更新原记录重新提交
+3. **Crisis Agent 强制**: 启用的 Agent 列表必须包含 "crisis" Agent
+4. **角色自动升级**: 审批通过时, 若用户 role_level < COACH, 自动升级为 COACH
+5. **审批结果**: 批准后 status → `trial` (非 active), 需要后续激活
+6. **只读限制**: 只有 `pending_review` 状态的申请可被修改/审批/拒绝
+
+---
+
+### 10.3 ExpertTenant 租户生命周期
+
+> **权威来源:** `core/models.py` ExpertTenant + TenantStatus/TenantTier 枚举
+
+#### 状态机
+
+```
+pending_review ──批准──→ trial ──激活──→ active
+                                          ↓
+                                     suspended ──恢复──→ active
+                                          ↓
+                                       archived
+```
+
+| 状态 | 说明 | 可执行操作 |
+|------|------|-----------|
+| pending_review | 等待管理员审核 | 修改申请、上传证书 |
+| trial | 试运营 | 完整功能、客户上限受限 |
+| active | 正式运营 | 全部功能 |
+| suspended | 暂停 | 只读、客户不可新增 |
+| archived | 归档 | 不可访问 |
+
+#### 租户三级分层
+
+| 层级 | 枚举值 | 默认客户上限 | 说明 |
+|------|--------|------------|------|
+| 基础合伙人 | basic_partner | 50 | 默认层级 |
+| 高级合伙人 | premium_partner | 150+ | 高级功能 |
+| 战略合伙人 | strategic_partner | 无限制 | 定制合作 |
+
+#### 租户核心字段
+
+| 字段 | 类型 | 规则 |
+|------|------|------|
+| id (slug) | String(64) | PK, 唯一标识 |
+| expert_user_id | Integer FK | 租户拥有者, NOT NULL |
+| brand_name | String(128) | 工作室名称, NOT NULL |
+| brand_avatar | String(16) | 默认 "🏥" |
+| brand_colors | JSON | `{"primary","accent","bg"}` 主题色 |
+| enabled_agents | JSON Array | 启用的 Agent ID 列表 |
+| default_fallback_agent | String(32) | 路由兜底 Agent, 默认 "behavior_rx" |
+| max_clients | Integer | 客户上限, 默认 50 |
+| routing_correlations | JSON | 域关联 `{"sleep":["glucose"]}` |
+| routing_conflicts | JSON | 域冲突 `{"sleep|exercise":"sleep"}` |
+| status | TenantStatus | 默认 trial |
+| tier | TenantTier | 默认 basic_partner |
+
+---
+
+### 10.4 自定义 Agent 管理规则
+
+> **权威来源:** `api/expert_agent_api.py` (6 端点)
+
+#### API 端点
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/tenants/{tid}/my-agents` | POST | 创建自定义 Agent |
+| `/tenants/{tid}/my-agents` | GET | 列出自己的 Agent |
+| `/tenants/{tid}/my-agents/{aid}` | PUT | 更新 Agent |
+| `/tenants/{tid}/my-agents/{aid}/toggle` | POST | 启用/禁用 Agent |
+| `/tenants/{tid}/my-agents/{aid}` | DELETE | 删除 Agent |
+| `/tenants/{tid}/my-agents/test-routing` | POST | 测试路由差异 |
+
+#### 关键规则
+
+1. **命名规则**: name_suffix 必须匹配 `^[a-z][a-z0-9_]{2,19}$` (小写字母开头, 3-20字符)
+2. **Agent ID 生成**: `{tenant_slug}_{name_suffix}`, 全局唯一
+3. **Agent 类型**: 自定义 Agent 统一使用 `type = "dynamic_llm"`, `is_preset = False`
+4. **预设 Agent 保护**: `is_preset = True` 的 Agent **不能修改 system_prompt**, **不能删除**
+5. **Crisis Agent 不可禁用**: "crisis" Agent 永远不能被 toggle 关闭 (400 错误)
+6. **路由测试**: test-routing 对比平台默认路由 vs 租户定制路由的差异
+
+---
+
+### 10.5 专家内容工作室治理
+
+> **权威来源:** `api/expert_content_api.py` (8 端点)
+
+#### API 端点
+
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/expert-content/{tid}/documents` | GET | 列出文档 |
+| `/expert-content/{tid}/documents` | POST | 创建文档 |
+| `/expert-content/{tid}/documents/{doc_id}` | GET | 文档详情 |
+| `/expert-content/{tid}/documents/{doc_id}` | PUT | 更新文档 |
+| `/expert-content/{tid}/documents/{doc_id}/publish` | POST | 发布 (触发分块+嵌入) |
+| `/expert-content/{tid}/documents/{doc_id}/unpublish` | POST | 取消发布 |
+| `/expert-content/{tid}/documents/{doc_id}` | DELETE | 删除文档 |
+| `/expert-content/{tid}/challenges` | GET | 列出挑战 |
+
+#### 关键规则
+
+1. **访问控制**: _check_tenant_access() — 仅租户拥有者或管理员可操作
+2. **发布流程**: 发布时调用 document_service.publish_document() 触发 RAG 分块 + 嵌入
+3. **治理字段**: 每个文档含 scope, status, review_status, reviewer_id, evidence_tier
+4. **证据分层**: 遵循 T1-T4 证据层级体系 (T1 系统综述 > T2 RCT > T3 专家共识 > T4 传统经验)
+5. **挑战管理**: 只列出 created_by == tenant.expert_user_id 的挑战模板
+
+---
+
+### 10.6 租户路由增强机制
+
+> **权威来源:** `api/tenant_api.py` 路由端点 + `core/agents/router.py`
+
+#### 路由层级
+
+```
+用户输入 → resolve_tenant_ctx() 识别租户
+  ├─ 有租户上下文: 租户关键词 (+30 boost) → 域关键词 (+30) → 平台关键词
+  └─ 无租户上下文: 域关键词 (+30) → 平台关键词
+```
+
+#### 路由配置项
+
+| 配置 | 说明 | 默认值 |
+|------|------|--------|
+| routing_correlations | 域关联扩展 `{"sleep":["glucose"]}` | `{}` |
+| routing_conflicts | 域冲突解决 `{"sleep\|exercise":"sleep"}` | `{}` |
+| agent_keywords | 每个 Agent 的关键词 + boost 权重 | keyword_boost = 1.5 |
+| default_fallback_agent | 路由兜底 Agent | "behavior_rx" |
+
+#### scope_boost 规则 (知识检索)
+
+| 范围 | 增强 | 说明 |
+|------|------|------|
+| tenant | +0.15 | 租户级文档最优先 |
+| domain | +0.08 | 领域级文档次之 |
+| platform | +0.00 | 平台级文档基线 |
+
+---
+
+### 10.7 督导会议记录模型 (CoachSupervisionRecord)
+
+> **权威来源:** `core/models.py:4432-4454` (coach_schema)
+
+#### 模型结构
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| id | Integer PK | 主键 |
+| supervisor_id | FK users.id | 督导者 (SUPERVISOR/PROMOTER/MASTER) |
+| coach_id | FK users.id | 被督导教练 |
+| session_type | String(30) | 督导类型 (个人/团体/案例等) |
+| scheduled_at | DateTime | 计划时间 |
+| completed_at | DateTime | 完成时间 |
+| status | String(20) | "scheduled"(默认) / "completed" / "cancelled" |
+| template_id | String(50) | 督导模板引用 |
+| session_notes | Text | 督导记录 |
+| action_items | JSON | 行动项列表 |
+| quality_rating | Float | 质量评分 |
+| compliance_met | Boolean | 合规性是否达标, 默认 True |
+
+#### 索引
+
+- `idx_supervision_coach`: (coach_id, status) — 查询教练的督导记录
+- `idx_supervision_supervisor`: (supervisor_id, status) — 查询督导者的工作量
+
+#### 当前状态
+
+模型已定义于 `coach_schema`，尚无独立的 CRUD API 端点。预期后续实现:
+- 督导排期与提醒
+- 督导报告生成
+- 合规审计统计
+
+---
+
 ## 附录: 权威来源文件索引
 
 | 文件 | 行数 | 规则内容 |
@@ -1835,7 +2099,13 @@ Stage Authority (C3 审计修复): 阶段晋级需要治理引擎授权, 防止�
 | `configs/safety_rules.json` | ~70 | 安全阈值/证据权重/严重度动作/危机热线 |
 | `configs/intervention_packs.json` | ~600 | 10个干预包定义 |
 | `configs/intervention_strategies.json` | ~1100 | 24因×5级干预策略树 |
+| `api/expert_registration_api.py` | ~620 | 专家注册8端点, 审批工作流 |
+| `api/tenant_api.py` | ~770 | 租户CRUD/客户/路由/统计 |
+| `api/expert_agent_api.py` | ~400 | 自定义Agent 6端点, 命名/保护规则 |
+| `api/expert_content_api.py` | ~360 | 内容工作室8端点, 发布/治理 |
+| `core/access_control.py` | ~130 | SUPERVISOR全局访问 + 三表教练-学员关系检查 |
+| `schemas/contract_types.py` | ~65 | 伦理条款定义 (COACH_5/PROMOTER_7) |
 
 ---
 
-*本文档版本 V5.2.6-complete, 与代码库同步。覆盖 9 大章节, 39 个配置/代码权威来源, 500+ 条规则。所有数据均从生产代码和配置文件直接提取。*
+*本文档版本 V5.2.7-complete, 与代码库同步。覆盖 10 大章节, 45 个配置/代码权威来源, 550+ 条规则。所有数据均从生产代码和配置文件直接提取。*

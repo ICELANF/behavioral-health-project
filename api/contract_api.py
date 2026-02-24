@@ -108,7 +108,7 @@ def get_ethical_clauses(
     current_user: User = Depends(get_current_user),
 ):
     """获取伦理声明条款"""
-    if declaration_type == "promoter_7clause":
+    if declaration_type in ("promoter_7clause", "supervisor_7clause"):
         clauses = PROMOTER_7_CLAUSES
     else:
         clauses = COACH_5_CLAUSES
@@ -131,7 +131,7 @@ def sign_ethical_declaration(
     db: Session = Depends(get_db),
 ):
     """签署伦理声明"""
-    if declaration_type == "promoter_7clause":
+    if declaration_type in ("promoter_7clause", "supervisor_7clause"):
         clauses = PROMOTER_7_CLAUSES
     else:
         clauses = COACH_5_CLAUSES

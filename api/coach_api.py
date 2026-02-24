@@ -42,7 +42,7 @@ _ROLE_LEVEL_MAP = {
     UserRole.SHARER: ("L2", "分享者"),
     UserRole.COACH: ("L3", "教练"),
     UserRole.PROMOTER: ("L4", "促进师"),
-    UserRole.SUPERVISOR: ("L4", "促进师"),
+    UserRole.SUPERVISOR: ("L4", "督导专家"),
     UserRole.MASTER: ("L5", "大师"),
     UserRole.ADMIN: ("L99", "管理员"),
 }
@@ -1346,7 +1346,7 @@ def coach_directory(
 
     role_title_map = {
         "coach": "健康教练", "promoter": "健康促进师",
-        "supervisor": "督导师", "master": "大师教练",
+        "supervisor": "督导专家", "master": "大师教练",
     }
     role_level_map = {
         "coach": 4, "promoter": 5, "supervisor": 5, "master": 6,
