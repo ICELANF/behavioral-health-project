@@ -905,9 +905,9 @@ async def get_system_notifications(
     """
     notifications = []
     try:
-        from core.database import get_db_session
+        from core.database import SessionLocal
         from sqlalchemy import desc
-        db = next(get_db_session())
+        db = SessionLocal()
         try:
             # 尝试从 credit_events 获取最近积分变动
             from core.models import CreditEvent
@@ -940,6 +940,37 @@ async def get_system_notifications(
         except Exception:
             pass
 
+        try:
+            # 从 notifications 表获取推送通知 (含处方审批通知)
+            from sqlalchemy import text as sa_text
+            notif_rows = db.execute(sa_text("""
+                SELECT id, title, body, type, is_read, created_at
+                FROM notifications
+                WHERE user_id = CAST(:uid AS integer)
+                ORDER BY created_at DESC LIMIT :lim
+            """), {"uid": current_user.id, "lim": limit}).mappings().all()
+            for r in notif_rows:
+                # 解析 body 中的深度链接 [link:/rx/xxx]
+                body_text = r["body"] or ""
+                link = None
+                if "[link:" in body_text:
+                    import re
+                    m = re.search(r'\[link:([^\]]+)\]', body_text)
+                    if m:
+                        link = m.group(1)
+                        body_text = body_text[:m.start()].strip()
+                notifications.append({
+                    "type": r["type"] or "system",
+                    "title": r["title"] or "",
+                    "body": body_text,
+                    "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+                    "notif_id": r["id"],
+                    "is_read": r["is_read"],
+                    "link": link,
+                })
+        except Exception:
+            pass
+
         # 按时间倒序排列
         notifications.sort(key=lambda x: x.get("created_at") or "", reverse=True)
         db.close()
@@ -947,6 +978,102 @@ async def get_system_notifications(
         pass
 
     return {"notifications": notifications[:limit]}
+
+
+# --- 处方查询接口 (供 H5 使用) ---
+@app.get("/api/v1/rx/my")
+async def get_my_prescriptions(
+    status: str = "active",
+    limit: int = 20,
+    current_user: User = Depends(get_current_user),
+):
+    """获取当前用户的行为处方列表"""
+    items = []
+    try:
+        from core.database import SessionLocal
+        from sqlalchemy import text as sa_text
+        db = SessionLocal()
+        try:
+            rows = db.execute(sa_text("""
+                SELECT id, target_behavior, frequency_dose, time_place,
+                       trigger_cue, obstacle_plan, support_resource,
+                       domain, difficulty_level, cultivation_stage,
+                       status, approved_by_review, created_at
+                FROM behavior_prescriptions
+                WHERE user_id = CAST(:uid AS integer) AND status = :st
+                ORDER BY created_at DESC LIMIT :lim
+            """), {"uid": current_user.id, "st": status, "lim": limit}).mappings().all()
+            for r in rows:
+                items.append({
+                    "id": r["id"],
+                    "target_behavior": r["target_behavior"] or "",
+                    "frequency_dose": r["frequency_dose"] or "",
+                    "time_place": r["time_place"] or "",
+                    "trigger_cue": r["trigger_cue"] or "",
+                    "obstacle_plan": r["obstacle_plan"] or "",
+                    "support_resource": r["support_resource"] or "",
+                    "domain": r["domain"] or "",
+                    "difficulty_level": r["difficulty_level"] or "",
+                    "cultivation_stage": r["cultivation_stage"] or "",
+                    "status": r["status"] or "",
+                    "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+                })
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning(f"[rx/my] query failed: {e}")
+    return {"prescriptions": items}
+
+
+@app.get("/api/v1/rx/{rx_id}")
+async def get_rx_detail_by_id(
+    rx_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """获取单个处方详情 (覆盖 behavior_rx 的 501 stub)"""
+    try:
+        from core.database import SessionLocal
+        from sqlalchemy import text as sa_text
+        db = SessionLocal()
+        try:
+            row = db.execute(sa_text("""
+                SELECT id, user_id, target_behavior, frequency_dose, time_place,
+                       trigger_cue, obstacle_plan, support_resource,
+                       domain, difficulty_level, cultivation_stage,
+                       status, approved_by_review, created_at
+                FROM behavior_prescriptions
+                WHERE id = :rid
+            """), {"rid": rx_id}).mappings().first()
+        finally:
+            db.close()
+    except Exception:
+        raise HTTPException(status_code=500, detail="数据库查询失败")
+
+    if not row:
+        raise HTTPException(status_code=404, detail="处方不存在")
+
+    # 权限检查: 用户只能看自己的, 教练可看学员的
+    if row["user_id"] != current_user.id:
+        from core.models import UserRole
+        if current_user.role not in (UserRole.COACH, UserRole.PROMOTER, UserRole.SUPERVISOR, UserRole.MASTER, UserRole.ADMIN):
+            raise HTTPException(status_code=403, detail="无权限查看")
+
+    return {
+        "id": row["id"],
+        "user_id": row["user_id"],
+        "target_behavior": row["target_behavior"] or "",
+        "frequency_dose": row["frequency_dose"] or "",
+        "time_place": row["time_place"] or "",
+        "trigger_cue": row["trigger_cue"] or "",
+        "obstacle_plan": row["obstacle_plan"] or "",
+        "support_resource": row["support_resource"] or "",
+        "domain": row["domain"] or "",
+        "difficulty_level": row["difficulty_level"] or "",
+        "cultivation_stage": row["cultivation_stage"] or "",
+        "status": row["status"] or "",
+        "approved_by_review": row["approved_by_review"] or "",
+        "created_at": row["created_at"].isoformat() if row["created_at"] else None,
+    }
 
 
 # --- 专家列表接口 ---

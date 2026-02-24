@@ -280,6 +280,13 @@ const router = createRouter({
       component: () => import('@/views/ProgramProgress.vue'),
       meta: { title: '行为特征' }
     },
+    // ── 行为处方详情 ──
+    {
+      path: '/rx/:id',
+      name: 'rx-detail',
+      component: () => import('@/views/RxPrescriptionDetail.vue'),
+      meta: { title: '行为处方详情' }
+    },
     // ── v3 渐进式评估 + AI Coach + 知识库 ──
     {
       path: '/v3/assessment',

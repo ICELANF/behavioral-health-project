@@ -3,6 +3,26 @@
     <van-nav-bar title="我的管理方案" left-arrow @click-left="$router.back()" />
 
     <div class="page-content">
+      <!-- 我的行为处方快捷入口 -->
+      <template v-if="!currentId && rxList.length">
+        <div class="section-header">我的行为处方</div>
+        <div
+          v-for="rx in rxList"
+          :key="rx.id"
+          class="plan-list-item card"
+          @click="goRxDetail(rx.id)"
+        >
+          <div class="plan-list-header">
+            <van-icon name="medel" size="24" color="#07c160" />
+            <div class="plan-list-info">
+              <div class="plan-list-title">{{ rx.target_behavior }}</div>
+              <div class="plan-list-time">{{ rx.domain }} · {{ formatTime(rx.created_at) }}</div>
+            </div>
+            <van-icon name="arrow" color="#c8c9cc" />
+          </div>
+        </div>
+      </template>
+
       <!-- 方案列表 (无 assignment_id 时) -->
       <template v-if="!currentId">
         <van-loading v-if="loadingList" class="loading" />
@@ -148,10 +168,11 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/index'
 
 const route = useRoute()
+const router = useRouter()
 const routeAssignmentId = ref<number | null>(null)
 const currentId = ref<number | null>(null)
 const activeTab = ref(0)
@@ -160,6 +181,7 @@ const loadingList = ref(false)
 const loadingDetail = ref(false)
 const planList = ref<any[]>([])
 const detail = ref<any>(null)
+const rxList = ref<any[]>([])
 
 function formatTime(str: string) {
   if (!str) return ''
@@ -199,13 +221,25 @@ async function loadPlanDetail(id: number) {
   }
 }
 
-onMounted(() => {
+function goRxDetail(rxId: string) {
+  router.push(`/rx/${rxId}`)
+}
+
+onMounted(async () => {
   const aid = route.query.assignment_id || route.query.id
   if (aid) {
     routeAssignmentId.value = Number(aid)
     loadPlanDetail(Number(aid))
   } else {
     loadPlanList()
+  }
+
+  // 加载行为处方列表
+  try {
+    const res: any = await api.get('/api/v1/rx/my', { params: { status: 'active' } })
+    rxList.value = res.prescriptions || []
+  } catch {
+    rxList.value = []
   }
 })
 </script>
@@ -214,6 +248,13 @@ onMounted(() => {
 @import '@/styles/variables.scss';
 
 .loading { text-align: center; padding: 60px 0; }
+
+.section-header {
+  font-size: $font-size-lg;
+  font-weight: 600;
+  color: $text-color;
+  padding: $spacing-sm $spacing-md 4px;
+}
 
 .plan-list-item {
   padding: $spacing-md;

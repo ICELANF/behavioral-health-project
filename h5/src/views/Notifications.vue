@@ -91,13 +91,20 @@
 
         <van-tab title="系统通知">
           <template v-if="notifications.length">
-            <div class="notify-item" v-for="(n, idx) in notifications" :key="idx">
+            <div
+              class="notify-item"
+              :class="{ clickable: !!n.link }"
+              v-for="(n, idx) in notifications"
+              :key="idx"
+              @click="onNotifyClick(n)"
+            >
               <van-icon :name="notifyIcon(n.type)" :color="notifyColor(n.type)" size="24" />
               <div class="notify-content">
                 <div class="notify-title">{{ n.title }}</div>
                 <div class="notify-body">{{ n.body }}</div>
                 <div class="notify-time">{{ formatTime(n.created_at) }}</div>
               </div>
+              <van-icon v-if="n.link" name="arrow" color="#c8c9cc" />
             </div>
           </template>
           <van-empty v-else description="暂无系统通知" />
@@ -276,6 +283,18 @@ async function markAlertRead(alert: any) {
     alert.user_read = true
     unreadAlertCount.value = Math.max(0, unreadAlertCount.value - 1)
   } catch { /* ignore */ }
+}
+
+function onNotifyClick(n: any) {
+  // 标记已读 (如果有 notif_id)
+  if (n.notif_id && !n.is_read) {
+    api.post(`/api/v1/notifications/${n.notif_id}/read`).catch(() => {})
+    n.is_read = true
+  }
+  // 深度链接跳转
+  if (n.link) {
+    router.push(n.link)
+  }
 }
 
 onMounted(async () => {
@@ -512,9 +531,15 @@ onMounted(async () => {
 .notify-item,
 .alert-item {
   display: flex;
+  align-items: center;
   gap: $spacing-sm;
   padding: $spacing-md;
   border-bottom: 1px solid #f5f5f5;
+
+  &.clickable {
+    cursor: pointer;
+    &:active { background: #f7f7f7; }
+  }
 
   .notify-content,
   .alert-content {

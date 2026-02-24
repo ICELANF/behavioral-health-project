@@ -332,7 +332,50 @@ async def _generate_initial_prescription(db: AsyncSession, user_id: int):
     # 根据L层级决定处方数量
     max_tasks = {"L1": 1, "L2": 1, "L3": 2, "L4": 3, "L5": 5}.get(l_level, 2)
 
-    # 生成默认处方集
+    # --- 尝试 BehaviorRx 引擎 ---
+    try:
+        from core.models import BehavioralProfile
+        from core.rx_context_adapter import profile_to_rx_context, select_agent_type
+        from behavior_rx.core.behavior_rx_engine import BehaviorRxEngine
+        from sqlalchemy import select as sa_select
+
+        result = await db.execute(
+            sa_select(BehavioralProfile).where(BehavioralProfile.user_id == user_id)
+        )
+        profile = result.scalars().first()
+
+        if profile and profile.current_stage:
+            ctx = profile_to_rx_context(profile)
+            agent_type = select_agent_type(profile)
+            engine = BehaviorRxEngine()
+            rx_dto = engine.compute_rx(context=ctx, agent_type=agent_type)
+
+            import uuid as _uuid
+            rx_id = f"rx_init_{_uuid.uuid4().hex[:8]}"
+            await db.execute(text("""
+                INSERT INTO behavior_prescriptions
+                    (id, user_id, target_behavior, frequency_dose,
+                     trigger_cue, obstacle_plan, domain, difficulty_level,
+                     cultivation_stage, status, created_at)
+                VALUES
+                    (:id, :uid, :target, :freq, :cue, :plan,
+                     :domain, :diff, 'startup', 'active', NOW())
+                ON CONFLICT (id) DO NOTHING
+            """), {
+                "id": rx_id, "uid": user_id,
+                "target": rx_dto.goal_behavior,
+                "freq": (rx_dto.micro_actions[0].frequency if rx_dto.micro_actions else "每日1次"),
+                "cue": (rx_dto.micro_actions[0].trigger if rx_dto.micro_actions else ""),
+                "plan": rx_dto.reasoning[:200] if rx_dto.reasoning else "",
+                "domain": rx_dto.domain_context.get("primary_domain", "general"),
+                "diff": rx_dto.intensity.value if hasattr(rx_dto.intensity, "value") else "moderate",
+            })
+            logger.info(f"[upgrade] BehaviorRx 初始处方生成: user={user_id}, bpt={bpt_type}, spi={l_level}")
+            return  # 成功, 跳过默认处方
+    except Exception as e:
+        logger.warning(f"[upgrade] BehaviorRx 降级到默认处方: {e}")
+
+    # --- 降级: 生成默认处方集 ---
     await _generate_default_prescription(db, user_id, max_tasks)
 
 

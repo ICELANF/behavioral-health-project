@@ -267,7 +267,63 @@ def generate_prescription(
 
     请求: {"student_id": 3}
     返回: {diagnosis, prescription, ai_suggestions, health_summary, intervention_plan, meta}
+
+    混合路由: BehaviorRx 引擎优先 (<200ms, 确定性) → LLM 降级
     """
+    # --- 尝试 BehaviorRx 引擎 (确定性路径) ---
+    try:
+        from core.models import BehavioralProfile
+        from core.rx_context_adapter import profile_to_rx_context, select_agent_type
+        from core.rx_response_mapper import rx_dto_to_copilot_json
+        from behavior_rx.core.behavior_rx_engine import BehaviorRxEngine
+
+        profile = db.query(BehavioralProfile).filter(
+            BehavioralProfile.user_id == student_id
+        ).first()
+
+        if profile and profile.current_stage:
+            ctx = profile_to_rx_context(profile)
+            agent_type = select_agent_type(profile)
+            engine = BehaviorRxEngine()
+            rx_dto = engine.compute_rx(context=ctx, agent_type=agent_type)
+
+            # 写入 behavior_prescriptions (status=draft, 等待教练审核)
+            import uuid as _uuid
+            rx_id = f"rx_{_uuid.uuid4().hex[:12]}"
+            try:
+                from sqlalchemy import text
+                db.execute(text("""
+                    INSERT INTO behavior_prescriptions
+                        (id, user_id, target_behavior, frequency_dose,
+                         trigger_cue, obstacle_plan, domain, difficulty_level,
+                         cultivation_stage, status, created_at)
+                    VALUES
+                        (:id, :uid, :target, :freq, :cue, :plan,
+                         :domain, :diff, 'startup', 'draft', NOW())
+                    ON CONFLICT (id) DO NOTHING
+                """), {
+                    "id": rx_id, "uid": student_id,
+                    "target": rx_dto.goal_behavior,
+                    "freq": (rx_dto.micro_actions[0].frequency if rx_dto.micro_actions else "每日1次"),
+                    "cue": (rx_dto.micro_actions[0].trigger if rx_dto.micro_actions else ""),
+                    "plan": rx_dto.reasoning[:200] if rx_dto.reasoning else "",
+                    "domain": (rx_dto.domain_context.get("primary_domain", "general")),
+                    "diff": rx_dto.intensity.value if hasattr(rx_dto.intensity, "value") else "moderate",
+                })
+                db.commit()
+            except Exception as e:
+                logger.warning(f"[copilot] BehaviorRx 持久化失败 (non-blocking): {e}")
+                db.rollback()
+
+            result = rx_dto_to_copilot_json(rx_dto, student_id, current_user.id)
+            result["meta"]["rx_id"] = rx_id
+            logger.info(f"[copilot] BehaviorRx 生成成功: student={student_id}, rx_id={rx_id}")
+            return result
+
+    except Exception as e:
+        logger.warning(f"[copilot] BehaviorRx 降级到 LLM: {e}")
+
+    # --- 降级: CopilotPrescriptionService (LLM 路径) ---
     from core.copilot_prescription_service import CopilotPrescriptionService
 
     service = CopilotPrescriptionService()

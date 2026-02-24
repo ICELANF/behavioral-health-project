@@ -254,10 +254,11 @@ async def approve_review(
 
     # Step 2: 如果是处方审核 → 激活处方
     student_id = review["student_id"]
+    rx_id = None
     if review["type"] == "prescription":
         rx_json = body.edited_rx_json or review["rx_fields_json"]
         if rx_json:
-            await _activate_prescription(db, student_id, rx_json, review_id)
+            rx_id = await _activate_prescription(db, student_id, rx_json, review_id)
 
         # Step 3: 触发任务重新生成
         try:
@@ -268,11 +269,34 @@ async def approve_review(
 
     # Step 4: 写入审核日志
     await db.execute(text("""
-        INSERT INTO coach_review_logs (coach_id, review_id, action, note, created_at)
-        VALUES (:cid, :rid, 'approved', :note, :now)
-    """), {"cid": coach_id, "rid": review_id, "note": body.review_note, "now": now})
+        INSERT INTO coach_review_logs (coach_id, review_id, action, elapsed_seconds, reviewed_at)
+        VALUES (:cid, :rid, 'approved', :elapsed, :now)
+    """), {"cid": coach_id, "rid": review_id, "elapsed": elapsed, "now": now})
 
     await db.commit()
+
+    # Step 5: 推送通知给用户 (commit 之后, non-blocking)
+    try:
+        from gateway.channels.push_router import send_notification as _push_notify
+
+        notif_title = "处方已审核通过" if rx_id else "审核已通过"
+        notif_body = (
+            f"您的行为处方已经教练审核通过，点击查看详情。"
+            if rx_id else
+            f"教练已审核通过您的内容。"
+        )
+        # 构造含深度链接的 body (H5 可解析 [link:/rx/xxx])
+        if rx_id:
+            notif_body += f" [link:/rx/{rx_id}]"
+
+        await _push_notify(
+            db=db, user_id=student_id,
+            title=notif_title, body=notif_body,
+        )
+        await db.commit()
+        logger.info(f"通知已推送: student={student_id}, rx_id={rx_id}")
+    except Exception as e:
+        logger.warning(f"审核通知推送失败 (non-blocking): {e}")
 
     logger.info(f"Coach {coach_id} approved review {review_id} for student {student_id} ({elapsed}s)")
 
@@ -330,9 +354,9 @@ async def reject_review(
 
     # 写日志
     await db.execute(text("""
-        INSERT INTO coach_review_logs (coach_id, review_id, action, note, created_at)
-        VALUES (:cid, :rid, 'rejected', :note, :now)
-    """), {"cid": coach_id, "rid": review_id, "note": body.reason, "now": now})
+        INSERT INTO coach_review_logs (coach_id, review_id, action, elapsed_seconds, reviewed_at)
+        VALUES (:cid, :rid, 'rejected', :elapsed, :now)
+    """), {"cid": coach_id, "rid": review_id, "elapsed": elapsed, "now": now})
 
     await db.commit()
 
@@ -395,11 +419,12 @@ async def get_coach_stats_today(
 
 async def _activate_prescription(
     db: AsyncSession, user_id: int, rx_json: dict, review_id: str
-):
+) -> str:
     """
     激活处方 — 修复审计报告⑦号断裂点
-    
-    将审核通过的处方写入 behavior_prescriptions 并激活
+
+    将审核通过的处方写入 behavior_prescriptions 并激活。
+    返回 rx_id 供通知推送使用。
     """
     import uuid
     rx_id = f"rx_{uuid.uuid4().hex[:12]}"
@@ -427,3 +452,4 @@ async def _activate_prescription(
     })
 
     logger.info(f"处方 {rx_id} 已激活 (用户 {user_id}, 审核 {review_id})")
+    return rx_id
