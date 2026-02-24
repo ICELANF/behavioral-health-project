@@ -19,6 +19,7 @@ from .specialist_agents import (
 from .integrative_agents import (
     BehaviorRxAgent, WeightAgent, CardiacRehabAgent,
 )
+from .vision_agent import VisionGuideAgent
 from .router import AgentRouter
 from .coordinator import MultiAgentCoordinator
 from .policy_gate import RuntimePolicyGate
@@ -32,6 +33,8 @@ __all__ = [
     "TCMWellnessAgent", "MotivationAgent",
     # 整合型Agent (3)
     "BehaviorRxAgent", "WeightAgent", "CardiacRehabAgent",
+    # 视力保护Agent (1)
+    "VisionGuideAgent",
     # 基础设施
     "AgentRouter", "MultiAgentCoordinator", "RuntimePolicyGate",
     "MasterAgent",

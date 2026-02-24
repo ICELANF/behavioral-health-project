@@ -655,6 +655,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./views/coach/PushQueueManage.vue'),
         meta: { title: '推送队列' }
       },
+      // ============ 视力处方审批 ============
+      {
+        path: 'coach/vision-rx-queue',
+        name: 'CoachVisionRxQueue',
+        component: () => import('./views/coach/CoachVisionRxQueue.vue'),
+        meta: { title: '视力处方审批' }
+      },
       // ============ 专家入驻审核 ============
       {
         path: 'admin/expert-applications',

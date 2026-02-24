@@ -1032,5 +1032,206 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
     except Exception as e:
         logger.warning(f"[Scheduler] tenant_trial_expiration 注册失败: {e}")
 
-    logger.info("[Scheduler] 定时任务调度器已配置 (含V004+V005+Phase4+CR15+CR28+R2+R9+R10+R7+R8+TenantExpiry)")
+    # ── I-07: 督导资质年审检查 (每天05:00) ──
+    try:
+        from core.database import get_db_session
+
+        @with_redis_lock("scheduler:credential_annual_review", ttl=600)
+        def job_credential_annual_review():
+            from core.supervisor_credential_service import SupervisorCredentialService
+            svc = SupervisorCredentialService()
+            try:
+                with get_db_session() as db:
+                    result = svc.check_expired_credentials(db)
+                    logger.info(
+                        "[Scheduler] 资质年审检查: %d expired, %d downgraded",
+                        result.get("expired", 0), result.get("downgraded", 0),
+                    )
+            except Exception as e:
+                logger.warning("[Scheduler] 资质年审检查失败: %s", e)
+
+        scheduler.add_job(
+            job_credential_annual_review,
+            CronTrigger(hour=5, minute=0),
+            id="credential_annual_review",
+            name="I-07督导资质年审检查",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] credential_annual_review 注册失败: {e}")
+
+    # ══════════════════════════════════════════
+    # VisionGuard 视力保护域 (5 个定时任务)
+    # ══════════════════════════════════════════
+
+    # ── Job27: 每日视力行为评分 (每天23:00) ──
+    try:
+        from core.database import get_db_session as _vg_get_db
+
+        @with_redis_lock("scheduler:vision_daily_score", ttl=600)
+        def job_vision_daily_score():
+            from core.vision_service import batch_calc_daily_scores, batch_update_risk_levels
+            try:
+                with _vg_get_db() as db:
+                    scored = batch_calc_daily_scores(db)
+                    updated = batch_update_risk_levels(db)
+                    logger.info(f"[Scheduler] 视力日评分: {scored} 条评分, {updated} 风险更新")
+            except Exception as e:
+                logger.warning(f"[Scheduler] 视力日评分失败: {e}")
+
+        scheduler.add_job(
+            job_vision_daily_score,
+            CronTrigger(hour=23, minute=0),
+            id="vision_daily_score",
+            name="视力行为日评分",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] vision_daily_score 注册失败: {e}")
+
+    # ── Job28: 视力处方触发 (每天23:15) ──
+    try:
+        from core.database import get_db_session as _vg_rx_db
+
+        @with_redis_lock("scheduler:vision_rx_trigger", ttl=600)
+        def job_vision_rx_trigger():
+            from core.vision_service import VisionProfile, check_rx_trigger
+            try:
+                with _vg_rx_db() as db:
+                    profiles = db.query(VisionProfile).filter(VisionProfile.is_vision_student == True).all()
+                    triggered = 0
+                    for p in profiles:
+                        if check_rx_trigger(db, p.user_id):
+                            triggered += 1
+                    logger.info(f"[Scheduler] 视力处方触发: {len(profiles)} 学生, {triggered} 触发")
+            except Exception as e:
+                logger.warning(f"[Scheduler] 视力处方触发失败: {e}")
+
+        scheduler.add_job(
+            job_vision_rx_trigger,
+            CronTrigger(hour=23, minute=15),
+            id="vision_rx_trigger",
+            name="视力处方触发(铁律)",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] vision_rx_trigger 注册失败: {e}")
+
+    # ── Job29: 监护人周报 (每周一08:00) ──
+    try:
+        from core.database import get_db_session as _vg_weekly_db
+
+        @with_redis_lock("scheduler:vision_weekly_guardian_report", ttl=900)
+        def job_vision_weekly_guardian_report():
+            from core.vision_service import (
+                VisionGuardianBinding, generate_weekly_report,
+            )
+            from sqlalchemy import text as sa_text
+            try:
+                with _vg_weekly_db() as db:
+                    bindings = (
+                        db.query(VisionGuardianBinding)
+                        .filter(VisionGuardianBinding.is_active == True)
+                        .all()
+                    )
+                    sent = 0
+                    for b in bindings:
+                        report = generate_weekly_report(db, b.student_user_id, b.guardian_user_id)
+                        if report.get("days_logged", 0) == 0:
+                            continue
+                        # 通知监护人
+                        try:
+                            db.execute(sa_text("""
+                                INSERT INTO notifications
+                                  (user_id, title, body, type, priority, is_read, created_at)
+                                VALUES (:uid, '孩子视力行为周报',
+                                  :body, 'vision_weekly_report', 'normal', false, NOW())
+                            """), {
+                                "uid": b.guardian_user_id,
+                                "body": f"本周打卡 {report['days_logged']} 天，"
+                                        f"平均评分 {report.get('avg_score', 0):.0f} 分，"
+                                        f"趋势: {report.get('trend', '-')}",
+                            })
+                            sent += 1
+                        except Exception:
+                            pass
+                    if sent:
+                        db.commit()
+                    logger.info(f"[Scheduler] 视力监护人周报: {len(bindings)} 绑定, {sent} 通知发送")
+            except Exception as e:
+                logger.warning(f"[Scheduler] 视力监护人周报失败: {e}")
+
+        scheduler.add_job(
+            job_vision_weekly_guardian_report,
+            CronTrigger(day_of_week="mon", hour=8, minute=0),
+            id="vision_weekly_guardian_report",
+            name="视力监护人周报",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] vision_weekly_guardian_report 注册失败: {e}")
+
+    # ── Job30: 目标自动调整 (每周日06:00) ──
+    try:
+        from core.database import get_db_session as _vg_goal_db
+
+        @with_redis_lock("scheduler:vision_goal_auto_adjust", ttl=600)
+        def job_vision_goal_auto_adjust():
+            from core.vision_service import VisionProfile, adjust_goals_for_stage
+            try:
+                with _vg_goal_db() as db:
+                    profiles = db.query(VisionProfile).filter(VisionProfile.is_vision_student == True).all()
+                    adjusted = 0
+                    for p in profiles:
+                        if p.ttm_vision_stage:
+                            adjust_goals_for_stage(db, p.user_id, p.ttm_vision_stage)
+                            adjusted += 1
+                    if adjusted:
+                        db.commit()
+                    logger.info(f"[Scheduler] 视力目标调整: {adjusted}/{len(profiles)} 用户")
+            except Exception as e:
+                logger.warning(f"[Scheduler] 视力目标调整失败: {e}")
+
+        scheduler.add_job(
+            job_vision_goal_auto_adjust,
+            CronTrigger(day_of_week="sun", hour=6, minute=0),
+            id="vision_goal_auto_adjust",
+            name="视力目标自动调整",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] vision_goal_auto_adjust 注册失败: {e}")
+
+    # ── Job31: 月度归档 (每月1日03:00) ──
+    try:
+        from core.database import get_db_session as _vg_archive_db
+
+        @with_redis_lock("scheduler:vision_monthly_archive", ttl=900)
+        def job_vision_monthly_archive():
+            from sqlalchemy import text as sa_text
+            try:
+                with _vg_archive_db() as db:
+                    cutoff = (date.today() - timedelta(days=180)).isoformat()
+                    result = db.execute(sa_text("""
+                        DELETE FROM vision_behavior_logs
+                        WHERE log_date < CAST(:cutoff AS date)
+                    """), {"cutoff": cutoff})
+                    deleted = result.rowcount
+                    if deleted:
+                        db.commit()
+                    logger.info(f"[Scheduler] 视力日志归档: 删除 {deleted} 条 >180天记录")
+            except Exception as e:
+                logger.warning(f"[Scheduler] 视力日志归档失败: {e}")
+
+        scheduler.add_job(
+            job_vision_monthly_archive,
+            CronTrigger(day=1, hour=3, minute=0),
+            id="vision_monthly_archive",
+            name="视力日志月度归档",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] vision_monthly_archive 注册失败: {e}")
+
+    logger.info("[Scheduler] 定时任务调度器已配置 (含V004+V005+Phase4+CR15+CR28+R2+R9+R10+R7+R8+TenantExpiry+I07+VisionGuard)")
     return scheduler

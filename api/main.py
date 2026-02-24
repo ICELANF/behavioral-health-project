@@ -980,6 +980,80 @@ async def get_system_notifications(
     return {"notifications": notifications[:limit]}
 
 
+@app.get("/api/v1/notifications/all")
+async def get_all_notifications(
+    unread_only: bool = False,
+    limit: int = 50,
+    current_user: User = Depends(get_current_user),
+):
+    """
+    获取 notifications 表中的所有通知 (含处方审批、教练推送等)。
+    支持 unread_only 过滤。
+    """
+    items = []
+    try:
+        from core.database import SessionLocal
+        from sqlalchemy import text as sa_text
+        db = SessionLocal()
+        try:
+            where_clause = "WHERE user_id = CAST(:uid AS integer)"
+            if unread_only:
+                where_clause += " AND is_read = false"
+            rows = db.execute(sa_text(f"""
+                SELECT id, title, body, type, is_read, created_at
+                FROM notifications
+                {where_clause}
+                ORDER BY created_at DESC LIMIT :lim
+            """), {"uid": current_user.id, "lim": limit}).mappings().all()
+            for r in rows:
+                body_text = r["body"] or ""
+                link = None
+                if "[link:" in body_text:
+                    import re
+                    m = re.search(r'\[link:([^\]]+)\]', body_text)
+                    if m:
+                        link = m.group(1)
+                        body_text = body_text[:m.start()].strip()
+                items.append({
+                    "id": r["id"],
+                    "title": r["title"] or "",
+                    "body": body_text,
+                    "type": r["type"] or "system",
+                    "is_read": r["is_read"],
+                    "link": link,
+                    "created_at": r["created_at"].isoformat() if r["created_at"] else None,
+                })
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning(f"[notifications/all] query failed: {e}")
+    return {"notifications": items, "total": len(items)}
+
+
+@app.post("/api/v1/notifications/{notif_id}/read")
+async def mark_notification_read(
+    notif_id: int,
+    current_user: User = Depends(get_current_user),
+):
+    """标记通知为已读"""
+    try:
+        from core.database import SessionLocal
+        from sqlalchemy import text as sa_text
+        db = SessionLocal()
+        try:
+            db.execute(sa_text("""
+                UPDATE notifications SET is_read = true
+                WHERE id = :nid AND user_id = CAST(:uid AS integer)
+            """), {"nid": notif_id, "uid": current_user.id})
+            db.commit()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning(f"[notifications/read] update failed: {e}")
+        raise HTTPException(status_code=500, detail="更新失败")
+    return {"success": True}
+
+
 # --- 处方查询接口 (供 H5 使用) ---
 @app.get("/api/v1/rx/my")
 async def get_my_prescriptions(
@@ -2116,6 +2190,24 @@ except Exception as e:
 
 
 # (R2-R8 已移到 bridge 之前注册, 见上方)
+
+
+# ========== 审计治理 I-07: 督导资质管理 ==========
+try:
+    from api.supervisor_credential_api import router as credential_router
+    app.include_router(credential_router)
+    print("[API] I-07 督导资质管理路由已注册 (4 endpoints)")
+except ImportError as e:
+    print(f"[API] I-07 督导资质管理路由注册失败: {e}")
+
+
+# ========== VisionGuard 视力行为保护 ==========
+try:
+    from api.vision_api import router as vision_router
+    app.include_router(vision_router)
+    print("[API] VisionGuard 视力行为保护路由已注册 (14 endpoints)")
+except ImportError as e:
+    print(f"[API] VisionGuard 路由注册失败: {e}")
 
 
 if __name__ == "__main__":

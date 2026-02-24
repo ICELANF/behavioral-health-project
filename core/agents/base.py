@@ -34,6 +34,7 @@ class AgentDomain(str, Enum):
     BEHAVIOR_RX = "behavior_rx"
     WEIGHT = "weight"
     CARDIAC_REHAB = "cardiac_rehab"
+    VISION = "vision"
 
 
 # ── 策略闸门决策类型 (§11.2) ──
@@ -101,6 +102,15 @@ class BaseAgent:
     priority: int = 5           # 0=最高
     base_weight: float = 0.8    # §10.1 权重
     enable_llm: bool = True     # LLM 增强开关 (CrisisAgent 关闭)
+    evidence_tier: str = "T3"   # I-09: 循证等级 T1/T2/T3/T4
+
+    # I-09: 循证等级置信度乘数
+    _EVIDENCE_MULTIPLIERS = {"T1": 1.0, "T2": 0.9, "T3": 0.75, "T4": 0.5}
+
+    def get_effective_confidence(self, raw_confidence: float) -> float:
+        """I-09: 根据循证等级调整置信度"""
+        multiplier = self._EVIDENCE_MULTIPLIERS.get(self.evidence_tier, 0.75)
+        return round(raw_confidence * multiplier, 4)
 
     def process(self, agent_input: AgentInput) -> AgentResult:
         raise NotImplementedError
@@ -185,6 +195,7 @@ AGENT_BASE_WEIGHTS: dict[str, float] = {
     "behavior_rx": 0.9,
     "weight": 0.85,
     "cardiac_rehab": 0.85,
+    "vision": 0.8,
 }
 
 
@@ -204,6 +215,7 @@ DOMAIN_CORRELATIONS: dict[str, list[str]] = {
                      "mental", "motivation", "behavior_rx", "tcm"],
     "cardiac_rehab": ["exercise", "stress", "sleep", "nutrition",
                       "mental", "glucose", "weight", "motivation", "behavior_rx"],
+    "vision":       ["sleep", "exercise", "behavior_rx", "nutrition"],
 }
 
 

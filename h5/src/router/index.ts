@@ -319,6 +319,31 @@ const router = createRouter({
       component: () => import('@/views/v3/Register.vue'),
       meta: { public: true }
     },
+    // ── VisionGuard 视力行为保护 ──
+    {
+      path: '/vision/daily',
+      name: 'vision-daily',
+      component: () => import('@/views/vision/VisionDailyLog.vue'),
+      meta: { title: '视力行为打卡' }
+    },
+    {
+      path: '/vision/guardian',
+      name: 'vision-guardian',
+      component: () => import('@/views/vision/VisionGuardianView.vue'),
+      meta: { title: '孩子视力报告' }
+    },
+    {
+      path: '/vision/profile',
+      name: 'vision-profile',
+      component: () => import('@/views/vision/VisionProfile.vue'),
+      meta: { title: '视力档案' }
+    },
+    {
+      path: '/vision/exam',
+      name: 'vision-exam',
+      component: () => import('@/views/vision/VisionExamRecord.vue'),
+      meta: { title: '视力检查记录' }
+    },
     {
       path: '/:pathMatch(.*)*',
       redirect: '/'

@@ -34,6 +34,7 @@ from .specialist_agents import (
     TCMWellnessAgent, MotivationAgent,
 )
 from .integrative_agents import BehaviorRxAgent, WeightAgent, CardiacRehabAgent
+from .vision_agent import VisionGuideAgent
 from .router import AgentRouter
 from .coordinator import MultiAgentCoordinator
 from .policy_gate import RuntimePolicyGate
@@ -72,6 +73,7 @@ class MasterAgent:
                 "behavior_rx": BehaviorRxAgent(),
                 "weight": WeightAgent(),
                 "cardiac_rehab": CardiacRehabAgent(),
+                "vision": VisionGuideAgent(),
             }
 
         self.router = AgentRouter(self._agents)

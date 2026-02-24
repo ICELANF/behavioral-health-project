@@ -2471,6 +2471,15 @@ class ExpertTenant(Base):
     applied_at = Column(DateTime, nullable=True,
         comment="申�提交时�")
 
+    # Migration 052: 审计治理扩展 (I-01/I-02)
+    credential_type = Column(String(30), nullable=True, comment="physician_license / coach_certification / phd_supervision")
+    role_confirmed = Column(Boolean, server_default=sa_text("false"), nullable=False)
+    role_confirmed_by = Column(Integer, nullable=True)
+    role_confirmed_at = Column(DateTime, nullable=True)
+    activated_at = Column(DateTime, nullable=True, comment="正式激活时间")
+    suspension_count = Column(Integer, server_default="0", nullable=False)
+    workspace_ready = Column(Boolean, server_default=sa_text("false"), nullable=False)
+
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
@@ -3467,6 +3476,7 @@ class AgentTemplate(Base):
     conflict_wins_over = Column(JSON, server_default="[]")
     is_preset = Column(Boolean, server_default=sa_text("false"))
     is_enabled = Column(Boolean, server_default=sa_text("true"), index=True)
+    evidence_tier = Column(String(5), server_default="T3", nullable=False, comment="T1/T2/T3/T4 循证等级")
     created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
     updated_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
@@ -4351,6 +4361,57 @@ class EthicalDeclaration(Base):
 
 
 # ============================================
+# Migration 052 — 审计治理: 督导资质 + 角色变更日志
+# ============================================
+
+class SupervisorCredential(Base):
+    """督导资质记录 — 资质授予/年审/吊销生命周期 (I-07)"""
+    __tablename__ = "supervisor_credentials"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    credential_type = Column(String(30), nullable=False, comment="physician_license / coach_certification / phd_supervision")
+    credential_number = Column(String(100), nullable=True, comment="证书编号")
+    issuing_authority = Column(String(200), nullable=True, comment="颁发机构")
+    issued_at = Column(DateTime, nullable=True, comment="颁发日期")
+    expires_at = Column(DateTime, nullable=True, comment="到期日期")
+    status = Column(String(20), server_default=sa_text("'active'"), nullable=False, comment="active/expired/revoked")
+    granted_by = Column(Integer, ForeignKey("users.id"), nullable=True, comment="授予操作者")
+    granted_at = Column(DateTime, server_default=func.now(), nullable=False)
+    last_review_at = Column(DateTime, nullable=True, comment="上次年审日期")
+    next_review_at = Column(DateTime, nullable=True, comment="下次年审截止")
+    revoked_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+    revoke_reason = Column(String(500), nullable=True)
+    review_notes = Column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("idx_supercred_user_status", "user_id", "status"),
+        Index("idx_supercred_next_review", "next_review_at", "status"),
+    )
+
+    user = relationship("User", foreign_keys=[user_id], backref="credentials")
+
+
+class RoleChangeLog(Base):
+    """角色变更审计日志 (I-01)"""
+    __tablename__ = "role_change_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    old_role = Column(String(30), nullable=False)
+    new_role = Column(String(30), nullable=False)
+    reason = Column(String(50), nullable=False, comment="application_approved / credential_granted / credential_revoked / manual")
+    changed_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    detail = Column(JSON, nullable=True)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("idx_rcl_user_created", "user_id", "created_at"),
+    )
+
+
+# ============================================
 # Migration 036 � 400分制考核 + 收益分配 + 沙�测�
 # ============================================
 
@@ -5104,6 +5165,7 @@ class PromptTemplate(Base):
         'core.reflection_service',       # ReflectionJournal
         'core.script_library_service',   # ScriptTemplate
         'behavior_rx.core.rx_models',    # RxPrescription, RxStrategyTemplate, AgentHandoffLog
+        'core.vision_service',           # VisionExamRecord, VisionBehaviorLog, VisionBehaviorGoal, VisionGuardianBinding, VisionProfile
     ]:
         try:
             importlib.import_module(mod)
