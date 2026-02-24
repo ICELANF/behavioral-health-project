@@ -402,6 +402,30 @@ def deliver_item(db: Session, item: CoachPushQueue):
     except Exception as e:
         logger.debug(f"[PushQueue] External push queued failed (non-blocking): {e}")
 
+    # WebSocket 实时推送
+    try:
+        import asyncio
+        from api.websocket_api import push_user_notification
+
+        async def _ws_push():
+            await push_user_notification(
+                user_id=str(item.student_id),
+                notification={
+                    "type": "coach_push",
+                    "title": item.title,
+                    "body": item.content or "",
+                    "push_id": str(item.id),
+                },
+            )
+
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(_ws_push())
+        else:
+            loop.run_until_complete(_ws_push())
+    except Exception as e:
+        logger.debug(f"[PushQueue] WebSocket push failed (non-blocking): {e}")
+
     logger.info(f"[PushQueue] 已投递: id={item.id} student={item.student_id}")
 
 

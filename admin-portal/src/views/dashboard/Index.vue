@@ -128,7 +128,7 @@ import request from '@/api/request'
 const roleLabels: Record<string, string> = {
   ADMIN: '系统管理员',
   MASTER: '大师',
-  SUPERVISOR: '督导',
+  SUPERVISOR: '督导专家',
   PROMOTER: '促进师',
   COACH: '教练',
   SHARER: '分享者',

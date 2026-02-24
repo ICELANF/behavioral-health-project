@@ -528,14 +528,34 @@ def approve_application(
     tenant.application_status = "approved"
     tenant.updated_at = datetime.utcnow()
 
-    # 2. 升级用户角色
+    # 2. 双轨角色升级 (I-01): 根据 credential_type 决定升级为 SUPERVISOR 还是 COACH
     applicant = db.query(User).filter(User.id == tenant.expert_user_id).first()
     if applicant:
+        credential_type = (tenant.application_data or {}).get("credential_type", "")
+        supervisor_credentials = {"physician_license", "phd_supervision"}
+        target_role = UserRole.SUPERVISOR if credential_type in supervisor_credentials else UserRole.COACH
+        target_level = ROLE_LEVEL.get(target_role, 4)
         user_level = ROLE_LEVEL.get(applicant.role, 0)
-        coach_level = ROLE_LEVEL.get(UserRole.COACH, 4)
-        if user_level < coach_level:
-            applicant.role = UserRole.COACH
-            logger.info("用户角色升级: user=%d, %s -> COACH", applicant.id, applicant.role.value)
+        if user_level < target_level:
+            old_role = applicant.role.value if applicant.role else "observer"
+            applicant.role = target_role
+            # 同步 credential_type 到租户
+            tenant.credential_type = credential_type or None
+            # 写入 RoleChangeLog 审计记录
+            try:
+                from core.models import RoleChangeLog
+                db.add(RoleChangeLog(
+                    user_id=applicant.id,
+                    old_role=old_role,
+                    new_role=target_role.value,
+                    reason="application_approved",
+                    changed_by=current_user.id,
+                    detail={"credential_type": credential_type, "tenant_id": tenant_id},
+                ))
+            except Exception as e:
+                logger.warning("RoleChangeLog 写入失败: %s", e)
+            logger.info("用户角色升级: user=%d, %s -> %s (credential=%s)",
+                        applicant.id, old_role, target_role.value, credential_type)
 
     # 3. 审计日志
     db.add(TenantAuditLog(

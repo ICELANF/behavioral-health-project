@@ -100,6 +100,11 @@ class AgentRouter:
                    any(k.startswith(field) for k in inp.device_data):
                     score += 15
 
+            # I-09: 循证等级加分 (T1:+10, T2:+7, T3:+3, T4:0)
+            _tier_bonus = {"T1": 10, "T2": 7, "T3": 3, "T4": 0}
+            agent_tier = getattr(agent, "evidence_tier", "T3")
+            score += _tier_bonus.get(agent_tier, 0)
+
             if score > 0:
                 scored.append((score, domain_str))
 

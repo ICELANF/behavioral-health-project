@@ -36,6 +36,7 @@ class CreateAgentRequest(BaseModel):
     correlations: List[str] = Field(default_factory=list, description="关联 Agent")
     priority: int = Field(5, ge=1, le=10, description="优先级 1-10")
     description: str = Field("", max_length=256)
+    evidence_tier: str = Field("T3", description="循证等级 T1/T2/T3/T4 (I-09)")
 
 
 class UpdateAgentRequest(BaseModel):
@@ -116,6 +117,18 @@ async def create_agent(
     if existing:
         raise HTTPException(status_code=409, detail=f"Agent ID '{agent_id}' 已存在")
 
+    # I-09: 循证等级权限校验
+    evidence_tier = getattr(req, "evidence_tier", "T3") or "T3"
+    _TIER_MIN_ROLE = {"T1": "admin", "T2": "supervisor", "T3": "coach", "T4": "coach"}
+    _ROLE_LEVEL_MAP = {"observer": 1, "grower": 2, "sharer": 3, "coach": 4, "promoter": 5, "supervisor": 5, "master": 6, "admin": 99}
+    min_role = _TIER_MIN_ROLE.get(evidence_tier, "coach")
+    user_role = current_user.role.value if current_user.role else "observer"
+    if _ROLE_LEVEL_MAP.get(user_role, 0) < _ROLE_LEVEL_MAP.get(min_role, 0):
+        raise HTTPException(
+            status_code=403,
+            detail=f"循证等级 {evidence_tier} 需要 {min_role} 或更高权限",
+        )
+
     # 1. 创建 AgentTemplate
     now = datetime.utcnow()
     tpl = AgentTemplate(
@@ -128,6 +141,7 @@ async def create_agent(
         correlations=req.correlations,
         priority=req.priority,
         system_prompt=req.system_prompt,
+        evidence_tier=evidence_tier,
         is_preset=False,
         is_enabled=True,
         created_by=current_user.id,
@@ -252,6 +266,10 @@ async def update_agent(
     return {"success": True, "message": f"Agent '{agent_id}' 更新成功"}
 
 
+# I-05: 强制 Agent 列表 (不可停用)
+FORCED_AGENTS = ["crisis", "supervisor_reviewer"]
+
+
 @router.post("/api/v1/tenants/{tenant_id}/my-agents/{agent_id}/toggle")
 async def toggle_agent(
     tenant_id: str,
@@ -259,11 +277,11 @@ async def toggle_agent(
     current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
-    """启用/停用 Agent (crisis 不可停用)"""
+    """启用/停用 Agent (I-05: 强制Agent不可停用)"""
     _verify_tenant_owner(tenant_id, current_user, db)
 
-    if agent_id == "crisis":
-        raise HTTPException(status_code=400, detail="crisis Agent 不可停用")
+    if agent_id in FORCED_AGENTS:
+        raise HTTPException(status_code=400, detail=f"'{agent_id}' 是强制Agent，不可停用")
 
     mapping = db.query(TenantAgentMapping).filter(
         TenantAgentMapping.tenant_id == tenant_id,
@@ -290,6 +308,66 @@ async def toggle_agent(
         "success": True,
         "data": {"agent_id": agent_id, "is_enabled": mapping.is_enabled},
         "message": f"Agent '{agent_id}' 已{'启用' if mapping.is_enabled else '停用'}",
+    }
+
+
+@router.post("/api/v1/tenants/{tenant_id}/my-agents/init-defaults")
+async def init_default_agents(
+    tenant_id: str,
+    current_user: User = Depends(require_coach_or_admin),
+    db: Session = Depends(get_db),
+):
+    """I-05: 基于角色初始化默认 Agent + 合并强制 Agent"""
+    _verify_tenant_owner(tenant_id, current_user, db)
+
+    import json, os
+    cfg_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "configs", "supervisor_credential_config.json",
+    )
+    try:
+        with open(cfg_path, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+    except Exception:
+        cfg = {}
+
+    role_val = current_user.role.value if current_user.role else "coach"
+    defaults_by_role = cfg.get("default_enabled_agents_by_role", {})
+    forced = cfg.get("forced_agents", FORCED_AGENTS)
+    default_agents = defaults_by_role.get(role_val, defaults_by_role.get("coach", ["crisis"]))
+
+    # 合并: 强制 Agent + 角色默认
+    merged = list(dict.fromkeys(forced + default_agents))
+
+    tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="租户不存在")
+
+    # 更新 enabled_agents
+    tenant.enabled_agents = merged
+
+    # 同步 TenantAgentMapping
+    for aid in merged:
+        existing = db.query(TenantAgentMapping).filter(
+            TenantAgentMapping.tenant_id == tenant_id,
+            TenantAgentMapping.agent_id == aid,
+        ).first()
+        if existing:
+            existing.is_enabled = True
+        else:
+            db.add(TenantAgentMapping(
+                tenant_id=tenant_id,
+                agent_id=aid,
+                is_enabled=True,
+            ))
+
+    db.commit()
+    _invalidate_and_reset()
+
+    return {
+        "success": True,
+        "data": {"enabled_agents": merged, "role": role_val},
+        "message": f"已初始化 {len(merged)} 个默认 Agent (角色: {role_val})",
     }
 
 

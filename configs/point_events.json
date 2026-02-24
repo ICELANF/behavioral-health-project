@@ -392,9 +392,10 @@
           "point_type": "influence",
           "amount": 50,
           "max_per_day": 0,
-          "eligible_roles": ["promoter", "master"],
+          "eligible_roles": ["promoter", "supervisor", "master"],
           "triggers_credit": false,
-          "description": "完成督导会议(下级教练)"
+          "description": "完成督导会议(下级教练)",
+          "role_points_override": {"supervisor": 80, "promoter": 50, "master": 50}
         },
         {
           "action": "knowledge_contribute",

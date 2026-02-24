@@ -647,7 +647,7 @@ def activate_tenant(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin),
 ):
-    """将租户从 trial → active (admin only)"""
+    """将租户从 trial → active (admin only) — I-02: 激活前4项检查清单"""
     tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="租户不存在")
@@ -657,13 +657,42 @@ def activate_tenant(
             status_code=400,
             detail=f"当前状态 {tenant.status.value} 不能激活，允许转换: {[s.value for s in allowed]}",
         )
+
+    # I-02: 激活前4项检查清单
+    checklist = {}
+    # 1. 角色已确认
+    checklist["role_confirmed"] = bool(getattr(tenant, "role_confirmed", False))
+    # 2. 伦理声明已签署 (C3纠偏: EthicalDeclaration.accepted_all)
+    try:
+        from core.models import EthicalDeclaration
+        ethics = db.query(EthicalDeclaration).filter(
+            EthicalDeclaration.user_id == tenant.expert_user_id,
+            EthicalDeclaration.accepted_all == True,
+        ).first()
+        checklist["ethics_signed"] = ethics is not None
+    except Exception:
+        checklist["ethics_signed"] = False
+    # 3. 工作空间就绪
+    checklist["workspace_ready"] = bool(getattr(tenant, "workspace_ready", False))
+    # 4. 无违规记录 (suspension_count == 0)
+    checklist["no_violations"] = (getattr(tenant, "suspension_count", 0) or 0) == 0
+
+    failed = [k for k, v in checklist.items() if not v]
+    if failed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"激活前检查未通过: {', '.join(failed)}",
+            headers={"X-Checklist": str(checklist)},
+        )
+
     old_status = tenant.status.value
     tenant.status = TenantStatus.active
+    tenant.activated_at = datetime.utcnow()
     tenant.updated_at = datetime.utcnow()
     db.add(TenantAuditLog(
         tenant_id=tenant_id, actor_id=current_user.id,
         action="status_change",
-        detail={"from": old_status, "to": "active"},
+        detail={"from": old_status, "to": "active", "checklist": checklist},
         created_at=datetime.utcnow(),
     ))
     db.commit()

@@ -13,8 +13,8 @@ const ROLE_NAMES: Record<string, string> = {
   GROWER: '成长者',
   SHARER: '分享者',
   COACH: '教练',
-  PROMOTER: '推广者',
-  SUPERVISOR: '督导',
+  PROMOTER: '促进师',
+  SUPERVISOR: '督导专家',
   MASTER: '大师',
   ADMIN: '管理员',
 }

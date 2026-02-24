@@ -39,7 +39,7 @@ _ROLE_LABEL = {
     "sharer": "分享者",
     "coach": "教练",
     "promoter": "促进师",
-    "supervisor": "督导",
+    "supervisor": "督导专家",
     "master": "大师",
     "admin": "管理员",
     "patient": "患者(旧)",

@@ -12,6 +12,7 @@ R6: Coach 飞轮 API — 真实DB版 (替换 coach_flywheel_api.py)
 部署: 替换 api/coach_flywheel_api.py
 """
 
+import json
 import logging
 from datetime import date, datetime, timedelta
 from typing import Optional, Literal
@@ -248,7 +249,7 @@ async def approve_review(
         WHERE id = :rid
     """), {
         "rid": review_id, "note": body.review_note,
-        "content": body.edited_content, "rx": str(body.edited_rx_json) if body.edited_rx_json else None,
+        "content": body.edited_content, "rx": json.dumps(body.edited_rx_json, ensure_ascii=False) if body.edited_rx_json else None,
         "now": now, "elapsed": elapsed,
     })
 
@@ -260,20 +261,26 @@ async def approve_review(
         if rx_json:
             rx_id = await _activate_prescription(db, student_id, rx_json, review_id)
 
-        # Step 3: 触发任务重新生成
-        try:
-            from api.r2_scheduler_agent import generate_daily_tasks_for_user
-            await generate_daily_tasks_for_user(db, student_id, date.today())
-        except Exception as e:
-            logger.warning(f"审核通过后任务生成失败: {e}")
-
-    # Step 4: 写入审核日志
+    # Step 3: 写入审核日志
     await db.execute(text("""
         INSERT INTO coach_review_logs (coach_id, review_id, action, elapsed_seconds, reviewed_at)
         VALUES (:cid, :rid, 'approved', :elapsed, :now)
     """), {"cid": coach_id, "rid": review_id, "elapsed": elapsed, "now": now})
 
     await db.commit()
+
+    # Step 3b: 触发任务重新生成 (commit 之后, non-blocking)
+    if review["type"] == "prescription":
+        try:
+            from api.r2_scheduler_agent import generate_daily_tasks_for_user
+            await generate_daily_tasks_for_user(db, student_id, date.today())
+            await db.commit()
+        except Exception as e:
+            logger.warning(f"审核通过后任务生成失败 (non-blocking): {e}")
+            try:
+                await db.rollback()
+            except Exception:
+                pass
 
     # Step 5: 推送通知给用户 (commit 之后, non-blocking)
     try:
@@ -297,6 +304,22 @@ async def approve_review(
         logger.info(f"通知已推送: student={student_id}, rx_id={rx_id}")
     except Exception as e:
         logger.warning(f"审核通知推送失败 (non-blocking): {e}")
+
+    # WebSocket 实时推送
+    try:
+        from api.websocket_api import push_user_notification
+        await push_user_notification(
+            user_id=str(student_id),
+            notification={
+                "type": "rx_approved" if rx_id else "review_approved",
+                "title": "处方已审核通过" if rx_id else "审核已通过",
+                "body": "您的行为处方已经教练审核通过，点击查看详情。" if rx_id else "教练已审核通过您的内容。",
+                "rx_id": rx_id,
+                "link": f"/rx/{rx_id}" if rx_id else None,
+            },
+        )
+    except Exception as e:
+        logger.debug(f"WebSocket推送失败 (non-blocking): {e}")
 
     logger.info(f"Coach {coach_id} approved review {review_id} for student {student_id} ({elapsed}s)")
 

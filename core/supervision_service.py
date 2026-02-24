@@ -211,6 +211,66 @@ class SupervisionService:
         return record
 
 
+    def dispatch_action_items(self, db: Session, record_id: int, supervisor: User) -> dict:
+        """
+        I-03: 督导行动项派发 — 会议完成后自动分发 action_items
+
+        action_items 结构: [{"type": "prescription_adjust"|"learning_task"|"self_reflection", ...}]
+        - prescription_adjust → CoachPushQueue (遵守 I-06 铁律: 通过教练审核)
+        - learning_task → Notification(type='learning_task') (C5/C6 纠偏)
+        - self_reflection → Notification(type='self_reflection')
+        """
+        record = self._get_owned_record(db, record_id, supervisor)
+        if record.status != "completed":
+            raise ValueError("只能对已完成的督导会议派发行动项")
+
+        items = record.action_items or []
+        if not items:
+            return {"dispatched": 0, "detail": []}
+
+        results = []
+        for item in items:
+            item_type = item.get("type", "")
+            try:
+                if item_type == "prescription_adjust":
+                    # 通过教练审核队列 (I-06 铁律)
+                    from core.models import CoachPushQueue
+                    entry = CoachPushQueue(
+                        coach_id=record.coach_id,
+                        student_id=item.get("student_id"),
+                        source_type="supervision_action",
+                        title=item.get("title", "督导行动项: 处方调整"),
+                        content=item.get("content", ""),
+                        priority=item.get("priority", "normal"),
+                        status="pending",
+                    )
+                    db.add(entry)
+                    results.append({"type": item_type, "target": "coach_push_queue", "ok": True})
+
+                elif item_type in ("learning_task", "self_reflection"):
+                    # C5/C6 纠偏: 使用 Notification 而非 CoachNotification/LearningAssignment
+                    from core.models import Notification
+                    notif = Notification(
+                        user_id=record.coach_id,
+                        title=item.get("title", f"督导行动项: {item_type}"),
+                        body=item.get("content", ""),
+                        type=item_type,
+                        priority="normal",
+                    )
+                    db.add(notif)
+                    results.append({"type": item_type, "target": "notification", "ok": True})
+
+                else:
+                    results.append({"type": item_type, "target": "unknown", "ok": False})
+
+            except Exception as e:
+                logger.warning("dispatch_action_items item failed: %s", e)
+                results.append({"type": item_type, "target": "error", "ok": False, "error": str(e)})
+
+        db.commit()
+        return {"dispatched": sum(1 for r in results if r["ok"]), "detail": results}
+
+
 def _record_to_dict(r: CoachSupervisionRecord, db: Session) -> dict:
     """序列化督导记录"""
     # 获取 supervisor 和 coach 的名字

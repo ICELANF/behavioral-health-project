@@ -148,6 +148,31 @@ class GovernancePointsTrigger:
                     "strategy": cheat_result.get("blocked_by"),
                 }
         
+        # I-08: 角色差异化积分 — 读取 role_points_override
+        try:
+            import json as _json
+            import os as _os
+            _pe_path = _os.path.join(
+                _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__))),
+                "configs", "point_events.json",
+            )
+            with open(_pe_path, "r", encoding="utf-8") as _f:
+                _pe_cfg = _json.load(_f)
+            # 查找当前 event_type 的 role_points_override
+            _override = None
+            for section in _pe_cfg.get("events", {}).values():
+                if isinstance(section, list):
+                    for ev in section:
+                        if ev.get("action") == event_type and "role_points_override" in ev:
+                            _override = ev["role_points_override"]
+                            break
+            if _override and "user_role" in context:
+                role_amount = _override.get(context["user_role"])
+                if role_amount is not None:
+                    context["amount_override"] = role_amount
+        except Exception:
+            pass
+
         # 调用 IncentiveEngine 核心计分
         result = await self.engine.award_points(
             user_id=user_id,
@@ -222,11 +247,12 @@ class GovernancePointsTrigger:
         })
     
     async def on_supervision_completed(
-        self, user_id: int, session_id: str
+        self, user_id: int, session_id: str, user_role: str = ""
     ) -> dict:
-        """GOV-07: 督导会议完成 → +50 影响力分"""
-        return await self._award_points(user_id, "supervision_session_completed", {
+        """GOV-07: 督导会议完成 → 影响力分 (I-08: supervisor=80, promoter=50, master=50)"""
+        return await self._award_points(user_id, "supervision_meeting", {
             "session_id": session_id,
+            "user_role": user_role,
         })
     
     async def on_agent_feedback_reply(

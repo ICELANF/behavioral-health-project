@@ -130,7 +130,7 @@ function statusLabel(s: string) {
 }
 
 function roleLabel(r: string) {
-  const map: Record<string, string> = { OBSERVER: '观察者', GROWER: '成长者', SHARER: '分享者', COACH: '教练', PROMOTER: '推广者', SUPERVISOR: '督导', MASTER: '大师', ADMIN: '管理员' }
+  const map: Record<string, string> = { OBSERVER: '观察者', GROWER: '成长者', SHARER: '分享者', COACH: '教练', PROMOTER: '促进师', SUPERVISOR: '督导专家', MASTER: '大师', ADMIN: '管理员' }
   return map[r] || r
 }
 

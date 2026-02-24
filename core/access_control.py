@@ -128,3 +128,54 @@ def _check_coach_student_relation(
             f"student={student_id} error={e}"
         )
         return False
+
+
+# ============================================
+# I-06: 铁律执行 — 督导不能直推学员
+# ============================================
+
+# C1 纠偏: User 模型无 role_level 列, 使用 ROLE_LEVEL dict
+_ROLE_LEVEL = {
+    "observer": 1, "grower": 2, "sharer": 3, "coach": 4,
+    "promoter": 5, "supervisor": 5, "master": 6, "admin": 99,
+}
+
+_STUDENT_ROLES = {"observer", "grower", "sharer"}
+
+
+def require_supervisor_or_above(current_user) -> None:
+    """权限检查: 当前用户必须是 supervisor 或更高级角色"""
+    role_val = current_user.role.value if current_user.role else "observer"
+    level = _ROLE_LEVEL.get(role_val, 0)
+    if level < 5:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"需要督导专家或更高权限 (当前: {role_val})",
+        )
+
+
+def enforce_iron_law_supervisor_push(current_user, student_id: int, db: Session) -> None:
+    """
+    I-06 铁律: 督导不能直接推送给学员
+    若 role==supervisor 且目标是学员(observer/grower/sharer) → 403
+    必须通过教练审核队列 (CoachPushQueue)
+    """
+    role_val = current_user.role.value if current_user.role else "observer"
+    if role_val != "supervisor":
+        return  # 非督导角色不受此限制
+
+    # 查目标用户角色
+    try:
+        target = db.execute(
+            text("SELECT role::text AS role FROM users WHERE id = :uid"),
+            {"uid": student_id},
+        ).fetchone()
+        if target and target.role.lower() in _STUDENT_ROLES:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="铁律: 督导专家不能直接推送给学员，必须通过教练审核队列",
+            )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"[IRON-LAW] 目标用户检查异常: student={student_id} error={e}")

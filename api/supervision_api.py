@@ -179,3 +179,50 @@ def supervision_stats(
     """督导统计 (当前用户)"""
     stats = _svc.get_stats(db, current_user.id)
     return {"success": True, "data": stats}
+
+
+@router.post("/sessions/{session_id}/dispatch")
+def dispatch_action_items(
+    session_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """I-03: 督导行动项派发 — 完成会议后分发 action_items"""
+    try:
+        result = _svc.dispatch_action_items(db, session_id, current_user)
+        return {"success": True, "data": result}
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/my-coaches")
+def list_my_coaches(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """列出当前督导专家管理的教练 (通过督导记录去重)"""
+    from core.models import CoachSupervisionRecord, User as UserModel
+    from sqlalchemy import distinct
+
+    coach_ids = db.query(distinct(CoachSupervisionRecord.coach_id)).filter(
+        CoachSupervisionRecord.supervisor_id == current_user.id,
+    ).all()
+    coach_ids = [cid[0] for cid in coach_ids]
+
+    if not coach_ids:
+        return {"success": True, "data": [], "total": 0}
+
+    coaches = db.query(UserModel).filter(UserModel.id.in_(coach_ids)).all()
+    data = [
+        {
+            "id": c.id,
+            "username": c.username,
+            "full_name": c.full_name,
+            "role": c.role.value if c.role else "",
+            "is_active": c.is_active,
+        }
+        for c in coaches
+    ]
+    return {"success": True, "data": data, "total": len(data)}

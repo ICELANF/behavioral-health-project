@@ -189,7 +189,7 @@ def get_user_role_profile(
         "full_name": user.full_name,
         "role": role_val,
         "role_label": {
-            "admin": "管理员", "supervisor": "督导", "promoter": "促进师",
+            "admin": "管理员", "supervisor": "督导专家", "promoter": "促进师",
             "master": "大师", "coach": "教练", "sharer": "分享者",
             "grower": "成长者", "observer": "观察员",
         }.get(role_val, role_val),

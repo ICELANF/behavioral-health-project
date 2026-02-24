@@ -64,7 +64,7 @@ def rx_dto_to_copilot_json(
         "problem": dto.reasoning.split("。")[0] if dto.reasoning else "需要关注行为改变",
         "difficulty": _intensity_to_difficulty(intensity_str),
         "purpose": f"通过{_STRATEGY_ZH.get(strategy_str, strategy_str)}策略促进行为改变",
-        "evidence": [],
+        "evidence": [{"tier": "T3", "label": "专家共识"}],
         "interventionAlert": "",
     }
 
@@ -156,6 +156,7 @@ def rx_dto_to_copilot_json(
         "agent_type": dto.agent_type.value if hasattr(dto.agent_type, "value") else str(dto.agent_type),
         "confidence": dto.confidence,
         "rx_id": str(dto.rx_id) if dto.rx_id else None,
+        "evidence_tier": getattr(dto, "evidence_tier", "T3"),
     }
 
     return {
