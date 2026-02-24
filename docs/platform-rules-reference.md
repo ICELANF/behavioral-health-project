@@ -1,7 +1,7 @@
 # 行健平台 — 规则体系完整参考文档
 
-**版本:** V5.2.6
-**生成时间:** 2026-02-24
+**版本:** V5.2.6-complete
+**更新时间:** 2026-02-24
 **适用范围:** 行为健康数字平台全部规则性内容的唯一权威参考
 **代码库:** `D:\behavioral-health-project`
 
@@ -48,6 +48,8 @@
   - [5.3 策略引擎五步管线 (PolicyEngine)](#53-策略引擎五步管线-policyengine)
 - [六、设备预警规则](#六设备预警规则)
 - [七、治理与同道者规则 (V4.0)](#七治理与同道者规则-v40)
+- [八、干预包规则](#八干预包规则)
+- [九、干预策略树](#九干预策略树)
 
 ---
 
@@ -348,6 +350,70 @@ journey_companion (旅程伴行), growth_reflection (成长复盘), coach_copilo
 
 **4 个 BehaviorRx Expert Agent:**
 BehaviorCoachAgent, MetabolicExpertAgent, CardiacExpertAgent, AdherenceExpertAgent
+
+#### Agent 基础权重 (AGENT_BASE_WEIGHTS)
+
+> **权威来源:** `core/agents/base.py`
+
+| Agent | 基础权重 | 说明 |
+|-------|---------|------|
+| crisis | 1.0 | 最高优先级 |
+| glucose | 0.9 | — |
+| behavior_rx | 0.9 | — |
+| sleep | 0.85 | — |
+| stress | 0.85 | — |
+| mental | 0.85 | — |
+| weight | 0.85 | — |
+| cardiac_rehab | 0.85 | — |
+| nutrition | 0.8 | — |
+| exercise | 0.8 | — |
+| motivation | 0.8 | — |
+| tcm | 0.75 | 最低权重 |
+
+#### 域关联网络 (DOMAIN_CORRELATIONS)
+
+> **权威来源:** `core/agents/base.py`
+
+| 主域 | 关联域 |
+|------|-------|
+| sleep | glucose, stress, mental, exercise |
+| glucose | sleep, nutrition, exercise, weight, stress |
+| stress | sleep, mental, exercise, cardiac_rehab |
+| nutrition | glucose, exercise, weight, tcm |
+| exercise | glucose, stress, sleep, weight, cardiac_rehab |
+| mental | stress, sleep, behavior_rx, motivation |
+| tcm | nutrition, sleep, mental, stress |
+| crisis | mental, stress, behavior_rx |
+| behavior_rx | mental, motivation, nutrition, exercise, sleep, glucose, weight, tcm, stress |
+| weight | nutrition, exercise, glucose, sleep, mental, motivation, behavior_rx, tcm |
+| cardiac_rehab | exercise, stress, sleep, nutrition, mental, glucose, weight, motivation, behavior_rx |
+
+**使用规则:** 主 Agent 选定后, 按 R6 规则从关联域中选择 1 个辅助 Agent (需有关键词命中)。
+
+#### 多 Agent 协调九步算法 (MultiAgentCoordinator)
+
+> **权威来源:** `core/agents/coordinator.py`
+
+```
+Step 1: 分配权重 — AGENT_BASE_WEIGHTS × agent.confidence
+Step 2: 检测冲突 — 扫描所有 Agent 对, 查 CONFLICT_PRIORITY 字典
+Step 3: 解决冲突 — 低优先域的 confidence × 0.6
+Step 4: 合并发现 — 拼接所有 Agent 的 findings
+Step 5: 合并建议 — 按 (weight × confidence) 降序排列
+Step 6: 综合风险 — 取最大值: CRITICAL > HIGH > MODERATE > LOW
+Step 7: 综合置信度 — 加权平均: Σ(weight × confidence) / Σ(weight)
+Step 8: 提取共识 — 出现在 ≥2 个 Agent 建议中的话题
+Step 9: 生成摘要 — "综合 N 个 Agent (domains...) 结论: 风险=X, 置信度=Y"
+```
+
+**冲突优先级规则 (CONFLICT_PRIORITY):**
+
+| Agent A | Agent B | 胜者 | 理由 |
+|---------|---------|------|------|
+| glucose | nutrition | glucose | 血糖优先 |
+| sleep | exercise | sleep | 睡眠优先 |
+| stress | exercise | stress | 压力管理优先 |
+| mental | exercise | mental | 心理健康优先 |
 
 ---
 
@@ -881,6 +947,29 @@ POST /copilot/generate-prescription {"student_id": N}
 **冲突策略:** `ON CONFLICT (id) DO NOTHING` (copilot/r4), 直接 INSERT (审批激活)
 **失败处理:** copilot → db.rollback() + 继续返回结果 (non-blocking); r4 → fallback 到默认处方
 
+#### CopilotPrescriptionService LLM 路径规则
+
+> **权威来源:** `core/copilot_prescription_service.py` (839行)
+
+**阶段→SPI 范围映射:**
+
+| 阶段 | 中文 | SPI 范围 | 干预阶段 |
+|------|------|---------|---------|
+| S0 | 无知无觉 | 5–15 | 认知唤醒 |
+| S1 | 强烈抗拒 | 10–25 | 认知唤醒 |
+| S2 | 被动承诺 | 20–40 | 动机激发 |
+| S3 | 勉强接受 | 35–55 | 行为塑造 |
+| S4 | 主动尝试 | 50–70 | 习惯强化 |
+| S5 | 规律践行 | 65–85 | 自主维持 |
+| S6 | 内化为常 | 80–95 | 自主维持 |
+
+**数据采集窗口:**
+- 近期设备数据: 7 天 (血糖/睡眠/运动/微行动)
+- 体征数据: 最近 5 条记录
+- 评估数据: 最新一次 (无时间窗口限制)
+
+**LLM 冷却规则:** 失败后 300 秒 (5 分钟) 内不重试, 直接走规则引擎降级路径
+
 ---
 
 ### 3.9 Profile→RxContext 适配规则
@@ -1158,6 +1247,15 @@ L0→L1 升级完成后:
 | M3 心智 | 思维觉察者 | 思维重构者 | 思维建筑师 | 心智之光 |
 | M4 教练 | 陪伴体验者 | 陪伴技术者 | 陪伴引领者 | 同行之灯 |
 
+**模块精通学分门槛:**
+
+| 层级 | M1 行为 | M2 生活方式 | M3 心智 | M4 教练 |
+|------|--------|-----------|--------|--------|
+| T1 觉察者 | 20 学分 | 20 学分 | 20 学分 | 20 学分 |
+| T2 实践者 | 60 学分 | 60 学分 | 60 学分 | 60 学分 |
+| T3 设计师 | 120 学分 | 100 学分 | 120 学分 | 100 学分 |
+| T4 大师 | 300 学分 | 250 学分 | 300 学分 | 250 学分 |
+
 **组合徽章:** 四维觉醒 (全T1) + 四维大师 (全T4, legendary)
 
 **4. 晋级仪式徽章 (5枚):**
@@ -1228,6 +1326,55 @@ L0→L1 升级完成后:
 }
 ```
 
+#### 逐级晋级详细要求
+
+> **权威来源:** `configs/promotion_rules.json`
+
+**L0→L1 (观察员→成长者)** — 最短 ~3 个月, 理论:实践 = 8:2
+
+| 维度 | 要求 |
+|------|------|
+| 学分 | 总 100 (必修 60: M1=20,M2=20,M3=10,M4=10; 选修 40) |
+| 积分 | 成长≥100 |
+| 同道者 | 4 名观察员 (invite 模式, 不要求质量分) |
+| 实践 | behavior_attempts≥15, understanding_score≥4, 伦理通过 |
+
+**L1→L2 (成长者→分享者)** — 最短 ~3 个月, 理论:实践 = 7:3
+
+| 维度 | 要求 |
+|------|------|
+| 学分 | 总 200 (必修 120: M1=40,M2=40,M3=20,M4=20; 选修 80) |
+| 积分 | 成长≥300, 贡献≥30, 影响力≥10 |
+| 同道者 | 4 名观察员 (mentor 模式, 生命周期 S0→S4) |
+| 实践 | 稳定行为 90 天, 指标改善≥2, 数据贡献≥3, 阶段 S0-S4 全部完成 |
+
+**L2→L3 (分享者→教练)** — 最短 ~10 个月, 理论:实践 = 5:5
+
+| 维度 | 要求 |
+|------|------|
+| 学分 | 总 800 (必修 380: M1=120,M2=100,M3=70,M4=90; 选修 420) |
+| 积分 | 成长≥800, 贡献≥100, 影响力≥50 |
+| 同道者 | 4 名成长者 (mentor, quality≥3.5) |
+| 实践 | 240 小时(score≥400), 10 案例, 可解释性≥0.8, 同道者时长≥50h, 培训≥40h, 伦理通过 |
+
+**L3→L4 (教练→促进师)** — 最短 ~15 个月, 理论:实践 = 4:6
+
+| 维度 | 要求 |
+|------|------|
+| 学分 | 总 1500 (必修 690: M1=180,M2=150,M3=120,M4=240; 选修 810) |
+| 积分 | 成长≥1500, 贡献≥500, 影响力≥200 |
+| 同道者 | 4 名分享者 (mentor, quality≥4.0), 已培养 L3+≥5 |
+| 实践 | 项目≥2, 课程开发≥1, 模板被采用≥2 |
+
+**L4→L5 (促进师→大师)** — 最短 ~24 个月, 理论:实践 = 3:7
+
+| 维度 | 要求 |
+|------|------|
+| 学分 | 总 3000 (必修 1200: M1=300,M2=250,M3=250,M4=400; 选修 1800) |
+| 积分 | 成长≥3000, 贡献≥1500, 影响力≥800 |
+| 同道者 | 4 名教练 (mentor, quality≥4.5), 已培养 L3≥15, L4≥4 |
+| 实践 | 原创方法论, 参与标准制定, 专家一致认可 |
+
 ---
 
 ## 五、安全管道规则
@@ -1246,6 +1393,40 @@ L0→L1 升级完成后:
 | L2 rag_safety | RAG 检索后 | 验证检索文档的安全性和相关性 |
 | L3 generation_guard | MasterAgent Step 7.5 | LLM 生成过程中的安全约束 |
 | L4 output_filter | MasterAgent Step 8.5 | 最终输出检查, 移除不安全内容 |
+
+#### 安全管线具体阈值
+
+> **权威来源:** `configs/safety_rules.json`
+
+| 参数 | 值 | 说明 |
+|------|------|------|
+| max_input_length | 5000 字符 | 超长输入截断 |
+| max_output_length | 8000 字符 | 超长输出截断 |
+| crisis_auto_escalate | true | 危机自动升级 |
+| pii_log_enabled | false | 不记录个人身份信息 |
+| review_queue_enabled | true | 启用审核队列 |
+
+**证据分级权重 (RAG 多源验证):**
+
+| 等级 | 权重 | 说明 |
+|------|------|------|
+| T1 | 1.0 | 最高证据级 (RCT/Meta分析) |
+| T2 | 0.8 | 中等证据 |
+| T3 | 0.5 | 较低证据 |
+| T4 | 0.2 | 最低证据 (专家意见) |
+
+**严重度→动作映射:**
+
+| 严重度 | 动作 | 通知管理员 | 记录输入 |
+|--------|------|----------|---------|
+| critical | block_and_escalate | 是 | 是 |
+| high | flag_for_review | 是 | 是 |
+| medium | add_disclaimer | 否 | 是 |
+| low | pass | 否 | 否 |
+
+**白名单域 (安全推荐类别):** nutrition, exercise, sleep, motivation, tcm
+
+**危机联系方式:** 热线 400-161-9995, 管理员通知已启用
 
 ---
 
@@ -1337,7 +1518,73 @@ Step 5: Trace — 记录决策轨迹
 | 睡眠质量 | <50 分 | — |
 | 睡眠不足 | <300 分钟 | — |
 
-**去重规则:** 同一数据类型 + 同一用户, 相同级别的预警在配置时间窗口内仅触发一次。
+**去重规则:** 同一数据类型 + 同一用户, 相同级别的预警在配置时间窗口内 (默认 1 小时) 仅触发一次。
+
+### R0-R4 五级风险区间
+
+> **权威来源:** `configs/risk_thresholds.json`
+
+#### 血糖 (mmol/L)
+
+| 等级 | 范围 | 说明 |
+|------|------|------|
+| R0 安全 | 3.9–7.0 | 无需响应 |
+| R1 注意 | 3.5–10.0 | 通知用户 |
+| R2 警告 | 3.0–13.9 | 通知用户+教练 |
+| R3 高危 | 2.5–16.6 | 强制教练介入 |
+| R4 危急 | <2.5 或 >16.7 | 危机接管+紧急联系人 |
+
+#### 心率 (bpm)
+
+| 等级 | 范围 |
+|------|------|
+| R0 | 55–100 |
+| R1 | 50–110 |
+| R2 | 45–130 |
+| R3 | 40–150 |
+| R4 | <40 或 >150 |
+
+#### 血压 (收缩压 / 舒张压, mmHg)
+
+| 等级 | 收缩压 | 舒张压 |
+|------|--------|--------|
+| R0 | 100–139 | 60–89 |
+| R1 | 90–159 | ≤99 |
+| R2 | 80–179 | ≤109 |
+| R3 | 70–199 | ≤119 |
+| R4 | <70 或 >200 | >120 |
+
+#### 血氧饱和度 (SpO2, %)
+
+| 等级 | 阈值 |
+|------|------|
+| R0 | ≥96% |
+| R1 | ≥93% |
+| R2 | ≥90% |
+| R3 | ≥85% |
+| R4 | <85% |
+
+#### 风险等级→响应 SLA
+
+| 等级 | 响应时间 | 动作 |
+|------|---------|------|
+| R0 | 无 | log_only |
+| R1 | 24 小时 | log + notify_user |
+| R2 | 4 小时 | notify_user + notify_coach |
+| R3 | 1 小时 | force_coach + supervisor_notify |
+| R4 | 1 小时 | crisis_takeover + emergency_contact |
+
+### 设备预警双通知链
+
+> **权威来源:** `core/device_alert_service.py`
+
+```
+设备数据异常检测 → 去重检查 (1h 窗口)
+  ↓ 通过
+1. 教练通知: CoachMessage (直接消息)
+2. 用户通知: Reminder (提醒)
+3. 审批队列: CoachPushQueue (供教练决策后续干预)
+```
 
 ---
 
@@ -1392,40 +1639,203 @@ Stage Authority (C3 审计修复): 阶段晋级需要治理引擎授权, 防止�
 
 ---
 
+## 八、干预包规则
+
+> **权威来源:** `configs/intervention_packs.json`
+
+10 个临床干预包, 由设备预警或行为检测触发, 含微行动任务 + 教练脚本。
+
+### 干预包总览
+
+| ID | 名称 | 触发标签 | 优先级 | 风险 | 最低教练级 |
+|----|------|---------|--------|------|----------|
+| IP-GLU-001 | 高血糖紧急干预 | high_glucose, glucose_spike | 1 | high/mid | L1 |
+| IP-GLU-002 | 低血糖预防与应对 | low_glucose | 1 | high | L1 |
+| IP-GLU-003 | 血糖波动管理 | glucose_fluctuation, glucose_spike | 2 | mid/low | L2 |
+| IP-DIET-001 | 暴饮暴食行为干预 | overeating | 2 | high/mid | L2 |
+| IP-DIET-002 | 高碳水饮食调整 | high_carb, irregular_meals | 3 | mid/low | L1 |
+| IP-EXR-001 | 久坐行为干预 | sedentary, low_activity | 3 | mid/low | L1 |
+| IP-MED-001 | 用药依从性提升 | missed_medication, irregular_medication | 2 | high/mid | L1 |
+| IP-SLP-001 | 睡眠质量改善 | poor_sleep, insomnia | 3 | mid/low | L1 |
+| IP-STR-001 | 压力与焦虑管理 | high_stress, anxiety | 2 | high/mid | L2 |
+| IP-EXR-002 | 运动习惯养成 | low_activity | 3 | low/normal | L1 |
+
+### 各干预包详情
+
+**IP-GLU-001 高血糖紧急干预** (适用阶段: 前意识/意识/准备)
+- 任务 1: 餐后血糖监测 (7 天)
+- 任务 2: 碳水替换实验
+- 任务 3: 餐后 15 分钟散步
+- 教练: 血糖数据解读对话 → 行为实验共创 → MI 动机访谈
+
+**IP-GLU-002 低血糖预防** (适用阶段: 意识/准备/行动)
+- 任务 1: 低血糖症状识别
+- 任务 2: 应急食物准备 (15g 快速碳水)
+- 教练: 应急演练 + 信心建立
+
+**IP-GLU-003 血糖波动管理** (适用阶段: 准备/行动/维持)
+- 任务 1: 3D 血糖-饮食-运动记录
+- 任务 2: 个性化饮食方案执行
+- 教练: 模式分析 → 方案微调
+
+**IP-DIET-001 暴饮暴食干预** (适用阶段: 前意识→行动)
+- 任务 1: 情绪-饮食日记
+- 任务 2: 3 个替代行为 (深呼吸/散步/打电话)
+- 教练: 情绪触发探索 → 正念饮食指导 → 共情支持
+
+**IP-DIET-002 高碳水调整** (适用阶段: 意识/准备/行动)
+- 任务 1: 每日碳水摄入记录
+- 任务 2: 碳水减半实验
+- 教练: 营养教育 (白米饭 60g 碳水对比) → 渐进调整
+
+**IP-EXR-001 久坐干预** (适用阶段: 前意识→行动)
+- 任务 1: 屏幕时间记录
+- 任务 2: 每小时 2-5 分钟起身活动
+- 任务 3: 步行通勤实验 (2000+步/天)
+- 教练: 久坐危害教育 → 办公环境重设计
+
+**IP-MED-001 用药依从** (适用阶段: 意识→维持)
+- 任务 1: 14 天服药记录
+- 任务 2: 习惯叠加 (如刷牙后吃药, 21 天)
+- 教练: 用药意义对话 → 障碍排除
+
+**IP-SLP-001 睡眠改善** (适用阶段: 意识→维持)
+- 任务 1: 14 天睡眠日记
+- 任务 2: 30 分钟睡前仪式 (戒屏/温水泡脚/4-7-8 呼吸)
+- 任务 3: 7 天固定作息时间表
+- 教练: 睡眠卫生教育 → 失眠焦虑重构
+
+**IP-STR-001 压力管理** (适用阶段: 前意识→行动)
+- 任务 1: 7 天压力事件日记 (每天 3 事件)
+- 任务 2: 每日 15 分钟渐进式肌肉放松 (PMR)
+- 任务 3: 认知重构练习
+- 教练: 压力源分析 (可控 vs 不可控) → 4-7-8 呼吸法 → 共情支持
+
+**IP-EXR-002 运动习惯** (适用阶段: 准备/行动/维持)
+- 任务 1: 周步数挑战 (每周 +1000 步, 目标 8000/天)
+- 任务 2: 21 天固定运动时间锚点
+- 教练: 个性化运动方案共创 → 进度回顾+正向强化
+
+---
+
+## 九、干预策略树
+
+> **权威来源:** `configs/intervention_strategies.json`
+
+5 个就绪度等级 × 24 个原因分类 = 50+ 干预策略路径
+
+### 五级就绪度
+
+| 等级 | 中文 | 说明 |
+|------|------|------|
+| L1 | 完全对抗 | 无改变意愿, 需最温和接触 |
+| L2 | 抗拒与反思 | 有矛盾, 可引导反思 |
+| L3 | 妥协与接受 | 愿意尝试小步骤 |
+| L4 | 顺应与调整 | 主动调整行为 |
+| L5 | 全面臣服 | 完全投入, 可升华为使命 |
+
+### 24 原因分类
+
+#### 内在驱动 (C1-C4)
+
+| # | 分类 | L1 策略 | L3 策略 | L5 策略 |
+|---|------|--------|--------|--------|
+| C1 | 价值观重塑 | "最重要的生活价值?" | "本周从哪件事开始?" | "想传递给谁?" |
+| C2 | 身份认同转变 | "理想中自己什么样?" | 身份实验 | 身份巩固+传递 |
+| C3 | 意义感与使命 | "最遗憾的事?" | 价值发现 | 使命升华 |
+| C4 | 自主掌控欲 | "能完全掌控什么?" | 选择赋权 | 全面自主 |
+
+#### 外部事件 (C5-C8)
+
+| # | 分类 | L1 策略 | L3 策略 | L5 策略 |
+|---|------|--------|--------|--------|
+| C5 | 关键健康事件 | "检查结果什么感受?" | "医生建议怎么开始?" | 数据验证+传播 |
+| C6 | 重大生活变迁 | 变化是审视机会 | 重建规律 | 影响力扩展 |
+| C7 | 社会压力 | "哪些压力想回应?" | 同伴支持 | 成为榜样 |
+| C8 | 经济压力 | 医疗费用分析 | 零成本方案 | 经验分享 |
+
+#### 情绪因素 (C9-C12)
+
+| # | 分类 | L1 策略 | L3 策略 | L5 策略 |
+|---|------|--------|--------|--------|
+| C9 | 恐惧与焦虑 | "最担心具体什么?" | 安全行动 | 恐惧转化 |
+| C10 | 愤怒与不甘 | "最想改变第一件事?" | 行动宣言 | 正向传递 |
+| C11 | 羞耻与内疚 | "给自己重新开始?" | 勇气行动 | 成功分享 |
+| C12 | 积极情绪 | "什么让您有启发?" | 正向循环 | 喜悦分享 |
+
+#### 认知因素 (C13-C16)
+
+| # | 分类 | L1 策略 | L3 策略 | L5 策略 |
+|---|------|--------|--------|--------|
+| C13 | 顿悟时刻 | "突然意识到什么?" | 觉察深化 | 智慧结晶 |
+| C14 | 知识补充 | "想了解什么?" | 实践验证 | 教学传承 |
+| C15 | 风险觉知 | "风险自评 1-10?" | 行动计划 | 传播预防 |
+| C16 | 未来思维 | "五年后的自己?" | 决策矩阵 (改变 vs 不改变) | 人生导师 |
+
+#### 能力资源 (C17-C20)
+
+| # | 分类 | L1 策略 | L3 策略 | L5 策略 |
+|---|------|--------|--------|--------|
+| C17 | 时间资源 | "最放松时段?" | 碎片化设计 (5分钟) | 时间管理传授 |
+| C18 | 经济资源 | 零成本方案 | 投资回报分析 | 资源共享 |
+| C19 | 技能提升 | "已经会做什么?" | 技能进阶 | 技能传授 |
+| C20 | 环境改善 | "支持 vs 阻碍因素?" | 环境改造 | 环境倡导 |
+
+#### 社会因素 (C21-C24)
+
+| # | 分类 | L1 策略 | L3 策略 | L5 策略 |
+|---|------|--------|--------|--------|
+| C21 | 榜样影响 | "想变成那样的人?" | 榜样故事 | 成为榜样 |
+| C22 | 同伴社群 | "社群共同努力?" | 社群匹配 | 社群领导 |
+| C23 | 家庭支持 | "家人态度?" | 家庭共建 | 家庭教育者 |
+| C24 | 专业指导 | "专业方案更有信心?" | 教练协作 | 角色升级 (教练培训) |
+
+---
+
 ## 附录: 权威来源文件索引
 
 | 文件 | 行数 | 规则内容 |
 |------|------|---------|
 | `api/paths_api.py` | ~200 | 六级门槛, 等级计算 |
 | `api/learning_api.py` | ~700 | 等级要求, 学时/测验/连续积分 |
+| `api/assessment_pipeline_api.py` | ~300 | BAPS评估管线 |
+| `api/r4_role_upgrade_trigger.py` | ~570 | Observer→Grower升级 + BehaviorRx集成 |
+| `api/r6_coach_flywheel_api_live.py` | ~456 | 教练审批5步闭环, 处方激活, 通知推送 |
+| `api/governance_api.py` | ~400 | V4.0治理26端点 |
+| `api/policy_api.py` | ~200 | 策略引擎12端点 |
+| `api/main.py` (rx端点) | ~94 | 处方查询权限, 通知聚合+深度链接解析 |
+| `api/v14/copilot_routes.py` | ~330 | 混合路由: BehaviorRx→LLM降级 |
 | `core/learning_service.py` | ~400 | 角色晋级5规则, 同道者计数 |
 | `core/user_segments.py` | ~550 | 4来源×4层级, 6画像 |
 | `core/promotion_service.py` | ~210 | 4维晋级检查 |
 | `core/challenge_service.py` | ~590 | 挑战生命周期, 双审核 |
 | `core/coach_push_queue_service.py` | ~515 | 推送审批工作流 |
 | `core/push_recommendation_service.py` | ~100 | 6规则推荐引擎 |
+| `core/copilot_prescription_service.py` | ~840 | LLM+规则引擎处方, 阶段→SPI映射, LLM冷却 |
 | `core/scheduler.py` | ~300 | 20定时任务 |
 | `core/master_agent_v0.py` | ~400 | 9步管线 |
 | `core/agents/router.py` | ~120 | 6优先级路由 |
+| `core/agents/base.py` | ~180 | Agent基础权重 + 域关联网络 |
+| `core/agents/coordinator.py` | ~200 | 多Agent协调9步算法 + 冲突优先级 |
 | `core/agents/v4_agents.py` | ~390 | 4个V4 Agent |
+| `core/rx_context_adapter.py` | ~126 | Profile→RxContext适配, 域→Agent映射, Barrier映射 |
+| `core/rx_response_mapper.py` | ~213 | DTO→Copilot JSON映射, 沟通风格→语调 |
+| `core/safety/safety_rules_ortho.py` | ~140 | L1-L4安全门 |
+| `core/peer_tracking_service.py` | ~300 | 同道者匹配与生命周期 |
+| `core/device_alert_service.py` | ~250 | 设备预警双通知链, 去重 |
+| `gateway/channels/push_router.py` | ~129 | 通知路由级联规则, 渠道选择 |
 | `behavior_rx/core/behavior_rx_engine.py` | ~900 | 三维处方引擎全部规则 |
 | `behavior_rx/core/rx_schemas.py` | ~300 | DTO定义, 枚举 |
-| `core/safety/safety_rules_ortho.py` | ~140 | L1-L4安全门 |
-| `core/copilot_prescription_service.py` | ~840 | LLM+规则引擎处方 |
-| `api/assessment_pipeline_api.py` | ~300 | BAPS评估管线 |
-| `api/r4_role_upgrade_trigger.py` | ~570 | Observer→Grower升级 |
-| `api/governance_api.py` | ~400 | V4.0治理26端点 |
-| `core/peer_tracking_service.py` | ~300 | 同道者匹配与生命周期 |
-| `api/policy_api.py` | ~200 | 策略引擎12端点 |
 | `configs/point_events.json` | ~430 | 30+积分事件定义 |
 | `configs/milestones.json` | ~300 | 7里程碑+翻牌+恢复 |
-| `configs/badges.json` | ~130 | 20+徽章+稀有度 |
-| `core/rx_context_adapter.py` | ~126 | Profile→RxContext适配, 域→Agent映射, Barrier映射 |
-| `core/rx_response_mapper.py` | ~213 | DTO→Copilot JSON映射, 沟通风格→语调, 处方显示映射 |
-| `api/r6_coach_flywheel_api_live.py` | ~456 | 教练审批5步闭环, 处方激活, 通知推送 |
-| `gateway/channels/push_router.py` | ~129 | 通知路由级联规则, 渠道选择 |
-| `api/main.py` (rx端点) | ~94 | 处方查询权限, 通知聚合+深度链接解析 |
+| `configs/badges.json` | ~130 | 20+徽章+稀有度+学分门槛 |
+| `configs/alert_thresholds.json` | ~100 | 设备预警基础阈值 |
+| `configs/risk_thresholds.json` | ~180 | R0-R4五级风险区间 + 响应SLA |
+| `configs/promotion_rules.json` | ~350 | 逐级晋级详细要求 (学分/实践/比例/时长) |
+| `configs/safety_rules.json` | ~70 | 安全阈值/证据权重/严重度动作/危机热线 |
+| `configs/intervention_packs.json` | ~600 | 10个干预包定义 |
+| `configs/intervention_strategies.json` | ~1100 | 24因×5级干预策略树 |
 
 ---
 
-*本文档版本 V5.2.6 (P1闭环补充), 与代码库同步。所有规则数据均从生产代码中直接提取。*
+*本文档版本 V5.2.6-complete, 与代码库同步。覆盖 9 大章节, 39 个配置/代码权威来源, 500+ 条规则。所有数据均从生产代码和配置文件直接提取。*
