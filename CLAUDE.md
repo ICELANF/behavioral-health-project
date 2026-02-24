@@ -1,6 +1,9 @@
-# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.2.6)
+# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.2.9)
 
 > 本文件由 Claude Code 自动加载，指导 AI 如何在本项目中工作。
+> **V5.2.9 变更**: 2026-02-24 VisionGuard视力行为保护域: Migration 053(5新表) + core/vision_service.py(5 ORM+评分引擎+风险评估+监护人+处方触发) + VisionGuideAgent(5意图+处方生成) + 5 Scheduler Jobs(23:00/23:15/Mon08/Sun06/月1日) + api/vision_api.py(14端点) + H5 4页面(打卡/监护人/档案/检查) + Admin审批队列 + h5/src/api/vision.ts; 铁律合规(AI→教练审核→推送)
+> **V5.2.8 变更**: 2026-02-24 审计I-01~I-09全量实施: Migration 052(2新表+7列扩展) + 双轨角色升级(I-01) + 激活4项检查(I-02) + 督导行动项派发(I-03) + 显示名称统一7处(I-04) + 强制Agent(I-05) + 铁律执行(I-06) + 资质生命周期(I-07, 4端点+调度器) + 积分差异化(I-08) + 循证等级治理(I-09) + 8处代码纠偏(C1-C8)
+> **V5.2.7 变更**: 2026-02-24 督导专家系统(6端点+状态机) + 租户生命周期(3端点) + RBAC修复 + P1 E2E验证3修复(json.dumps+事务隔离) + P1通知增强(WebSocket推送+2新端点) + 33测试
 > **V5.2.6 变更**: 2026-02-24 P1闭环: BehaviorRx引擎集成(混合路由<200ms) + 教练审批→通知推送(深度链接) + H5处方详情页(5卡片) + 新增5文件修改8文件
 > **V5.2.5 变更**: 2026-02-24 Rx仪表盘数据修复(Agent状态+策略模板字段转换) + 干预包后端(10包3端点) + 绑定管理权限修复 + 专家工作台iframe端口修复
 > **V5.2.4 变更**: 2026-02-23 AI行为处方生成(839行服务+LLM/规则引擎双路径+5标签页全接入) + 教练学员角色过滤修复(_STUDENT_ROLES白名单)
@@ -9,7 +12,7 @@
 > **V5.2.1 变更**: 2026-02-22 预发布审计全绿 (56P/0F) + CI修复 (register_external_models) + 多模态单元测试 (28 tests)
 > **V5.2.0 变更**: 2026-02-21 P7 Smart Hub 多模态采集中心 (4模式底部面板) + ASR语音转文字服务 (cloud_first策略, 2端点)
 >
-> 上游契约: `E:\注册表更新文件\行健平台-契约注册表-V5_1_9-CONSOLIDATED.md` (已升级为 V5.2.5)
+> 上游契约: `E:\注册表更新文件\行健平台-契约注册表-V5_2_7-CONSOLIDATED.md` (V5.2.8 唯一权威版)
 > Agent配置清单: `agent_multimodal_host_config.md` (47+ Agent类 · 15预设模板 · 4层安全 · 6模态)
 
 ---
@@ -18,8 +21,41 @@
 
 BHP（Behavioral Health Platform）是一个行为健康数字化管理平台，服务于慢病逆转与行为改变领域。平台包含 Observer(观察者)、Grower(成长者)、Coach(教练)、Expert(专家)、Admin(管理员) 五种用户角色，集成了评估引擎、AI Agent 系统、RAG 知识库、多模态交互引擎、智能监测方案及微信生态对接能力。
 
-**规模**: 76+ 路由模块 · 650+ API 端点 · 130+ 数据模型 · 50 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **32页Admin响应式** · **全mock=0** · **预发布审计56P/0F** · **CI 4-stage全绿** · **六级累进任务目录(42项)** · **统一个人中心(3共享组件)** · **教练端全量种子数据** · **教练双重身份健康面板** · **AI行为处方(BehaviorRx+LLM双路径)** · **学员角色白名单过滤** · **干预包管理(10包3端点)** · **Rx仪表盘全数据联通** · **P1闭环(AI生成→审批→通知→H5详情)**
+**规模**: 84+ 路由模块 · 681+ API 端点 · 152 数据模型 · 53 迁移版本 · **48+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **32页Admin响应式** · **全mock=0** · **预发布审计56P/0F** · **CI 4-stage全绿** · **六级累进任务目录(42项)** · **统一个人中心(3共享组件)** · **教练端全量种子数据** · **教练双重身份健康面板** · **AI行为处方(BehaviorRx+LLM双路径)** · **学员角色白名单过滤** · **干预包管理(10包3端点)** · **Rx仪表盘全数据联通** · **P1闭环(AI生成→审批→通知→H5详情, 8/8 E2E)** · **督导会议系统(6端点)** · **租户生命周期(状态机)** · **审计I-01~I-09(资质生命周期+循证等级+铁律执行)** · **VisionGuard视力行为保护(14端点+5表+1Agent+5Job+5页面)**
 
+> ⚠️ **V5.2.9 变更** (2026-02-24):
+> - **VisionGuard 视力行为保护域** (18文件: 10新建+8修改):
+>   - **Migration 053**: 5新表 — vision_exam_records(检查) + vision_behavior_logs(行为日志) + vision_behavior_goals(目标) + vision_guardian_bindings(监护关系) + vision_profiles(视力档案)
+>   - **core/vision_service.py**: 5 ORM模型 + calc_behavior_score(五维加权) + assess_vision_risk + build_instant_message(TTM感知) + 监护人CRUD + adjust_goals_for_stage + generate_weekly_report + check_rx_trigger(→coach_push_queue铁律)
+>   - **VisionGuideAgent**: 5意图(behavior_checkin/goal_inquiry/guardian_summary/resistance_handling/expert_consultation) + VisionRxGenerator(3格式处方)
+>   - **5 Scheduler Jobs**: vision_daily_score(23:00) + vision_rx_trigger(23:15) + vision_weekly_guardian_report(Mon 08:00) + vision_goal_auto_adjust(Sun 06:00) + vision_monthly_archive(月1日 03:00)
+>   - **api/vision_api.py**: 14端点(/v1/vision/*: log打卡/goals目标/guardian监护/profile档案/exam检查/dashboard仪表盘)
+>   - **H5 4页面**: VisionDailyLog(SVG环形+5维卡片) + VisionGuardianView(孩子报告+趋势) + VisionProfile(风险+监护人) + VisionExamRecord(录入+历史)
+>   - **Admin**: CoachVisionRxQueue.vue(视力处方审批队列, Ant Design Vue 4)
+>   - **h5/src/api/vision.ts**: 12个API方法
+>   - **铁律合规**: Job28检测连续3天评分下降 → check_rx_trigger → coach_push_queue(source_type="vision_rx") → 教练审批 → 推送
+>
+> ⚠️ **V5.2.8 变更** (2026-02-24):
+> - **审计I-01~I-09全量实施** (23文件: 4新建+19修改):
+>   - **I-01 双轨角色升级**: expert_registration_api — physician_license/phd_supervision→SUPERVISOR, 其他→COACH + RoleChangeLog审计
+>   - **I-02 激活4项检查**: tenant_api — role_confirmed + ethics_signed(EthicalDeclaration) + workspace_ready + no_violations
+>   - **I-03 督导行动项派发**: supervision_service + supervision_api — prescription_adjust→CoachPushQueue, learning_task/self_reflection→Notification
+>   - **I-04 显示名称统一7处**: "督导"→"督导专家" + "推广者"→"促进师" (user_api/admin_analytics_api/useCurrentUser.ts/MyContributions.vue/Index.vue)
+>   - **I-05 强制Agent**: FORCED_AGENTS=["crisis","supervisor_reviewer"] + init-defaults端点
+>   - **I-06 铁律执行**: access_control — supervisor不能直推学员(必须经CoachPushQueue)
+>   - **I-07 资质生命周期**: `core/supervisor_credential_service.py`(~220行) + `api/supervisor_credential_api.py`(4端点) + scheduler credential_annual_review(05:00)
+>   - **I-08 积分差异化**: governance_points — role_points_override(supervisor:80/promoter:50)
+>   - **I-09 循证等级治理**: evidence_tier(T1-T4) + confidence_multiplier + router评分加成 + 创建权限校验
+> - **Migration 052**: supervisor_credentials(16列) + role_change_logs(8列) + expert_tenants(+7列) + agent_templates(+evidence_tier)
+> - **8处代码纠偏(C1-C8)**: role_level→ROLE_LEVEL.get / name→username / EthicsSignature→EthicalDeclaration / TenantDocument→KnowledgeDocument / CoachNotification→Notification / LearningAssignment→Notification(type=) / credit_service→governance_points_integration / specialist_agents→remaining_agents
+>
+> ⚠️ **V5.2.7 变更** (2026-02-24):
+> - **督导专家系统**: `core/supervision_service.py`(~200行: CRUD+状态机) + `api/supervision_api.py`(6端点) + MySupervision.vue真实API; SUPERVISOR显示名→"督导专家"; supervisor_7clause伦理条款
+> - **租户生命周期**: tenant_api 3端点(activate/suspend/archive) + `_VALID_TRANSITIONS`状态机 + 扩展stats(retention/graduation/agents)
+> - **P1 E2E验证修复(3Bug)**: ①`edited_rx_json` str()→json.dumps(ensure_ascii=False); ②缺少import json; ③审批后处方未持久化(generate_daily_tasks_for_user失败→PG事务abort)→task gen移至commit后(non-blocking)
+> - **P1通知增强**: deliver_item()+approve_review() 追加WebSocket push_user_notification; 新增 `GET /notifications/all`(unread_only+link解析) + `POST /notifications/{id}/read`
+> - **RBAC/Scheduler/测试**: user_api PROMOTER遗漏(2处); tenant_trial_expiration(04:00)+supervision_reminder(07:30); 33新测试全绿
+>
 > ⚠️ **V5.2.6 变更** (2026-02-24):
 > - **P1闭环 — BehaviorRx集成**: `core/rx_context_adapter.py`(BehavioralProfile→RxContext) + `core/rx_response_mapper.py`(RxPrescriptionDTO→Copilot 6-key JSON); `copilot_routes.py` 混合路由(BehaviorRx<200ms优先→LLM降级); `r4_role_upgrade_trigger.py` 初始处方接入引擎
 > - **P1闭环 — 通知推送**: `r6_coach_flywheel_api_live.py` approve_review审批后写notifications表+深度链接`[link:/rx/{rx_id}]`; `main.py` notifications/system端点增加notifications表查询+link解析; 新增 `GET /rx/my` + `GET /rx/{rx_id}` 端点
@@ -108,6 +144,7 @@ behavioral-health-project/
 │   │   ├── v4_agents.py            # 4个V4.0旅程Agent
 │   │   ├── trust_guide_agent.py    # 信任引导Agent
 │   │   ├── generic_llm_agent.py    # 通用模板Agent
+│   │   ├── vision_agent.py        # VisionGuideAgent (视力行为保护, 5意图+处方生成)
 │   │   ├── router.py              # AgentRouter 6步路由
 │   │   ├── coordinator.py         # MultiAgentCoordinator 9步协调
 │   │   └── master_agent.py        # V6 模板感知版
@@ -126,11 +163,12 @@ behavioral-health-project/
 │   ├── baps/                      # BAPS五维评估 + V5.0新增4引擎
 │   ├── v14/
 │   │   └── agents.py              # V14增强: SafetyAgent + ResistanceAgent + ExplainAgent
+│   ├── vision_service.py             # VisionGuard: 5 ORM + 评分引擎 + 风险评估 + 监护人 + 处方触发
 │   └── schemas/
 ├── api/                            # ★ 路由模块包
 │   ├── dependencies.py             # 认证守卫: get_current_user / require_admin / require_coach_or_admin
 │   ├── config.py                   # DIFY/OLLAMA 配置
-│   ├── *_api.py                    # 49+ 路由模块 (含event_tracking/feature_flag/settings_api)
+│   ├── *_api.py                    # 50+ 路由模块 (含event_tracking/feature_flag/settings_api/vision_api)
 │   ├── *_service.py                # 61+ 核心服务 (含device_task_bridge/trust_score_service)
 │   ├── r2_scheduler_agent.py       # ★ V5.0 R2 飞轮: 处方→每日任务
 │   ├── r3_grower_flywheel_api_live.py  # ★ V5.0 R3: Grower飞轮 (5端点)
@@ -179,7 +217,14 @@ behavioral-health-project/
 │       ├── MyContributions.vue           # V5.2.2: 我的分享共享组件 (~420行)
 │       ├── MyBenefits.vue                # V5.2.2: 我的权益共享组件 (~350行)
 │       └── CoachSelfHealthSummary.vue    # V5.2.3: 教练自身健康概览 (4指标+任务进度)
+│   └── src/views/coach/
+│       └── CoachVisionRxQueue.vue       # V5.2.9: 视力处方审批队列 (Ant Design Vue 4)
 ├── h5/                             # Vue 3 移动端 (:5173) — Observer + Grower
+│   └── src/views/vision/                # V5.2.9 VisionGuard 4页面
+│       ├── VisionDailyLog.vue           # 视力行为打卡 (SVG环形+5维卡片)
+│       ├── VisionGuardianView.vue       # 孩子视力报告 (监护人视角+趋势图)
+│       ├── VisionProfile.vue            # 视力档案 (风险等级+监护人+专家绑定)
+│       └── VisionExamRecord.vue         # 视力检查记录 (录入+历史+趋势)
 ├── miniprogram/                    # V5.0: 微信小程序 (Taro 3)
 ├── knowledge/                      # 知识库 (Markdown)
 ├── configs/                        # 业务配置文件
@@ -728,6 +773,8 @@ cd miniprogram && npm run dev:weapp
 - ~~CI M16_Reflection 500~~ → ✅ V5.2.1 register_external_models() + reflection_api.py加固
 - ~~pre_launch_verify 12 FAIL~~ → ✅ V5.2.1 Docker环境自动检测 + SQLAlchemy直连DB + Redis AUTH
 - ~~db_backup.sh 旧凭据~~ → ✅ V5.2.1 bhp_user→postgres, bhp_db→health_platform
+- ~~P1 edited_rx_json 单引号~~ → ✅ V5.2.7 str()→json.dumps(ensure_ascii=False)
+- ~~P1 审批后处方未持久化~~ → ✅ V5.2.7 generate_daily_tasks_for_user 移至 commit 后 (non-blocking)
 
 ---
 
@@ -757,7 +804,7 @@ cd miniprogram && npm run dev:weapp
 | 架构总览 | `platform-architecture-overview.md` | 完整路由/模型/服务/数据流 |
 | 核心业务逻辑 | `behavioral-prescription-core-logic-supplemented.md` | 26章, 2367行 |
 | **Agent Host 配置** *(V5.0.1)* | **`agent_multimodal_host_config.md`** | **47+ Agent · LLM配置 · 多模态 · 安全管道** |
-| **契约注册表** *(V5.2.5)* | **`E:\注册表更新文件\行健平台-契约注册表-V5_1_9-CONSOLIDATED.md`** | **V5.2.5 唯一权威版 (含干预包+Rx仪表盘+权限修复+专家工作台)** |
+| **契约注册表** *(V5.2.7)* | **`E:\注册表更新文件\行健平台-契约注册表-V5_2_7-CONSOLIDATED.md`** | **V5.2.7 唯一权威版 (含P1闭环+督导系统+租户生命周期+57条变更)** |
 | 多模态消息协议 | `core/multimodal/protocol.py` | 10种模态定义 |
 
 ---
@@ -865,6 +912,10 @@ Base.metadata.create_all(engine)
 | **种子业务数据** *(V5.2.3)* | **seed_test_business_data.py: 6角色全量业务数据(385任务+教练绑定+推送队列+同道者)** | **✅完成** |
 | **教练双重身份** *(V5.2.3)* | **CoachSelfHealthSummary.vue: 4指标+任务进度, 嵌入CoachHome** | **✅完成** |
 | **教练端响应式** *(V5.2.3)* | **13页coach @640px移动端断点 (19→32页总Admin响应式)** | **✅完成** |
+| **AI行为处方** *(V5.2.4)* | **copilot_prescription_service(839行) + LLM/规则引擎双路径 + 教练学员角色过滤** | **✅完成** |
+| **干预包+Rx仪表盘** *(V5.2.5)* | **10包3端点 + Rx仪表盘数据联通 + 绑定权限修复 + 专家工作台iframe修复** | **✅完成** |
+| **P1闭环** *(V5.2.6)* | **BehaviorRx集成(adapter+mapper+混合路由) + 通知推送 + H5处方详情(5卡片) + 5新3改** | **✅完成** |
+| **督导+租户+P1验证** *(V5.2.7)* | **督导会议(6ep) + 租户生命周期(3ep) + P1 E2E 3修复(json/事务) + WebSocket推送 + 2通知端点 + 33测试** | **✅完成** |
 
 ---
 
