@@ -32,6 +32,10 @@
   - [3.6 阻力阈值与升级规则](#36-阻力阈值与升级规则)
   - [3.7 处方有效性评估 (IES)](#37-处方有效性评估-ies)
   - [3.8 混合路由: BehaviorRx→LLM 降级](#38-混合路由-behaviorrxllm-降级)
+  - [3.9 Profile→RxContext 适配规则](#39-profilerxcontext-适配规则)
+  - [3.10 沟通风格→干预语调映射](#310-沟通风格干预语调映射)
+  - [3.11 Observer→Grower 初始处方生成规则](#311-observergrower-初始处方生成规则)
+  - [3.12 处方查询与权限规则](#312-处方查询与权限规则)
 - [四、积分与激励规则](#四积分与激励规则)
   - [4.1 三维积分体系](#41-三维积分体系)
   - [4.2 里程碑与仪式](#42-里程碑与仪式)
@@ -193,6 +197,59 @@ pending → approved → sent
 pending → rejected (终止)
 pending → expired (72小时未处理)
 ```
+
+#### 通知路由级联规则
+
+> **权威来源:** `gateway/channels/push_router.py`
+
+`send_notification()` 的渠道选择遵循以下优先级:
+
+```
+1. 永远先写 in-app 通知 (notifications 表)
+2. 渠道选择:
+   a. 若指定 channel 参数 → 使用指定渠道
+   b. 若用户设置 preferred_channel → 使用用户偏好
+   c. 否则级联 (cascade): wechat → sms → email → in-app only
+3. 渠道数据检查:
+   - wechat 需要 wx_openid 非空
+   - sms 需要 phone 非空
+   - email 需要 email 非空
+4. 指定渠道但数据缺失 → 标记 fallback=True, 按级联顺序尝试
+```
+
+**返回结构:** `{"channel_used": "wechat|sms|email|in_app", "success": bool, "fallback": bool}`
+
+#### 通知深度链接格式
+
+```
+格式: [link:/路径]
+示例: [link:/rx/rx_7e3492a63958]
+
+解析规则 (H5 Notifications.vue):
+  正则: /\[link:([^\]]+)\]/
+  匹配 → 提取路径 → router.push(路径)
+  不匹配 → 通知不可点击
+```
+
+#### P1 处方审批→通知 完整闭环
+
+> **权威来源:** `api/r6_coach_flywheel_api_live.py` `approve_review()`
+
+```
+Step 1: UPDATE coach_review_queue SET status='approved'
+Step 2: 若 type='prescription' → _activate_prescription()
+        写入 behavior_prescriptions (status='active')
+        返回 rx_id
+Step 3: 触发 generate_daily_tasks_for_user() 重新生成每日任务
+Step 4: INSERT INTO coach_review_logs (action='approved')
+Step 5: (commit 后, non-blocking) push_router.send_notification()
+        含深度链接: "[link:/rx/{rx_id}]"
+```
+
+**处方激活规则 (`_activate_prescription`):**
+- 生成 `rx_id = "rx_{uuid[:12]}"` (审批激活)
+- INSERT INTO behavior_prescriptions, status='active', approved_by_review=review_id
+- 字段来源: rx_json 中的 target_behavior, frequency_dose, trigger_cue, obstacle_plan, domain, difficulty_level
 
 ---
 
@@ -812,6 +869,147 @@ POST /copilot/generate-prescription {"student_id": N}
 }
 ```
 
+#### 处方 ID 格式与持久化规则
+
+| 场景 | ID 格式 | 初始状态 | 来源 |
+|------|---------|---------|------|
+| copilot 生成 (教练工作台) | `rx_{uuid[:12]}` | draft | copilot_routes.py |
+| 教练审批激活 | `rx_{uuid[:12]}` | active | r6_coach_flywheel_api_live.py |
+| Observer→Grower 初始处方 | `rx_init_{uuid[:8]}` | active | r4_role_upgrade_trigger.py |
+
+**持久化表:** `behavior_prescriptions`
+**冲突策略:** `ON CONFLICT (id) DO NOTHING` (copilot/r4), 直接 INSERT (审批激活)
+**失败处理:** copilot → db.rollback() + 继续返回结果 (non-blocking); r4 → fallback 到默认处方
+
+---
+
+### 3.9 Profile→RxContext 适配规则
+
+> **权威来源:** `core/rx_context_adapter.py`
+
+#### 域→Expert Agent 类型映射 (DOMAIN_AGENT_MAP)
+
+| primary_domain | ExpertAgentType | 说明 |
+|----------------|----------------|------|
+| metabolic | METABOLIC_EXPERT | 代谢专家 |
+| glucose | METABOLIC_EXPERT | 血糖管理 |
+| nutrition | BEHAVIOR_COACH | 营养行为 |
+| exercise | BEHAVIOR_COACH | 运动行为 |
+| sleep | BEHAVIOR_COACH | 睡眠行为 |
+| emotion | BEHAVIOR_COACH | 情绪管理 |
+| cardiac | CARDIAC_EXPERT | 心脏康复 |
+| cardiac_rehab | CARDIAC_EXPERT | 心脏康复 |
+| (无匹配/无域) | BEHAVIOR_COACH | 默认 |
+
+**选择逻辑:** 遍历 `BehavioralProfile.primary_domains` 列表, 第一个命中 DOMAIN_AGENT_MAP 的域决定 Agent 类型。
+
+#### ORM→DTO 字段转换规则
+
+| ORM 字段 | 转换规则 | DTO 字段 | 降级默认值 |
+|---------|---------|---------|-----------|
+| current_stage (enum) | _STAGE_INT_MAP: S0=0..S6=6 | ttm_stage | 0 (S0) |
+| stage_stability (enum) | STABLE=0.9, SEMI_STABLE=0.5, UNSTABLE=0.2 | stage_stability | 0.5 |
+| big5_scores (JSON) | 读取 O/C/E/A/N 各项 | personality | 各项默认50 |
+| capacity_total (0-100) | ÷100, clamp [0,1] | capacity_score | 0.5 |
+| spi_score (0-100) | ÷100, clamp [0,1] | self_efficacy | 0.5 |
+| stage_confidence | 直接使用 | stage_readiness | 0.5 |
+| domain_details (JSON) | 直接使用 | domain_data | {} |
+| user_id (int) | uuid5(NAMESPACE_DNS, "bhp-user-{id}") | user_id (UUID) | — |
+| (无历史数据) | — | recent_adherence | 0.5 |
+
+#### Barrier 映射规则 (CAPACITY 弱项→障碍类型)
+
+从 `capacity_weak` 列表中提取障碍关键词:
+
+| 弱项关键词 | 障碍类型 | 含义 |
+|-----------|---------|------|
+| 动机 / M_ | low_motivation | 低动机 |
+| 时间 / T_ | forgetfulness | 遗忘/无暇 |
+| 信心 / C_ | fear | 恐惧/信心不足 |
+| 资源 / A2_ | economic | 经济/资源障碍 |
+| 认知 | cognitive | 认知障碍 |
+
+#### 风险标记规则
+
+| risk_flags 含值 | risk_level |
+|----------------|-----------|
+| dropout_risk 或 relapse_risk | elevated |
+| (无匹配) | normal |
+
+---
+
+### 3.10 沟通风格→干预语调映射
+
+> **权威来源:** `core/rx_response_mapper.py` `_comm_to_tone()`
+
+| 沟通风格 | 干预语调 | 描述 |
+|---------|---------|------|
+| empathetic (共情型) | gentle_accepting | 温和接纳 |
+| data_driven (数据驱动型) | structured_analytical | 结构化分析 |
+| challenge (挑战型) | encouraging_practical | 鼓励务实 |
+| social_proof (社会证明型) | encouraging_practical | 鼓励务实 |
+| exploratory (探索型) | gentle_accepting | 温和接纳 |
+| neutral (中立型) | gentle_accepting | 温和接纳 |
+
+**强度→难度数值映射:**
+minimal=1, low=2, moderate=3, high=4, intensive=5
+
+---
+
+### 3.11 Observer→Grower 初始处方生成规则
+
+> **权威来源:** `api/r4_role_upgrade_trigger.py` `_generate_initial_prescription()`
+
+```
+L0→L1 升级完成后:
+1. 读取 BPT-6 分型 (assessment_sessions.module_type='bpt6')
+2. 读取 SPI 心理层级 (assessment_sessions.module_type='spi')
+3. 根据 L 层级决定最大处方数: L1=1, L2=1, L3=2, L4=3, L5=5
+4. 尝试 BehaviorRx 引擎:
+   a. 查询 BehavioralProfile
+   b. profile_to_rx_context() → select_agent_type()
+   c. engine.compute_rx() → 写入 behavior_prescriptions (status='active')
+   d. rx_id 格式: "rx_init_{uuid[:8]}"
+5. BehaviorRx 失败 → 降级到默认处方集:
+   a. 营养: 记录三餐饮食
+   b. 运动: 每日散步15分钟
+   c. 监测: 血糖监测 (如适用)
+```
+
+---
+
+### 3.12 处方查询与权限规则
+
+> **权威来源:** `api/main.py` rx 端点
+
+#### GET /api/v1/rx/my — 用户处方列表
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| status | "active" | 过滤状态 (active/draft/completed/paused/cancelled) |
+| limit | 20 | 最大返回数 |
+
+**权限:** 仅返回 `current_user.id` 的处方。
+
+#### GET /api/v1/rx/{rx_id} — 处方详情
+
+**权限检查:**
+
+```
+1. user_id == current_user.id → 允许 (自己的处方)
+2. current_user.role ∈ {COACH, PROMOTER, SUPERVISOR, MASTER, ADMIN} → 允许
+3. 否则 → 403 无权限
+```
+
+#### GET /api/v1/notifications/system — 系统通知聚合
+
+聚合三个数据源:
+1. `credit_events` 表: 积分变动通知
+2. `user_milestones` 表: 里程碑达成通知
+3. `notifications` 表: 推送通知 (含处方审批通知)
+
+**深度链接解析:** 从 body 中提取 `[link:xxx]` 格式, 转为 `link` 字段供 H5 导航。
+
 ---
 
 ## 四、积分与激励规则
@@ -1222,7 +1420,12 @@ Stage Authority (C3 审计修复): 阶段晋级需要治理引擎授权, 防止�
 | `configs/point_events.json` | ~430 | 30+积分事件定义 |
 | `configs/milestones.json` | ~300 | 7里程碑+翻牌+恢复 |
 | `configs/badges.json` | ~130 | 20+徽章+稀有度 |
+| `core/rx_context_adapter.py` | ~126 | Profile→RxContext适配, 域→Agent映射, Barrier映射 |
+| `core/rx_response_mapper.py` | ~213 | DTO→Copilot JSON映射, 沟通风格→语调, 处方显示映射 |
+| `api/r6_coach_flywheel_api_live.py` | ~456 | 教练审批5步闭环, 处方激活, 通知推送 |
+| `gateway/channels/push_router.py` | ~129 | 通知路由级联规则, 渠道选择 |
+| `api/main.py` (rx端点) | ~94 | 处方查询权限, 通知聚合+深度链接解析 |
 
 ---
 
-*本文档版本 V5.2.6, 与代码库同步。所有规则数据均从生产代码中直接提取。*
+*本文档版本 V5.2.6 (P1闭环补充), 与代码库同步。所有规则数据均从生产代码中直接提取。*
