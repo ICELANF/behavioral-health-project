@@ -1694,6 +1694,14 @@ try:
 except ImportError as e:
     print(f"[API] 专家租户路由注册失败: {e}")
 
+# 注册督导会议路由
+try:
+    from api.supervision_api import router as supervision_router
+    app.include_router(supervision_router)
+    print("[API] 督导会议路由已注册")
+except ImportError as e:
+    print(f"[API] 督导会议路由注册失败: {e}")
+
 # 注册专家内容工作室路由
 try:
     from api.expert_content_api import router as expert_content_router

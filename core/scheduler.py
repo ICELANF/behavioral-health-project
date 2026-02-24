@@ -898,5 +898,139 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
     except Exception as e:
         logger.warning(f"[Scheduler] R8 context cleanup 注册失败: {e}")
 
-    logger.info("[Scheduler] 定时任务调度器已配置 (含V004+V005+Phase4+CR15+CR28+R2处方+R9信任预警+R10教练升级+R7通知+R8上下文)")
+    # ── 督导会议提醒 (每天07:30) ──
+    try:
+        from core.database import AsyncSessionLocal as _SupervisionAsync
+
+        @with_redis_lock("scheduler:supervision_reminder", ttl=600)
+        async def job_supervision_reminder():
+            from sqlalchemy import text as sa_text
+            async with _SupervisionAsync() as db:
+                try:
+                    # 查找未来24小时内的已排期督导
+                    rows = (await db.execute(sa_text("""
+                        SELECT csr.id, csr.supervisor_id, csr.coach_id, csr.session_type,
+                               csr.scheduled_at,
+                               sup.full_name AS sup_name, sup.username AS sup_user,
+                               coach.full_name AS coach_name, coach.username AS coach_user
+                        FROM coach_schema.coach_supervision_records csr
+                        JOIN users sup ON sup.id = csr.supervisor_id
+                        JOIN users coach ON coach.id = csr.coach_id
+                        WHERE csr.status = 'scheduled'
+                          AND csr.scheduled_at >= NOW()
+                          AND csr.scheduled_at < NOW() + INTERVAL '24 hours'
+                    """))).mappings().all()
+
+                    notified = 0
+                    for row in rows:
+                        sched = row["scheduled_at"]
+                        time_str = sched.strftime("%m-%d %H:%M") if sched else "待定"
+                        coach_name = row["coach_name"] or row["coach_user"] or ""
+                        sup_name = row["sup_name"] or row["sup_user"] or ""
+
+                        # 通知督导者
+                        await db.execute(sa_text("""
+                            INSERT INTO notifications
+                              (user_id, title, body, type, priority, is_read, created_at)
+                            VALUES (:uid, '督导会议提醒',
+                              :body, 'supervision_reminder', 'normal', false, NOW())
+                        """), {
+                            "uid": row["supervisor_id"],
+                            "body": f"您与教练「{coach_name}」的{row['session_type']}督导将于 {time_str} 进行。",
+                        })
+                        # 通知被督导教练
+                        await db.execute(sa_text("""
+                            INSERT INTO notifications
+                              (user_id, title, body, type, priority, is_read, created_at)
+                            VALUES (:uid, '督导会议提醒',
+                              :body, 'supervision_reminder', 'normal', false, NOW())
+                        """), {
+                            "uid": row["coach_id"],
+                            "body": f"督导「{sup_name}」安排的{row['session_type']}督导将于 {time_str} 进行，请准时参加。",
+                        })
+                        notified += 1
+
+                    if notified:
+                        await db.commit()
+                    logger.info(f"[Scheduler] 督导提醒: {len(rows)} 场会议, {notified} 双方通知")
+                except Exception as e:
+                    logger.warning(f"[Scheduler] 督导提醒失败: {e}")
+
+        scheduler.add_job(
+            job_supervision_reminder,
+            CronTrigger(hour=7, minute=30),
+            id="supervision_reminder",
+            name="督导会议提醒",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] supervision_reminder 注册失败: {e}")
+
+    # ── 租户试用期过期检查 (每天04:00) ──
+    try:
+        from core.database import AsyncSessionLocal as _TenantAsync
+
+        @with_redis_lock("scheduler:tenant_trial_expiration", ttl=600)
+        async def job_tenant_trial_expiration():
+            from sqlalchemy import text as sa_text
+            async with _TenantAsync() as db:
+                try:
+                    # 查找已过期的 trial 租户
+                    rows = (await db.execute(sa_text("""
+                        SELECT id, expert_user_id, brand_name, trial_expires_at
+                        FROM expert_tenants
+                        WHERE status = 'trial'
+                          AND trial_expires_at IS NOT NULL
+                          AND trial_expires_at < NOW()
+                    """))).mappings().all()
+
+                    suspended = 0
+                    for row in rows:
+                        tid = row["id"]
+                        uid = row["expert_user_id"]
+                        # 暂停租户
+                        await db.execute(sa_text("""
+                            UPDATE expert_tenants
+                            SET status = 'suspended', updated_at = NOW()
+                            WHERE id = :tid
+                        """), {"tid": tid})
+                        # 审计日志
+                        await db.execute(sa_text("""
+                            INSERT INTO tenant_audit_logs
+                              (tenant_id, actor_id, action, detail, created_at)
+                            VALUES (:tid, 0, 'status_change',
+                              CAST(:detail AS jsonb), NOW())
+                        """), {
+                            "tid": tid,
+                            "detail": f'{{"from":"trial","to":"suspended","reason":"trial_expired","trial_expires_at":"{row["trial_expires_at"]}"}}',
+                        })
+                        # 通知专家
+                        await db.execute(sa_text("""
+                            INSERT INTO notifications
+                              (user_id, title, body, type, priority, is_read, created_at)
+                            VALUES (:uid, '试用期已到期',
+                              :body, 'tenant_trial_expired', 'high', false, NOW())
+                        """), {
+                            "uid": uid,
+                            "body": f'您的专家工作室「{row["brand_name"]}」试用期已到期，请联系管理员激活。',
+                        })
+                        suspended += 1
+
+                    if suspended:
+                        await db.commit()
+                    logger.info(f"[Scheduler] 租户试用期检查: {len(rows)} 过期, {suspended} 已暂停")
+                except Exception as e:
+                    logger.warning(f"[Scheduler] 租户试用期检查失败: {e}")
+
+        scheduler.add_job(
+            job_tenant_trial_expiration,
+            CronTrigger(hour=4, minute=0),
+            id="tenant_trial_expiration",
+            name="租户试用期过期检查",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] tenant_trial_expiration 注册失败: {e}")
+
+    logger.info("[Scheduler] 定时任务调度器已配置 (含V004+V005+Phase4+CR15+CR28+R2+R9+R10+R7+R8+TenantExpiry)")
     return scheduler

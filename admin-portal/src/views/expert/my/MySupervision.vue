@@ -197,11 +197,10 @@ const openScheduleFor = (coach: CoachItem) => {
 
 const loadSupervisionData = async () => {
   try {
-    const [coachesRes, promotionRes, queueRes] = await Promise.allSettled([
+    const [coachesRes, sessionsRes, statsRes] = await Promise.allSettled([
       request.get('v1/admin/coaches'),
-      request.get('v1/promotion/applications', { params: { status: 'pending' } }),
-      // 从推送审批队列获取督导安排记录（source_type=coach_message，内容含[督导安排]）
-      request.get('v1/coach/push-queue', { params: { source_type: 'coach_message', page_size: 50 } }),
+      request.get('v1/supervision/sessions', { params: { page_size: 50 } }),
+      request.get('v1/supervision/stats'),
     ])
     if (coachesRes.status === 'fulfilled') {
       const items = coachesRes.value.data?.items || coachesRes.value.data || []
@@ -217,43 +216,22 @@ const loadSupervisionData = async () => {
       console.error('加载教练列表失败:', coachesRes.reason)
     }
 
-    // 合并两个数据源到 sessions
+    // 从督导 API 加载会话记录
     const allSessions: SessionItem[] = []
-
-    // 来源1: 晋级申请（原有逻辑）
-    if (promotionRes.status === 'fulfilled') {
-      const apps = promotionRes.value.data?.applications || []
-      for (const s of apps) {
-        allSessions.push({
-          id: `promo-${s.application_id}`,
-          coach: s.full_name || s.username || '',
-          coachId: String(s.user_id || s.applicant_id || ''),
-          status: s.status === 'pending' ? '待进行' : '已完成',
-          date: s.applied_at || '',
-          topic: `${s.current_level} → ${s.target_level} 晋级审核`,
-          notes: s.reviewer_comment || '',
-        })
+    if (sessionsRes.status === 'fulfilled') {
+      const items = sessionsRes.value.data?.data || sessionsRes.value.data || []
+      const statusMap: Record<string, string> = {
+        scheduled: '待进行', in_progress: '进行中', completed: '已完成', cancelled: '已取消',
       }
-    }
-
-    // 来源2: 推送队列中的督导安排
-    if (queueRes.status === 'fulfilled') {
-      const queueItems = queueRes.value.data?.items || []
-      for (const item of queueItems) {
-        // 只取内容以 [督导安排] 开头的记录
-        if (!item.content?.startsWith('[督导安排]')) continue
-        const coachObj = coaches.value.find(c => c.id === String(item.student_id))
-        const statusMap: Record<string, string> = {
-          pending: '待审核', approved: '已审核', sent: '已完成', rejected: '已拒绝',
-        }
+      for (const s of (Array.isArray(items) ? items : [])) {
         allSessions.push({
-          id: `queue-${item.id}`,
-          coach: coachObj?.name || `学员#${item.student_id}`,
-          coachId: String(item.student_id),
-          status: statusMap[item.status] || item.status,
-          date: item.created_at || '',
-          topic: item.content.replace('[督导安排] ', '').split('\n')[0],
-          notes: item.content.split('\n').slice(1).join('\n'),
+          id: String(s.id),
+          coach: s.coach_name || '',
+          coachId: String(s.coach_id),
+          status: statusMap[s.status] || s.status,
+          date: s.scheduled_at || s.created_at || '',
+          topic: s.session_type || '',
+          notes: s.session_notes || '',
         })
       }
     }
@@ -272,10 +250,11 @@ const scheduleSupervision = async () => {
     return
   }
   try {
-    await request.post('v1/coach/messages', {
-      student_id: Number(newSession.coachId),
-      content: `[督导安排] ${newSession.topic}${newSession.date ? '\n时间: ' + (newSession.date.format?.('YYYY-MM-DD HH:mm') || '') : ''}${newSession.notes ? '\n备注: ' + newSession.notes : ''}`,
-      message_type: 'notice',
+    await request.post('v1/supervision/sessions', {
+      coach_id: Number(newSession.coachId),
+      session_type: 'individual',
+      scheduled_at: newSession.date?.toISOString?.() || newSession.date?.format?.('YYYY-MM-DDTHH:mm:ss') || null,
+      notes: `${newSession.topic}${newSession.notes ? '\n' + newSession.notes : ''}`,
     })
     showScheduleModal.value = false
     newSession.coachId = undefined

@@ -41,7 +41,35 @@ for root, dirs, files in os.walk("."):
         except Exception:
             pass
 
-# --------------- Check 2: CORS wildcard ---------------
+# --------------- Check 2: RBAC role list consistency ---------------
+# Detect role lists containing "promoter" but missing "supervisor" (or vice versa)
+# These are always L4 peers and should appear together.
+if not fast_mode:
+    _rbac_pattern = re.compile(
+        r'(?:role\.in_\(|\.role\.value\s+(?:not\s+)?in\s+|"role"\s*:\s*)\[([^\]]+)\]'
+    )
+    for root, dirs, files in os.walk("."):
+        dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
+        for f in files:
+            if not f.endswith(".py") or f in EXCLUDE_FILES:
+                continue
+            path = os.path.join(root, f)
+            try:
+                for i, line in enumerate(open(path, encoding="utf-8", errors="ignore"), 1):
+                    m = _rbac_pattern.search(line)
+                    if not m:
+                        continue
+                    content = m.group(1).lower()
+                    has_promoter = "promoter" in content
+                    has_supervisor = "supervisor" in content
+                    if has_promoter and not has_supervisor:
+                        errors.append(f"  {path}:{i}: Role list has 'promoter' but missing 'supervisor' (L4 peers)")
+                    elif has_supervisor and not has_promoter:
+                        errors.append(f"  {path}:{i}: Role list has 'supervisor' but missing 'promoter' (L4 peers)")
+            except Exception:
+                pass
+
+# --------------- Check 3: CORS wildcard ---------------
 if not fast_mode:
     for f in ["api/main.py", "main.py"]:
         if os.path.exists(f):

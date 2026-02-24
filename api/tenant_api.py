@@ -592,6 +592,23 @@ def tenant_stats(
         TenantClient.enrolled_at >= month_start,
     ).scalar() or 0
 
+    # 留存率: active / (active + exited + paused)
+    denom = counts.get("active", 0) + counts.get("exited", 0) + counts.get("paused", 0)
+    retention_rate = round(counts.get("active", 0) / denom, 4) if denom > 0 else 0.0
+
+    # 毕业率: graduated / total
+    total_clients = sum(counts.values())
+    graduation_rate = round(counts.get("graduated", 0) / total_clients, 4) if total_clients > 0 else 0.0
+
+    # Agent 使用统计 (启用 vs 总映射)
+    total_agents = db.query(func.count(TenantAgentMapping.id)).filter(
+        TenantAgentMapping.tenant_id == tenant_id
+    ).scalar() or 0
+    enabled_agents = db.query(func.count(TenantAgentMapping.id)).filter(
+        TenantAgentMapping.tenant_id == tenant_id,
+        TenantAgentMapping.is_enabled == True,
+    ).scalar() or 0
+
     return {
         "success": True,
         "data": {
@@ -600,11 +617,115 @@ def tenant_stats(
                 "graduated": counts.get("graduated", 0),
                 "paused": counts.get("paused", 0),
                 "exited": counts.get("exited", 0),
-                "total": sum(counts.values()),
+                "total": total_clients,
             },
             "new_this_month": new_this_month,
+            "retention_rate": retention_rate,
+            "graduation_rate": graduation_rate,
+            "agents": {
+                "total": total_agents,
+                "enabled": enabled_agents,
+            },
         },
     }
+
+
+# ============================================
+# 租户状态转换 (admin only)
+# ============================================
+
+_VALID_TRANSITIONS = {
+    TenantStatus.trial: [TenantStatus.active, TenantStatus.suspended],
+    TenantStatus.active: [TenantStatus.suspended],
+    TenantStatus.suspended: [TenantStatus.active, TenantStatus.archived],
+}
+
+
+@router.post("/{tenant_id}/activate")
+def activate_tenant(
+    tenant_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """将租户从 trial → active (admin only)"""
+    tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="租户不存在")
+    allowed = _VALID_TRANSITIONS.get(tenant.status, [])
+    if TenantStatus.active not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"当前状态 {tenant.status.value} 不能激活，允许转换: {[s.value for s in allowed]}",
+        )
+    old_status = tenant.status.value
+    tenant.status = TenantStatus.active
+    tenant.updated_at = datetime.utcnow()
+    db.add(TenantAuditLog(
+        tenant_id=tenant_id, actor_id=current_user.id,
+        action="status_change",
+        detail={"from": old_status, "to": "active"},
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+    db.refresh(tenant)
+    return {"success": True, "data": _tenant_full(tenant)}
+
+
+@router.post("/{tenant_id}/suspend")
+def suspend_tenant(
+    tenant_id: str,
+    reason: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """暂停租户 (trial/active → suspended, admin only)"""
+    tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="租户不存在")
+    allowed = _VALID_TRANSITIONS.get(tenant.status, [])
+    if TenantStatus.suspended not in allowed:
+        raise HTTPException(
+            status_code=400,
+            detail=f"当前状态 {tenant.status.value} 不能暂停",
+        )
+    old_status = tenant.status.value
+    tenant.status = TenantStatus.suspended
+    tenant.updated_at = datetime.utcnow()
+    db.add(TenantAuditLog(
+        tenant_id=tenant_id, actor_id=current_user.id,
+        action="status_change",
+        detail={"from": old_status, "to": "suspended", "reason": reason},
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+    db.refresh(tenant)
+    return {"success": True, "data": _tenant_full(tenant)}
+
+
+@router.post("/{tenant_id}/archive")
+def archive_tenant(
+    tenant_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """归档租户 (suspended → archived, admin only)"""
+    tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
+    if not tenant:
+        raise HTTPException(status_code=404, detail="租户不存在")
+    if tenant.status != TenantStatus.suspended:
+        raise HTTPException(status_code=400, detail="只有暂停状态的租户可以归档")
+    old_status = tenant.status.value
+    tenant.status = TenantStatus.archived
+    tenant.updated_at = datetime.utcnow()
+    db.add(TenantAuditLog(
+        tenant_id=tenant_id, actor_id=current_user.id,
+        action="status_change",
+        detail={"from": old_status, "to": "archived"},
+        created_at=datetime.utcnow(),
+    ))
+    db.commit()
+    db.refresh(tenant)
+    return {"success": True, "data": _tenant_full(tenant)}
 
 
 # ============================================

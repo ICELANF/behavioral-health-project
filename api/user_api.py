@@ -538,7 +538,7 @@ def list_coaches(
         try:
             target_roles = [UserRole(role)]
         except ValueError:
-            target_roles = [UserRole.COACH, UserRole.SUPERVISOR]
+            target_roles = [UserRole.COACH, UserRole.PROMOTER, UserRole.SUPERVISOR]
     else:
         target_roles = [
             UserRole.OBSERVER, UserRole.GROWER, UserRole.SHARER,
@@ -631,7 +631,7 @@ def assign_grower(
 
     coach = db.query(User).filter(
         User.id == request.coach_id,
-        User.role.in_([UserRole.COACH, UserRole.SUPERVISOR]),
+        User.role.in_([UserRole.COACH, UserRole.PROMOTER, UserRole.SUPERVISOR]),
     ).first()
     if not coach:
         raise HTTPException(status_code=404, detail="教练不存在")
