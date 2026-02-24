@@ -1,6 +1,7 @@
-# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.2.5)
+# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.2.6)
 
 > 本文件由 Claude Code 自动加载，指导 AI 如何在本项目中工作。
+> **V5.2.6 变更**: 2026-02-24 P1闭环: BehaviorRx引擎集成(混合路由<200ms) + 教练审批→通知推送(深度链接) + H5处方详情页(5卡片) + 新增5文件修改8文件
 > **V5.2.5 变更**: 2026-02-24 Rx仪表盘数据修复(Agent状态+策略模板字段转换) + 干预包后端(10包3端点) + 绑定管理权限修复 + 专家工作台iframe端口修复
 > **V5.2.4 变更**: 2026-02-23 AI行为处方生成(839行服务+LLM/规则引擎双路径+5标签页全接入) + 教练学员角色过滤修复(_STUDENT_ROLES白名单)
 > **V5.2.3 变更**: 2026-02-22 教练端三合一增强 — 种子业务数据(6角色全量) + 教练双重身份(CoachSelfHealthSummary) + 教练端13页响应式
@@ -17,8 +18,14 @@
 
 BHP（Behavioral Health Platform）是一个行为健康数字化管理平台，服务于慢病逆转与行为改变领域。平台包含 Observer(观察者)、Grower(成长者)、Coach(教练)、Expert(专家)、Admin(管理员) 五种用户角色，集成了评估引擎、AI Agent 系统、RAG 知识库、多模态交互引擎、智能监测方案及微信生态对接能力。
 
-**规模**: 76+ 路由模块 · 650+ API 端点 · 130+ 数据模型 · 50 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **32页Admin响应式** · **全mock=0** · **预发布审计56P/0F** · **CI 4-stage全绿** · **六级累进任务目录(42项)** · **统一个人中心(3共享组件)** · **教练端全量种子数据** · **教练双重身份健康面板** · **AI行为处方(LLM+规则引擎双路径)** · **学员角色白名单过滤** · **干预包管理(10包3端点)** · **Rx仪表盘全数据联通**
+**规模**: 76+ 路由模块 · 650+ API 端点 · 130+ 数据模型 · 50 迁移版本 · **47+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **32页Admin响应式** · **全mock=0** · **预发布审计56P/0F** · **CI 4-stage全绿** · **六级累进任务目录(42项)** · **统一个人中心(3共享组件)** · **教练端全量种子数据** · **教练双重身份健康面板** · **AI行为处方(BehaviorRx+LLM双路径)** · **学员角色白名单过滤** · **干预包管理(10包3端点)** · **Rx仪表盘全数据联通** · **P1闭环(AI生成→审批→通知→H5详情)**
 
+> ⚠️ **V5.2.6 变更** (2026-02-24):
+> - **P1闭环 — BehaviorRx集成**: `core/rx_context_adapter.py`(BehavioralProfile→RxContext) + `core/rx_response_mapper.py`(RxPrescriptionDTO→Copilot 6-key JSON); `copilot_routes.py` 混合路由(BehaviorRx<200ms优先→LLM降级); `r4_role_upgrade_trigger.py` 初始处方接入引擎
+> - **P1闭环 — 通知推送**: `r6_coach_flywheel_api_live.py` approve_review审批后写notifications表+深度链接`[link:/rx/{rx_id}]`; `main.py` notifications/system端点增加notifications表查询+link解析; 新增 `GET /rx/my` + `GET /rx/{rx_id}` 端点
+> - **P1闭环 — H5处方详情**: `RxPrescriptionDetail.vue`(5卡片:阶段/目标/策略/障碍/支持) + `types/rx.ts` + `api/rx.ts`; 路由`/rx/:id`; Notifications.vue系统通知点击跳转; MyPlan.vue处方列表入口
+> - **附带修复**: ExpertAgentType枚举大写 + coach_review_logs列名漂移(note→elapsed_seconds) + get_db_session→SessionLocal
+>
 > ⚠️ **V5.2.5 变更** (2026-02-24):
 > - **干预包管理后端**: `configs/intervention_packs.json`(10个干预包, 6域) + `api/intervention_api.py`(3端点: list/match/detail, JSON配置只读)
 > - **Rx仪表盘数据联通**: `behavior_rx/rx_routes.py` — agents/status端点返回富AgentStatusEntry[](名称/能力/域/处方统计, DB实时查询) + strategies端点包装{strategies,total}+字段名转换(ttm_stage_range→applicable_stages等)
