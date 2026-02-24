@@ -35,6 +35,7 @@ class AgentDomain(str, Enum):
     WEIGHT = "weight"
     CARDIAC_REHAB = "cardiac_rehab"
     VISION = "vision"
+    XZB_EXPERT = "xzb_expert"
 
 
 # ── 策略闸门决策类型 (§11.2) ──
@@ -196,6 +197,7 @@ AGENT_BASE_WEIGHTS: dict[str, float] = {
     "weight": 0.85,
     "cardiac_rehab": 0.85,
     "vision": 0.8,
+    "xzb_expert": 0.95,
 }
 
 

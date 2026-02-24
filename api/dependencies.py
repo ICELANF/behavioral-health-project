@@ -146,13 +146,36 @@ def resolve_tenant_ctx(
             TenantClient.status == "active",
         ).first()
         if client:
-            return get_tenant_routing_context(client.tenant_id, db)
+            ctx = get_tenant_routing_context(client.tenant_id, db)
+            # 注入 XZB 行智诊疗专家绑定 (如租户专家有 XZB 画像)
+            ctx = _inject_xzb_context(ctx, client.tenant_id, db)
+            return ctx
 
-        # 3. 普通用户
+        # 3. 普通用户 — 检查直接 XZB 专家绑定
+        xzb_expert_id = getattr(current_user, "xzb_expert_id", None)
+        if xzb_expert_id:
+            return {"xzb_expert_id": str(xzb_expert_id)}
+
         return None
     except Exception as e:
         logger.warning("resolve_tenant_ctx 失败 (降级到平台默认): %s", e)
         return None
+
+
+def _inject_xzb_context(ctx: Optional[dict], tenant_id, db: Session) -> dict:
+    """将租户专家的 XZB 画像注入路由上下文"""
+    ctx = ctx or {}
+    try:
+        from core.models import ExpertTenant
+        tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
+        if tenant:
+            expert_user = db.query(User).filter(User.id == tenant.expert_user_id).first()
+            xzb_id = getattr(expert_user, "xzb_expert_id", None) if expert_user else None
+            if xzb_id:
+                ctx["xzb_expert_id"] = str(xzb_id)
+    except Exception as e:
+        logger.debug("_inject_xzb_context: %s", e)
+    return ctx
 
 
 # ══════════════════════════════════════════════

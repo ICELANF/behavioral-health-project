@@ -1,6 +1,7 @@
-# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.2.9)
+# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.3.0)
 
 > 本文件由 Claude Code 自动加载，指导 AI 如何在本项目中工作。
+> **V5.3.0 变更**: 2026-02-25 行智诊疗(XZB)专家个人AGENT Phase 0+1+2: Migration 054(10新表+3ALTER) + core/xzb/(8文件) + api/xzb_api.py(29端点) + XZBExpertAgent注册到MasterAgent(AgentDomain.XZB_EXPERT) + Retriever对接EmbeddingService(embed_query+KnowledgeRetriever) + Job35 LLM对话知识挖掘 + Job38 真实向量嵌入 + RxBridge→coach_push_queue直接注入(铁律) + _source_label添加vision_rx+xzb_expert; 11新建+8修改=19文件; Alembic HEAD=054
 > **V5.2.9 变更**: 2026-02-24 VisionGuard视力行为保护域: Migration 053(5新表) + core/vision_service.py(5 ORM+评分引擎+风险评估+监护人+处方触发) + VisionGuideAgent(5意图+处方生成) + 5 Scheduler Jobs(23:00/23:15/Mon08/Sun06/月1日) + api/vision_api.py(14端点) + H5 4页面(打卡/监护人/档案/检查) + Admin审批队列 + h5/src/api/vision.ts; 铁律合规(AI→教练审核→推送)
 > **V5.2.8 变更**: 2026-02-24 审计I-01~I-09全量实施: Migration 052(2新表+7列扩展) + 双轨角色升级(I-01) + 激活4项检查(I-02) + 督导行动项派发(I-03) + 显示名称统一7处(I-04) + 强制Agent(I-05) + 铁律执行(I-06) + 资质生命周期(I-07, 4端点+调度器) + 积分差异化(I-08) + 循证等级治理(I-09) + 8处代码纠偏(C1-C8)
 > **V5.2.7 变更**: 2026-02-24 督导专家系统(6端点+状态机) + 租户生命周期(3端点) + RBAC修复 + P1 E2E验证3修复(json.dumps+事务隔离) + P1通知增强(WebSocket推送+2新端点) + 33测试

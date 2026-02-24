@@ -513,6 +513,8 @@ def _source_label(source_type: str) -> str:
         "coach_reminder": "教练提醒",
         "assessment_push": "评估结果",
         "micro_action_assign": "微行动指派",
+        "vision_rx": "视力处方",
+        "xzb_expert": "行智诊疗",
     }
     return labels.get(source_type, source_type)
 

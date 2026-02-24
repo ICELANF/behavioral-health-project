@@ -1233,5 +1233,298 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
     except Exception as e:
         logger.warning(f"[Scheduler] vision_monthly_archive 注册失败: {e}")
 
-    logger.info("[Scheduler] 定时任务调度器已配置 (含V004+V005+Phase4+CR15+CR28+R2+R9+R10+R7+R8+TenantExpiry+I07+VisionGuard)")
+    # ═══════════════════════════════════════════════
+    # 行智诊疗 (XZB) 定时任务 — Job 34-38
+    # 原编号 26-30 → 重编号避免与 VisionGuard 29-33 冲突
+    # ═══════════════════════════════════════════════
+
+    # ── Job34: XZB知识库健康度检查 (每日03:30) ──
+    try:
+        from core.database import get_db_session as _xzb_hc_db
+
+        @with_redis_lock("scheduler:xzb_knowledge_health_check", ttl=600)
+        def job_xzb_knowledge_health_check():
+            from sqlalchemy import text as sa_text
+            try:
+                with _xzb_hc_db() as db:
+                    # 标记超2年未更新知识为需复核
+                    result = db.execute(sa_text("""
+                        UPDATE xzb_knowledge SET needs_review = TRUE
+                        WHERE updated_at < NOW() - INTERVAL '730 days'
+                          AND is_active = TRUE AND needs_review = FALSE
+                          AND expires_at IS NULL
+                    """))
+                    flagged = result.rowcount
+                    # 停用已过期知识
+                    expired = db.execute(sa_text("""
+                        UPDATE xzb_knowledge SET is_active = FALSE
+                        WHERE expires_at < NOW() AND is_active = TRUE
+                    """))
+                    expired_count = expired.rowcount
+                    if flagged or expired_count:
+                        db.commit()
+                    logger.info(f"[Scheduler] XZB知识健检: 标记复核={flagged} 停用过期={expired_count}")
+            except Exception as e:
+                logger.warning(f"[Scheduler] XZB知识健检失败: {e}")
+
+        scheduler.add_job(
+            job_xzb_knowledge_health_check,
+            CronTrigger(hour=3, minute=30),
+            id="xzb_knowledge_health_check",
+            name="XZB知识库健康度检查",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] xzb_knowledge_health_check 注册失败: {e}")
+
+    # ── Job35: XZB对话沉淀知识挖掘 (每日06:30) ──
+    try:
+        from core.database import get_db_session as _xzb_digest_db
+
+        @with_redis_lock("scheduler:xzb_conversation_digest", ttl=600)
+        def job_xzb_conversation_digest():
+            from sqlalchemy import text as sa_text
+            try:
+                with _xzb_digest_db() as db:
+                    # 查询昨日已结束但未挖掘的对话
+                    rows = db.execute(sa_text("""
+                        SELECT c.id, c.expert_id,
+                               COALESCE(c.messages_json, '[]') as messages
+                        FROM xzb_conversations c
+                        WHERE c.created_at >= NOW() - INTERVAL '1 day'
+                          AND c.created_at < NOW()
+                          AND c.knowledge_mined = FALSE
+                          AND c.ended_at IS NOT NULL
+                        LIMIT 50
+                    """)).fetchall()
+
+                    if not rows:
+                        logger.info("[Scheduler] XZB对话沉淀: 无待处理对话")
+                        return
+
+                    # LLM 知识提取
+                    mined_count = 0
+                    try:
+                        from core.llm_client import get_llm_client
+                        llm = get_llm_client()
+                    except ImportError:
+                        llm = None
+
+                    for conv_id, expert_id, messages_json in rows:
+                        try:
+                            import json
+                            messages = json.loads(messages_json) if messages_json else []
+                            if not messages or len(messages) < 2:
+                                # 太短的对话不值得挖掘, 直接标记
+                                db.execute(sa_text(
+                                    "UPDATE xzb_conversations SET knowledge_mined = TRUE WHERE id = :cid"
+                                ), {"cid": str(conv_id)})
+                                continue
+
+                            # 用 LLM 提取可复用知识
+                            if llm:
+                                dialogue_text = "\n".join(
+                                    f"{m.get('role','?')}: {m.get('content','')}"
+                                    for m in messages[:20]  # 限制长度
+                                )
+                                resp = llm.chat(
+                                    system="你是知识提取助手。从以下对话中提取可复用的健康知识要点。"
+                                           "每条知识用JSON格式输出: {\"content\": \"...\", \"type\": \"note|tip|warning\"}。"
+                                           "只输出JSON数组, 无多余文字。如无可提取知识, 输出空数组 []。",
+                                    user=dialogue_text,
+                                    temperature=0.3,
+                                    timeout=30.0,
+                                )
+                                if resp.success and resp.content.strip():
+                                    try:
+                                        facts = json.loads(resp.content.strip())
+                                        for fact in (facts if isinstance(facts, list) else []):
+                                            content = fact.get("content", "").strip()
+                                            if content and len(content) > 10:
+                                                db.execute(sa_text("""
+                                                    INSERT INTO xzb_knowledge
+                                                        (id, expert_id, type, content, evidence_tier,
+                                                         is_active, expert_confirmed, source_conversation_id)
+                                                    VALUES (gen_random_uuid(), :eid, :tp, :ct, 'T4',
+                                                            TRUE, FALSE, :cid)
+                                                """), {
+                                                    "eid": str(expert_id),
+                                                    "tp": fact.get("type", "note"),
+                                                    "ct": content[:2000],
+                                                    "cid": str(conv_id),
+                                                })
+                                                mined_count += 1
+                                    except (json.JSONDecodeError, TypeError):
+                                        pass  # LLM 输出非法 JSON, 跳过
+
+                            # 标记对话已挖掘
+                            db.execute(sa_text(
+                                "UPDATE xzb_conversations SET knowledge_mined = TRUE WHERE id = :cid"
+                            ), {"cid": str(conv_id)})
+                        except Exception as inner_e:
+                            logger.debug("XZB digest conv %s failed: %s", conv_id, inner_e)
+
+                    db.commit()
+                    logger.info(f"[Scheduler] XZB对话沉淀: 处理 {len(rows)} 条对话, 提取 {mined_count} 条知识")
+            except Exception as e:
+                logger.warning(f"[Scheduler] XZB对话沉淀失败: {e}")
+
+        scheduler.add_job(
+            job_xzb_conversation_digest,
+            CronTrigger(hour=6, minute=30),
+            id="xzb_conversation_digest",
+            name="XZB对话沉淀知识挖掘",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] xzb_conversation_digest 注册失败: {e}")
+
+    # ── Job36: XZB专家活跃度检查 (每日09:00) ──
+    try:
+        from core.database import get_db_session as _xzb_active_db
+
+        @with_redis_lock("scheduler:xzb_expert_active_check", ttl=600)
+        def job_xzb_expert_active_check():
+            from sqlalchemy import text as sa_text
+            try:
+                with _xzb_active_db() as db:
+                    # 超30日未活跃的专家进入休眠模式
+                    result = db.execute(sa_text("""
+                        UPDATE xzb_configs SET dormant_mode = TRUE
+                        WHERE expert_id IN (
+                            SELECT id FROM xzb_expert_profiles
+                            WHERE is_active = TRUE
+                              AND last_active_at < NOW() - INTERVAL '30 days'
+                        ) AND dormant_mode = FALSE
+                    """))
+                    if result.rowcount:
+                        db.commit()
+                    logger.info(f"[Scheduler] XZB专家活跃度: {result.rowcount} 位进入休眠")
+            except Exception as e:
+                logger.warning(f"[Scheduler] XZB专家活跃度检查失败: {e}")
+
+        scheduler.add_job(
+            job_xzb_expert_active_check,
+            CronTrigger(hour=9, minute=0),
+            id="xzb_expert_active_check",
+            name="XZB专家活跃度检查",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] xzb_expert_active_check 注册失败: {e}")
+
+    # ── Job37: XZB处方片段审计 (每日06:20) ──
+    try:
+        from core.database import get_db_session as _xzb_audit_db
+
+        @with_redis_lock("scheduler:xzb_rx_fragment_audit", ttl=300)
+        def job_xzb_rx_fragment_audit():
+            from sqlalchemy import text as sa_text
+            try:
+                with _xzb_audit_db() as db:
+                    # 统计超时未处理的处方片段
+                    stale = db.execute(sa_text("""
+                        SELECT COUNT(*) FROM xzb_rx_fragments
+                        WHERE status = 'submitted'
+                          AND created_at < NOW() - INTERVAL '1 hour'
+                    """)).scalar() or 0
+                    if stale:
+                        logger.warning(f"[Scheduler] XZB处方审计: {stale} 个片段超时未处理")
+                    # 统计当日成功率
+                    total = db.execute(sa_text("""
+                        SELECT COUNT(*) FROM xzb_rx_fragments
+                        WHERE created_at >= CURRENT_DATE
+                    """)).scalar() or 0
+                    approved = db.execute(sa_text("""
+                        SELECT COUNT(*) FROM xzb_rx_fragments
+                        WHERE status = 'approved' AND created_at >= CURRENT_DATE
+                    """)).scalar() or 0
+                    rate = 100 * approved / total if total > 0 else 0
+                    logger.info(f"[Scheduler] XZB处方审计: 注入率 {approved}/{total} = {rate:.1f}%")
+            except Exception as e:
+                logger.warning(f"[Scheduler] XZB处方审计失败: {e}")
+
+        scheduler.add_job(
+            job_xzb_rx_fragment_audit,
+            CronTrigger(hour=6, minute=20),
+            id="xzb_rx_fragment_audit",
+            name="XZB处方片段审计",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] xzb_rx_fragment_audit 注册失败: {e}")
+
+    # ── Job38: XZB知识向量同步 (每日02:30) ──
+    try:
+        from core.database import get_db_session as _xzb_embed_db
+
+        @with_redis_lock("scheduler:xzb_knowledge_embedding_sync", ttl=900)
+        def job_xzb_knowledge_embedding_sync():
+            from sqlalchemy import text as sa_text
+            try:
+                with _xzb_embed_db() as db:
+                    # 查询待嵌入的知识条目 (每批最多100条)
+                    rows = db.execute(sa_text("""
+                        SELECT id, content FROM xzb_knowledge
+                        WHERE is_active = TRUE AND expert_confirmed = TRUE
+                          AND vector_embedding IS NULL
+                        LIMIT 100
+                    """)).fetchall()
+
+                    if not rows:
+                        logger.info("[Scheduler] XZB向量同步: 无待嵌入条目")
+                        return
+
+                    # 初始化 EmbeddingService
+                    embed_svc = None
+                    try:
+                        from core.knowledge.embedding_service import EmbeddingService
+                        embed_svc = EmbeddingService()
+                    except ImportError:
+                        logger.warning("[Scheduler] XZB向量同步: EmbeddingService 不可用")
+                        return
+
+                    embedded_count = 0
+                    try:
+                        for idx, (kid, content) in enumerate(rows):
+                            if not content or len(content.strip()) < 5:
+                                continue
+
+                            vec = embed_svc.embed_query(content)
+                            if not vec:
+                                logger.debug("XZB embed failed for knowledge %s", kid)
+                                continue
+
+                            # pgvector 格式: '[0.1, 0.2, ...]'
+                            vec_str = "[" + ",".join(str(v) for v in vec) + "]"
+                            db.execute(sa_text("""
+                                UPDATE xzb_knowledge
+                                SET vector_embedding = CAST(:vec AS vector)
+                                WHERE id = :kid
+                            """), {"vec": vec_str, "kid": str(kid)})
+                            embedded_count += 1
+
+                            # 每50条提交一次进度
+                            if (idx + 1) % 50 == 0:
+                                db.commit()
+                                logger.info(f"[Scheduler] XZB向量同步进度: {idx + 1}/{len(rows)}")
+
+                        db.commit()
+                        logger.info(f"[Scheduler] XZB向量同步: 完成 {embedded_count}/{len(rows)} 条嵌入")
+                    finally:
+                        embed_svc.close()
+            except Exception as e:
+                logger.warning(f"[Scheduler] XZB向量同步失败: {e}")
+
+        scheduler.add_job(
+            job_xzb_knowledge_embedding_sync,
+            CronTrigger(hour=2, minute=30),
+            id="xzb_knowledge_embedding_sync",
+            name="XZB知识向量同步",
+            replace_existing=True,
+        )
+    except Exception as e:
+        logger.warning(f"[Scheduler] xzb_knowledge_embedding_sync 注册失败: {e}")
+
+    logger.info("[Scheduler] 定时任务调度器已配置 (含V004+V005+Phase4+CR15+CR28+R2+R9+R10+R7+R8+TenantExpiry+I07+VisionGuard+XZB)")
     return scheduler

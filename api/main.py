@@ -649,6 +649,16 @@ try:
 except Exception as e:
     print(f"[API] v3 路由注册失败: {e}")
 
+# ============================================
+# 注册 行智诊疗 (XZB) 专家个人AGENT路由
+# ============================================
+try:
+    from api.xzb_api import router as xzb_router
+    app.include_router(xzb_router)
+    print("[API] 行智诊疗(XZB)路由已注册 (29 endpoints: experts/knowledge/chat/rx/med-circle)")
+except ImportError as e:
+    print(f"[API] 行智诊疗路由注册失败: {e}")
+
 # 挂载静态文件服务
 try:
     from fastapi.staticfiles import StaticFiles

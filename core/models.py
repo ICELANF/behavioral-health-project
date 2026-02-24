@@ -5166,6 +5166,7 @@ class PromptTemplate(Base):
         'core.script_library_service',   # ScriptTemplate
         'behavior_rx.core.rx_models',    # RxPrescription, RxStrategyTemplate, AgentHandoffLog
         'core.vision_service',           # VisionExamRecord, VisionBehaviorLog, VisionBehaviorGoal, VisionGuardianBinding, VisionProfile
+        'core.xzb.xzb_models',          # XZB: XZBExpertProfile, XZBConfig, XZBKnowledge, XZBKnowledgeRule, XZBConversation, XZBRxFragment, XZBExpertIntervention, XZBMedCircle, XZBMedCircleComment, XZBKnowledgeSharing
     ]:
         try:
             importlib.import_module(mod)

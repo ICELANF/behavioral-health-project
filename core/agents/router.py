@@ -44,6 +44,7 @@ class AgentRouter:
             - correlations: 租户级关联覆盖
             - fallback_agent: 租户回退 Agent
             - enabled_agents: 租户启用的 Agent 列表
+            - xzb_expert_id: 行智诊疗专家ID (如用户绑定了XZB专家)
         """
         scored: list[tuple[float, str]] = []
 
@@ -52,6 +53,12 @@ class AgentRouter:
         tenant_corr = (tenant_ctx or {}).get("correlations")
         fallback = (tenant_ctx or {}).get("fallback_agent", "behavior_rx")
         enabled_set = set((tenant_ctx or {}).get("enabled_agents", []))
+
+        # ── XZB 行智诊疗: 检测专家绑定, 加权注入(非截断) ──
+        xzb_expert_id = (tenant_ctx or {}).get("xzb_expert_id")
+        if xzb_expert_id and "xzb_expert" in self.agents:
+            # 将 XZB 专家 Agent 加入候选池, +80分(高于风险50, 低于crisis100)
+            scored.append((80.0, "xzb_expert"))
 
         # 合并关联: 租户优先 > 模板/硬编码
         correlations = dict(self._correlations)
