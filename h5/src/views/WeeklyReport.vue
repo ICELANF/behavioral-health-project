@@ -94,7 +94,7 @@
 
         <!-- 建议 -->
         <div v-if="report.suggestions && report.suggestions.length" class="suggestions-card card">
-          <h4>本周建议</h4>
+          <h4>本周建议 <AiContentBadge :review-status="report.review_status" compact /></h4>
           <div v-for="(s, i) in report.suggestions" :key="i" class="suggestion-item">
             <van-icon name="bulb-o" color="#faad14" size="16" />
             <span>{{ s }}</span>
@@ -124,6 +124,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import AiContentBadge from '@/components/common/AiContentBadge.vue'
 import request from '@/api/request'
 
 const router = useRouter()

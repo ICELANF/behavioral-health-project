@@ -7,7 +7,7 @@
         <div class="logo-section">
           <van-icon name="shield-o" size="64" color="#1989fa" />
           <h1>行健行为教练</h1>
-          <p class="version">v1.0.0</p>
+          <p class="version">v{{ appVersion }}</p>
         </div>
 
         <div class="desc-section">
@@ -64,6 +64,8 @@
 </template>
 
 <script setup lang="ts">
+import { APP_VERSION } from '@/config'
+const appVersion = APP_VERSION
 </script>
 
 <style lang="scss" scoped>

@@ -192,9 +192,8 @@ function onStudentChange(idx: number) {
 }
 
 function viewLogs() {
-  // Navigate to daily log or use router
   if (currentStudent.value) {
-    router.push('/vision/daily')
+    router.push({ path: '/vision/daily', query: { student_id: currentStudent.value.student_id } })
   }
 }
 

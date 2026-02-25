@@ -291,88 +291,78 @@ function onNotifyClick(n: any) {
     api.post(`/api/v1/notifications/${n.notif_id}/read`).catch(() => {})
     n.is_read = true
   }
-  // 深度链接跳转
-  if (n.link) {
+  // 深度链接跳转 (仅允许内部路由，防止开放重定向)
+  if (n.link && typeof n.link === 'string' && n.link.startsWith('/') && !n.link.startsWith('//')) {
     router.push(n.link)
   }
 }
 
 onMounted(async () => {
-  // 加载对话会话
+  // 并行加载所有数据源
   loadingSessions.value = true
-  try {
-    const res: any = await api.get('/api/v1/chat/sessions')
-    sessions.value = res.sessions || res.data || res || []
-  } catch {
-    sessions.value = []
-  } finally {
-    loadingSessions.value = false
-  }
-
-  // 加载教练消息
   loadingCoachMessages.value = true
-  try {
-    const [msgRes, countRes] = await Promise.all([
+  loadingReminders.value = true
+  loadingPendingAssess.value = true
+  loadingDeviceAlerts.value = true
+
+  const [sessionsRes, msgRes, countRes, remindersRes, assessRes, notifRes, deviceDashRes, alertsRes] =
+    await Promise.allSettled([
+      api.get('/api/v1/chat/sessions'),
       api.get('/api/v1/messages/inbox'),
       api.get('/api/v1/messages/unread-count'),
+      api.get('/api/v1/reminders'),
+      api.get('/api/v1/assessment-assignments/my-pending'),
+      api.get('/api/v1/notifications/system?limit=20'),
+      api.get('/api/v1/mp/device/dashboard/today'),
+      api.get('/api/v1/alerts/my?limit=20'),
     ])
-    coachMessages.value = (msgRes as any).messages || []
-    unreadCount.value = (countRes as any).unread_count || 0
-  } catch {
-    coachMessages.value = []
-  } finally {
-    loadingCoachMessages.value = false
+
+  // 对话会话
+  if (sessionsRes.status === 'fulfilled') {
+    const res = sessionsRes.value as any
+    sessions.value = res.sessions || res.data || res || []
+  }
+  loadingSessions.value = false
+
+  // 教练消息
+  if (msgRes.status === 'fulfilled') {
+    coachMessages.value = (msgRes.value as any).messages || []
+  }
+  if (countRes.status === 'fulfilled') {
+    unreadCount.value = (countRes.value as any).unread_count || 0
+  }
+  loadingCoachMessages.value = false
+
+  // 提醒
+  if (remindersRes.status === 'fulfilled') {
+    reminders.value = (remindersRes.value as any).reminders || []
+  }
+  loadingReminders.value = false
+
+  // 待完成评估
+  if (assessRes.status === 'fulfilled') {
+    pendingAssessments.value = (assessRes.value as any).assignments || []
+  }
+  loadingPendingAssess.value = false
+
+  // 系统通知
+  if (notifRes.status === 'fulfilled') {
+    notifications.value = (notifRes.value as any).notifications || []
   }
 
-  // 加载提醒
-  loadingReminders.value = true
-  try {
-    const res: any = await api.get('/api/v1/reminders')
-    reminders.value = res.reminders || []
-  } catch {
-    reminders.value = []
-  } finally {
-    loadingReminders.value = false
+  // 健康提醒（来自设备）
+  if (deviceDashRes.status === 'fulfilled') {
+    const res = deviceDashRes.value as any
+    if (res?.alerts) healthAlerts.value = res.alerts
   }
 
-  // 加载待完成评估
-  loadingPendingAssess.value = true
-  try {
-    const res: any = await api.get('/api/v1/assessment-assignments/my-pending')
-    pendingAssessments.value = res.assignments || []
-  } catch {
-    pendingAssessments.value = []
-  } finally {
-    loadingPendingAssess.value = false
+  // 设备预警
+  if (alertsRes.status === 'fulfilled') {
+    const alerts = (alertsRes.value as any).alerts || []
+    deviceAlertList.value = alerts
+    unreadAlertCount.value = alerts.filter((a: any) => !a.user_read).length
   }
-
-  // 加载系统通知
-  try {
-    const res: any = await api.get('/api/v1/notifications/system?limit=20')
-    notifications.value = res.notifications || []
-  } catch {
-    notifications.value = []
-  }
-
-  // 加载健康提醒（来自设备）
-  try {
-    const res: any = await api.get('/api/v1/mp/device/dashboard/today')
-    if (res?.alerts) {
-      healthAlerts.value = res.alerts
-    }
-  } catch {}
-
-  // 加载设备预警
-  loadingDeviceAlerts.value = true
-  try {
-    const res: any = await api.get('/api/v1/alerts/my?limit=20')
-    deviceAlertList.value = res.alerts || []
-    unreadAlertCount.value = (res.alerts || []).filter((a: any) => !a.user_read).length
-  } catch {
-    deviceAlertList.value = []
-  } finally {
-    loadingDeviceAlerts.value = false
-  }
+  loadingDeviceAlerts.value = false
 })
 </script>
 

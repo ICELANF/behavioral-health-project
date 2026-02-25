@@ -212,7 +212,7 @@ function onTabChange() {
 
 // ---- 内容列表 ----
 const contentList = ref<any[]>([])
-const loading = ref(false)
+const loading = ref(true)
 const refreshing = ref(false)
 const finished = ref(false)
 const page = ref(1)

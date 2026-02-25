@@ -40,6 +40,7 @@
         <div class="risk-header">
           <van-icon :name="riskIcon" :color="riskColor" size="24" />
           <span class="risk-level">{{ riskText }}风险</span>
+          <AiContentBadge :review-status="dashboardData.review_status" compact style="margin-left:auto" />
         </div>
         <ul class="risk-details">
           <li v-for="(item, index) in dashboardData.recommendations" :key="index">
@@ -77,16 +78,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
 import { showLoadingToast, closeToast, showToast } from 'vant'
 import TabBar from '@/components/common/TabBar.vue'
+import AiContentBadge from '@/components/common/AiContentBadge.vue'
 import { useUserStore } from '@/stores/user'
 import dashboardApi from '@/api/dashboard'
 import { fetchFullReport } from '@/api/report'
 import type { DashboardData } from '@/api/types'
 
 const chartRef = ref<HTMLElement>()
+let chartInstance: echarts.ECharts | null = null
 const userStore = useUserStore()
 const isLoading = ref(false)
 const reportLoading = ref(false)
@@ -179,7 +182,9 @@ async function viewFullReport() {
 function initChart() {
   if (!chartRef.value) return
 
+  chartInstance?.dispose()
   const chart = echarts.init(chartRef.value)
+  chartInstance = chart
   const option = {
     grid: {
       top: 20,
@@ -219,6 +224,11 @@ function initChart() {
   }
   chart.setOption(option)
 }
+
+onUnmounted(() => {
+  chartInstance?.dispose()
+  chartInstance = null
+})
 </script>
 
 <style lang="scss" scoped>

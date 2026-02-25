@@ -4,7 +4,7 @@
 
     <div v-if="!submitted" class="batch-content">
       <!-- 进度 -->
-      <van-progress :percentage="Math.round((currentIdx + 1) / questions.length * 100)" stroke-width="6" style="margin: 12px 16px;" />
+      <van-progress :percentage="questions.length ? Math.round((currentIdx + 1) / questions.length * 100) : 0" stroke-width="6" style="margin: 12px 16px;" />
       <div class="q-counter">第 {{ currentIdx + 1 }} / {{ questions.length }} 题</div>
 
       <!-- 当前题目 -->
@@ -68,7 +68,7 @@ onMounted(async () => {
       }
     }
   } catch (e) {
-    console.warn('[AssessmentBatch] load failed:', e)
+    console.error('[AssessmentBatch] load failed:', e)
   }
   startTime.value = Date.now()
 })

@@ -309,7 +309,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
 import { showToast } from 'vant'
-import { coachApi } from '@/api/coach-api'
+import api from '@/api/index'
 
 // ── 权威数据（对应 api/paths_api.py + api/coach_api.py） ─────────────
 const levels = [
@@ -494,7 +494,7 @@ async function submitApply() {
   }
   submitting.value = true
   try {
-    await coachApi.applyPromotion({
+    await api.post('/api/v1/coach/promotion-applications', {
       current_level: form.stage,
       story: form.story,
       target_domain: form.domain,

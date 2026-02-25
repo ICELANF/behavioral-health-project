@@ -218,7 +218,7 @@ async function loadGoals() {
 
 async function loadExistingLog() {
   try {
-    const res: any = await visionApi.getMyLogs(1)
+    const res: any = await visionApi.getMyLogs(30)
     const logs = res?.logs || []
     const todayLog = logs.find((l: any) => l.log_date === logDateStr.value)
     if (todayLog) {
@@ -265,7 +265,7 @@ onMounted(() => {
 
 <style scoped>
 .vision-daily-log {
-  padding-bottom: 80px;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   background: #f7f8fa;
   min-height: 100vh;
 }

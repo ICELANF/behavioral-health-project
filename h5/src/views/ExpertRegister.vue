@@ -363,8 +363,10 @@ function restoreDraft() {
 
 function saveDraft() {
   try {
+    // 排除敏感银行信息，防止本地存储泄露
+    const { bank_name, bank_branch, bank_account, bank_holder, ...safeDraft } = form
     localStorage.setItem(DRAFT_KEY, JSON.stringify({
-      form: { ...form },
+      form: { ...safeDraft },
       step: step.value,
       maxReached: maxReached.value,
       savedAt: Date.now(),
@@ -583,7 +585,7 @@ onMounted(() => {
 .expert-register {
   min-height: 100vh;
   background: #f7f8fa;
-  padding-bottom: 80px;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 /* ── Step Tabs (可点击) ── */

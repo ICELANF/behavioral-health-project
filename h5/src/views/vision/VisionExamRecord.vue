@@ -21,29 +21,37 @@
           </van-cell-group>
 
           <van-cell-group inset title="左眼数据">
-            <van-field v-model.number="form.left_eye_sph" label="球镜 (SPH)" type="number" placeholder="如 -2.50" input-align="right">
+            <van-field v-model.number="form.left_eye_sph" label="球镜 (SPH)" type="number" placeholder="如 -2.50 (-30~+20)" input-align="right"
+              :rules="[{ validator: (v: any) => v == null || v === '' || (v >= -30 && v <= 20), message: 'SPH 范围 -30 ~ +20' }]">
               <template #button><span class="unit">D</span></template>
             </van-field>
-            <van-field v-model.number="form.left_eye_cyl" label="柱镜 (CYL)" type="number" placeholder="散光度数" input-align="right">
+            <van-field v-model.number="form.left_eye_cyl" label="柱镜 (CYL)" type="number" placeholder="散光度数 (-10~0)" input-align="right"
+              :rules="[{ validator: (v: any) => v == null || v === '' || (v >= -10 && v <= 0), message: 'CYL 范围 -10 ~ 0' }]">
               <template #button><span class="unit">D</span></template>
             </van-field>
-            <van-field v-model.number="form.left_eye_axial_len" label="眼轴长度" type="number" placeholder="如 24.5" input-align="right">
+            <van-field v-model.number="form.left_eye_axial_len" label="眼轴长度" type="number" placeholder="如 24.5 (15~35)" input-align="right"
+              :rules="[{ validator: (v: any) => v == null || v === '' || (v >= 15 && v <= 35), message: '眼轴长度 15~35mm' }]">
               <template #button><span class="unit">mm</span></template>
             </van-field>
-            <van-field v-model.number="form.left_eye_va" label="视力" type="number" placeholder="5分制, 如 4.8" input-align="right" />
+            <van-field v-model.number="form.left_eye_va" label="视力" type="number" placeholder="5分制, 如 4.8 (0~5.3)" input-align="right"
+              :rules="[{ validator: (v: any) => v == null || v === '' || (v >= 0 && v <= 5.3), message: '视力范围 0 ~ 5.3' }]" />
           </van-cell-group>
 
           <van-cell-group inset title="右眼数据">
-            <van-field v-model.number="form.right_eye_sph" label="球镜 (SPH)" type="number" placeholder="如 -2.50" input-align="right">
+            <van-field v-model.number="form.right_eye_sph" label="球镜 (SPH)" type="number" placeholder="如 -2.50 (-30~+20)" input-align="right"
+              :rules="[{ validator: (v: any) => v == null || v === '' || (v >= -30 && v <= 20), message: 'SPH 范围 -30 ~ +20' }]">
               <template #button><span class="unit">D</span></template>
             </van-field>
-            <van-field v-model.number="form.right_eye_cyl" label="柱镜 (CYL)" type="number" placeholder="散光度数" input-align="right">
+            <van-field v-model.number="form.right_eye_cyl" label="柱镜 (CYL)" type="number" placeholder="散光度数 (-10~0)" input-align="right"
+              :rules="[{ validator: (v: any) => v == null || v === '' || (v >= -10 && v <= 0), message: 'CYL 范围 -10 ~ 0' }]">
               <template #button><span class="unit">D</span></template>
             </van-field>
-            <van-field v-model.number="form.right_eye_axial_len" label="眼轴长度" type="number" placeholder="如 24.5" input-align="right">
+            <van-field v-model.number="form.right_eye_axial_len" label="眼轴长度" type="number" placeholder="如 24.5 (15~35)" input-align="right"
+              :rules="[{ validator: (v: any) => v == null || v === '' || (v >= 15 && v <= 35), message: '眼轴长度 15~35mm' }]">
               <template #button><span class="unit">mm</span></template>
             </van-field>
-            <van-field v-model.number="form.right_eye_va" label="视力" type="number" placeholder="5分制, 如 4.8" input-align="right" />
+            <van-field v-model.number="form.right_eye_va" label="视力" type="number" placeholder="5分制, 如 4.8 (0~5.3)" input-align="right"
+              :rules="[{ validator: (v: any) => v == null || v === '' || (v >= 0 && v <= 5.3), message: '视力范围 0 ~ 5.3' }]" />
           </van-cell-group>
 
           <van-cell-group inset>
@@ -159,9 +167,29 @@ function riskLabel(level: string) {
   return map[level] || level
 }
 
+function validateRange(val: number | null, min: number, max: number, label: string): string | null {
+  if (val == null) return null
+  if (val < min || val > max) return `${label}超出范围 (${min}~${max})`
+  return null
+}
+
 async function handleSubmit() {
   if (!form.value.exam_date) {
     showToast('请选择检查日期')
+    return
+  }
+  const checks = [
+    validateRange(form.value.left_eye_sph, -30, 20, '左眼SPH'),
+    validateRange(form.value.right_eye_sph, -30, 20, '右眼SPH'),
+    validateRange(form.value.left_eye_cyl, -10, 0, '左眼CYL'),
+    validateRange(form.value.right_eye_cyl, -10, 0, '右眼CYL'),
+    validateRange(form.value.left_eye_axial_len, 15, 35, '左眼眼轴'),
+    validateRange(form.value.right_eye_axial_len, 15, 35, '右眼眼轴'),
+    validateRange(form.value.left_eye_va, 0, 5.3, '左眼视力'),
+    validateRange(form.value.right_eye_va, 0, 5.3, '右眼视力'),
+  ].filter(Boolean)
+  if (checks.length) {
+    showToast(checks[0]!)
     return
   }
   submitting.value = true

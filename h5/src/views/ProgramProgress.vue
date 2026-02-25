@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { programApi } from '@/api/program'
 import * as echarts from 'echarts'
@@ -65,6 +65,8 @@ const eid = route.params.id as string
 const loading = ref(true)
 const data = ref<any>(null)
 const chartRef = ref<HTMLElement>()
+let chartInstance: echarts.ECharts | null = null
+let resizeHandler: (() => void) | null = null
 
 const DIM_META: Record<string, { label: string; color: string }> = {
   compliance: { label: '依从性', color: '#1989fa' },
@@ -88,7 +90,9 @@ const dimensions = computed(() => {
 
 const initChart = () => {
   if (!chartRef.value || !data.value?.profile) return
+  chartInstance?.dispose()
   const chart = echarts.init(chartRef.value)
+  chartInstance = chart
   const profile = data.value.profile
   const keys = Object.keys(DIM_META)
   const labels = keys.map(k => DIM_META[k].label)
@@ -113,8 +117,18 @@ const initChart = () => {
     }],
   })
 
-  window.addEventListener('resize', () => chart.resize())
+  resizeHandler = () => chart.resize()
+  window.addEventListener('resize', resizeHandler)
 }
+
+onUnmounted(() => {
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+    resizeHandler = null
+  }
+  chartInstance?.dispose()
+  chartInstance = null
+})
 
 onMounted(async () => {
   try {

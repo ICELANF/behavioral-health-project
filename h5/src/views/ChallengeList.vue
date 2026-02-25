@@ -152,7 +152,7 @@ interface Enrollment {
 
 const router = useRouter()
 
-const loading = ref(false)
+const loading = ref(true)
 const refreshing = ref(false)
 const enrollments = ref<Enrollment[]>([])
 const startingId = ref<number | null>(null)

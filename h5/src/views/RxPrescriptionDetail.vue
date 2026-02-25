@@ -32,6 +32,16 @@
           </div>
         </div>
 
+        <!-- 待审核门控: draft/pending 状态隐藏详细内容 -->
+        <div v-if="isDraftOrPending" class="card rx-pending-gate">
+          <van-icon name="clock-o" size="40" color="#faad14" />
+          <p class="pending-title">处方内容待教练审核</p>
+          <p class="pending-hint">教练审核通过后，处方详细内容将在此展示</p>
+          <van-tag type="warning" size="medium">{{ statusLabel }}</van-tag>
+        </div>
+
+        <!-- 以下详细内容仅在非 draft/pending 状态展示 -->
+        <template v-else>
         <!-- 目标行为卡 -->
         <div class="card rx-section">
           <div class="section-title">
@@ -96,6 +106,7 @@
             <van-tag type="success" size="small">教练已审核</van-tag>
           </div>
         </div>
+        </template>
       </template>
 
       <van-empty v-else-if="!loading" description="处方不存在或无权限查看" />
@@ -145,6 +156,11 @@ const intensityTagType = computed(() => {
 const domainLabel = computed(() => {
   if (!rx.value) return ''
   return DOMAIN_LABELS[rx.value.domain] || rx.value.domain || '综合'
+})
+
+const isDraftOrPending = computed(() => {
+  const s = rx.value?.status
+  return s === 'draft' || s === 'pending'
 })
 
 const statusLabel = computed(() => {
@@ -263,6 +279,24 @@ onMounted(async () => {
     display: flex;
     gap: $spacing-xs;
     flex-wrap: wrap;
+  }
+
+  .rx-pending-gate {
+    text-align: center;
+    padding: $spacing-lg $spacing-md;
+
+    .pending-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: $text-color;
+      margin: $spacing-sm 0 4px;
+    }
+
+    .pending-hint {
+      font-size: $font-size-sm;
+      color: $text-color-secondary;
+      margin-bottom: $spacing-sm;
+    }
   }
 
   .rx-obstacle, .rx-support {

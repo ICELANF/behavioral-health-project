@@ -139,10 +139,15 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { showToast } from 'vant'
+import api from '@/api/index'
+import storage from '@/utils/storage'
 
 const router = useRouter()
 const userStore = useUserStore()
-const userInfo = computed(() => userStore.currentUser || {})
+const userInfo = computed(() => {
+  const authUser = storage.getAuthUser()
+  return authUser || { username: userStore.name, avatar: '' }
+})
 
 const defaultAvatar = '/images/default-avatar.png'
 const selectedPain = ref<string | null>(null)
@@ -211,23 +216,25 @@ const openChat = () => {
 }
 
 const completeTask = async () => {
-  if (todayTask.value) {
-    todayTask.value.completed = true
-    showToast({ message: '✅ 打卡成功！', type: 'success' })
-  }
+  if (!todayTask.value) return
+  todayTask.value.completed = true
+  showToast({ message: '打卡成功！', type: 'success' })
+  try {
+    await api.post('/api/v1/tasks/today-micro/complete')
+  } catch { /* 乐观更新已生效，静默失败 */ }
 }
 
 onMounted(async () => {
   // 加载今日微任务
   try {
-    const { data } = await fetch('/api/v1/tasks/today-micro').then(r => r.json())
-    if (data) todayTask.value = { content: data.content, completed: data.completed }
+    const res: any = await api.get('/api/v1/tasks/today-micro')
+    if (res) todayTask.value = { content: res.content, completed: res.completed }
   } catch { /* 静默失败，不影响首页渲染 */ }
 
   // 加载剩余对话次数
   try {
-    const { data } = await fetch('/api/v1/chat/remaining-today').then(r => r.json())
-    remainingChats.value = data?.remaining ?? 3
+    const res: any = await api.get('/api/v1/chat/remaining-today')
+    remainingChats.value = res?.remaining ?? 3
   } catch {}
 })
 </script>
@@ -236,7 +243,7 @@ onMounted(async () => {
 .observer-home {
   min-height: 100vh;
   background: #F7F8FB;
-  padding-bottom: 80px;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 /* 头部英雄区 */

@@ -40,8 +40,8 @@
       </div>
     </div>
 
-    <!-- 快速体验入口 -->
-    <div class="quick-login">
+    <!-- 快速体验入口 (仅开发环境) -->
+    <div v-if="isDev" class="quick-login">
       <p class="quick-title">快速体验</p>
       <div class="quick-buttons">
         <van-button size="small" round @click="quickLogin('grower')">成长者</van-button>
@@ -68,20 +68,23 @@ import { useUserStore } from '@/stores/user'
 const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
+const isDev = import.meta.env.DEV
 
 const form = reactive({
   username: '',
   password: '',
 })
 
-const demoAccounts: Record<string, { password: string; label: string }> = {
+// 演示账号仅在开发环境可用
+const demoAccounts: Record<string, { password: string; label: string }> = isDev ? {
   observer: { password: 'Observer@2026', label: '观察员' },
   grower:   { password: 'Grower@2026',   label: '成长者' },
   sharer:   { password: 'Sharer@2026',   label: '分享者' },
   coach:    { password: 'Coach@2026',    label: '教练' },
-}
+} : {}
 
 function quickLogin(role: string) {
+  if (!isDev) return
   const account = demoAccounts[role]
   if (!account) return
   form.username = role

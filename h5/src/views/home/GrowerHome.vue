@@ -66,7 +66,7 @@
     <div class="ai-nudge-card" v-if="aiNudge" @click="openChat">
       <div class="ai-icon">🤖</div>
       <div class="ai-content">
-        <p class="ai-title">本周数据洞察</p>
+        <p class="ai-title">本周数据洞察 <AiContentBadge compact /></p>
         <p class="ai-text">{{ aiNudge }}</p>
       </div>
       <van-icon name="arrow" color="#aaa" />
@@ -92,6 +92,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '@/api/index'
+import AiContentBadge from '@/components/common/AiContentBadge.vue'
 const router = useRouter()
 const userInfo = ref<any>({})
 const streakDays = ref(0)
@@ -115,16 +117,23 @@ const domainColor = (d: string) => {
 }
 
 const toggleTask = async (task: any) => {
-  task.done = !task.done
-  // POST /api/v1/tasks/{id}/complete
+  const newState = !task.done
+  task.done = newState
+  try {
+    if (newState) {
+      await api.post(`/api/v1/tasks/${task.id}/complete`)
+    } else {
+      await api.post(`/api/v1/tasks/${task.id}/uncomplete`)
+    }
+  } catch { /* 乐观更新已生效 */ }
 }
 
 const openChat = () => router.push('/chat')
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/v1/home/grower-dashboard').then(r => r.json())
-    const d = res.data || {}
+    const res: any = await api.get('/api/v1/home/grower-dashboard')
+    const d = res || {}
     streakDays.value = d.streak_days || 0
     stabilityScore.value = d.stability_score || 0
     tasks.value = d.today_tasks || []
@@ -136,7 +145,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.grower-home { min-height: 100vh; background: #F7F8FB; padding-bottom: 80px; }
+.grower-home { min-height: 100vh; background: #F7F8FB; padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 .grower-hero { position: relative; padding: 52px 20px 28px; }
 .hero-bg {
   position: absolute; inset: 0;

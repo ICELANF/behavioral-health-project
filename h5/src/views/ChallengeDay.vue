@@ -407,7 +407,7 @@ const route = useRoute()
 const router = useRouter()
 const enrollmentId = route.params.id as string
 
-const loading = ref(false)
+const loading = ref(true)
 const pushes = ref<Push[]>([])
 const progress = reactive<ProgressInfo>({
   current_day: 0,

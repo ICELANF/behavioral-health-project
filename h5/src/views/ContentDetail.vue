@@ -45,8 +45,8 @@
           </div>
         </div>
 
-        <!-- 正文 -->
-        <div class="content-body card" v-html="content.body"></div>
+        <!-- 正文 (DOMPurify 防 XSS) -->
+        <div class="content-body card" v-html="sanitizedBody"></div>
 
         <!-- 评论区 -->
         <div class="comments-section card">
@@ -130,6 +130,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import DOMPurify from 'dompurify'
 import api from '@/api/index'
 import InteractionBar from '@/components/InteractionBar.vue'
 import ShareSheet from '@/components/ShareSheet.vue'
@@ -152,6 +153,10 @@ const comments = ref<any[]>([])
 const commentText = ref('')
 const submittingComment = ref(false)
 const showShare = ref(false)
+
+const sanitizedBody = computed(() =>
+  content.value?.body ? DOMPurify.sanitize(content.value.body) : ''
+)
 
 const shareUrl = computed(() => {
   return `${window.location.origin}/content/${contentType.value}/${contentId.value}`

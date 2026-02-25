@@ -18,8 +18,19 @@ const router = createRouter({
       beforeEnter: (_to, _from, next) => {
         const token = storage.getToken()
         if (!token) { next({ name: 'login' }); return }
-        // 尝试从localStorage读取角色等级 (登录后由auth store写入)
-        const roleLevel = parseInt(localStorage.getItem('bhp_role_level') || '0', 10)
+        // 从登录响应存储的用户信息中读取角色 (比 raw localStorage 更安全)
+        const ROLE_LEVEL: Record<string, number> = {
+          observer: 1, OBSERVER: 1,
+          grower: 2, GROWER: 2,
+          sharer: 3, SHARER: 3,
+          coach: 4, COACH: 4,
+          promoter: 5, PROMOTER: 5,
+          supervisor: 5, SUPERVISOR: 5,
+          master: 6, MASTER: 6,
+          admin: 99, ADMIN: 99,
+        }
+        const authUser = storage.getAuthUser()
+        const roleLevel = ROLE_LEVEL[authUser?.role] || 0
         if (roleLevel <= 1) {
           next({ path: '/home/observer', replace: true })
         } else if (roleLevel === 3) {
@@ -63,7 +74,7 @@ const router = createRouter({
     {
       path: '/home/today',
       name: 'grower-today',
-      component: () => import('@/views/home/GrowerHome.vue'),
+      component: () => import('@/views/home/GrowerTodayHome.vue'),
       meta: { title: '今日行动' },
       beforeEnter: (_to, _from, next) => {
         if (!localStorage.getItem('bhp_grower_onboarding_done')) {
@@ -134,12 +145,14 @@ const router = createRouter({
     {
       path: '/privacy-policy',
       name: 'privacy-policy',
-      component: () => import('@/views/PrivacyPolicy.vue')
+      component: () => import('@/views/PrivacyPolicy.vue'),
+      meta: { title: '隐私政策', public: true }
     },
     {
       path: '/about-us',
       name: 'about-us',
-      component: () => import('@/views/AboutUs.vue')
+      component: () => import('@/views/AboutUs.vue'),
+      meta: { title: '关于我们', public: true }
     },
     {
       path: '/behavior-assessment',

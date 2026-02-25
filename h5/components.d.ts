@@ -7,12 +7,16 @@ export {}
 
 declare module 'vue' {
   export interface GlobalComponents {
+    AiContentBadge: typeof import('./src/components/common/AiContentBadge.vue')['default']
     BehaviorTaskCard: typeof import('./src/components/task/BehaviorTaskCard.vue')['default']
     CitationBlock: typeof import('./src/components/chat/CitationBlock.vue')['default']
     CitationMarker: typeof import('./src/components/chat/CitationMarker.vue')['default']
     EfficacySlider: typeof import('./src/components/chat/EfficacySlider.vue')['default']
+    GlobalSearch: typeof import('./src/components/common/GlobalSearch.vue')['default']
     InteractionBar: typeof import('./src/components/InteractionBar.vue')['default']
     MessageBubble: typeof import('./src/components/chat/MessageBubble.vue')['default']
+    NotificationBell: typeof import('./src/components/common/NotificationBell.vue')['default']
+    QuickInputHub: typeof import('./src/components/health/QuickInputHub.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     ShareSheet: typeof import('./src/components/ShareSheet.vue')['default']
@@ -29,6 +33,7 @@ declare module 'vue' {
     VanCircle: typeof import('vant/es')['Circle']
     VanCollapse: typeof import('vant/es')['Collapse']
     VanCollapseItem: typeof import('vant/es')['CollapseItem']
+    VanDatePicker: typeof import('vant/es')['DatePicker']
     VanDialog: typeof import('vant/es')['Dialog']
     VanDropdownItem: typeof import('vant/es')['DropdownItem']
     VanDropdownMenu: typeof import('vant/es')['DropdownMenu']

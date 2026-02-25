@@ -163,7 +163,7 @@ interface Task {
   source?: string
 }
 
-const loading = ref(false)
+const loading = ref(true)
 const tasks = ref<Task[]>([])
 const stats = reactive({
   streak_days: 0,

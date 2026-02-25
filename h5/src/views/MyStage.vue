@@ -125,7 +125,7 @@ import { ref, computed, onMounted } from 'vue'
 import { showSuccessToast } from 'vant'
 import api from '@/api/index'
 
-const loading = ref(false)
+const loading = ref(true)
 const loadingTasks = ref(false)
 const profile = ref<any>(null)
 const todayTasks = ref<any[]>([])

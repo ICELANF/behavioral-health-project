@@ -76,14 +76,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { showToast } from 'vant'
 import api from '@/api/index'
 import storage from '@/utils/storage'
 
 const ROLE_MAP: Record<string, string> = {
-  admin: '管理员', coach: '健康教练', grower: '成长者',
-  observer: '观察员', supervisor: '督导', promoter: '推广者', master: '大师'
+  admin: '管理员', coach: '健康教练', grower: '成长者', sharer: '分享者',
+  observer: '观察员', supervisor: '督导', promoter: '推广者', master: '大师',
+  ADMIN: '管理员', COACH: '健康教练', GROWER: '成长者', SHARER: '分享者',
+  OBSERVER: '观察员', SUPERVISOR: '督导', PROMOTER: '推广者', MASTER: '大师',
 }
 
 const userInfo = ref<Record<string, any>>({})
@@ -95,10 +97,18 @@ const pwForm = reactive({
   confirm_password: ''
 })
 
-const settings = reactive({
-  healthReminder: true,
-  messagePush: true,
-  exerciseReminder: false
+const SETTINGS_KEY = 'bhp_notification_settings'
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch { /* use defaults */ }
+  return { healthReminder: true, messagePush: true, exerciseReminder: false }
+}
+const settings = reactive(loadSettings())
+
+watch(settings, (val) => {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(val))
 })
 
 const roleLabel = computed(() => ROLE_MAP[userInfo.value.role] || userInfo.value.role || '--')

@@ -82,7 +82,7 @@ import dashboardApi from '@/api/dashboard'
 import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
-const loading = ref(false)
+const loading = ref(true)
 const report = ref<any>(null)
 const chapters = ref<any[]>([])
 const activeChapter = ref<number[]>([])

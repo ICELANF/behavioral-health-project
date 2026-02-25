@@ -23,6 +23,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { authApi } from '../../api/v3/index.js'
+import storage from '@/utils/storage'
 
 const router = useRouter()
 const phone = ref(''); const nickname = ref(''); const password = ref(''); const confirmPwd = ref('')
@@ -33,7 +34,7 @@ async function onRegister() {
   try {
     const res = await authApi.register(phone.value, password.value, nickname.value)
     if (res?.data) {
-      localStorage.setItem('access_token', res.data.tokens.access_token)
+      storage.setToken(res.data.tokens.access_token)
       localStorage.setItem('refresh_token', res.data.tokens.refresh_token)
       // 新注册用户默认Observer(level=1)
       localStorage.setItem('bhp_role_level', String(res.data.user?.role_level || 1))

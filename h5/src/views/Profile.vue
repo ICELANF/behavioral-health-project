@@ -86,7 +86,7 @@
 
       <!-- 版本信息 -->
       <div class="version-info">
-        行健行为教练 v1.0.0
+        行健行为教练 v{{ appVersion }}
       </div>
     </div>
 
@@ -101,8 +101,10 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import api from '@/api/index'
 import TabBar from '@/components/common/TabBar.vue'
+import { APP_VERSION } from '@/config'
 
 const router = useRouter()
+const appVersion = APP_VERSION
 const userStore = useUserStore()
 
 onMounted(async () => {

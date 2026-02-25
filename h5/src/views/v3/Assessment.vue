@@ -53,7 +53,7 @@ onMounted(async () => {
     if (sRes?.data) completedIds.value = sRes.data.completed_batches || []
     if (rRes?.data) recommended.value = rRes.data
   } catch (e) {
-    console.warn('[Assessment] load failed:', e)
+    console.error('[Assessment] load failed:', e)
   }
 })
 </script>

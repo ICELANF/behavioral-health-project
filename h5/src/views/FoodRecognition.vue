@@ -96,7 +96,10 @@
 
         <!-- 营养建议 -->
         <div v-if="result.advice" class="advice-card card">
-          <div class="advice-title">营养建议</div>
+          <div class="advice-title">
+            营养建议
+            <AiContentBadge :review-status="result.review_status" compact />
+          </div>
           <div class="advice-text">{{ result.advice }}</div>
         </div>
 
@@ -215,6 +218,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import TabBar from '@/components/common/TabBar.vue'
+import AiContentBadge from '@/components/common/AiContentBadge.vue'
 import api from '@/api/index'
 
 const router = useRouter()

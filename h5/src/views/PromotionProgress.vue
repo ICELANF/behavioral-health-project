@@ -114,7 +114,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import * as echarts from 'echarts'
 import { promotionApi } from '@/api/credit-promotion'
@@ -202,11 +202,11 @@ function renderRadar() {
   const p = progress.value
 
   const indicators = [
-    { name: '学分', max: r.credits?.total_min || 100 },
-    { name: '成长积分', max: r.points?.growth_min || 100 },
-    { name: '贡献积分', max: r.points?.contribution_min || 100 },
-    { name: '影响力', max: r.points?.influence_min || 100 },
-    { name: '同道者', max: r.companions?.graduated_min || 4 },
+    { name: '学分', max: Math.max(r.credits?.total_min || 100, 1) },
+    { name: '成长积分', max: Math.max(r.points?.growth_min || 100, 1) },
+    { name: '贡献积分', max: Math.max(r.points?.contribution_min || 100, 1) },
+    { name: '影响力', max: Math.max(r.points?.influence_min || 100, 1) },
+    { name: '同道者', max: Math.max(r.companions?.graduated_min || 4, 1) },
   ]
 
   const values = [
@@ -262,13 +262,18 @@ onMounted(() => {
   loadProgress()
   checkEligibility()
 })
+
+onUnmounted(() => {
+  radarChart?.dispose()
+  radarChart = null
+})
 </script>
 
 <style scoped>
 .promotion-progress {
   min-height: 100vh;
   background: #f7f8fa;
-  padding-bottom: 80px;
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 .level-card {
   margin: 12px 16px;

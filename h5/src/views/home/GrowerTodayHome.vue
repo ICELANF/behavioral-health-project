@@ -101,9 +101,12 @@
       <div class="tip-avatar">🤖</div>
       <div class="tip-bubble">
         <p class="tip-text">{{ coachTip }}</p>
-        <button class="tip-action" @click="openChat">
-          和我聊聊 →
-        </button>
+        <div class="tip-footer">
+          <AiContentBadge compact />
+          <button class="tip-action" @click="openChat">
+            和我聊聊 →
+          </button>
+        </div>
       </div>
     </div>
 
@@ -138,6 +141,7 @@ import api from '@/api/index'
 import { useUserStore } from '@/stores/user'
 import NotificationBell from '@/components/common/NotificationBell.vue'
 import GlobalSearch from '@/components/common/GlobalSearch.vue'
+import AiContentBadge from '@/components/common/AiContentBadge.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -374,6 +378,7 @@ onMounted(async () => {
 .tip-avatar { font-size: 24px; flex-shrink: 0; }
 .tip-bubble { flex: 1; }
 .tip-text { font-size: 13px; color: #374151; margin: 0 0 8px; line-height: 1.5; }
+.tip-footer { display: flex; align-items: center; justify-content: space-between; }
 .tip-action {
   background: none; border: none; color: var(--bhp-brand-primary, #10b981);
   font-size: 13px; font-weight: 600; cursor: pointer; padding: 0;

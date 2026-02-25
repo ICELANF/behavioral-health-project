@@ -15,7 +15,7 @@ const http = axios.create({
 
 // ── 请求拦截: 附加 Token ──
 http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token')
+  const token = localStorage.getItem('h5_token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
@@ -44,7 +44,7 @@ http.interceptors.response.use(
             refresh_token: refreshToken,
           })
           const tokens = data.data
-          localStorage.setItem('access_token', tokens.access_token)
+          localStorage.setItem('h5_token', tokens.access_token)
           localStorage.setItem('refresh_token', tokens.refresh_token)
 
           // 重放队列
