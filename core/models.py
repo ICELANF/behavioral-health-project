@@ -1739,7 +1739,8 @@ class CoachPushQueue(Base):
     status = Column(String(10), default="pending", nullable=False)  # pending | approved | rejected | sent | expired
     coach_note = Column(String(500), nullable=True)
 
-    # 时间�
+    # 审核追踪
+    reviewer_id = Column(Integer, ForeignKey("users.id"), nullable=True, comment="审批人ID")
     reviewed_at = Column(DateTime, nullable=True)
     sent_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
@@ -2077,6 +2078,7 @@ class ContentItem(Base):
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     tenant_id = Column(String(64), nullable=True, index=True)
     status = Column(String(20), default="draft", nullable=False, index=True)  # draft/published/archived
+    review_status = Column(String(20), default="pending", nullable=False, index=True)  # pending/approved/rejected — 铁律: AI内容必须审核后才能发布
 
     # 统��数 (反范式，高效读取)
     view_count = Column(Integer, default=0)

@@ -16,7 +16,7 @@ from sqlalchemy import func
 
 from core.models import (
     AgentMarketplaceListing, AgentComposition, AgentGrowthPoints,
-    AgentTemplate, User,
+    AgentTemplate, ExpertTenant, User,
 )
 
 logger = logging.getLogger(__name__)
@@ -132,6 +132,19 @@ def install_template(
     target_tenant_id: str,
 ) -> AgentTemplate:
     """安装市场模板 — 克隆到目标租户"""
+    # IDOR 防护: 验证安装者对目标租户有管辖权
+    installer = db.query(User).filter(User.id == installer_id).first()
+    if not installer:
+        raise ValueError("安装者用户不存在")
+    is_admin = getattr(installer, 'role', '').upper() in ('ADMIN', 'MASTER', 'SUPERVISOR')
+    if not is_admin:
+        tenant = db.query(ExpertTenant).filter(
+            ExpertTenant.id == target_tenant_id,
+            ExpertTenant.expert_user_id == installer_id,
+        ).first()
+        if not tenant:
+            raise ValueError("无权向该租户安装模板")
+
     listing = db.query(AgentMarketplaceListing).filter(
         AgentMarketplaceListing.id == listing_id,
         AgentMarketplaceListing.status == "published",

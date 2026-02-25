@@ -1,7 +1,8 @@
 # BHP 行为健康数字平台 — Claude Code 项目指令 (V5.3.0)
 
 > 本文件由 Claude Code 自动加载，指导 AI 如何在本项目中工作。
-> **V5.3.0 变更**: 2026-02-25 行智诊疗(XZB)专家个人AGENT Phase 0+1+2 + 深度自检修复: Migration 054(10新表+3ALTER) + core/xzb/(8文件) + api/xzb_api.py(29端点) + XZBExpertAgent注册到MasterAgent(AgentDomain.XZB_EXPERT) + Retriever对接EmbeddingService(embed_query+KnowledgeRetriever) + Job35 LLM对话知识挖掘 + Job38 真实向量嵌入 + RxBridge→coach_push_queue直接注入(铁律) + _source_label添加vision_rx+xzb_expert; **深度自检**: seeker_id UUID→int(4文件CRITICAL修复) + ondelete CASCADE(4处ORM对齐DDL) + PostType/SharingPermission枚举(2个); 11新建+10修改=21文件; Alembic HEAD=054
+> **V5.3.0 变更**: 2026-02-25 行智诊疗(XZB)专家个人AGENT Phase 0+1+2 + 深度自检修复: Migration 054(10新表+3ALTER) + core/xzb/(8文件) + api/xzb_api.py(29端点) + XZBExpertAgent注册到MasterAgent(AgentDomain.XZB_EXPERT) + Retriever对接EmbeddingService(embed_query+KnowledgeRetriever) + Job35 LLM对话知识挖掘 + Job38 真实向量嵌入 + RxBridge→coach_push_queue直接注入(铁律) + _source_label添加vision_rx+xzb_expert; **深度自检**: seeker_id UUID→int(4文件CRITICAL修复) + ondelete CASCADE(4处ORM对齐DDL) + PostType/SharingPermission枚举(2个); 11新建+10修改=21文件; Alembic HEAD=056
+> **Admin安全审核** (2026-02-25): 全面审核修复28项(33文件)+3项后端修复: **Phase 0基础设施**(6 CRITICAL: router RBAC执行+request.ts端口+client.ts硬编码UserID+copilot SSE token泄露+auth refresh字段+supabase崩溃) + **XSS防护**(DOMPurify sanitize.ts+6处v-html全修复) + **stale token**(CoachHome/StudentAssessment/CoachSelfHealthSummary Proxy动态headers) + **硬编码密码**(coach/List+StudentList→随机临时密码, Login→仅dev显示) + **AgentMarketplace JWT→localStorage角色** + **6 client页面token guard** + **console.log全删除(28处含PII)** + **后端铁律修复**: Migration 056(content_items.review_status铁律审核字段+coach_push_queue.reviewer_id审批追踪) + ecosystem IDOR租户管辖权校验; pentest 10/10 + E2E 51/0/7 全通过; Alembic HEAD=056
 > **V5.2.9 变更**: 2026-02-24 VisionGuard视力行为保护域: Migration 053(5新表) + core/vision_service.py(5 ORM+评分引擎+风险评估+监护人+处方触发) + VisionGuideAgent(5意图+处方生成) + 5 Scheduler Jobs(23:00/23:15/Mon08/Sun06/月1日) + api/vision_api.py(14端点) + H5 4页面(打卡/监护人/档案/检查) + Admin审批队列 + h5/src/api/vision.ts; 铁律合规(AI→教练审核→推送)
 > **V5.2.8 变更**: 2026-02-24 审计I-01~I-09全量实施: Migration 052(2新表+7列扩展) + 双轨角色升级(I-01) + 激活4项检查(I-02) + 督导行动项派发(I-03) + 显示名称统一7处(I-04) + 强制Agent(I-05) + 铁律执行(I-06) + 资质生命周期(I-07, 4端点+调度器) + 积分差异化(I-08) + 循证等级治理(I-09) + 8处代码纠偏(C1-C8)
 > **V5.2.7 变更**: 2026-02-24 督导专家系统(6端点+状态机) + 租户生命周期(3端点) + RBAC修复 + P1 E2E验证3修复(json.dumps+事务隔离) + P1通知增强(WebSocket推送+2新端点) + 33测试
@@ -22,7 +23,7 @@
 
 BHP（Behavioral Health Platform）是一个行为健康数字化管理平台，服务于慢病逆转与行为改变领域。平台包含 Observer(观察者)、Grower(成长者)、Coach(教练)、Expert(专家)、Admin(管理员) 五种用户角色，集成了评估引擎、AI Agent 系统、RAG 知识库、多模态交互引擎、智能监测方案及微信生态对接能力。
 
-**规模**: 85+ 路由模块 · 710+ API 端点 · 157 数据模型 · 54 迁移版本 · **49+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **32页Admin响应式** · **全mock=0** · **预发布审计56P/0F** · **CI 4-stage全绿** · **六级累进任务目录(42项)** · **统一个人中心(3共享组件)** · **教练端全量种子数据** · **教练双重身份健康面板** · **AI行为处方(BehaviorRx+LLM双路径)** · **学员角色白名单过滤** · **干预包管理(10包3端点)** · **Rx仪表盘全数据联通** · **P1闭环(AI生成→审批→通知→H5详情, 8/8 E2E)** · **督导会议系统(6端点)** · **租户生命周期(状态机)** · **审计I-01~I-09(资质生命周期+循证等级+铁律执行)** · **VisionGuard视力行为保护(14端点+5表+1Agent+5Job+5页面)** · **行智诊疗XZB专家AGENT(29端点+10表+1Agent+5Job+8模块)**
+**规模**: 85+ 路由模块 · 710+ API 端点 · 157 数据模型 · 54 迁移版本 · **49+ AI Agent 类** · 16+ Docker 容器 · **10 种交互模态** · **3 条微信通道** · **全平台搜索(三端隔离)** · **行为周报(自动+H5展示)** · **32页Admin响应式** · **全mock=0** · **预发布审计56P/0F** · **CI 4-stage全绿** · **六级累进任务目录(42项)** · **统一个人中心(3共享组件)** · **教练端全量种子数据** · **教练双重身份健康面板** · **AI行为处方(BehaviorRx+LLM双路径)** · **学员角色白名单过滤** · **干预包管理(10包3端点)** · **Rx仪表盘全数据联通** · **P1闭环(AI生成→审批→通知→H5详情, 8/8 E2E)** · **督导会议系统(6端点)** · **租户生命周期(状态机)** · **审计I-01~I-09(资质生命周期+循证等级+铁律执行)** · **VisionGuard视力行为保护(14端点+5表+1Agent+5Job+5页面)** · **行智诊疗XZB专家AGENT(29端点+10表+1Agent+5Job+8模块)** · **Admin安全审核28项修复(RBAC+XSS+stale-token+硬编码密码, pentest 10/10)**
 
 > ⚠️ **V5.2.9 变更** (2026-02-24):
 > - **VisionGuard 视力行为保护域** (18文件: 10新建+8修改):
@@ -776,6 +777,14 @@ cd miniprogram && npm run dev:weapp
 - ~~db_backup.sh 旧凭据~~ → ✅ V5.2.1 bhp_user→postgres, bhp_db→health_platform
 - ~~P1 edited_rx_json 单引号~~ → ✅ V5.2.7 str()→json.dumps(ensure_ascii=False)
 - ~~P1 审批后处方未持久化~~ → ✅ V5.2.7 generate_daily_tasks_for_user 移至 commit 后 (non-blocking)
+- ~~Admin router RBAC 未执行~~ → ✅ Admin审核 beforeEach补全requiresAdmin+requiredRole检查
+- ~~v-html XSS (ChatView/AIChatBox等6处)~~ → ✅ Admin审核 DOMPurify sanitize.ts全修复
+- ~~copilot SSE JWT泄露到URL~~ → ✅ Admin审核 改fetch+ReadableStream+Authorization header
+- ~~client.ts 硬编码X-User-ID:'1'~~ → ✅ Admin审核 改动态getClientHeaders()
+- ~~CoachHome/StudentAssessment stale token~~ → ✅ Admin审核 Proxy动态authHeaders
+- ~~coach/List+StudentList 硬编码密码~~ → ✅ Admin审核 改随机临时密码
+- ~~console.log泄露PII(学员姓名/请求体)~~ → ✅ Admin审核 全部删除(28处)
+- Admin审核遗留(后端侧): ContentManage/KnowledgeSharingReview 缺 review_status badge(需后端返回字段); 审批流缺 reviewed_by/reviewed_at 审计追踪; IDOR 租户归属校验(需后端 jurisdiction 检查)
 
 ---
 

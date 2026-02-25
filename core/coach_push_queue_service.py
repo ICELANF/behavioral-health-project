@@ -184,6 +184,7 @@ def approve_item(
     if coach_note:
         item.coach_note = coach_note
 
+    item.reviewer_id = coach_id
     item.reviewed_at = datetime.utcnow()
 
     if scheduled_time and scheduled_time > datetime.utcnow():
@@ -218,6 +219,7 @@ def reject_item(
 
     item.status = "rejected"
     item.coach_note = coach_note
+    item.reviewer_id = coach_id
     item.reviewed_at = datetime.utcnow()
 
     db.commit()
@@ -244,6 +246,7 @@ def batch_approve(
     count = 0
     for item in items:
         item.status = "approved"
+        item.reviewer_id = coach_id
         item.reviewed_at = now
         deliver_item(db, item)
         count += 1
@@ -534,6 +537,7 @@ def _item_to_dict(item: CoachPushQueue) -> Dict[str, Any]:
         "priority": item.priority,
         "status": item.status,
         "coach_note": item.coach_note,
+        "reviewer_id": item.reviewer_id,
         "reviewed_at": item.reviewed_at.isoformat() if item.reviewed_at else None,
         "sent_at": item.sent_at.isoformat() if item.sent_at else None,
         "created_at": item.created_at.isoformat() if item.created_at else None,

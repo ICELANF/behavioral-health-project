@@ -113,6 +113,7 @@ def _item_to_card(item: ContentItem, author_info: dict = None) -> dict:
         "collect_count": item.collect_count or 0,
         "has_quiz": item.has_quiz,
         "status": item.status,
+        "review_status": item.review_status,
         "created_at": item.created_at.isoformat() if item.created_at else None,
     }
 
@@ -133,6 +134,7 @@ def _item_to_detail(db: Session, item: ContentItem) -> dict:
         "author": author,
         "tenant_id": item.tenant_id,
         "status": item.status,
+        "review_status": item.review_status,
         "has_quiz": item.has_quiz,
         "stats": {
             "view_count": item.view_count or 0,
