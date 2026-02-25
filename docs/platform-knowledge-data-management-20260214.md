@@ -1735,3 +1735,39 @@ get_user_growth_points()
 > 13 个调度任务, 3 个配置文件
 > **生成日期**: 2026-02-14
 > **项目位置**: `D:\behavioral-health-project`
+
+---
+
+## 第十一部分: Claude Code 集成规范
+
+### 11.1 知识包与 Agent 配置的隔离原则
+
+| 类别 | 目录 | 用途 | 是否纳入 RAG |
+|------|------|------|:------------:|
+| 知识包 (Knowledge) | `knowledge/kb_*/**/*.md` | 分块 → 嵌入 → 向量检索 | **是** |
+| Agent 配置 (System Prompt) | `docs/agents/*.md` | Agent 初始化注入 (system prompt) | **否** |
+
+**铁律**: `docs/agents/` 目录下的 Agent 配置文件（system prompt）**只用于 Agent 初始化注入，不纳入 RAG 入库流程**，与知识包严格隔离。
+
+- `docs/agents/` 中的文件由 `AgentTemplate.system_prompt` 或 `GenericLLMAgent` 在初始化时直接读取，作为 system message 注入 LLM 上下文
+- `knowledge/` 中的文件由 `scripts/ingest_knowledge.py` 入库，经分块（`core/knowledge/chunker.py`）→ 嵌入（`EmbeddingService`）→ 写入 `knowledge_chunks` 表，供 RAG 检索引擎使用
+- 两套流程互不交叉：知识包不作为 system prompt，Agent 配置不进入向量库
+- 若 Agent 需引用知识库内容，应通过 RAG 中间件（`core/knowledge/rag_middleware.py`）在运行时检索注入，而非将知识文件复制到 `docs/agents/`
+
+### 11.2 docs/agents/ 目录约定
+
+```
+docs/agents/
+├── metabolic_agent.md        # 代谢专家 Agent system prompt
+├── sleep_agent.md            # 睡眠专家 Agent system prompt
+├── emotion_agent.md          # 情绪专家 Agent system prompt
+├── motivation_agent.md       # 动机专家 Agent system prompt
+├── nutrition_agent.md        # 营养专家 Agent system prompt
+├── exercise_agent.md         # 运动专家 Agent system prompt
+├── tcm_agent.md              # 中医体质 Agent system prompt
+├── crisis_agent.md           # 危机干预 Agent system prompt
+├── vision_agent.md           # 视力守护 Agent system prompt
+└── ...
+```
+
+文件命名规范: `<agent_name>_agent.md`，内容为纯 Markdown，首行 `# <Agent 中文名>` 标题。

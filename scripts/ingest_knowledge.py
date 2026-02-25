@@ -18,6 +18,7 @@ import os
 import sys
 import re
 import json
+import hashlib
 import argparse
 from datetime import datetime
 
@@ -154,6 +155,17 @@ def ingest_directory(
                 print(f"  ⏭ 无有效内容: {filename}")
                 continue
 
+            # 计算文件哈希 (去重用)
+            file_hash = hashlib.sha256(content.encode("utf-8")).hexdigest()
+
+            # 检查哈希去重
+            hash_exists = db.query(KnowledgeDocument).filter(
+                KnowledgeDocument.file_hash == file_hash,
+            ).first()
+            if hash_exists:
+                print(f"  ⏭ 内容重复(hash): {title} (id={hash_exists.id})")
+                continue
+
             # 创建文档
             doc = KnowledgeDocument(
                 title=title,
@@ -166,6 +178,8 @@ def ingest_directory(
                 is_active=True,
                 status="processing",
                 file_path=filepath,
+                file_hash=file_hash,
+                file_size=len(content.encode("utf-8")),
                 chunk_count=len(chunks),
                 created_at=datetime.utcnow(),
             )
@@ -189,7 +203,7 @@ def ingest_directory(
                     scope=scope,
                     domain_id=file_domain,
                     tenant_id=tenant_id,
-                    embedding=json.dumps(embedding) if embedding else None,
+                    embedding=embedding if embedding else None,
                     created_at=datetime.utcnow(),
                 )
                 db.add(chunk)

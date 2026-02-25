@@ -1,0 +1,713 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "饮食行为干预决策树10情境 × 5优先级 = 50条微行动模板",
+    "source": "代谢健康饮食行为干预知识库 V1.0",
+    "total_templates": 50,
+    "scenarios": 10,
+    "priorities_per_scenario": 5,
+    "integrates_with": ["policy_dietary_scenarios.json", "knowledge/kb_dietary_intervention/"]
+  },
+  "templates": [
+    {
+      "_section": "S01 情绪性进食 — 失控的补偿者",
+      "items": [
+        {
+          "template_id": "MA-DS01-P1",
+          "scenario_id": "S01",
+          "priority": 1,
+          "domain": "nutrition",
+          "title": "饭前喝200ml温水",
+          "description": "在每次正餐前饮用200ml温水，激活胃壁牵张感受器，提前触发饱腹信号。",
+          "metabolic_mechanism": "激活胃壁牵张感受器，提前触发饱腹信号，降低情绪进食量15-20%",
+          "difficulty": "easy",
+          "compliance_tip": "将水杯放在餐桌固定位置，与拿筷子动作堆叠",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 2
+        },
+        {
+          "template_id": "MA-DS01-P2",
+          "scenario_id": "S01",
+          "priority": 2,
+          "domain": "nutrition",
+          "title": "奶茶降级：全糖→半糖→无糖",
+          "description": "渐进式降低含糖饮品甜度，每2周下调一档，避免多巴胺戒断反应。",
+          "metabolic_mechanism": "降低血糖峰值，避免多巴胺戒断反应引发更强渴望",
+          "difficulty": "easy",
+          "compliance_tip": "不要求一步戒断，只要求'降一格'，减少心理抗拒",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS01-P3",
+          "scenario_id": "S01",
+          "priority": 3,
+          "domain": "emotion",
+          "title": "建立非食物补偿清单",
+          "description": "列出3-5个能缓解情绪的非食物活动（如洗热水澡、听音乐、深呼吸5次），情绪进食冲动时使用。",
+          "metabolic_mechanism": "洗热水澡/听音乐/深呼吸5次——提供皮质醇下调的替代路径",
+          "difficulty": "moderate",
+          "compliance_tip": "清单贴在冰箱门上或手机备忘录首页，降低决策成本",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 10
+        },
+        {
+          "template_id": "MA-DS01-P4",
+          "scenario_id": "S01",
+          "priority": 4,
+          "domain": "cognitive",
+          "title": "情绪-进食日志（2分钟/次）",
+          "description": "每次情绪进食后记录：触发事件→当时情绪→吃了什么→事后感受，为BFR提供原始数据。",
+          "metabolic_mechanism": "识别个人高频触发器，为BFR提供原始数据",
+          "difficulty": "moderate",
+          "compliance_tip": "使用平台打卡功能，每次只需填4个简短词组",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 2
+        },
+        {
+          "template_id": "MA-DS01-P5",
+          "scenario_id": "S01",
+          "priority": 5,
+          "domain": "cognitive",
+          "title": "60秒暂停练习",
+          "description": "情绪进食冲动来临时按下60秒暂停键：不是不吃，只是观察胃部感觉和情绪状态。",
+          "metabolic_mechanism": "激活前额叶，打断杏仁核→自动进食的神经通路",
+          "difficulty": "moderate",
+          "compliance_tip": "配合手机计时器，倒计时60秒，期间做3次深呼吸",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 1
+        }
+      ]
+    },
+    {
+      "_section": "S02 家庭饮食冲突 — 被爱与节奏吞噬",
+      "items": [
+        {
+          "template_id": "MA-DS02-P1",
+          "scenario_id": "S02",
+          "priority": 1,
+          "domain": "nutrition",
+          "title": "温水涮水技术",
+          "description": "餐桌备一碗温水，将菜肴过水后再食用，减少油盐摄入而不改变家庭饮食氛围。",
+          "metabolic_mechanism": "减少油盐摄入约30%，不改变家庭饮食氛围",
+          "difficulty": "easy",
+          "compliance_tip": "对家人说'最近胃不好，医生让清淡些'，用医学指令替代个人选择",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS02-P2",
+          "scenario_id": "S02",
+          "priority": 2,
+          "domain": "nutrition",
+          "title": "换小碗（餐具降级）",
+          "description": "将饭碗换成小一号的碗，利用视觉错觉减少摄入量，家人几乎不会察觉。",
+          "metabolic_mechanism": "利用视觉错觉，减少摄入量15-20%，家人几乎不会察觉",
+          "difficulty": "easy",
+          "compliance_tip": "以'这个碗好看'为由自然更换，不需要解释健康原因",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS02-P3",
+          "scenario_id": "S02",
+          "priority": 3,
+          "domain": "nutrition",
+          "title": "进食顺序：蔬菜→蛋白质→主食",
+          "description": "调整进食顺序，先吃蔬菜和蛋白质，最后吃主食，降低餐后血糖峰值。",
+          "metabolic_mechanism": "膳食纤维先行，降低餐后血糖峰值，胰岛素分泌平缓化",
+          "difficulty": "easy",
+          "compliance_tip": "先夹几筷子菜，再吃肉/蛋，米饭留到最后",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS02-P4",
+          "scenario_id": "S02",
+          "priority": 4,
+          "domain": "nutrition",
+          "title": "主动加一道白灼蔬菜",
+          "description": "每餐主动承担加一道白灼蔬菜的任务，不改变主菜，为自己争取绿色安全区。",
+          "metabolic_mechanism": "自主控制一道菜，增加饱腹感，减少重油菜摄入比例",
+          "difficulty": "moderate",
+          "compliance_tip": "说'今天我来加个菜'，表达对家庭的参与同时争取健康空间",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 10
+        },
+        {
+          "template_id": "MA-DS02-P5",
+          "scenario_id": "S02",
+          "priority": 5,
+          "domain": "exercise",
+          "title": "饭后15分钟散步",
+          "description": "饭后与家人一起散步15分钟，替代瘫着消化的惯性。",
+          "metabolic_mechanism": "降低餐后血糖约15-20%，代替'瘫着消化'的惯性",
+          "difficulty": "easy",
+          "compliance_tip": "邀请家人同行，变成家庭活动而非个人健康任务",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 15
+        }
+      ]
+    },
+    {
+      "_section": "S03 自我否定螺旋 — 意志力失败者",
+      "items": [
+        {
+          "template_id": "MA-DS03-P1",
+          "scenario_id": "S03",
+          "priority": 1,
+          "domain": "nutrition",
+          "title": "喝够2升水（即时恢复动作）",
+          "description": "偏移发生后的第二天，只做一件事：喝够2升水。完成即为成功。",
+          "metabolic_mechanism": "促进代谢废物排出，稀释血液糖分，快速建立'我能完成'的心理基线",
+          "difficulty": "easy",
+          "compliance_tip": "准备1升透明水壶，上午喝完一壶、下午喝完一壶",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS03-P2",
+          "scenario_id": "S03",
+          "priority": 2,
+          "domain": "nutrition",
+          "title": "午餐加一种蛋白质",
+          "description": "确保午餐至少包含一种蛋白质（鸡胸肉/鸡蛋/豆腐），稳定血糖预防下午饥饿触发的失控。",
+          "metabolic_mechanism": "稳定血糖，预防下午饥饿触发的情绪进食，降低晚间失控风险约40%",
+          "difficulty": "easy",
+          "compliance_tip": "鸡蛋是最低门槛选项，便利店即可购买",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS03-P3",
+          "scenario_id": "S03",
+          "priority": 3,
+          "domain": "cognitive",
+          "title": "自由餐配额：每周2次",
+          "description": "在行为处方中写入每周2次自由餐，不记录、不愧疚。计划内违规消除负罪感土壤。",
+          "metabolic_mechanism": "研究显示'计划内违规'使行为坚持率提升35%",
+          "difficulty": "easy",
+          "compliance_tip": "明确告知：这不是失败，是系统的减压阀",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS03-P4",
+          "scenario_id": "S03",
+          "priority": 4,
+          "domain": "exercise",
+          "title": "偏移后散步10分钟",
+          "description": "饮食偏移后不自责，只做一个动作：散步10分钟。降低餐后血糖并产生内啡肽正反馈。",
+          "metabolic_mechanism": "降低餐后血糖峰值，同时产生内啡肽正反馈，替代自责情绪",
+          "difficulty": "easy",
+          "compliance_tip": "强调'不是惩罚，是修复'，散步时听喜欢的音乐",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 10
+        },
+        {
+          "template_id": "MA-DS03-P5",
+          "scenario_id": "S03",
+          "priority": 5,
+          "domain": "cognitive",
+          "title": "BFR工作表（仅5分钟）",
+          "description": "将失控事件转化为数据：触发因素→行为→后果→替代方案，建立观察者视角。",
+          "metabolic_mechanism": "将失控转化为数据，建立'观察者视角'，是重建自我效能的神经学路径",
+          "difficulty": "moderate",
+          "compliance_tip": "用模板填写，不需要叙述，填关键词即可",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 5
+        }
+      ]
+    },
+    {
+      "_section": "S04 绩效焦虑 — 越急越胖的精密机器",
+      "items": [
+        {
+          "template_id": "MA-DS04-P1",
+          "scenario_id": "S04",
+          "priority": 1,
+          "domain": "stress",
+          "title": "4-7-8呼吸锚定（看完数据后）",
+          "description": "查看健康数据后执行4-7-8呼吸法（吸气4秒-屏气7秒-呼气8秒），激活副交感神经。",
+          "metabolic_mechanism": "激活副交感神经，降低因数据波动引发的急性应激反应",
+          "difficulty": "easy",
+          "compliance_tip": "将呼吸练习堆叠在'查看数据'动作之后，形成自动触发",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 3
+        },
+        {
+          "template_id": "MA-DS04-P2",
+          "scenario_id": "S04",
+          "priority": 2,
+          "domain": "cognitive",
+          "title": "测量频率降级（每日→每周）",
+          "description": "停止每日称重/频繁自测血糖，改为每周固定时间一次，减少杏仁核激活频率。",
+          "metabolic_mechanism": "消除每日体重波动带来的皮质醇激活，稳定神经-内分泌节律",
+          "difficulty": "moderate",
+          "compliance_tip": "将体重秤放进柜子，每周一早上固定时间取出一次",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS04-P3",
+          "scenario_id": "S04",
+          "priority": 3,
+          "domain": "cognitive",
+          "title": "行为完成率替代达标率",
+          "description": "关注过程而非结果：统计本周行为完成率（如饮水/散步/进食顺序），代替体重/血糖数字。",
+          "metabolic_mechanism": "用'观察'替代'评判'，降低情绪负载，提升行为依从性",
+          "difficulty": "moderate",
+          "compliance_tip": "使用平台打卡功能，每日只需打勾，不需要写数字",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 2
+        },
+        {
+          "template_id": "MA-DS04-P4",
+          "scenario_id": "S04",
+          "priority": 4,
+          "domain": "cognitive",
+          "title": "每周一条自我肯定",
+          "description": "每周写一条'本周我做到了___'的自我肯定，聚焦成功而非失败。",
+          "metabolic_mechanism": "训练大脑关注正向证据，降低'全或无'灾难化认知的频率",
+          "difficulty": "easy",
+          "compliance_tip": "用平台日志功能，每周日晚填写一条即可",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 2
+        },
+        {
+          "template_id": "MA-DS04-P5",
+          "scenario_id": "S04",
+          "priority": 5,
+          "domain": "cognitive",
+          "title": "非数字奖励系统",
+          "description": "建立与数字无关的奖励：完成5天行为打卡→奖励自己一次电影/按摩/新书。",
+          "metabolic_mechanism": "将正强化从'数字达标'迁移到'行为达成'，重建内在动机回路",
+          "difficulty": "easy",
+          "compliance_tip": "提前列出3个自己喜欢的非食物奖励，达成后立即兑现",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 1
+        }
+      ]
+    },
+    {
+      "_section": "S05 职场高压 — 身不由己的职场精英",
+      "items": [
+        {
+          "template_id": "MA-DS05-P1",
+          "scenario_id": "S05",
+          "priority": 1,
+          "domain": "nutrition",
+          "title": "电脑开机时喝200ml水",
+          "description": "利用电脑开机的30秒等待时间喝一杯水，堆叠在每天必然发生的动作上。",
+          "metabolic_mechanism": "提高日均饮水量，促进代谢，降低血液黏稠度，启动成本接近零",
+          "difficulty": "easy",
+          "compliance_tip": "水杯放在键盘旁边，开机=喝水，形成条件反射",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS05-P2",
+          "scenario_id": "S05",
+          "priority": 2,
+          "domain": "exercise",
+          "title": "接电话时站立行走",
+          "description": "接听电话时自动站起来走动，每次3-15分钟，减少久坐时间。",
+          "metabolic_mechanism": "减少久坐，激活下肢肌肉，改善胰岛素敏感性，每次3-15分钟",
+          "difficulty": "easy",
+          "compliance_tip": "将手机铃声设为提示信号：响铃=站立",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 5
+        },
+        {
+          "template_id": "MA-DS05-P3",
+          "scenario_id": "S05",
+          "priority": 3,
+          "domain": "nutrition",
+          "title": "外卖备注少油少盐+加素菜",
+          "description": "点外卖时添加备注'少油少盐'并加一份纯素菜，先吃素菜再吃其他。",
+          "metabolic_mechanism": "减少钠摄入，增加膳食纤维，降低餐后血糖峰值15-20%",
+          "difficulty": "easy",
+          "compliance_tip": "收藏常用外卖店的'少油少盐+蔬菜'组合，一键下单",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS05-P4",
+          "scenario_id": "S05",
+          "priority": 4,
+          "domain": "nutrition",
+          "title": "午餐先吃蔬菜再吃主食",
+          "description": "调整午餐进食顺序，先吃蔬菜部分再吃主食，延缓胃排空。",
+          "metabolic_mechanism": "延缓胃排空，降低GI效应，午后血糖曲线更平稳",
+          "difficulty": "easy",
+          "compliance_tip": "将蔬菜放在饭盒上层或盘子前方，拿起就先吃",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS05-P5",
+          "scenario_id": "S05",
+          "priority": 5,
+          "domain": "exercise",
+          "title": "回程提前一站下车步行",
+          "description": "下班回家时提前一站下车步行，增加非运动性产热(NEAT)。",
+          "metabolic_mechanism": "增加NEAT(非运动性产热)，等效于额外消耗约100-150 kcal/天",
+          "difficulty": "easy",
+          "compliance_tip": "选择天气好的日子开始，逐渐变成固定习惯",
+          "ttm_stages": ["S1", "S2"],
+          "duration_minutes": 15
+        }
+      ]
+    },
+    {
+      "_section": "S06 工具依赖 — 被CGM绑架的精密机器",
+      "items": [
+        {
+          "template_id": "MA-DS06-P1",
+          "scenario_id": "S06",
+          "priority": 1,
+          "domain": "cognitive",
+          "title": "饭前盲测预测",
+          "description": "戴着设备吃饭前不看屏幕，先预测进食后身体感受，饭后1小时先写主观感受再对数据。",
+          "metabolic_mechanism": "训练内脏感受器和大脑预测系统的协同，是内感觉知的核心练习",
+          "difficulty": "moderate",
+          "compliance_tip": "用便签纸写预测，吃完后翻面写实际感受，再看设备",
+          "ttm_stages": ["S3", "S4"],
+          "duration_minutes": 3
+        },
+        {
+          "template_id": "MA-DS06-P2",
+          "scenario_id": "S06",
+          "priority": 2,
+          "domain": "cognitive",
+          "title": "身体感受日志（一句话）",
+          "description": "进食后20分钟记录一句话：'今天吃了___，感觉___'，建立食物-感受映射。",
+          "metabolic_mechanism": "建立食物-感受映射的内部数据库，替代外部数字依赖",
+          "difficulty": "easy",
+          "compliance_tip": "打开平台日志，只写一句话，不需要详细描述",
+          "ttm_stages": ["S3", "S4"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS06-P3",
+          "scenario_id": "S06",
+          "priority": 3,
+          "domain": "exercise",
+          "title": "饭后散步锚点（设备无关）",
+          "description": "建立'吃完饭就散步10分钟'的锚点行为，无论是否佩戴CGM都执行。",
+          "metabolic_mechanism": "从'数字驱动'转为'习惯驱动'，无论是否佩戴CGM都执行",
+          "difficulty": "easy",
+          "compliance_tip": "把散步变成'饭后默认动作'，不因设备在不在而改变",
+          "ttm_stages": ["S3", "S4"],
+          "duration_minutes": 10
+        },
+        {
+          "template_id": "MA-DS06-P4",
+          "scenario_id": "S06",
+          "priority": 4,
+          "domain": "cognitive",
+          "title": "间歇性佩戴（戴3天摘4天）",
+          "description": "每周佩戴3天、脱离4天，在脱离期模拟戴着时的选餐逻辑，记录自主行为表现。",
+          "metabolic_mechanism": "渐进脱敏，每次脱离后记录自主行为表现，建立'我能独立做到'的证据",
+          "difficulty": "challenging",
+          "compliance_tip": "脱离期偏差率<20%才推进延长，否则回退一步",
+          "ttm_stages": ["S3", "S4"],
+          "duration_minutes": 5
+        },
+        {
+          "template_id": "MA-DS06-P5",
+          "scenario_id": "S06",
+          "priority": 5,
+          "domain": "stress",
+          "title": "腹部呼吸感知练习（进食前3分钟）",
+          "description": "进食前做3分钟腹部呼吸练习，感知腹部饥饿/饱腹信号，训练肠-脑轴信号感知。",
+          "metabolic_mechanism": "激活内感觉知系统，训练肠-脑轴的信号感知，是工具依赖的根本解药",
+          "difficulty": "moderate",
+          "compliance_tip": "闭眼，双手放在腹部，感受呼吸时腹部的起伏和肠胃信号",
+          "ttm_stages": ["S3", "S4"],
+          "duration_minutes": 3
+        }
+      ]
+    },
+    {
+      "_section": "S07 社交应酬 — 身不由己的餐桌交际者",
+      "items": [
+        {
+          "template_id": "MA-DS07-P1",
+          "scenario_id": "S07",
+          "priority": 1,
+          "domain": "nutrition",
+          "title": "应酬前饱腹预备",
+          "description": "进包间前30分钟吃一个苹果或喝一杯高纤维饮料，带着7分饱进场。",
+          "metabolic_mechanism": "果胶+纤维素降低胃排空速率，进入餐厅时已有60-70%饱腹感",
+          "difficulty": "easy",
+          "compliance_tip": "在办公室备苹果或纤维饮料，出发前10分钟食用",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 5
+        },
+        {
+          "template_id": "MA-DS07-P2",
+          "scenario_id": "S07",
+          "priority": 2,
+          "domain": "nutrition",
+          "title": "第一杯换茶（以茶代酒）",
+          "description": "入座后第一杯要茶不要酒，话术：'最近在调理一个指标，先以茶代酒敬大家'。",
+          "metabolic_mechanism": "避免酒精引发的肝糖原释放和血糖骤升，减少肝脏代谢负担",
+          "difficulty": "moderate",
+          "compliance_tip": "提前准备好话术，主动拿起茶杯表达社交热情",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS07-P3",
+          "scenario_id": "S07",
+          "priority": 3,
+          "domain": "nutrition",
+          "title": "蔬菜先行策略",
+          "description": "进食顺序：水→蔬菜→蛋白质→主食，先大口吃绿叶菜垫底，膳食纤维减缓油脂糖分吸收。",
+          "metabolic_mechanism": "可使餐后血糖峰值降低20-30%，是应酬场景中代谢保护最强的单一干预",
+          "difficulty": "easy",
+          "compliance_tip": "主动夹蔬菜，看起来像在热情吃菜，实际在建立代谢护城河",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS07-P4",
+          "scenario_id": "S07",
+          "priority": 4,
+          "domain": "nutrition",
+          "title": "应酬后修复日",
+          "description": "应酬次日晨走20分钟+轻断食早餐，帮助肝脏代谢过剩肝糖原。",
+          "metabolic_mechanism": "帮助肝脏代谢过剩的肝糖原，加速恢复代谢基线",
+          "difficulty": "moderate",
+          "compliance_tip": "提前设好闹钟，早起20分钟出门走一圈",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 20
+        },
+        {
+          "template_id": "MA-DS07-P5",
+          "scenario_id": "S07",
+          "priority": 5,
+          "domain": "cognitive",
+          "title": "应酬损伤评估表",
+          "description": "应酬后记录：饮酒量/进食量/次日血糖/身体感受，建立个体化应酬-代谢影响数据库。",
+          "metabolic_mechanism": "让客观数据替代主观感受成为约束力，建立应酬-代谢影响的个人数据库",
+          "difficulty": "moderate",
+          "compliance_tip": "用平台日志功能，次日早上花3分钟记录",
+          "ttm_stages": ["S2", "S3"],
+          "duration_minutes": 3
+        }
+      ]
+    },
+    {
+      "_section": "S08 运动恐惧 — 被身体背叛的畏惧者",
+      "items": [
+        {
+          "template_id": "MA-DS08-P1",
+          "scenario_id": "S08",
+          "priority": 1,
+          "domain": "exercise",
+          "title": "原地踏步3分钟（首次运动）",
+          "description": "在家中安全环境下原地踏步3分钟，证明'动'这件事是安全的、受控的。",
+          "metabolic_mechanism": "突破'第一动'——零成本启动，证明运动对此人'是安全的'",
+          "difficulty": "easy",
+          "compliance_tip": "穿最舒服的睡衣，在自己房间，没有任何人看着你",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 3
+        },
+        {
+          "template_id": "MA-DS08-P2",
+          "scenario_id": "S08",
+          "priority": 2,
+          "domain": "stress",
+          "title": "呼吸感知运动（刷牙时单脚站立）",
+          "description": "刷牙时尝试单脚站立，每天约1分钟，激活下肢肌肉而无任何心理负担。",
+          "metabolic_mechanism": "每天约1分钟，激活下肢肌肉，提升基础代谢，无心理负担",
+          "difficulty": "easy",
+          "compliance_tip": "先用手扶墙保持平衡，逐渐放开",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS08-P3",
+          "scenario_id": "S08",
+          "priority": 3,
+          "domain": "exercise",
+          "title": "步行替代（不标签为运动）",
+          "description": "将步行定义为'出去走走'而非'运动'，去除运动标签降低心理门槛。",
+          "metabolic_mechanism": "每次约5-15分钟，累计可产生100-200 kcal/天的额外能量消耗",
+          "difficulty": "easy",
+          "compliance_tip": "不穿运动服，不计步数，只是'出门透透气'",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 10
+        },
+        {
+          "template_id": "MA-DS08-P4",
+          "scenario_id": "S08",
+          "priority": 4,
+          "domain": "cognitive",
+          "title": "身体安全信号清单",
+          "description": "建立安全运动判断标准：微汗+能完整说出一句话=安全范围，消除灾难化认知。",
+          "metabolic_mechanism": "提供安全运动强度的可操作判断标准，消除'心跳炸开'的灾难化认知",
+          "difficulty": "easy",
+          "compliance_tip": "打印卡片贴在门口：'微汗+能说话=安全'",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 2
+        },
+        {
+          "template_id": "MA-DS08-P5",
+          "scenario_id": "S08",
+          "priority": 5,
+          "domain": "cognitive",
+          "title": "渐进暴露：仅换鞋",
+          "description": "第一步只做'换上运动鞋'这一个动作，不要求出门，建立运动相关行为的安全记忆。",
+          "metabolic_mechanism": "锚定正向感受，对抗运动恐惧记忆，改变运动-痛苦的神经联结",
+          "difficulty": "easy",
+          "compliance_tip": "换上运动鞋坐沙发也行，让大脑习惯'运动装备≠危险'",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 1
+        }
+      ]
+    },
+    {
+      "_section": "S09 价值矛盾 — 矛盾的生命取向",
+      "items": [
+        {
+          "template_id": "MA-DS09-P1",
+          "scenario_id": "S09",
+          "priority": 1,
+          "domain": "cognitive",
+          "title": "享乐vs健康画面对比（10秒觉察）",
+          "description": "进食冲动时做10秒练习：这一口带来的快乐能持续多久？它解决了饥饿还是寂寞？",
+          "metabolic_mechanism": "训练前额叶对边缘系统的调节，不要求戒断，只要求觉察",
+          "difficulty": "easy",
+          "compliance_tip": "不要求改变行为，只要求在行动前暂停10秒想一想",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS09-P2",
+          "scenario_id": "S09",
+          "priority": 2,
+          "domain": "cognitive",
+          "title": "72小时实验",
+          "description": "选一个微小改变（如少糖/多走路）执行72小时，不设长期目标，只看3天内身体感受变化。",
+          "metabolic_mechanism": "72小时足够产生可感知的代谢变化（精力/睡眠/情绪），建立体验证据",
+          "difficulty": "easy",
+          "compliance_tip": "明确告知'只要3天，3天后你自己决定要不要继续'",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS09-P3",
+          "scenario_id": "S09",
+          "priority": 3,
+          "domain": "emotion",
+          "title": "健康享乐清单",
+          "description": "列出既让自己开心又对健康有益的活动（如散步听音乐/跟朋友喝茶/晒太阳），证明健康≠痛苦。",
+          "metabolic_mechanism": "消除'健康=自我剥夺'的负性框架，将健康行为嵌入'开心'的叙事",
+          "difficulty": "easy",
+          "compliance_tip": "至少列出5个，贴在手机壁纸或冰箱门上",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 10
+        },
+        {
+          "template_id": "MA-DS09-P4",
+          "scenario_id": "S09",
+          "priority": 4,
+          "domain": "nutrition",
+          "title": "正念进食每周1次",
+          "description": "每周选一餐慢慢吃，感受每一口食物的味道和身体反应，不看手机不聊天。",
+          "metabolic_mechanism": "正念进食使餐后血糖峰值降低约10%，同时提升饮食满足感",
+          "difficulty": "moderate",
+          "compliance_tip": "选最喜欢的一餐来做，正念让快乐更持久",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 20
+        },
+        {
+          "template_id": "MA-DS09-P5",
+          "scenario_id": "S09",
+          "priority": 5,
+          "domain": "cognitive",
+          "title": "价值澄清日记",
+          "description": "每周写一段话：'这周让我觉得活得好看的瞬间是___'，从生活愿景倒推健康行为的意义。",
+          "metabolic_mechanism": "建立健康与快乐的正向联结，从终极生活愿景倒推健康行为的必要性",
+          "difficulty": "moderate",
+          "compliance_tip": "用平台日志功能，周末花5分钟回顾一周亮点",
+          "ttm_stages": ["S0", "S1"],
+          "duration_minutes": 5
+        }
+      ]
+    },
+    {
+      "_section": "S10 习得性无助 — 从权威依赖到自主回归",
+      "items": [
+        {
+          "template_id": "MA-DS10-P1",
+          "scenario_id": "S10",
+          "priority": 1,
+          "domain": "cognitive",
+          "title": "用户自定义第一动作",
+          "description": "由用户自己说出'闭着眼也能做到'的第一个健康微动作，不由教练指派。自主选择是重建内控感的核心。",
+          "metabolic_mechanism": "自主选择是重建内控感的核心——任何由教练指派的动作都会延续'外控依赖'",
+          "difficulty": "easy",
+          "compliance_tip": "哪怕用户说的是'每天多喝一杯水'，也接受并从这里开始",
+          "ttm_stages": ["S0"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS10-P2",
+          "scenario_id": "S10",
+          "priority": 2,
+          "domain": "nutrition",
+          "title": "喝够2升水",
+          "description": "最低门槛、最高代谢收益的单一行为。血液流动性改善可在3天内感受到。",
+          "metabolic_mechanism": "最低门槛、最高代谢收益的单一行为；血液流动性改善可在3天内感受到",
+          "difficulty": "easy",
+          "compliance_tip": "准备1升透明水壶，可视化进度",
+          "ttm_stages": ["S0"],
+          "duration_minutes": 0
+        },
+        {
+          "template_id": "MA-DS10-P3",
+          "scenario_id": "S10",
+          "priority": 3,
+          "domain": "nutrition",
+          "title": "饭前等待5分钟",
+          "description": "每餐开始前等待5分钟再吃第一口，训练延迟满足的最简形式。",
+          "metabolic_mechanism": "训练延迟满足的最简形式，同时降低进食量约10-15%，不改变任何饮食内容",
+          "difficulty": "easy",
+          "compliance_tip": "先喝水或看手机5分钟，不需要意志力对抗",
+          "ttm_stages": ["S0"],
+          "duration_minutes": 5
+        },
+        {
+          "template_id": "MA-DS10-P4",
+          "scenario_id": "S10",
+          "priority": 4,
+          "domain": "cognitive",
+          "title": "每日精力评分（1-10）",
+          "description": "每天只打一个数字（1-10分）评估精力水平，最低负担的自我监测方式。",
+          "metabolic_mechanism": "最低负担的自我监测方式，建立'我在追踪我的身体'的主体感",
+          "difficulty": "easy",
+          "compliance_tip": "与平台每日打卡结合，只需点一个数字",
+          "ttm_stages": ["S0"],
+          "duration_minutes": 1
+        },
+        {
+          "template_id": "MA-DS10-P5",
+          "scenario_id": "S10",
+          "priority": 5,
+          "domain": "cognitive",
+          "title": "连续3天打卡单一动作",
+          "description": "将P1选择的动作连续执行3天，'连胜体验'是重建自我效能最有效的神经学干预。",
+          "metabolic_mechanism": "'连胜体验'是重建自我效能最有效的神经学干预，3天即可开始重塑信念",
+          "difficulty": "easy",
+          "compliance_tip": "第一次成功后立即正向反馈，连续3天→发放'习得性有效'徽章",
+          "ttm_stages": ["S0"],
+          "duration_minutes": 1
+        }
+      ]
+    }
+  ]
+}

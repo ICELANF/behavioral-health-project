@@ -1,0 +1,500 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "饮食行为干预决策树10情境 → Policy Engine路由规则",
+    "source": "代谢健康饮食行为干预知识库 V1.0",
+    "total_rules": 15,
+    "rule_type": "routing",
+    "integrates_with": ["micro_action_dietary_templates.json", "knowledge/kb_dietary_intervention/"]
+  },
+  "rules": [
+    {
+      "_section": "10条场景规则 (S01-S10)",
+      "items": [
+        {
+          "rule_name": "dietary_s01_emotional_eating",
+          "rule_type": "routing",
+          "description": "S01 情绪性进食: 情绪/压力触发的补偿性进食行为，路由至metabolic agent处理皮质醇-胰岛素循环",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S1", "S2"]]},
+              {">=": [{"var": "trust_score"}, 0.3]},
+              {"<=": [{"var": "trust_score"}, 0.5]},
+              {"or": [
+                {"in": ["情绪", {"var": "keywords"}]},
+                {"in": ["压力", {"var": "keywords"}]},
+                {"in": ["奶茶", {"var": "keywords"}]},
+                {"in": ["甜点", {"var": "keywords"}]},
+                {"in": ["自责", {"var": "keywords"}]},
+                {"in": ["受气", {"var": "keywords"}]},
+                {"in": ["吃东西", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "metabolic",
+            "scenario_id": "S01",
+            "scenario_name": "情绪性进食",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S1", "S2"],
+            "cross_scenario": ["S03", "S09"]
+          },
+          "priority": 75,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_s02_family_conflict",
+          "rule_type": "routing",
+          "description": "S02 家庭饮食冲突: 家庭环境中油盐重、劝吃压力，嵌入式干预而非对抗",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S2", "S3"]]},
+              {">=": [{"var": "trust_score"}, 0.4]},
+              {"or": [
+                {"in": ["家里", {"var": "keywords"}]},
+                {"in": ["长辈", {"var": "keywords"}]},
+                {"in": ["油盐", {"var": "keywords"}]},
+                {"in": ["劝吃", {"var": "keywords"}]},
+                {"in": ["做饭", {"var": "keywords"}]},
+                {"in": ["伤感情", {"var": "keywords"}]},
+                {"in": ["家人", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "metabolic",
+            "scenario_id": "S02",
+            "scenario_name": "家庭饮食冲突",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S2", "S3"],
+            "cross_scenario": ["S10"]
+          },
+          "priority": 75,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_s03_self_denial_spiral",
+          "rule_type": "routing",
+          "description": "S03 自我否定螺旋: 反复失败后的习得性无助，优先去道德化再处理代谢",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S0", "S1"]]},
+              {"<": [{"var": "trust_score"}, 0.3]},
+              {"or": [
+                {"in": ["没救", {"var": "keywords"}]},
+                {"in": ["没毅力", {"var": "keywords"}]},
+                {"in": ["破罐", {"var": "keywords"}]},
+                {"in": ["自责", {"var": "keywords"}]},
+                {"in": ["厌恶自己", {"var": "keywords"}]},
+                {"in": ["半途而废", {"var": "keywords"}]},
+                {"in": ["放弃", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "emotion",
+            "scenario_id": "S03",
+            "scenario_name": "自我否定螺旋",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S0", "S1"],
+            "cross_scenario": ["S01", "S10"]
+          },
+          "priority": 78,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_s04_performance_anxiety",
+          "rule_type": "routing",
+          "description": "S04 绩效焦虑: 对指标的完美主义追求导致皮质醇升高，需转向过程导向",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S2", "S3"]]},
+              {">=": [{"var": "trust_score"}, 0.35]},
+              {"<=": [{"var": "trust_score"}, 0.55]},
+              {"or": [
+                {"in": ["指标", {"var": "keywords"}]},
+                {"in": ["焦虑", {"var": "keywords"}]},
+                {"in": ["没达标", {"var": "keywords"}]},
+                {"in": ["KPI", {"var": "keywords"}]},
+                {"in": ["崩溃", {"var": "keywords"}]},
+                {"in": ["又胖回来", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "metabolic",
+            "scenario_id": "S04",
+            "scenario_name": "绩效焦虑",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S2", "S3"],
+            "cross_scenario": ["S06"]
+          },
+          "priority": 74,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_s05_workplace_stress",
+          "rule_type": "routing",
+          "description": "S05 职场高压: 时间资源耗尽、外卖依赖，微量嵌入与行为堆叠策略",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S1", "S2"]]},
+              {">=": [{"var": "trust_score"}, 0.3]},
+              {"<=": [{"var": "trust_score"}, 0.5]},
+              {"or": [
+                {"in": ["太忙", {"var": "keywords"}]},
+                {"in": ["外卖", {"var": "keywords"}]},
+                {"in": ["没时间", {"var": "keywords"}]},
+                {"in": ["加班", {"var": "keywords"}]},
+                {"in": ["不现实", {"var": "keywords"}]},
+                {"in": ["早8晚10", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "metabolic",
+            "scenario_id": "S05",
+            "scenario_name": "职场高压",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S1", "S2"],
+            "cross_scenario": ["S07"]
+          },
+          "priority": 74,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_s06_tool_dependency",
+          "rule_type": "routing",
+          "description": "S06 工具依赖: CGM等设备撤除后行为真空，需建立内感觉知替代外部反馈",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S3", "S4"]]},
+              {">=": [{"var": "trust_score"}, 0.5]},
+              {"or": [
+                {"in": ["CGM", {"var": "keywords"}]},
+                {"in": ["摘掉", {"var": "keywords"}]},
+                {"in": ["空虚", {"var": "keywords"}]},
+                {"in": ["数据", {"var": "keywords"}]},
+                {"in": ["传感器", {"var": "keywords"}]},
+                {"in": ["没人管", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "metabolic",
+            "scenario_id": "S06",
+            "scenario_name": "工具依赖",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S3", "S4"],
+            "cross_scenario": ["S04"]
+          },
+          "priority": 73,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_s07_social_dining",
+          "rule_type": "routing",
+          "description": "S07 社交应酬: 高频应酬与社交权力结构下的饮食失控，防御性选择架构",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S2", "S3"]]},
+              {">=": [{"var": "trust_score"}, 0.5]},
+              {"or": [
+                {"in": ["应酬", {"var": "keywords"}]},
+                {"in": ["客户", {"var": "keywords"}]},
+                {"in": ["劝酒", {"var": "keywords"}]},
+                {"in": ["饭局", {"var": "keywords"}]},
+                {"in": ["大鱼大肉", {"var": "keywords"}]},
+                {"in": ["不给面子", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "metabolic",
+            "scenario_id": "S07",
+            "scenario_name": "社交应酬",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S2", "S3"],
+            "cross_scenario": ["S05"]
+          },
+          "priority": 74,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_s08_exercise_fear",
+          "rule_type": "routing",
+          "description": "S08 运动恐惧: 躯体感知扭曲+社交羞耻，NEAT策略绕过心理防线",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S0", "S1"]]},
+              {"<": [{"var": "trust_score"}, 0.35]},
+              {"or": [
+                {"in": ["害怕运动", {"var": "keywords"}]},
+                {"in": ["心跳快", {"var": "keywords"}]},
+                {"in": ["健身房", {"var": "keywords"}]},
+                {"in": ["不敢", {"var": "keywords"}]},
+                {"in": ["酷刑", {"var": "keywords"}]},
+                {"in": ["被看", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "motivation",
+            "scenario_id": "S08",
+            "scenario_name": "运动恐惧",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S0", "S1"],
+            "cross_scenario": ["S09"]
+          },
+          "priority": 76,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_s09_value_conflict",
+          "rule_type": "routing",
+          "description": "S09 价值矛盾: 即时快乐vs长期健康的内在冲突，建立非零和联结",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S0", "S1"]]},
+              {">=": [{"var": "trust_score"}, 0.35]},
+              {"<=": [{"var": "trust_score"}, 0.55]},
+              {"or": [
+                {"in": ["矛盾", {"var": "keywords"}]},
+                {"in": ["人生苦短", {"var": "keywords"}]},
+                {"in": ["开心就好", {"var": "keywords"}]},
+                {"in": ["三分钟热度", {"var": "keywords"}]},
+                {"in": ["两难", {"var": "keywords"}]},
+                {"in": ["懒得坚持", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "motivation",
+            "scenario_id": "S09",
+            "scenario_name": "价值矛盾",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S0", "S1"],
+            "cross_scenario": ["S01", "S08"]
+          },
+          "priority": 74,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_s10_learned_helplessness",
+          "rule_type": "routing",
+          "description": "S10 习得性无助: 慢性失败积累的神经学结果，从用户自主选择重建效能感",
+          "condition_expr": {
+            "and": [
+              {"==": [{"var": "user_stage"}, "S0"]},
+              {"<": [{"var": "trust_score"}, 0.25]},
+              {"or": [
+                {"in": ["没救", {"var": "keywords"}]},
+                {"in": ["天生", {"var": "keywords"}]},
+                {"in": ["反正", {"var": "keywords"}]},
+                {"in": ["做不到", {"var": "keywords"}]},
+                {"in": ["指标都红", {"var": "keywords"}]},
+                {"in": ["干什么都不行", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "motivation",
+            "scenario_id": "S10",
+            "scenario_name": "习得性无助",
+            "knowledge_scope": "kb_dietary_intervention",
+            "ttm_stages": ["S0"],
+            "cross_scenario": ["S02", "S03"]
+          },
+          "priority": 80,
+          "evidence_tier": "T3"
+        }
+      ]
+    },
+    {
+      "_section": "5条叠加规则 (双关键词组合匹配时优先于单场景)",
+      "items": [
+        {
+          "rule_name": "dietary_overlay_s01_s03_emotion_denial",
+          "rule_type": "routing",
+          "description": "S01+S03叠加: 情绪进食+自我否定(最高频叠加)，emotion优先去道德化，S01的M-Action在信任建立后再启动",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S0", "S1", "S2"]]},
+              {"or": [
+                {"in": ["情绪", {"var": "keywords"}]},
+                {"in": ["压力", {"var": "keywords"}]},
+                {"in": ["奶茶", {"var": "keywords"}]},
+                {"in": ["甜点", {"var": "keywords"}]}
+              ]},
+              {"or": [
+                {"in": ["没救", {"var": "keywords"}]},
+                {"in": ["没毅力", {"var": "keywords"}]},
+                {"in": ["自责", {"var": "keywords"}]},
+                {"in": ["破罐", {"var": "keywords"}]},
+                {"in": ["厌恶自己", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "emotion",
+            "scenario_id": "S01+S03",
+            "scenario_name": "情绪进食+自我否定叠加",
+            "knowledge_scope": "kb_dietary_intervention",
+            "primary_scenario": "S03",
+            "secondary_scenario": "S01",
+            "strategy": "先去道德化(S03)，信任建立后启动S01 M-Action"
+          },
+          "priority": 79,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_overlay_s05_s07_work_social",
+          "rule_type": "routing",
+          "description": "S05+S07叠加: 职场高压+社交应酬，共享行为嵌入策略，合并设计行为处方",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S1", "S2", "S3"]]},
+              {"or": [
+                {"in": ["太忙", {"var": "keywords"}]},
+                {"in": ["外卖", {"var": "keywords"}]},
+                {"in": ["没时间", {"var": "keywords"}]},
+                {"in": ["加班", {"var": "keywords"}]}
+              ]},
+              {"or": [
+                {"in": ["应酬", {"var": "keywords"}]},
+                {"in": ["客户", {"var": "keywords"}]},
+                {"in": ["劝酒", {"var": "keywords"}]},
+                {"in": ["饭局", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "metabolic",
+            "scenario_id": "S05+S07",
+            "scenario_name": "职场高压+社交应酬叠加",
+            "knowledge_scope": "kb_dietary_intervention",
+            "primary_scenario": "S05",
+            "secondary_scenario": "S07",
+            "strategy": "共享行为嵌入策略，合并设计行为处方"
+          },
+          "priority": 77,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_overlay_s04_s06_anxiety_tool",
+          "rule_type": "routing",
+          "description": "S04+S06叠加: 绩效焦虑+工具依赖(数字控制型)，先降低反馈频率(S04)再建立内感觉知(S06)",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S2", "S3", "S4"]]},
+              {"or": [
+                {"in": ["指标", {"var": "keywords"}]},
+                {"in": ["焦虑", {"var": "keywords"}]},
+                {"in": ["没达标", {"var": "keywords"}]},
+                {"in": ["崩溃", {"var": "keywords"}]}
+              ]},
+              {"or": [
+                {"in": ["CGM", {"var": "keywords"}]},
+                {"in": ["摘掉", {"var": "keywords"}]},
+                {"in": ["数据", {"var": "keywords"}]},
+                {"in": ["传感器", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "metabolic",
+            "scenario_id": "S04+S06",
+            "scenario_name": "绩效焦虑+工具依赖叠加",
+            "knowledge_scope": "kb_dietary_intervention",
+            "primary_scenario": "S04",
+            "secondary_scenario": "S06",
+            "strategy": "先降低反馈频率(S04)，再建立内感觉知(S06)"
+          },
+          "priority": 76,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_overlay_s10_s02_helpless_family",
+          "rule_type": "routing",
+          "description": "S10+S02叠加: 习得性无助+家庭冲突，S10优先重建自我效能，S02作为支撑系统并行推进",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S0", "S1", "S2"]]},
+              {"or": [
+                {"in": ["没救", {"var": "keywords"}]},
+                {"in": ["天生", {"var": "keywords"}]},
+                {"in": ["反正", {"var": "keywords"}]},
+                {"in": ["做不到", {"var": "keywords"}]}
+              ]},
+              {"or": [
+                {"in": ["家里", {"var": "keywords"}]},
+                {"in": ["长辈", {"var": "keywords"}]},
+                {"in": ["家人", {"var": "keywords"}]},
+                {"in": ["劝吃", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "motivation",
+            "scenario_id": "S10+S02",
+            "scenario_name": "习得性无助+家庭冲突叠加",
+            "knowledge_scope": "kb_dietary_intervention",
+            "primary_scenario": "S10",
+            "secondary_scenario": "S02",
+            "strategy": "S10优先重建自我效能，S02作为家庭支撑系统并行推进"
+          },
+          "priority": 79,
+          "evidence_tier": "T3"
+        },
+        {
+          "rule_name": "dietary_overlay_s01_s09_emotion_value",
+          "rule_type": "routing",
+          "description": "S01+S09叠加: 情绪进食+价值矛盾，先建立享乐≠放弃健康框架(S09)，再切入S01干预",
+          "condition_expr": {
+            "and": [
+              {"in": [{"var": "user_stage"}, ["S0", "S1", "S2"]]},
+              {"or": [
+                {"in": ["情绪", {"var": "keywords"}]},
+                {"in": ["压力", {"var": "keywords"}]},
+                {"in": ["奶茶", {"var": "keywords"}]},
+                {"in": ["甜点", {"var": "keywords"}]}
+              ]},
+              {"or": [
+                {"in": ["矛盾", {"var": "keywords"}]},
+                {"in": ["人生苦短", {"var": "keywords"}]},
+                {"in": ["开心就好", {"var": "keywords"}]},
+                {"in": ["两难", {"var": "keywords"}]}
+              ]}
+            ]
+          },
+          "action_type": "select_agent",
+          "action_params": {
+            "agent": "motivation",
+            "scenario_id": "S01+S09",
+            "scenario_name": "情绪进食+价值矛盾叠加",
+            "knowledge_scope": "kb_dietary_intervention",
+            "primary_scenario": "S09",
+            "secondary_scenario": "S01",
+            "strategy": "先建立享乐≠放弃健康框架(S09)，再切入S01干预"
+          },
+          "priority": 76,
+          "evidence_tier": "T3"
+        }
+      ]
+    }
+  ]
+}
