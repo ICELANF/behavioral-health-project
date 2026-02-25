@@ -63,7 +63,7 @@ class AgentFactory:
         )
 
         Settings.embed_model = OllamaEmbedding(
-            model_name=model_config.get("embed", "nomic-embed-text:latest"),
+            model_name=model_config.get("embed", "mxbai-embed-large:latest"),
             base_url=model_config.get("ollama_base_url", "http://localhost:11434")
         )
 

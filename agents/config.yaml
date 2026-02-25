@@ -4,7 +4,7 @@
 
 # === 模型配置 ===
 model:
-  embed: "nomic-embed-text:latest"
+  embed: "mxbai-embed-large:latest"
   llm: "qwen2.5:0.5b"
   ollama_base_url: "http://localhost:11434"
   temperature: 0.3

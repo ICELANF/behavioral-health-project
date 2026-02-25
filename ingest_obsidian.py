@@ -1155,7 +1155,7 @@ aliases:
         print("\n正在向量化知识库...")
 
         # 设置 Embedding 模型
-        embed_model = self.config.get("model", {}).get("embed", "nomic-embed-text:latest")
+        embed_model = self.config.get("model", {}).get("embed", "mxbai-embed-large:latest")
         Settings.embed_model = OllamaEmbedding(model_name=embed_model)
 
         # 扫描所有 Markdown 文件

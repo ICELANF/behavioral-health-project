@@ -153,6 +153,7 @@ class XZBKnowledge(Base):
     content = Column(Text, nullable=False)
     evidence_tier = Column(String(2))
     vector_embedding = Column(Vector(768)) if Vector else Column(Text)
+    vector_embedding_1024 = Column(Vector(1024)) if Vector else Column(Text)
     source = Column(Text)
     tags = Column(ARRAY(Text), server_default=sa_text("'{}'::text[]"))
     applicable_conditions = Column(JSONB, server_default=sa_text("'{}'::jsonb"))

@@ -196,7 +196,7 @@ class OllamaModelManager:
 
     def get_embedding(
         self,
-        model_name: str = "nomic-embed-text:latest"
+        model_name: str = "mxbai-embed-large:latest"
     ) -> Optional['OllamaEmbedding']:
         """
         获取嵌入模型

@@ -203,15 +203,15 @@ class XZBKnowledgeRetriever:
             rows = db.execute(
                 select(
                     XZBKnowledge,
-                    (1 - cosine_distance(XZBKnowledge.vector_embedding, query_vector)).label("score"),
+                    (1 - cosine_distance(XZBKnowledge.vector_embedding_1024, query_vector)).label("score"),
                 )
                 .where(and_(
                     XZBKnowledge.expert_id == expert_id,
                     XZBKnowledge.is_active == True,  # noqa: E712
                     XZBKnowledge.expert_confirmed == True,  # noqa: E712
-                    XZBKnowledge.vector_embedding.isnot(None),
+                    XZBKnowledge.vector_embedding_1024.isnot(None),
                 ))
-                .order_by(cosine_distance(XZBKnowledge.vector_embedding, query_vector))
+                .order_by(cosine_distance(XZBKnowledge.vector_embedding_1024, query_vector))
                 .limit(top_k)
             ).all()
         except Exception as e:

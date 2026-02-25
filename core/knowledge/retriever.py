@@ -254,7 +254,7 @@ class KnowledgeRetriever:
         ).filter(
             KnowledgeDocument.is_active == True,
             KnowledgeDocument.status == "ready",
-            KnowledgeChunk.embedding.isnot(None),
+            KnowledgeChunk.embedding_1024.isnot(None),
         )
 
         # scope 条件
@@ -287,7 +287,7 @@ class KnowledgeRetriever:
         scored = []
         for chunk in candidates:
             try:
-                chunk_vec = json.loads(chunk.embedding)
+                chunk_vec = json.loads(chunk.embedding_1024)
             except (json.JSONDecodeError, TypeError):
                 continue
 

@@ -73,7 +73,7 @@ def _get_embedder():
     if _embedder_instance is None:
         from .embedding_service import EmbeddingService
         _embedder_instance = EmbeddingService()
-        logger.info("✅ RAG Embedding 服务已加载 (Ollama nomic-embed-text)")
+        logger.info("✅ RAG Embedding 服务已加载 (Ollama mxbai-embed-large, 1024维)")
     return _embedder_instance
 
 
