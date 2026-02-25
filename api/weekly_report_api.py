@@ -55,7 +55,9 @@ async def latest_weekly_report(
     """), {"uid": current_user.id})).mappings().first()
     if not row:
         raise HTTPException(404, "暂无周报数据")
-    return dict(row)
+    result = dict(row)
+    result["review_status"] = "auto"
+    return result
 
 
 @router.get("/api/v1/weekly-reports/{week_start}")

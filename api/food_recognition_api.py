@@ -314,6 +314,7 @@ async def recognize_food(
         "created_at": record.created_at.isoformat() if record.created_at else None,
         "task_completed": task_result is not None,
         "task_info": task_result,
+        "review_status": "auto",
     }
 
 

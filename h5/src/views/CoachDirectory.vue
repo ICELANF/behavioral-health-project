@@ -39,15 +39,10 @@
           <div class="coach-info">
             <div class="coach-name-row">
               <span class="coach-name">{{ coach.username || coach.name }}</span>
-              <van-tag
-                :type="roleTagType(coach.role_level)"
-                size="small"
-                round
-              >
-                {{ roleLabel(coach.role_level) }}
+              <van-tag type="primary" size="small" round>
+                {{ coach.title || '教练' }}
               </van-tag>
             </div>
-            <div v-if="coach.title" class="coach-title">{{ coach.title }}</div>
             <div v-if="coach.specialties?.length" class="coach-specialties">
               <van-tag
                 v-for="spec in coach.specialties.slice(0, 3)"
@@ -62,11 +57,8 @@
             </div>
             <div class="coach-desc" v-if="coach.bio">{{ coach.bio }}</div>
             <div class="coach-meta">
-              <span v-if="coach.student_count !== undefined">
-                <van-icon name="friends-o" size="12" /> {{ coach.student_count }} 位学员
-              </span>
-              <span v-if="coach.rating">
-                <van-icon name="star" size="12" color="#ff976a" /> {{ coach.rating }}
+              <span v-if="coach.specialties?.length">
+                {{ coach.specialties.length }} 项专长
               </span>
             </div>
           </div>
@@ -109,23 +101,6 @@ const filteredCoaches = computed(() => {
 
 function onSearch() {
   // 筛选由 computed 自动处理
-}
-
-// 角色标签
-function roleLabel(level: number): string {
-  const map: Record<number, string> = {
-    4: '教练',
-    5: '督导',
-    6: '导师',
-    99: '管理员'
-  }
-  return map[level] || '教练'
-}
-
-function roleTagType(level: number): 'primary' | 'success' | 'warning' | 'danger' {
-  if (level >= 6) return 'danger'
-  if (level >= 5) return 'warning'
-  return 'primary'
 }
 
 // 头像颜色

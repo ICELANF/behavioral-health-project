@@ -83,14 +83,12 @@ import * as echarts from 'echarts'
 import { showLoadingToast, closeToast, showToast } from 'vant'
 import TabBar from '@/components/common/TabBar.vue'
 import AiContentBadge from '@/components/common/AiContentBadge.vue'
-import { useUserStore } from '@/stores/user'
 import dashboardApi from '@/api/dashboard'
 import { fetchFullReport } from '@/api/report'
 import type { DashboardData } from '@/api/types'
 
 const chartRef = ref<HTMLElement>()
 let chartInstance: echarts.ECharts | null = null
-const userStore = useUserStore()
 const isLoading = ref(false)
 const reportLoading = ref(false)
 const showReport = ref(false)
@@ -148,7 +146,7 @@ async function loadDashboardData() {
   showLoadingToast({ message: '加载中...', forbidClick: true })
 
   try {
-    const data = await dashboardApi.getDashboard(userStore.userId)
+    const data = await dashboardApi.getDashboard()
     dashboardData.value = data
     // 数据加载完成后初始化图表
     setTimeout(() => initChart(), 100)

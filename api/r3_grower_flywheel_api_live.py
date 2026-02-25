@@ -78,6 +78,7 @@ class CoachTipResponse(BaseModel):
     tip: str
     tip_type: str
     agent_id: str
+    review_status: str = "auto"
 
 
 class WeekDay(BaseModel):

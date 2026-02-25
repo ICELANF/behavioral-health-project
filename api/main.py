@@ -1173,9 +1173,40 @@ async def get_experts(current_user: User = Depends(get_current_user)):
 
 
 # --- 个人看板接口 ---
+@app.get("/api/v1/dashboard/me")
+async def get_my_dashboard(current_user: User = Depends(get_current_user)):
+    """获取当前用户个人看板数据（从 JWT 提取身份，防止 IDOR）"""
+    import random
+    user_id = current_user.id
+    base_score = random.randint(55, 75)
+
+    return {
+        "user_id": user_id,
+        "overall_score": base_score,
+        "stress_score": base_score - random.randint(5, 15),
+        "fatigue_score": base_score - random.randint(0, 10),
+        "trend": [
+            {"date": "01-17", "score": base_score - 6},
+            {"date": "01-18", "score": base_score - 2},
+            {"date": "01-19", "score": base_score - 4},
+            {"date": "01-20", "score": base_score + 1},
+            {"date": "01-21", "score": base_score - 1},
+            {"date": "01-22", "score": base_score},
+            {"date": "01-23", "score": base_score}
+        ],
+        "risk_level": "medium" if base_score < 65 else "low",
+        "recommendations": [
+            "建议每天进行10分钟深呼吸练习",
+            "保持规律作息，避免熬夜",
+            "适当进行户外活动，接触阳光"
+        ],
+        "review_status": "auto",
+    }
+
+
 @app.get("/api/v1/dashboard/{user_id}")
 async def get_dashboard(user_id: str, current_user: User = Depends(get_current_user)):
-    """获取用户个人看板数据"""
+    """获取用户个人看板数据（旧接口，保留兼容）"""
     # 模拟数据 (实际应从数据库/评估系统获取)
     import random
     base_score = random.randint(55, 75)
@@ -1199,7 +1230,8 @@ async def get_dashboard(user_id: str, current_user: User = Depends(get_current_u
             "建议每天进行10分钟深呼吸练习",
             "保持规律作息，避免熬夜",
             "适当进行户外活动，接触阳光"
-        ]
+        ],
+        "review_status": "auto",
     }
 
 
