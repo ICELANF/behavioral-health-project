@@ -134,6 +134,7 @@ import {
   healthConsultStream,
   type ChatMessage
 } from '@/api/ollama'
+import { formatChatMessage } from '@/utils/sanitize'
 
 interface DisplayMessage {
   role: 'user' | 'assistant'
@@ -279,12 +280,8 @@ const scrollToBottom = () => {
   })
 }
 
-// 格式化消息 (支持 markdown)
-const formatMessage = (content: string) => {
-  return content
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>')
-}
+// 格式化消息 (DOMPurify sanitize 防 XSS)
+const formatMessage = (content: string) => formatChatMessage(content)
 
 // 格式化时间
 const formatTime = (date: Date) => {

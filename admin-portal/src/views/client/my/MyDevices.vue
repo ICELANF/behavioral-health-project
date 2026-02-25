@@ -98,6 +98,7 @@ const bindOptions = [
 ]
 
 const loadDevices = async () => {
+  if (!localStorage.getItem('admin_token')) return
   loading.value = true
   try {
     const { data } = await request.get('/v1/devices')

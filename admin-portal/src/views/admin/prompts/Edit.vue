@@ -23,6 +23,7 @@ import {
 import type { PromptTemplate } from '@/types'
 import { TTM_STAGES, TRIGGER_DOMAINS } from '@/constants'
 import request from '@/api/request'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 const router = useRouter()
 const route = useRoute()
@@ -83,6 +84,8 @@ const previewContent = computed(() => {
   })
   return content
 })
+
+const sanitizedPreview = computed(() => sanitizeHtml(previewContent.value))
 
 // 加载数据
 onMounted(async () => {
@@ -314,7 +317,7 @@ const handleBack = () => {
         <FormItem label="效果预览">
           <Alert type="info" class="preview-alert">
             <template #message>
-              <div v-html="previewContent" class="preview-content"></div>
+              <div v-html="sanitizedPreview" class="preview-content"></div>
             </template>
           </Alert>
         </FormItem>

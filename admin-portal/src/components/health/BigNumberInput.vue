@@ -31,7 +31,7 @@
     <!-- 智能提示 -->
     <div v-if="hint" class="smart-hint">
       <div class="hint-icon">💡</div>
-      <div class="hint-text" v-html="hint"></div>
+      <div class="hint-text" v-html="sanitizeHtml(hint || '')"></div>
     </div>
 
     <!-- 错误提示 -->
@@ -67,6 +67,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 interface Props {
   modelValue: string | number

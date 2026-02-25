@@ -244,7 +244,6 @@ const handleTaskToggle = (task: Task) => {
 
 // ===== 行为组件数据 =====
 const handleBehaviorInteract = (state: CompletionState) => {
-  console.log('行为任务交互:', state)
 }
 
 const coachDemoData = reactive({

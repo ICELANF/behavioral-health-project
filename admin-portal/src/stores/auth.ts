@@ -93,6 +93,13 @@ export const useAuthStore = defineStore('auth', () => {
         if (data.user?.id) {
           localStorage.setItem('admin_user_id', String(data.user.id))
         }
+        // 存储角色信息供路由守卫 RBAC 使用
+        if (data.user?.role) {
+          localStorage.setItem('admin_role', data.user.role)
+        }
+        if (data.user?.level !== undefined) {
+          localStorage.setItem('admin_level', String(data.user.level))
+        }
 
         return true
       }
@@ -119,11 +126,14 @@ export const useAuthStore = defineStore('auth', () => {
         user.value = {
           user_id: String(data.id),
           role: data.role || '',
-          level: 0,
-          certifications: [],
+          level: data.level || 0,
+          certifications: data.certifications || [],
           status: data.is_active ? 'active' : 'inactive',
-          permissions: [],
+          permissions: data.permissions || [],
         }
+        // 同步到 localStorage 供路由守卫使用
+        if (data.role) localStorage.setItem('admin_role', data.role)
+        if (data.level !== undefined) localStorage.setItem('admin_level', String(data.level))
         return true
       }
       return false
@@ -143,14 +153,16 @@ export const useAuthStore = defineStore('auth', () => {
       const res = await request.post('v1/auth/refresh', {
         refresh_token: refreshToken.value
       })
-      const data = res.data as LoginResponse
+      const data = res.data
 
-      if (data.success && data.token) {
-        token.value = data.token
+      // 后端返回 access_token (OAuth2 标准), 兼容 token 字段
+      const newToken = data.access_token || data.token
+      if (newToken) {
+        token.value = newToken
         refreshToken.value = data.refresh_token || null
         user.value = data.user || null
 
-        localStorage.setItem('admin_token', data.token)
+        localStorage.setItem('admin_token', newToken)
         if (data.refresh_token) {
           localStorage.setItem('admin_refresh_token', data.refresh_token)
         }
@@ -179,6 +191,9 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = null
       localStorage.removeItem('admin_token')
       localStorage.removeItem('admin_refresh_token')
+      localStorage.removeItem('admin_user_id')
+      localStorage.removeItem('admin_role')
+      localStorage.removeItem('admin_level')
     }
   }
 

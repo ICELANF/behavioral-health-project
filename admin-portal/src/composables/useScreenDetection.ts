@@ -135,7 +135,6 @@ export function useScreenDetection() {
     window.addEventListener('focus', handleWindowFocus);
     window.addEventListener('beforeunload', handleBeforeUnload);
 
-    console.log('[AntiCheat] Screen detection started');
   };
 
   /**
@@ -152,7 +151,6 @@ export function useScreenDetection() {
     window.removeEventListener('focus', handleWindowFocus);
     window.removeEventListener('beforeunload', handleBeforeUnload);
 
-    console.log('[AntiCheat] Screen detection stopped');
   };
 
   /**

@@ -163,6 +163,7 @@ import {
   healthConsult,
   type ChatMessage
 } from '@/api/ollama'
+import { formatChatMessage } from '@/utils/sanitize'
 
 // 路由参数
 const route = useRoute()
@@ -406,14 +407,8 @@ const scrollToBottom = () => {
   })
 }
 
-// 格式化消息 (支持基础 markdown)
-const formatMessage = (content: string) => {
-  return content
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`(.*?)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br>')
-}
+// 格式化消息 (DOMPurify sanitize 防 XSS)
+const formatMessage = (content: string) => formatChatMessage(content)
 
 // 格式化时间
 const formatTime = (date: Date) => {

@@ -123,6 +123,7 @@ const certificates = ref([])
 const recommendations = ref([])
 
 async function loadLearningData() {
+  if (!localStorage.getItem('admin_token')) return
   loading.value = true
   const userId = parseInt(localStorage.getItem('admin_user_id') || '0')
 

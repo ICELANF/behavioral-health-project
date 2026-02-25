@@ -157,7 +157,6 @@ export function useProctorCamera(config: Partial<SnapshotConfig> = {}) {
       snapshots.value.push(snapshot);
       snapshotCount.value++;
 
-      console.log(`[ProctorCamera] Captured snapshot: ${snapshot.id}, trigger: ${trigger}`);
 
       return snapshot;
     } catch (error) {
@@ -207,7 +206,6 @@ export function useProctorCamera(config: Partial<SnapshotConfig> = {}) {
       scheduleNextCapture();
     }
 
-    console.log('[ProctorCamera] Started');
     return true;
   };
 
@@ -233,7 +231,6 @@ export function useProctorCamera(config: Partial<SnapshotConfig> = {}) {
       videoElement.srcObject = null;
     }
 
-    console.log('[ProctorCamera] Stopped');
   };
 
   /**

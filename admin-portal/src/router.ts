@@ -768,17 +768,56 @@ const router = createRouter({
   routes
 })
 
+// 角色等级映射 (与后端 ROLE_LEVEL 对齐)
+const ROLE_LEVEL_MAP: Record<string, number> = {
+  OBSERVER: 1, GROWER: 2, SHARER: 3, COACH: 4,
+  PROMOTER: 5, SUPERVISOR: 5, MASTER: 6, ADMIN: 99,
+  // 兼容带后缀的教练角色
+  COACH_JUNIOR: 4, COACH_INTERMEDIATE: 4, COACH_SENIOR: 4,
+  EXPERT: 5,
+}
+
+function getUserRoleLevel(): number {
+  // 优先从 admin_level 读取 (登录时存储)
+  const stored = localStorage.getItem('admin_level')
+  if (stored) return parseInt(stored, 10) || 0
+  // fallback: 从 admin_role 推算
+  const role = (localStorage.getItem('admin_role') || '').toUpperCase()
+  return ROLE_LEVEL_MAP[role] || 0
+}
+
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('admin_token')
+
+  // 1. 未登录拦截 (requiresAuth !== false 的路由必须有 token)
   if (to.meta.requiresAuth !== false && !token) {
     next('/login')
     return
   }
 
-  // 飞轮角色分流: 访问 /dashboard 时按角色跳转 (2026-02-17)
+  // 2. RBAC: requiresAdmin — 仅 admin(99) 可访问
+  if (to.matched.some(r => r.meta.requiresAdmin)) {
+    const level = getUserRoleLevel()
+    if (level < 99) {
+      next('/dashboard')
+      return
+    }
+  }
+
+  // 3. RBAC: requiredRole — 检查角色等级 (meta.requiredRole 为最低等级数值)
+  const requiredRole = to.meta.requiredRole as number | undefined
+  if (requiredRole && requiredRole > 0) {
+    const level = getUserRoleLevel()
+    if (level < requiredRole) {
+      next('/dashboard')
+      return
+    }
+  }
+
+  // 4. 飞轮角色分流: 访问 /dashboard 时按角色跳转 (2026-02-17)
   if (to.path === '/dashboard' && token) {
-    const roleLevel = parseInt(localStorage.getItem('admin_level') || '0', 10)
+    const roleLevel = getUserRoleLevel()
     if (roleLevel >= 99) {
       next('/admin/command-center')
       return

@@ -17,12 +17,24 @@ interface PatientDashboard {
   todayTasks: Task[]
 }
 
-const ENGINE_API = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:8002'
-const MP_HEADERS = { 'Content-Type': 'application/json', 'X-User-ID': '1' }
+const ENGINE_API = import.meta.env.VITE_ENGINE_API_URL || 'http://127.0.0.1:8000'
+
+function getClientHeaders(): Record<string, string> {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  const token = localStorage.getItem('admin_token')
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
+  }
+  const userId = localStorage.getItem('admin_user_id')
+  if (userId) {
+    headers['X-User-ID'] = userId
+  }
+  return headers
+}
 
 export async function getPatientDashboard(): Promise<PatientDashboard> {
   const res = await fetch(`${ENGINE_API}/api/v1/mp/task/today`, {
-    headers: MP_HEADERS
+    headers: getClientHeaders()
   })
   const data = await res.json()
   const stage = (data.stage || 'preparation') as keyof typeof BEHAVIOR_STAGE_MAP
@@ -42,7 +54,7 @@ export async function getPatientDashboard(): Promise<PatientDashboard> {
 export async function updateTaskStatus(taskId: string, completed: boolean): Promise<boolean> {
   const res = await fetch(`${ENGINE_API}/api/v1/mp/task/${taskId}/status`, {
     method: 'POST',
-    headers: MP_HEADERS,
+    headers: getClientHeaders(),
     body: JSON.stringify({ completed }),
   })
   return res.ok
@@ -81,8 +93,8 @@ export async function getHealthSummary(): Promise<HealthSummary> {
     // 并行请求后端三个接口
     const [statusRes, stateRes, progressRes] = await Promise.all([
       fetch(`${ENGINE_API}/latest_status`).then(r => r.json()).catch(() => null),
-      fetch(`${ENGINE_API}/api/v1/mp/user/state`, { headers: MP_HEADERS }).then(r => r.json()).catch(() => null),
-      fetch(`${ENGINE_API}/api/v1/mp/progress/summary`, { headers: MP_HEADERS }).then(r => r.json()).catch(() => null)
+      fetch(`${ENGINE_API}/api/v1/mp/user/state`, { headers: getClientHeaders() }).then(r => r.json()).catch(() => null),
+      fetch(`${ENGINE_API}/api/v1/mp/progress/summary`, { headers: getClientHeaders() }).then(r => r.json()).catch(() => null)
     ])
 
     // 从 latest_status 获取血糖数据
@@ -159,7 +171,7 @@ export interface RecommendedTask {
 
 export async function getRecommendedTasks(): Promise<RecommendedTask[]> {
   const res = await fetch(`${ENGINE_API}/api/v1/mp/task/recommended`, {
-    headers: MP_HEADERS,
+    headers: getClientHeaders(),
   })
   const data = await res.json()
   return (data.tasks || []).map((t: any) => ({

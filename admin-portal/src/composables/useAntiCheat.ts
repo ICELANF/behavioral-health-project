@@ -172,7 +172,6 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
     // 检查是否需要警告或自动提交
     checkThresholds();
 
-    console.log(`[AntiCheat] Violation recorded: ${type}, severity: ${severity}, count: ${violationCount.value}`);
 
     return violation;
   };
@@ -265,7 +264,6 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
       }
     }
 
-    console.log('[AntiCheat] Started', { errors });
 
     return { success: errors.length === 0, errors };
   };
@@ -291,7 +289,6 @@ export function useAntiCheat(config: Partial<AntiCheatConfig> = {}) {
       proctorCamera.stop();
     }
 
-    console.log('[AntiCheat] Stopped');
   };
 
   /**

@@ -221,11 +221,24 @@ const route = useRoute()
 const studentId = route.params.id as string
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-const token = localStorage.getItem('admin_token') || ''
-const authHeaders: Record<string, string> = {
-  'Content-Type': 'application/json',
-  ...(token ? { Authorization: `Bearer ${token}` } : {}),
+
+// 动态获取 authHeaders — 避免长会话 stale token
+function getAuthHeaders(): Record<string, string> {
+  const t = localStorage.getItem('admin_token')
+  return {
+    'Content-Type': 'application/json',
+    ...(t ? { Authorization: `Bearer ${t}` } : {}),
+  }
 }
+const authHeaders = new Proxy({} as Record<string, string>, {
+  get(_, prop: string) { return getAuthHeaders()[prop] },
+  has(_, prop: string) { return prop in getAuthHeaders() },
+  ownKeys() { return Object.keys(getAuthHeaders()) },
+  getOwnPropertyDescriptor(_, prop: string) {
+    const val = getAuthHeaders()[prop]
+    return val !== undefined ? { configurable: true, enumerable: true, value: val } : undefined
+  },
+})
 
 const loading = ref(true)
 const activeTab = ref('records')

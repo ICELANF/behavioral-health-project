@@ -146,13 +146,10 @@ import request from '../../api/request'
 import ListCard from '@/components/core/ListCard.vue'
 
 const activeTab = ref('marketplace')
+// 使用 localStorage 存储的角色信息判断 (由 auth store 登录时写入), 不解码 JWT
 const isAdmin = computed(() => {
-  try {
-    const token = localStorage.getItem('admin_token')
-    if (!token) return false
-    const payload = JSON.parse(atob(token.split('.')[1]))
-    return payload.role === 'admin'
-  } catch { return false }
+  const role = (localStorage.getItem('admin_role') || '').toUpperCase()
+  return role === 'ADMIN'
 })
 
 // Marketplace
@@ -263,7 +260,14 @@ async function handleRejectListing(id: number) {
 async function handleCreateComposition() {
   compositionCreating.value = true
   try {
-    const pipeline = JSON.parse(pipelineJson.value)
+    let pipeline: any
+    try {
+      pipeline = JSON.parse(pipelineJson.value)
+    } catch {
+      message.error('Pipeline JSON 格式无效，请检查后重试')
+      compositionCreating.value = false
+      return
+    }
     await request.post('/v1/agent-ecosystem/compositions', {
       ...compositionForm,
       pipeline,

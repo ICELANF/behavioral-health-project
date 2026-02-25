@@ -156,10 +156,12 @@ const connectSSE = async () => {
   connectionStatus.value = 'connecting'
 
   try {
-    const stream = await copilotApi.streamPrescription(userId)
-    if (stream && typeof stream.onmessage !== 'undefined') {
-      eventSource = stream
-      eventSource.onmessage = (event) => {
+    const controller = copilotApi.streamPrescription(
+      userId,
+      (event) => {
+        // onMessage callback
+        connectionStatus.value = 'connected'
+        isConnecting.value = false
         try {
           const data = JSON.parse(event.data)
           if (data.type === 'prescription') {
@@ -176,11 +178,15 @@ const connectSSE = async () => {
             transitionEvent.value = data.transition_event
           }
         } catch (e) { /* parse error */ }
-      }
-      eventSource.onerror = () => {
+      },
+      (err) => {
+        // onError callback
         connectionStatus.value = 'error'
         isConnecting.value = false
       }
+    )
+    if (controller) {
+      eventSource = controller
       connectionStatus.value = 'connected'
     }
   } catch (e) {
@@ -206,7 +212,6 @@ const ignorePrescription = async (item, index) => {
 }
 
 const handleToolAction = async (data, item) => {
-  console.log('执行工具动作:', data)
   const idx = prescriptionStream.value.indexOf(item)
   if (idx > -1) {
     const feedbackMap = {
@@ -261,7 +266,7 @@ const pushPrescription = (data) => {
 }
 
 onBeforeUnmount(() => {
-  if (eventSource) { eventSource.close(); eventSource = null }
+  if (eventSource) { eventSource.abort(); eventSource = null }
 })
 
 defineExpose({ pushPrescription })

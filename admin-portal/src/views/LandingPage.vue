@@ -19,7 +19,7 @@
         <div class="l-hero-grid">
           <div>
             <div class="l-hero-tag l-fade-in"><div class="l-pulse-dot" /><span>{{ pageData.heroTag }}</span></div>
-            <h1 class="l-fade-in" style="transition-delay:.1s" v-html="pageData.heroTitle" />
+            <h1 class="l-fade-in" style="transition-delay:.1s" v-html="sanitizeHtml(pageData.heroTitle)" />
             <p class="l-hero-subtitle l-fade-in" style="transition-delay:.2s">{{ pageData.heroSubtitle }}</p>
             <div class="l-hero-buttons l-fade-in" style="transition-delay:.3s">
               <button class="l-btn-primary">{{ pageData.heroCta }}</button>
@@ -152,6 +152,7 @@ import { ref, watch, nextTick } from 'vue'
 import { useLandingTheme, useScrollReveal, SCENES, type PageData } from '../composables/useLanding'
 import LandingHeroSVG from '../components/landing/LandingHeroSVG.vue'
 import LandingCounter from '../components/landing/LandingCounter.vue'
+import { sanitizeHtml } from '@/utils/sanitize'
 
 const NAV_ITEMS = [
   { key: 'home', label: '首页' },

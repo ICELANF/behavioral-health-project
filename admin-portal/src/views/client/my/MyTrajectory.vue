@@ -112,6 +112,7 @@ const stageColors = { S0: '#d9d9d9', S1: '#bfbfbf', S2: '#91d5ff', S3: '#69c0ff'
 const stageNames = { S0: '觉醒期', S1: '松动期', S2: '探索期', S3: '准备期', S4: '行动期', S5: '坚持期', S6: '融入期' }
 
 onMounted(async () => {
+  if (!localStorage.getItem('admin_token')) return
   // Load TTM stage from assessment profile
   try {
     const res = await request.get('v1/assessment/profile/me')

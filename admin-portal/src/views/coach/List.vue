@@ -568,15 +568,16 @@ const handleSave = async () => {
       message.success('教练信息已更新')
     } else {
       const username = formState.phone || `coach_${Date.now()}`
+      const tempPwd = `C${Math.random().toString(36).slice(2, 8)}!${Math.floor(Math.random() * 90 + 10)}`
       await request.post('/v1/admin/users', {
         username,
-        password: 'Coach@2026',
+        password: tempPwd,
         full_name: formState.name,
         role: 'coach',
         email: formState.email || '',
         phone: formState.phone,
       })
-      message.success('教练已添加')
+      message.success(`教练已添加，临时密码: ${tempPwd}，请通知教练尽快修改`)
     }
 
     modalVisible.value = false

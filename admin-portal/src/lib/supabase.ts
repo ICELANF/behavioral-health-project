@@ -1,13 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Missing Supabase environment variables');
+// Graceful degradation: 缺失 env vars 时不崩溃，仅 warn
+let supabase: SupabaseClient | null = null;
+if (supabaseUrl && supabaseAnonKey) {
+  supabase = createClient(supabaseUrl, supabaseAnonKey);
+} else {
+  console.warn('[supabase] Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY — Supabase disabled');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export { supabase };
 
 export interface AuditLog {
   id?: string;
@@ -23,6 +27,11 @@ export interface AuditLog {
 }
 
 export const sendBehaviorEvent = async (logData: Omit<AuditLog, 'id' | 'created_at'>) => {
+  if (!supabase) {
+    console.warn('[supabase] Client not initialized, skipping audit log');
+    return null;
+  }
+
   const { data, error } = await supabase
     .from('behavior_audit_logs')
     .insert([logData])
@@ -30,7 +39,8 @@ export const sendBehaviorEvent = async (logData: Omit<AuditLog, 'id' | 'created_
     .maybeSingle();
 
   if (error) {
-    throw new Error(`Failed to log audit event: ${error.message}`);
+    console.error(`[supabase] Failed to log audit event: ${error.message}`);
+    return null;
   }
 
   return data;

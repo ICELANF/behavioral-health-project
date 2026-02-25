@@ -137,6 +137,7 @@ const trendColor = (score) => {
 }
 
 onMounted(async () => {
+  if (!localStorage.getItem('admin_token')) return
   // Try to fetch from API; on success, update result and history
   try {
     const res = await request.get(`v1/assessment-assignments/${assessmentId}/result`)

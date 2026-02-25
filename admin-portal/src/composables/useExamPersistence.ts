@@ -64,7 +64,6 @@ export function useExamPersistence(examId: string, coachId: string) {
       hasUnfinishedExam.value = true;
       savedSession.value = session;
 
-      console.log('[ExamPersistence] Found unfinished exam:', session);
       return session;
     } catch (error) {
       console.error('[ExamPersistence] Check error:', error);
@@ -101,7 +100,6 @@ export function useExamPersistence(examId: string, coachId: string) {
       };
 
       localStorage.setItem(key, JSON.stringify(updated));
-      console.log('[ExamPersistence] Progress saved');
     } catch (error) {
       console.error('[ExamPersistence] Save error:', error);
     }
@@ -118,7 +116,6 @@ export function useExamPersistence(examId: string, coachId: string) {
       saveProgress(data);
     }, AUTO_SAVE_INTERVAL);
 
-    console.log('[ExamPersistence] Auto-save started');
   };
 
   /**
@@ -140,7 +137,6 @@ export function useExamPersistence(examId: string, coachId: string) {
       localStorage.removeItem(key);
       hasUnfinishedExam.value = false;
       savedSession.value = null;
-      console.log('[ExamPersistence] Session cleared');
     } catch (error) {
       console.error('[ExamPersistence] Clear error:', error);
     }
@@ -167,7 +163,6 @@ export function useExamPersistence(examId: string, coachId: string) {
       remainingSeconds: adjustedRemainingSeconds,
     };
 
-    console.log('[ExamPersistence] Progress restored, remaining:', adjustedRemainingSeconds);
     return restored;
   };
 

@@ -90,6 +90,7 @@ const iconMap = { phq9: '😔', gad7: '😰', pss10: '😤', who5: '😊', audit
 const colorMap = { phq9: '#e6f7ff', gad7: '#fff7e6', pss10: '#fff1f0', who5: '#f6ffed', audit: '#f9f0ff', ipaq: '#e6fffb', psqi: '#f0f5ff', dass21: '#fffbe6' }
 
 const loadAssessments = async () => {
+  if (!localStorage.getItem('admin_token')) return
   try {
     const [catalogRes, recordsRes] = await Promise.allSettled([
       request.get('v1/assessments'),

@@ -1455,8 +1455,22 @@ const router = useRouter()
 const { isMobile, isCompact, modalWidth } = useResponsive()
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-const token = localStorage.getItem('admin_token')
-const authHeaders = { Authorization: `Bearer ${token}` }
+
+// 动态获取 authHeaders — 避免长会话 stale token
+function getAuthHeaders(): Record<string, string> {
+  const t = localStorage.getItem('admin_token')
+  return t ? { Authorization: `Bearer ${t}` } : {}
+}
+// 向后兼容: authHeaders 改为 getter (已有 25 处引用)
+const authHeaders = new Proxy({} as Record<string, string>, {
+  get(_, prop: string) { return getAuthHeaders()[prop] },
+  has(_, prop: string) { return prop in getAuthHeaders() },
+  ownKeys() { return Object.keys(getAuthHeaders()) },
+  getOwnPropertyDescriptor(_, prop: string) {
+    const val = getAuthHeaders()[prop]
+    return val !== undefined ? { configurable: true, enumerable: true, value: val } : undefined
+  },
+})
 
 // 401 guard: token 失效时自动跳转登录
 function handle401(res: Response) {
@@ -1556,24 +1570,20 @@ async function loadAIPrescription(studentId: number) {
   }
   prescriptionLoading.value = true
   prescriptionError.value = ''
-  console.log('[copilot-rx] 开始加载, studentId=', studentId)
   try {
     const url = `${API_BASE}/v1/copilot/generate-prescription`
     const body = JSON.stringify({ student_id: studentId })
-    console.log('[copilot-rx] POST', url, body)
     const res = await fetch(url, {
       method: 'POST',
       headers: { ...authHeaders, 'Content-Type': 'application/json' },
       body,
     })
-    console.log('[copilot-rx] 响应状态:', res.status)
     if (handle401(res)) return
     if (!res.ok) {
       const err = await res.json().catch(() => ({}))
       throw new Error(err.detail || `请求失败 (${res.status})`)
     }
     const data = await res.json()
-    console.log('[copilot-rx] 响应数据 keys:', Object.keys(data))
 
     // meta
     prescriptionMeta.value = data.meta || {}
@@ -1592,7 +1602,6 @@ async function loadAIPrescription(studentId: number) {
     if (Array.isArray(d.evidence) && d.evidence.length > 0) {
       diagnosisData.evidence.splice(0, diagnosisData.evidence.length, ...d.evidence)
     }
-    console.log('[copilot-rx] diagnosis mapped: spi=', diagnosisData.spiScore, 'reasons=', diagnosisData.sixReasons.length, 'evidence=', diagnosisData.evidence.length)
 
     // prescription → prescriptionData (use splice for Vue reactivity)
     const p = data.prescription || {}
@@ -1610,7 +1619,6 @@ async function loadAIPrescription(studentId: number) {
     if (Array.isArray(p.strategies) && p.strategies.length > 0) {
       prescriptionData.strategies.splice(0, prescriptionData.strategies.length, ...p.strategies)
     }
-    console.log('[copilot-rx] prescription mapped: phase=', prescriptionData.phase.current, 'behaviors=', prescriptionData.targetBehaviors.length, 'strategies=', prescriptionData.strategies.length)
 
     // ai_suggestions
     if (Array.isArray(data.ai_suggestions) && data.ai_suggestions.length > 0) {
@@ -1642,7 +1650,6 @@ async function loadAIPrescription(studentId: number) {
       }
     }
 
-    console.log('[copilot-rx] 数据映射完成')
   } catch (e: any) {
     prescriptionError.value = e.message || 'AI 分析失败'
     console.error('[copilot-rx] 错误:', e)
@@ -1928,7 +1935,6 @@ const startFollowup = (student: typeof pendingStudents.value[0]) => {
     message.warning('请先选择学员')
     return
   }
-  console.log('[followup] startFollowup:', s.id, s.name)
   if (!studentDrawerVisible.value) {
     currentStudent.value = s
     studentDrawerVisible.value = true
@@ -1966,7 +1972,6 @@ const generateFollowup = async (student: typeof pendingStudents.value[0]) => {
     '请直接输出跟进消息内容，不要加任何前缀。',
   ].join('\n')
 
-  console.log('[followup] generateFollowup for', s.name)
   try {
     const res = await fetch(`${API_BASE}/v1/copilot/chat-sync`, {
       method: 'POST',
@@ -1978,7 +1983,6 @@ const generateFollowup = async (student: typeof pendingStudents.value[0]) => {
       throw new Error(`HTTP ${res.status}`)
     }
     const data = await res.json()
-    console.log('[followup] AI reply:', data.reply?.substring(0, 50))
     aiFollowupSuggestion.value = data.reply || '无法生成建议，请手动输入'
   } catch (e: any) {
     console.error('[followup] generateFollowup error:', e)

@@ -123,7 +123,6 @@ export function useFullscreen() {
         onExitCallback();
       }
 
-      console.log(`[Fullscreen] Exit detected, count: ${exitCount.value}`);
     }
   };
 
@@ -149,7 +148,6 @@ export function useFullscreen() {
     const success = await requestFullscreen();
 
     if (success) {
-      console.log('[Fullscreen] Enforcement started');
     }
 
     return success;
@@ -170,7 +168,6 @@ export function useFullscreen() {
     // 退出全屏
     await exitFullscreen();
 
-    console.log('[Fullscreen] Enforcement stopped');
   };
 
   /**

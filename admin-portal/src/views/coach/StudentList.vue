@@ -474,14 +474,16 @@ const handleSaveStudent = async () => {
   } else {
     // 添加模式 — create user in backend
     try {
+      const tempPwd = `G${Math.random().toString(36).slice(2, 8)}!${Math.floor(Math.random() * 90 + 10)}`
       const res = await request.post('v1/admin/users', {
         username: formStudent.name,
         full_name: formStudent.name,
         phone: formStudent.phone,
         email: formStudent.email || `${Date.now()}@placeholder.local`,
-        password: 'Grower@2026',
+        password: tempPwd,
         role: 'grower',
       })
+      message.info(`学员临时密码: ${tempPwd}，请通知学员尽快修改`)
       const newId = res.data?.id || Date.now()
       students.value.push({
         id: newId,

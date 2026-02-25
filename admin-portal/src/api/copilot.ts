@@ -75,19 +75,59 @@ export const copilotApi = {
   },
 
   /**
-   * SSE 实时处方流 - 连接到后端 SSE 端点接收实时处方推送
+   * SSE 实时处方流 - 使用 fetch + ReadableStream (不暴露 JWT 到 URL)
+   * 返回 AbortController 供调用方取消连接
    */
-  streamPrescription(userId: string): EventSource | null {
-    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8002/api'
+  streamPrescription(
+    userId: string,
+    onMessage: (event: { type: string; data: string }) => void,
+    onError?: (err: Error) => void
+  ): AbortController | null {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api'
     const token = localStorage.getItem('admin_token')
-    try {
-      const url = `${baseUrl}/v1/copilot/stream/${userId}?token=${token || ''}`
-      const es = new EventSource(url)
-      return es
-    } catch (e) {
-      console.warn('[Copilot] SSE connection failed, falling back to mock mode')
-      return null
-    }
+    const controller = new AbortController()
+
+    fetch(`${baseUrl}/v1/copilot/stream/${userId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token || ''}`,
+        'Accept': 'text/event-stream',
+      },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok || !response.body) {
+          throw new Error(`SSE connection failed: ${response.status}`)
+        }
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let buffer = ''
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          const lines = buffer.split('\n')
+          buffer = lines.pop() || ''
+
+          let eventType = 'message'
+          for (const line of lines) {
+            if (line.startsWith('event:')) {
+              eventType = line.slice(6).trim()
+            } else if (line.startsWith('data:')) {
+              onMessage({ type: eventType, data: line.slice(5).trim() })
+              eventType = 'message'
+            }
+          }
+        }
+      })
+      .catch((err) => {
+        if (err.name !== 'AbortError') {
+          onError?.(err)
+        }
+      })
+
+    return controller
   },
 
   /**

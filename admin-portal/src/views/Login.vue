@@ -54,9 +54,10 @@
             </a-form-item>
           </a-form>
 
-          <div class="login-footer">
+          <!-- 测试账号仅在开发环境显示 -->
+          <div v-if="isDev" class="login-footer">
             <div class="demo-accounts">
-              <p>测试账号：</p>
+              <p>测试账号（仅开发环境）：</p>
               <div class="account-tags">
                 <a-tag color="default" @click="fillDemo('observer')">L1 观察员</a-tag>
                 <a-tag color="green" @click="fillDemo('grower')">L2 成长者</a-tag>
@@ -94,6 +95,7 @@ const router = useRouter()
 const loading = ref(false)
 const selectedRole = ref<string>('')
 const rememberMe = ref(true)
+const isDev = import.meta.env.DEV
 
 const formState = reactive({
   username: '',

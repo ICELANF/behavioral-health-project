@@ -72,6 +72,7 @@ function scoreLevelClass(score, maxScore) {
 }
 
 async function loadAssessments() {
+  if (!localStorage.getItem('admin_token')) return
   loading.value = true
   try {
     const assignments = await assessmentApi.getAssignments()

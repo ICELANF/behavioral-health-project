@@ -204,6 +204,7 @@ import {
 import { message } from 'ant-design-vue'
 import { healthApi } from '@/api/health'
 import request from '@/api/request'
+import { formatChatMessage } from '@/utils/sanitize'
 
 const router = useRouter()
 
@@ -331,12 +332,8 @@ const askQuestion = (text: string) => {
 }
 
 
-// 格式化消息
-const formatMessage = (content: string) => {
-  return content
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>')
-}
+// 格式化消息 (DOMPurify sanitize 防 XSS)
+const formatMessage = (content: string) => formatChatMessage(content)
 
 // 格式化时间
 const formatTime = (timestamp: number) => {

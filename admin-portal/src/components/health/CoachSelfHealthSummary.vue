@@ -39,8 +39,20 @@ import { ref, reactive, onMounted } from 'vue'
 defineProps<{ compact?: boolean }>()
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || ''
-const token = localStorage.getItem('admin_token') || ''
-const headers = { Authorization: `Bearer ${token}` }
+// 动态获取 headers 避免 stale token
+function getHeaders() {
+  const t = localStorage.getItem('admin_token')
+  return t ? { Authorization: `Bearer ${t}` } : {}
+}
+const headers = new Proxy({} as Record<string, string>, {
+  get(_, p: string) { return getHeaders()[p as keyof ReturnType<typeof getHeaders>] },
+  has(_, p: string) { return p in getHeaders() },
+  ownKeys() { return Object.keys(getHeaders()) },
+  getOwnPropertyDescriptor(_, p: string) {
+    const v = getHeaders()[p as keyof ReturnType<typeof getHeaders>]
+    return v ? { configurable: true, enumerable: true, value: v } : undefined
+  },
+})
 
 const metrics = reactive([
   { key: 'glucose', icon: '🩸', label: '最近血糖', value: null as string | null, unit: 'mmol/L', loading: true },
@@ -79,7 +91,7 @@ async function loadTodayTasks() {
 }
 
 onMounted(() => {
-  if (token) {
+  if (localStorage.getItem('admin_token')) {
     loadHealthData()
     loadTodayTasks()
   }
