@@ -63,7 +63,7 @@ const router = createRouter({
     {
       path: '/home/today',
       name: 'grower-today',
-      component: () => import('@/views/home/GrowerTodayHome.vue'),
+      component: () => import('@/views/home/GrowerHome.vue'),
       meta: { title: '今日行动' },
       beforeEnter: (_to, _from, next) => {
         if (!localStorage.getItem('bhp_grower_onboarding_done')) {

@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>行健平台 — 行为健康操作系统</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=Rajdhani:wght@300;500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink:        #0A1628;
+    --sky:        #0D47A1;
+    --azure:      #1976D2;
+    --frost:      #42A5F5;
+    --mist:       #E3F0FF;
+    --jade:       #00695C;
+    --amber:      #E65100;
+    --gold:       #F9A825;
+    --paper:      #FAFBFF;
+    --smoke:      rgba(255,255,255,0.06);
+  }
+
+  html, body { height: 100%; overflow-x: hidden; }
+
+  body {
+    background: var(--ink);
+    font-family: 'Noto Serif SC', serif;
+    color: #fff;
+    min-height: 100vh;
+  }
+
+  /* ── Grain overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity: 0.35;
+  }
+
+  /* ── Background mesh ── */
+  .bg-mesh {
+    position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  }
+  .bg-mesh::after {
+    content: '';
+    position: absolute;
+    width: 1200px; height: 1200px;
+    top: -400px; right: -300px;
+    background: radial-gradient(ellipse, rgba(13,71,161,0.5) 0%, transparent 70%);
+    border-radius: 50%;
+    animation: breathe 8s ease-in-out infinite;
+  }
+  .bg-mesh::before {
+    content: '';
+    position: absolute;
+    width: 800px; height: 800px;
+    bottom: -200px; left: -200px;
+    background: radial-gradient(ellipse, rgba(0,105,92,0.3) 0%, transparent 65%);
+    border-radius: 50%;
+    animation: breathe 10s ease-in-out infinite reverse;
+  }
+  @keyframes breathe {
+    0%,100% { transform: scale(1) translate(0,0); }
+    50%      { transform: scale(1.06) translate(20px,-20px); }
+  }
+
+  /* ── Main layout ── */
+  .cover {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    grid-column: 1 / -1;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 28px 56px;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .brand-mark {
+    width: 42px; height: 42px;
+    background: linear-gradient(135deg, var(--azure), var(--frost));
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 900;
+    font-family: 'Noto Serif SC', serif;
+    box-shadow: 0 4px 20px rgba(25,118,210,0.4);
+  }
+  .brand-name {
+    font-size: 18px; font-weight: 700; letter-spacing: 2px;
+    background: linear-gradient(90deg, #fff 60%, rgba(255,255,255,0.5));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .brand-sub { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 1px; margin-top: 2px; }
+  .topbar-meta {
+    display: flex; gap: 24px; align-items: center;
+  }
+  .topbar-badge {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px; font-weight: 500;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .version-tag {
+    background: rgba(66,165,245,0.15);
+    border: 1px solid rgba(66,165,245,0.3);
+    color: var(--frost);
+    font-size: 11px; padding: 4px 12px; border-radius: 20px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 600;
+  }
+
+  /* ── Left panel — Hero ── */
+  .hero-panel {
+    padding: 64px 56px 80px;
+    display: flex; flex-direction: column; justify-content: center;
+  }
+  .eyebrow {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 24px;
+  }
+  .eyebrow-line {
+    width: 32px; height: 2px;
+    background: linear-gradient(90deg, var(--frost), transparent);
+  }
+  .eyebrow-text {
+    font-size: 12px; color: var(--frost); letter-spacing: 3px;
+    font-family: 'Rajdhani', sans-serif; font-weight: 500;
+    text-transform: uppercase;
+  }
+  .hero-title {
+    font-size: clamp(42px, 5vw, 72px);
+    font-weight: 900;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+  .hero-title .char-xing {
+    color: var(--frost);
+    text-shadow: 0 0 40px rgba(66,165,245,0.6);
+  }
+  .hero-title-en {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: clamp(14px, 1.5vw, 20px);
+    font-weight: 300; letter-spacing: 8px;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 32px;
+    text-transform: uppercase;
+  }
+  .hero-tagline {
+    font-size: clamp(18px, 2vw, 26px);
+    font-weight: 700;
+    line-height: 1.5;
+    color: rgba(255,255,255,0.85);
+    margin-bottom: 40px;
+    max-width: 480px;
+    border-left: 3px solid var(--azure);
+    padding-left: 20px;
+  }
+  .hero-tagline em { color: var(--gold); font-style: normal; }
+
+  /* Stats row */
+  .stats-row {
+    display: flex; gap: 40px; margin-bottom: 48px;
+  }
+  .stat-item { }
+  .stat-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 36px; font-weight: 700;
+    color: #fff; line-height: 1;
+    display: flex; align-items: baseline; gap: 4px;
+  }
+  .stat-unit { font-size: 16px; color: var(--frost); }
+  .stat-label { font-size: 12px; color: rgba(255,255,255,0.4); margin-top: 4px; letter-spacing: 1px; }
+  .stat-divider { width: 1px; background: rgba(255,255,255,0.1); }
+
+  /* CTA */
+  .cta-row { display: flex; gap: 16px; align-items: center; }
+  .cta-primary {
+    background: linear-gradient(135deg, var(--sky), var(--azure));
+    color: #fff; border: none; border-radius: 50px;
+    padding: 16px 36px; font-size: 16px; font-weight: 700;
+    cursor: pointer; letter-spacing: 2px;
+    font-family: 'Noto Serif SC', serif;
+    box-shadow: 0 8px 32px rgba(13,71,161,0.5);
+    transition: all 0.3s;
+  }
+  .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(13,71,161,0.7); }
+  .cta-secondary {
+    color: rgba(255,255,255,0.5); font-size: 14px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer; transition: color 0.2s;
+    letter-spacing: 1px;
+  }
+  .cta-secondary:hover { color: rgba(255,255,255,0.8); }
+  .cta-arrow {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  /* ── Right panel — Roles Visual ── */
+  .roles-panel {
+    padding: 64px 56px 80px 24px;
+    display: flex; flex-direction: column; justify-content: center;
+    gap: 14px;
+  }
+  .roles-title {
+    font-size: 13px; color: rgba(255,255,255,0.3);
+    letter-spacing: 3px; text-transform: uppercase;
+    font-family: 'Rajdhani', sans-serif;
+    margin-bottom: 8px;
+  }
+
+  .role-card {
+    background: var(--smoke);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 16px; padding: 16px 20px;
+    display: flex; align-items: center; gap: 16px;
+    transition: all 0.3s; cursor: default;
+    backdrop-filter: blur(10px);
+    position: relative; overflow: hidden;
+  }
+  .role-card::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    border-radius: 3px 0 0 3px;
+  }
+  .role-card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.15);
+    transform: translateX(4px);
+  }
+
+  .role-card--observer::before  { background: #78909C; }
+  .role-card--grower::before    { background: #4CAF50; }
+  .role-card--sharer::before    { background: #2196F3; }
+  .role-card--coach::before     { background: #FF9800; }
+  .role-card--supervisor::before { background: #9C27B0; }
+  .role-card--expert::before    { background: #F44336; }
+  .role-card--institution::before { background: #00BCD4; }
+
+  .role-icon-wrap {
+    width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .role-card--observer  .role-icon-wrap { background: rgba(120,144,156,0.15); }
+  .role-card--grower    .role-icon-wrap { background: rgba(76,175,80,0.15); }
+  .role-card--sharer    .role-icon-wrap { background: rgba(33,150,243,0.15); }
+  .role-card--coach     .role-icon-wrap { background: rgba(255,152,0,0.15); }
+  .role-card--supervisor .role-icon-wrap { background: rgba(156,39,176,0.15); }
+  .role-card--expert    .role-icon-wrap { background: rgba(244,67,54,0.15); }
+  .role-card--institution .role-icon-wrap { background: rgba(0,188,212,0.15); }
+
+  .role-body { flex: 1; }
+  .role-name { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.9); }
+  .role-desc { font-size: 11px; color: rgba(255,255,255,0.4); margin-top: 2px; line-height: 1.5; }
+  .role-badge {
+    font-size: 10px; padding: 3px 10px;
+    border-radius: 20px; font-family: 'Rajdhani', sans-serif;
+    font-weight: 600; letter-spacing: 1px;
+  }
+  .badge-learner   { background: rgba(76,175,80,0.15); color: #A5D6A7; }
+  .badge-pro       { background: rgba(255,152,0,0.15); color: #FFCC80; }
+  .badge-expert    { background: rgba(244,67,54,0.15); color: #EF9A9A; }
+  .badge-new       { background: rgba(66,165,245,0.15); color: #90CAF9; }
+  .badge-org       { background: rgba(0,188,212,0.15); color: #80DEEA; }
+
+  /* ── Bottom bar ── */
+  .bottombar {
+    grid-column: 1 / -1;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 20px 56px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .tech-stack {
+    display: flex; gap: 20px; align-items: center;
+  }
+  .tech-chip {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px; font-weight: 500;
+    color: rgba(255,255,255,0.25); letter-spacing: 1px;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 4px 12px; border-radius: 4px;
+  }
+  .build-info {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px; color: rgba(255,255,255,0.2);
+    letter-spacing: 1px;
+  }
+
+  /* Floating decorative elements */
+  .deco-hex {
+    position: fixed; z-index: 0;
+    opacity: 0.04;
+    font-size: 300px;
+    color: var(--frost);
+    line-height: 1;
+    animation: float 12s ease-in-out infinite;
+  }
+  .deco-hex--1 { top: 10%; left: -80px; animation-delay: 0s; }
+  .deco-hex--2 { bottom: 5%; right: -60px; animation-delay: 4s; font-size: 200px; }
+  @keyframes float {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50%      { transform: translateY(-30px) rotate(5deg); }
+  }
+
+  /* Architecture diagram box (bottom of hero) */
+  .arch-micro {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex; gap: 0; align-items: center;
+    flex-wrap: wrap;
+    max-width: 520px;
+    margin-top: 16px;
+  }
+  .arch-node {
+    font-size: 10px; color: rgba(255,255,255,0.35);
+    padding: 4px 10px; white-space: nowrap;
+    font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px;
+  }
+  .arch-arrow {
+    color: rgba(255,255,255,0.15); font-size: 12px;
+  }
+  .arch-node.highlight {
+    color: var(--frost);
+    background: rgba(66,165,245,0.08);
+    border-radius: 6px;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+<div class="deco-hex deco-hex--1">⬡</div>
+<div class="deco-hex deco-hex--2">⬡</div>
+
+<div class="cover">
+
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">行</div>
+      <div>
+        <div class="brand-name">行健平台</div>
+        <div class="brand-sub">XINGJIANKANG PLATFORM</div>
+      </div>
+    </div>
+    <div class="topbar-meta">
+      <span class="topbar-badge">HEAD = 054</span>
+      <span class="topbar-badge">667+ ENDPOINTS</span>
+      <span class="topbar-badge">48 AI AGENTS</span>
+      <span class="version-tag">V5.3.0</span>
+    </div>
+  </header>
+
+  <!-- Hero Panel (Left) -->
+  <main class="hero-panel">
+    <div class="eyebrow">
+      <div class="eyebrow-line"></div>
+      <span class="eyebrow-text">Behavioral Health Operating System</span>
+    </div>
+
+    <h1 class="hero-title">
+      <span class="char-xing">行</span>为健康<br>操作系统
+    </h1>
+    <p class="hero-title-en">BehaviorOS · 行健平台</p>
+
+    <div class="hero-tagline">
+      让<em>每个角色</em>在首次交互中<br>感受到这是<em>为我设计的</em>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-item">
+        <div class="stat-num">48<span class="stat-unit">类</span></div>
+        <div class="stat-label">AI AGENTS</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-num">667<span class="stat-unit">+</span></div>
+        <div class="stat-label">API ENDPOINTS</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat-item">
+        <div class="stat-num">3<span class="stat-unit">圈</span></div>
+        <div class="stat-label">FLYWHEEL LOOPS</div>
+      </div>
+    </div>
+
+    <div class="cta-row">
+      <button class="cta-primary">立即开始</button>
+      <div class="cta-secondary">
+        <span>查看架构文档</span>
+        <div class="cta-arrow">→</div>
+      </div>
+    </div>
+
+    <div class="arch-micro">
+      <span class="arch-node">Observer</span>
+      <span class="arch-arrow">→</span>
+      <span class="arch-node">Grower</span>
+      <span class="arch-arrow">→</span>
+      <span class="arch-node">Sharer</span>
+      <span class="arch-arrow">→</span>
+      <span class="arch-node highlight">Coach + Expert</span>
+      <span class="arch-arrow">→</span>
+      <span class="arch-node">Supervisor</span>
+      <span class="arch-arrow">→</span>
+      <span class="arch-node">Admin</span>
+    </div>
+  </main>
+
+  <!-- Roles Panel (Right) -->
+  <aside class="roles-panel">
+    <p class="roles-title">角色生态 · Role Ecosystem</p>
+
+    <div class="role-card role-card--observer">
+      <div class="role-icon-wrap">🌱</div>
+      <div class="role-body">
+        <div class="role-name">Observer 体验者</div>
+        <div class="role-desc">情境式入口 · 安全低门槛 · 行为阶段定位</div>
+      </div>
+      <span class="role-badge badge-learner">L0</span>
+    </div>
+
+    <div class="role-card role-card--grower">
+      <div class="role-icon-wrap">📈</div>
+      <div class="role-body">
+        <div class="role-name">Grower 成长者</div>
+        <div class="role-desc">行为稳定度 · 处方任务 · 连续打卡天数</div>
+      </div>
+      <span class="role-badge badge-learner">L1</span>
+    </div>
+
+    <div class="role-card role-card--sharer">
+      <div class="role-icon-wrap">🌟</div>
+      <div class="role-body">
+        <div class="role-name">Sharer 分享者</div>
+        <div class="role-desc">影响力指数 · 贡献通道 · Coach 候选孵化</div>
+      </div>
+      <span class="role-badge badge-learner">L2</span>
+    </div>
+
+    <div class="role-card role-card--coach">
+      <div class="role-icon-wrap">🎯</div>
+      <div class="role-body">
+        <div class="role-name">Coach 健康教练</div>
+        <div class="role-desc">风险自动排序 · AI副驾驶 · 处方审批</div>
+      </div>
+      <span class="role-badge badge-pro">L3</span>
+    </div>
+
+    <div class="role-card role-card--supervisor">
+      <div class="role-icon-wrap">🔬</div>
+      <div class="role-body">
+        <div class="role-name">Supervisor 督导专家</div>
+        <div class="role-desc">循证等级审核 · T1/T2 证据显示 · 质量把关</div>
+      </div>
+      <span class="role-badge badge-pro">L4</span>
+    </div>
+
+    <div class="role-card role-card--expert">
+      <div class="role-icon-wrap">⚕️</div>
+      <div class="role-body">
+        <div class="role-name">Expert 专家独立主体 ★新</div>
+        <div class="role-desc">MODE A/B/C 自主选择 · 行诊智伴 · 私有知识库</div>
+      </div>
+      <span class="role-badge badge-expert">XZB</span>
+    </div>
+
+    <div class="role-card role-card--institution">
+      <div class="role-icon-wrap">🏛️</div>
+      <div class="role-body">
+        <div class="role-name">Institution 机构合作 ★新</div>
+        <div class="role-desc">医院 / 学校 / 企业 · VisionGuard 首个样本</div>
+      </div>
+      <span class="role-badge badge-org">ORG</span>
+    </div>
+  </aside>
+
+  <!-- Bottom Bar -->
+  <footer class="bottombar">
+    <div class="tech-stack">
+      <span class="tech-chip">FastAPI</span>
+      <span class="tech-chip">PostgreSQL 15 + pgvector</span>
+      <span class="tech-chip">Vue 3</span>
+      <span class="tech-chip">Ollama / DeepSeek</span>
+      <span class="tech-chip">Docker Compose</span>
+      <span class="tech-chip">Redis</span>
+    </div>
+    <div class="build-info">
+      BUILD 2026-02-25 · MIGRATION HEAD 054 · 147 ORM MODELS
+    </div>
+  </footer>
+
+</div>
+
+<script>
+  // 角色卡片入场动画
+  document.querySelectorAll('.role-card').forEach((card, i) => {
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(30px)';
+    setTimeout(() => {
+      card.style.transition = 'all 0.5s ease';
+      card.style.opacity = '1';
+      card.style.transform = '';
+    }, 300 + i * 80);
+  });
+
+  // 统计数字动画
+  document.querySelectorAll('.stat-num').forEach(el => {
+    const target = parseFloat(el.textContent);
+    if (isNaN(target)) return;
+    const unit = el.querySelector('.stat-unit')?.textContent || '';
+    el.textContent = '0';
+    if (unit) {
+      const span = document.createElement('span');
+      span.className = 'stat-unit';
+      span.textContent = unit;
+      el.appendChild(span);
+    }
+    let start = 0;
+    const step = target / 40;
+    const timer = setInterval(() => {
+      start = Math.min(start + step, target);
+      const intPart = Math.floor(start);
+      el.firstChild.textContent = intPart;
+      if (start >= target) clearInterval(timer);
+    }, 30);
+  });
+</script>
+</body>
+</html>

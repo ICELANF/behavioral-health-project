@@ -4,7 +4,7 @@ API Dependencies
 
 提供API端点的通用依赖项，如认证、授权等
 """
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -13,7 +13,7 @@ from jose import JWTError, jwt
 from loguru import logger
 
 from core.database import get_db
-from core.models import User
+from core.models import User, UserRole
 from core.auth import verify_token_with_blacklist
 
 # OAuth2密码模式
@@ -117,6 +117,22 @@ def require_coach_or_admin(current_user: User = Depends(get_current_user)) -> Us
             detail="需要教练或管理员权限"
         )
     return current_user
+
+
+def require_roles(allowed_roles: List[UserRole]):
+    """
+    角色白名单依赖工厂 — 返回 Depends 可用的函数
+
+    用法: current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.COACH]))
+    """
+    def _checker(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"需要以下角色之一: {', '.join(r.name for r in allowed_roles)}"
+            )
+        return current_user
+    return _checker
 
 
 def resolve_tenant_ctx(

@@ -56,6 +56,7 @@ class UserRole(str, enum.Enum):
 
     # 系统角色
     ADMIN = "admin"              # L99 系统管理�
+    INSTITUTION_ADMIN = "institution_admin"  # 机构管理员 (V5.3.0 Migration 055)
     SYSTEM = "system"            # 系统账号
 
     # 旧�色（向后兼容，映射到新角色�

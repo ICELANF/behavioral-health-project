@@ -2220,6 +2220,34 @@ except ImportError as e:
     print(f"[API] VisionGuard 路由注册失败: {e}")
 
 
+# ========== 统一首页API ==========
+try:
+    from api.home_api import router as home_router
+    app.include_router(home_router)
+    print("[API] 统一首页API已注册 (1 endpoint: GET /api/v1/home)")
+except ImportError as e:
+    print(f"[API] 统一首页API注册失败: {e}")
+
+
+# ========== Expert 独立AGENT API (V5.3.0) ==========
+try:
+    from api.expert_api import router as expert_api_router
+    app.include_router(expert_api_router)
+    print("[API] Expert独立AGENT API已注册 (18 endpoints: /api/v1/expert)")
+except ImportError as e:
+    print(f"[API] Expert API注册失败: {e}")
+
+# ========== 机构合作 + 合伙人体系 API (V5.3.0) ==========
+try:
+    from api.institution_partner_api import institution_router, partner_router
+    app.include_router(institution_router)
+    app.include_router(partner_router)
+    print("[API] 机构合作API已注册 (6 endpoints: /api/v1/institutions)")
+    print("[API] 合伙人体系API已注册 (6 endpoints: /api/v1/partners)")
+except ImportError as e:
+    print(f"[API] 机构/合伙人API注册失败: {e}")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
