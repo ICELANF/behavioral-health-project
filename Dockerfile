@@ -60,8 +60,8 @@ COPY backend/ ./backend/
 COPY baps/ ./baps/
 COPY behavior_rx/ ./behavior_rx/
 COPY schemas/ ./schemas/
-COPY assistant_agents/ ./assistant_agents/
-COPY professional_agents/ ./professional_agents/
+# [SURGERY] moved to _deprecated/
+# [SURGERY] moved to _deprecated/
 COPY gateway/ ./gateway/
 COPY v3/ ./v3/
 COPY migrations/ ./migrations/
