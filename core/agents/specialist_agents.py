@@ -19,7 +19,7 @@ class CrisisAgent(BaseAgent):
     base_weight = 1.0
     enable_llm = False  # 危机干预必须确定性，不走 LLM
 
-    CRITICAL_KW = ["自杀", "自残", "不想活", "结束生命", "去死", "跳楼", "割腕", "遗书"]
+    CRITICAL_KW = ["自杀", "自残", "不想活", "结束生命", "去死", "跳楼", "割腕", "遗书", "安眠药", "安眠药过量"]
     WARNING_KW = ["活着没意思", "太痛苦了", "撑不下去", "崩溃", "绝望"]
 
     def process(self, inp: AgentInput) -> AgentResult:
@@ -32,7 +32,7 @@ class CrisisAgent(BaseAgent):
                     confidence=1.0,
                     risk_level=RiskLevel.CRITICAL,
                     findings=[f"检测到危急关键词: {kw}"],
-                    recommendations=["立即升级至人工专业支持"],
+                    recommendations=["请立即拨打心理援助热线寻求专业帮助: 400-161-9995", "如有危险请拨打120急救电话"],
                     metadata={"risk_level": "critical", "keyword": kw,
                               "action": "escalate_immediately"},
                 )
@@ -44,7 +44,7 @@ class CrisisAgent(BaseAgent):
                     confidence=0.9,
                     risk_level=RiskLevel.HIGH,
                     findings=[f"检测到警告关键词: {kw}"],
-                    recommendations=["提供共情支持", "评估是否需要升级"],
+                    recommendations=["我们很关心你，建议拨打危机热线获得专业支持: 400-161-9995", "提供共情支持", "评估是否需要升级"],
                     metadata={"risk_level": "warning", "keyword": kw,
                               "action": "soft_support_then_assess"},
                 )
