@@ -1,0 +1,1502 @@
+{
+  "timestamp": "2026-02-27 164142",
+  "total": 166,
+  "passed": 166,
+  "failed": 0,
+  "results": [
+    {
+      "role": "observer",
+      "page": "Home",
+      "method": "GET",
+      "endpoint": "/api/v1/home",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "observer",
+      "page": "Profile",
+      "method": "GET",
+      "endpoint": "/api/v1/auth/me",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "observer",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/flags",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "observer",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/home/motivation-stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "observer",
+      "page": "Chat",
+      "method": "GET",
+      "endpoint": "/api/v1/chat/sessions",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "observer",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "observer",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content/recommended?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "observer",
+      "page": "BehaviorAssessment",
+      "method": "GET",
+      "endpoint": "/api/v1/assessment-assignments/my-pending",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Home",
+      "method": "GET",
+      "endpoint": "/api/v1/home",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Profile",
+      "method": "GET",
+      "endpoint": "/api/v1/auth/me",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/flags",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/home/motivation-stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Chat",
+      "method": "GET",
+      "endpoint": "/api/v1/chat/sessions",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content/recommended?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "BehaviorAssessment",
+      "method": "GET",
+      "endpoint": "/api/v1/assessment-assignments/my-pending",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "GrowerTodayHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach-tip/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "GrowerTodayHome",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-summary",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "DailyTasks",
+      "method": "GET",
+      "endpoint": "/api/v1/daily-tasks/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "DailyTasks",
+      "method": "GET",
+      "endpoint": "/api/v1/daily-tasks/catalog",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/task-pool",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/dashboard/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/glucose?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/blood-pressure?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/weight?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/sleep?limit=14",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "MyCredits",
+      "method": "GET",
+      "endpoint": "/api/v1/credits/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "MyCredits",
+      "method": "GET",
+      "endpoint": "/api/v1/credits/modules",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/my-mentees",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/my-mentors",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "PromotionProgress",
+      "method": "GET",
+      "endpoint": "/api/v1/promotion/progress",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "PromotionProgress",
+      "method": "GET",
+      "endpoint": "/api/v1/promotion/rules",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "MyPlan",
+      "method": "GET",
+      "endpoint": "/api/v1/programs/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "MyPlan",
+      "method": "GET",
+      "endpoint": "/api/v1/assessment-assignments/pushed-list",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "WeeklyReport",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-reports/latest",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "WeeklyReport",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-reports",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/messages/inbox",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/messages/unread-count",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/alerts/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/reminders",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "grower",
+      "page": "DataSync",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/devices",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Home",
+      "method": "GET",
+      "endpoint": "/api/v1/home",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Profile",
+      "method": "GET",
+      "endpoint": "/api/v1/auth/me",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/flags",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/home/motivation-stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Chat",
+      "method": "GET",
+      "endpoint": "/api/v1/chat/sessions",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content/recommended?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "BehaviorAssessment",
+      "method": "GET",
+      "endpoint": "/api/v1/assessment-assignments/my-pending",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "GrowerTodayHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach-tip/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "GrowerTodayHome",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-summary",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "DailyTasks",
+      "method": "GET",
+      "endpoint": "/api/v1/daily-tasks/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "DailyTasks",
+      "method": "GET",
+      "endpoint": "/api/v1/daily-tasks/catalog",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/task-pool",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/dashboard/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/glucose?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/blood-pressure?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/weight?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/sleep?limit=14",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "MyCredits",
+      "method": "GET",
+      "endpoint": "/api/v1/credits/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "MyCredits",
+      "method": "GET",
+      "endpoint": "/api/v1/credits/modules",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/my-mentees",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/my-mentors",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "PromotionProgress",
+      "method": "GET",
+      "endpoint": "/api/v1/promotion/progress",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "PromotionProgress",
+      "method": "GET",
+      "endpoint": "/api/v1/promotion/rules",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "MyPlan",
+      "method": "GET",
+      "endpoint": "/api/v1/programs/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "MyPlan",
+      "method": "GET",
+      "endpoint": "/api/v1/assessment-assignments/pushed-list",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "WeeklyReport",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-reports/latest",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "WeeklyReport",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-reports",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/messages/inbox",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/messages/unread-count",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/alerts/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/reminders",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "DataSync",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/devices",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "sharer",
+      "page": "Contribute",
+      "method": "GET",
+      "endpoint": "/api/v1/contributions/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Home",
+      "method": "GET",
+      "endpoint": "/api/v1/home",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Profile",
+      "method": "GET",
+      "endpoint": "/api/v1/auth/me",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/flags",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/home/motivation-stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Chat",
+      "method": "GET",
+      "endpoint": "/api/v1/chat/sessions",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content/recommended?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "BehaviorAssessment",
+      "method": "GET",
+      "endpoint": "/api/v1/assessment-assignments/my-pending",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "GrowerTodayHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach-tip/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "GrowerTodayHome",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-summary",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "DailyTasks",
+      "method": "GET",
+      "endpoint": "/api/v1/daily-tasks/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "DailyTasks",
+      "method": "GET",
+      "endpoint": "/api/v1/daily-tasks/catalog",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/task-pool",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/dashboard/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/glucose?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/blood-pressure?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/weight?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/sleep?limit=14",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "MyCredits",
+      "method": "GET",
+      "endpoint": "/api/v1/credits/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "MyCredits",
+      "method": "GET",
+      "endpoint": "/api/v1/credits/modules",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/my-mentees",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/my-mentors",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "PromotionProgress",
+      "method": "GET",
+      "endpoint": "/api/v1/promotion/progress",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "PromotionProgress",
+      "method": "GET",
+      "endpoint": "/api/v1/promotion/rules",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "MyPlan",
+      "method": "GET",
+      "endpoint": "/api/v1/programs/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "MyPlan",
+      "method": "GET",
+      "endpoint": "/api/v1/assessment-assignments/pushed-list",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "WeeklyReport",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-reports/latest",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "WeeklyReport",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-reports",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/messages/inbox",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/messages/unread-count",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/alerts/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/reminders",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "DataSync",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/devices",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "Contribute",
+      "method": "GET",
+      "endpoint": "/api/v1/contributions/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "CoachHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach/dashboard-stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "CoachHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach/students?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "CoachHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach-push/pending?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "CoachManagement",
+      "method": "GET",
+      "endpoint": "/api/v1/coach/students",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "coach",
+      "page": "CoachManagement",
+      "method": "GET",
+      "endpoint": "/api/v1/coach/performance",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Home",
+      "method": "GET",
+      "endpoint": "/api/v1/home",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Profile",
+      "method": "GET",
+      "endpoint": "/api/v1/auth/me",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/flags",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Public",
+      "method": "GET",
+      "endpoint": "/api/v1/home/motivation-stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Chat",
+      "method": "GET",
+      "endpoint": "/api/v1/chat/sessions",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "LearnCenter",
+      "method": "GET",
+      "endpoint": "/api/v1/content/recommended?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "BehaviorAssessment",
+      "method": "GET",
+      "endpoint": "/api/v1/assessment-assignments/my-pending",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "GrowerTodayHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach-tip/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "GrowerTodayHome",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-summary",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "DailyTasks",
+      "method": "GET",
+      "endpoint": "/api/v1/daily-tasks/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "DailyTasks",
+      "method": "GET",
+      "endpoint": "/api/v1/daily-tasks/catalog",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Tasks",
+      "method": "GET",
+      "endpoint": "/api/v1/micro-actions/task-pool",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/dashboard/today",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/glucose?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/blood-pressure?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/weight?limit=20",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "HealthRecords",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/sleep?limit=14",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "MyCredits",
+      "method": "GET",
+      "endpoint": "/api/v1/credits/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "MyCredits",
+      "method": "GET",
+      "endpoint": "/api/v1/credits/modules",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/my-mentees",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "MyCompanions",
+      "method": "GET",
+      "endpoint": "/api/v1/companions/my-mentors",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "PromotionProgress",
+      "method": "GET",
+      "endpoint": "/api/v1/promotion/progress",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "PromotionProgress",
+      "method": "GET",
+      "endpoint": "/api/v1/promotion/rules",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "MyPlan",
+      "method": "GET",
+      "endpoint": "/api/v1/programs/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "MyPlan",
+      "method": "GET",
+      "endpoint": "/api/v1/assessment-assignments/pushed-list",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "WeeklyReport",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-reports/latest",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "WeeklyReport",
+      "method": "GET",
+      "endpoint": "/api/v1/weekly-reports",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/messages/inbox",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/messages/unread-count",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/alerts/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Notifications",
+      "method": "GET",
+      "endpoint": "/api/v1/reminders",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "DataSync",
+      "method": "GET",
+      "endpoint": "/api/v1/mp/device/devices",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "Contribute",
+      "method": "GET",
+      "endpoint": "/api/v1/contributions/my",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "CoachHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach/dashboard-stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "CoachHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach/students?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "CoachHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach-push/pending?limit=5",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "CoachManagement",
+      "method": "GET",
+      "endpoint": "/api/v1/coach/students",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "CoachManagement",
+      "method": "GET",
+      "endpoint": "/api/v1/coach/performance",
+      "status": 200,
+      "passed": true,
+      "error": null
+    },
+    {
+      "role": "promoter",
+      "page": "ProHome",
+      "method": "GET",
+      "endpoint": "/api/v1/coach/dashboard-stats",
+      "status": 200,
+      "passed": true,
+      "error": null
+    }
+  ]
+}

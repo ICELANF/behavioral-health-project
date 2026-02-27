@@ -27,11 +27,14 @@ export function track(event: string, properties?: Record<string, any>): void {
 /** Flush queued events to backend */
 async function flush(): Promise<void> {
   if (queue.length === 0) return
+  // 无 token 时丢弃事件，避免 401 循环
+  const token = localStorage.getItem('h5_token')
+  if (!token) { queue.length = 0; return }
   const batch = queue.splice(0, 100)
   try {
     await api.post('/api/v1/events/track', { events: batch })
   } catch {
-    // Put events back on failure (best-effort)
+    // Put events back on failure (best-effort, 最多保留50条)
     queue.unshift(...batch.slice(0, 50))
   }
 }

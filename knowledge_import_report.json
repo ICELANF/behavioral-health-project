@@ -1,0 +1,171 @@
+{
+  "timestamp": "2026-02-27 21:24:30",
+  "source_dir": "G:/知识库",
+  "dry_run": false,
+  "total": 15,
+  "passed": 15,
+  "failed": 0,
+  "domain_distribution": {
+    "nutrition": 13,
+    "exercise": 1,
+    "cognitive": 1
+  },
+  "evidence_distribution": {
+    "T1": 8,
+    "T2": 6,
+    "T3": 0,
+    "T4": 1
+  },
+  "results": [
+    {
+      "filename": "国家基层糖尿病防治管理指南2022_知识库版.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T1",
+      "priority": 9,
+      "description": "国家卫健委《国家基层糖尿病防治管理指南(2022版)》——糖尿病综合管理权威依据",
+      "status": "ok",
+      "job_id": 16,
+      "chunks": 53
+    },
+    {
+      "filename": "ACLM生活方式干预糖尿病指南2025_知识库版.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T1",
+      "priority": 9,
+      "description": "美国生活方式医学学会(ACLM)《生活方式干预糖尿病循证指南(2025)》",
+      "status": "ok",
+      "job_id": 17,
+      "chunks": 36
+    },
+    {
+      "filename": "acsm_exercise_prescription_guideline.md",
+      "domain_id": "exercise",
+      "evidence_tier": "T1",
+      "priority": 9,
+      "description": "ACSM美国运动医学学会《运动处方指南》——慢病运动干预权威参考",
+      "status": "ok",
+      "job_id": 18,
+      "chunks": 41
+    },
+    {
+      "filename": "bgm_clinical_guideline_2021.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T1",
+      "priority": 8,
+      "description": "《血糖监测临床应用指南(2021)》——BGM/CGM规范使用依据",
+      "status": "ok",
+      "job_id": 19,
+      "chunks": 19
+    },
+    {
+      "filename": "动态葡萄糖图谱_AGP_报告临床应用指南.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T1",
+      "priority": 8,
+      "description": "《动态葡萄糖图谱(AGP)报告临床应用国际共识》——CGM报告解读规范",
+      "status": "ok",
+      "job_id": 20,
+      "chunks": 39
+    },
+    {
+      "filename": "成人肥胖食养指南-BHP知识库文档.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T1",
+      "priority": 8,
+      "description": "国家卫健委《成人肥胖食养指南》——肥胖营养干预权威依据",
+      "status": "ok",
+      "job_id": 21,
+      "chunks": 45
+    },
+    {
+      "filename": "成人高血压食养指南2023_BHP知识库文档.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T1",
+      "priority": 8,
+      "description": "国家卫健委《成人高血压食养指南(2023)》——高血压膳食管理规范",
+      "status": "ok",
+      "job_id": 22,
+      "chunks": 50
+    },
+    {
+      "filename": "成人高脂血症食养指南2023_BHP知识库文档.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T1",
+      "priority": 8,
+      "description": "国家卫健委《成人高脂血症食养指南(2023)》——血脂异常膳食干预",
+      "status": "ok",
+      "job_id": 23,
+      "chunks": 50
+    },
+    {
+      "filename": "缓解2型糖尿病中国专家共识_知识库版.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T2",
+      "priority": 8,
+      "description": "《缓解2型糖尿病中国专家共识》——低热量饮食/代谢手术/生活方式干预路径",
+      "status": "ok",
+      "job_id": 24,
+      "chunks": 51
+    },
+    {
+      "filename": "LADA诊疗中国专家共识2021版解读.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T2",
+      "priority": 7,
+      "description": "《成人隐匿性自身免疫糖尿病(LADA)诊疗中国专家共识(2021)》解读",
+      "status": "ok",
+      "job_id": 25,
+      "chunks": 34
+    },
+    {
+      "filename": "成人隐匿性自身免疫糖尿病_LADA_临床指南.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T2",
+      "priority": 7,
+      "description": "成人LADA临床指南——自身免疫糖尿病鉴别诊断与个性化治疗方案",
+      "status": "ok",
+      "job_id": 26,
+      "chunks": 38
+    },
+    {
+      "filename": "diabetes_dietary_guide.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T2",
+      "priority": 7,
+      "description": "糖尿病饮食实用指导——膳食计划/食物交换份/GI指数/餐后血糖管理",
+      "status": "ok",
+      "job_id": 27,
+      "chunks": 43
+    },
+    {
+      "filename": "hyperuricemia_gout_dietary_guide.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T2",
+      "priority": 7,
+      "description": "高尿酸血症与痛风食养指南——嘌呤管理/食物分级/生活方式干预",
+      "status": "ok",
+      "job_id": 28,
+      "chunks": 37
+    },
+    {
+      "filename": "儿童青少年肥胖食养知识库_BHP.md",
+      "domain_id": "nutrition",
+      "evidence_tier": "T2",
+      "priority": 7,
+      "description": "儿童青少年肥胖食养知识库——针对未成年群体营养干预与家庭管理策略",
+      "status": "ok",
+      "job_id": 29,
+      "chunks": 48
+    },
+    {
+      "filename": "行为健康数字平台标准规则知识库.md",
+      "domain_id": "cognitive",
+      "evidence_tier": "T4",
+      "priority": 5,
+      "description": "行为健康数字平台内部标准规则知识库——平台行为干预规范与执行流程参考",
+      "status": "ok",
+      "job_id": 30,
+      "chunks": 40
+    }
+  ]
+}
