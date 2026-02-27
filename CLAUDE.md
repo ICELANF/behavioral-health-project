@@ -1,7 +1,7 @@
 # CLAUDE.md — 行健平台 (BehaviorOS) 项目契约
 
-> 最后更新: 2026-02-27 (架构手术完成)
-> Git tag: `surgery-complete-20260227`
+> 最后更新: 2026-02-28 (Phase 4 清退完成)
+> Git tag: `cleanup-phase4-20260228`
 
 ## 项目概述
 
@@ -21,6 +21,7 @@
 CrisisAgent.priority = 0  (最高优先级，永远第一个执行)
 任何涉及自杀/自残关键词 → 必须返回 risk_level=critical + 热线 400-161-9995
 绝不允许任何代码修改降低 CrisisAgent 优先级或绕过危机检测
+全链路已验证: InputFilter → Router → CrisisAgent → GenerationGuard ✅
 ```
 
 ### 2. Registry 冻结铁律
@@ -46,14 +47,24 @@ MicroActionTask.domain ∈ {nutrition, exercise, sleep, emotion, stress, cogniti
 任何新 Agent 读写任务数据必须遵守以上枚举
 ```
 
+### 5. MasterAgent 统一入口铁律 (Phase 4 新增)
+```
+所有代码必须通过 api.main.get_master_agent() 获取 MasterAgent
+禁止: from core.master_agent import MasterAgent; MasterAgent()  ← 直接实例化
+禁止: from core.master_agent_v0 import MasterAgentV0            ← v0 直接引用
+允许: from core.master_agent import DeviceData, CGMData...      ← 纯数据类型引用
+```
+
 ---
 
-## 📁 项目结构 (手术后)
+## 📁 项目结构 (Phase 4 完成)
 
 ```
 behavioral-health-project/
 ├── api/
-│   └── main.py                    # FastAPI 入口 (get_master_agent → Registry 版本)
+│   ├── main.py                    # FastAPI 入口 (get_master_agent → Registry 版本)
+│   ├── agent_api.py               # ★ Phase 4: 统一使用 get_master_agent()
+│   └── expert_agent_api.py        # ★ Phase 4: 统一使用 get_master_agent()
 ├── core/
 │   ├── agents/
 │   │   ├── __init__.py            # 公共导出
@@ -65,33 +76,41 @@ behavioral-health-project/
 │   │   ├── router.py              # ★ AgentRouter (关键词+数据+权重)
 │   │   ├── specialist_agents.py   # 领域专家 Agent (crisis/sleep/glucose/...)
 │   │   ├── startup.py             # ★ create_registry() 启动入口
-│   │   └── user_agents/           # ★ Phase 3 新增
+│   │   └── user_agents/           # Phase 3 用户端 Agent
 │   │       ├── health_assistant.py
 │   │       ├── habit_tracker.py
 │   │       └── onboarding_guide.py
-│   ├── intervention/              # ★ Phase 2 新增
+│   ├── intervention/              # Phase 2 干预计划
 │   │   ├── action_plan.py
 │   │   └── daily_briefing.py
 │   ├── safety/
-│   │   ├── input_filter.py        # 输入层安全过滤
-│   │   └── generation_guard.py    # 输出层安全守卫
-│   ├── master_agent_unified.py    # 降级 stub (→ 重定向到新 MasterAgent)
+│   │   ├── input_filter.py        # 输入层安全过滤 ✅ 已验证
+│   │   └── generation_guard.py    # 输出层安全守卫 ✅ 已验证
+│   ├── master_agent_unified.py    # 降级 stub (api/main.py fallback)
 │   └── master_agent_v0.py         # 遗留 v0 (6874行, 仅做数据类型引用)
 ├── behavior_rx/                   # 行为处方引擎
+├── v3/routers/                    # v3 路由 (8个, 前端仍在使用, 暂保留)
 ├── services/
-│   ├── micro_action_service.py    # 微行动服务
-│   └── batch_ingestion_service.py # 知识库批量摄入
-├── _deprecated/                   # ★ 手术归档
+│   ├── micro_action_service.py
+│   └── batch_ingestion_service.py
+├── _deprecated/                   # 归档区
 │   ├── assistant_agents/          # 原用户层 (未激活)
 │   ├── professional_agents/       # 原教练层 (未激活)
+│   ├── behavior_rx_patches/       # ★ Phase 4: v0 monkey-patch 归档
 │   ├── master_agent_v6.py.bak
 │   └── master_agent_unified_original.py
 ├── tests/
 │   ├── test_crisis_smoke.py       # 危机冒烟 (32/32)
 │   ├── test_golden_baseline.py    # 金色基线 (8/8)
-│   └── test_consistency.py        # 一致性 (31/32)
-└── surgery_code/                  # 手术代码包 (可删除)
+│   └── test_consistency.py        # 一致性 (32/32)
+└── CLAUDE.md                      # 本文件
 ```
+
+**已删除目录** (Phase 4):
+- `behavior_rx_v32_complete/` — 重复备份 (TD-4)
+- `master_agent_merge/` — 临时合并代码 (TD-5)
+- `surgery_code/` — 手术代码包
+- `apply_patches.py` / `fix_crisis.py` — 旧手术脚本
 
 ---
 
@@ -119,21 +138,21 @@ behavioral-health-project/
 | MetabolicExpertAgent | behavior_rx | 1 | 0.9 | behavior_rx/ |
 | CardiacExpertAgent | behavior_rx | 1 | 0.9 | behavior_rx/ |
 | AdherenceExpertAgent | behavior_rx | 1 | 0.9 | behavior_rx/ |
-| **HealthAssistantAgent** | health_assistant | 5 | 0.65 | user_agents/ |
-| **HabitTrackerAgent** | habit_tracker | 5 | 0.6 | user_agents/ |
-| **OnboardingGuideAgent** | onboarding_guide | 4 | 0.7 | user_agents/ |
+| HealthAssistantAgent | health_assistant | 5 | 0.65 | user_agents/ |
+| HabitTrackerAgent | habit_tracker | 5 | 0.6 | user_agents/ |
+| OnboardingGuideAgent | onboarding_guide | 4 | 0.7 | user_agents/ |
 
 ### 请求处理流程
 
 ```
-用户消息 → InputFilter (安全过滤)
+用户消息 → InputFilter (安全过滤) ✅
          → MasterAgent.process()
            → AgentRouter.route() (关键词+数据+权重)
            → [Agent1, Agent2, ...].process()
            → MultiAgentCoordinator.coordinate()
            → InterventionPlan (如需)
            → ResponseSynthesizer
-         → GenerationGuard (输出安全)
+         → GenerationGuard (输出安全) ✅
          → 返回响应
 ```
 
@@ -141,12 +160,17 @@ behavioral-health-project/
 
 ```python
 # 统一入口 (api/main.py)
-from api.main import get_master_agent
-ma = get_master_agent()              # 返回 MasterAgent (Registry 版本)
-ma.process(user_id, message, ...)    # 主处理
-ma.chat(user_id, message)            # 简化聊天
-ma.sync_device_data(user_id, data)   # 设备数据同步
-ma.submit_assessment(user_id, data)  # 评估提交
+from api.main import get_master_agent       # ← 唯一正确方式
+ma = get_master_agent()
+ma.process(user_id, message, ...)           # 主处理
+ma.chat(user_id, message)                   # 简化聊天
+ma.sync_device_data(user_id, data)          # 设备数据同步
+ma.submit_assessment(user_id, data)         # 评估提交
+
+# ❌ 禁止:
+# from core.master_agent import MasterAgent; MasterAgent()
+# from core.master_agent_v0 import MasterAgentV0
+# from api.main import get_agent_master  ← deprecated alias
 ```
 
 ---
@@ -166,29 +190,22 @@ ma.submit_assessment(user_id, data)  # 评估提交
 ### Git 工作流
 
 ```bash
-git tag pre-surgery-20260227     # 手术前快照
-git tag surgery-complete-20260227 # 手术完成
+git tag pre-surgery-20260227        # 手术前快照
+git tag surgery-complete-20260227   # 手术完成
+git tag cleanup-phase4-20260228    # Phase 4 清退完成
 # 回滚: git checkout pre-surgery-20260227
 ```
 
 ### Docker 操作
 
 ```bash
-docker-compose build             # 重建镜像
-docker-compose up -d             # 启动
+docker-compose build
+docker-compose up -d
 docker exec bhp_v3_api pytest tests/test_crisis_smoke.py -v
 docker exec bhp_v3_api pytest tests/test_golden_baseline.py -v
 docker exec bhp_v3_api pytest tests/test_consistency.py -v
-docker logs bhp_v3_api --tail 50 # 查看日志
+docker logs bhp_v3_api --tail 50
 ```
-
-### 环境变量
-
-| 变量 | 值 | 来源 |
-|------|-----|------|
-| LOG_LEVEL | INFO | docker-compose.yml (必须大写) |
-| DATABASE_URL | postgresql://... | .env |
-| REDIS_URL | redis://... | .env |
 
 ---
 
@@ -196,12 +213,14 @@ docker logs bhp_v3_api --tail 50 # 查看日志
 
 | ID | 问题 | 严重度 | 状态 |
 |----|------|--------|------|
-| TD-1 | `core/master_agent_v0.py` 6874行遗留代码 | 中 | Phase 4 清退 |
-| TD-2 | `core/master_agent_unified.py` stub 仍存在 | 低 | Phase 4 清退 |
-| TD-3 | `api/agent_api.py` 多处直接 `MasterAgent()` 实例化 | 中 | Phase 4 统一 |
-| TD-4 | `behavior_rx_v32_complete/` 重复目录 | 低 | 可直接删除 |
-| TD-5 | `master_agent_merge/` 临时合并代码 | 低 | 可直接删除 |
-| TD-6 | HabitTracker streak_days 从 context 读取，mock 测试不匹配 | 低 | 测试修复 |
+| TD-1 | `core/master_agent_v0.py` 6874行遗留代码 | 中 | 仅数据类型引用，Phase 5 清退 |
+| TD-2 | `core/master_agent_unified.py` stub | 低 | api/main.py fallback 用，Phase 5 清退 |
+| ~~TD-3~~ | ~~agent_api.py 直接 MasterAgent() 实例化~~ | — | ✅ Phase 4 已修复 |
+| ~~TD-4~~ | ~~behavior_rx_v32_complete/ 重复目录~~ | — | ✅ Phase 4 已删除 |
+| ~~TD-5~~ | ~~master_agent_merge/ 临时合并代码~~ | — | ✅ Phase 4 已删除 |
+| ~~TD-6~~ | ~~HabitTracker streak_days 测试不匹配~~ | — | ✅ Phase 4 已修复 |
+| TD-7 | v3 路由 8 个 router 前端仍在使用 | 低 | 前端迁移后清退 |
+| TD-8 | api/main.py L1559 DeviceData 从 core.master_agent 引用 | 低 | 数据类提取后清退 |
 
 ---
 
@@ -209,7 +228,34 @@ docker logs bhp_v3_api --tail 50 # 查看日志
 
 | 阶段 | 内容 | 优先级 |
 |------|------|--------|
-| Phase 4 | v3 import 路径清退 (20个端点迁移) | P1 |
-| 加固 | CrisisAgent 安全 pipeline 全链路闭环 | P1 |
-| 扩展 | 第二类 Agent (rx_composer/chronic_manager) | P2 |
-| 清理 | 删除 behavior_rx_v32_complete/ master_agent_merge/ | P3 |
+| **P3 联调** | 6角色端到端旅程走通 | P1 |
+| **P3 部署** | Docker + alembic + CI/CD | P1 |
+| P3 安全 | 渗透测试 (SQL注入/XSS/CSRF) | P2 |
+| Phase 5 | v0/unified stub 最终清退 | P3 |
+| Phase 5 | v3 路由废弃 (前端迁移后) | P3 |
+| 扩展 | 第二类 Agent (rx_composer/chronic_manager) | P3 |
+
+---
+
+## 📊 测试状态
+
+```
+测试套件: 72 passed / 0 failed
+  - test_crisis_smoke.py:    32/32 ✅
+  - test_golden_baseline.py:  8/8  ✅
+  - test_consistency.py:     32/32 ✅
+
+CrisisAgent 全链路:
+  InputFilter ✅ → Router ✅ → CrisisAgent(p=0) ✅ → 热线 ✅ → GenerationGuard ✅ → MasterAgent e2e ✅
+```
+
+---
+
+## 📜 变更历史
+
+| 日期 | Tag | 变更 |
+|------|-----|------|
+| 2026-02-27 | `pre-surgery-20260227` | 手术前快照 |
+| 2026-02-27 | `surgery-complete-20260227` | P0-P3 架构手术完成 |
+| 2026-02-27 | — | CrisisAgent 关键词+热线修复 (32/32) |
+| 2026-02-28 | `cleanup-phase4-20260228` | Phase 4: TD-3~TD-6 清退, v0 import 清理 |
