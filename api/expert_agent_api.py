@@ -2,9 +2,7 @@
 """
 Expert Agent API - 专家自助 Agent CRUD
 
-专家在自己的租户下创建/管理动态 Agent (dynamic_llm 模板)。
-所有写操作会同步更新 AgentTemplate + TenantAgentMapping + 缓存。
-"""
+专家在自己的租户下创�?管理动�?Agent (dynamic_llm 模板)�?所有写操作会同步更�?AgentTemplate + TenantAgentMapping + 缓存�?"""
 import re
 from datetime import datetime
 from typing import Optional, List, Dict, Any
@@ -29,12 +27,12 @@ _NAME_SUFFIX_RE = re.compile(r"^[a-z][a-z0-9_]{2,19}$")
 # ---------------------------------------------------------------------------
 
 class CreateAgentRequest(BaseModel):
-    name_suffix: str = Field(..., description="Agent 后缀名, 如 gut_health")
+    name_suffix: str = Field(..., description="Agent 后缀�? �?gut_health")
     display_name: str = Field(..., max_length=64, description="显示名称")
-    system_prompt: str = Field("", description="系统提示词")
-    keywords: List[str] = Field(default_factory=list, description="路由关键词")
+    system_prompt: str = Field("", description="系统提示�?)
+    keywords: List[str] = Field(default_factory=list, description="路由关键�?)
     correlations: List[str] = Field(default_factory=list, description="关联 Agent")
-    priority: int = Field(5, ge=1, le=10, description="优先级 1-10")
+    priority: int = Field(5, ge=1, le=10, description="优先�?1-10")
     description: str = Field("", max_length=256)
     evidence_tier: str = Field("T3", description="循证等级 T1/T2/T3/T4 (I-09)")
 
@@ -61,14 +59,14 @@ def _verify_tenant_owner(
     current_user: User,
     db: Session,
 ) -> ExpertTenant:
-    """校验 tenant 归属: 必须是 owner 或 admin"""
+    """校验 tenant 归属: 必须�?owner �?admin"""
     tenant = db.query(ExpertTenant).filter(
         ExpertTenant.id == tenant_id,
     ).first()
     if not tenant:
-        raise HTTPException(status_code=404, detail="租户不存在")
+        raise HTTPException(status_code=404, detail="租户不存�?)
     if tenant.expert_user_id != current_user.id and current_user.role.value != "admin":
-        raise HTTPException(status_code=403, detail="无权操作此租户")
+        raise HTTPException(status_code=403, detail="无权操作此租�?)
     return tenant
 
 
@@ -97,25 +95,24 @@ async def create_agent(
     current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
-    """创建专家自定义 Agent (dynamic_llm 模板 + TenantAgentMapping)"""
+    """创建专家自定�?Agent (dynamic_llm 模板 + TenantAgentMapping)"""
     tenant = _verify_tenant_owner(tenant_id, current_user, db)
 
     # 校验 name_suffix
     if not _NAME_SUFFIX_RE.match(req.name_suffix):
         raise HTTPException(
             status_code=400,
-            detail="name_suffix 必须: 小写字母开头, 3-20位, 仅含小写字母/数字/下划线",
+            detail="name_suffix 必须: 小写字母开�? 3-20�? 仅含小写字母/数字/下划�?,
         )
 
     # 生成全局唯一 agent_id
-    # 从 tenant_id 取 slug (前16字符, 移除非字母数字)
+    # �?tenant_id �?slug (�?6字符, 移除非字母数�?
     slug = re.sub(r"[^a-z0-9]", "", tenant_id.lower())[:16]
     agent_id = f"{slug}_{req.name_suffix}"
 
-    # 检查重复
-    existing = db.query(AgentTemplate).filter(AgentTemplate.agent_id == agent_id).first()
+    # 检查重�?    existing = db.query(AgentTemplate).filter(AgentTemplate.agent_id == agent_id).first()
     if existing:
-        raise HTTPException(status_code=409, detail=f"Agent ID '{agent_id}' 已存在")
+        raise HTTPException(status_code=409, detail=f"Agent ID '{agent_id}' 已存�?)
 
     # I-09: 循证等级权限校验
     evidence_tier = getattr(req, "evidence_tier", "T3") or "T3"
@@ -126,7 +123,7 @@ async def create_agent(
     if _ROLE_LEVEL_MAP.get(user_role, 0) < _ROLE_LEVEL_MAP.get(min_role, 0):
         raise HTTPException(
             status_code=403,
-            detail=f"循证等级 {evidence_tier} 需要 {min_role} 或更高权限",
+            detail=f"循证等级 {evidence_tier} 需�?{min_role} 或更高权�?,
         )
 
     # 1. 创建 AgentTemplate
@@ -188,7 +185,7 @@ async def list_my_agents(
     current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
-    """列出专家自己的 Agent (含预置 + 自建)"""
+    """列出专家自己�?Agent (含预�?+ 自建)"""
     _verify_tenant_owner(tenant_id, current_user, db)
 
     mappings = db.query(TenantAgentMapping).filter(
@@ -228,21 +225,21 @@ async def update_agent(
     current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
-    """更新 Agent 的 prompt/keywords/correlations"""
+    """更新 Agent �?prompt/keywords/correlations"""
     _verify_tenant_owner(tenant_id, current_user, db)
 
     tpl = db.query(AgentTemplate).filter(AgentTemplate.agent_id == agent_id).first()
     if not tpl:
-        raise HTTPException(status_code=404, detail="Agent 模板不存在")
+        raise HTTPException(status_code=404, detail="Agent 模板不存�?)
 
     mapping = db.query(TenantAgentMapping).filter(
         TenantAgentMapping.tenant_id == tenant_id,
         TenantAgentMapping.agent_id == agent_id,
     ).first()
     if not mapping:
-        raise HTTPException(status_code=404, detail="租户 Agent 映射不存在")
+        raise HTTPException(status_code=404, detail="租户 Agent 映射不存�?)
 
-    # 更新 AgentTemplate (仅非预置 Agent 可修改 system_prompt)
+    # 更新 AgentTemplate (仅非预置 Agent 可修�?system_prompt)
     if req.display_name is not None:
         tpl.display_name = req.display_name
         mapping.display_name = req.display_name
@@ -281,14 +278,14 @@ async def toggle_agent(
     _verify_tenant_owner(tenant_id, current_user, db)
 
     if agent_id in FORCED_AGENTS:
-        raise HTTPException(status_code=400, detail=f"'{agent_id}' 是强制Agent，不可停用")
+        raise HTTPException(status_code=400, detail=f"'{agent_id}' 是强制Agent，不可停�?)
 
     mapping = db.query(TenantAgentMapping).filter(
         TenantAgentMapping.tenant_id == tenant_id,
         TenantAgentMapping.agent_id == agent_id,
     ).first()
     if not mapping:
-        raise HTTPException(status_code=404, detail="租户 Agent 映射不存在")
+        raise HTTPException(status_code=404, detail="租户 Agent 映射不存�?)
 
     mapping.is_enabled = not mapping.is_enabled
 
@@ -317,7 +314,7 @@ async def init_default_agents(
     current_user: User = Depends(require_coach_or_admin),
     db: Session = Depends(get_db),
 ):
-    """I-05: 基于角色初始化默认 Agent + 合并强制 Agent"""
+    """I-05: 基于角色初始化默�?Agent + 合并强制 Agent"""
     _verify_tenant_owner(tenant_id, current_user, db)
 
     import json, os
@@ -341,7 +338,7 @@ async def init_default_agents(
 
     tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
     if not tenant:
-        raise HTTPException(status_code=404, detail="租户不存在")
+        raise HTTPException(status_code=404, detail="租户不存�?)
 
     # 更新 enabled_agents
     tenant.enabled_agents = merged
@@ -367,7 +364,7 @@ async def init_default_agents(
     return {
         "success": True,
         "data": {"enabled_agents": merged, "role": role_val},
-        "message": f"已初始化 {len(merged)} 个默认 Agent (角色: {role_val})",
+        "message": f"已初始化 {len(merged)} 个默�?Agent (角色: {role_val})",
     }
 
 
@@ -386,8 +383,7 @@ async def test_routing(
 
     tenant_ctx = get_tenant_routing_context(tenant_id, db)
 
-    # 构造测试输入
-    test_input = AgentInput(
+    # 构造测试输�?    test_input = AgentInput(
         user_id=current_user.id,
         message=req.message,
         intent="",
@@ -399,8 +395,8 @@ async def test_routing(
     # 平台默认路由
     platform_route = []
     try:
-        from api.main import get_agent_master
-        am = get_agent_master()
+        from api.main import get_master_agent
+        am = get_master_agent()
         if am and hasattr(am, "router"):
             platform_route = am.router.route(test_input, tenant_ctx=None)
     except Exception:
@@ -409,8 +405,8 @@ async def test_routing(
     # 租户定制路由
     tenant_route = []
     try:
-        from api.main import get_agent_master
-        am = get_agent_master()
+        from api.main import get_master_agent
+        am = get_master_agent()
         if am and hasattr(am, "router"):
             tenant_route = am.router.route(test_input, tenant_ctx=tenant_ctx)
     except Exception:
@@ -443,9 +439,9 @@ async def delete_agent(
 
     tpl = db.query(AgentTemplate).filter(AgentTemplate.agent_id == agent_id).first()
     if not tpl:
-        raise HTTPException(status_code=404, detail="Agent 模板不存在")
+        raise HTTPException(status_code=404, detail="Agent 模板不存�?)
     if tpl.is_preset:
-        raise HTTPException(status_code=400, detail="预置 Agent 不可删除, 请使用停用")
+        raise HTTPException(status_code=400, detail="预置 Agent 不可删除, 请使用停�?)
 
     # 删除 TenantAgentMapping
     db.query(TenantAgentMapping).filter(
@@ -453,7 +449,7 @@ async def delete_agent(
         TenantAgentMapping.agent_id == agent_id,
     ).delete()
 
-    # 从 enabled_agents 移除
+    # �?enabled_agents 移除
     tenant = db.query(ExpertTenant).filter(ExpertTenant.id == tenant_id).first()
     if tenant:
         enabled = list(tenant.enabled_agents or [])
@@ -467,4 +463,4 @@ async def delete_agent(
     db.commit()
     _invalidate_and_reset()
 
-    return {"success": True, "message": f"Agent '{agent_id}' 已删除"}
+    return {"success": True, "message": f"Agent '{agent_id}' 已删�?}
