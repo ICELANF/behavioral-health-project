@@ -36,6 +36,10 @@ class AgentDomain(str, Enum):
     CARDIAC_REHAB = "cardiac_rehab"
     VISION = "vision"
     XZB_EXPERT = "xzb_expert"
+    # Phase 3: 用户层 Agent
+    HEALTH_ASSISTANT = "health_assistant"
+    HABIT_TRACKER = "habit_tracker"
+    ONBOARDING_GUIDE = "onboarding_guide"
 
 
 # ── 策略闸门决策类型 (§11.2) ──
@@ -198,6 +202,10 @@ AGENT_BASE_WEIGHTS: dict[str, float] = {
     "cardiac_rehab": 0.85,
     "vision": 0.8,
     "xzb_expert": 0.95,
+    # Phase 3: 用户层 Agent
+    "health_assistant": 0.65,
+    "habit_tracker": 0.6,
+    "onboarding_guide": 0.7,
 }
 
 
@@ -218,6 +226,10 @@ DOMAIN_CORRELATIONS: dict[str, list[str]] = {
     "cardiac_rehab": ["exercise", "stress", "sleep", "nutrition",
                       "mental", "glucose", "weight", "motivation", "behavior_rx"],
     "vision":       ["sleep", "exercise", "behavior_rx", "nutrition"],
+    # Phase 3: 用户层 Agent
+    "health_assistant": ["nutrition", "tcm", "exercise", "sleep"],
+    "habit_tracker":    ["behavior_rx", "motivation"],
+    "onboarding_guide": ["trust_guide", "motivation", "health_assistant"],
 }
 
 

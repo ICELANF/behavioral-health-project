@@ -60,25 +60,39 @@ from core.models import User
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# 延迟导入 Master Agent — 统一单例 (v0+v6 合并)
+# Phase 1+2: AgentRegistry + 统一 MasterAgent
+_registry = None
 _master_agent = None
 
 def get_master_agent(db_session=None):
-    """获取统一 MasterAgent 单例 (v0+v6 合并)"""
-    global _master_agent
+    """获取统一 MasterAgent 单例 (通过 AgentRegistry)"""
+    global _master_agent, _registry
     if _master_agent is None:
         try:
-            from core.master_agent_unified import UnifiedMasterAgent
             if db_session is None:
                 try:
                     from core.database import SessionLocal
                     db_session = SessionLocal()
                 except Exception:
                     pass
-            _master_agent = UnifiedMasterAgent(db_session=db_session)
-            print("[API] UnifiedMasterAgent (v0+v6) 初始化成功")
+            # Phase 1: 创建并冻结 Registry
+            if _registry is None:
+                from core.agents.startup import create_registry
+                _registry = create_registry(db_session=db_session)
+                print(f"[API] AgentRegistry 已冻结: {_registry.count()} 个 Agent")
+            # Phase 2: 统一 MasterAgent
+            from core.agents.master_agent import MasterAgent
+            _master_agent = MasterAgent(registry=_registry, db_session=db_session)
+            print("[API] MasterAgent (统一版) 初始化完成")
         except Exception as e:
-            print(f"[API] UnifiedMasterAgent 初始化失败: {e}")
+            print(f"[API] MasterAgent 初始化失败: {e}")
+            # 降级: 尝试旧版
+            try:
+                from core.master_agent_unified import UnifiedMasterAgent
+                _master_agent = UnifiedMasterAgent(db_session=db_session)
+                print("[API] 降级到 UnifiedMasterAgent")
+            except Exception as e2:
+                print(f"[API] 降级也失败: {e2}")
     return _master_agent
 
 
@@ -2127,19 +2141,21 @@ except ImportError as e:
     print(f"[API] v1 通用路由注册失败: {e}")
 
 # ========== V4.1 Agent双层分离路由 ==========
-try:
-    from assistant_agents.router import router as assistant_router
-    app.include_router(assistant_router)
+# [SURGERY] 已通过 Registry 注册, 不再需要独立路由
+# try:
+#     from assistant_agents.router import router as assistant_router
+#     app.include_router(assistant_router)
     print("[API] V4.1 用户层Agent路由已注册 (/v1/assistant)")
-except ImportError as e:
-    print(f"[API] V4.1 用户层Agent路由注册失败: {e}")
+# except ImportError as e:
+#     print(f"[API] V4.1 用户层Agent路由注册失败: {e}")
 
-try:
-    from professional_agents.router import router as professional_router
-    app.include_router(professional_router)
+# [SURGERY] 已通过 Registry 注册, 不再需要独立路由
+# try:
+#     from professional_agents.router import router as professional_router
+#     app.include_router(professional_router)
     print("[API] V4.1 教练层Agent路由已注册 (/v1/professional)")
-except ImportError as e:
-    print(f"[API] V4.1 教练层Agent路由注册失败: {e}")
+# except ImportError as e:
+#     print(f"[API] V4.1 教练层Agent路由注册失败: {e}")
 
 try:
     from gateway.router import router as gateway_router
