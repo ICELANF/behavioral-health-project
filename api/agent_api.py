@@ -174,8 +174,8 @@ def _run_agent_task(req: AgentRunRequest,
 
     # 优先: v6 MasterAgent (template-aware + tenant_ctx)
     try:
-        from api.main import get_agent_master
-        agent_master = get_agent_master()
+        from api.main import get_master_agent
+        agent_master = get_master_agent()
         if agent_master:
             result = agent_master.process(
                 user_id=int(req.user_id),
@@ -217,22 +217,23 @@ def _run_agent_task(req: AgentRunRequest,
     except Exception:
         # 降级: v0 MasterAgent
         try:
-            from core.master_agent import MasterAgent, UserInput, InputType
-            agent = MasterAgent()
-            user_input = UserInput(
+            from api.main import get_master_agent
+            ma = get_master_agent()
+            if ma is None:
+                raise RuntimeError("MasterAgent unavailable")
+            result = ma.process(
                 user_id=req.user_id,
-                input_type=InputType.TEXT,
-                content=f"[{req.agent_type}] {req.expected_output}",
-                session_id=task_id,
+                message=f"[{req.agent_type}] {req.expected_output}",
+                context=req.context,
             )
-            result = agent.process(user_input)
             suggestions = []
-            if hasattr(result, 'response') and result.response:
+            resp_text = result.get("response", "") if isinstance(result, dict) else ""
+            if resp_text:
                 suggestions.append({
                     "id": f"sug-{task_id}",
                     "type": "action",
                     "priority": 7,
-                    "text": getattr(result.response, 'reply', str(result.response)),
+                    "text": resp_text,
                 })
             output = {
                 "task_id": task_id,
@@ -247,7 +248,7 @@ def _run_agent_task(req: AgentRunRequest,
                 "agents_used": [req.agent_type],
                 "metadata": {
                     "processing_time_ms": 120,
-                    "model_version": "xingjian-coach-v1.0",
+                    "model_version": "master-agent-unified",
                 },
                 "created_at": started_at,
             }
@@ -680,24 +681,21 @@ async def agent_system_status(current_user=Depends(get_current_user)):
     """获取多Agent系统整体状态"""
     # 检查 v0 MasterAgent 可用性
     master_available = False
+    unified_agent_count = 0
     try:
-        from core.master_agent import MasterAgent
-        _ = MasterAgent()
-        master_available = True
+        from api.main import get_master_agent
+        ma = get_master_agent()
+        if ma:
+            master_available = True
+            registry = getattr(ma, '_registry', None)
+            if registry:
+                unified_agent_count = len(registry._agents) if hasattr(registry, '_agents') else 0
     except Exception:
         pass
 
-    # 检查 v6 AgentMaster 可用性
-    agent_master_v6 = False
-    v6_agent_count = 0
-    try:
-        from api.main import get_agent_master
-        am = get_agent_master()
-        if am:
-            agent_master_v6 = True
-            v6_agent_count = len(am._agents)
-    except Exception:
-        pass
+    # 统一架构: v6 = master (向后兼容字段)
+    agent_master_v6 = master_available
+    v6_agent_count = unified_agent_count
 
     # 模板缓存
     template_count = 0
