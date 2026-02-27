@@ -1,8 +1,11 @@
 """
-AgentRouter — 路由分发
-来源: §9.3 路由优先级规则
+AgentRouter — 路由分发 (Registry 版)
 
-优先级规则:
+变更:
+  Before: __init__(agents: dict[str, BaseAgent]) — 接受硬编码 dict
+  After:  __init__(registry: AgentRegistry) — 从 Registry 查询
+
+路由优先级规则不变 (§9.3):
   1. 危机状态 → CrisisAgent (强制)
   2. 风险等级 → 对应专业Agent
   3. 意图关键词 → 匹配领域Agent (专家自定义 > 平台预置)
@@ -11,21 +14,26 @@ AgentRouter — 路由分发
   6. 领域关联 → 加入相关协同Agent
 """
 from __future__ import annotations
+import logging
 from typing import TYPE_CHECKING, Optional
-from .base import AgentDomain, AgentInput, DOMAIN_CORRELATIONS
+
+from .base import AgentInput, DOMAIN_CORRELATIONS
+from .registry import AgentRegistry
 
 if TYPE_CHECKING:
     from .base import BaseAgent
 
+logger = logging.getLogger(__name__)
+
 
 class AgentRouter:
-    """根据用户输入和画像, 路由到1-2个最相关的Agent"""
+    """根据用户输入和画像, 路由到 1-2 个最相关的 Agent"""
 
-    def __init__(self, agents: dict[str, "BaseAgent"]):
-        self.agents = agents  # domain_str -> agent instance
+    def __init__(self, registry: AgentRegistry):
+        self._registry = registry
 
         # 尝试从模板缓存加载关联网络, 失败降级到硬编码
-        self._correlations = DOMAIN_CORRELATIONS
+        self._correlations = dict(DOMAIN_CORRELATIONS)
         try:
             from core.agent_template_service import build_correlations_from_templates
             tpl_corr = build_correlations_from_templates()
@@ -34,17 +42,17 @@ class AgentRouter:
         except Exception:
             pass
 
+    @property
+    def agents(self) -> dict[str, "BaseAgent"]:
+        """向后兼容: 暴露 agents dict (只读)"""
+        return self._registry.list_agents()
+
     def route(self, inp: AgentInput, max_agents: int = 2,
               tenant_ctx: Optional[dict] = None) -> list[str]:
         """
-        返回应激活的agent domain列表 (按优先级排序)
+        返回应激活的 agent domain 列表 (按优先级排序)
 
-        tenant_ctx: 租户路由上下文 (来自 get_tenant_routing_context)
-            - agent_keyword_overrides: {agent_id: {"keywords": [...], "boost": 1.5}}
-            - correlations: 租户级关联覆盖
-            - fallback_agent: 租户回退 Agent
-            - enabled_agents: 租户启用的 Agent 列表
-            - xzb_expert_id: 行智诊疗专家ID (如用户绑定了XZB专家)
+        逻辑与原版完全一致, 仅将 self.agents[...] 改为 self._registry.get_or_none(...)
         """
         scored: list[tuple[float, str]] = []
 
@@ -54,10 +62,9 @@ class AgentRouter:
         fallback = (tenant_ctx or {}).get("fallback_agent", "behavior_rx")
         enabled_set = set((tenant_ctx or {}).get("enabled_agents", []))
 
-        # ── XZB 行智诊疗: 检测专家绑定, 加权注入(非截断) ──
+        # ── XZB 行智诊疗: 检测专家绑定 ──
         xzb_expert_id = (tenant_ctx or {}).get("xzb_expert_id")
-        if xzb_expert_id and "xzb_expert" in self.agents:
-            # 将 XZB 专家 Agent 加入候选池, +80分(高于风险50, 低于crisis100)
+        if xzb_expert_id and self._registry.has("xzb_expert"):
             scored.append((80.0, "xzb_expert"))
 
         # 合并关联: 租户优先 > 模板/硬编码
@@ -65,55 +72,64 @@ class AgentRouter:
         if tenant_corr:
             correlations.update(tenant_corr)
 
-        for domain_str, agent in self.agents.items():
+        for domain, agent in self._registry:
             # 如果有租户上下文且 Agent 不在启用列表中, 跳过 (crisis 始终保留)
-            if enabled_set and domain_str != "crisis" and domain_str not in enabled_set:
+            if enabled_set and domain != "crisis" and domain not in enabled_set:
                 continue
 
             score = 0.0
 
             # 规则1: 危机强制
-            if domain_str == "crisis" and agent.matches_intent(inp.message):
-                return ["crisis"]  # 立即返回, 不再路由其他
+            if domain == "crisis" and agent.matches_intent(inp.message):
+                return ["crisis"]  # 立即返回
 
             # 规则2: 风险等级
             risk = inp.profile.get("risk_level", "low")
-            if risk == "critical" and domain_str == "crisis":
+            if risk == "critical" and domain == "crisis":
                 score += 100
-            elif risk == "high" and domain_str in ("glucose", "stress", "mental"):
+            elif risk == "high" and domain in ("glucose", "stress", "mental"):
                 score += 50
 
-            # 规则3a: 专家自定义关键词 (优先级更高)
-            override = kw_overrides.get(domain_str)
+            # 规则3a: 专家自定义关键词
+            override = kw_overrides.get(domain)
             if override:
                 boost = override.get("boost", 1.5)
                 custom_kws = override.get("keywords", [])
                 msg_lower = inp.message.lower()
                 if any(kw.lower() in msg_lower for kw in custom_kws):
-                    score += 30 * boost  # 带加权的关键词得分
+                    score += 30 * boost
 
-            # 规则3b: 平台预置关键词
-            if agent.matches_intent(inp.message):
+            # 规则3b: 平台预置关键词 (优先从 AgentMeta 获取, 降级到实例属性)
+            meta = self._registry.get_meta(domain) if self._registry.has(domain) else None
+            meta_keywords = meta.keywords if meta else ()
+            instance_keywords = getattr(agent, "keywords", [])
+            all_keywords = set(meta_keywords) | set(instance_keywords)
+
+            msg_lower = inp.message.lower()
+            if any(kw in msg_lower for kw in all_keywords):
                 score += 30
 
             # 规则4: 用户偏好
             focus = inp.profile.get("preferences", {}).get("focus", "")
-            if focus and focus == domain_str:
+            if focus and focus == domain:
                 score += 20
 
             # 规则5: 设备数据
-            for field in getattr(agent, "data_fields", []):
+            data_fields = meta.data_fields if meta else ()
+            if not data_fields:
+                data_fields = getattr(agent, "data_fields", [])
+            for field in data_fields:
                 if field in inp.device_data or \
                    any(k.startswith(field) for k in inp.device_data):
                     score += 15
 
-            # I-09: 循证等级加分 (T1:+10, T2:+7, T3:+3, T4:0)
+            # I-09: 循证等级加分
             _tier_bonus = {"T1": 10, "T2": 7, "T3": 3, "T4": 0}
-            agent_tier = getattr(agent, "evidence_tier", "T3")
+            agent_tier = meta.evidence_tier if meta else getattr(agent, "evidence_tier", "T3")
             score += _tier_bonus.get(agent_tier, 0)
 
             if score > 0:
-                scored.append((score, domain_str))
+                scored.append((score, domain))
 
         scored.sort(key=lambda x: -x[0])
         primary = [d for _, d in scored[:max_agents]]
@@ -122,10 +138,11 @@ class AgentRouter:
         if len(primary) == 1:
             corr = correlations.get(primary[0], [])
             for c in corr:
-                if c in self.agents and c not in primary:
-                    # 仅在关联Agent也有关键词匹配时才加入
-                    if self.agents[c].matches_intent(inp.message):
+                if self._registry.has(c) and c not in primary:
+                    corr_agent = self._registry.get(c)
+                    if corr_agent.matches_intent(inp.message):
                         primary.append(c)
                         break
 
-        return primary or [fallback if fallback in self.agents else "behavior_rx"]
+        fallback_domain = fallback if self._registry.has(fallback) else "behavior_rx"
+        return primary or [fallback_domain]

@@ -1,46 +1,26 @@
 """
-BHP v3 Agent体系
-================
-来源: behavioral-prescription-core-logic-supplemented.md §8-§11
+core.agents — Agent 子系统公开 API
 
-包含:
-- 9个专科Agent + 3个整合型Agent
-- AgentRouter (路由分发)
-- MultiAgentCoordinator (多Agent协调+冲突消解)
-- RuntimePolicyGate (策略闸门)
-- MasterAgent (九步处理流程编排)
+用法:
+    from core.agents import MasterAgent, AgentRegistry, create_registry
+
+    registry = create_registry(db_session=db)
+    agent = MasterAgent(registry=registry)
+    result = agent.process(user_id=1, message="...")
 """
-
-from .specialist_agents import (
-    CrisisAgent, SleepAgent, GlucoseAgent, StressAgent,
-    NutritionAgent, ExerciseAgent, MentalHealthAgent,
-    TCMWellnessAgent, MotivationAgent,
-)
-from .integrative_agents import (
-    BehaviorRxAgent, WeightAgent, CardiacRehabAgent,
-)
-from .vision_agent import VisionGuideAgent
-from .xzb_expert_agent import XZBExpertAgent
-from .router import AgentRouter
-from .coordinator import MultiAgentCoordinator
-from .policy_gate import RuntimePolicyGate
+from .registry import AgentRegistry, RegistryFrozenError, AgentNotRegisteredError
+from .agent_meta import AgentMeta, AgentTier
+from .startup import create_registry, register_all_agents
 from .master_agent import MasterAgent
-from .ollama_client import SyncOllamaClient, get_ollama_client
+from .base import BaseAgent, AgentInput, AgentResult, RiskLevel, AgentDomain, PolicyDecision
 
 __all__ = [
-    # 专科Agent (9)
-    "CrisisAgent", "SleepAgent", "GlucoseAgent", "StressAgent",
-    "NutritionAgent", "ExerciseAgent", "MentalHealthAgent",
-    "TCMWellnessAgent", "MotivationAgent",
-    # 整合型Agent (3)
-    "BehaviorRxAgent", "WeightAgent", "CardiacRehabAgent",
-    # 视力保护Agent (1)
-    "VisionGuideAgent",
-    # 行智诊疗Agent (1)
-    "XZBExpertAgent",
-    # 基础设施
-    "AgentRouter", "MultiAgentCoordinator", "RuntimePolicyGate",
+    # Registry
+    "AgentRegistry", "RegistryFrozenError", "AgentNotRegisteredError",
+    "AgentMeta", "AgentTier",
+    "create_registry", "register_all_agents",
+    # Core
     "MasterAgent",
-    # LLM 客户端
-    "SyncOllamaClient", "get_ollama_client",
+    "BaseAgent", "AgentInput", "AgentResult",
+    "RiskLevel", "AgentDomain", "PolicyDecision",
 ]
