@@ -702,21 +702,24 @@ class ProgramService:
     def get_my_programs(self, user_id: int) -> List[dict]:
         """我的方案列表"""
         result = self.db.execute(text("""
-            SELECT * FROM v_program_enrollment_summary
-            WHERE user_id = :uid
+            SELECT v.*, pe.template_id
+            FROM v_program_enrollment_summary v
+            JOIN program_enrollments pe ON pe.id = v.enrollment_id
+            WHERE v.user_id = :uid
             ORDER BY
-              CASE status
+              CASE v.status
                 WHEN 'active' THEN 0
                 WHEN 'paused' THEN 1
                 WHEN 'completed' THEN 2
                 ELSE 3
               END,
-              last_interaction_at DESC NULLS LAST
+              v.last_interaction_at DESC NULLS LAST
         """), {"uid": user_id})
 
         return [
             {
                 "enrollment_id": str(r.enrollment_id),
+                "template_id": str(r.template_id),
                 "template_slug": r.template_slug,
                 "template_title": r.template_title,
                 "category": r.category,

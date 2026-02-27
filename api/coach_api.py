@@ -257,6 +257,15 @@ def get_coach_dashboard(
     }
 
 
+@router.get("/dashboard-stats")
+def get_coach_dashboard_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """教练仪表盘统计快览（/dashboard 的轻量别名，CoachHome.vue 使用）"""
+    return get_coach_dashboard(db=db, current_user=current_user)
+
+
 @router.get("/students")
 def list_my_students(
     search: Optional[str] = None,

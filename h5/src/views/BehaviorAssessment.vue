@@ -136,11 +136,11 @@
             track-color="#e8e8e8"
             stroke-width="6"
           />
-          <div class="progress-text">{{ currentIndex + 1 }} / {{ questions.length }}</div>
+          <div class="progress-text">第 {{ currentIndex + 1 }} 题 / 共 {{ questions.length }} 题 (已答 {{ answeredCount }}){{ !answers[currentQuestion?.id] ? ' · 请选择' : '' }}</div>
         </div>
 
         <!-- 当前题目 -->
-        <div class="question-card card">
+        <div class="question-card card" v-if="currentQuestion.id">
           <div class="question-group">{{ currentQuestion.group }}</div>
           <div class="question-text">{{ currentQuestion.text }}</div>
 
@@ -177,9 +177,8 @@
             v-else
             type="primary"
             :loading="submitting"
-            :disabled="!allAnswered"
             @click="submitAssessment"
-          >提交评估</van-button>
+          >{{ submitting ? '提交中...' : '提交评估' }}</van-button>
         </div>
         </template>
       </template>
@@ -213,12 +212,21 @@
           </div>
         </div>
 
+        <!-- 未登录提示 -->
+        <div v-if="result?._local" class="card" style="text-align:center;padding:16px;background:linear-gradient(135deg,#fff7e6,#fffbe6);margin-bottom:12px">
+          <div style="font-size:14px;color:#fa8c16;font-weight:500;margin-bottom:8px">以上为初步评估结果</div>
+          <div style="font-size:12px;color:#666;margin-bottom:12px">登录后可获得完整的行为特征分析和个性化改变方案</div>
+          <van-button type="warning" size="small" round @click="goLoginWithSave">
+            登录获取完整报告
+          </van-button>
+        </div>
+
         <!-- 行动按钮 -->
         <div class="result-actions">
-          <van-button type="primary" block round @click="$router.push('/my-stage')">
+          <van-button v-if="!result?._local" type="primary" block round @click="$router.push('/my-stage')">
             查看我的行为状态
           </van-button>
-          <van-button plain block round @click="$router.push('/my-plan')">
+          <van-button v-if="!result?._local" plain block round @click="$router.push('/my-plan')">
             查看我的改变计划
           </van-button>
           <van-button plain block round @click="$router.push('/')">
@@ -293,10 +301,12 @@ const options = [
   { value: 5, label: '非常符合' },
 ]
 
-const currentQuestion = computed(() => questions.value[currentIndex.value])
-const allAnswered = computed(() => questions.value.every(q => answers.value[q.id]))
+const EMPTY_Q = { id: '', group: '', text: '' }
+const currentQuestion = computed(() => questions.value[currentIndex.value] || EMPTY_Q)
+const answeredCount = computed(() => questions.value.filter(q => answers.value[q.id] != null).length)
+const allAnswered = computed(() => questions.value.length > 0 && answeredCount.value >= questions.value.length)
 
-const currentIndividualQuestion = computed(() => individualQuestions.value[currentIndex.value])
+const currentIndividualQuestion = computed(() => individualQuestions.value[currentIndex.value] || EMPTY_Q)
 const allIndividualAnswered = computed(() => individualQuestions.value.every(q => individualAnswers.value[q.id]))
 const individualOptions = computed(() => {
   if (!currentIndividualQuestion.value) return options
@@ -310,8 +320,8 @@ const individualOptions = computed(() => {
   return options
 })
 
-const currentCustomQuestion = computed(() => customQuestions.value[currentIndex.value])
-const allCustomAnswered = computed(() => customQuestions.value.every(q => customAnswers.value[q.id]))
+const currentCustomQuestion = computed(() => customQuestions.value[currentIndex.value] || EMPTY_Q)
+const allCustomAnswered = computed(() => customQuestions.value.length > 0 && customQuestions.value.every(q => customAnswers.value[q.id]))
 
 const stageClass = computed(() => {
   const stage = result.value?.profile?.stage?.current
@@ -324,23 +334,41 @@ const stageClass = computed(() => {
 
 function selectAnswer(value: number) {
   answers.value[currentQuestion.value.id] = value
-  // 自动前进到下一题
   if (currentIndex.value < questions.value.length - 1) {
-    setTimeout(() => currentIndex.value++, 200)
+    // 自动前进到下一题（防双击跳题：记录当前 index，只在未变化时前进）
+    const idx = currentIndex.value
+    setTimeout(() => {
+      if (currentIndex.value === idx) {
+        currentIndex.value++
+      }
+    }, 200)
+  } else if (allAnswered.value) {
+    // 最后一题答完 → 自动提交（0.5s延迟让用户看到选择高亮）
+    setTimeout(() => submitAssessment(), 500)
   }
 }
 
 function selectIndividualAnswer(value: number) {
   individualAnswers.value[currentIndividualQuestion.value.id] = value
   if (currentIndex.value < individualQuestions.value.length - 1) {
-    setTimeout(() => currentIndex.value++, 200)
+    const idx = currentIndex.value
+    setTimeout(() => {
+      if (currentIndex.value === idx) currentIndex.value++
+    }, 200)
+  } else if (allIndividualAnswered.value) {
+    setTimeout(() => submitAssessment(), 500)
   }
 }
 
 function selectCustomAnswer(value: number) {
   customAnswers.value[currentCustomQuestion.value.id] = value
   if (currentIndex.value < customQuestions.value.length - 1) {
-    setTimeout(() => currentIndex.value++, 200)
+    const idx = currentIndex.value
+    setTimeout(() => {
+      if (currentIndex.value === idx) currentIndex.value++
+    }, 200)
+  } else if (allCustomAnswered.value) {
+    setTimeout(() => submitAssessment(), 500)
   }
 }
 
@@ -368,6 +396,38 @@ function domainIcon(domain: string) {
   return icons[domain] || 'info-o'
 }
 
+// 登录前保存答案，登录后自动恢复并提交
+function goLoginWithSave() {
+  sessionStorage.setItem('bhp_assessment_answers', JSON.stringify(answers.value))
+  const focus = route.query.focus ? `?focus=${route.query.focus}` : ''
+  router.push(`/login?redirect=/behavior-assessment${focus}`)
+}
+
+// 客户端 TTM 阶段计算 (无需登录时兜底)
+function computeLocalTTMResult(ans: Record<string, number>) {
+  const groups = [
+    { ids: ['TTM01','TTM02','TTM03'], stage: 'S0', name: '无意识期', desc: '你目前还没有改变的想法，这很正常。每个人的改变节奏不同。' },
+    { ids: ['TTM04','TTM05','TTM06'], stage: 'S1', name: '犹豫期', desc: '你知道有些习惯可以改善，但还没准备好。慢慢来，不着急。' },
+    { ids: ['TTM07','TTM08','TTM09'], stage: 'S2', name: '思考期', desc: '你已经开始思考改变了！这是非常重要的第一步。' },
+    { ids: ['TTM10','TTM11','TTM12'], stage: 'S3', name: '准备期', desc: '你正在为改变做准备，行动就在眼前！' },
+    { ids: ['TTM13','TTM14','TTM15'], stage: 'S4', name: '行动期', desc: '你已经在积极改变了，坚持下去！' },
+    { ids: ['TTM16','TTM17','TTM18'], stage: 'S5', name: '维持期', desc: '新习惯已经成为你生活的一部分，很了不起！' },
+    { ids: ['TTM19','TTM20','TTM21'], stage: 'S6', name: '稳固期', desc: '健康生活方式已经是你的自然状态，你还能帮助他人！' },
+  ]
+  // 找到得分最高的阶段组
+  let bestStage = groups[0]
+  let bestAvg = 0
+  for (const g of groups) {
+    const avg = g.ids.reduce((s, id) => s + (ans[id] || 0), 0) / g.ids.length
+    if (avg > bestAvg) { bestAvg = avg; bestStage = g }
+  }
+  return {
+    profile: { stage: { current: bestStage.stage, name: bestStage.name, description: bestStage.desc } },
+    intervention_plan: { domain_interventions: [] },
+    _local: true,
+  }
+}
+
 async function submitAssessment() {
   submitting.value = true
   try {
@@ -390,18 +450,38 @@ async function submitAssessment() {
       showToast('评估已提交，等待教练审核')
     } else {
       if (!allAnswered.value) {
-        showToast('请完成所有题目')
+        // 找到第一道未答题并跳转
+        const firstUnanswered = questions.value.findIndex(q => answers.value[q.id] == null)
+        if (firstUnanswered >= 0) {
+          currentIndex.value = firstUnanswered
+          showToast(`请先回答第 ${firstUnanswered + 1} 题`)
+        } else {
+          showToast('请完成所有题目')
+        }
         submitting.value = false
         return
       }
-      const res = await api.post('/api/v1/assessment/evaluate', {
-        ttm7: answers.value,
-      })
-      result.value = res
+      // 有 token 时走后端完整管线，否则客户端本地计算
+      const token = localStorage.getItem('h5_token')
+      if (token) {
+        try {
+          const res = await api.post('/api/v1/assessment/evaluate', {
+            ttm7: answers.value,
+          })
+          result.value = res
+        } catch (apiErr: any) {
+          // 后端失败 (token过期/服务异常) → 降级为本地计算
+          console.warn('Assessment API failed, falling back to local:', apiErr.message)
+          result.value = computeLocalTTMResult(answers.value)
+        }
+      } else {
+        // 未登录观察员 → 本地计算
+        result.value = computeLocalTTMResult(answers.value)
+      }
     }
     currentStep.value = 'result'
   } catch (e: any) {
-    showToast(e.response?.data?.detail || '评估提交失败')
+    showToast(e.response?.data?.detail || '评估提交失败，请重试')
   } finally {
     submitting.value = false
   }
@@ -409,13 +489,16 @@ async function submitAssessment() {
 
 // 加载教练推送的评估任务详情
 onMounted(async () => {
-  // 尝试从后端加载 TTM7 题目（支持后台管理）
-  try {
-    const qRes: any = await api.get('/api/v1/assessment/ttm7-questions')
-    if (qRes.questions?.length) {
-      questions.value = qRes.questions
-    }
-  } catch { /* 使用内置题目 */ }
+  // 尝试从后端加载 TTM7 题目（有 token 时才调用，避免无意义 401）
+  const token = localStorage.getItem('h5_token')
+  if (token) {
+    try {
+      const qRes: any = await api.get('/api/v1/assessment/ttm7-questions')
+      if (qRes.questions?.length) {
+        questions.value = qRes.questions
+      }
+    } catch { /* 使用内置题目 */ }
+  }
   const aid = route.query.assignment_id
   if (aid) {
     assignmentId.value = Number(aid)
@@ -454,6 +537,20 @@ onMounted(async () => {
       }
     } catch { /* ignore */ }
     finally { loadingAssignment.value = false }
+  }
+
+  // 登录后恢复已保存的答案并自动提交
+  const saved = sessionStorage.getItem('bhp_assessment_answers')
+  if (saved && token) {
+    try {
+      const restored = JSON.parse(saved)
+      if (Object.keys(restored).length >= questions.value.length) {
+        answers.value = restored
+        sessionStorage.removeItem('bhp_assessment_answers')
+        // 自动提交到后端
+        await submitAssessment()
+      }
+    } catch { /* 恢复失败则忽略 */ }
   }
 })
 </script>

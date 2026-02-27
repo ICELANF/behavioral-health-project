@@ -92,7 +92,6 @@
         </a-card>
       </a-col>
       <a-col :xs="24" :lg="10">
-        <!-- TODO: 接入 GET /v1/analytics/admin/system-info 动态获取系统概况 -->
         <a-card title="系统概况" :bordered="false">
           <a-descriptions :column="1" bordered size="small">
             <a-descriptions-item label="Agent在线数">{{ systemInfo.agent_count }}</a-descriptions-item>
@@ -342,6 +341,13 @@ async function fetchChallengeEffectiveness() {
   } catch { isEmpty.value.challenge = true } finally { loading.value.challenge = false }
 }
 
+async function fetchSystemInfo() {
+  try {
+    const res = await request.get('v1/analytics/admin/system-info')
+    systemInfo.value = { ...systemInfo.value, ...res.data }
+  } catch { /* keep defaults */ }
+}
+
 function disposeCharts() {
   charts.forEach(c => c?.dispose())
   charts.length = 0
@@ -359,6 +365,7 @@ async function fetchAll() {
     fetchRiskDistribution(),
     fetchCoachLeaderboard(),
     fetchChallengeEffectiveness(),
+    fetchSystemInfo(),
   ])
   refreshing.value = false
 }

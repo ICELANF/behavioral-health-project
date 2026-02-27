@@ -1,0 +1,107 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "成长者自选任务目录 — 六级累进，47项任务",
+    "updated": "2026-02-27",
+    "difficulty_points": {
+      "easy": 3,
+      "moderate": 5,
+      "challenging": 8
+    },
+    "fields": {
+      "id": "唯一标识 (cat_ 前缀)",
+      "title": "任务标题",
+      "tag": "分类标签 (监测/运动/营养/情绪/睡眠/用药/学习/分享/同道者/教练管理/培训督导/平台治理)",
+      "tag_color": "标签颜色 (hex)",
+      "domain": "领域标识 (英文)",
+      "input_mode": "输入方式 (device/photo/voice/text)",
+      "quick_label": "快捷按钮文字",
+      "icon": "图标 emoji",
+      "min_level": "最低可见角色等级 (0=观察者, 1=成长者, 2=分享者, 3=教练, 4=促进师, 5=大师)",
+      "difficulty": "难度 (easy/moderate/challenging)",
+      "estimated_minutes": "预计耗时 (分钟, 0=不定时)",
+      "description": "一句话说明",
+      "frequency_suggestion": "建议频率 (daily/weekly/as_needed)",
+      "points_reward": "自定义积分 (可选, 未设则按难度默认: easy→{g:3}, moderate→{g:5}, challenging→{g:8})"
+    }
+  },
+  "catalog": [
+    {
+      "_section": "L0 观察者 (5项基础)",
+      "items": [
+        {"id": "cat_glucose",    "title": "测量空腹血糖",      "tag": "监测", "tag_color": "#3b82f6", "domain": "glucose",        "input_mode": "device", "quick_label": "记录", "icon": "🩸", "min_level": 0, "difficulty": "easy",      "estimated_minutes": 5,  "description": "清晨空腹测量血糖并记录",             "frequency_suggestion": "daily"},
+        {"id": "cat_bp",         "title": "测量血压",          "tag": "监测", "tag_color": "#3b82f6", "domain": "blood_pressure", "input_mode": "device", "quick_label": "记录", "icon": "💉", "min_level": 0, "difficulty": "easy",      "estimated_minutes": 5,  "description": "测量并记录今日血压值",               "frequency_suggestion": "daily"},
+        {"id": "cat_weight",     "title": "称体重",            "tag": "监测", "tag_color": "#3b82f6", "domain": "weight",         "input_mode": "device", "quick_label": "记录", "icon": "⚖️",  "min_level": 0, "difficulty": "easy",      "estimated_minutes": 2,  "description": "称量并记录今日体重",                 "frequency_suggestion": "daily"},
+        {"id": "cat_mood",       "title": "记录今天心情",       "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",        "input_mode": "text",   "quick_label": "记录", "icon": "😊", "min_level": 0, "difficulty": "easy",      "estimated_minutes": 3,  "description": "用一句话记录今天的心情状态",          "frequency_suggestion": "daily"},
+        {"id": "cat_learn",      "title": "阅读健康知识10分钟",  "tag": "学习", "tag_color": "#ec4899", "domain": "learning",       "input_mode": "text",   "quick_label": "打卡", "icon": "📖", "min_level": 0, "difficulty": "easy",      "estimated_minutes": 10, "description": "阅读一篇健康知识文章",               "frequency_suggestion": "daily"}
+      ]
+    },
+    {
+      "_section": "L1 成长者 (+19项，累计24)",
+      "items": [
+        {"id": "cat_walk_30",    "title": "步行30分钟",        "tag": "运动", "tag_color": "#10b981", "domain": "exercise",   "input_mode": "text",  "quick_label": "打卡", "icon": "🚶",   "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 30, "description": "饭后步行30分钟，保持中速",            "frequency_suggestion": "daily"},
+        {"id": "cat_walk_60",    "title": "步行60分钟",        "tag": "运动", "tag_color": "#10b981", "domain": "exercise",   "input_mode": "text",  "quick_label": "打卡", "icon": "🚶‍♂️", "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 60, "description": "户外步行60分钟，推荐快走",            "frequency_suggestion": "daily"},
+        {"id": "cat_yoga",       "title": "瑜伽/拉伸15分钟",    "tag": "运动", "tag_color": "#10b981", "domain": "exercise",   "input_mode": "text",  "quick_label": "打卡", "icon": "🧘",   "min_level": 1, "difficulty": "easy",      "estimated_minutes": 15, "description": "做一组瑜伽或拉伸动作",               "frequency_suggestion": "daily"},
+        {"id": "cat_tai_chi",    "title": "太极拳20分钟",      "tag": "运动", "tag_color": "#10b981", "domain": "exercise",   "input_mode": "text",  "quick_label": "打卡", "icon": "🥋",   "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 20, "description": "练习一套太极拳",                     "frequency_suggestion": "daily"},
+        {"id": "cat_swim",       "title": "游泳30分钟",        "tag": "运动", "tag_color": "#10b981", "domain": "exercise",   "input_mode": "text",  "quick_label": "打卡", "icon": "🏊",   "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 30, "description": "游泳30分钟，注意安全",               "frequency_suggestion": "weekly"},
+        {"id": "cat_cycle",      "title": "骑行30分钟",        "tag": "运动", "tag_color": "#10b981", "domain": "exercise",   "input_mode": "text",  "quick_label": "打卡", "icon": "🚴",   "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 30, "description": "户外或室内骑行30分钟",               "frequency_suggestion": "weekly"},
+        {"id": "cat_baduanjin",  "title": "八段锦一套",        "tag": "运动", "tag_color": "#10b981", "domain": "exercise",   "input_mode": "text",  "quick_label": "打卡", "icon": "🏋️",  "min_level": 1, "difficulty": "easy",      "estimated_minutes": 15, "description": "完成一套八段锦练习",                 "frequency_suggestion": "daily"},
+        {"id": "cat_meal_photo", "title": "拍照记录一餐",       "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition",  "input_mode": "photo", "quick_label": "拍照", "icon": "📸",   "min_level": 1, "difficulty": "easy",      "estimated_minutes": 3,  "description": "拍照记录一餐饮食内容",               "frequency_suggestion": "daily"},
+        {"id": "cat_water",      "title": "喝水8杯",           "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition",  "input_mode": "text",  "quick_label": "打卡", "icon": "💧",   "min_level": 1, "difficulty": "easy",      "estimated_minutes": 1,  "description": "今日累计饮水8杯(约1500ml)",          "frequency_suggestion": "daily"},
+        {"id": "cat_veggie",     "title": "吃够300g蔬菜",      "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition",  "input_mode": "text",  "quick_label": "打卡", "icon": "🥦",   "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 0,  "description": "今日蔬菜摄入达到300克",              "frequency_suggestion": "daily"},
+        {"id": "cat_no_sugar",   "title": "今日无含糖饮料",     "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition",  "input_mode": "text",  "quick_label": "打卡", "icon": "🚫",   "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 0,  "description": "一整天不喝含糖饮料",                 "frequency_suggestion": "daily"},
+        {"id": "cat_journal",    "title": "写感恩日记",        "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",    "input_mode": "text",  "quick_label": "记录", "icon": "📝",   "min_level": 1, "difficulty": "easy",      "estimated_minutes": 10, "description": "写下今天值得感恩的3件小事",           "frequency_suggestion": "daily"},
+        {"id": "cat_breathe",    "title": "腹式呼吸5分钟",     "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",    "input_mode": "text",  "quick_label": "打卡", "icon": "🌬️",  "min_level": 1, "difficulty": "easy",      "estimated_minutes": 5,  "description": "静坐做腹式深呼吸5分钟",              "frequency_suggestion": "daily"},
+        {"id": "cat_mindfulness","title": "正念冥想10分钟",     "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",    "input_mode": "text",  "quick_label": "打卡", "icon": "🧘‍♀️", "min_level": 1, "difficulty": "easy",      "estimated_minutes": 10, "description": "安静环境中进行正念冥想",              "frequency_suggestion": "daily"},
+        {"id": "cat_stress_scan","title": "身体扫描放松",       "tag": "情绪", "tag_color": "#8b5cf6", "domain": "stress",     "input_mode": "text",  "quick_label": "打卡", "icon": "🫧",   "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 15, "description": "从头到脚进行身体扫描放松练习",         "frequency_suggestion": "daily"},
+        {"id": "cat_sleep",      "title": "记录睡眠",          "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",      "input_mode": "text",  "quick_label": "打卡", "icon": "😴",   "min_level": 1, "difficulty": "easy",      "estimated_minutes": 3,  "description": "记录昨晚入睡和起床时间",              "frequency_suggestion": "daily"},
+        {"id": "cat_early_bed",  "title": "22:30前入睡",       "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",      "input_mode": "text",  "quick_label": "打卡", "icon": "🌙",   "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 0,  "description": "在22:30之前上床入睡",                "frequency_suggestion": "daily"},
+        {"id": "cat_medication", "title": "按时服药",          "tag": "用药", "tag_color": "#ef4444", "domain": "medication", "input_mode": "text",  "quick_label": "打卡", "icon": "💊",   "min_level": 1, "difficulty": "easy",      "estimated_minutes": 2,  "description": "按医嘱按时服用药物",                 "frequency_suggestion": "daily"},
+        {"id": "cat_food_log_3", "title": "记录三餐饮食",       "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition",  "input_mode": "text",  "quick_label": "记录", "icon": "🍽️",  "min_level": 1, "difficulty": "moderate",  "estimated_minutes": 15, "description": "详细记录早中晚三餐的饮食内容",         "frequency_suggestion": "daily"}
+      ]
+    },
+    {
+      "_section": "L2 分享者 (+9项，累计33)",
+      "items": [
+        {"id": "cat_write_share",    "title": "撰写经验分享文章",  "tag": "分享",   "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "✍️",  "min_level": 2, "difficulty": "challenging", "estimated_minutes": 30, "description": "撰写一篇个人健康管理经验分享",   "frequency_suggestion": "weekly",    "points_reward": {"growth": 5, "contribution": 8, "influence": 0}},
+        {"id": "cat_case_story",     "title": "提交案例故事",      "tag": "分享",   "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "📖",  "min_level": 2, "difficulty": "challenging", "estimated_minutes": 25, "description": "提交一个完整的健康管理案例故事", "frequency_suggestion": "weekly",    "points_reward": {"growth": 5, "contribution": 8, "influence": 0}},
+        {"id": "cat_answer_question","title": "回答社区问题(1个)", "tag": "分享",   "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "💬",  "min_level": 2, "difficulty": "moderate",    "estimated_minutes": 10, "description": "在社区回答一个健康相关问题",   "frequency_suggestion": "daily",     "points_reward": {"growth": 3, "contribution": 5, "influence": 0}},
+        {"id": "cat_review_share",   "title": "审阅他人分享内容",  "tag": "分享",   "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "👀",  "min_level": 2, "difficulty": "moderate",    "estimated_minutes": 15, "description": "审阅并点评一篇他人分享的内容", "frequency_suggestion": "weekly",    "points_reward": {"growth": 3, "contribution": 5, "influence": 0}},
+        {"id": "cat_peer_share",     "title": "分享本周健康心得",  "tag": "分享",   "tag_color": "#f97316", "domain": "social",       "input_mode": "text", "quick_label": "打卡", "icon": "💡",  "min_level": 2, "difficulty": "moderate",    "estimated_minutes": 20, "description": "在社区分享本周健康管理心得体会","frequency_suggestion": "weekly",    "points_reward": {"growth": 3, "contribution": 5, "influence": 2}},
+        {"id": "cat_contact_peer",   "title": "联系同道者(1次)",   "tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion",    "input_mode": "text", "quick_label": "打卡", "icon": "🤝",  "min_level": 2, "difficulty": "moderate",    "estimated_minutes": 10, "description": "联系一位同道者了解近况",       "frequency_suggestion": "daily",     "points_reward": {"growth": 3, "contribution": 3, "influence": 2}},
+        {"id": "cat_mentor_peer",    "title": "辅导同道者(15分钟)","tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion",    "input_mode": "text", "quick_label": "打卡", "icon": "🎓",  "min_level": 2, "difficulty": "moderate",    "estimated_minutes": 15, "description": "花15分钟辅导一位同道者",       "frequency_suggestion": "daily",     "points_reward": {"growth": 3, "contribution": 5, "influence": 2}},
+        {"id": "cat_check_peer",     "title": "检查同道者进度",    "tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion",    "input_mode": "text", "quick_label": "打卡", "icon": "📊",  "min_level": 2, "difficulty": "easy",       "estimated_minutes": 10, "description": "查看同道者的任务和健康数据进度","frequency_suggestion": "daily",     "points_reward": {"growth": 3, "contribution": 3, "influence": 0}},
+        {"id": "cat_invite_peer",    "title": "邀请新同道者",      "tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion",    "input_mode": "text", "quick_label": "打卡", "icon": "📨",  "min_level": 2, "difficulty": "moderate",    "estimated_minutes": 5,  "description": "邀请一位新朋友加入平台",       "frequency_suggestion": "as_needed", "points_reward": {"growth": 3, "contribution": 3, "influence": 5}}
+      ]
+    },
+    {
+      "_section": "L3 教练 (+6项，累计39)",
+      "items": [
+        {"id": "cat_review_rx",    "title": "审核学员处方",      "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📋", "min_level": 3, "difficulty": "challenging", "estimated_minutes": 20, "description": "审核一位学员的行为健康处方",   "frequency_suggestion": "daily",  "points_reward": {"growth": 5, "contribution": 8, "influence": 0}},
+        {"id": "cat_followup",     "title": "完成学员跟进(1人)", "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📞", "min_level": 3, "difficulty": "moderate",    "estimated_minutes": 15, "description": "对一位学员进行健康跟进",       "frequency_suggestion": "daily",  "points_reward": {"growth": 5, "contribution": 5, "influence": 0}},
+        {"id": "cat_view_data",    "title": "查看学员健康数据",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📈", "min_level": 3, "difficulty": "moderate",    "estimated_minutes": 10, "description": "查看并分析学员的健康数据趋势", "frequency_suggestion": "daily",  "points_reward": {"growth": 5, "contribution": 3, "influence": 0}},
+        {"id": "cat_motivate",     "title": "发送学员激励消息",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "💪", "min_level": 3, "difficulty": "easy",       "estimated_minutes": 5,  "description": "给学员发送一条激励消息",       "frequency_suggestion": "daily",  "points_reward": {"growth": 3, "contribution": 3, "influence": 2}},
+        {"id": "cat_coach_course", "title": "完成教练进修课程",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "🎯", "min_level": 3, "difficulty": "challenging", "estimated_minutes": 45, "description": "完成一节教练进修培训课程",     "frequency_suggestion": "weekly", "points_reward": {"growth": 8, "contribution": 5, "influence": 0}},
+        {"id": "cat_case_report",  "title": "撰写学员案例报告",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📝", "min_level": 3, "difficulty": "challenging", "estimated_minutes": 40, "description": "撰写一份完整的学员案例报告",   "frequency_suggestion": "weekly", "points_reward": {"growth": 5, "contribution": 10, "influence": 0}}
+      ]
+    },
+    {
+      "_section": "L4 促进师 (+4项，累计43)",
+      "items": [
+        {"id": "cat_audit_coach",   "title": "审核教练工作质量",  "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "🔍",  "min_level": 4, "difficulty": "challenging", "estimated_minutes": 30, "description": "审核一位教练的工作质量和案例",   "frequency_suggestion": "weekly",    "points_reward": {"growth": 5, "contribution": 8, "influence": 5}},
+        {"id": "cat_design_course", "title": "设计培训课程模块",  "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "📐",  "min_level": 4, "difficulty": "challenging", "estimated_minutes": 60, "description": "设计一个完整的培训课程模块",   "frequency_suggestion": "weekly",    "points_reward": {"growth": 5, "contribution": 10, "influence": 5}},
+        {"id": "cat_region_data",   "title": "分析区域健康数据",  "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "🗺️", "min_level": 4, "difficulty": "challenging", "estimated_minutes": 45, "description": "分析所辖区域的健康数据报告",   "frequency_suggestion": "weekly",    "points_reward": {"growth": 5, "contribution": 8, "influence": 3}},
+        {"id": "cat_workshop",      "title": "组织工作坊/研讨会", "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "🏫",  "min_level": 4, "difficulty": "challenging", "estimated_minutes": 90, "description": "组织并主持一次工作坊或研讨会", "frequency_suggestion": "as_needed", "points_reward": {"growth": 5, "contribution": 10, "influence": 10}}
+      ]
+    },
+    {
+      "_section": "L5 大师 (+4项，累计47)",
+      "items": [
+        {"id": "cat_audit_content",  "title": "审核课程内容质量",  "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "✅",  "min_level": 5, "difficulty": "challenging", "estimated_minutes": 45, "description": "审核平台课程内容的专业性和质量",   "frequency_suggestion": "weekly",    "points_reward": {"growth": 5, "contribution": 10, "influence": 5}},
+        {"id": "cat_review_policy",  "title": "制定/审阅平台政策", "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "📜",  "min_level": 5, "difficulty": "challenging", "estimated_minutes": 60, "description": "制定或审阅平台运营管理政策",     "frequency_suggestion": "as_needed", "points_reward": {"growth": 5, "contribution": 10, "influence": 10}},
+        {"id": "cat_platform_build", "title": "参与平台共建讨论",  "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "🌐",  "min_level": 5, "difficulty": "challenging", "estimated_minutes": 30, "description": "参与平台发展方向的共建讨论",     "frequency_suggestion": "weekly",    "points_reward": {"growth": 5, "contribution": 8, "influence": 8}},
+        {"id": "cat_standard_review","title": "审阅行业标准文件",  "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "📑",  "min_level": 5, "difficulty": "challenging", "estimated_minutes": 60, "description": "审阅行业标准文件并提出修改建议", "frequency_suggestion": "as_needed", "points_reward": {"growth": 5, "contribution": 10, "influence": 10}}
+      ]
+    }
+  ]
+}

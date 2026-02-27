@@ -323,8 +323,9 @@ class HealthProfileUpdate(BaseModel):
     display_name: Optional[str] = None
     gender: Optional[str] = None
     age: Optional[int] = None
-    height: Optional[str] = None
-    weight: Optional[str] = None
+    height: Optional[Any] = None  # accept str or number
+    weight: Optional[Any] = None  # accept str or number
+    goals: Optional[List[str]] = None
     diagnosis: Optional[str] = None
     diagnoses: Optional[List[str]] = None
     diagnosis_date: Optional[str] = None
@@ -352,6 +353,10 @@ async def update_my_health_profile(
 
     # 合并更新 (只覆盖前端发送的非None字段)
     update_data = body.dict(exclude_none=True)
+    # height/weight: 统一转为字符串存储
+    for key in ("height", "weight"):
+        if key in update_data:
+            update_data[key] = str(update_data[key])
     existing.update(update_data)
 
     # 写回 users.profile

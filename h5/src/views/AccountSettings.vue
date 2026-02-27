@@ -1,8 +1,5 @@
 <template>
-  <div class="page-container">
-    <van-nav-bar title="账号设置" left-arrow @click-left="$router.back()" />
-
-    <div class="page-content">
+  <PageShell title="账号设置" :show-back="true">
       <!-- 账号信息 -->
       <div class="card">
         <h3>账号信息</h3>
@@ -71,13 +68,13 @@
           </van-cell>
         </van-cell-group>
       </div>
-    </div>
-  </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { showToast } from 'vant'
+import PageShell from '@/components/common/PageShell.vue'
 import api from '@/api/index'
 import storage from '@/utils/storage'
 

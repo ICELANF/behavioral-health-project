@@ -6,31 +6,16 @@
       - 投稿统计 (知识分享)
       - 影响力积分 (社会认可)
   -->
-  <div class="sharer-home">
-    <!-- ═══ 顶部: 问候+连续天数+分享者标签 ═══ -->
-    <div class="today-header">
-      <div class="greeting">
-        <span class="greeting-time">{{ greetingText }}</span>
-        <h1 class="user-name">{{ userName }}</h1>
-      </div>
-      <div class="header-badges">
-        <div class="role-badge">
-          <span class="role-icon">💬</span>
-          <span class="role-text">分享者</span>
-        </div>
-        <div class="streak-badge" v-if="streakDays > 0">
-          <span class="streak-fire">🔥</span>
-          <span class="streak-num">{{ streakDays }}</span>
-          <span class="streak-label">天</span>
-        </div>
-        <NotificationBell />
-      </div>
-    </div>
+  <PageShell :show-nav-bar="false" :show-tab-bar="true" no-padding>
+    <!-- ═══ 顶部: UserHero (头像+问候+streak+设置+通知) ═══ -->
+    <UserHero :streak-days="streakDays" />
 
     <!-- ═══ 全局搜索 ═══ -->
-    <GlobalSearch />
+    <div style="padding: 0 20px;">
+      <GlobalSearch />
+    </div>
 
-    <!-- ═══ 今日进度环 (复用Grower) ═══ -->
+    <!-- ═══ 今日进度环 + 积分 ═══ -->
     <div class="progress-hero">
       <div class="progress-circle">
         <svg viewBox="0 0 100 100">
@@ -45,54 +30,75 @@
           <span class="prog-total">{{ totalCount }}</span>
         </div>
       </div>
-      <div class="progress-label">
-        <span v-if="completionPct === 0">今天的旅程开始了 ✨</span>
-        <span v-else-if="completionPct < 50">继续加油 💪</span>
-        <span v-else-if="completionPct < 100">快完成了！🎯</span>
-        <span v-else>今天全部完成！🏆</span>
-      </div>
-    </div>
-
-    <!-- ═══ 今日行动卡片流 (复用Grower打卡逻辑) ═══ -->
-    <div class="actions-section">
-      <h2 class="section-title">今日行动</h2>
-      <div class="action-list">
-        <div v-for="action in todayActions" :key="action.id"
-          class="action-card" :class="{ done: action.done, active: !action.done }"
-          @click="handleAction(action)">
-          <div class="action-check">
-            <div class="check-circle" :class="{ checked: action.done }">
-              <span v-if="action.done" class="check-icon">✓</span>
-              <span v-else class="action-order">{{ action.order }}</span>
-            </div>
-          </div>
-          <div class="action-body">
-            <div class="action-title" :class="{ 'line-through': action.done }">
-              {{ action.title }}
-            </div>
-            <div class="action-meta">
-              <span class="meta-tag" :style="{ background: action.tagColor + '20', color: action.tagColor }">
-                {{ action.tag }}
-              </span>
-              <span class="meta-time">{{ action.timeHint }}</span>
-              <span class="meta-mode" v-if="action.inputMode">
-                {{ inputModeIcon(action.inputMode) }}
-              </span>
-            </div>
-          </div>
-          <div class="action-quick" v-if="!action.done">
-            <button class="quick-btn" @click.stop="quickCheckin(action)">
-              {{ action.quickLabel || '打卡' }}
-            </button>
-          </div>
-          <div class="action-quick" v-else>
-            <span class="done-time">{{ action.doneTime }}</span>
-          </div>
+      <div class="progress-right">
+        <div class="progress-label">
+          <span v-if="completionPct === 0">今天的旅程开始了 ✨</span>
+          <span v-else-if="completionPct < 50">继续加油 💪</span>
+          <span v-else-if="completionPct < 100">快完成了！🎯</span>
+          <span v-else>今天全部完成！🏆</span>
+        </div>
+        <div class="daily-points" v-if="dailyPoints > 0">
+          <span class="points-badge">+{{ dailyPoints }} 积分 🏆</span>
         </div>
       </div>
     </div>
 
-    <!-- ═══ 🤝 我的同道者 (NEW) ═══ -->
+    <!-- ═══ 执行统计 ═══ -->
+    <MotivationCard ref="motivationCardRef" />
+
+    <!-- ═══ 分组任务区 ═══ -->
+    <!-- 教练推荐 -->
+    <TaskGroupSection
+      v-if="coachTasks.length > 0"
+      title="教练推荐" icon="🏥" color="blue"
+      :tasks="coachTasks"
+      :default-expanded="true"
+      @checkin="handleCheckin"
+      @click-action="handleAction"
+    />
+
+    <!-- AI推荐 -->
+    <TaskGroupSection
+      v-if="aiTasks.length > 0"
+      title="AI推荐" icon="🤖" color="green"
+      :tasks="aiTasks"
+      :default-expanded="true"
+      @checkin="handleCheckin"
+      @click-action="handleAction"
+    />
+
+    <!-- 自选任务 -->
+    <TaskGroupSection
+      title="自选任务" icon="📝" color="gray"
+      :tasks="selfTasks"
+      :default-expanded="true"
+      @checkin="handleCheckin"
+      @click-action="handleAction"
+    >
+      <template #header-action>
+        <button class="add-self-btn" @click.stop="showCatalog = true">+ 添加</button>
+      </template>
+    </TaskGroupSection>
+
+    <!-- 已完成 -->
+    <TaskGroupSection
+      v-if="doneTasks.length > 0"
+      title="已完成" icon="✅" color="emerald"
+      :tasks="doneTasks"
+      :default-expanded="false"
+      :max-visible="3"
+      @click-action="handleAction"
+    />
+
+    <!-- ═══ 自选目录弹层 ═══ -->
+    <CatalogSheet
+      v-model:show="showCatalog"
+      :catalog="catalog"
+      :catalog-loading="catalogLoading"
+      @add-from-catalog="handleAddFromCatalog"
+    />
+
+    <!-- ═══ 🤝 我的同道者 ═══ -->
     <div class="mentee-section">
       <div class="section-header">
         <h2 class="section-title">🤝 我的同道者</h2>
@@ -121,7 +127,7 @@
       </div>
     </div>
 
-    <!-- ═══ 📝 我的分享 (NEW) ═══ -->
+    <!-- ═══ 📝 我的分享 ═══ -->
     <div class="contribution-section">
       <h2 class="section-title">📝 我的分享</h2>
       <div class="contrib-stats">
@@ -144,7 +150,7 @@
       </div>
     </div>
 
-    <!-- ═══ ⭐ 影响力 (NEW) ═══ -->
+    <!-- ═══ ⭐ 影响力 ═══ -->
     <div class="influence-section">
       <h2 class="section-title">⭐ 影响力</h2>
       <div class="influence-row">
@@ -172,7 +178,7 @@
       </div>
     </div>
 
-    <!-- ═══ 本周一览 7日点阵 (复用Grower) ═══ -->
+    <!-- ═══ 本周一览 7日点阵 ═══ -->
     <div class="week-glance">
       <h2 class="section-title">本周一览</h2>
       <div class="week-dots">
@@ -191,62 +197,53 @@
       <div class="checkin-toast" v-if="showCheckinToast">
         <span class="toast-emoji">{{ checkinEmoji }}</span>
         <span class="toast-text">{{ checkinMessage }}</span>
+        <span class="toast-points" v-if="checkinPoints > 0">+{{ checkinPoints }} 积分</span>
+        <span class="toast-streak" v-if="checkinStreak > 0">🔥 连续 {{ checkinStreak }} 天</span>
       </div>
     </Transition>
-  </div>
+
+  </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import api from '@/api/index'
 import { useUserStore } from '@/stores/user'
-import NotificationBell from '@/components/common/NotificationBell.vue'
+import { useTaskGroups, type TodayAction } from '@/composables/useTaskGroups'
+import PageShell from '@/components/common/PageShell.vue'
+import UserHero from '@/components/common/UserHero.vue'
 import GlobalSearch from '@/components/common/GlobalSearch.vue'
 import AiContentBadge from '@/components/common/AiContentBadge.vue'
+import TaskGroupSection from '@/components/task/TaskGroupSection.vue'
+import CatalogSheet from '@/components/task/CatalogSheet.vue'
+import MotivationCard from '@/components/home/MotivationCard.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-// ── 用户状态 ──
-const userName = ref(userStore.name || '用户')
-const streakDays = ref(0)
-const coachTip = ref('')
+// ── 任务分组 ──
+const {
+  coachTasks, aiTasks, selfTasks, doneTasks,
+  dailyPoints, streakDays,
+  totalCount, doneCount, completionPct,
+  loadTodayTasks, checkin,
+  catalog, catalogLoading, loadCatalog, addFromCatalog,
+} = useTaskGroups()
 
-// ── 今日行动 ──
-interface TodayAction {
-  id: string
-  order: number
-  title: string
-  tag: string
-  tagColor: string
-  timeHint: string
-  inputMode?: 'photo' | 'voice' | 'text' | 'device'
-  quickLabel?: string
-  done: boolean
-  doneTime?: string
+const motivationCardRef = ref<InstanceType<typeof MotivationCard>>()
+
+const completionColor = ref('#f59e0b')
+function updateCompletionColor() {
+  const pct = completionPct.value
+  if (pct >= 100) completionColor.value = '#10b981'
+  else if (pct >= 50) completionColor.value = '#3b82f6'
+  else completionColor.value = '#f59e0b'
 }
 
-const todayActions = ref<TodayAction[]>([])
-
-const doneCount = computed(() => todayActions.value.filter(a => a.done).length)
-const totalCount = computed(() => todayActions.value.length)
-const completionPct = computed(() => totalCount.value > 0 ? Math.round((doneCount.value / totalCount.value) * 100) : 0)
-const completionColor = computed(() => {
-  if (completionPct.value >= 100) return '#10b981'
-  if (completionPct.value >= 50) return '#3b82f6'
-  return '#f59e0b'
-})
-
-// ── 问候 ──
-const greetingText = computed(() => {
-  const h = new Date().getHours()
-  if (h < 6) return '夜深了'
-  if (h < 11) return '早上好'
-  if (h < 14) return '中午好'
-  if (h < 18) return '下午好'
-  return '晚上好'
-})
+// ── 教练提示 ──
+const coachTip = ref('')
 
 // ── 分享者专属数据 ──
 interface MenteeSlot {
@@ -270,15 +267,15 @@ const influenceScore = ref({ total: 0, likes: 0, saves: 0, citations: 0, officia
 // ── 本周 ──
 const weekDays = ref<{ label: string; status: string }[]>([])
 
+// ── 自选目录弹层 ──
+const showCatalog = ref(false)
+
 // ── 打卡交互 ──
 const showCheckinToast = ref(false)
 const checkinEmoji = ref('🎉')
 const checkinMessage = ref('')
-
-function inputModeIcon(mode: string) {
-  const map: Record<string, string> = { photo: '📷', voice: '🎤', text: '✏️', device: '⌚' }
-  return map[mode] || ''
-}
+const checkinPoints = ref(0)
+const checkinStreak = ref(0)
 
 function handleAction(action: TodayAction) {
   if (action.done) return
@@ -301,25 +298,39 @@ function handleAction(action: TodayAction) {
   }
 }
 
-async function quickCheckin(action: TodayAction) {
-  action.done = true
-  action.doneTime = new Date().toTimeString().slice(0, 5)
-
+async function handleCheckin(action: TodayAction) {
   const emojis = ['🎉', '💪', '✨', '🔥', '👏']
   const messages = ['太棒了！', '做到了！', '继续保持！', '又进一步！', '好样的！']
   const idx = Math.floor(Math.random() * emojis.length)
   checkinEmoji.value = emojis[idx]
   checkinMessage.value = messages[idx]
+  checkinPoints.value = 0
+  checkinStreak.value = 0
 
-  try {
-    const res: any = await api.post(`/api/v1/daily-tasks/${action.id}/checkin`)
-    if (res.emoji) checkinEmoji.value = res.emoji
-    if (res.message) checkinMessage.value = res.message
-    if (res.streak_days) streakDays.value = res.streak_days
-  } catch { /* optimistic update */ }
+  const result = await checkin(action)
+
+  if (result.emoji) checkinEmoji.value = result.emoji
+  if (result.message) checkinMessage.value = result.message
+  if (result.points_earned) checkinPoints.value = result.points_earned
+  if (result.streak_days) checkinStreak.value = result.streak_days
+
+  updateCompletionColor()
 
   showCheckinToast.value = true
-  setTimeout(() => showCheckinToast.value = false, 2000)
+  setTimeout(() => { showCheckinToast.value = false }, 2500)
+
+  // 刷新激励统计
+  motivationCardRef.value?.reload()
+}
+
+async function handleAddFromCatalog(catalogId: string, customTitle?: string) {
+  const ok = await addFromCatalog(catalogId || '', customTitle)
+  if (ok) {
+    showToast('已添加')
+    updateCompletionColor()
+  } else {
+    showToast('添加失败')
+  }
 }
 
 function openChat() { router.push('/chat') }
@@ -329,33 +340,18 @@ function goContribute() { router.push('/contribute') }
 function goChat() { router.push('/chat') }
 
 onMounted(async () => {
-  // 并行加载: 3个Grower复用API + 3个Sharer新API
-  const [tasksRes, tipRes, weekRes, menteeRes, contribRes, influenceRes] = await Promise.allSettled([
-    api.get('/api/v1/daily-tasks/today'),
+  // 并行加载: 任务+目录+教练提示+本周 + 3个Sharer API
+  const [, tipRes, weekRes, , menteeRes, contribRes, influenceRes] = await Promise.allSettled([
+    loadTodayTasks(),
     api.get('/api/v1/coach-tip/today'),
     api.get('/api/v1/weekly-summary'),
+    loadCatalog(),
     api.get('/api/v1/sharer/mentee-progress'),
     api.get('/api/v1/sharer/contribution-stats'),
     api.get('/api/v1/sharer/influence-score'),
   ])
 
-  // 今日任务
-  if (tasksRes.status === 'fulfilled') {
-    const data = tasksRes.value as any
-    todayActions.value = (data.tasks || []).map((t: any) => ({
-      id: t.id,
-      order: t.order,
-      title: t.title,
-      tag: t.tag,
-      tagColor: t.tag_color,
-      timeHint: t.time_hint,
-      inputMode: t.input_mode,
-      quickLabel: t.quick_label,
-      done: t.done,
-      doneTime: t.done_time,
-    }))
-    streakDays.value = data.streak_days || 0
-  }
+  updateCompletionColor()
 
   // 教练提示
   if (tipRes.status === 'fulfilled') {
@@ -406,37 +402,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.sharer-home {
-  min-height: 100vh;
-  background: #ffffff;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+/* ── 进度环 + 积分 ── */
+.progress-hero {
+  display: flex; align-items: center; justify-content: center;
+  gap: 20px; padding: 20px 20px 16px;
 }
-
-/* ── 头部 ── */
-.today-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 16px 20px 0;
-}
-.greeting-time { font-size: 13px; color: #9ca3af; }
-.user-name { font-size: 22px; font-weight: 800; color: #111827; margin: 2px 0 0; }
-.header-badges { display: flex; align-items: center; gap: 8px; }
-.role-badge {
-  display: flex; align-items: center; gap: 4px;
-  background: #ede9fe; border-radius: 20px; padding: 6px 12px;
-}
-.role-icon { font-size: 14px; }
-.role-text { font-size: 12px; font-weight: 700; color: #7c3aed; }
-.streak-badge {
-  display: flex; align-items: baseline; gap: 2px;
-  background: #fef3c7; border-radius: 20px; padding: 6px 12px;
-}
-.streak-fire { font-size: 16px; }
-.streak-num { font-size: 20px; font-weight: 900; color: #d97706; }
-.streak-label { font-size: 11px; color: #92400e; }
-
-/* ── 进度环 ── */
-.progress-hero { display: flex; flex-direction: column; align-items: center; padding: 20px 0 16px; }
-.progress-circle { width: 100px; height: 100px; position: relative; }
+.progress-circle { width: 100px; height: 100px; position: relative; flex-shrink: 0; }
 .progress-circle svg { transform: rotate(-90deg); }
 .prog-bg { fill: none; stroke: #f3f4f6; stroke-width: 6; }
 .prog-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray 0.6s ease; }
@@ -446,47 +417,24 @@ onMounted(async () => {
 .prog-done { font-size: 28px; font-weight: 900; color: #111827; }
 .prog-slash { font-size: 16px; color: #d1d5db; margin: 0 2px; }
 .prog-total { font-size: 16px; color: #9ca3af; }
-.progress-label { font-size: 14px; color: #6b7280; margin-top: 8px; }
+.progress-right { display: flex; flex-direction: column; gap: 6px; }
+.progress-label { font-size: 14px; color: #6b7280; }
+.points-badge {
+  display: inline-block; font-size: 13px; font-weight: 700;
+  color: #d97706; background: #fef3c7; padding: 3px 10px;
+  border-radius: 12px;
+}
 
-/* ── 行动卡片 ── */
-.actions-section { padding: 0 20px; }
+/* ── 自选区添加按钮 ── */
+.add-self-btn {
+  background: none; border: 1px solid #d1d5db; border-radius: 6px;
+  padding: 3px 10px; font-size: 12px; font-weight: 600;
+  color: #6b7280; cursor: pointer; transition: all 0.2s;
+}
+.add-self-btn:active { background: #f3f4f6; transform: scale(0.95); }
+
+/* ── section-title ── */
 .section-title { font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 12px; }
-.action-list { display: flex; flex-direction: column; gap: 8px; }
-.action-card {
-  display: flex; align-items: center; gap: 12px;
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
-  padding: 14px 16px; transition: all 0.2s; cursor: pointer;
-}
-.action-card.active:active { transform: scale(0.98); background: #f9fafb; }
-.action-card.done { background: #f9fafb; border-color: #f3f4f6; }
-
-.check-circle {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: 2.5px solid #d1d5db; display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 700; color: #9ca3af; transition: all 0.3s; flex-shrink: 0;
-}
-.check-circle.checked {
-  border-color: var(--bhp-brand-primary, #10b981);
-  background: var(--bhp-brand-primary, #10b981); color: #fff;
-}
-.check-icon { font-size: 16px; }
-
-.action-body { flex: 1; min-width: 0; }
-.action-title { font-size: 14px; font-weight: 600; color: #111827; }
-.action-title.line-through { text-decoration: line-through; color: #9ca3af; }
-.action-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-.meta-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-.meta-time { font-size: 11px; color: #9ca3af; }
-.meta-mode { font-size: 14px; }
-
-.quick-btn {
-  background: var(--bhp-brand-primary, #10b981); color: #fff;
-  border: none; border-radius: 8px; padding: 6px 14px;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  white-space: nowrap; transition: all 0.2s;
-}
-.quick-btn:active { transform: scale(0.95); }
-.done-time { font-size: 12px; color: #9ca3af; }
 
 /* ── 同道者区块 ── */
 .mentee-section { padding: 20px 20px 0; }
@@ -584,15 +532,17 @@ onMounted(async () => {
 .day-dot.future { background: #f3f4f6; color: #d1d5db; }
 .day-dot.missed { background: #f3f4f6; color: #d1d5db; }
 
-/* ── 打卡Toast ── */
+/* ── 打卡Toast (增强: 积分+连续天数) ── */
 .checkin-toast {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
   background: rgba(0,0,0,0.85); color: #fff; border-radius: 16px;
   padding: 20px 32px; text-align: center; z-index: 999;
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
 .toast-emoji { font-size: 40px; }
 .toast-text { font-size: 16px; font-weight: 700; }
+.toast-points { font-size: 14px; color: #fbbf24; font-weight: 600; }
+.toast-streak { font-size: 12px; color: #9ca3af; }
 .checkin-toast-enter-active { animation: toastIn 0.3s; }
 .checkin-toast-leave-active { animation: toastOut 0.3s; }
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%,-50%) scale(0.8); } to { opacity: 1; transform: translate(-50%,-50%) scale(1); } }

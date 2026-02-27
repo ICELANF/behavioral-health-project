@@ -1,30 +1,36 @@
 <template>
-  <div class="page-container chat-page">
-    <!-- 顶部导航 -->
-    <van-nav-bar
-      :title="currentExpertInfo?.name || '行健教练'"
-      left-arrow
-      @click-left="$router.back()"
-    >
-      <template #right>
-        <van-popover
-          v-model:show="showExpertPicker"
-          :actions="expertActions"
-          @select="onExpertSelect"
-          placement="bottom-end"
-        >
-          <template #reference>
-            <van-icon name="exchange" size="20" />
-          </template>
-        </van-popover>
-      </template>
-    </van-nav-bar>
+  <PageShell
+    :title="chatStore.isAnonymous ? 'AI 健康向导' : (currentExpertInfo?.name || '行健教练')"
+    :show-back="true"
+    :show-tab-bar="true"
+    no-padding
+  >
+    <template #header-right v-if="!chatStore.isAnonymous">
+      <van-popover
+        v-model:show="showExpertPicker"
+        :actions="expertActions"
+        @select="onExpertSelect"
+        placement="bottom-end"
+      >
+        <template #reference>
+          <van-icon name="exchange" size="20" />
+        </template>
+      </van-popover>
+    </template>
+
+    <div class="chat-page">
+
+    <!-- 体验模式提示条 -->
+    <div v-if="chatStore.isAnonymous && !chatStore.trialExhausted" class="trial-banner">
+      <van-icon name="info-o" size="14" />
+      <span>体验对话 {{ chatStore.trialCount }}/{{ 3 }} — 注册解锁无限对话</span>
+    </div>
 
     <!-- 消息列表 -->
     <div class="message-list" ref="messageListRef">
       <div v-if="messages.length === 0" class="empty-state">
         <van-icon name="chat-o" size="64" color="#ddd" />
-        <p>开始与{{ currentExpertInfo?.name }}对话吧</p>
+        <p>{{ chatStore.isAnonymous ? '你好！我是 AI 健康向导，有什么想聊的？' : ('开始与' + (currentExpertInfo?.name || '教练') + '对话吧') }}</p>
       </div>
 
       <template v-for="message in messages" :key="message.id">
@@ -70,8 +76,19 @@
       </div>
     </div>
 
-    <!-- 效能感滑块 -->
-    <EfficacySlider v-model="userStore.efficacyScore" />
+    <!-- 体验用完：注册引导浮层 -->
+    <div v-if="chatStore.trialExhausted" class="trial-exhausted-overlay">
+      <div class="trial-exhausted-card">
+        <van-icon name="smile-o" size="48" color="#1565C0" />
+        <h3>体验已结束</h3>
+        <p>注册成为成长者，解锁无限 AI 对话和个性化健康方案</p>
+        <van-button type="primary" block round @click="goRegister">立即注册</van-button>
+        <p class="trial-login-link" @click="goLogin">已有账号？去登录</p>
+      </div>
+    </div>
+
+    <!-- 效能感滑块 (仅登录用户) -->
+    <EfficacySlider v-if="!chatStore.isAnonymous" v-model="userStore.efficacyScore" />
 
     <!-- 图片预览条 -->
     <div v-if="pendingImage" class="image-preview-bar">
@@ -81,8 +98,9 @@
     </div>
 
     <!-- 输入区域 -->
-    <div class="input-area safe-area-bottom">
+    <div class="input-area safe-area-bottom" v-if="!chatStore.trialExhausted">
       <van-button
+        v-if="!chatStore.isAnonymous"
         icon="photo-o"
         size="small"
         round
@@ -102,7 +120,7 @@
         type="textarea"
         :rows="1"
         :autosize="{ maxHeight: 100 }"
-        placeholder="输入您的问题..."
+        :placeholder="chatStore.isAnonymous ? '试着问我一个健康问题...' : '输入您的问题...'"
         @keypress.enter.prevent="sendMessage"
       />
       <van-button
@@ -115,19 +133,24 @@
         发送
       </van-button>
     </div>
-  </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import { useUserStore } from '@/stores/user'
 import { useChatStore } from '@/stores/chat'
 import MessageBubble from '@/components/chat/MessageBubble.vue'
 import TaskCard from '@/components/chat/TaskCard.vue'
 import EfficacySlider from '@/components/chat/EfficacySlider.vue'
+import PageShell from '@/components/common/PageShell.vue'
 import api from '@/api/index'
 
+const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 const chatStore = useChatStore()
 
@@ -153,6 +176,14 @@ const expertActions = computed(() =>
 function onExpertSelect(action: { text: string; value: string }) {
   chatStore.setCurrentExpert(action.value)
   showExpertPicker.value = false
+}
+
+function goRegister() {
+  router.push('/register?from=chat&upgrade=grower')
+}
+
+function goLogin() {
+  router.push('/login?redirect=/chat')
 }
 
 function triggerImagePicker() {
@@ -197,7 +228,12 @@ async function sendMessage() {
     await sendImageMessage(text)
   } else {
     inputText.value = ''
-    await chatStore.sendMessage(text)
+    // 匿名体验 vs 已登录
+    if (chatStore.isAnonymous) {
+      await chatStore.sendTrialMessage(text)
+    } else {
+      await chatStore.sendMessage(text)
+    }
   }
   scrollToBottom()
 }
@@ -275,6 +311,13 @@ async function sendImageMessage(text: string) {
   }
 }
 
+onMounted(() => {
+  const action = route.query.action as string
+  if (action === 'camera') {
+    nextTick(() => triggerImagePicker())
+  }
+})
+
 onUnmounted(() => {
   if (pendingImageUrl.value) {
     URL.revokeObjectURL(pendingImageUrl.value)
@@ -309,7 +352,65 @@ watch(messages, () => {
 .chat-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  flex: 1;
+  min-height: 0;
+}
+
+.trial-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(90deg, #E3F0FF, #F0F7FF);
+  color: #1565C0;
+  font-size: 13px;
+  font-weight: 500;
+  border-bottom: 1px solid #BBDEFB;
+}
+
+.trial-exhausted-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.trial-exhausted-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+
+  h3 {
+    font-size: 18px;
+    color: #333;
+    margin: 16px 0 8px;
+  }
+
+  p {
+    font-size: 14px;
+    color: #666;
+    margin: 0 0 20px;
+    line-height: 1.6;
+  }
+
+  .trial-login-link {
+    margin-top: 12px;
+    font-size: 13px;
+    color: #1989fa;
+    cursor: pointer;
+
+    &:active {
+      opacity: 0.7;
+    }
+  }
 }
 
 .message-list {

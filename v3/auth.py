@@ -248,6 +248,7 @@ class RegisterRequest(BaseModel):
     phone: str = Field(..., min_length=11, max_length=11, pattern=r"^1\d{10}$")
     password: str = Field(..., min_length=6, max_length=32)
     nickname: str = Field("", max_length=64)
+    code: str = Field("", max_length=6, description="SMS 验证码 (注册时校验)")
 
 
 class LoginRequest(BaseModel):

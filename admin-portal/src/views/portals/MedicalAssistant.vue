@@ -135,12 +135,14 @@ const quickActions = [
   { key: 'data', icon: '📊', label: '数据统计', bg: '#ecfeff' },
 ]
 
-const prescriptionTemplates = ref([
-  { id: 1, icon: '🩸', name: '血糖管理行为处方', desc: '饮食+运动+监测+用药4维度', items: 12, bg: '#fef2f2', color: '#dc2626' },
-  { id: 2, icon: '⚖️', name: '体重控制行为处方', desc: '热量限制+运动计划+行为记录', items: 8, bg: '#fffbeb', color: '#d97706' },
-  { id: 3, icon: '🧘', name: '心理干预行为处方', desc: '正念+认知重构+社交支持', items: 6, bg: '#fdf4ff', color: '#9333ea' },
-  { id: 4, icon: '😴', name: '睡眠改善行为处方', desc: '睡眠卫生+放松训练', items: 5, bg: '#ecfeff', color: '#0891b2' },
-])
+const _TEMPLATE_STYLE: Record<string, { icon: string; bg: string; color: string }> = {
+  glucose: { icon: '🩸', bg: '#fef2f2', color: '#dc2626' },
+  weight: { icon: '⚖️', bg: '#fffbeb', color: '#d97706' },
+  mental: { icon: '🧘', bg: '#fdf4ff', color: '#9333ea' },
+  sleep: { icon: '😴', bg: '#ecfeff', color: '#0891b2' },
+  default: { icon: '📋', bg: '#f0f5ff', color: '#1890ff' },
+}
+const prescriptionTemplates = ref<any[]>([])
 
 const todayTodos = ref<{ id: number; title: string; patient: string; time: string; done: boolean; type: string; typeLabel: string }[]>([])
 
@@ -151,6 +153,16 @@ const recentPrescriptions = ref<{ id: number; patient: string; name: string; dat
 const statusLabelMap: Record<string, string> = { active: '执行中', completed: '已完成', paused: '已暂停', pending: '待开始' }
 
 onMounted(async () => {
+  // Load prescription templates from intervention packages
+  try {
+    const res = await request.get('v1/rx/intervention-packages')
+    const pkgs = res.data?.packages || res.data?.items || (Array.isArray(res.data) ? res.data : [])
+    prescriptionTemplates.value = pkgs.map((p: any) => {
+      const style = _TEMPLATE_STYLE[p.domain || p.category] || _TEMPLATE_STYLE.default
+      return { id: p.id, icon: style.icon, name: p.name || p.title, desc: p.description || p.desc || '', items: p.item_count || p.items || 0, bg: style.bg, color: style.color }
+    })
+  } catch { /* API unavailable — keep empty */ }
+
   // Load today's todos from daily-tasks API
   try {
     const res = await request.get('v1/daily-tasks/today')

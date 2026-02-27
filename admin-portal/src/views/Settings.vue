@@ -372,54 +372,15 @@ const basicSettings = reactive({
   contactPhone: '400-000-0000'
 })
 
-// 等级配置
-const levelConfigs = ref([
-  {
-    level: 'L1',
-    name: 'L1 成长者',
-    required_courses: 3,
-    required_exams: 1,
-    required_cases: 5,
-    required_mentoring_hours: 0,
-    additional_requirements: ''
-  },
-  {
-    level: 'L2',
-    name: 'L2 分享者',
-    required_courses: 5,
-    required_exams: 2,
-    required_cases: 20,
-    required_mentoring_hours: 10,
-    additional_requirements: '需完成至少1次督导反馈'
-  },
-  {
-    level: 'L3',
-    name: 'L3 教练',
-    required_courses: 8,
-    required_exams: 3,
-    required_cases: 50,
-    required_mentoring_hours: 20,
-    additional_requirements: '需有至少2个成功案例报告'
-  },
-  {
-    level: 'L4',
-    name: 'L4 促进师',
-    required_courses: 10,
-    required_exams: 4,
-    required_cases: 100,
-    required_mentoring_hours: 40,
-    additional_requirements: '需完成督导培训，有带教经验'
-  },
-  {
-    level: 'L5',
-    name: 'L5 大师',
-    required_courses: 15,
-    required_exams: 5,
-    required_cases: 200,
-    required_mentoring_hours: 80,
-    additional_requirements: '需有显著行业贡献，具备培训师资格'
-  }
-])
+// 等级配置 (从 settings API 加载，未保存时使用平台默认)
+const _DEFAULT_LEVEL_CONFIGS = [
+  { level: 'L1', name: 'L1 成长者', required_courses: 3, required_exams: 1, required_cases: 5, required_mentoring_hours: 0, additional_requirements: '' },
+  { level: 'L2', name: 'L2 分享者', required_courses: 5, required_exams: 2, required_cases: 20, required_mentoring_hours: 10, additional_requirements: '需完成至少1次督导反馈' },
+  { level: 'L3', name: 'L3 教练', required_courses: 8, required_exams: 3, required_cases: 50, required_mentoring_hours: 20, additional_requirements: '需有至少2个成功案例报告' },
+  { level: 'L4', name: 'L4 促进师', required_courses: 10, required_exams: 4, required_cases: 100, required_mentoring_hours: 40, additional_requirements: '需完成督导培训，有带教经验' },
+  { level: 'L5', name: 'L5 大师', required_courses: 15, required_exams: 5, required_cases: 200, required_mentoring_hours: 80, additional_requirements: '需有显著行业贡献，具备培训师资格' },
+]
+const levelConfigs = ref<typeof _DEFAULT_LEVEL_CONFIGS>([])
 
 // 考试设置
 const examSettings = reactive({
@@ -498,7 +459,17 @@ const loadAdminUsers = async () => {
   }
 }
 
-onMounted(loadAdminUsers)
+onMounted(async () => {
+  loadAdminUsers()
+  // 加载等级配置 (settings API)
+  try {
+    const res = await request.get('v1/admin/settings/levels')
+    const saved = res.data?.levels || (Array.isArray(res.data) ? res.data : null)
+    levelConfigs.value = saved && saved.length > 0 ? saved : _DEFAULT_LEVEL_CONFIGS
+  } catch {
+    levelConfigs.value = _DEFAULT_LEVEL_CONFIGS
+  }
+})
 
 // 用户表单
 const userForm = reactive({

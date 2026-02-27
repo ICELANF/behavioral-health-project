@@ -1,8 +1,13 @@
-# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.3.0)
+# BHP 行为健康数字平台 — Claude Code 项目指令 (V5.3.1)
 
 > 本文件由 Claude Code 自动加载，指导 AI 如何在本项目中工作。
-> **V5.3.0 变更**: 2026-02-25 行智诊疗(XZB)专家个人AGENT Phase 0+1+2 + 深度自检修复: Migration 054(10新表+3ALTER) + core/xzb/(8文件) + api/xzb_api.py(29端点) + XZBExpertAgent注册到MasterAgent(AgentDomain.XZB_EXPERT) + Retriever对接EmbeddingService(embed_query+KnowledgeRetriever) + Job35 LLM对话知识挖掘 + Job38 真实向量嵌入 + RxBridge→coach_push_queue直接注入(铁律) + _source_label添加vision_rx+xzb_expert; **深度自检**: seeker_id UUID→int(4文件CRITICAL修复) + ondelete CASCADE(4处ORM对齐DDL) + PostType/SharingPermission枚举(2个); 11新建+10修改=21文件; Alembic HEAD=056
-> **Admin安全审核** (2026-02-25): 全面审核修复28项(33文件)+3项后端修复: **Phase 0基础设施**(6 CRITICAL: router RBAC执行+request.ts端口+client.ts硬编码UserID+copilot SSE token泄露+auth refresh字段+supabase崩溃) + **XSS防护**(DOMPurify sanitize.ts+6处v-html全修复) + **stale token**(CoachHome/StudentAssessment/CoachSelfHealthSummary Proxy动态headers) + **硬编码密码**(coach/List+StudentList→随机临时密码, Login→仅dev显示) + **AgentMarketplace JWT→localStorage角色** + **6 client页面token guard** + **console.log全删除(28处含PII)** + **后端铁律修复**: Migration 056(content_items.review_status铁律审核字段+coach_push_queue.reviewer_id审批追踪) + ecosystem IDOR租户管辖权校验; pentest 10/10 + E2E 51/0/7 全通过; Alembic HEAD=056
+> **V5.3.1 成长者四原则任务+H5全链路200** (2026-02-27): 成长者添加任务四原则(`micro_action_service.py`完全重写+get_task_pool_by_focus+user_self_add_task+数据闭环) + `micro_action_api.py`新增3端点(GET/task-pool, POST/self-add, PATCH/focus-areas) + `Tasks.vue`三来源标签+FAB+底部弹窗 + `Profile.vue`关注领域卡片(5选择+防抖保存) + `daily_tasks_api.py`新建(5端点) + **BugFix** `r3_grower_flywheel_api_live.py` pathlib.Path被fastapi.Path覆盖→`from pathlib import Path as FilePath` + **新别名端点**: `GET /api/v1/coach/dashboard-stats`(coach_api别名) + `GET /api/v1/coach-push/pending` + `POST /coach-push/{id}/approve|reject`(alias_router注入main.py) + **验收**: `scripts/test_all_pages_by_role.py`(5角色×166端点全部200); 4新+6改=10文件; 契约注册表66条
+> **AI健康向导+登录增强+批量导入** (2026-02-26): AI体验聊天(`POST /api/v1/chat/trial`, 匿名IP限频10次/日) + 手机验证码登录(`POST /api/v1/auth/sms-login`, 查Redis验证码→自动创建用户) + 公开发送验证码(`POST /api/v1/auth/send-sms-code`, 无需JWT) + V3注册支持`upgrade=grower`自动升级成长者 + 批量用户导入(`POST /admin/users/batch-import`, CSV, phone/wx_openid自动关联) + 导入模板下载(`GET /admin/users/import-template`); H5: Chat.vue体验模式(3次试用→注册引导浮层) + Login.vue三Tab(账号/验证码/微信) + Register.vue SMS验证码 + WechatCallback.vue + ObserverHome允许匿名聊天 + `/chat`路由public; Admin: UserImport.vue(CSV上传+预览+导入结果); .env添加SMS+WeChat配置占位; 3新建+13修改=16文件
+> **V5.3.0 变更**: 2026-02-25 行智诊疗(XZB)专家个人AGENT Phase 0+1+2 + 深度自检修复: Migration 054(10新表+3ALTER) + core/xzb/(8文件) + api/xzb_api.py(29端点) + XZBExpertAgent注册到MasterAgent(AgentDomain.XZB_EXPERT) + Retriever对接EmbeddingService(embed_query+KnowledgeRetriever) + Job35 LLM对话知识挖掘 + Job38 真实向量嵌入 + RxBridge→coach_push_queue直接注入(铁律) + _source_label添加vision_rx+xzb_expert; **深度自检**: seeker_id UUID→int(4文件CRITICAL修复) + ondelete CASCADE(4处ORM对齐DDL) + PostType/SharingPermission枚举(2个); 11新建+10修改=21文件; Alembic HEAD=057
+> **运营中心** (2026-02-26): 预约演示→管理员站内通知(Notification+高优先级) + GET/PUT /api/v1/demo-requests(列表+状态管理,admin) + 平台事件日志API(GET /api/v1/admin/operation-center/stats|events|logs, 聚合demo_requests+notifications+loguru日志读取+错误计数) + Admin OperationCenter.vue(3 tab: 商务线索/系统日志/事件流, 30s自动刷新) + /admin/operation-center路由(requiresAdmin); 2新+2改; 契约注册表63条
+> **Landing Page交互补全+动态审核** (2026-02-26): 预约演示弹窗(联系表单7字段+POST /api/v1/demo-requests+in-modal成功/错误反馈) + "了解更多"平滑滚动 + Footer链接归位 + GET /api/v1/landing/platform-stats(动态ORM/Agent/API/知识引擎统计, 5min缓存) + 首页技术卡片动态更新(391→698 API/59→169模型/12→20 Agent/3→4层) + 移除死代码useCounter(); Migration 058(demo_requests表) + DemoRequest ORM; 2新+4改; Alembic HEAD=058
+> **Admin Mock残留清零** (2026-02-26): QuestionBank 8项修复(TS接口对齐+预览opt.key/text+服务端筛选+分页+统计avgCorrectRate+xlsx导入+CSV导出+Store清理) + 5处mock→API(HomeView/Settings/MedicalAssistant/PublicPortal/CoachHome) + AdminAnalytics system-info端点(GET /v1/analytics/admin/system-info); npm install xlsx; 1新+8改
+> **Admin安全审核** (2026-02-25): 全面审核修复28项(33文件)+3项后端修复: **Phase 0基础设施**(6 CRITICAL: router RBAC执行+request.ts端口+client.ts硬编码UserID+copilot SSE token泄露+auth refresh字段+supabase崩溃) + **XSS防护**(DOMPurify sanitize.ts+6处v-html全修复) + **stale token**(CoachHome/StudentAssessment/CoachSelfHealthSummary Proxy动态headers) + **硬编码密码**(coach/List+StudentList→随机临时密码, Login→仅dev显示) + **AgentMarketplace JWT→localStorage角色** + **6 client页面token guard** + **console.log全删除(28处含PII)** + **后端铁律修复**: Migration 056(content_items.review_status铁律审核字段+coach_push_queue.reviewer_id审批追踪) + ecosystem IDOR租户管辖权校验; pentest 10/10 + E2E 51/0/7 全通过; Alembic HEAD=057
 > **V5.2.9 变更**: 2026-02-24 VisionGuard视力行为保护域: Migration 053(5新表) + core/vision_service.py(5 ORM+评分引擎+风险评估+监护人+处方触发) + VisionGuideAgent(5意图+处方生成) + 5 Scheduler Jobs(23:00/23:15/Mon08/Sun06/月1日) + api/vision_api.py(14端点) + H5 4页面(打卡/监护人/档案/检查) + Admin审批队列 + h5/src/api/vision.ts; 铁律合规(AI→教练审核→推送)
 > **V5.2.8 变更**: 2026-02-24 审计I-01~I-09全量实施: Migration 052(2新表+7列扩展) + 双轨角色升级(I-01) + 激活4项检查(I-02) + 督导行动项派发(I-03) + 显示名称统一7处(I-04) + 强制Agent(I-05) + 铁律执行(I-06) + 资质生命周期(I-07, 4端点+调度器) + 积分差异化(I-08) + 循证等级治理(I-09) + 8处代码纠偏(C1-C8)
 > **V5.2.7 变更**: 2026-02-24 督导专家系统(6端点+状态机) + 租户生命周期(3端点) + RBAC修复 + P1 E2E验证3修复(json.dumps+事务隔离) + P1通知增强(WebSocket推送+2新端点) + 33测试
@@ -16,6 +21,73 @@
 >
 > 上游契约: `E:\注册表更新文件\行健平台-契约注册表-V5_2_7-CONSOLIDATED.md` (V5.3.0 唯一权威版)
 > Agent配置清单: `agent_multimodal_host_config.md` (47+ Agent类 · 15预设模板 · 4层安全 · 6模态)
+
+---
+
+## 零、文件上传检测（自动触发 — 最高优先级）
+
+**规则：每当会话中出现文件上传，立即执行以下判断，不需要等待用户额外说明。**
+
+```
+上传文件类型判断：
+  ├─ .py / .vue / .sql / .ts / .json 等代码文件
+  │    → 走代码工作流，不触发知识转换
+  │
+  ├─ .md 文件且用户说明是知识库文件
+  │    → 直接审阅格式合规性，对照8模块模板给出补全建议
+  │
+  └─ 其他所有文件（PDF / Word / PPT / TXT / 图片含文字 / RAR/ZIP压缩包）
+       → 立即启动知识入库转换流程
+          参考：@docs/agents/knowledge_ingestion_prompt.md
+```
+
+**转换流程三步**：
+1. **文档诊断卡**：知识层级(Evidence/语义规则/L1底座/L2领域/L3情境) / 建议拆分数 / 缺失信息 / 来源可信度
+2. **按层模板转换**：L3情境→完整8模块模板; L2领域→调用指引模板; Evidence层→元数据卡片+规则提取; L1底座→差异补充
+3. **输出说明**：存放路径 / 待专家确认问题 / ⚠️不确定内容标注 / 下一步建议
+
+**铁律**：
+- 不确定的医学结论加⚠️标注，不自行断言
+- 跨层内容必须拆分，不混在一个文件里
+- 话术必须是完整可用句子，不是描述性说明
+- 不在知识包里写入任何具体用户数据
+- 数值阈值必须给出具体数字，不是"较高时注意"
+
+**知识库导航** — 饮食行为干预决策树位于 `docs/knowledge/`，先读索引再按需加载：
+→ 索引：`@docs/knowledge/README.md`
+
+| 关键词出现 | 加载文件 |
+|-----------|---------|
+| TTM/阶段/S0/S1/S2/S3/S4/S5/无意向/维持期/行为改变阶段 | `docs/knowledge/base/ttm_stages.md` |
+| BFR/行为事实/回溯/访谈框架/六要素/背景/触发 | `docs/knowledge/base/bfr_framework.md` |
+| BPT6/行为倾向/六维/情绪化/效能感/认知弹性 | `docs/knowledge/base/bpt6_dimensions.md` |
+| 危机/红线/自伤/自杀/低血糖危机/高血压危机/CrisisAgent/熔断 | `docs/knowledge/base/crisis_protocol.md` |
+| 情绪/压力/奶茶/甜点/自责 | `docs/knowledge/dietary_s01_emotion.md` |
+| 家里/长辈/油盐/劝吃 | `docs/knowledge/dietary_s02_family.md` |
+| 没救/没毅力/自责/破罐 | `docs/knowledge/dietary_s03_spiral.md` |
+| 指标/焦虑/没达标/KPI | `docs/knowledge/dietary_s04_anxiety.md` |
+| 太忙/外卖/没时间 | `docs/knowledge/dietary_s05_workplace.md` |
+| CGM/设备/摘掉/数据 | `docs/knowledge/dietary_s06_tool.md` |
+| 应酬/客户/劝酒/饭局 | `docs/knowledge/dietary_s07_social.md` |
+| 害怕运动/心跳快/健身房 | `docs/knowledge/dietary_s08_exercise.md` |
+| 矛盾/人生苦短/开心就好 | `docs/knowledge/dietary_s09_conflict.md` |
+| 没救/天生/反正做不到 | `docs/knowledge/dietary_s10_helpless.md` |
+| 体质/气虚/阳虚/阴虚/痰湿/湿热/血瘀/气郁/特禀/怕冷/手脚冰凉/腹部肥满/面部油腻/胸闷叹气/过敏 | `docs/knowledge/domain/tcm_constitution_base.md` |
+| 评估/测评/问卷/人格/大五/BIG5/BPT/行为类型/阶段/TTM/改变/潜力/CAPACITY/成功率/SPI/处方/报告/状态机 | `docs/knowledge/domain/baps_assessment_system.md` |
+| 血糖/血压/BMI/腰围/血脂/胆固醇/甘油三酯/尿酸/糖化/HbA1c/代谢综合征 | `docs/knowledge/domain/metabolic_biomarkers.md` |
+| 压力/焦虑/紧张/皮质醇/HRV/心率变异/烦躁/崩溃/喘不过气/腰围增加 | `docs/knowledge/domain/stress_cortisol_metabolism.md` |
+| 睡眠/失眠/早醒/熬夜/嗜睡/打鼾/睡不着/多梦/深度睡眠 | `docs/knowledge/domain/sleep_science.md` |
+| 运动/健身/步数/跑步/散步/游泳/瑜伽/力量训练/心率/NEAT | `docs/knowledge/domain/exercise_prescription.md` |
+| 动机/MI/访谈/改变话语/抗拒/矛盾心理/OARS/变化话语/DARN/维持话语 | `docs/knowledge/base/mi_interview_framework.md` |
+| 抑郁/焦虑/情绪低落/无助/想哭/PHQ-9/GAD-7/PSS/自责/暴饮暴食 | `docs/knowledge/domain/mental_health_screening.md` |
+| 体重/减重/减肥/BMI/体脂/复胖/反弹/平台期/节食/肥胖 | `docs/knowledge/domain/weight_management.md` |
+| 心脏/冠心病/心梗/支架/搭桥/心衰/心脏康复/胸闷/心悸/术后运动 | `docs/knowledge/domain/cardiac_rehab_protocol.md` |
+| 饮食/营养/热量/碳水/蛋白质/GI/食谱/吃什么/减肥餐/外卖 | `docs/knowledge/domain/nutrition_science.md` |
+| 视力/近视/远视/散光/眼镜/OK镜/户外时间/屏幕时间/眼疲劳/度数 | `docs/knowledge/domain/vision_protection.md` |
+| 处方/行为/微行动/习惯/目标/坚持不了/怎么做到/方案/干预包/SMART | `docs/knowledge/domain/behavior_rx_design.md` |
+| 复发/又回到老样子/放弃/坚持不下去/破功/AVE/高危情境/回退 | `docs/knowledge/base/ttm_relapse_protocol.md` |
+| Agency/自主性/信任/被动/过渡/主动/Observer转化/教练Override/SDT | `docs/knowledge/base/agency_trust_model.md` |
+| 大五/人格/神经质/外向性/开放性/宜人性/尽责性/BFP/OCEAN/NEO/性格/自律差/冲动/敏感/内向/完美主义 | `docs/knowledge/domain/bfp_behavioral_health_base.md` |
 
 ---
 

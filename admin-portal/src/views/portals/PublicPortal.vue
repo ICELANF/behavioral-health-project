@@ -97,10 +97,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { RightOutlined } from '@ant-design/icons-vue'
 import { message } from 'ant-design-vue'
+import request from '@/api/request'
 
 const router = useRouter()
 const searchQuery = ref('')
@@ -116,19 +117,15 @@ const categories = [
   { key: 'prevention', icon: '🛡️', label: '并发症预防', bg: '#f0f5ff' },
 ]
 
-const hotArticles = ref([
-  { id: 1, title: '2型糖尿病患者的每日运动指南：30分钟改变健康轨迹', tag: '运动', tagBg: '#dcfce7', tagColor: '#16a34a', views: '3.2万', thumb: '' },
-  { id: 2, title: '低GI饮食全攻略：哪些食物可以放心吃？', tag: '饮食', tagBg: '#fef3c7', tagColor: '#d97706', views: '2.8万', thumb: '' },
-  { id: 3, title: '行为改变五阶段模型：从犹豫到坚持的科学路径', tag: '心理', tagBg: '#e0e7ff', tagColor: '#4f46e5', views: '1.5万', thumb: '' },
-  { id: 4, title: '血糖监测时间点解读：餐前餐后到底差多少？', tag: '血糖', tagBg: '#fee2e2', tagColor: '#dc2626', views: '4.1万', thumb: '' },
-])
-
-const selfTestTools = ref([
-  { id: 1, icon: '📋', name: 'PHQ-9 抑郁筛查', desc: '9题快速评估' },
-  { id: 2, icon: '📊', name: 'GAD-7 焦虑评估', desc: '7题焦虑自测' },
-  { id: 3, icon: '🩸', name: '糖尿病风险评估', desc: '多维度风险筛查' },
-  { id: 4, icon: '🏃', name: '运动能力测评', desc: '运动处方参考' },
-])
+const _TAG_STYLE: Record<string, { tagBg: string; tagColor: string }> = {
+  运动: { tagBg: '#dcfce7', tagColor: '#16a34a' },
+  饮食: { tagBg: '#fef3c7', tagColor: '#d97706' },
+  心理: { tagBg: '#e0e7ff', tagColor: '#4f46e5' },
+  血糖: { tagBg: '#fee2e2', tagColor: '#dc2626' },
+  default: { tagBg: '#f0f5ff', tagColor: '#1890ff' },
+}
+const hotArticles = ref<any[]>([])
+const selfTestTools = ref<any[]>([])
 
 // ---- 科普分类 → 患者端首页 (带分类参数) ----
 const categoryRouteMap: Record<string, string> = {
@@ -170,6 +167,33 @@ const goTool = (tool: { id: number; name: string }) => {
   const target = toolRouteMap[tool.id] || '/client/assessment/list'
   router.push({ path: target, query: { tool: tool.name } })
 }
+
+onMounted(async () => {
+  // 加载热门科普文章
+  try {
+    const res = await request.get('v1/content/recommended', { params: { limit: 4, content_type: 'article' } })
+    const items = res.data?.items || res.data?.data || (Array.isArray(res.data) ? res.data : [])
+    hotArticles.value = items.slice(0, 4).map((a: any) => {
+      const tag = a.domain || a.category || a.tag || '健康'
+      const style = _TAG_STYLE[tag] || _TAG_STYLE.default
+      return {
+        id: a.id, title: a.title,
+        tag, tagBg: style.tagBg, tagColor: style.tagColor,
+        views: a.view_count ? `${(a.view_count / 10000).toFixed(1)}万` : '0',
+        thumb: a.cover_url || '',
+      }
+    })
+  } catch { /* API unavailable — keep empty */ }
+
+  // 加载自测工具 (公开评估量表)
+  try {
+    const res = await request.get('v1/assessments/templates', { params: { limit: 4, is_public: true } })
+    const items = res.data?.items || res.data?.data || (Array.isArray(res.data) ? res.data : [])
+    selfTestTools.value = items.slice(0, 4).map((t: any) => ({
+      id: t.id, icon: t.icon || '📋', name: t.name || t.title, desc: t.description || `${t.question_count || ''}题评估`,
+    }))
+  } catch { /* API unavailable — keep empty */ }
+})
 </script>
 
 <style scoped>

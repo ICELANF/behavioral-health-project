@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "version": "1.0.0",
-    "description": "BHP徽章与成就配置 - 含学时徽章、模块成就、晋级纪念物",
-    "updated": "2026-02-09"
+    "version": "1.1.0",
+    "description": "BHP徽章与成就配置 - 含学时徽章、模块成就、晋级纪念物、领域成就(7x3)、自选任务里程碑(4)",
+    "updated": "2026-02-27"
   },
 
   "badge_categories": {
@@ -119,6 +119,49 @@
           "memorial": {"type": "contribution_heatmap_art", "includes": "methodology_page", "unique": true},
           "unlocks_display": ["理论创新", "标准制定", "学术发表", "平台治理"]
         }
+      ]
+    },
+    "domain_achievement": {
+      "label": "领域成就",
+      "display_order": 5,
+      "badges": [
+        {"id": "badge_nutrition_7d",   "name": "7天营养记录达人",   "icon": "🥗", "rarity": "uncommon",  "condition": {"domain": "营养", "checkin_days_gte": 7},   "description": "营养相关任务连续打卡7天"},
+        {"id": "badge_nutrition_30d",  "name": "营养管理月度之星",  "icon": "🥗", "rarity": "rare",      "condition": {"domain": "营养", "checkin_count_gte": 30},  "description": "营养相关任务累计打卡30次"},
+        {"id": "badge_nutrition_100",  "name": "百日营养践行者",    "icon": "🥗", "rarity": "epic",      "condition": {"domain": "营养", "checkin_count_gte": 100}, "description": "营养相关任务累计打卡100次"},
+
+        {"id": "badge_exercise_7d",    "name": "7天运动达人",       "icon": "🏃", "rarity": "uncommon",  "condition": {"domain": "运动", "checkin_days_gte": 7},   "description": "运动相关任务连续打卡7天"},
+        {"id": "badge_exercise_30d",   "name": "运动坚持月度之星",  "icon": "🏃", "rarity": "rare",      "condition": {"domain": "运动", "checkin_count_gte": 30},  "description": "运动相关任务累计打卡30次"},
+        {"id": "badge_exercise_100",   "name": "百日运动践行者",    "icon": "🏃", "rarity": "epic",      "condition": {"domain": "运动", "checkin_count_gte": 100}, "description": "运动相关任务累计打卡100次"},
+
+        {"id": "badge_sleep_7d",       "name": "7天早睡早起达人",   "icon": "😴", "rarity": "uncommon",  "condition": {"domain": "睡眠", "checkin_days_gte": 7},   "description": "睡眠相关任务连续打卡7天"},
+        {"id": "badge_sleep_30d",      "name": "睡眠管理月度之星",  "icon": "😴", "rarity": "rare",      "condition": {"domain": "睡眠", "checkin_count_gte": 30},  "description": "睡眠相关任务累计打卡30次"},
+        {"id": "badge_sleep_100",      "name": "百日好眠践行者",    "icon": "😴", "rarity": "epic",      "condition": {"domain": "睡眠", "checkin_count_gte": 100}, "description": "睡眠相关任务累计打卡100次"},
+
+        {"id": "badge_emotion_7d",     "name": "7天情绪关怀达人",   "icon": "🧘", "rarity": "uncommon",  "condition": {"domain": "情绪", "checkin_days_gte": 7},   "description": "情绪相关任务连续打卡7天"},
+        {"id": "badge_emotion_30d",    "name": "情绪管理月度之星",  "icon": "🧘", "rarity": "rare",      "condition": {"domain": "情绪", "checkin_count_gte": 30},  "description": "情绪相关任务累计打卡30次"},
+        {"id": "badge_emotion_100",    "name": "百日情绪践行者",    "icon": "🧘", "rarity": "epic",      "condition": {"domain": "情绪", "checkin_count_gte": 100}, "description": "情绪相关任务累计打卡100次"},
+
+        {"id": "badge_monitor_7d",     "name": "7天监测达人",       "icon": "🩸", "rarity": "uncommon",  "condition": {"domain": "监测", "checkin_days_gte": 7},   "description": "监测相关任务连续打卡7天"},
+        {"id": "badge_monitor_30d",    "name": "监测管理月度之星",  "icon": "🩸", "rarity": "rare",      "condition": {"domain": "监测", "checkin_count_gte": 30},  "description": "监测相关任务累计打卡30次"},
+        {"id": "badge_monitor_100",    "name": "百日监测践行者",    "icon": "🩸", "rarity": "epic",      "condition": {"domain": "监测", "checkin_count_gte": 100}, "description": "监测相关任务累计打卡100次"},
+
+        {"id": "badge_learning_7d",    "name": "7天学习达人",       "icon": "📖", "rarity": "uncommon",  "condition": {"domain": "学习", "checkin_days_gte": 7},   "description": "学习相关任务连续打卡7天"},
+        {"id": "badge_learning_30d",   "name": "学习月度之星",      "icon": "📖", "rarity": "rare",      "condition": {"domain": "学习", "checkin_count_gte": 30},  "description": "学习相关任务累计打卡30次"},
+        {"id": "badge_learning_100",   "name": "百日学习践行者",    "icon": "📖", "rarity": "epic",      "condition": {"domain": "学习", "checkin_count_gte": 100}, "description": "学习相关任务累计打卡100次"},
+
+        {"id": "badge_medication_7d",  "name": "7天用药打卡达人",   "icon": "💊", "rarity": "uncommon",  "condition": {"domain": "用药", "checkin_days_gte": 7},   "description": "用药相关任务连续打卡7天"},
+        {"id": "badge_medication_30d", "name": "用药管理月度之星",  "icon": "💊", "rarity": "rare",      "condition": {"domain": "用药", "checkin_count_gte": 30},  "description": "用药相关任务累计打卡30次"},
+        {"id": "badge_medication_100", "name": "百日用药践行者",    "icon": "💊", "rarity": "epic",      "condition": {"domain": "用药", "checkin_count_gte": 100}, "description": "用药相关任务累计打卡100次"}
+      ]
+    },
+    "self_task_milestone": {
+      "label": "自选任务里程碑",
+      "display_order": 6,
+      "badges": [
+        {"id": "badge_self_10",  "name": "自选探索者", "icon": "🌱", "rarity": "common",    "condition": {"self_task_count_gte": 10},  "reward": {"growth": 20},  "description": "累计完成10个自选任务"},
+        {"id": "badge_self_50",  "name": "自选实践者", "icon": "🌿", "rarity": "uncommon",  "condition": {"self_task_count_gte": 50},  "reward": {"growth": 50, "contribution": 10},  "description": "累计完成50个自选任务"},
+        {"id": "badge_self_100", "name": "自选大师",   "icon": "🌳", "rarity": "rare",      "condition": {"self_task_count_gte": 100}, "reward": {"growth": 100, "contribution": 30}, "description": "累计完成100个自选任务"},
+        {"id": "badge_self_365", "name": "自选传奇",   "icon": "🌟", "rarity": "legendary", "condition": {"self_task_count_gte": 365}, "reward": {"growth": 200, "contribution": 50}, "description": "累计完成365个自选任务"}
       ]
     }
   },

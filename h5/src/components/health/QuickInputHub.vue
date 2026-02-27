@@ -401,9 +401,17 @@ const onPhoto = async (e: Event) => {
     const fd = new FormData()
     fd.append('file', file)
     const result = await healthApi.recognizeFood(fd)
-    photoResult.value = result
+    if (result && (result.food_name || result.image_url)) {
+      photoResult.value = result
+    } else {
+      // API 返回成功但 VLM 不可用，图片已保存
+      photoResult.value = { ...result, food_name: '已记录（AI分析暂不可用）' }
+    }
   } catch (e: any) {
-    photoError.value = e?.response?.data?.detail || '识别失败，请重试'
+    // 超时或网络错误
+    photoError.value = e?.code === 'ECONNABORTED'
+      ? 'AI 分析超时，请稍后重试'
+      : (e?.response?.data?.detail || '识别失败，请重试')
     photoPreview.value = ''
   }
 }
@@ -445,19 +453,45 @@ const toggleRecording = () => {
 // ── Web Speech API (primary, Chrome) ──
 const startWebSpeech = () => {
   if (!SpeechRecognitionClass) return
-  recognition = new SpeechRecognitionClass()
-  recognition.lang = 'zh-CN'
-  recognition.continuous = true
-  recognition.interimResults = true
-  recognition.onresult = (event: any) => {
-    let t = ''
-    for (let i = 0; i < event.results.length; i++) t += event.results[i][0].transcript
-    voiceText.value = t
+  try {
+    recognition = new SpeechRecognitionClass()
+    recognition.lang = 'zh-CN'
+    recognition.continuous = true
+    recognition.interimResults = true
+    recognition.onresult = (event: any) => {
+      let t = ''
+      for (let i = 0; i < event.results.length; i++) t += event.results[i][0].transcript
+      voiceText.value = t
+    }
+    recognition.onerror = (evt: any) => {
+      isRecording.value = false
+      recognition = null
+      const errType = evt?.error || ''
+      if (errType === 'network' || errType === 'service-not-allowed' || errType === 'not-allowed') {
+        // Web Speech 不可用，回退到 MediaRecorder → server ASR
+        if (mediaRecorderSupported) {
+          showToast('切换到服务端语音识别...')
+          startMediaRecorder()
+        } else {
+          showToast({ message: '语音识别不可用，请检查网络和麦克风权限', type: 'fail' })
+        }
+      } else if (errType === 'no-speech') {
+        showToast('未检测到语音，请靠近麦克风重试')
+      } else {
+        showToast({ message: '语音识别出错: ' + errType, type: 'fail' })
+      }
+    }
+    recognition.onend = () => { isRecording.value = false }
+    recognition.start()
+    isRecording.value = true
+  } catch (e) {
+    // SpeechRecognition 初始化失败，回退到 MediaRecorder
+    if (mediaRecorderSupported) {
+      startMediaRecorder()
+    } else {
+      showToast({ message: '语音识别不可用', type: 'fail' })
+    }
   }
-  recognition.onerror = () => { isRecording.value = false }
-  recognition.onend = () => { isRecording.value = false }
-  recognition.start()
-  isRecording.value = true
 }
 
 // ── MediaRecorder → server ASR (fallback) ──

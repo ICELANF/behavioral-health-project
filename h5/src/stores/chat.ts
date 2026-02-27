@@ -27,6 +27,59 @@ export const useChatStore = defineStore('chat', () => {
   const isLoading = ref<boolean>(false)
   const conversationId = ref<string>('')
 
+  // ── Trial 体验模式 ──
+  const TRIAL_KEY = 'bhp_trial_chat_count'
+  const TRIAL_LIMIT = 3
+
+  const trialCount = ref<number>(parseInt(localStorage.getItem(TRIAL_KEY) || '0', 10))
+
+  const isAnonymous = computed(() => !storage.getToken())
+
+  const trialExhausted = computed(() => isAnonymous.value && trialCount.value >= TRIAL_LIMIT)
+
+  const trialRemaining = computed(() => Math.max(0, TRIAL_LIMIT - trialCount.value))
+
+  function incrementTrialCount() {
+    trialCount.value++
+    localStorage.setItem(TRIAL_KEY, String(trialCount.value))
+  }
+
+  // 匿名体验聊天
+  async function sendTrialMessage(content: string) {
+    const userMessage: ChatMessage = {
+      id: 'msg_' + Date.now(),
+      role: 'user',
+      content,
+      timestamp: Date.now()
+    }
+    messages.value.push(userMessage)
+    isLoading.value = true
+
+    try {
+      const response: any = await chatApi.sendTrialMessage(content)
+      const answerText = response.answer || '抱歉，我暂时无法回答这个问题。'
+      const assistantMessage: ChatMessage = {
+        id: 'msg_' + Date.now(),
+        role: 'assistant',
+        content: answerText,
+        expert: currentExpertInfo.value?.name,
+        timestamp: Date.now(),
+      }
+      messages.value.push(assistantMessage)
+      incrementTrialCount()
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail || '网络错误，请稍后重试。'
+      messages.value.push({
+        id: 'msg_' + Date.now(),
+        role: 'assistant',
+        content: detail,
+        timestamp: Date.now()
+      })
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   // 计算属性
   const currentExpertInfo = computed(() => {
     return experts.value.find(e => e.id === currentExpert.value)
@@ -152,7 +205,12 @@ export const useChatStore = defineStore('chat', () => {
     currentExpertInfo,
     pendingTasks,
     completedTasks,
+    isAnonymous,
+    trialExhausted,
+    trialRemaining,
+    trialCount,
     sendMessage,
+    sendTrialMessage,
     setCurrentExpert,
     toggleTaskComplete,
     clearMessages

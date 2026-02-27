@@ -6,8 +6,10 @@ R3 (最终版): Grower 飞轮 API — 真实DB + 个性化庆祝
 部署: 替换 api/grower_flywheel_api.py
 """
 
+import json
 import random
 from datetime import date, datetime, timedelta
+from pathlib import Path as FilePath
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Path
@@ -65,6 +67,9 @@ class CheckinResponse(BaseModel):
     emoji: str
     points_earned: int = 0
     badge_unlocked: Optional[str] = None
+    points_breakdown: Optional[dict] = None
+    badge_name: Optional[str] = None
+    milestone_reached: Optional[str] = None
 
 
 class StreakResponse(BaseModel):
@@ -162,7 +167,7 @@ async def checkin_task(
     current_user=Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """任务打卡 — 写DB + 更新streak + 个性化反馈 + 里程碑检查"""
+    """任务打卡 — 难度差异积分 + 奖励引擎 + 个性化反馈 + 里程碑检查"""
     if body is None:
         body = CheckinRequest()
 
@@ -171,7 +176,7 @@ async def checkin_task(
 
     # 验证任务归属
     task_result = await db.execute(text("""
-        SELECT id, user_id, done, title, tag FROM daily_tasks WHERE id = :tid AND user_id = :uid
+        SELECT id, user_id, done, title, tag, source FROM daily_tasks WHERE id = :tid AND user_id = :uid
     """), {"tid": task_id, "uid": user_id})
     task = task_result.mappings().first()
     if not task:
@@ -179,23 +184,89 @@ async def checkin_task(
     if task["done"]:
         raise HTTPException(status_code=409, detail="任务已完成，不可重复打卡")
 
+    # ── 积分计算引擎 ──
+    cat_item = next((c for c in TASK_CATALOG if c["title"] == task["title"]), None)
+    difficulty = cat_item.get("difficulty", "easy") if cat_item else "easy"
+
+    # 基础积分 (按难度分层: easy=3, moderate=5, challenging=8)
+    if cat_item and cat_item.get("points_reward"):
+        base_points = cat_item["points_reward"].get("growth", DIFFICULTY_POINTS.get(difficulty, 3))
+    else:
+        base_points = DIFFICULTY_POINTS.get(difficulty, 3)
+
+    points_breakdown = {"base": base_points}
+    total_points = base_points
+
+    # 更新streak (先算，后续奖励依赖streak值)
+    streak_days = await _update_streak(db, user_id, now.date())
+
+    # 连续打卡奖励 (仅取最高档)
+    if streak_days >= 30:
+        points_breakdown["streak_30d"] = 5
+        total_points += 5
+    elif streak_days >= 14:
+        points_breakdown["streak_14d"] = 3
+        total_points += 3
+    elif streak_days >= 7:
+        points_breakdown["streak_7d"] = 2
+        total_points += 2
+
+    # 首次完成奖励 (该目录任务从未打卡过)
+    if cat_item:
+        first_check = await db.execute(text("""
+            SELECT 1 FROM task_checkins tc JOIN daily_tasks dt ON tc.task_id = dt.id
+            WHERE tc.user_id = :uid AND dt.title = :title
+            LIMIT 1
+        """), {"uid": user_id, "title": task["title"]})
+        if not first_check.first():
+            points_breakdown["first_time"] = 5
+            total_points += 5
+
     # 写入打卡记录
     await db.execute(text("""
         INSERT INTO task_checkins (task_id, user_id, note, photo_url, value, voice_url, points_earned, checked_at)
-        VALUES (:tid, :uid, :note, :photo, :val, :voice, 10, :now)
+        VALUES (:tid, :uid, :note, :photo, :val, :voice, :pts, :now)
     """), {"tid": task_id, "uid": user_id, "note": body.note, "photo": body.photo_url,
-           "val": body.value, "voice": body.voice_url, "now": now})
+           "val": body.value, "voice": body.voice_url, "pts": total_points, "now": now})
 
     # 更新任务状态
     await db.execute(text("UPDATE daily_tasks SET done = true, done_time = :now WHERE id = :tid"),
                      {"tid": task_id, "now": now})
 
-    # 更新streak
-    streak_days = await _update_streak(db, user_id, now.date())
+    # 领域多样性奖励 (今日已完成 ≥3 个不同领域)
+    domain_count = (await db.execute(text("""
+        SELECT COUNT(DISTINCT tag) FROM daily_tasks
+        WHERE user_id = :uid AND task_date = :today AND done = true
+    """), {"uid": user_id, "today": now.date()})).scalar() or 0
+    if domain_count >= 3:
+        points_breakdown["domain_diversity"] = 3
+        total_points += 3
+
+    # 检查全部完成
+    counts = (await db.execute(text("""
+        SELECT COUNT(*) as total, SUM(CASE WHEN done THEN 1 ELSE 0 END) as done_count
+        FROM daily_tasks WHERE user_id = :uid AND task_date = :today
+    """), {"uid": user_id, "today": now.date()})).mappings().first()
+    all_done = counts["total"] > 0 and counts["done_count"] == counts["total"]
+
+    # 全部完成奖励
+    if all_done:
+        points_breakdown["all_done"] = 5
+        total_points += 5
+
+    # 自选积极性奖励 (source='self', 每日上限5次)
+    if (task["source"] or "") == "self":
+        self_done_today = (await db.execute(text("""
+            SELECT COUNT(*) FROM daily_tasks
+            WHERE user_id = :uid AND task_date = :today AND source = 'self' AND done = true
+        """), {"uid": user_id, "today": now.date()})).scalar() or 0
+        if self_done_today <= 5:
+            points_breakdown["self_select"] = 1
+            total_points += 1
 
     # 累加积分
-    await db.execute(text("UPDATE users SET growth_points = COALESCE(growth_points, 0) + 10 WHERE id = :uid"),
-                     {"uid": user_id})
+    await db.execute(text("UPDATE users SET growth_points = COALESCE(growth_points, 0) + :pts WHERE id = :uid"),
+                     {"uid": user_id, "pts": total_points})
 
     await db.commit()
 
@@ -216,16 +287,40 @@ async def checkin_task(
     except Exception:
         pass  # 信任分更新失败不影响打卡主流程
 
-    # 检查全部完成
-    counts = (await db.execute(text("""
-        SELECT COUNT(*) as total, SUM(CASE WHEN done THEN 1 ELSE 0 END) as done_count
-        FROM daily_tasks WHERE user_id = :uid AND task_date = :today
-    """), {"uid": user_id, "today": now.date()})).mappings().first()
-    all_done = counts["total"] > 0 and counts["done_count"] == counts["total"]
-
     # ── 个性化反馈 (PATCH-4 合并) ──
     fb = await _build_personalized_feedback(db, user_id, streak_days, task["tag"] or "", all_done)
     badge = "daily_complete" if all_done and streak_days >= 7 else None
+    badge_name = None
+
+    # ── 领域成就徽章检查 ──
+    domain_tag = task["tag"] or ""
+    if domain_tag:
+        domain_total = (await db.execute(text("""
+            SELECT COUNT(*) FROM task_checkins tc JOIN daily_tasks dt ON tc.task_id = dt.id
+            WHERE tc.user_id = :uid AND dt.tag = :tag
+        """), {"uid": user_id, "tag": domain_tag})).scalar() or 0
+        if domain_total >= 100:
+            badge_name = f"百日{domain_tag}践行者"
+        elif domain_total >= 30:
+            badge_name = f"{domain_tag}管理月度之星"
+        elif domain_total >= 7:
+            badge_name = f"7天{domain_tag}达人"
+
+    # ── 累计自选任务里程碑 ──
+    milestone_reached = None
+    if (task["source"] or "") == "self":
+        self_total = (await db.execute(text("""
+            SELECT COUNT(*) FROM task_checkins tc JOIN daily_tasks dt ON tc.task_id = dt.id
+            WHERE tc.user_id = :uid AND dt.source = 'self'
+        """), {"uid": user_id})).scalar() or 0
+        if self_total >= 365:
+            milestone_reached = "SELF_TASK_365"
+        elif self_total >= 100:
+            milestone_reached = "SELF_TASK_100"
+        elif self_total >= 50:
+            milestone_reached = "SELF_TASK_50"
+        elif self_total >= 10:
+            milestone_reached = "SELF_TASK_10"
 
     # ── 里程碑检查 (R7 合并) ──
     try:
@@ -237,7 +332,10 @@ async def checkin_task(
     return CheckinResponse(
         success=True, task_id=task_id, done_time=now.strftime("%H:%M"),
         streak_days=streak_days, message=fb["message"], emoji=fb["emoji"],
-        points_earned=10, badge_unlocked=badge,
+        points_earned=total_points, badge_unlocked=badge,
+        points_breakdown=points_breakdown,
+        badge_name=badge_name or badge,
+        milestone_reached=milestone_reached,
     )
 
 
@@ -590,67 +688,22 @@ ROLE_TO_LEVEL = {
     "PROMOTER": 4, "SUPERVISOR": 4, "MASTER": 5, "ADMIN": 99,
 }
 
-TASK_CATALOG = [
-    # ── L0 观察员 (5项基础) ──
-    {"id": "cat_glucose",   "title": "测量空腹血糖",     "tag": "监测", "tag_color": "#3b82f6", "domain": "glucose",       "input_mode": "device", "quick_label": "记录", "icon": "🩸", "min_level": 0},
-    {"id": "cat_bp",        "title": "测量血压",         "tag": "监测", "tag_color": "#3b82f6", "domain": "blood_pressure","input_mode": "device", "quick_label": "记录", "icon": "💉", "min_level": 0},
-    {"id": "cat_weight",    "title": "称体重",           "tag": "监测", "tag_color": "#3b82f6", "domain": "weight",        "input_mode": "device", "quick_label": "记录", "icon": "⚖️",  "min_level": 0},
-    {"id": "cat_mood",      "title": "记录今天心情",      "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",       "input_mode": "text",   "quick_label": "记录", "icon": "😊", "min_level": 0},
-    {"id": "cat_learn",     "title": "阅读健康知识10分钟", "tag": "学习", "tag_color": "#ec4899", "domain": "learning",      "input_mode": "text",   "quick_label": "打卡", "icon": "📖", "min_level": 0},
+# ═══ 从 configs/task_catalog.json 加载任务目录 ═══
+def _load_task_catalog():
+    """加载 configs/task_catalog.json，展平分节结构为扁平列表"""
+    json_path = FilePath(__file__).resolve().parent.parent / "configs" / "task_catalog.json"
+    with open(json_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    # 提取难度→积分映射
+    diff_pts = data.get("_meta", {}).get("difficulty_points", {"easy": 3, "moderate": 5, "challenging": 8})
+    # 展平 catalog[].items
+    flat = []
+    for section in data.get("catalog", []):
+        for item in section.get("items", []):
+            flat.append(item)
+    return diff_pts, flat
 
-    # ── L1 成长者 (再加19项，累计24) ──
-    # 运动类
-    {"id": "cat_walk_30",   "title": "步行30分钟",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🚶",   "min_level": 1},
-    {"id": "cat_walk_60",   "title": "步行60分钟",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🚶‍♂️", "min_level": 1},
-    {"id": "cat_yoga",      "title": "瑜伽/拉伸15分钟",   "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🧘",   "min_level": 1},
-    {"id": "cat_tai_chi",   "title": "太极拳20分钟",     "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🥋",   "min_level": 1},
-    {"id": "cat_swim",      "title": "游泳30分钟",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🏊",   "min_level": 1},
-    {"id": "cat_cycle",     "title": "骑行30分钟",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🚴",   "min_level": 1},
-    {"id": "cat_baduanjin", "title": "八段锦一套",       "tag": "运动", "tag_color": "#10b981", "domain": "exercise",  "input_mode": "text",   "quick_label": "打卡", "icon": "🏋️",  "min_level": 1},
-    # 营养类
-    {"id": "cat_meal_photo","title": "拍照记录一餐",      "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition", "input_mode": "photo",  "quick_label": "拍照", "icon": "📸",   "min_level": 1},
-    {"id": "cat_water",     "title": "喝水8杯",          "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition", "input_mode": "text",   "quick_label": "打卡", "icon": "💧",   "min_level": 1},
-    {"id": "cat_veggie",    "title": "吃够300g蔬菜",     "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition", "input_mode": "text",   "quick_label": "打卡", "icon": "🥦",   "min_level": 1},
-    {"id": "cat_no_sugar",  "title": "今日无含糖饮料",    "tag": "营养", "tag_color": "#f59e0b", "domain": "nutrition", "input_mode": "text",   "quick_label": "打卡", "icon": "🚫",   "min_level": 1},
-    # 情绪/睡眠 (余下)
-    {"id": "cat_journal",   "title": "写感恩日记",       "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",   "input_mode": "text",   "quick_label": "记录", "icon": "📝",   "min_level": 1},
-    {"id": "cat_breathe",   "title": "腹式呼吸5分钟",    "tag": "情绪", "tag_color": "#8b5cf6", "domain": "emotion",   "input_mode": "text",   "quick_label": "打卡", "icon": "🌬️",  "min_level": 1},
-    {"id": "cat_sleep",     "title": "记录睡眠",         "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",     "input_mode": "text",   "quick_label": "打卡", "icon": "😴",   "min_level": 1},
-    {"id": "cat_early_bed", "title": "22:30前入睡",      "tag": "睡眠", "tag_color": "#6366f1", "domain": "sleep",     "input_mode": "text",   "quick_label": "打卡", "icon": "🌙",   "min_level": 1},
-    # 用药
-    {"id": "cat_medication","title": "按时服药",         "tag": "用药", "tag_color": "#ef4444", "domain": "medication","input_mode": "text",   "quick_label": "打卡", "icon": "💊",   "min_level": 1},
-
-    # ── L2 分享者 (再加8项，累计32) ──
-    # 分享类
-    {"id": "cat_write_share",   "title": "撰写经验分享文章", "tag": "分享", "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "✍️",  "min_level": 2},
-    {"id": "cat_case_story",    "title": "提交案例故事",     "tag": "分享", "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "📖",  "min_level": 2},
-    {"id": "cat_answer_question","title": "回答社区问题(1个)","tag": "分享", "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "💬",  "min_level": 2},
-    {"id": "cat_review_share",  "title": "审阅他人分享内容", "tag": "分享", "tag_color": "#f97316", "domain": "contribution", "input_mode": "text", "quick_label": "打卡", "icon": "👀",  "min_level": 2},
-    # 同道者类
-    {"id": "cat_contact_peer",  "title": "联系同道者(1次)",  "tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion", "input_mode": "text", "quick_label": "打卡", "icon": "🤝",  "min_level": 2},
-    {"id": "cat_mentor_peer",   "title": "辅导同道者(15分钟)","tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion", "input_mode": "text", "quick_label": "打卡", "icon": "🎓",  "min_level": 2},
-    {"id": "cat_check_peer",    "title": "检查同道者进度",    "tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion", "input_mode": "text", "quick_label": "打卡", "icon": "📊",  "min_level": 2},
-    {"id": "cat_invite_peer",   "title": "邀请新同道者",     "tag": "同道者", "tag_color": "#8b5cf6", "domain": "companion", "input_mode": "text", "quick_label": "打卡", "icon": "📨",  "min_level": 2},
-
-    # ── L3 教练 (再加6项，累计38) ──
-    {"id": "cat_review_rx",     "title": "审核学员处方",      "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📋",  "min_level": 3},
-    {"id": "cat_followup",      "title": "完成学员跟进(1人)", "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📞",  "min_level": 3},
-    {"id": "cat_view_data",     "title": "查看学员健康数据",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📈",  "min_level": 3},
-    {"id": "cat_motivate",      "title": "发送学员激励消息",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "💪",  "min_level": 3},
-    {"id": "cat_coach_course",  "title": "完成教练进修课程",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "🎯",  "min_level": 3},
-    {"id": "cat_case_report",   "title": "撰写学员案例报告",   "tag": "教练管理", "tag_color": "#0ea5e9", "domain": "coaching", "input_mode": "text", "quick_label": "打卡", "icon": "📝",  "min_level": 3},
-
-    # ── L4 促进师 (再加4项，累计42) ──
-    {"id": "cat_audit_coach",   "title": "审核教练工作质量",   "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "🔍",  "min_level": 4},
-    {"id": "cat_design_course", "title": "设计培训课程模块",   "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "📐",  "min_level": 4},
-    {"id": "cat_region_data",   "title": "分析区域健康数据",   "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "🗺️", "min_level": 4},
-    {"id": "cat_workshop",      "title": "组织工作坊/研讨会",  "tag": "培训督导", "tag_color": "#7c3aed", "domain": "supervision", "input_mode": "text", "quick_label": "打卡", "icon": "🏫",  "min_level": 4},
-
-    # ── L5 大师 (再加3项，累计45) ──
-    {"id": "cat_audit_content", "title": "审核课程内容质量",   "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "✅",  "min_level": 5},
-    {"id": "cat_review_policy", "title": "制定/审阅平台政策",  "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "📜",  "min_level": 5},
-    {"id": "cat_platform_build","title": "参与平台共建讨论",   "tag": "平台治理", "tag_color": "#dc2626", "domain": "governance", "input_mode": "text", "quick_label": "打卡", "icon": "🌐",  "min_level": 5},
-]
+DIFFICULTY_POINTS, TASK_CATALOG = _load_task_catalog()
 
 
 @router.get("/daily-tasks/catalog")
@@ -659,7 +712,19 @@ async def get_task_catalog(current_user=Depends(get_current_user)):
     user_role = (getattr(current_user, 'role', None) or 'grower').upper()
     level = ROLE_TO_LEVEL.get(user_role, 1)
     filtered = [c for c in TASK_CATALOG if c.get("min_level", 1) <= level]
-    return {"catalog": filtered, "total": len(filtered)}
+    # 前端兼容: 添加 category(=tag), default_title(=title) 别名 + 积分预览
+    items = []
+    for c in filtered:
+        difficulty = c.get("difficulty", "easy")
+        default_pts = DIFFICULTY_POINTS.get(difficulty, 3)
+        item = {
+            **c,
+            "category": c["tag"],
+            "default_title": c["title"],
+            "points_reward": c.get("points_reward", {"growth": default_pts, "contribution": 0, "influence": 0}),
+        }
+        items.append(item)
+    return {"items": items, "total": len(items)}
 
 
 # ═══════════════════════════════════════════════════

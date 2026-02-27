@@ -420,6 +420,7 @@ import {
 import { message } from 'ant-design-vue'
 import { BEHAVIOR_STAGE_MAP, AGENT_TYPE_MAP, TRIGGER_DOMAINS } from '@/constants/index'
 import { getPatientDashboard, updateTaskStatus, getHealthSummary, type Task } from '@/api/client'
+import request from '@/api/request'
 import {
   getRecommendations,
   getUserFocusAreas,
@@ -608,11 +609,7 @@ const openCoachAction = (action: RecommendedCoachAction) => {
 
 // 用药提醒
 const showMedDrawer = ref(false)
-const medReminders = ref([
-  { id: 1, name: '二甲双胍', dosage: '500mg', time: '08:00', frequency: '每日2次（早/晚餐后）', taken: false, notes: '餐后服用，避免空腹；如出现胃肠不适可随餐服用' },
-  { id: 2, name: '格列美脲', dosage: '2mg', time: '07:30', frequency: '每日1次（早餐前）', taken: true, notes: '早餐前15分钟服用；注意低血糖风险，随身携带糖果' },
-  { id: 3, name: '阿卡波糖', dosage: '50mg', time: '12:00', frequency: '每日3次（随餐）', taken: false, notes: '与第一口饭同时嚼服；可能引起腹胀、排气增多' },
-])
+const medReminders = ref<{ id: number; name: string; dosage: string; time: string; frequency: string; taken: boolean; notes: string }[]>([])
 const medPrecautions = [
   { icon: '⏰', title: '按时服药', desc: '设定闹钟提醒，固定时间服药，不要随意更改服药时间' },
   { icon: '🚫', title: '不可自行停药', desc: '即使血糖正常也不要自行停药或减量，需遵医嘱调整' },
@@ -677,6 +674,19 @@ onMounted(async () => {
 
   // 加载健康数据
   await refreshHealth()
+
+  // 加载用药提醒 (从微行动中筛选 medication 类型)
+  try {
+    const medRes = await request.get('v1/micro-actions/today')
+    const tasks = medRes.data?.tasks || (Array.isArray(medRes.data) ? medRes.data : [])
+    medReminders.value = tasks
+      .filter((t: any) => t.tag === 'medication' || t.category === 'medication')
+      .map((t: any) => ({
+        id: t.id, name: t.title || t.name || '用药', dosage: t.dosage || '',
+        time: t.due_time || t.time || '', frequency: t.frequency || '',
+        taken: t.done ?? t.completed ?? false, notes: t.notes || t.description || '',
+      }))
+  } catch { /* 无用药提醒 API — 保持空态 */ }
 
   // 加载推荐
   await loadRecommendations()

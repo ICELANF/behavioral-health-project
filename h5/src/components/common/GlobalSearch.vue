@@ -157,7 +157,21 @@ async function onImage(e: Event) {
   try {
     const res: any = await api.post('/api/v1/food/recognize', formData)
     const data = res.data || res
-    imageAnalysis.value = data.description || data.result || JSON.stringify(data)
+    // 格式化食物识别结果
+    if (data.food_name) {
+      const parts = [data.food_name]
+      if (data.calories) parts.push(`热量: ${data.calories} kcal`)
+      if (data.protein) parts.push(`蛋白质: ${data.protein}g`)
+      if (data.fat) parts.push(`脂肪: ${data.fat}g`)
+      if (data.carbs) parts.push(`碳水: ${data.carbs}g`)
+      imageAnalysis.value = parts.join(' | ')
+    } else if (data.description || data.result) {
+      imageAnalysis.value = data.description || data.result
+    } else if (data.image_url) {
+      imageAnalysis.value = '图片已保存，AI 分析暂不可用'
+    } else {
+      imageAnalysis.value = '未识别到食物信息'
+    }
   } catch {
     showToast({ message: '图片识别失败', type: 'fail' })
   } finally {
@@ -170,13 +184,13 @@ function goToResult(category: string, item: any) {
   searchQuery.value = ''
   switch (category) {
     case 'content':
-      router.push(`/content/${item.id}`)
+      router.push(`/content/${item.type || 'article'}/${item.id}`)
       break
     case 'tasks':
       router.push('/tasks')
       break
     case 'users':
-      router.push(`/profile/${item.id}`)
+      router.push({ path: '/profile', query: { uid: item.id } })
       break
     default:
       router.push('/tasks')

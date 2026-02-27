@@ -27,15 +27,24 @@ async def batch_upload(
     scope: str = Form("platform"),
     domain_id: Optional[str] = Form(None),
     tenant_id: Optional[str] = Form(None),
+    evidence_tier: str = Form("T3"),
+    priority: int = Form(5),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_coach_or_admin),
 ):
-    """批量上传知识文件(multipart)"""
+    """批量上传知识文件(multipart)
+
+    evidence_tier: T1=系统综述/权威指南, T2=专家共识, T3=回顾性研究, T4=经验/内部资料
+    priority: 1-10，越高检索权重越大
+    """
     filename = file.filename or "unknown"
     ext = os.path.splitext(filename)[1].lower()
 
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(400, f"不支持的文件格式: {ext}，支持: {', '.join(ALLOWED_EXTENSIONS)}")
+
+    if evidence_tier not in ("T1", "T2", "T3", "T4"):
+        raise HTTPException(400, "evidence_tier 须为 T1/T2/T3/T4")
 
     # 保存到临时文件
     tmp_fd, tmp_path = tempfile.mkstemp(suffix=ext)
@@ -56,6 +65,8 @@ async def batch_upload(
             scope=scope,
             domain_id=domain_id,
             tenant_id=tenant_id,
+            evidence_tier=evidence_tier,
+            priority=priority,
         )
 
         return {

@@ -8,38 +8,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/index'
+import { useNotificationStore } from '@/stores/notification'
 
 const router = useRouter()
-const unreadCount = ref(0)
-let pollTimer: ReturnType<typeof setInterval> | null = null
+const notifStore = useNotificationStore()
 
-async function fetchUnread() {
+const unreadCount = computed(() => notifStore.unreadCount)
+
+// 首次加载时从REST API获取未读数作为fallback
+onMounted(async () => {
   try {
     const res: any = await api.get('/api/v1/messages/unread-count')
-    unreadCount.value = res.unread_count || 0
+    notifStore.setCount(res.unread_count || 0)
   } catch {
-    // 静默失败，不影响用户体验
+    // 静默失败
   }
-}
+})
 
 function goNotifications() {
   router.push('/notifications')
 }
-
-onMounted(() => {
-  fetchUnread()
-  pollTimer = setInterval(fetchUnread, 30000)
-})
-
-onUnmounted(() => {
-  if (pollTimer) {
-    clearInterval(pollTimer)
-    pollTimer = null
-  }
-})
 </script>
 
 <style scoped>

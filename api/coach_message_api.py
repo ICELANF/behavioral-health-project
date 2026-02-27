@@ -291,6 +291,18 @@ async def get_unread_count(
     return {"unread_count": count}
 
 
+@router.get("/api/v1/messages/rejected")
+async def get_rejected_pushes(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """获取被驳回的推送项（用户视角），含驳回原因"""
+    from core.coach_push_queue_service import get_rejected_for_user
+    return get_rejected_for_user(db, user_id=current_user.id, page=page, page_size=page_size)
+
+
 def _msg_to_dict(msg: CoachMessage) -> dict:
     return {
         "id": msg.id,

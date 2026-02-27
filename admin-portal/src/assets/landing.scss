@@ -230,3 +230,74 @@
   .l-nav-links { display: none; }
   .l-hero-stats { gap: 20px; flex-wrap: wrap; }
 }
+
+/* ═══ Contact Modal ═══ */
+.l-modal-mask {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  animation: l-fade-mask .2s ease;
+}
+@keyframes l-fade-mask { from { opacity: 0 } to { opacity: 1 } }
+
+.l-modal {
+  background: #fff; border-radius: 16px; width: 440px; max-width: 92vw;
+  max-height: 90vh; overflow-y: auto;
+  box-shadow: 0 24px 48px rgba(0,0,0,.2);
+  animation: l-slide-up .25s ease;
+}
+@keyframes l-slide-up { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: none } }
+
+.l-modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 24px 0;
+  h3 { margin: 0; font-size: 20px; color: var(--l-text); }
+}
+.l-modal-close {
+  background: none; border: none; font-size: 28px; cursor: pointer;
+  color: #999; line-height: 1; padding: 0 4px;
+  &:hover { color: #333; }
+}
+.l-modal-form {
+  padding: 16px 24px 24px;
+}
+.l-form-row {
+  margin-bottom: 14px;
+  label {
+    display: block; font-size: 13px; font-weight: 500; color: #555; margin-bottom: 4px;
+  }
+  input, select, textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid #d9d9d9; border-radius: 8px;
+    font-size: 14px; font-family: var(--l-sans); outline: none; transition: border .2s;
+    &:focus { border-color: var(--l-accent); box-shadow: 0 0 0 2px rgba(34,197,94,.15); }
+  }
+  textarea { resize: vertical; }
+  select { appearance: auto; }
+}
+.l-required { color: #ff4d4f; }
+.l-form-submit {
+  width: 100%; padding: 12px; border: none; border-radius: 10px;
+  font-size: 16px; font-weight: 600; color: #fff; cursor: pointer;
+  background: var(--l-primary);
+  transition: opacity .2s;
+  &:hover { opacity: .9; }
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+.l-modal-result {
+  padding: 32px 24px; text-align: center;
+  h4 { font-size: 18px; margin: 12px 0 8px; }
+  p { font-size: 14px; color: #666; margin: 0 0 20px; }
+}
+.l-result-icon {
+  width: 56px; height: 56px; border-radius: 50%; margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; font-weight: 700;
+}
+.l-result-success {
+  .l-result-icon { background: #f0fdf4; color: #22c55e; }
+  h4 { color: #166534; }
+}
+.l-result-error {
+  .l-result-icon { background: #fef2f2; color: #ef4444; }
+  h4 { color: #991b1b; }
+}

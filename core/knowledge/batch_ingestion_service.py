@@ -4,6 +4,7 @@
 流程: 上传文件 → 检测类型 → 解压(压缩包) → 转换Markdown → 分块 → 嵌入 → 入库
 复用现有 embedding_service + chunker + document_service
 """
+import hashlib
 import os
 import shutil
 from datetime import datetime
@@ -25,6 +26,8 @@ def process_batch_upload(
     scope: str = "platform",
     domain_id: Optional[str] = None,
     tenant_id: Optional[str] = None,
+    evidence_tier: str = "T3",
+    priority: int = 5,
 ) -> BatchIngestionJob:
     """
     处理批量上传
@@ -79,7 +82,8 @@ def process_batch_upload(
                     fname = os.path.basename(fpath)
                     md_text = convert_file_to_markdown(fpath)
                     doc_id, n_chunks = _ingest_single_document(
-                        db, user_id, fname, md_text, scope, domain_id, tenant_id
+                        db, user_id, fname, md_text, scope, domain_id, tenant_id,
+                        evidence_tier=evidence_tier, priority=priority,
                     )
                     doc_ids.append(doc_id)
                     total_chunks += n_chunks
@@ -97,7 +101,8 @@ def process_batch_upload(
 
             md_text = convert_file_to_markdown(file_path)
             doc_id, n_chunks = _ingest_single_document(
-                db, user_id, filename, md_text, scope, domain_id, tenant_id
+                db, user_id, filename, md_text, scope, domain_id, tenant_id,
+                evidence_tier=evidence_tier, priority=priority,
             )
             job.processed_files = 1
             job.total_chunks = n_chunks
@@ -128,6 +133,8 @@ def _ingest_single_document(
     scope: str,
     domain_id: Optional[str],
     tenant_id: Optional[str],
+    evidence_tier: str = "T3",
+    priority: int = 5,
 ) -> tuple:
     """
     灌注单个文档
@@ -138,6 +145,17 @@ def _ingest_single_document(
     # 去掉扩展名作为标题
     title = os.path.splitext(filename)[0]
 
+    # 计算内容哈希（去重防重复导入）
+    file_hash = hashlib.sha256(markdown_text.encode("utf-8", errors="replace")).hexdigest()
+
+    # 去重检查：若已存在相同 hash 的文档则跳过
+    existing = db.query(KnowledgeDocument).filter(
+        KnowledgeDocument.file_hash == file_hash
+    ).first()
+    if existing:
+        logger.info(f"文档已存在(hash重复)，跳过: {title} → doc_id={existing.id}")
+        return existing.id, existing.chunk_count or 0
+
     # 创建 KnowledgeDocument
     doc = KnowledgeDocument(
         title=title,
@@ -146,11 +164,13 @@ def _ingest_single_document(
         domain_id=domain_id,
         scope=scope,
         tenant_id=tenant_id,
-        priority=5,
+        priority=priority,
         is_active=True,
         status="ready",
         raw_content=markdown_text,
-        evidence_tier="T3",
+        evidence_tier=evidence_tier,
+        file_hash=file_hash,
+        file_type="md",
         review_status="not_required",
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),

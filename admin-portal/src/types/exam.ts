@@ -20,21 +20,26 @@ export type SpecialtyTag =
 // 题目类型
 export type QuestionType = 'single' | 'multiple' | 'truefalse' | 'short_answer';
 
+// 选项接口
+export interface QuestionOption {
+  key: string;
+  text: string;
+}
+
 // 题目接口
 export interface Question {
+  id: number;
   question_id: string;
   content: string;
-  type: QuestionType;
-  level: CertificationLevel;
-  difficulty: 1 | 2 | 3 | 4 | 5;
-  options?: string[];
-  answer?: number | boolean | number[];
+  question_type: QuestionType;
+  domain?: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  options?: QuestionOption[];
+  answer?: string[];
   explanation?: string;
   tags?: string[];
-  category?: string;
+  correct_rate?: number;
   use_count: number;
-  default_score: number;
-  status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
 }
@@ -123,14 +128,13 @@ export interface ExamListParams {
 
 // 题目列表查询参数
 export interface QuestionListParams {
-  type?: QuestionType;
-  level?: CertificationLevel;
-  difficulty?: number;
+  question_type?: QuestionType;
+  domain?: string;
+  difficulty?: 'easy' | 'medium' | 'hard';
   keyword?: string;
-  status?: 'active' | 'inactive';
   exclude_ids?: string[];
-  page?: number;
-  page_size?: number;
+  skip?: number;
+  limit?: number;
 }
 
 // 结果列表查询参数

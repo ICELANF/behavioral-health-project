@@ -130,10 +130,10 @@ function formatTime(iso: string) {
 }
 
 function goToManage() {
-  // 跳转到管理后台
+  // 跳转到工作室管理页
   const tid = application.value?.tenant_id
   if (tid) {
-    window.location.href = `/expert/dashboard/${tid}`
+    router.push(`/studio/${tid}`)
   }
 }
 

@@ -83,10 +83,12 @@ CREATE TABLE IF NOT EXISTS program_enrollments (
   drop_reason     TEXT,
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW(),
-  -- 同一用户同一模板同时只能有一个active实例
-  CONSTRAINT uq_active_enrollment UNIQUE (user_id, template_id)
-    DEFERRABLE INITIALLY DEFERRED
 );
+
+-- 同一用户同一模板同时只能有一个active/paused实例 (允许completed/dropped后重新加入)
+CREATE UNIQUE INDEX IF NOT EXISTS uq_active_enrollment
+  ON program_enrollments (user_id, template_id)
+  WHERE status IN ('active', 'paused');
 
 CREATE INDEX IF NOT EXISTS idx_pe_user ON program_enrollments(user_id);
 CREATE INDEX IF NOT EXISTS idx_pe_template ON program_enrollments(template_id);

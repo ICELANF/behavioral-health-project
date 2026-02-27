@@ -135,6 +135,50 @@ export const coachFlywheelApi = {
   },
 }
 
+// ── History + Analytics API ──
+
+export interface HistoryItem {
+  id: number
+  student_name: string
+  source_type: string
+  title: string
+  content: string
+  status: string
+  coach_note: string | null
+  review_seconds: number | null
+  reviewed_at: string | null
+  created_at: string | null
+}
+
+export interface ReviewAnalytics {
+  period: string
+  total_reviewed: number
+  approved: number
+  rejected: number
+  expired: number
+  approval_rate: number
+  avg_review_seconds: number
+  by_type: Record<string, number>
+  by_day: Array<{ date: string; count: number; avg_seconds: number }>
+}
+
+export const pushQueueApi = {
+  async getHistory(params: { status?: string; page?: number; page_size?: number; date_from?: string; date_to?: string } = {}): Promise<{ items: HistoryItem[]; total: number }> {
+    const res = await request.get('/v1/coach/push-queue/history', { params })
+    return { items: res.data.items || [], total: res.data.total || 0 }
+  },
+
+  async getAnalytics(period: number = 7): Promise<ReviewAnalytics> {
+    const res = await request.get('/v1/coach/push-queue/analytics', { params: { period } })
+    return res.data
+  },
+
+  async getItemDetail(itemId: number) {
+    const res = await request.get(`/v1/coach/push-queue/${itemId}/detail`)
+    return res.data
+  },
+}
+
 export const coachApi = {
   async getPerformance(_coachId: string, params: { startDate?: string; endDate?: string } = {}) {
     const res = await request.get('/v1/coach/performance', { params })

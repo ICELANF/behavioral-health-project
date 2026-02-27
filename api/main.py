@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List
 import logging
 from loguru import logger
-from fastapi import BackgroundTasks, Depends, FastAPI, Body, Header, HTTPException
+from fastapi import BackgroundTasks, Depends, FastAPI, Body, Header, HTTPException, Request
 
 # ── 日志配置: 文件轮转 + 结构化 ──
 _log_dir = os.getenv("LOG_DIR", "/app/logs")
@@ -495,6 +495,14 @@ try:
 except ImportError as e:
     print(f"[API] 微行动路由注册失败: {e}")
 
+# 注册今日任务路由（GrowerTodayHome.vue 数据层）
+try:
+    from api.daily_tasks_api import router as daily_tasks_router
+    app.include_router(daily_tasks_router)
+    print("[API] 今日任务路由已注册")
+except ImportError as e:
+    print(f"[API] 今日任务路由注册失败: {e}")
+
 # 注册教练消息路由
 try:
     from api.coach_message_api import router as coach_message_router
@@ -569,9 +577,10 @@ except ImportError as e:
 
 # 注册教练推送审批队列路由
 try:
-    from api.coach_push_queue_api import router as push_queue_router
+    from api.coach_push_queue_api import router as push_queue_router, alias_router as coach_push_alias_router
     app.include_router(push_queue_router)
-    print("[API] 教练推送审批队列路由已注册")
+    app.include_router(coach_push_alias_router)
+    print("[API] 教练推送审批队列路由已注册 (+ /coach-push 兼容别名)")
 except ImportError as e:
     print(f"[API] 教练推送审批队列路由注册失败: {e}")
 
@@ -745,6 +754,48 @@ class AgentGateway:
             return {"response": f"服务暂时不可用：{str(e)}"}
 
 # --- API 路由 ---
+
+# ── 匿名体验聊天 (AI 健康向导, 无需 JWT, IP 限频) ──
+from collections import defaultdict
+_trial_chat_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+class TrialChatRequest(BaseModel):
+    message: str = Field(..., min_length=1, max_length=500)
+    session_id: Optional[str] = None
+
+@app.post("/api/v1/chat/trial")
+async def trial_chat(
+    body: TrialChatRequest,
+    request: Request,
+):
+    """匿名体验聊天 — 每 IP 每日 10 次, 不保存 DB"""
+    client_ip = request.client.host if request.client else "unknown"
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    # IP 限频
+    if _trial_chat_counts[today][client_ip] >= 10:
+        raise HTTPException(status_code=429, detail="今日体验次数已用完，注册后可无限使用")
+
+    _trial_chat_counts[today][client_ip] += 1
+    remaining = 10 - _trial_chat_counts[today][client_ip]
+
+    # 清理过期计数 (仅保留今天)
+    for d in list(_trial_chat_counts.keys()):
+        if d != today:
+            del _trial_chat_counts[d]
+
+    try:
+        result = await AgentGateway.call_ollama_direct(body.message)
+        answer = result.get("response", "抱歉，我暂时无法回答这个问题。")
+    except Exception:
+        answer = "服务暂时不可用，请稍后重试。"
+
+    return {
+        "status": "success",
+        "answer": answer,
+        "remaining": remaining,
+        "trial": True,
+    }
 
 @app.post("/api/v1/dispatch")
 async def dispatch_request(
@@ -2260,6 +2311,14 @@ try:
 except ImportError as e:
     print(f"[API] 统一首页API注册失败: {e}")
 
+# ========== 首页激励统计API ==========
+try:
+    from api.motivation_api import router as motivation_router
+    app.include_router(motivation_router)
+    print("[API] 首页激励统计API已注册 (1 endpoint: GET /api/v1/home/motivation-stats)")
+except ImportError as e:
+    print(f"[API] 首页激励统计API注册失败: {e}")
+
 
 # ========== Expert 独立AGENT API (V5.3.0) ==========
 try:
@@ -2278,6 +2337,22 @@ try:
     print("[API] 合伙人体系API已注册 (6 endpoints: /api/v1/partners)")
 except ImportError as e:
     print(f"[API] 机构/合伙人API注册失败: {e}")
+
+# ========== 预约演示 API ==========
+try:
+    from api.demo_request_api import router as demo_request_router
+    app.include_router(demo_request_router)
+    print("[API] Landing Page API已注册 (POST+GET /api/v1/demo-requests + GET /api/v1/landing/platform-stats)")
+except ImportError as e:
+    print(f"[API] 预约演示API注册失败: {e}")
+
+# ========== 运营中心 API ==========
+try:
+    from api.platform_event_log_api import router as operation_center_router
+    app.include_router(operation_center_router)
+    print("[API] 运营中心API已注册 (GET /api/v1/admin/operation-center/stats|events|logs)")
+except ImportError as e:
+    print(f"[API] 运营中心API注册失败: {e}")
 
 
 if __name__ == "__main__":

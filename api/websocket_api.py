@@ -15,6 +15,8 @@ from typing import Dict, Set, Optional, Any
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
 from loguru import logger
 
+from core.auth import verify_token_with_blacklist
+
 router = APIRouter(tags=["WebSocket"])
 
 
@@ -314,20 +316,47 @@ async def feed_websocket(
 
 
 @router.websocket("/ws/user/{user_id}")
-async def user_websocket(websocket: WebSocket, user_id: str):
+async def user_websocket(
+    websocket: WebSocket,
+    user_id: str,
+    token: str = Query(default=""),
+):
     """
-    用户个人频道 WebSocket 连接
+    用户个人频道 WebSocket 连接（JWT认证）
 
-    推送：
-    - 学习进度更新
-    - 个人通知
-    - 成就解锁
-    - 奖励领取
+    连接时需传 ?token=<JWT>，验证通过后才 accept。
+    认证失败返回 close(4001, "unauthorized")。
+
+    推送类型：
+    - coach_push: 教练审批通过的推送
+    - assessment: 评估相关通知
+    - device_alert: 设备预警
+    - system: 系统通知
+    - 学习进度更新 / 成就解锁 / 奖励领取
     """
+    # ── JWT 认证 ──
+    if not token:
+        await websocket.close(code=4001, reason="unauthorized: missing token")
+        return
+
+    try:
+        payload = verify_token_with_blacklist(token, "access")
+        if payload is None:
+            await websocket.close(code=4001, reason="unauthorized: invalid token")
+            return
+
+        token_user_id = str(payload.get("user_id") or payload.get("sub") or "")
+        if token_user_id != user_id:
+            await websocket.close(code=4001, reason="unauthorized: user_id mismatch")
+            return
+    except Exception:
+        await websocket.close(code=4001, reason="unauthorized: token verification failed")
+        return
+
+    # ── 认证通过，建立连接 ──
     await manager.connect_user(websocket, user_id)
 
     try:
-        # 发送连接确认
         await websocket.send_json({
             "type": "connected",
             "user_id": user_id,
@@ -335,23 +364,21 @@ async def user_websocket(websocket: WebSocket, user_id: str):
         })
 
         while True:
-            # 监听客户端消息
             try:
                 data = await asyncio.wait_for(
                     websocket.receive_json(),
                     timeout=30.0
                 )
 
-                # 处理进度上报
-                if data.get("action") == "progress_update":
-                    # 确认收到
+                if data.get("type") == "ping":
+                    await websocket.send_json({"type": "pong"})
+                elif data.get("action") == "progress_update":
                     await websocket.send_json({
                         "type": "progress_confirmed",
                         "data": data.get("progress")
                     })
 
             except asyncio.TimeoutError:
-                # 发送心跳
                 await websocket.send_json({"type": "ping"})
 
     except WebSocketDisconnect:

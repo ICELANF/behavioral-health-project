@@ -1,33 +1,14 @@
 <template>
-  <!--
-    Grower 今日行动首页
-    飞轮目标: 留存 — 每天打开就知道"今天做什么"，行动完成获得正反馈循环
-    核心设计: 
-      ❌ 旧版: 数据概览Dashboard（血糖图、步数图、BMI卡片）→ 信息过载，不知道做什么
-      ✅ 新版: 今日行动卡片流 → 每张卡片 = 一个具体行动 → 完成打卡 → 即时反馈
-    替换: h5/src/views/home/index.vue (当Grower角色时渲染此组件)
-  -->
-  <div class="grower-today">
-    <!-- ═══ 顶部: 问候+连续天数 ═══ -->
-    <div class="today-header">
-      <div class="greeting">
-        <span class="greeting-time">{{ greetingText }}</span>
-        <h1 class="user-name">{{ userName }}</h1>
-      </div>
-      <div class="header-right">
-        <div class="streak-badge" v-if="streakDays > 0">
-          <span class="streak-fire">🔥</span>
-          <span class="streak-num">{{ streakDays }}</span>
-          <span class="streak-label">天</span>
-        </div>
-        <NotificationBell />
-      </div>
-    </div>
+  <PageShell :show-nav-bar="false" :show-tab-bar="true" no-padding>
+    <!-- ═══ 顶部: UserHero (头像+问候+streak+设置+通知) ═══ -->
+    <UserHero :streak-days="streakDays" />
 
     <!-- ═══ 全局搜索 ═══ -->
-    <GlobalSearch />
+    <div style="padding: 0 20px;">
+      <GlobalSearch />
+    </div>
 
-    <!-- ═══ 今日进度环 ═══ -->
+    <!-- ═══ 今日进度环 + 积分 ═══ -->
     <div class="progress-hero">
       <div class="progress-circle">
         <svg viewBox="0 0 100 100">
@@ -42,59 +23,80 @@
           <span class="prog-total">{{ totalCount }}</span>
         </div>
       </div>
-      <div class="progress-label">
-        <span v-if="completionPct === 0">今天的旅程开始了 ✨</span>
-        <span v-else-if="completionPct < 50">继续加油 💪</span>
-        <span v-else-if="completionPct < 100">快完成了！🎯</span>
-        <span v-else>今天全部完成！🏆</span>
-      </div>
-    </div>
-
-    <!-- ═══ 今日行动卡片流 (核心区域) ═══ -->
-    <div class="actions-section">
-      <h2 class="section-title">今日行动</h2>
-
-      <div class="action-list">
-        <div v-for="action in todayActions" :key="action.id"
-          class="action-card" :class="{ done: action.done, active: !action.done }"
-          @click="handleAction(action)">
-
-          <!-- 左: 完成圆圈 -->
-          <div class="action-check">
-            <div class="check-circle" :class="{ checked: action.done }">
-              <span v-if="action.done" class="check-icon">✓</span>
-              <span v-else class="action-order">{{ action.order }}</span>
-            </div>
-          </div>
-
-          <!-- 中: 内容 -->
-          <div class="action-body">
-            <div class="action-title" :class="{ 'line-through': action.done }">
-              {{ action.title }}
-            </div>
-            <div class="action-meta">
-              <span class="meta-tag" :style="{ background: action.tagColor + '20', color: action.tagColor }">
-                {{ action.tag }}
-              </span>
-              <span class="meta-time">{{ action.timeHint }}</span>
-              <span class="meta-mode" v-if="action.inputMode">
-                {{ inputModeIcon(action.inputMode) }}
-              </span>
-            </div>
-          </div>
-
-          <!-- 右: 快捷操作 -->
-          <div class="action-quick" v-if="!action.done">
-            <button class="quick-btn" @click.stop="quickCheckin(action)">
-              {{ action.quickLabel || '打卡' }}
-            </button>
-          </div>
-          <div class="action-quick" v-else>
-            <span class="done-time">{{ action.doneTime }}</span>
-          </div>
+      <div class="progress-right">
+        <div class="progress-label">
+          <span v-if="completionPct === 0">今天的旅程开始了 ✨</span>
+          <span v-else-if="completionPct < 50">继续加油 💪</span>
+          <span v-else-if="completionPct < 100">快完成了！🎯</span>
+          <span v-else>今天全部完成！🏆</span>
+        </div>
+        <div class="daily-points" v-if="dailyPoints > 0">
+          <span class="points-badge">+{{ dailyPoints }} 积分 🏆</span>
         </div>
       </div>
     </div>
+
+    <!-- ═══ 执行统计 ═══ -->
+    <MotivationCard ref="motivationCardRef" />
+
+    <!-- ═══ 分组任务区 ═══ -->
+    <!-- 教练推荐 -->
+    <TaskGroupSection
+      v-if="coachTasks.length > 0"
+      title="教练推荐" icon="🏥" color="blue"
+      :tasks="coachTasks"
+      :default-expanded="true"
+      @checkin="handleCheckin"
+      @click-action="handleAction"
+    />
+
+    <!-- AI推荐 -->
+    <TaskGroupSection
+      v-if="aiTasks.length > 0"
+      title="AI推荐" icon="🤖" color="green"
+      :tasks="aiTasks"
+      :default-expanded="true"
+      @checkin="handleCheckin"
+      @click-action="handleAction"
+    />
+
+    <!-- 自选任务 -->
+    <TaskGroupSection
+      title="自选任务" icon="📝" color="gray"
+      :tasks="selfTasks"
+      :default-expanded="true"
+      @checkin="handleCheckin"
+      @click-action="handleAction"
+    >
+      <template #header-action>
+        <button class="add-self-btn" @click.stop="showCatalog = true">+ 添加</button>
+      </template>
+    </TaskGroupSection>
+
+    <!-- 已完成 -->
+    <TaskGroupSection
+      v-if="doneTasks.length > 0"
+      title="已完成" icon="✅" color="emerald"
+      :tasks="doneTasks"
+      :default-expanded="false"
+      :max-visible="3"
+      @click-action="handleAction"
+    />
+
+    <!-- 空状态: 没有任何任务 -->
+    <div class="empty-tasks" v-if="totalCount === 0">
+      <span class="empty-icon">📋</span>
+      <p class="empty-text">今天还没有任务</p>
+      <button class="empty-add-btn" @click="showCatalog = true">+ 添加自选任务</button>
+    </div>
+
+    <!-- ═══ 自选目录弹层 ═══ -->
+    <CatalogSheet
+      v-model:show="showCatalog"
+      :catalog="catalog"
+      :catalog-loading="catalogLoading"
+      @add-from-catalog="handleAddFromCatalog"
+    />
 
     <!-- ═══ AI 教练提示 (个性化一句话) ═══ -->
     <div class="coach-tip" v-if="coachTip">
@@ -124,75 +126,99 @@
       </div>
     </div>
 
-    <!-- ═══ 打卡成功动画 ═══ -->
+    <!-- ═══ 打卡成功动画 (增强: 积分明细+徽章+里程碑) ═══ -->
     <Transition name="checkin-toast">
       <div class="checkin-toast" v-if="showCheckinToast">
         <span class="toast-emoji">{{ checkinEmoji }}</span>
         <span class="toast-text">{{ checkinMessage }}</span>
+        <span class="toast-points" v-if="checkinPoints > 0">+{{ checkinPoints }} 积分</span>
+        <div class="toast-breakdown" v-if="checkinBreakdown && Object.keys(checkinBreakdown).length > 1">
+          <span v-for="(val, key) in checkinBreakdown" :key="key" class="breakdown-item">
+            {{ breakdownLabel(String(key)) }} +{{ val }}
+          </span>
+        </div>
+        <span class="toast-streak" v-if="checkinStreak > 0">🔥 连续 {{ checkinStreak }} 天</span>
+        <span class="toast-badge" v-if="checkinBadge">🏅 {{ checkinBadge }}</span>
+        <span class="toast-milestone" v-if="checkinMilestone">🎯 {{ milestoneLabel(checkinMilestone) }}</span>
       </div>
     </Transition>
-  </div>
+
+  </PageShell>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { showToast } from 'vant'
 import api from '@/api/index'
 import { useUserStore } from '@/stores/user'
-import NotificationBell from '@/components/common/NotificationBell.vue'
+import { useTaskGroups, type TodayAction } from '@/composables/useTaskGroups'
+import PageShell from '@/components/common/PageShell.vue'
+import UserHero from '@/components/common/UserHero.vue'
 import GlobalSearch from '@/components/common/GlobalSearch.vue'
 import AiContentBadge from '@/components/common/AiContentBadge.vue'
+import TaskGroupSection from '@/components/task/TaskGroupSection.vue'
+import CatalogSheet from '@/components/task/CatalogSheet.vue'
+import MotivationCard from '@/components/home/MotivationCard.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-// ── 用户状态 ──
-const userName = ref(userStore.name || '用户')
-const streakDays = ref(0)
-const coachTip = ref('')
+// ── 任务分组 ──
+const {
+  coachTasks, aiTasks, selfTasks, doneTasks,
+  dailyPoints, streakDays,
+  totalCount, doneCount, completionPct,
+  loadTodayTasks, checkin,
+  catalog, catalogLoading, loadCatalog, addFromCatalog,
+} = useTaskGroups()
 
-// ── 今日行动 ──
-interface TodayAction {
-  id: string
-  order: number
-  title: string
-  tag: string
-  tagColor: string
-  timeHint: string
-  inputMode?: 'photo' | 'voice' | 'text' | 'device'
-  quickLabel?: string
-  done: boolean
-  doneTime?: string
+const motivationCardRef = ref<InstanceType<typeof MotivationCard>>()
+
+const completionColor = ref('#f59e0b')
+// 用 watch 替代 computed 以简化 (直接在打卡回调里更新)
+function updateCompletionColor() {
+  const pct = completionPct.value
+  if (pct >= 100) completionColor.value = '#10b981'
+  else if (pct >= 50) completionColor.value = '#3b82f6'
+  else completionColor.value = '#f59e0b'
 }
 
-const todayActions = ref<TodayAction[]>([])
-
-const doneCount = computed(() => todayActions.value.filter(a => a.done).length)
-const totalCount = computed(() => todayActions.value.length)
-const completionPct = computed(() => totalCount.value > 0 ? Math.round((doneCount.value / totalCount.value) * 100) : 0)
-const completionColor = computed(() => {
-  if (completionPct.value >= 100) return '#10b981'
-  if (completionPct.value >= 50) return '#3b82f6'
-  return '#f59e0b'
-})
-
-// ── 问候 ──
-const greetingText = computed(() => {
-  const h = new Date().getHours()
-  if (h < 6) return '夜深了'
-  if (h < 11) return '早上好'
-  if (h < 14) return '中午好'
-  if (h < 18) return '下午好'
-  return '晚上好'
-})
+// ── 教练提示 ──
+const coachTip = ref('')
 
 // ── 本周 ──
 const weekDays = ref<{ label: string; status: string }[]>([])
+
+// ── 自选目录弹层 ──
+const showCatalog = ref(false)
 
 // ── 打卡交互 ──
 const showCheckinToast = ref(false)
 const checkinEmoji = ref('🎉')
 const checkinMessage = ref('')
+const checkinPoints = ref(0)
+const checkinStreak = ref(0)
+const checkinBreakdown = ref<Record<string, number> | null>(null)
+const checkinBadge = ref('')
+const checkinMilestone = ref('')
+
+function breakdownLabel(key: string): string {
+  const map: Record<string, string> = {
+    base: '基础', streak_7d: '连续7天', streak_14d: '连续14天',
+    streak_30d: '连续30天', first_time: '首次完成',
+    domain_diversity: '领域多样', all_done: '全部完成', self_select: '自选积极',
+  }
+  return map[key] || key
+}
+
+function milestoneLabel(m: string): string {
+  const map: Record<string, string> = {
+    SELF_TASK_10: '自选探索者', SELF_TASK_50: '自选实践者',
+    SELF_TASK_100: '自选大师', SELF_TASK_365: '自选传奇',
+  }
+  return map[m] || m
+}
 
 function inputModeIcon(mode: string) {
   const map: Record<string, string> = { photo: '📷', voice: '🎤', text: '✏️', device: '⌚' }
@@ -201,12 +227,11 @@ function inputModeIcon(mode: string) {
 
 function handleAction(action: TodayAction) {
   if (action.done) return
-  // 营养拍照任务 → 直接跳转食物识别页 (拍照后自动打卡)
+  // 营养拍照任务 → 直接跳转食物识别页
   if (action.inputMode === 'photo' && action.tag === '营养') {
     router.push({ path: '/food-recognition', query: { taskId: action.id } })
     return
   }
-  // 根据inputMode跳转到对应的多模态入口
   switch (action.inputMode) {
     case 'photo':
       router.push({ path: '/chat', query: { action: 'camera', type: 'food', taskId: action.id } })
@@ -222,28 +247,48 @@ function handleAction(action: TodayAction) {
   }
 }
 
-async function quickCheckin(action: TodayAction) {
-  // 即时乐观更新
-  action.done = true
-  action.doneTime = new Date().toTimeString().slice(0, 5)
-
+async function handleCheckin(action: TodayAction) {
   // 默认反馈
   const emojis = ['🎉', '💪', '✨', '🔥', '👏']
   const messages = ['太棒了！', '做到了！', '继续保持！', '又进一步！', '好样的！']
   const idx = Math.floor(Math.random() * emojis.length)
   checkinEmoji.value = emojis[idx]
   checkinMessage.value = messages[idx]
+  checkinPoints.value = 0
+  checkinStreak.value = 0
+  checkinBreakdown.value = null
+  checkinBadge.value = ''
+  checkinMilestone.value = ''
 
-  // 调用后端 API
-  try {
-    const res: any = await api.post(`/api/v1/daily-tasks/${action.id}/checkin`)
-    if (res.emoji) checkinEmoji.value = res.emoji
-    if (res.message) checkinMessage.value = res.message
-    if (res.streak_days) streakDays.value = res.streak_days
-  } catch { /* 乐观更新已生效 */ }
+  const result = await checkin(action)
+
+  if (result.emoji) checkinEmoji.value = result.emoji
+  if (result.message) checkinMessage.value = result.message
+  if (result.points_earned) checkinPoints.value = result.points_earned
+  if (result.streak_days) checkinStreak.value = result.streak_days
+  if (result.points_breakdown) checkinBreakdown.value = result.points_breakdown
+  if (result.badge_name) checkinBadge.value = result.badge_name
+  if (result.milestone_reached) checkinMilestone.value = result.milestone_reached
+
+  updateCompletionColor()
 
   showCheckinToast.value = true
-  setTimeout(() => showCheckinToast.value = false, 2000)
+  // 有额外奖励时显示更久
+  const hasExtras = checkinBadge.value || checkinMilestone.value
+  setTimeout(() => { showCheckinToast.value = false }, hasExtras ? 3500 : 2500)
+
+  // 刷新激励统计
+  motivationCardRef.value?.reload()
+}
+
+async function handleAddFromCatalog(catalogId: string, customTitle?: string) {
+  const ok = await addFromCatalog(catalogId || '', customTitle)
+  if (ok) {
+    showToast('已添加')
+    updateCompletionColor()
+  } else {
+    showToast('添加失败')
+  }
 }
 
 function openChat() {
@@ -251,30 +296,15 @@ function openChat() {
 }
 
 onMounted(async () => {
-  // 并行加载今日任务、教练提示、本周一览
-  const [tasksRes, tipRes, weekRes] = await Promise.allSettled([
-    api.get('/api/v1/daily-tasks/today'),
+  // 并行加载今日任务、目录、教练提示、本周一览
+  const [, tipRes, weekRes] = await Promise.allSettled([
+    loadTodayTasks(),
     api.get('/api/v1/coach-tip/today'),
     api.get('/api/v1/weekly-summary'),
+    loadCatalog(),
   ])
 
-  // 今日任务
-  if (tasksRes.status === 'fulfilled') {
-    const data = tasksRes.value as any
-    todayActions.value = (data.tasks || []).map((t: any) => ({
-      id: t.id,
-      order: t.order,
-      title: t.title,
-      tag: t.tag,
-      tagColor: t.tag_color,
-      timeHint: t.time_hint,
-      inputMode: t.input_mode,
-      quickLabel: t.quick_label,
-      done: t.done,
-      doneTime: t.done_time,
-    }))
-    streakDays.value = data.streak_days || 0
-  }
+  updateCompletionColor()
 
   // 教练提示
   if (tipRes.status === 'fulfilled') {
@@ -294,31 +324,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.grower-today {
-  min-height: 100vh;
-  background: #ffffff;
-  padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+/* ── 进度环 + 积分 ── */
+.progress-hero {
+  display: flex; align-items: center; justify-content: center;
+  gap: 20px; padding: 20px 20px 16px;
 }
-
-/* ── 头部 ── */
-.today-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 16px 20px 0;
-}
-.greeting-time { font-size: 13px; color: #9ca3af; }
-.user-name { font-size: 22px; font-weight: 800; color: #111827; margin: 2px 0 0; }
-.header-right { display: flex; align-items: center; gap: 8px; }
-.streak-badge {
-  display: flex; align-items: baseline; gap: 2px;
-  background: #fef3c7; border-radius: 20px; padding: 6px 12px;
-}
-.streak-fire { font-size: 16px; }
-.streak-num { font-size: 20px; font-weight: 900; color: #d97706; }
-.streak-label { font-size: 11px; color: #92400e; }
-
-/* ── 进度环 ── */
-.progress-hero { display: flex; flex-direction: column; align-items: center; padding: 20px 0 16px; }
-.progress-circle { width: 100px; height: 100px; position: relative; }
+.progress-circle { width: 100px; height: 100px; position: relative; flex-shrink: 0; }
 .progress-circle svg { transform: rotate(-90deg); }
 .prog-bg { fill: none; stroke: #f3f4f6; stroke-width: 6; }
 .prog-fill { fill: none; stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray 0.6s ease; }
@@ -328,47 +339,36 @@ onMounted(async () => {
 .prog-done { font-size: 28px; font-weight: 900; color: #111827; }
 .prog-slash { font-size: 16px; color: #d1d5db; margin: 0 2px; }
 .prog-total { font-size: 16px; color: #9ca3af; }
-.progress-label { font-size: 14px; color: #6b7280; margin-top: 8px; }
+.progress-right { display: flex; flex-direction: column; gap: 6px; }
+.progress-label { font-size: 14px; color: #6b7280; }
+.daily-points { }
+.points-badge {
+  display: inline-block; font-size: 13px; font-weight: 700;
+  color: #d97706; background: #fef3c7; padding: 3px 10px;
+  border-radius: 12px;
+}
 
-/* ── 行动卡片 ── */
-.actions-section { padding: 0 20px; }
+/* ── 自选区添加按钮 ── */
+.add-self-btn {
+  background: none; border: 1px solid #d1d5db; border-radius: 6px;
+  padding: 3px 10px; font-size: 12px; font-weight: 600;
+  color: #6b7280; cursor: pointer; transition: all 0.2s;
+}
+.add-self-btn:active { background: #f3f4f6; transform: scale(0.95); }
+
+/* ── 空任务状态 ── */
+.empty-tasks { text-align: center; padding: 32px 20px; }
+.empty-icon { font-size: 36px; display: block; margin-bottom: 8px; }
+.empty-text { font-size: 14px; color: #9ca3af; margin: 0 0 12px; }
+.empty-add-btn {
+  background: var(--bhp-brand-primary, #10b981); color: #fff;
+  border: none; border-radius: 10px; padding: 10px 24px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.empty-add-btn:active { transform: scale(0.95); }
+
+/* ── section-title ── */
 .section-title { font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 12px; }
-.action-list { display: flex; flex-direction: column; gap: 8px; }
-.action-card {
-  display: flex; align-items: center; gap: 12px;
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
-  padding: 14px 16px; transition: all 0.2s; cursor: pointer;
-}
-.action-card.active:active { transform: scale(0.98); background: #f9fafb; }
-.action-card.done { background: #f9fafb; border-color: #f3f4f6; }
-
-.check-circle {
-  width: 32px; height: 32px; border-radius: 50%;
-  border: 2.5px solid #d1d5db; display: flex; align-items: center; justify-content: center;
-  font-size: 14px; font-weight: 700; color: #9ca3af; transition: all 0.3s; flex-shrink: 0;
-}
-.check-circle.checked {
-  border-color: var(--bhp-brand-primary, #10b981);
-  background: var(--bhp-brand-primary, #10b981); color: #fff;
-}
-.check-icon { font-size: 16px; }
-
-.action-body { flex: 1; min-width: 0; }
-.action-title { font-size: 14px; font-weight: 600; color: #111827; }
-.action-title.line-through { text-decoration: line-through; color: #9ca3af; }
-.action-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
-.meta-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
-.meta-time { font-size: 11px; color: #9ca3af; }
-.meta-mode { font-size: 14px; }
-
-.quick-btn {
-  background: var(--bhp-brand-primary, #10b981); color: #fff;
-  border: none; border-radius: 8px; padding: 6px 14px;
-  font-size: 13px; font-weight: 600; cursor: pointer;
-  white-space: nowrap; transition: all 0.2s;
-}
-.quick-btn:active { transform: scale(0.95); }
-.done-time { font-size: 12px; color: #9ca3af; }
 
 /* ── AI教练提示 ── */
 .coach-tip {
@@ -399,15 +399,27 @@ onMounted(async () => {
 .day-dot.today { background: #dbeafe; color: #2563eb; border: 2px solid #3b82f6; }
 .day-dot.future { background: #f3f4f6; color: #d1d5db; }
 
-/* ── 打卡Toast ── */
+/* ── 打卡Toast (增强: 积分+连续天数) ── */
 .checkin-toast {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
   background: rgba(0,0,0,0.85); color: #fff; border-radius: 16px;
   padding: 20px 32px; text-align: center; z-index: 999;
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
 .toast-emoji { font-size: 40px; }
 .toast-text { font-size: 16px; font-weight: 700; }
+.toast-points { font-size: 14px; color: #fbbf24; font-weight: 600; }
+.toast-breakdown {
+  display: flex; flex-wrap: wrap; gap: 4px 8px; justify-content: center;
+  margin-top: 2px;
+}
+.breakdown-item {
+  font-size: 11px; color: #d1d5db; background: rgba(255,255,255,0.1);
+  padding: 1px 6px; border-radius: 4px;
+}
+.toast-streak { font-size: 12px; color: #9ca3af; }
+.toast-badge { font-size: 13px; color: #a78bfa; font-weight: 600; margin-top: 2px; }
+.toast-milestone { font-size: 13px; color: #34d399; font-weight: 600; margin-top: 2px; }
 .checkin-toast-enter-active { animation: toastIn 0.3s; }
 .checkin-toast-leave-active { animation: toastOut 0.3s; }
 @keyframes toastIn { from { opacity: 0; transform: translate(-50%,-50%) scale(0.8); } to { opacity: 1; transform: translate(-50%,-50%) scale(1); } }

@@ -26,7 +26,7 @@ from loguru import logger
 
 from core.content_access_service import get_user_level, get_access_status
 from core.auth import get_role_level
-from api.dependencies import get_current_user, require_coach_or_admin
+from api.dependencies import get_current_user, get_optional_user, require_coach_or_admin
 from core.database import get_db
 from core.models import (
     User, ContentItem, ContentLike, ContentBookmark, ContentComment,
@@ -198,10 +198,10 @@ def get_content_list(
     sort_by: str = "created_at",
     sort_order: str = "desc",
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
-    """获取内容列表（含等级门控）"""
-    user_level = get_user_level(current_user)
+    """获取内容列表（支持匿名浏览，登录用户获得等级门控）"""
+    user_level = get_user_level(current_user) if current_user else 0
 
     query = db.query(ContentItem).filter(ContentItem.status == "published")
 
@@ -249,9 +249,9 @@ def get_recommended_content(
     limit: int = Query(10, ge=1, le=50),
     domain: Optional[str] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
-    """获取推荐内容（按热度排序）"""
+    """获取推荐内容（按热度排序，支持匿名浏览）"""
     query = db.query(ContentItem).filter(ContentItem.status == "published")
     if domain:
         query = query.filter(ContentItem.domain == domain)
@@ -267,14 +267,14 @@ def get_recommended_content(
 def get_course_detail(
     course_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
-    """获取课程详情（含等级门控）"""
+    """获取课程详情（支持匿名浏览，含等级门控）"""
     item = db.query(ContentItem).filter(ContentItem.id == course_id).first()
     if not item:
         raise HTTPException(404, "课程不存在")
 
-    user_level = get_user_level(current_user)
+    user_level = get_user_level(current_user) if current_user else 0
     detail = _item_to_detail(db, item)
     access = get_access_status(user_level, item.level or "L0")
     detail["access_status"] = access
@@ -925,24 +925,25 @@ def get_content_detail(
     content_type: str,
     content_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_user),
 ):
-    """获取内容详情（统一接口）"""
+    """获取内容详情（支持匿名浏览，登录用户记录浏览历史）"""
     item = db.query(ContentItem).filter(ContentItem.id == content_id).first()
     if not item:
         raise HTTPException(404, "内容不存在")
 
     # 增加浏览量
     item.view_count = (item.view_count or 0) + 1
-    db.add(UserActivityLog(
-        user_id=current_user.id, activity_type="learn",
-        detail={"content_id": content_id, "type": content_type},
-        created_at=datetime.utcnow(),
-    ))
+    if current_user:
+        db.add(UserActivityLog(
+            user_id=current_user.id, activity_type="learn",
+            detail={"content_id": content_id, "type": content_type},
+            created_at=datetime.utcnow(),
+        ))
     db.commit()
 
     detail = _item_to_detail(db, item)
-    interaction = _get_user_interaction(db, current_user.id, content_id)
+    interaction = _get_user_interaction(db, current_user.id, content_id) if current_user else {}
 
     return {"content": detail, "user_interaction": interaction}
 

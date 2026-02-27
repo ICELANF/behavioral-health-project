@@ -81,3 +81,17 @@ html, body {
 .safe-area-top {
   padding-top: env(safe-area-inset-top);
 }
+
+// 移动端触摸目标 — 最小 44px (WCAG)
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// 底部安全区 padding
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

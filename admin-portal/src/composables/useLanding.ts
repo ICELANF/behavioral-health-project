@@ -55,17 +55,49 @@ export interface PageData {
   cta: PageCTA
 }
 
+interface PlatformStats {
+  api_endpoints: number
+  data_models: number
+  agent_count: number
+  knowledge_tiers: number
+  scheduler_jobs: number
+  platform_version: string
+}
+
+/** Merge dynamic platform stats into home page data */
+function applyDynamicStats(base: PageData, stats: PlatformStats): PageData {
+  const heroStats = [...base.heroStats]
+  // heroStats[1] = AI Agent count
+  heroStats[1] = { value: stats.agent_count, suffix: '+', label: 'AI Agent' }
+
+  const sectionSub = `${stats.api_endpoints}+ API · ${stats.data_models}张数据表 · ${stats.agent_count}个AI Agent · 双轨状态机`
+
+  const cards: DataCardItem[] = [
+    { icon: '🔌', number: stats.api_endpoints, suffix: '+', label: 'API 端点', description: '覆盖评估、干预、学习、设备全链路' },
+    { icon: '🧬', number: stats.data_models, suffix: '+', label: '数据模型', description: '从用户画像到行为轨迹全维度建模' },
+    { icon: '🤖', number: stats.agent_count, suffix: '+', label: 'AI Agent', description: 'Master协调、领域专家、主动干预' },
+    { icon: '📚', number: stats.knowledge_tiers, suffix: '层', label: '知识引擎', description: 'RAG检索+证据分层+引用标注' },
+  ]
+
+  // flow step 3: update agent count in desc
+  const flow = base.flow.map((f, i) =>
+    i === 2 ? { ...f, desc: `${stats.agent_count} Agent协同` } : f
+  )
+
+  return { ...base, heroStats, sectionSub, cards, flow }
+}
+
 export const PAGES: Record<string, PageData> = {
   home: {
     heroTag: '行为健康数字基建', heroCta: '预约演示',
     heroTitle: '让健康管理<br><em>自然生长</em>',
     heroSubtitle: '不是冰冷的数据看板，是有温度的行为改变系统。从评估到干预、从个体到群体，用数字化基建重塑健康管理的底层逻辑。',
-    heroStats: [{ value: 180, suffix: '天', label: '代谢逆转周期' }, { value: 12, suffix: '个', label: 'AI Agent' }, { value: 97, suffix: '%', label: '行为改善率' }],
+    heroStats: [{ value: 180, suffix: '天', label: '代谢逆转周期' }, { value: 20, suffix: '+', label: 'AI Agent' }, { value: 97, suffix: '%', label: '行为改善率' }],
     hasScenes: true,
-    sectionTag: '技术架构', sectionTitle: '不是又一个「健康管理App」', sectionSub: '377+ API · 59张数据表 · 12个AI Agent · 双轨状态机',
-    flow: [{ icon: '📋', title: 'BAPS评估', desc: '150题四维量表' }, { icon: '🧠', title: 'AI画像', desc: 'TTM阶段推演' }, { icon: '💊', title: '精准干预', desc: '12 Agent协同' }, { icon: '🔄', title: '行为追踪', desc: '微行动引擎' }, { icon: '📊', title: '效果闭环', desc: '持续优化' }],
+    sectionTag: '技术架构', sectionTitle: '不是又一个「健康管理App」', sectionSub: '698+ API · 169张数据表 · 20个AI Agent · 双轨状态机',
+    flow: [{ icon: '📋', title: 'BAPS评估', desc: '150题四维量表' }, { icon: '🧠', title: 'AI画像', desc: 'TTM阶段推演' }, { icon: '💊', title: '精准干预', desc: '20 Agent协同' }, { icon: '🔄', title: '行为追踪', desc: '微行动引擎' }, { icon: '📊', title: '效果闭环', desc: '持续优化' }],
     cardsTag: '核心能力', cardsTitle: '平台技术全景',
-    cards: [{ icon: '🔌', number: 391, suffix: '+', label: 'API 端点', description: '覆盖评估、干预、学习、设备全链路' }, { icon: '🧬', number: 59, suffix: '', label: '数据模型', description: '从用户画像到行为轨迹全维度建模' }, { icon: '🤖', number: 12, suffix: '', label: 'AI Agent', description: 'Master协调、领域专家、主动干预' }, { icon: '📚', number: 3, suffix: '层', label: '知识引擎', description: 'RAG检索+证据分层+引用标注' }],
+    cards: [{ icon: '🔌', number: 698, suffix: '+', label: 'API 端点', description: '覆盖评估、干预、学习、设备全链路' }, { icon: '🧬', number: 169, suffix: '+', label: '数据模型', description: '从用户画像到行为轨迹全维度建模' }, { icon: '🤖', number: 20, suffix: '+', label: 'AI Agent', description: 'Master协调、领域专家、主动干预' }, { icon: '📚', number: 4, suffix: '层', label: '知识引擎', description: 'RAG检索+证据分层+引用标注' }],
     testimonials: [{ quote: '终于不是让患者填完问卷就完事了。系统能自动生成行为处方，还能追踪执行。', name: '张主任', role: '某三甲医院 内分泌科' }, { quote: '我们的会员续保率提升了23%，不是靠降价，是靠真正在管健康。', name: '李总', role: '某寿险公司 健康管理部' }, { quote: '基层慢病筛查终于能跟干预打通了，不再是两张皮。', name: '王科长', role: '某区卫健委' }],
     cta: { title: '准备好让改变生长了吗？', subtitle: '15分钟了解一套完整的行为健康数字基建', button: '预约产品演示' },
   },
@@ -130,12 +162,21 @@ export const SCENES = [
 
 // ═══════ Composables ═══════
 
-/** 使用当前页面主题 */
+/** 使用当前页面主题 + 动态平台统计 */
 export function useLandingTheme() {
   const currentPage = ref('home')
+  const platformStats = ref<PlatformStats | null>(null)
+
   const theme = computed(() => THEMES[currentPage.value] || THEMES.home)
-  const pageData = computed(() => PAGES[currentPage.value] || PAGES.home)
   const svgData = computed(() => SVG_DATA[currentPage.value] || SVG_DATA.home)
+
+  const pageData = computed(() => {
+    const base = PAGES[currentPage.value] || PAGES.home
+    if (currentPage.value === 'home' && platformStats.value) {
+      return applyDynamicStats(base, platformStats.value)
+    }
+    return base
+  })
 
   function switchPage(page: string) {
     currentPage.value = page
@@ -153,7 +194,13 @@ export function useLandingTheme() {
     root.style.setProperty('--l-text-light', t.textLight)
   }
 
-  onMounted(() => applyTheme(THEMES.home))
+  onMounted(async () => {
+    applyTheme(THEMES.home)
+    try {
+      const res = await fetch('/api/v1/landing/platform-stats')
+      if (res.ok) platformStats.value = await res.json()
+    } catch { /* keep static defaults */ }
+  })
 
   return { currentPage, theme, pageData, svgData, switchPage }
 }
@@ -184,33 +231,4 @@ export function useScrollReveal(rootRef: Ref<HTMLElement | null>) {
   onUnmounted(() => observer?.disconnect())
 
   return { reinit: () => setTimeout(init, 80) }
-}
-
-/** 数字滚动动画 */
-export function useCounter(targetRef: Ref<HTMLElement | null>, target: number, suffix: string = '') {
-  const display = ref('0' + suffix)
-
-  onMounted(() => {
-    if (!targetRef.value) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          observer.disconnect()
-          const duration = 2000
-          const start = performance.now()
-          function step(now: number) {
-            const p = Math.min((now - start) / duration, 1)
-            const eased = 1 - Math.pow(1 - p, 3)
-            display.value = Math.round(target * eased).toLocaleString() + suffix
-            if (p < 1) requestAnimationFrame(step)
-          }
-          requestAnimationFrame(step)
-        }
-      },
-      { threshold: 0.3 }
-    )
-    observer.observe(targetRef.value)
-  })
-
-  return { display }
 }

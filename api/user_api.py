@@ -503,6 +503,41 @@ def delete_user(
 
 
 # ============================================
+# Notification Preferences (复用 User.preferred_channel)
+# ============================================
+
+class NotificationPreferencesRequest(BaseModel):
+    preferred_channel: str  # "app" | "wechat" | "sms" | "email"
+
+
+@router.get("/user-notification-preferences")
+def get_notification_preferences(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取当前用户的通知偏好"""
+    return {
+        "preferred_channel": getattr(current_user, 'preferred_channel', None) or "app",
+    }
+
+
+@router.put("/user-notification-preferences")
+def update_notification_preferences(
+    body: NotificationPreferencesRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """更新通知偏好"""
+    valid_channels = {"app", "wechat", "sms", "email"}
+    if body.preferred_channel not in valid_channels:
+        raise HTTPException(status_code=400, detail=f"无效渠道，可选: {', '.join(valid_channels)}")
+
+    current_user.preferred_channel = body.preferred_channel
+    db.commit()
+    return {"message": "通知偏好已更新", "preferred_channel": body.preferred_channel}
+
+
+# ============================================
 # Statistics
 # ============================================
 
@@ -730,3 +765,145 @@ def reject_transfer(
     flag_modified(grower, "profile")
     db.commit()
     return {"message": "转移已拒绝"}
+
+
+# ============================================
+# 批量用户导入
+# ============================================
+
+from fastapi import File, UploadFile
+import csv
+import io
+import secrets
+
+
+@router.post("/users/batch-import")
+async def batch_import_users(
+    file: UploadFile = File(..., description="CSV/Excel file with user data"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    批量导入用户 — 支持 CSV 格式
+
+    CSV 列: phone (必填), name, role, wx_openid (选填)
+
+    自动关联逻辑:
+    1. 按 phone 查已有用户 → 更新信息
+    2. 按 wx_openid 查已有用户 → 更新信息
+    3. 都没匹配 → 创建新用户 (随机密码, 待首次验证码登录)
+
+    返回: { created: N, updated: N, errors: [...] }
+    """
+    if not file.filename:
+        raise HTTPException(400, "请上传文件")
+
+    # 读取文件内容
+    content = await file.read()
+    try:
+        text = content.decode("utf-8-sig")  # 兼容 Excel 导出的 BOM
+    except UnicodeDecodeError:
+        try:
+            text = content.decode("gbk")  # 兼容中文 Windows
+        except UnicodeDecodeError:
+            raise HTTPException(400, "文件编码不支持，请使用 UTF-8 或 GBK 编码")
+
+    reader = csv.DictReader(io.StringIO(text))
+
+    # 验证表头
+    required_col = "phone"
+    if not reader.fieldnames or required_col not in reader.fieldnames:
+        raise HTTPException(400, f"CSV 必须包含 '{required_col}' 列。检测到的列: {reader.fieldnames}")
+
+    created = 0
+    updated = 0
+    errors = []
+
+    VALID_ROLES = {r.value for r in UserRole}
+
+    for i, row in enumerate(reader, start=2):  # start=2: 第一行是表头
+        phone = (row.get("phone") or "").strip()
+        name = (row.get("name") or row.get("full_name") or "").strip()
+        role_str = (row.get("role") or "observer").strip().lower()
+        wx_openid = (row.get("wx_openid") or "").strip()
+
+        if not phone:
+            errors.append({"row": i, "error": "手机号为空"})
+            continue
+
+        import re
+        if not re.match(r'^1\d{10}$', phone):
+            errors.append({"row": i, "phone": phone, "error": "手机号格式不正确"})
+            continue
+
+        if role_str not in VALID_ROLES:
+            role_str = "observer"
+
+        try:
+            # 1. 按 phone 查找
+            existing = db.query(User).filter(User.phone == phone).first()
+            if existing:
+                if name:
+                    existing.full_name = name
+                if wx_openid and not existing.wx_openid:
+                    existing.wx_openid = wx_openid
+                if role_str:
+                    existing.role = UserRole(role_str)
+                db.commit()
+                updated += 1
+                continue
+
+            # 2. 按 wx_openid 查找
+            if wx_openid:
+                existing = db.query(User).filter(User.wx_openid == wx_openid).first()
+                if existing:
+                    existing.phone = phone
+                    if name:
+                        existing.full_name = name
+                    if role_str:
+                        existing.role = UserRole(role_str)
+                    db.commit()
+                    updated += 1
+                    continue
+
+            # 3. 创建新用户
+            random_pwd = secrets.token_urlsafe(12)
+            new_user = User(
+                phone=phone,
+                username=f"u_{phone[-6:]}",
+                email=f"{phone}@bhp.local",
+                password_hash=hash_password(random_pwd),
+                full_name=name or f"用户{phone[-4:]}",
+                role=UserRole(role_str),
+                is_active=True,
+            )
+            if wx_openid:
+                new_user.wx_openid = wx_openid
+            db.add(new_user)
+            db.commit()
+            created += 1
+
+        except Exception as e:
+            db.rollback()
+            errors.append({"row": i, "phone": phone, "error": str(e)})
+
+    return {
+        "created": created,
+        "updated": updated,
+        "total_processed": created + updated + len(errors),
+        "errors": errors[:50],  # 最多返回 50 条错误
+    }
+
+
+@router.get("/users/import-template")
+def download_import_template(
+    current_user: User = Depends(require_admin),
+):
+    """下载用户导入 CSV 模板"""
+    from fastapi.responses import StreamingResponse
+    csv_content = "phone,name,role,wx_openid\n13800138001,张三,grower,\n13800138002,李四,observer,\n"
+    return StreamingResponse(
+        io.StringIO(csv_content),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=user_import_template.csv"},
+    )

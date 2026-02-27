@@ -3,7 +3,8 @@
 <!-- ═══════════════════════════════════════════════════════════ -->
 <!-- 文件路径: h5/src/views/home/GrowerHome.vue -->
 <template>
-  <div class="grower-home">
+  <PageShell :show-nav-bar="false" :show-tab-bar="true" no-padding>
+    <div class="grower-home">
     <!-- 头部：连续天数 + 稳定度 -->
     <div class="grower-hero">
       <div class="hero-bg" />
@@ -86,7 +87,9 @@
         </div>
       </div>
     </div>
-  </div>
+
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -94,6 +97,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/index'
 import AiContentBadge from '@/components/common/AiContentBadge.vue'
+import PageShell from '@/components/common/PageShell.vue'
 const router = useRouter()
 const userInfo = ref<any>({})
 const streakDays = ref(0)
@@ -145,7 +149,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.grower-home { min-height: 100vh; background: #F7F8FB; padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+.grower-home { background: #F7F8FB; }
 .grower-hero { position: relative; padding: 52px 20px 28px; }
 .hero-bg {
   position: absolute; inset: 0;

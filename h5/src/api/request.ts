@@ -16,12 +16,16 @@ const request = axios.create({
   }
 })
 
-// 请求拦截器 — 注入 token
+// 请求拦截器 — 注入 token + FormData Content-Type 修正
 request.interceptors.request.use(
   (config) => {
     const token = storage.getToken()
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    }
+    // FormData 时删除默认 JSON Content-Type，让 axios 自动设置 multipart/form-data + boundary
+    if (config.data instanceof FormData) {
+      delete config.headers['Content-Type']
     }
     return config
   },

@@ -18,6 +18,32 @@ from core.auth import verify_token_with_blacklist
 
 # OAuth2密码模式
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
+
+
+def get_optional_user(
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    """
+    可选认证 — 有 token 则返回 User，无 token 或无效则返回 None。
+    用于公开浏览但登录用户可获得增强体验的端点。
+    """
+    if not token:
+        return None
+    try:
+        payload = verify_token_with_blacklist(token, "access")
+        if payload is None:
+            return None
+        user_id = payload.get("user_id") or payload.get("sub")
+        if user_id is None:
+            return None
+        user = db.query(User).filter(User.id == int(user_id)).first()
+        if user and user.is_active:
+            return user
+        return None
+    except (JWTError, Exception):
+        return None
 
 
 def get_current_user(

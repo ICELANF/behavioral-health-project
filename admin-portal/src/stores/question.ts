@@ -14,11 +14,7 @@ export const useQuestionStore = defineStore('question', () => {
   const total = ref(0);
 
   // Filters
-  const filters = ref<QuestionListParams>({
-    page: 1,
-    page_size: 20,
-    status: 'active',
-  });
+  const filters = ref<QuestionListParams>({});
 
   // Actions
   async function fetchQuestions(params?: QuestionListParams) {
@@ -85,7 +81,7 @@ export const useQuestionStore = defineStore('question', () => {
   }
 
   function resetFilters() {
-    filters.value = { page: 1, page_size: 20, status: 'active' };
+    filters.value = {};
   }
 
   function clearCurrentQuestion() {

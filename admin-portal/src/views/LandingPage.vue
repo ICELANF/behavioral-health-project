@@ -8,7 +8,7 @@
           <button v-for="item in NAV_ITEMS" :key="item.key" class="l-nav-link" :class="{ active: currentPage === item.key }" @click="go(item.key)">{{ item.label }}</button>
         </div>
       </div>
-      <button class="l-nav-cta">预约演示</button>
+      <button class="l-nav-cta" @click="openContact()">预约演示</button>
     </nav>
 
     <!-- Hero -->
@@ -22,8 +22,8 @@
             <h1 class="l-fade-in" style="transition-delay:.1s" v-html="sanitizeHtml(pageData.heroTitle)" />
             <p class="l-hero-subtitle l-fade-in" style="transition-delay:.2s">{{ pageData.heroSubtitle }}</p>
             <div class="l-hero-buttons l-fade-in" style="transition-delay:.3s">
-              <button class="l-btn-primary">{{ pageData.heroCta }}</button>
-              <button class="l-btn-ghost">了解更多 →</button>
+              <button class="l-btn-primary" @click="openContact()">{{ pageData.heroCta }}</button>
+              <button class="l-btn-ghost" @click="scrollToNext()">了解更多 →</button>
             </div>
             <div class="l-hero-stats l-fade-in" style="transition-delay:.4s">
               <div v-for="(s, i) in pageData.heroStats" :key="i">
@@ -41,7 +41,7 @@
     </section>
 
     <!-- Scene Cards (home only) -->
-    <section v-if="pageData.hasScenes" class="l-section">
+    <section ref="sectionScenesRef" v-if="pageData.hasScenes" class="l-section">
       <div class="l-inner">
         <div class="l-section-header l-fade-in">
           <div class="l-section-tag">解决方案</div>
@@ -61,7 +61,7 @@
     </section>
 
     <!-- Flow -->
-    <section class="l-section l-bg-gradient">
+    <section ref="sectionFlowRef" class="l-section l-bg-gradient">
       <div class="l-inner">
         <div class="l-section-header l-fade-in">
           <div class="l-section-tag">{{ pageData.sectionTag }}</div>
@@ -80,7 +80,7 @@
     </section>
 
     <!-- Data Cards -->
-    <section class="l-section l-bg-white">
+    <section ref="sectionCardsRef" class="l-section l-bg-white">
       <div class="l-inner">
         <div class="l-section-header l-fade-in">
           <div class="l-section-tag">{{ pageData.cardsTag }}</div>
@@ -98,7 +98,7 @@
     </section>
 
     <!-- Testimonials -->
-    <section class="l-section l-bg-warm">
+    <section ref="sectionTestimonialsRef" class="l-section l-bg-warm">
       <div class="l-inner">
         <div class="l-section-header l-fade-in">
           <div class="l-section-tag">客户声音</div>
@@ -123,7 +123,7 @@
       <div class="l-cta-inner l-fade-in">
         <h2>{{ pageData.cta.title }}</h2>
         <p>{{ pageData.cta.subtitle }}</p>
-        <button class="l-cta-btn">{{ pageData.cta.button }}</button>
+        <button class="l-cta-btn" @click="openContact()">{{ pageData.cta.button }}</button>
       </div>
     </section>
 
@@ -144,11 +144,74 @@
         <span>京ICP备XXXXXXXX号</span>
       </div>
     </footer>
+
+    <!-- Contact Modal -->
+    <div v-if="showContact" class="l-modal-mask" @click.self="showContact = false">
+      <div class="l-modal">
+        <div class="l-modal-header">
+          <h3>预约演示</h3>
+          <button class="l-modal-close" @click="showContact = false">&times;</button>
+        </div>
+        <!-- Success state -->
+        <div v-if="submitResult.status === 'success'" class="l-modal-result l-result-success">
+          <div class="l-result-icon">&#10003;</div>
+          <h4>预约信息已提交</h4>
+          <p>我们将尽快与您联系，感谢您的关注！</p>
+          <button class="l-form-submit" @click="showContact = false">关闭</button>
+        </div>
+        <!-- Error state -->
+        <div v-else-if="submitResult.status === 'error'" class="l-modal-result l-result-error">
+          <div class="l-result-icon">!</div>
+          <p>{{ submitResult.message }}</p>
+          <button class="l-form-submit" @click="submitResult.status = ''">重新填写</button>
+        </div>
+        <!-- Form -->
+        <form v-else class="l-modal-form" @submit.prevent="submitContact">
+          <div class="l-form-row">
+            <label>姓名 <span class="l-required">*</span></label>
+            <input v-model="form.name" required placeholder="您的姓名" maxlength="50" />
+          </div>
+          <div class="l-form-row">
+            <label>机构/公司</label>
+            <input v-model="form.organization" placeholder="机构或公司名称" maxlength="200" />
+          </div>
+          <div class="l-form-row">
+            <label>职位</label>
+            <input v-model="form.title" placeholder="您的职位" maxlength="100" />
+          </div>
+          <div class="l-form-row">
+            <label>手机 <span class="l-required">*</span></label>
+            <input v-model="form.phone" required placeholder="联系电话" maxlength="20" />
+          </div>
+          <div class="l-form-row">
+            <label>邮箱</label>
+            <input v-model="form.email" type="email" placeholder="电子邮箱" maxlength="100" />
+          </div>
+          <div class="l-form-row">
+            <label>感兴趣方案</label>
+            <select v-model="form.solution">
+              <option value="">请选择</option>
+              <option value="hospital">医院</option>
+              <option value="insurance">商保</option>
+              <option value="government">政府</option>
+              <option value="rwe">RWE</option>
+            </select>
+          </div>
+          <div class="l-form-row">
+            <label>备注</label>
+            <textarea v-model="form.message" placeholder="请描述您的需求或问题" maxlength="2000" rows="3"></textarea>
+          </div>
+          <button type="submit" class="l-form-submit" :disabled="submitting">
+            {{ submitting ? '提交中...' : '提交预约' }}
+          </button>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, reactive, nextTick, type Ref } from 'vue'
 import { useLandingTheme, useScrollReveal, SCENES, type PageData } from '../composables/useLanding'
 import LandingHeroSVG from '../components/landing/LandingHeroSVG.vue'
 import LandingCounter from '../components/landing/LandingCounter.vue'
@@ -169,6 +232,11 @@ const FOOTER_COLS = [
 ]
 
 const rootRef = ref<HTMLElement | null>(null)
+const sectionScenesRef = ref<HTMLElement | null>(null)
+const sectionFlowRef = ref<HTMLElement | null>(null)
+const sectionCardsRef = ref<HTMLElement | null>(null)
+const sectionTestimonialsRef = ref<HTMLElement | null>(null)
+
 const { currentPage, theme, pageData, svgData, switchPage } = useLandingTheme()
 const { reinit } = useScrollReveal(rootRef)
 
@@ -177,9 +245,79 @@ function go(page: string) {
   nextTick(reinit)
 }
 
+// ── Smooth scroll ──
+function scrollToEl(el: HTMLElement | null) {
+  el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+function scrollToNext() {
+  // 首页 → 场景卡片; 子页面 → 流程区
+  if (currentPage.value === 'home') {
+    scrollToEl(sectionScenesRef.value)
+  } else {
+    scrollToEl(sectionFlowRef.value)
+  }
+}
+
+// ── Contact modal ──
+const SOLUTION_MAP: Record<string, string> = {
+  home: '', hospital: 'hospital', insurance: 'insurance', government: 'government', rwe: 'rwe',
+}
+
+const showContact = ref(false)
+const submitting = ref(false)
+const submitResult = reactive({ status: '', message: '' })
+const form = reactive({
+  name: '', organization: '', title: '', phone: '', email: '',
+  solution: '', message: '',
+})
+
+function openContact(prefillMessage?: string) {
+  form.solution = SOLUTION_MAP[currentPage.value] || ''
+  if (prefillMessage) form.message = prefillMessage
+  submitResult.status = ''
+  submitResult.message = ''
+  showContact.value = true
+}
+
+async function submitContact() {
+  submitting.value = true
+  try {
+    const res = await fetch('/api/v1/demo-requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...form, source_page: currentPage.value }),
+    })
+    if (res.ok) {
+      submitResult.status = 'success'
+      Object.assign(form, { name: '', organization: '', title: '', phone: '', email: '', solution: '', message: '' })
+    } else {
+      const err = await res.json().catch(() => null)
+      submitResult.status = 'error'
+      submitResult.message = err?.detail || '提交失败，请稍后再试'
+    }
+  } catch {
+    submitResult.status = 'error'
+    submitResult.message = '网络错误，请检查网络后再试'
+  } finally {
+    submitting.value = false
+  }
+}
+
+// ── Footer links ──
 function handleFooterLink(item: string) {
-  const map: Record<string, string> = { '医院': 'hospital', '商保': 'insurance', '政府': 'government', 'RWE': 'rwe' }
-  if (map[item]) go(map[item])
+  const pageMap: Record<string, string> = { '医院': 'hospital', '商保': 'insurance', '政府': 'government', 'RWE': 'rwe' }
+  if (pageMap[item]) { go(pageMap[item]); return }
+
+  const scrollMap: Record<string, Ref<HTMLElement | null>> = {
+    'BAPS评估': sectionCardsRef, 'AI Agent': sectionCardsRef,
+    '知识引擎': sectionCardsRef, '问卷系统': sectionCardsRef,
+    '团队': sectionTestimonialsRef, '研究': sectionTestimonialsRef,
+  }
+  if (scrollMap[item]) { scrollToEl(scrollMap[item].value); return }
+
+  if (item === '联系我们') { openContact(); return }
+  if (item === '加入我们') { openContact('人才加入咨询'); return }
 }
 </script>
 

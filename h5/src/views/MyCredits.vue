@@ -1,6 +1,5 @@
 <template>
-  <div class="my-credits">
-    <van-nav-bar title="我的学分" left-arrow @click-left="$router.back()" />
+  <PageShell title="我的学分" :show-back="true">
 
     <!-- 学分汇总卡片 -->
     <div class="summary-card">
@@ -52,11 +51,12 @@
         <van-button size="small" @click="loadMore" :loading="loadingMore">加载更多</van-button>
       </div>
     </van-cell-group>
-  </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import PageShell from '@/components/common/PageShell.vue'
 import { creditApi } from '@/api/credit-promotion'
 
 const credits = reactive<{ total: Record<string, any>; by_type: any[] }>({
@@ -103,10 +103,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.my-credits {
-  min-height: 100vh;
-  background: #f7f8fa;
-}
 .summary-card {
   margin: 12px 16px;
   padding: 20px;

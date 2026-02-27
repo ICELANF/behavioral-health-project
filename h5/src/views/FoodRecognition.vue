@@ -1,8 +1,5 @@
 <template>
-  <div class="page-container">
-    <van-nav-bar title="食物识别" left-arrow @click-left="router.back()" />
-
-    <div class="page-content">
+  <PageShell title="食物识别" :show-back="true">
       <!-- 拍照区域 -->
       <div v-if="!analyzing && !result" class="capture-section card">
         <div class="capture-area" @click="triggerFileInput">
@@ -172,7 +169,6 @@
         </template>
         <div v-else class="history-empty">暂无识别记录</div>
       </div>
-    </div>
 
     <!-- 历史详情弹窗 -->
     <van-popup v-model:show="showDetail" position="bottom" round :style="{ height: '75%' }">
@@ -208,16 +204,14 @@
         </div>
       </div>
     </van-popup>
-
-    <TabBar />
-  </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
-import TabBar from '@/components/common/TabBar.vue'
+import PageShell from '@/components/common/PageShell.vue'
 import AiContentBadge from '@/components/common/AiContentBadge.vue'
 import api from '@/api/index'
 
@@ -275,7 +269,11 @@ async function onFileSelected(e: Event) {
       taskCompleted.value = true
       taskInfo.value = res.task_info
     }
-    showToast({ message: '分析完成', type: 'success' })
+    if (res.food_name) {
+      showToast({ message: '分析完成', type: 'success' })
+    } else {
+      showToast({ message: '图片已保存，AI分析暂不可用', type: 'success' })
+    }
     // 刷新历史
     historyOffset.value = 0
     await loadHistory(true)

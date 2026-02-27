@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, case, func
 from loguru import logger
 
-from core.models import CoachPushQueue, CoachMessage, Reminder
+from core.models import CoachPushQueue, CoachMessage, Reminder, User
 
 
 def create_queue_item(
@@ -499,6 +499,218 @@ def update_item(
     db.commit()
     db.refresh(item)
     return item
+
+
+# ============================================
+# 审批历史 + 详情
+# ============================================
+
+def get_history(
+    db: Session,
+    coach_id: int,
+    status: Optional[str] = None,
+    student_id: Optional[int] = None,
+    source_type: Optional[str] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> Dict[str, Any]:
+    """获取已处理的审批历史（非 pending 状态）"""
+    query = db.query(CoachPushQueue).filter(CoachPushQueue.coach_id == coach_id)
+
+    if status:
+        query = query.filter(CoachPushQueue.status == status)
+    else:
+        query = query.filter(CoachPushQueue.status.in_(["approved", "rejected", "sent", "expired"]))
+    if student_id:
+        query = query.filter(CoachPushQueue.student_id == student_id)
+    if source_type:
+        query = query.filter(CoachPushQueue.source_type == source_type)
+    if date_from:
+        query = query.filter(CoachPushQueue.created_at >= date_from)
+    if date_to:
+        query = query.filter(CoachPushQueue.created_at <= date_to)
+
+    total = query.count()
+    items = (
+        query
+        .order_by(CoachPushQueue.reviewed_at.desc().nullslast(), CoachPushQueue.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    # 关联学员姓名
+    student_ids = {i.student_id for i in items}
+    students = {u.id: u for u in db.query(User).filter(User.id.in_(student_ids)).all()} if student_ids else {}
+
+    result_items = []
+    for item in items:
+        d = _item_to_dict(item)
+        s = students.get(item.student_id)
+        d["student_name"] = (s.full_name or s.username) if s else "未知"
+        # 计算审批耗时
+        if item.reviewed_at and item.created_at:
+            d["review_seconds"] = int((item.reviewed_at - item.created_at).total_seconds())
+        else:
+            d["review_seconds"] = None
+        result_items.append(d)
+
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "items": result_items,
+    }
+
+
+def get_item_detail(db: Session, item_id: int, coach_id: int) -> Dict[str, Any]:
+    """获取单条推送详情"""
+    item = db.query(CoachPushQueue).filter(
+        CoachPushQueue.id == item_id,
+        CoachPushQueue.coach_id == coach_id,
+    ).first()
+    if not item:
+        raise ValueError("推送条目不存在或无权操作")
+
+    d = _item_to_dict(item)
+    student = db.query(User).filter(User.id == item.student_id).first()
+    d["student_name"] = (student.full_name or student.username) if student else "未知"
+    if item.reviewed_at and item.created_at:
+        d["review_seconds"] = int((item.reviewed_at - item.created_at).total_seconds())
+    else:
+        d["review_seconds"] = None
+    return d
+
+
+def get_rejected_for_user(
+    db: Session,
+    user_id: int,
+    page: int = 1,
+    page_size: int = 20,
+) -> Dict[str, Any]:
+    """获取被驳回的推送（用户视角）"""
+    query = db.query(CoachPushQueue).filter(
+        CoachPushQueue.student_id == user_id,
+        CoachPushQueue.status == "rejected",
+    )
+    total = query.count()
+    items = (
+        query
+        .order_by(CoachPushQueue.reviewed_at.desc().nullslast())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+    return {
+        "total": total,
+        "page": page,
+        "items": [_item_to_dict(i) for i in items],
+    }
+
+
+# ============================================
+# 审批效率分析
+# ============================================
+
+def get_review_analytics(
+    db: Session,
+    coach_id: Optional[int] = None,
+    period_days: int = 7,
+) -> Dict[str, Any]:
+    """
+    审批效率分析
+
+    coach_id=None 时返回全局（管理员视角），否则返回单教练数据。
+    """
+    cutoff = datetime.utcnow() - timedelta(days=period_days)
+
+    base_q = db.query(CoachPushQueue).filter(
+        CoachPushQueue.status.in_(["approved", "rejected", "sent", "expired"]),
+        CoachPushQueue.created_at >= cutoff,
+    )
+    if coach_id:
+        base_q = base_q.filter(CoachPushQueue.coach_id == coach_id)
+
+    items = base_q.all()
+
+    total = len(items)
+    approved = sum(1 for i in items if i.status in ("approved", "sent"))
+    rejected = sum(1 for i in items if i.status == "rejected")
+    expired = sum(1 for i in items if i.status == "expired")
+
+    # 平均审批耗时
+    review_seconds = []
+    for i in items:
+        if i.reviewed_at and i.created_at:
+            secs = (i.reviewed_at - i.created_at).total_seconds()
+            if 0 < secs < 86400:  # 排除异常值
+                review_seconds.append(secs)
+
+    avg_review_seconds = int(sum(review_seconds) / len(review_seconds)) if review_seconds else 0
+
+    # 按来源类型统计
+    by_type: Dict[str, int] = {}
+    for i in items:
+        by_type[i.source_type] = by_type.get(i.source_type, 0) + 1
+
+    # 按天统计
+    by_day: Dict[str, Dict[str, Any]] = {}
+    for i in items:
+        day = (i.reviewed_at or i.created_at).strftime("%Y-%m-%d") if (i.reviewed_at or i.created_at) else "unknown"
+        if day not in by_day:
+            by_day[day] = {"date": day, "count": 0, "seconds_sum": 0, "seconds_count": 0}
+        by_day[day]["count"] += 1
+        if i.reviewed_at and i.created_at:
+            secs = (i.reviewed_at - i.created_at).total_seconds()
+            if 0 < secs < 86400:
+                by_day[day]["seconds_sum"] += secs
+                by_day[day]["seconds_count"] += 1
+
+    by_day_list = []
+    for d in sorted(by_day.values(), key=lambda x: x["date"]):
+        avg_s = int(d["seconds_sum"] / d["seconds_count"]) if d["seconds_count"] else 0
+        by_day_list.append({"date": d["date"], "count": d["count"], "avg_seconds": avg_s})
+
+    result = {
+        "period": f"{period_days}d",
+        "total_reviewed": total,
+        "approved": approved,
+        "rejected": rejected,
+        "expired": expired,
+        "approval_rate": round(approved / total, 3) if total else 0,
+        "avg_review_seconds": avg_review_seconds,
+        "by_type": by_type,
+        "by_day": by_day_list,
+    }
+
+    # 管理员视角：各教练排行
+    if coach_id is None:
+        coach_stats: Dict[int, Dict[str, Any]] = {}
+        for i in items:
+            cid = i.coach_id
+            if cid not in coach_stats:
+                coach_stats[cid] = {"coach_id": cid, "count": 0, "approved": 0}
+            coach_stats[cid]["count"] += 1
+            if i.status in ("approved", "sent"):
+                coach_stats[cid]["approved"] += 1
+
+        coach_ids = list(coach_stats.keys())
+        coaches = {u.id: u for u in db.query(User).filter(User.id.in_(coach_ids)).all()} if coach_ids else {}
+        coach_ranking = []
+        for cs in sorted(coach_stats.values(), key=lambda x: x["count"], reverse=True):
+            u = coaches.get(cs["coach_id"])
+            coach_ranking.append({
+                "coach_id": cs["coach_id"],
+                "coach_name": (u.full_name or u.username) if u else "未知",
+                "total": cs["count"],
+                "approved": cs["approved"],
+                "approval_rate": round(cs["approved"] / cs["count"], 3) if cs["count"] else 0,
+            })
+        result["coach_ranking"] = coach_ranking
+
+    return result
 
 
 # ============================================

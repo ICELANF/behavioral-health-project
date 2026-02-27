@@ -27,7 +27,7 @@
           <div class="content-meta">
             <div class="author-info">
               <van-icon name="user-circle-o" size="20" color="#1989fa" />
-              <span class="author-name">{{ content.author || '平台编辑' }}</span>
+              <span class="author-name">{{ content.author?.name || content.author || '平台编辑' }}</span>
             </div>
             <span class="publish-time">{{ formatTime(content.created_at) }}</span>
           </div>
@@ -66,7 +66,7 @@
                 <van-icon name="user-circle-o" size="32" color="#c8c9cc" />
               </div>
               <div class="comment-content">
-                <div class="comment-user">{{ comment.username || '匿名用户' }}</div>
+                <div class="comment-user">{{ comment.user?.name || comment.username || '匿名用户' }}</div>
                 <div class="comment-text">{{ comment.content }}</div>
                 <div class="comment-time">{{ formatTime(comment.created_at) }}</div>
               </div>
@@ -167,17 +167,31 @@ async function loadContent() {
   loading.value = true
   try {
     const res: any = await api.get(`/api/v1/content/detail/${contentType.value}/${contentId.value}`)
-    content.value = res
-    liked.value = res.liked || false
-    collected.value = res.collected || false
-    likeCount.value = res.like_count || 0
-    collectCount.value = res.collect_count || 0
-    comments.value = res.comments || []
+    // API 返回 { content: {...}, user_interaction: {...} }
+    const detail = res.content || res
+    const interaction = res.user_interaction || {}
+    content.value = detail
+    liked.value = interaction.liked || false
+    collected.value = interaction.collected || false
+    likeCount.value = detail.stats?.like_count ?? detail.like_count ?? 0
+    collectCount.value = detail.stats?.collect_count ?? detail.collect_count ?? 0
+    // 评论走独立接口
+    loadComments()
   } catch (err) {
     console.error('加载内容失败:', err)
     showToast('加载失败')
   } finally {
     loading.value = false
+  }
+}
+
+// 加载评论
+async function loadComments() {
+  try {
+    const res: any = await api.get(`/api/v1/content/${contentId.value}/comments`)
+    comments.value = res.items || res.comments || (Array.isArray(res) ? res : [])
+  } catch {
+    comments.value = []
   }
 }
 

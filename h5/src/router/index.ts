@@ -1,43 +1,49 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import storage from '@/utils/storage'
 
+// ═══ 全局角色→首页映射 (8角色, 每个角色独立首页) ═══
+const ROLE_HOME_MAP: Record<string, string> = {
+  observer:   '/home/observer',
+  grower:     '/home/today',
+  sharer:     '/home/sharer',
+  coach:      '/home/coach',
+  promoter:   '/home/pro',
+  supervisor: '/home/pro',
+  master:     '/home/master',
+  admin:      '/home/admin',
+}
+
+/** 根据当前登录用户角色获取首页路径 */
+function getRoleHomePath(): string {
+  const authUser = storage.getAuthUser()
+  const role = (authUser?.role || 'observer').toLowerCase()
+  return ROLE_HOME_MAP[role] || '/home/observer'
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
+    {
+      path: '/portal',
+      name: 'portal',
+      component: () => import('@/views/Portal.vue'),
+      meta: { title: '行为健康数字平台', public: true }
+    },
     {
       path: '/login',
       name: 'login',
       component: () => import('@/views/Login.vue'),
       meta: { public: true }
     },
-    // ═══ 飞轮首页: 按角色分流 (2026-02-22 三分支: Observer/Grower/Sharer+) ═══
+    // ═══ 首页: 未登录→门户, 已登录→按角色名分流到各自首页 ═══
     {
       path: '/',
       name: 'home',
       component: () => import('@/views/Home.vue'),
       beforeEnter: (_to, _from, next) => {
         const token = storage.getToken()
-        if (!token) { next({ name: 'login' }); return }
-        // 从登录响应存储的用户信息中读取角色 (比 raw localStorage 更安全)
-        const ROLE_LEVEL: Record<string, number> = {
-          observer: 1, OBSERVER: 1,
-          grower: 2, GROWER: 2,
-          sharer: 3, SHARER: 3,
-          coach: 4, COACH: 4,
-          promoter: 5, PROMOTER: 5,
-          supervisor: 5, SUPERVISOR: 5,
-          master: 6, MASTER: 6,
-          admin: 99, ADMIN: 99,
-        }
-        const authUser = storage.getAuthUser()
-        const roleLevel = ROLE_LEVEL[authUser?.role] || 0
-        if (roleLevel <= 1) {
-          next({ path: '/home/observer', replace: true })
-        } else if (roleLevel === 3) {
-          next({ path: '/home/sharer', replace: true })   // Sharer专属
-        } else {
-          next({ path: '/home/today', replace: true })     // Grower(2) + Coach(4)+
-        }
+        if (!token) { next({ path: '/portal', replace: true }); return }
+        next({ path: getRoleHomePath(), replace: true })
       }
     },
     {
@@ -62,14 +68,7 @@ const router = createRouter({
       path: '/home/observer',
       name: 'observer-home',
       component: () => import('@/views/home/ObserverHome.vue'),
-      meta: { title: '开始你的健康旅程' },
-      beforeEnter: (_to, _from, next) => {
-        if (!localStorage.getItem('bhp_onboarding_done')) {
-          next({ path: '/onboarding', replace: true })
-        } else {
-          next()
-        }
-      }
+      meta: { title: '开始你的健康旅程', public: true },
     },
     {
       path: '/home/today',
@@ -98,9 +97,34 @@ const router = createRouter({
       }
     },
     {
+      path: '/home/coach',
+      name: 'coach-home',
+      component: () => import('@/views/home/CoachHome.vue'),
+      meta: { title: '教练工作台' },
+    },
+    {
+      path: '/home/pro',
+      name: 'pro-home',
+      component: () => import('@/views/home/ProHome.vue'),
+      meta: { title: '专业工作台' },
+    },
+    {
+      path: '/home/master',
+      name: 'master-home',
+      component: () => import('@/views/home/MasterHome.vue'),
+      meta: { title: '大师工作台' },
+    },
+    {
+      path: '/home/admin',
+      name: 'admin-home',
+      component: () => import('@/views/home/AdminHome.vue'),
+      meta: { title: '管理员首页' },
+    },
+    {
       path: '/chat',
       name: 'chat',
-      component: () => import('@/views/Chat.vue')
+      component: () => import('@/views/Chat.vue'),
+      meta: { title: 'AI 健康向导', public: true }
     },
     {
       path: '/tasks',
@@ -143,6 +167,12 @@ const router = createRouter({
       component: () => import('@/views/AccountSettings.vue')
     },
     {
+      path: '/settings/notifications',
+      name: 'notification-settings',
+      component: () => import('@/views/settings/NotificationSettings.vue'),
+      meta: { title: '通知设置' }
+    },
+    {
       path: '/privacy-policy',
       name: 'privacy-policy',
       component: () => import('@/views/PrivacyPolicy.vue'),
@@ -157,7 +187,8 @@ const router = createRouter({
     {
       path: '/behavior-assessment',
       name: 'behavior-assessment',
-      component: () => import('@/views/BehaviorAssessment.vue')
+      component: () => import('@/views/BehaviorAssessment.vue'),
+      meta: { title: '行为状态评估', public: true }
     },
     {
       path: '/my-stage',
@@ -189,13 +220,13 @@ const router = createRouter({
       path: '/learn',
       name: 'learn',
       component: () => import('@/views/LearnCenter.vue'),
-      meta: { title: '学习中心' }
+      meta: { title: '学习中心', public: true }
     },
     {
       path: '/content/:type/:id',
       name: 'content-detail',
       component: () => import('@/views/ContentDetail.vue'),
-      meta: { title: '内容详情' }
+      meta: { title: '内容详情', public: true }
     },
     {
       path: '/my-learning',
@@ -357,6 +388,13 @@ const router = createRouter({
       component: () => import('@/views/vision/VisionExamRecord.vue'),
       meta: { title: '视力检查记录' }
     },
+    // ── 微信授权回调 ──
+    {
+      path: '/wechat/callback',
+      name: 'wechat-callback',
+      component: () => import('@/views/WechatCallback.vue'),
+      meta: { title: '微信登录', public: true }
+    },
     {
       path: '/:pathMatch(.*)*',
       redirect: '/'
@@ -364,16 +402,25 @@ const router = createRouter({
   ]
 })
 
-// 路由守卫 - 未登录跳转登录页
+// ═══ 全局修补 router.back() — 历史栈为空时回首页，防止导航卡死 ═══
+const _originalBack = router.back.bind(router)
+router.back = () => {
+  if (window.history.state?.back) {
+    _originalBack()
+  } else {
+    router.replace('/')
+  }
+}
+
+// 路由守卫 - 未登录访问需认证页面 → 跳转门户页
 router.beforeEach((to, _from, next) => {
   const token = storage.getToken()
   if (!to.meta?.public && !token) {
-    next({ name: 'login' })
-  } else if (to.name === 'login' && token) {
-    next({ name: 'home' })
+    next({ path: '/portal', replace: true })
   } else {
     next()
   }
 })
 
+export { getRoleHomePath, ROLE_HOME_MAP }
 export default router

@@ -1,6 +1,6 @@
 <template>
-  <!-- Observer 首页 — 情境式入口，安全低门槛，行为阶段定位 -->
-  <div class="observer-home">
+  <PageShell :show-nav-bar="false" :show-tab-bar="true" no-padding>
+    <div class="observer-home">
     <!-- 头部欢迎区 -->
     <div class="hero-section">
       <div class="hero-bg" />
@@ -131,7 +131,8 @@
       <p>我们限制的不是表达，而是伤害</p>
       <p>你的行为可以改变，你的身份不需要被定义</p>
     </div>
-  </div>
+    </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -141,6 +142,7 @@ import { useUserStore } from '@/stores/user'
 import { showToast } from 'vant'
 import api from '@/api/index'
 import storage from '@/utils/storage'
+import PageShell from '@/components/common/PageShell.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -149,10 +151,11 @@ const userInfo = computed(() => {
   return authUser || { username: userStore.name, avatar: '' }
 })
 
-const defaultAvatar = '/images/default-avatar.png'
+const defaultAvatar = '/images/default-avatar.svg'
 const selectedPain = ref<string | null>(null)
 const showUpgradeInfo = ref(false)
-const remainingChats = ref(3)
+const trialUsed = parseInt(localStorage.getItem('bhp_trial_chat_count') || '0', 10)
+const remainingChats = ref(Math.max(0, 3 - trialUsed))
 const upgradeProgress = ref(15)
 
 const painPoints = [
@@ -208,15 +211,18 @@ const startAssessment = () => {
 }
 
 const openChat = () => {
-  if (remainingChats.value === 0) {
-    showToast('今日次数已用完，明日再来')
-    return
-  }
+  // 允许匿名用户体验 AI 健康向导（3 次免费体验）
   router.push('/chat')
 }
 
 const completeTask = async () => {
   if (!todayTask.value) return
+  const token = storage.getToken()
+  if (!token) {
+    showToast('登录后即可记录打卡')
+    setTimeout(() => router.push('/login?redirect=/home/observer'), 1200)
+    return
+  }
   todayTask.value.completed = true
   showToast({ message: '打卡成功！', type: 'success' })
   try {
@@ -225,6 +231,9 @@ const completeTask = async () => {
 }
 
 onMounted(async () => {
+  const token = storage.getToken()
+  if (!token) return // 未登录观察员: 使用默认值，不触发 API 调用
+
   // 加载今日微任务
   try {
     const res: any = await api.get('/api/v1/tasks/today-micro')
@@ -241,9 +250,7 @@ onMounted(async () => {
 
 <style scoped>
 .observer-home {
-  min-height: 100vh;
   background: #F7F8FB;
-  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 /* 头部英雄区 */

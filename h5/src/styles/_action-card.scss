@@ -1,0 +1,39 @@
+// 共享行动卡片样式 — GrowerTodayHome / SharerHome 复用
+.actions-section { padding: 0 20px; }
+.section-title { font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 12px; }
+.action-list { display: flex; flex-direction: column; gap: 8px; }
+.action-card {
+  display: flex; align-items: center; gap: 12px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+  padding: 14px 16px; transition: all 0.2s; cursor: pointer;
+}
+.action-card.active:active { transform: scale(0.98); background: #f9fafb; }
+.action-card.done { background: #f9fafb; border-color: #f3f4f6; }
+
+.check-circle {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 2.5px solid #d1d5db; display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #9ca3af; transition: all 0.3s; flex-shrink: 0;
+}
+.check-circle.checked {
+  border-color: var(--bhp-brand-primary, #10b981);
+  background: var(--bhp-brand-primary, #10b981); color: #fff;
+}
+.check-icon { font-size: 16px; }
+
+.action-body { flex: 1; min-width: 0; }
+.action-title { font-size: 14px; font-weight: 600; color: #111827; }
+.action-title.line-through { text-decoration: line-through; color: #9ca3af; }
+.action-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.meta-tag { font-size: 11px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+.meta-time { font-size: 11px; color: #9ca3af; }
+.meta-mode { font-size: 14px; }
+
+.quick-btn {
+  background: var(--bhp-brand-primary, #10b981); color: #fff;
+  border: none; border-radius: 8px; padding: 6px 14px;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  white-space: nowrap; transition: all 0.2s;
+}
+.quick-btn:active { transform: scale(0.95); }
+.done-time { font-size: 12px; color: #9ca3af; }

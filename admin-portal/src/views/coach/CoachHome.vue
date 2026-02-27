@@ -1746,16 +1746,16 @@ const handleCopilotToolAction = (data: any) => {
 // AI 推荐（含审核状态，从学员列表同步生成）
 const aiRecommendations = ref<any[]>([])
 
-// 干预工具
-const interventionTools = ref([
-  { id: 't1', icon: '📋', name: '评估量表' },
-  { id: 't2', icon: '📚', name: '健康课程' },
-  { id: 't3', icon: '🎯', name: '审核推送' },
-  { id: 't4', icon: '💬', name: '建议模板' },
-  { id: 't5', icon: '📊', name: '数据分析' },
-  { id: 't6', icon: '🤖', name: 'AI 助手' },
-  { id: 't7', icon: '✅', name: '推送审批' }
-])
+// 干预工具 (UI 导航配置, 非数据)
+const interventionTools = [
+  { id: 't1', icon: '📋', name: '评估量表', route: '/client/assessment/list' },
+  { id: 't2', icon: '📚', name: '健康课程', route: '/content/articles' },
+  { id: 't3', icon: '🎯', name: '审核推送', route: '/coach/ai-review' },
+  { id: 't4', icon: '💬', name: '建议模板', route: '/prompts/list' },
+  { id: 't5', icon: '📊', name: '数据分析', route: '/coach/my/analytics' },
+  { id: 't6', icon: '🤖', name: 'AI 助手', route: '/client/chat' },
+  { id: 't7', icon: '✅', name: '推送审批', route: '/coach/ai-review' },
+]
 
 // 学习进度
 const learningProgress = reactive({
@@ -2062,7 +2062,7 @@ const viewDetail = (rec: typeof aiRecommendations.value[0]) => {
 }
 
 // 干预工具
-const openTool = (tool: typeof interventionTools.value[0]) => {
+const openTool = (tool: typeof interventionTools[0]) => {
   switch (tool.id) {
     case 't1': // 评估量表
       assessmentDrawerVisible.value = true

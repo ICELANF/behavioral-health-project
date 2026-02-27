@@ -1,16 +1,12 @@
 <template>
-  <div class="page-container">
-    <van-nav-bar title="个人中心" />
-
-    <div class="page-content">
-      <!-- 用户信息卡片 -->
+  <PageShell title="个人中心" :show-tab-bar="true">
+      <!-- 用户信息卡片 + 资料编辑 -->
       <div class="user-card card">
-        <div class="user-avatar">
-          <van-icon name="user-circle-o" size="64" color="#1989fa" />
-        </div>
-        <div class="user-info">
-          <h2>{{ userStore.name }}</h2>
-          <p class="user-id">ID: {{ userStore.userId }}</p>
+        <ProfileEditor />
+        <div class="user-meta-row">
+          <span class="role-tag" :class="'role--' + userStore.role">{{ userStore.roleLabel }}</span>
+          <span class="growth-pts" v-if="userStore.growthPoints > 0">{{ userStore.growthPoints }} 积分</span>
+          <span class="user-id">ID: {{ userStore.userId }}</span>
         </div>
         <div class="efficacy-badge" :style="{ backgroundColor: userStore.efficacyColor + '20', color: userStore.efficacyColor }">
           效能 {{ userStore.efficacyScore }}
@@ -60,6 +56,34 @@
         </van-grid>
       </div>
 
+      <!-- 我的关注领域（原则二：关注问题直接导出任务） -->
+      <div class="focus-card card">
+        <div class="focus-header">
+          <div class="focus-title">
+            <van-icon name="flag-o" color="#07c160" />
+            <span>我的关注领域</span>
+          </div>
+          <span class="focus-hint">影响 AI 任务推荐</span>
+        </div>
+        <div class="focus-tags">
+          <van-tag
+            v-for="domain in ALL_DOMAINS"
+            :key="domain.value"
+            :type="focusDomains.includes(domain.value) ? 'primary' : 'default'"
+            size="medium"
+            class="focus-tag"
+            :class="{ active: focusDomains.includes(domain.value) }"
+            @click="toggleFocusDomain(domain.value)"
+          >
+            {{ domain.label }}
+          </van-tag>
+        </div>
+        <div class="focus-tip">
+          <van-icon name="info-o" size="12" color="#999" />
+          <span>选择你关注的健康问题，AI 将优先为你推荐相关任务</span>
+        </div>
+      </div>
+
       <!-- 功能菜单 -->
       <div class="menu-card card">
         <van-cell-group :border="false">
@@ -73,6 +97,7 @@
       <!-- 设置菜单 -->
       <div class="menu-card card">
         <van-cell-group :border="false">
+          <van-cell title="通知设置" icon="bell" is-link @click="goTo('notification-settings')" />
           <van-cell title="账号设置" icon="setting-o" is-link @click="goTo('account-settings')" />
           <van-cell title="隐私政策" icon="shield-o" is-link @click="goTo('privacy-policy')" />
           <van-cell title="关于我们" icon="info-o" is-link @click="goTo('about-us')" />
@@ -88,46 +113,111 @@
       <div class="version-info">
         行健行为教练 v{{ appVersion }}
       </div>
-    </div>
-
-    <TabBar />
-  </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
-import { showConfirmDialog } from 'vant'
+import { onMounted, ref } from 'vue'
+import { showConfirmDialog, showToast, showSuccessToast } from 'vant'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import api from '@/api/index'
-import TabBar from '@/components/common/TabBar.vue'
+import PageShell from '@/components/common/PageShell.vue'
+import ProfileEditor from '@/components/profile/ProfileEditor.vue'
 import { APP_VERSION } from '@/config'
 
 const router = useRouter()
 const appVersion = APP_VERSION
 const userStore = useUserStore()
 
-onMounted(async () => {
-  // 刷新用户信息
-  try {
-    const me: any = await api.get('/api/v1/auth/me')
-    if (me.username) userStore.name = me.username
-    if (me.id) userStore.userId = me.id
-    if (me.efficacy_score != null) userStore.efficacyScore = me.efficacy_score
-  } catch { /* 使用缓存 */ }
+// ────── 关注领域（原则二：关注问题直接导出任务） ──────
+const ALL_DOMAINS = [
+  { value: 'nutrition', label: '营养' },
+  { value: 'exercise', label: '运动' },
+  { value: 'sleep', label: '睡眠' },
+  { value: 'emotion', label: '情绪' },
+  { value: 'stress', label: '压力' },
+  { value: 'cognitive', label: '认知' },
+  { value: 'social', label: '社交' },
+  { value: 'tcm', label: '中医' },
+]
 
-  // 加载穿戴设备摘要
-  try {
-    const device: any = await api.get('/api/v1/mp/device/dashboard/today')
-    if (device) {
-      userStore.wearableData = {
-        hr: device.heart_rate ?? device.hr,
-        steps: device.steps,
-        sleep_hours: device.sleep_hours,
-        hrv: device.hrv,
-      }
+const focusDomains = ref<string[]>([])
+let focusSaveTimer: ReturnType<typeof setTimeout> | null = null
+
+function toggleFocusDomain(domain: string) {
+  const idx = focusDomains.value.indexOf(domain)
+  if (idx === -1) {
+    if (focusDomains.value.length >= 5) {
+      showToast('最多选择5个关注领域')
+      return
     }
-  } catch { /* 使用缓存 */ }
+    focusDomains.value.push(domain)
+  } else {
+    if (focusDomains.value.length <= 1) {
+      showToast('至少保留1个关注领域')
+      return
+    }
+    focusDomains.value.splice(idx, 1)
+  }
+  // 防抖自动保存（600ms 后触发）
+  if (focusSaveTimer) clearTimeout(focusSaveTimer)
+  focusSaveTimer = setTimeout(saveFocusDomains, 600)
+}
+
+async function saveFocusDomains() {
+  try {
+    await api.patch('/api/v1/micro-actions/focus-areas', { domains: focusDomains.value })
+    showSuccessToast('关注领域已更新')
+  } catch {
+    showToast('保存失败，请重试')
+  }
+}
+
+async function loadFocusDomains() {
+  try {
+    // 从 task-pool 接口拿 focus_domains（不额外增加接口）
+    const pool: any = await api.get('/api/v1/micro-actions/task-pool')
+    if (pool?.focus_domains?.length) {
+      focusDomains.value = pool.focus_domains
+    } else {
+      focusDomains.value = ['nutrition', 'exercise', 'sleep']
+    }
+  } catch {
+    focusDomains.value = ['nutrition', 'exercise', 'sleep']
+  }
+}
+
+// goProfile removed — ProfileEditor handles avatar upload inline
+
+onMounted(async () => {
+  // 并行加载：用户信息 + 设备数据 + 关注领域
+  const [meRes, deviceRes] = await Promise.allSettled([
+    api.get('/api/v1/auth/me'),
+    api.get('/api/v1/mp/device/dashboard/today'),
+  ])
+
+  if (meRes.status === 'fulfilled') {
+    const me: any = meRes.value
+    if (me.username) userStore.name = me.username
+    if (me.id) userStore.userId = String(me.id)
+    if (me.efficacy_score != null) userStore.efficacyScore = me.efficacy_score
+    if (me.role) userStore.role = me.role.toLowerCase()
+    if (me.avatar !== undefined) userStore.avatar = me.avatar || ''
+    if (me.growth_points != null) userStore.growthPoints = me.growth_points
+  }
+
+  if (deviceRes.status === 'fulfilled' && deviceRes.value) {
+    const device: any = deviceRes.value
+    userStore.wearableData = {
+      hr: device.heart_rate ?? device.hr,
+      steps: device.steps,
+      sleep_hours: device.sleep_hours,
+      hrv: device.hrv,
+    }
+  }
+
+  await loadFocusDomains()
 })
 
 function goTo(name: string) {
@@ -149,25 +239,40 @@ function handleLogout() {
 
 .user-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: $spacing-md;
+  gap: $spacing-sm;
 
-  .user-avatar {
-    flex-shrink: 0;
+  .user-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
   }
 
-  .user-info {
-    flex: 1;
+  .role-tag {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 8px;
+    border-radius: 10px;
+    color: #fff;
+    background: #10b981;
+  }
+  .role--observer { background: #f59e0b; }
+  .role--grower   { background: #10b981; }
+  .role--sharer   { background: #7c3aed; }
+  .role--coach    { background: #3b82f6; }
+  .role--promoter { background: #6366f1; }
 
-    h2 {
-      font-size: $font-size-xl;
-      margin-bottom: 4px;
-    }
+  .growth-pts {
+    font-size: $font-size-sm;
+    color: #d97706;
+    font-weight: 500;
+  }
 
-    .user-id {
-      font-size: $font-size-sm;
-      color: $text-color-secondary;
-    }
+  .user-id {
+    font-size: $font-size-sm;
+    color: $text-color-secondary;
   }
 
   .efficacy-badge {
@@ -210,6 +315,59 @@ function handleLogout() {
 
 .logout-btn {
   margin-top: $spacing-md;
+}
+
+// ────── 关注领域卡片（原则二） ──────
+.focus-card {
+  .focus-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+
+    .focus-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: $font-size-lg;
+      font-weight: 600;
+      color: $text-color;
+    }
+
+    .focus-hint {
+      font-size: $font-size-xs;
+      color: $text-color-placeholder;
+    }
+  }
+
+  .focus-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+
+    .focus-tag {
+      cursor: pointer;
+      transition: all 0.2s;
+      border-radius: 16px;
+      padding: 4px 14px;
+      font-size: $font-size-sm;
+
+      &.active {
+        transform: scale(1.05);
+        box-shadow: 0 2px 6px rgba(7, 193, 96, 0.25);
+      }
+    }
+  }
+
+  .focus-tip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: $font-size-xs;
+    color: $text-color-placeholder;
+    line-height: 1.4;
+  }
 }
 
 .version-info {

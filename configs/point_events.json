@@ -1,8 +1,8 @@
 {
   "_meta": {
-    "version": "1.0.0",
-    "description": "BHP积分事件映射表 - 对接point_transactions表",
-    "updated": "2026-02-09",
+    "version": "1.1.0",
+    "description": "BHP积分事件映射表 - 对接point_transactions表 + 自选任务积分事件(7条)",
+    "updated": "2026-02-27",
     "field_map": {
       "action": "point_transactions.action",
       "point_type": "point_transactions.point_type (枚举: growth/contribution/influence)",
@@ -405,6 +405,77 @@
           "eligible_roles": ["coach", "promoter", "master"],
           "triggers_credit": false,
           "description": "知识贡献(知识库文档入库)"
+        }
+      ]
+    },
+    {
+      "_section": "自选任务积分事件 (self-task incentive) — 自主选择的激励",
+      "items": [
+        {
+          "action": "self_task_complete",
+          "point_type": "growth",
+          "amount_note": "按难度: easy=3, moderate=5, challenging=8",
+          "max_per_day": 0,
+          "eligible_roles": ["observer", "grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "完成自选任务打卡(基础积分按难度计算)"
+        },
+        {
+          "action": "self_task_first_time",
+          "point_type": "growth",
+          "amount": 5,
+          "max_per_day": 0,
+          "eligible_roles": ["observer", "grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "首次完成某目录任务(额外奖励)"
+        },
+        {
+          "action": "self_task_domain_diversity",
+          "point_type": "growth",
+          "amount": 3,
+          "max_per_day": 1,
+          "eligible_roles": ["observer", "grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "今日完成3个以上不同领域任务"
+        },
+        {
+          "action": "self_task_streak_bonus",
+          "point_type": "growth",
+          "amount_note": "7天=+2, 14天=+3, 30天=+5",
+          "max_per_day": 1,
+          "eligible_roles": ["observer", "grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "description": "连续打卡streak奖励(按天数分档)"
+        },
+        {
+          "action": "self_task_milestone_10",
+          "point_type": "growth",
+          "amount": 20,
+          "max_per_day": 0,
+          "eligible_roles": ["grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "milestone": true,
+          "description": "累计完成10个自选任务里程碑"
+        },
+        {
+          "action": "self_task_milestone_50",
+          "point_type": "growth",
+          "amount": 50,
+          "max_per_day": 0,
+          "eligible_roles": ["grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "milestone": true,
+          "description": "累计完成50个自选任务里程碑"
+        },
+        {
+          "action": "self_task_milestone_100",
+          "point_type": "growth",
+          "amount": 100,
+          "max_per_day": 0,
+          "eligible_roles": ["grower", "sharer", "coach", "promoter", "master"],
+          "triggers_credit": false,
+          "milestone": true,
+          "description": "累计完成100个自选任务里程碑"
         }
       ]
     }

@@ -5166,6 +5166,23 @@ class PromptTemplate(Base):
     updated_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
 
 
+class DemoRequest(Base):
+    """预约演示/商务咨询请求 — Landing Page 表单提交"""
+    __tablename__ = "demo_requests"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(50), nullable=False, comment="联系人姓名")
+    organization = Column(String(200), nullable=True, comment="机构/公司名称")
+    title = Column(String(100), nullable=True, comment="职位")
+    phone = Column(String(20), nullable=False, comment="手机号")
+    email = Column(String(100), nullable=True, comment="邮箱")
+    solution = Column(String(30), nullable=True, comment="感兴趣方案: hospital/insurance/government/rwe")
+    message = Column(Text, nullable=True, comment="备注留言")
+    source_page = Column(String(30), nullable=True, comment="来源页面")
+    status = Column(String(20), server_default=sa_text("'pending'"), nullable=False, comment="pending/contacted/closed")
+    created_at = Column(DateTime, server_default=sa_text("now()"), nullable=False)
+
+
     import importlib
     for mod in [
         'core.reflection_service',       # ReflectionJournal

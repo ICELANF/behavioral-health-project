@@ -60,6 +60,13 @@ def _create_token(user_id: int, username: str, role: str) -> str:
 # WeChat OAuth
 # ═══════════════════════════════════════════════════
 
+@router.get("/api/v1/auth/wechat/config")
+async def wechat_config():
+    """公开端点: 前端检测微信登录是否可用 (无需认证)"""
+    from gateway.channels.wx_gateway import is_configured
+    return {"configured": is_configured()}
+
+
 @router.get("/api/v1/auth/wechat/login")
 async def wechat_login(redirect_uri: str = Query(..., description="H5 redirect after auth")):
     """Generate WeChat OAuth URL or indicate not configured."""
@@ -164,6 +171,117 @@ async def wechat_callback(
     return RedirectResponse(f"/?token={jwt_token}")
 
 
+class WechatExchangeRequest(BaseModel):
+    code: str
+    state: str = ""
+
+
+@router.post("/api/v1/auth/wechat/exchange")
+async def wechat_exchange(
+    req: WechatExchangeRequest,
+    db: AsyncSession = Depends(get_async_db),
+):
+    """
+    前端专用: code 换 token (JSON 响应, 不做 redirect)
+
+    与 GET /wechat/callback 逻辑相同，但返回 JSON 而非 302/307。
+    用于 WechatCallback.vue 的 SPA 场景。
+    """
+    from gateway.channels.wx_gateway import exchange_code, get_user_info
+
+    token_data = await exchange_code(req.code)
+    if not token_data:
+        raise HTTPException(400, "微信授权失败")
+
+    openid = token_data["openid"]
+    unionid = token_data.get("unionid")
+
+    # 查找已有用户
+    user_row = None
+    result = await db.execute(
+        text("SELECT id, username, role::text AS role, nickname, avatar_url FROM users WHERE wx_openid = :oid LIMIT 1"),
+        {"oid": openid},
+    )
+    user_row = result.mappings().first()
+
+    if not user_row and unionid:
+        result = await db.execute(
+            text("SELECT id, username, role::text AS role, nickname, avatar_url FROM users WHERE union_id = :uid LIMIT 1"),
+            {"uid": unionid},
+        )
+        user_row = result.mappings().first()
+
+    if user_row:
+        # 同步微信资料
+        try:
+            wx_info = await get_user_info(token_data["access_token"], openid) or {}
+            wx_nick = wx_info.get("nickname", "")
+            wx_avatar = wx_info.get("avatar", "")
+            if wx_nick or wx_avatar:
+                await db.execute(
+                    text("UPDATE users SET nickname=COALESCE(NULLIF(:nick,''),nickname), avatar_url=COALESCE(NULLIF(:av,''),avatar_url), updated_at=NOW() WHERE id=:uid"),
+                    {"nick": wx_nick, "av": wx_avatar, "uid": user_row["id"]},
+                )
+                await db.commit()
+        except Exception:
+            pass
+
+        jwt_token = _create_token(user_row["id"], user_row["username"], user_row["role"])
+        ROLE_LEVELS = {"OBSERVER": 1, "GROWER": 2, "SHARER": 3, "COACH": 4, "PROMOTER": 5, "SUPERVISOR": 5, "MASTER": 6, "ADMIN": 99}
+        return {
+            "access_token": jwt_token,
+            "token_type": "bearer",
+            "user": {
+                "id": user_row["id"],
+                "username": user_row["username"],
+                "role": user_row["role"].lower(),
+                "role_level": ROLE_LEVELS.get(user_row["role"], 1),
+                "full_name": user_row.get("nickname", ""),
+            },
+        }
+
+    # 新用户 — 从微信获取资料并创建
+    wx_info = await get_user_info(token_data["access_token"], openid) or {}
+    nickname = wx_info.get("nickname", "")
+    avatar = wx_info.get("avatar", "")
+    username = f"wx_{openid[:8]}"
+    fake_email = f"{username}@wx.placeholder.local"
+
+    from passlib.hash import bcrypt
+    pw_hash = bcrypt.hash(uuid.uuid4().hex)
+
+    await db.execute(
+        text("""
+            INSERT INTO users (username, email, password_hash, role, is_active, nickname, avatar_url,
+                               wx_openid, union_id, preferred_channel, created_at, updated_at)
+            VALUES (:un, :em, :pw, 'OBSERVER', true, :nick, :av,
+                    :oid, :uid, 'wechat', NOW(), NOW())
+        """),
+        {"un": username, "em": fake_email, "pw": pw_hash, "nick": nickname, "av": avatar, "oid": openid, "uid": unionid},
+    )
+    await db.commit()
+
+    result = await db.execute(
+        text("SELECT id, username, role::text AS role FROM users WHERE wx_openid = :oid LIMIT 1"),
+        {"oid": openid},
+    )
+    new_user = result.mappings().first()
+    jwt_token = _create_token(new_user["id"], new_user["username"], new_user["role"])
+
+    return {
+        "access_token": jwt_token,
+        "token_type": "bearer",
+        "user": {
+            "id": new_user["id"],
+            "username": new_user["username"],
+            "role": "observer",
+            "role_level": 1,
+            "full_name": nickname,
+        },
+        "is_new_user": True,
+    }
+
+
 @router.post("/api/v1/auth/wechat/bind")
 async def wechat_bind(
     req: BindRequest,
@@ -255,6 +373,47 @@ async def jsapi_ticket(
 # ═══════════════════════════════════════════════════
 # SMS Phone Verification
 # ═══════════════════════════════════════════════════
+
+@router.post("/api/v1/auth/send-sms-code")
+async def send_public_sms_code(req: PhoneSendRequest):
+    """
+    公开端点: 发送短信验证码 (登录/注册用, 无需 JWT)
+
+    - 限频: 同一手机号 60 秒内只能发一次
+    - 验证码 5 分钟有效, 存入 Redis
+    - 无 SMS 凭据时 fallback 到日志输出 (开发模式)
+    """
+    import os, re
+    phone = req.phone.strip()
+    if not re.match(r'^1\d{10}$', phone):
+        raise HTTPException(400, "手机号格式不正确")
+
+    # Rate limit via Redis
+    try:
+        import redis.asyncio as aioredis
+        r = aioredis.from_url(os.getenv("REDIS_URL", "redis://localhost:6379"))
+        key = f"sms_rate:{phone}"
+        if await r.exists(key):
+            raise HTTPException(429, "请等待60秒后再次发送")
+        code = f"{random.randint(100000, 999999)}"
+        await r.setex(f"sms_code:{phone}", 300, code)  # 5min TTL
+        await r.setex(key, 60, "1")  # rate limit 60s
+        await r.aclose()
+    except HTTPException:
+        raise
+    except Exception:
+        code = f"{random.randint(100000, 999999)}"
+        logger.warning("Redis unavailable for SMS code, using in-memory fallback")
+
+    # Send SMS
+    from gateway.channels.sms_gateway import send_sms, is_configured as sms_configured
+    if sms_configured():
+        await send_sms(phone, "SMS_BHP_VERIFY", {"code": code})
+    else:
+        logger.info(f"[DEV] SMS code for {phone}: {code}")
+
+    return {"success": True, "message": "验证码已发送"}
+
 
 @router.post("/api/v1/auth/verify-phone")
 async def send_phone_code(

@@ -3,6 +3,39 @@
     <van-nav-bar title="我的管理方案" left-arrow @click-left="$router.back()" />
 
     <div class="page-content">
+      <!-- 我的健康计划 (Program Enrollments) -->
+      <template v-if="!currentId && programList.length">
+        <div class="section-header">我的健康计划</div>
+        <div
+          v-for="prog in programList"
+          :key="prog.enrollment_id"
+          class="plan-list-item card program-card"
+          @click="goProgramDetail(prog.enrollment_id)"
+        >
+          <div class="plan-list-header">
+            <van-icon name="calendar-o" size="24" color="#1989fa" />
+            <div class="plan-list-info">
+              <div class="plan-list-title">{{ prog.template_title }}</div>
+              <div class="plan-list-time">
+                第 {{ prog.current_day }}/{{ prog.total_days }} 天 ·
+                <van-tag :type="prog.status === 'active' ? 'success' : prog.status === 'paused' ? 'warning' : 'default'" size="small">
+                  {{ programStatusText(prog.status) }}
+                </van-tag>
+              </div>
+            </div>
+            <van-icon name="arrow" color="#c8c9cc" />
+          </div>
+          <van-progress
+            :percentage="prog.progress_pct"
+            :show-pivot="false"
+            stroke-width="4"
+            color="#07c160"
+            track-color="#e8e8e8"
+            style="margin-top: 10px"
+          />
+        </div>
+      </template>
+
       <!-- 我的行为处方快捷入口 -->
       <template v-if="!currentId && rxList.length">
         <div class="section-header">我的行为处方</div>
@@ -27,6 +60,7 @@
       <template v-if="!currentId">
         <van-loading v-if="loadingList" class="loading" />
         <template v-else-if="planList.length">
+          <div class="section-header">教练管理方案</div>
           <div
             v-for="plan in planList"
             :key="plan.id"
@@ -48,7 +82,7 @@
             </div>
           </div>
         </template>
-        <van-empty v-else description="暂无管理方案" />
+        <van-empty v-else-if="!programList.length && !rxList.length" description="暂无管理方案" />
       </template>
 
       <!-- 方案详情 -->
@@ -182,6 +216,7 @@ const loadingDetail = ref(false)
 const planList = ref<any[]>([])
 const detail = ref<any>(null)
 const rxList = ref<any[]>([])
+const programList = ref<any[]>([])
 
 function formatTime(str: string) {
   if (!str) return ''
@@ -225,6 +260,30 @@ function goRxDetail(rxId: string) {
   router.push(`/rx/${rxId}`)
 }
 
+function goProgramDetail(enrollmentId: string) {
+  router.push(`/program/${enrollmentId}/today`)
+}
+
+function programStatusText(status: string) {
+  const map: Record<string, string> = {
+    active: '进行中',
+    paused: '已暂停',
+    completed: '已完成',
+    dropped: '已退出',
+  }
+  return map[status] || status
+}
+
+async function loadPrograms() {
+  try {
+    const res: any = await api.get('/api/v1/programs/my')
+    const items = Array.isArray(res) ? res : (res?.data || [])
+    programList.value = items
+  } catch {
+    programList.value = []
+  }
+}
+
 onMounted(async () => {
   const aid = route.query.assignment_id || route.query.id
   if (aid) {
@@ -234,12 +293,14 @@ onMounted(async () => {
     loadPlanList()
   }
 
-  // 加载行为处方列表
-  try {
-    const res: any = await api.get('/api/v1/rx/my', { params: { status: 'active' } })
+  // 并行加载行为处方和健康计划
+  const [rxRes, _] = await Promise.allSettled([
+    api.get('/api/v1/rx/my', { params: { status: 'active' } }),
+    loadPrograms(),
+  ])
+  if (rxRes.status === 'fulfilled') {
+    const res: any = rxRes.value
     rxList.value = res.prescriptions || []
-  } catch {
-    rxList.value = []
   }
 })
 </script>
@@ -378,5 +439,9 @@ onMounted(async () => {
 .plan-actions {
   margin-top: $spacing-lg;
   padding: 0 $spacing-md;
+}
+
+.program-card {
+  .van-progress { margin-left: 32px; }
 }
 </style>

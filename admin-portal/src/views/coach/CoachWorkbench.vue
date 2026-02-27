@@ -12,6 +12,8 @@
     <div class="top-tab-bar">
       <div class="top-tabs">
         <button class="top-tab" :class="{ active: activeTopTab === 'review' }" @click="activeTopTab = 'review'">审核工作台</button>
+        <button class="top-tab" :class="{ active: activeTopTab === 'history' }" @click="switchTab('history')">历史记录</button>
+        <button class="top-tab" :class="{ active: activeTopTab === 'analytics' }" @click="switchTab('analytics')">效率分析</button>
         <button class="top-tab" :class="{ active: activeTopTab === 'profile' }" @click="activeTopTab = 'profile'">个人档案</button>
         <button class="top-tab" :class="{ active: activeTopTab === 'contributions' }" @click="activeTopTab = 'contributions'">我的分享</button>
         <button class="top-tab" :class="{ active: activeTopTab === 'benefits' }" @click="activeTopTab = 'benefits'">我的权益</button>
@@ -62,7 +64,11 @@
               <div class="item-avatar">{{ item.name[0] }}</div>
               <div class="item-info">
                 <span class="item-name">{{ item.name }}</span>
-                <span class="item-type">{{ item.typeLabel }}</span>
+                <span class="item-type">
+                  <span class="source-badge-sm" :style="{ background: getSourceStyle(item.source_type || item.type).bg, color: getSourceStyle(item.source_type || item.type).color }">
+                    {{ getSourceStyle(item.source_type || item.type).icon }} {{ sourceLabel(item.source_type || item.type) }}
+                  </span>
+                </span>
               </div>
               <div class="item-badges">
                 <span class="badge-stage" :style="{ background: stageColor(item.stage) }">
@@ -107,6 +113,9 @@
           <div class="prescription-area">
             <div class="rx-header">
               <h3>{{ currentItem.typeLabel }}</h3>
+              <span class="source-badge" :style="{ background: getSourceStyle(currentItem.source_type || currentItem.type).bg, color: getSourceStyle(currentItem.source_type || currentItem.type).color }">
+                {{ getSourceStyle(currentItem.source_type || currentItem.type).icon }} {{ sourceLabel(currentItem.source_type || currentItem.type) }}
+              </span>
               <span class="rx-source">AI预填 · 可修改</span>
             </div>
 
@@ -167,6 +176,139 @@
       </div>
     </div>
 
+    <!-- ═══ Tab: 审批历史 ═══ -->
+    <div v-show="activeTopTab === 'history'" class="history-content">
+      <!-- 筛选栏 -->
+      <div class="history-filters">
+        <select v-model="historyStatus" @change="loadHistory" class="filter-select">
+          <option value="">全部状态</option>
+          <option value="sent">已通过</option>
+          <option value="rejected">已驳回</option>
+          <option value="expired">已过期</option>
+        </select>
+        <input type="date" v-model="historyDateFrom" @change="loadHistory" class="filter-input" placeholder="开始日期" />
+        <input type="date" v-model="historyDateTo" @change="loadHistory" class="filter-input" placeholder="结束日期" />
+      </div>
+
+      <div class="history-table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>学员</th>
+              <th>类型</th>
+              <th>状态</th>
+              <th>驳回原因</th>
+              <th>耗时</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="item in historyItems" :key="item.id">
+              <td>{{ formatDateTime(item.reviewed_at || item.created_at) }}</td>
+              <td>{{ item.student_name }}</td>
+              <td>
+                <span class="source-badge" :style="{ background: getSourceStyle(item.source_type).bg, color: getSourceStyle(item.source_type).color }">
+                  {{ getSourceStyle(item.source_type).icon }} {{ sourceLabel(item.source_type) }}
+                </span>
+              </td>
+              <td>
+                <span class="status-tag" :class="item.status">{{ statusLabel(item.status) }}</span>
+              </td>
+              <td class="note-cell">{{ item.coach_note || '-' }}</td>
+              <td>{{ item.review_seconds != null ? item.review_seconds + 's' : '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-if="!historyItems.length" class="no-data">暂无历史记录</div>
+      </div>
+
+      <div class="pagination" v-if="historyTotal > historyPageSize">
+        <button :disabled="historyPage <= 1" @click="historyPage--; loadHistory()">上一页</button>
+        <span>{{ historyPage }} / {{ Math.ceil(historyTotal / historyPageSize) }}</span>
+        <button :disabled="historyPage * historyPageSize >= historyTotal" @click="historyPage++; loadHistory()">下一页</button>
+      </div>
+    </div>
+
+    <!-- ═══ Tab: 效率分析 ═══ -->
+    <div v-show="activeTopTab === 'analytics'" class="analytics-content">
+      <div class="analytics-period">
+        <button v-for="p in [7, 14, 30]" :key="p"
+          class="period-btn" :class="{ active: analyticsPeriod === p }"
+          @click="analyticsPeriod = p; loadAnalytics()">
+          {{ p }}天
+        </button>
+      </div>
+
+      <div class="analytics-cards" v-if="analytics">
+        <div class="a-card">
+          <div class="a-num">{{ analytics.total_reviewed }}</div>
+          <div class="a-label">总审批数</div>
+        </div>
+        <div class="a-card">
+          <div class="a-num" style="color:#10b981">{{ (analytics.approval_rate * 100).toFixed(1) }}%</div>
+          <div class="a-label">审批通过率</div>
+        </div>
+        <div class="a-card">
+          <div class="a-num" style="color:#3b82f6">{{ analytics.avg_review_seconds }}s</div>
+          <div class="a-label">平均审批耗时</div>
+        </div>
+        <div class="a-card">
+          <div class="a-num" style="color:#dc2626">{{ analytics.rejected }}</div>
+          <div class="a-label">驳回数</div>
+        </div>
+      </div>
+
+      <!-- 按类型分布 -->
+      <div class="analytics-section" v-if="analytics">
+        <h4>按来源类型分布</h4>
+        <div class="type-bars">
+          <div class="type-bar" v-for="(count, type) in analytics.by_type" :key="type as string">
+            <span class="type-label">
+              <span class="source-badge-sm" :style="{ background: getSourceStyle(type as string).bg, color: getSourceStyle(type as string).color }">
+                {{ getSourceStyle(type as string).icon }} {{ sourceLabel(type as string) }}
+              </span>
+            </span>
+            <div class="bar-track">
+              <div class="bar-fill" :style="{ width: typeBarWidth(count), background: sourceBarColor(type as string) }"></div>
+            </div>
+            <span class="type-count">{{ count }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 每日趋势 -->
+      <div class="analytics-section" v-if="analytics && analytics.by_day.length">
+        <h4>每日审批趋势</h4>
+        <div class="day-chart">
+          <div class="day-bar-group" v-for="d in analytics.by_day" :key="d.date">
+            <div class="day-bar" :style="{ height: dayBarHeight(d.count) }">
+              <span class="day-bar-val">{{ d.count }}</span>
+            </div>
+            <span class="day-label">{{ d.date.slice(5) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 通过/驳回/过期 分布 -->
+      <div class="analytics-section" v-if="analytics">
+        <h4>审批结果分布</h4>
+        <div class="pie-legend">
+          <span class="legend-item">
+            <span class="dot" style="background:#10b981"></span>
+            通过 {{ analytics.approved }}
+          </span>
+          <span class="legend-item">
+            <span class="dot" style="background:#dc2626"></span>
+            驳回 {{ analytics.rejected }}
+          </span>
+          <span class="legend-item">
+            <span class="dot" style="background:#9ca3af"></span>
+            过期 {{ analytics.expired }}
+          </span>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══ Tab: 个人档案 ═══ -->
     <div v-show="activeTopTab === 'profile'" class="personal-tab-wrap">
       <PersonalHealthProfile :embedded="true" />
@@ -186,7 +328,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { coachFlywheelApi, type ReviewQueueItem } from '@/api/coach-api'
+import { coachFlywheelApi, pushQueueApi, type ReviewQueueItem, type HistoryItem, type ReviewAnalytics } from '@/api/coach-api'
 import { UserAvatarPopover, PersonalHealthProfile, MyContributions, MyBenefits } from '@/components/health'
 
 // ── Top-level tab ──
@@ -323,6 +465,114 @@ function handleKeydown(e: KeyboardEvent) {
     case 'r': e.preventDefault(); handleReject(); break
     case 'n': e.preventDefault(); handleSkip(); break
   }
+}
+
+// ── 历史记录 ──
+const historyItems = ref<HistoryItem[]>([])
+const historyTotal = ref(0)
+const historyPage = ref(1)
+const historyPageSize = 20
+const historyStatus = ref('')
+const historyDateFrom = ref('')
+const historyDateTo = ref('')
+let historyLoaded = false
+
+async function loadHistory() {
+  try {
+    const res = await pushQueueApi.getHistory({
+      status: historyStatus.value || undefined,
+      page: historyPage.value,
+      page_size: historyPageSize,
+      date_from: historyDateFrom.value || undefined,
+      date_to: historyDateTo.value || undefined,
+    })
+    historyItems.value = res.items
+    historyTotal.value = res.total
+    historyLoaded = true
+  } catch (e) {
+    console.warn('Failed to load history:', e)
+  }
+}
+
+// ── 效率分析 ──
+const analytics = ref<ReviewAnalytics | null>(null)
+const analyticsPeriod = ref(7)
+let analyticsLoaded = false
+
+async function loadAnalytics() {
+  try {
+    analytics.value = await pushQueueApi.getAnalytics(analyticsPeriod.value)
+    analyticsLoaded = true
+  } catch (e) {
+    console.warn('Failed to load analytics:', e)
+  }
+}
+
+function switchTab(tab: string) {
+  activeTopTab.value = tab
+  if (tab === 'history' && !historyLoaded) loadHistory()
+  if (tab === 'analytics' && !analyticsLoaded) loadAnalytics()
+}
+
+// ── 辅助函数 ──
+const sourceLabels: Record<string, string> = {
+  challenge: '挑战打卡', device_alert: '设备预警', micro_action: '微行动',
+  ai_recommendation: 'AI建议', system: '系统', coach_message: '教练消息',
+  coach_reminder: '教练提醒', assessment_push: '评估结果',
+  micro_action_assign: '微行动指派', vision_rx: '视力处方', xzb_expert: '行智诊疗',
+  prescription: '行为处方', ai_reply: 'AI回复', push: '推送',
+}
+function sourceLabel(type: string): string {
+  return sourceLabels[type] || type
+}
+
+// 来源类型样式映射 (背景色 / 文字色 / 图标 / 柱状图色)
+const sourceStyles: Record<string, { bg: string; color: string; icon: string; bar: string }> = {
+  xzb_expert:        { bg: '#e8f5e9', color: '#2e7d32', icon: '💊', bar: '#2e7d32' },
+  vision_rx:         { bg: '#e3f2fd', color: '#1565c0', icon: '👁', bar: '#1565c0' },
+  prescription:      { bg: '#ede7f6', color: '#6a1b9a', icon: '📋', bar: '#7c4dff' },
+  device_alert:      { bg: '#fff3e0', color: '#e65100', icon: '⚡', bar: '#ff9800' },
+  challenge:         { bg: '#fff8e1', color: '#f57f17', icon: '🏆', bar: '#ffc107' },
+  ai_recommendation: { bg: '#e8eaf6', color: '#283593', icon: '🤖', bar: '#5c6bc0' },
+  assessment_push:   { bg: '#fce4ec', color: '#c62828', icon: '📊', bar: '#ef5350' },
+  micro_action:      { bg: '#f3e5f5', color: '#7b1fa2', icon: '⚡', bar: '#ab47bc' },
+  micro_action_assign: { bg: '#f3e5f5', color: '#7b1fa2', icon: '📌', bar: '#ab47bc' },
+  coach_message:     { bg: '#e0f2f1', color: '#00695c', icon: '💬', bar: '#26a69a' },
+  coach_reminder:    { bg: '#e0f2f1', color: '#00695c', icon: '🔔', bar: '#26a69a' },
+  ai_reply:          { bg: '#e8eaf6', color: '#283593', icon: '🤖', bar: '#5c6bc0' },
+  push:              { bg: '#eceff1', color: '#455a64', icon: '📤', bar: '#78909c' },
+  system:            { bg: '#eceff1', color: '#455a64', icon: '⚙', bar: '#90a4ae' },
+}
+const defaultSourceStyle = { bg: '#f5f5f5', color: '#616161', icon: '📎', bar: '#9e9e9e' }
+function getSourceStyle(type: string) {
+  return sourceStyles[type] || defaultSourceStyle
+}
+function sourceBarColor(type: string): string {
+  return (sourceStyles[type] || defaultSourceStyle).bar
+}
+
+const statusLabels: Record<string, string> = {
+  approved: '已通过', sent: '已发送', rejected: '已驳回', expired: '已过期', pending: '待处理',
+}
+function statusLabel(s: string): string {
+  return statusLabels[s] || s
+}
+
+function formatDateTime(str: string | null): string {
+  if (!str) return '-'
+  return str.replace('T', ' ').slice(0, 16)
+}
+
+function typeBarWidth(count: number): string {
+  if (!analytics.value) return '0%'
+  const max = Math.max(...Object.values(analytics.value.by_type), 1)
+  return `${Math.round((count / max) * 100)}%`
+}
+
+function dayBarHeight(count: number): string {
+  if (!analytics.value || !analytics.value.by_day.length) return '0px'
+  const max = Math.max(...analytics.value.by_day.map(d => d.count), 1)
+  return `${Math.max(4, Math.round((count / max) * 120))}px`
 }
 </script>
 
@@ -462,6 +712,8 @@ function handleKeydown(e: KeyboardEvent) {
 .rx-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .rx-header h3 { font-size: 16px; font-weight: 700; margin: 0; }
 .rx-source { font-size: 11px; color: #3b82f6; background: #eff6ff; padding: 2px 8px; border-radius: 4px; }
+.source-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; white-space: nowrap; }
+.source-badge-sm { display: inline-flex; align-items: center; gap: 2px; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
 
 .rx-fields { display: flex; flex-direction: column; gap: 10px; }
 .rx-field label { display: block; font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 4px; }
@@ -514,6 +766,55 @@ function handleKeydown(e: KeyboardEvent) {
 .empty-icon { font-size: 64px; margin-bottom: 16px; }
 .empty-state h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 8px; }
 .empty-state p { font-size: 14px; color: #6b7280; }
+
+/* ── 历史记录 ── */
+.history-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 16px 24px; }
+.history-filters { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-select, .filter-input {
+  padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px;
+  background: #fff; color: #374151;
+}
+.history-table-wrap { flex: 1; overflow: auto; }
+.history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.history-table th { background: #f9fafb; padding: 10px 12px; text-align: left; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; white-space: nowrap; }
+.history-table td { padding: 10px 12px; border-bottom: 1px solid #f3f4f6; color: #4b5563; }
+.history-table tr:hover { background: #f9fafb; }
+.note-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #dc2626; }
+.status-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+.status-tag.sent, .status-tag.approved { background: #dcfce7; color: #16a34a; }
+.status-tag.rejected { background: #fef2f2; color: #dc2626; }
+.status-tag.expired { background: #f3f4f6; color: #6b7280; }
+.no-data { text-align: center; padding: 40px; color: #9ca3af; font-size: 14px; }
+.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 12px 0; }
+.pagination button { padding: 6px 16px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer; font-size: 13px; }
+.pagination button:disabled { opacity: 0.4; cursor: not-allowed; }
+.pagination span { font-size: 13px; color: #6b7280; }
+
+/* ── 效率分析 ── */
+.analytics-content { flex: 1; overflow-y: auto; padding: 16px 24px; }
+.analytics-period { display: flex; gap: 8px; margin-bottom: 20px; }
+.period-btn { padding: 6px 18px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; }
+.period-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+.analytics-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+.a-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; text-align: center; }
+.a-num { font-size: 28px; font-weight: 800; color: #111827; }
+.a-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
+.analytics-section { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.analytics-section h4 { font-size: 14px; font-weight: 700; margin: 0 0 12px; color: #374151; }
+.type-bars { display: flex; flex-direction: column; gap: 8px; }
+.type-bar { display: flex; align-items: center; gap: 10px; }
+.type-label { width: 110px; font-size: 12px; color: #6b7280; text-align: right; flex-shrink: 0; }
+.bar-track { flex: 1; height: 20px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; background: #3b82f6; border-radius: 4px; transition: width 0.3s; min-width: 2px; }
+.type-count { width: 32px; font-size: 12px; font-weight: 700; color: #374151; }
+.day-chart { display: flex; align-items: flex-end; gap: 4px; height: 140px; padding-top: 10px; }
+.day-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.day-bar { width: 100%; max-width: 36px; background: #3b82f6; border-radius: 4px 4px 0 0; display: flex; align-items: flex-start; justify-content: center; min-height: 4px; }
+.day-bar-val { font-size: 10px; color: #fff; font-weight: 700; margin-top: 2px; }
+.day-label { font-size: 10px; color: #9ca3af; margin-top: 4px; }
+.pie-legend { display: flex; gap: 20px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #374151; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
 
 /* ── Personal tab wrapper ── */
 .personal-tab-wrap {

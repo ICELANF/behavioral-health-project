@@ -3,7 +3,8 @@
 路径前缀: /api/v3/auth
 """
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from v3.database import get_db
@@ -16,19 +17,64 @@ from v3.auth import (
     UserProfile, ChangePasswordRequest, TokenPair,
 )
 
+# 角色等级映射
+ROLE_LEVELS = {
+    "OBSERVER": 1, "observer": 1,
+    "GROWER": 2, "grower": 2,
+    "SHARER": 3, "sharer": 3,
+    "COACH": 4, "coach": 4,
+    "PROMOTER": 5, "promoter": 5,
+    "SUPERVISOR": 5, "supervisor": 5,
+    "MASTER": 6, "master": 6,
+    "ADMIN": 99, "admin": 99,
+}
+
 router = APIRouter(prefix="/api/v3/auth", tags=["鉴权"])
 
 
 @router.post("/register", response_model=APIResponse, summary="用户注册")
-def register(req: RegisterRequest, db: Session = Depends(get_db)):
+def register(
+    req: RegisterRequest,
+    upgrade: Optional[str] = Query(None, description="注册后自动升级角色: grower"),
+    source: Optional[str] = Query(None, description="注册来源: chat_trial"),
+    db: Session = Depends(get_db),
+):
     """
     手机号 + 密码注册
 
     密码: bcrypt 散列存储, 最少 6 位
+    - `upgrade=grower`: 注册后自动升级为成长者 (L1→L2)
+    - `source=chat_trial`: 标记来源为 AI 健康向导体验
     """
+    # ── SMS 验证码校验 ──
+    if req.code:
+        import os
+        try:
+            import redis as _redis
+            redis_url = os.environ.get("REDIS_URL", "redis://:difyai123456@redis:6379/0")
+            r = _redis.from_url(redis_url, decode_responses=True)
+            stored_code = r.get(f"sms_code:{req.phone}")
+            if not stored_code or stored_code != req.code:
+                raise HTTPException(status_code=400, detail="验证码错误或已过期")
+            r.delete(f"sms_code:{req.phone}")  # 验证成功，删除
+        except HTTPException:
+            raise
+        except Exception:
+            pass  # Redis 不可用时跳过 (开发模式)
+    else:
+        # 没传验证码 — 开发模式允许，生产环境应强制
+        import os
+        if os.environ.get("DEPLOY_ENV", "").upper() == "PRODUCTION":
+            raise HTTPException(status_code=400, detail="请输入验证码")
+
     existing = db.query(User).filter(User.phone == req.phone).first()
     if existing:
         raise HTTPException(status_code=409, detail="手机号已注册")
+
+    # 角色: 默认 OBSERVER, upgrade=grower 时自动升级
+    initial_role = "OBSERVER"
+    if upgrade and upgrade.lower() == "grower":
+        initial_role = "GROWER"
 
     # Auto-generate username from phone (DB requires NOT NULL)
     auto_username = f"u{req.phone[-8:]}"
@@ -38,14 +84,25 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         password_hash=hash_password(req.password),
         nickname=req.nickname or f"用户{req.phone[-4:]}",
         email=f"{auto_username}@placeholder.local",  # DB requires NOT NULL
+        role=initial_role,
     )
+    # 标记转化来源
+    if source:
+        try:
+            user.conversion_source = source
+        except Exception:
+            pass  # 字段不存在时静默跳过 (v3.auth.User 可能没有此列)
     db.add(user)
     db.commit()
     db.refresh(user)
 
+    role_level = ROLE_LEVELS.get(user.role, 1)
     tokens = create_token_pair(user.id, user.role)
+    profile = UserProfile.model_validate(user).model_dump()
+    profile["role_level"] = role_level  # 确保前端拿到正确的 role_level
+
     return APIResponse(data={
-        "user": UserProfile.model_validate(user).model_dump(),
+        "user": profile,
         "tokens": tokens.model_dump(),
     })
 

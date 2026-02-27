@@ -576,6 +576,12 @@ const routes: RouteRecordRaw[] = [
         meta: { title: '用户管理' }
       },
       {
+        path: 'admin/user-import',
+        name: 'AdminUserImport',
+        component: () => import('./views/admin/UserImport.vue'),
+        meta: { title: '批量导入' }
+      },
+      {
         path: 'admin/distribution',
         name: 'AdminDistribution',
         component: () => import('./views/admin/Distribution.vue'),
@@ -716,6 +722,13 @@ const routes: RouteRecordRaw[] = [
         component: () => import('./views/admin/KnowledgeSharingReview.vue'),
         meta: { title: '知识共享管理', requiresAdmin: true }
       },
+      // ============ XZB 知识确认 (V5.3.0) ============
+      {
+        path: 'expert/xzb-knowledge',
+        name: 'XzbKnowledgeConfirm',
+        component: () => import('./views/expert/XzbKnowledgeConfirm.vue'),
+        meta: { title: '知识确认', requiredRole: 5 }
+      },
       // ============ 安全管理 (V005) ============
       {
         path: 'safety',
@@ -739,6 +752,13 @@ const routes: RouteRecordRaw[] = [
       },
       // ============ 行为处方 (Behavior Rx) ============
       ...rxRoutes,
+      // 运营中心
+      {
+        path: 'admin/operation-center',
+        name: 'OperationCenter',
+        component: () => import('./views/admin/OperationCenter.vue'),
+        meta: { title: '运营中心', requiresAdmin: true }
+      },
       // 系统设置
       {
         path: 'settings',

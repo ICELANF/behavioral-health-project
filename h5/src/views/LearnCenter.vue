@@ -4,10 +4,8 @@
   底部Tab: 学习
 -->
 <template>
-  <div class="page-container">
-    <van-nav-bar title="学习中心" />
-
-    <div class="page-content learn-center">
+  <PageShell title="学习中心" :show-tab-bar="true" no-padding>
+    <div class="learn-center">
       <!-- 学习进度卡片 -->
       <div class="progress-card card">
         <div class="progress-header">
@@ -106,7 +104,7 @@
                 <h3 class="content-title">{{ item.title }}</h3>
                 <p class="content-summary">{{ item.summary || stripHtml(item.body) }}</p>
                 <div class="content-footer">
-                  <span class="content-author">{{ item.author || '平台' }}</span>
+                  <span class="content-author">{{ item.author?.name || item.author || '平台' }}</span>
                   <span class="content-stats">
                     👁 {{ item.view_count || 0 }}
                     · ❤ {{ item.like_count || 0 }}
@@ -124,9 +122,7 @@
         </van-list>
       </van-pull-refresh>
     </div>
-
-    <TabBar />
-  </div>
+  </PageShell>
 </template>
 
 <script setup lang="ts">
@@ -134,7 +130,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api/index'
 import { useUserStore } from '@/stores/user'
-import TabBar from '@/components/common/TabBar.vue'
+import PageShell from '@/components/common/PageShell.vue'
 
 const router = useRouter()
 const userStore = useUserStore()

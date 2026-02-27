@@ -52,7 +52,29 @@
               </div>
             </div>
           </template>
-          <van-empty v-else description="暂无教练消息" />
+          <!-- 被驳回的推送 (灰色卡片) -->
+          <template v-if="rejectedPushes.length">
+            <div class="section-divider">已驳回</div>
+            <div
+              class="coach-msg-item rejected"
+              v-for="rp in rejectedPushes"
+              :key="'rej-' + rp.id"
+            >
+              <div class="coach-msg-avatar">
+                <van-icon name="info-o" size="28" color="#999" />
+              </div>
+              <div class="coach-msg-content">
+                <div class="coach-msg-header">
+                  <span class="coach-name" style="color:#999">{{ rp.title || '推送内容' }}</span>
+                  <van-tag size="small" type="default">已驳回</van-tag>
+                </div>
+                <div class="coach-msg-body">{{ rp.content }}</div>
+                <div v-if="rp.coach_note" class="reject-reason">驳回原因: {{ rp.coach_note }}</div>
+                <div class="coach-msg-time">{{ formatTime(rp.reviewed_at || rp.created_at) }}</div>
+              </div>
+            </div>
+          </template>
+          <van-empty v-else-if="!coachMessages.length" description="暂无教练消息" />
         </van-tab>
 
         <van-tab :title="pendingAssessTabTitle">
@@ -178,11 +200,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { showNotify } from 'vant'
 import api from '@/api/index'
+import { useNotificationStore } from '@/stores/notification'
 
 const router = useRouter()
+const notifStore = useNotificationStore()
 const activeTab = ref(0)
 const sessions = ref<any[]>([])
 const notifications = ref<any[]>([])
@@ -197,6 +222,9 @@ const unreadCount = ref(0)
 // 提醒
 const loadingReminders = ref(false)
 const reminders = ref<any[]>([])
+
+// 被驳回的推送
+const rejectedPushes = ref<any[]>([])
 
 // 设备预警
 const loadingDeviceAlerts = ref(false)
@@ -363,7 +391,39 @@ onMounted(async () => {
     unreadAlertCount.value = alerts.filter((a: any) => !a.user_read).length
   }
   loadingDeviceAlerts.value = false
+
+  // 加载被驳回的推送
+  try {
+    const rejRes: any = await api.get('/api/v1/messages/rejected')
+    rejectedPushes.value = rejRes.items || []
+  } catch { /* ignore */ }
 })
+
+// ── WebSocket 实时刷新 ──
+watch(
+  () => notifStore.latestMessages,
+  (msgs) => {
+    if (!msgs.length) return
+    const latest = msgs[0]
+    // 新消息到达时，显示 toast 并根据类型刷新对应 tab 数据
+    if (latest.type === 'coach_push' || latest.type === 'coach_message') {
+      // 刷新教练消息
+      api.get('/api/v1/messages/inbox').then((res: any) => {
+        coachMessages.value = res.messages || []
+      }).catch(() => {})
+      api.get('/api/v1/messages/unread-count').then((res: any) => {
+        unreadCount.value = res.unread_count || 0
+      }).catch(() => {})
+    } else if (latest.type === 'device_alert') {
+      api.get('/api/v1/alerts/my?limit=20').then((res: any) => {
+        const alerts = res.alerts || []
+        deviceAlertList.value = alerts
+        unreadAlertCount.value = alerts.filter((a: any) => !a.user_read).length
+      }).catch(() => {})
+    }
+  },
+  { deep: true }
+)
 </script>
 
 <style lang="scss" scoped>
@@ -530,6 +590,29 @@ onMounted(async () => {
     cursor: pointer;
     &:active { background: #f7f7f7; }
   }
+
+.section-divider {
+  padding: 8px $spacing-md;
+  font-size: $font-size-xs;
+  color: $text-color-placeholder;
+  background: #fafafa;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.coach-msg-item.rejected {
+  opacity: 0.65;
+  background: #fafafa;
+
+  .reject-reason {
+    font-size: $font-size-xs;
+    color: #ee0a24;
+    margin-top: 4px;
+    padding: 2px 6px;
+    background: #fff1f0;
+    border-radius: 4px;
+    display: inline-block;
+  }
+}
 
   .notify-content,
   .alert-content {

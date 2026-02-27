@@ -115,6 +115,10 @@ class UserResponse(BaseModel):
     created_at: datetime
 
 
+class ProfileUpdateRequest(BaseModel):
+    full_name: Optional[str] = None
+
+
 class ChangePasswordRequest(BaseModel):
     old_password: str
     new_password: str
@@ -405,7 +409,10 @@ def refresh_token_endpoint(
             detail="无效或过期的刷新令牌"
         )
 
-    user_id = payload.get("user_id")
+    # 兼容 V1 (user_id) 和 V3 (sub) token 格式
+    user_id = payload.get("user_id") or payload.get("sub")
+    if user_id is not None:
+        user_id = int(user_id)
     user = db.query(User).filter(User.id == user_id).first()
     if not user or not user.is_active:
         raise HTTPException(
@@ -431,6 +438,26 @@ def refresh_token_endpoint(
             "full_name": user.full_name,
         }
     )
+
+
+@router.put("/profile")
+async def update_my_profile(
+    body: ProfileUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    更新当前用户资料 (昵称等)
+    """
+    if body.full_name is not None:
+        current_user.full_name = body.full_name.strip()[:50]
+    db.commit()
+    db.refresh(current_user)
+    return {
+        "success": True,
+        "full_name": current_user.full_name,
+        "username": current_user.username,
+    }
 
 
 @router.put("/password")
@@ -475,6 +502,95 @@ async def logout(
     token_blacklist.revoke(credentials.credentials)
     logger.info(f"用户登出: ID={current_user.id}")
     return {"message": "登出成功"}
+
+
+# ── 手机验证码登录 ──
+
+class SmsLoginRequest(BaseModel):
+    phone: str
+    code: str
+
+
+@router.post("/sms-login")
+async def sms_login(
+    body: SmsLoginRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    手机验证码登录 — 无需密码
+
+    - 验证 Redis 中的 SMS 验证码
+    - 用户不存在则自动创建 (role=observer)
+    - 返回 JWT token
+    """
+    import os, re
+    if not re.match(r'^1\d{10}$', body.phone):
+        raise HTTPException(status_code=400, detail="手机号格式不正确")
+
+    # 验证码校验 (Redis)
+    import redis as _redis
+    try:
+        redis_url = os.environ.get("REDIS_URL", "redis://:difyai123456@redis:6379/0")
+        r = _redis.from_url(redis_url, decode_responses=True)
+        stored_code = r.get(f"sms_code:{body.phone}")
+    except Exception:
+        stored_code = None
+
+    if not stored_code:
+        raise HTTPException(status_code=400, detail="验证码已过期，请重新获取")
+    if stored_code != body.code:
+        raise HTTPException(status_code=400, detail="验证码错误")
+
+    # 验证成功，删除验证码
+    try:
+        r.delete(f"sms_code:{body.phone}")
+    except Exception:
+        pass
+
+    # 查找或创建用户
+    user = db.query(User).filter(User.phone == body.phone).first()
+
+    if user:
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="账号已停用")
+    else:
+        # 自动创建用户
+        import secrets
+        user = User(
+            phone=body.phone,
+            username=f"u_{body.phone[-6:]}",
+            email=f"{body.phone}@bhp.local",
+            password_hash=hash_password(secrets.token_urlsafe(12)),
+            role=UserRole.OBSERVER,
+            is_active=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+    # 更新最后登录时间
+    user.last_login_at = datetime.utcnow()
+    db.commit()
+
+    # 生成 token
+    role_str = user.role.value if hasattr(user.role, "value") else str(user.role)
+    tokens = create_user_tokens(user.id, user.username, role_str)
+
+    ROLE_LEVELS = {"observer": 1, "grower": 2, "sharer": 3, "coach": 4, "promoter": 5, "supervisor": 5, "master": 6, "admin": 99}
+
+    return {
+        "access_token": tokens["access_token"],
+        "refresh_token": tokens["refresh_token"],
+        "token_type": "bearer",
+        "user": {
+            "id": user.id,
+            "username": user.username,
+            "full_name": user.full_name,
+            "role": role_str,
+            "role_level": ROLE_LEVELS.get(role_str, 1),
+        },
+    }
 
 
 # 导出router

@@ -146,6 +146,11 @@
           <span>用户管理</span>
         </a-menu-item>
 
+        <a-menu-item v-if="isAdmin" key="admin-user-import" @click="$router.push('/admin/user-import')">
+          <template #icon><UploadOutlined /></template>
+          <span>批量导入</span>
+        </a-menu-item>
+
         <!-- 管理员可见 - 分配管理 -->
         <a-menu-item v-if="isAdmin" key="admin-distribution" @click="$router.push('/admin/distribution')">
           <template #icon><ApartmentOutlined /></template>
@@ -479,6 +484,7 @@ import {
   MessageOutlined,
   BarChartOutlined,
   CloudUploadOutlined,
+  UploadOutlined,
   FileAddOutlined,
   LineChartOutlined,
   AppstoreOutlined,
@@ -580,6 +586,8 @@ watch(() => route.path, (path) => {
     selectedKeys.value = ['admin-challenges']
   } else if (path === '/admin/user-management') {
     selectedKeys.value = ['admin-user-management']
+  } else if (path === '/admin/user-import') {
+    selectedKeys.value = ['admin-user-import']
   } else if (path === '/admin/distribution') {
     selectedKeys.value = ['admin-distribution']
   } else if (path.includes('/admin/bindings')) {

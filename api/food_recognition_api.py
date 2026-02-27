@@ -225,22 +225,20 @@ async def recognize_food(
 
     # 4. 调用 VLM 视觉模型 (ollama_first: Ollama → Cloud fallback)
     raw_text = ""
+    vlm_available = True
     try:
         from core.vlm_service import VLMService
         vlm = VLMService()
         result = await vlm.analyze_image(b64_data, FOOD_ANALYSIS_PROMPT, temperature=0.3)
         raw_text = result.get("text", "")
         logger.info(f"[Food] VLM provider: {result.get('provider')}")
-    except httpx.TimeoutException:
-        raise HTTPException(status_code=504, detail="AI 模型响应超时，请稍后重试")
-    except RuntimeError as e:
-        raise HTTPException(status_code=502, detail=str(e))
     except Exception as e:
-        logger.error(f"[Food] VLM 调用失败: {e}")
-        raise HTTPException(status_code=502, detail="AI 模型服务不可用")
+        logger.warning(f"[Food] VLM 不可用，保存图片记录（无AI分析）: {e}")
+        vlm_available = False
+        raw_text = ""
 
-    # 5. 解析响应
-    parsed = _parse_llm_response(raw_text)
+    # 5. 解析响应 (VLM不可用时使用空数据)
+    parsed = _parse_llm_response(raw_text) if vlm_available and raw_text else {}
 
     # 6. 写入数据库
     record = FoodAnalysis(

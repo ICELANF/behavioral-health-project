@@ -100,10 +100,19 @@
       </div>
 
       <div class="step-actions">
-        <van-button type="primary" block round @click="finishOnboarding">
+        <van-button type="primary" block round :loading="finishing" @click="finishOnboarding">
           {{ enrolledIds.length > 0 ? '开始健康之旅' : '跳过，直接进入' }}
         </van-button>
         <van-button plain block round @click="currentStep = 1">上一步</van-button>
+      </div>
+    </div>
+
+    <!-- 完成后兜底: 如果跳转失败，仍能手动进入 -->
+    <div v-if="currentStep >= 3" class="step-panel">
+      <div class="finish-hero">
+        <div class="finish-icon">🎉</div>
+        <p class="finish-text">健康档案已完善！</p>
+        <van-button type="primary" block round @click="forceNavigate">进入首页</van-button>
       </div>
     </div>
   </div>
@@ -150,6 +159,7 @@ function toggleGoal(key: string) {
 const recommendedPrograms = ref<any[]>([])
 const enrollingId = ref('')
 const enrolledIds = ref<string[]>([])
+const finishing = ref(false)
 
 async function nextStep() {
   if (currentStep.value === 0) {
@@ -210,17 +220,35 @@ async function enrollProgram(programId: string) {
     await api.post('/api/v1/programs/enroll', { template_id: programId })
     enrolledIds.value.push(programId)
     showToast({ message: '已加入计划', type: 'success' })
-  } catch {
-    showToast('加入失败，请稍后重试')
+  } catch (e: any) {
+    const detail = e?.response?.data?.detail || ''
+    if (detail === 'already_enrolled') {
+      enrolledIds.value.push(programId)
+      showToast({ message: '您已加入该计划', type: 'success' })
+    } else {
+      showToast('加入失败，请稍后重试')
+    }
   } finally {
     enrollingId.value = ''
   }
 }
 
-function finishOnboarding() {
+async function finishOnboarding() {
+  finishing.value = true
   localStorage.setItem('bhp_grower_onboarding_done', '1')
   showToast({ message: '欢迎成为成长者！', type: 'success' })
-  router.replace('/home/today')
+  try {
+    await router.replace('/home/today')
+  } catch {
+    // 路由跳转失败兜底
+    currentStep.value = 3
+    finishing.value = false
+  }
+}
+
+function forceNavigate() {
+  localStorage.setItem('bhp_grower_onboarding_done', '1')
+  window.location.href = '/'
 }
 
 function skipAll() {
@@ -228,10 +256,26 @@ function skipAll() {
   router.replace('/home/today')
 }
 
-onMounted(() => {
+onMounted(async () => {
   // 如果已完成引导，直接跳转
   if (localStorage.getItem('bhp_grower_onboarding_done')) {
-    router.replace('/home/today')
+    try {
+      await router.replace('/home/today')
+    } catch {
+      window.location.href = '/'
+    }
+    return
+  }
+  // 加载已加入的计划，避免重复加入
+  try {
+    const res: any = await api.get('/api/v1/programs/my')
+    const myPrograms = Array.isArray(res) ? res : (res?.data || [])
+    enrolledIds.value = myPrograms
+      .filter((p: any) => ['active', 'paused'].includes(p.status))
+      .map((p: any) => p.template_id)
+      .filter(Boolean)
+  } catch {
+    // 非阻塞
   }
 })
 </script>
@@ -339,5 +383,23 @@ onMounted(() => {
   padding: 32px 16px;
   color: #9ca3af;
   font-size: 14px;
+}
+
+/* Finish hero */
+.finish-hero {
+  text-align: center;
+  padding: 48px 24px;
+}
+
+.finish-icon {
+  font-size: 64px;
+  margin-bottom: 16px;
+}
+
+.finish-text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 28px;
 }
 </style>

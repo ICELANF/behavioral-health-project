@@ -8,12 +8,12 @@
       <div class="fab-label">记录</div>
     </div>
 
-    <van-tabbar v-model="active" route>
-      <van-tabbar-item icon="home-o" to="/">首页</van-tabbar-item>
-      <van-tabbar-item icon="chat-o" to="/chat">对话</van-tabbar-item>
-      <van-tabbar-item icon="bookmark-o" to="/learn">学习</van-tabbar-item>
-      <van-tabbar-item icon="todo-list-o" to="/tasks">任务</van-tabbar-item>
-      <van-tabbar-item icon="user-o" to="/profile">我的</van-tabbar-item>
+    <van-tabbar v-model="activeTab" @change="onTabChange">
+      <van-tabbar-item icon="home-o">首页</van-tabbar-item>
+      <van-tabbar-item icon="chat-o">对话</van-tabbar-item>
+      <van-tabbar-item icon="bookmark-o">学习</van-tabbar-item>
+      <van-tabbar-item icon="todo-list-o">任务</van-tabbar-item>
+      <van-tabbar-item icon="user-o">我的</van-tabbar-item>
     </van-tabbar>
 
     <!-- QuickInputHub popup -->
@@ -22,11 +22,32 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import QuickInputHub from '@/components/health/QuickInputHub.vue'
 
-const active = ref(0)
+const route = useRoute()
+const router = useRouter()
 const showHub = ref(false)
+
+const TAB_ROUTES = ['/', '/chat', '/learn', '/tasks', '/profile']
+
+function getActiveTab(path: string): number {
+  if (path === '/' || path.startsWith('/home/') || path === '/dashboard') return 0
+  if (path.startsWith('/chat')) return 1
+  if (path.startsWith('/learn')) return 2
+  if (path.startsWith('/tasks')) return 3
+  if (path.startsWith('/profile')) return 4
+  return 0
+}
+
+const activeTab = ref(getActiveTab(route.path))
+
+watch(() => route.path, (p) => { activeTab.value = getActiveTab(p) })
+
+function onTabChange(idx: number) {
+  router.push(TAB_ROUTES[idx])
+}
 
 const emit = defineEmits<{
   (e: 'data-submitted'): void
