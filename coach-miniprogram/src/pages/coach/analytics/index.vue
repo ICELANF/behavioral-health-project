@@ -126,12 +126,12 @@ import { ref, computed, onMounted } from 'vue'
 import http from '@/api/request'
 
 const PERIODS = [
-  { key: 'week',  label: '本周' },
-  { key: 'month', label: '本月' },
-  { key: '3month', label: '近3月' },
+  { key: '7',  label: '本周' },
+  { key: '30', label: '本月' },
+  { key: '90', label: '近3月' },
 ]
 
-const period = ref('week')
+const period = ref('7')
 const data   = ref<any>(null)
 
 const metrics = computed(() => [
@@ -161,9 +161,9 @@ onMounted(async () => {
 async function loadData() {
   try {
     const [risk, stage, pushStats] = await Promise.all([
-      http.get<any>('/v1/analytics/coach/risk-trend', { period: period.value }),
-      http.get<any>('/v1/analytics/coach/stage-distribution', { period: period.value }),
-      http.get<any>('/v1/coach/push-queue/analytics', { period: period.value }),
+      http.get<any>('/v1/analytics/coach/risk-trend', { period_days: period.value }),
+      http.get<any>('/v1/analytics/coach/stage-distribution', { period_days: period.value }),
+      http.get<any>('/v1/coach/push-queue/analytics', { period_days: period.value }),
     ])
     data.value = { ...risk, ...stage, push_stats: pushStats }
   } catch {

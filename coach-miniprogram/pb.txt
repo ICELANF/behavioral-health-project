@@ -1,7 +1,25 @@
-修复最后2个404：
+修复以下3个问题：
 
-1. 全局搜索 /v1/notifications/unread-count，替换为 /v1/messages/unread-count
+1. 全局搜索项目里所有还在用 /v1/notifications/unread-count 的地方，
+   改为 /v1/messages/unread-count（上次漏掉了某个文件）
 
-2. 全局搜索 /v1/assessment-assignments/my，替换为 /v1/assessment-assignments/my-pending
+2. GET /api/v1/coach/push-queue/analytics?period=week 返回 422，
+   说明 period 参数后端不接受字符串，
+   查看 src/pages/coach/analytics/index.vue，
+   把 period 参数改为 period_days：week→7, month→30, quarter→90
 
-完成后执行 npm run build:mp-weixin，然后 git add -A && git commit -m "fix: 修复最后2个404路径"
+3. POST /api/v1/auth/login 401 说明 admin 密码可能不对，
+   执行以下命令重置 admin 密码：
+   docker exec bhp_v3_api python -c "
+   import sys; sys.path.insert(0, '.')
+   from app.database import get_db
+   from app.models import User
+   from app.auth import get_password_hash
+   db = next(get_db())
+   u = db.query(User).filter(User.username=='admin').first()
+   u.hashed_password = get_password_hash('Admin@2026')
+   db.commit()
+   print('admin密码已重置')
+   "
+
+完成后执行 npm run build:mp-weixin 并提交。
