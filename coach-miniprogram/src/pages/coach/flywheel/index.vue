@@ -311,6 +311,7 @@ async function runFollowup() {
   showStudentPicker.value = false
   generating.value = true
   try {
+    console.log('runAgent studentId:', pickedStudent.value.id)
     const res = await coachApi.runAgent(pickedStudent.value.id, '生成个性化跟进计划')
     agentResult.value = res.data || res
   } catch (e: any) {

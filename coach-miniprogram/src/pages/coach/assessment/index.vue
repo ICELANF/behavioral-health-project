@@ -79,12 +79,12 @@
           <view class="cam-modal__scale-list">
             <view
               v-for="s in SCALE_OPTIONS"
-              :key="s"
+              :key="s.key"
               class="cam-modal__scale"
-              :class="{ 'cam-modal__scale--active': selectedScales.includes(s) }"
-              @tap="toggleScale(s)"
+              :class="{ 'cam-modal__scale--active': selectedScales.includes(s.key) }"
+              @tap="toggleScale(s.key)"
             >
-              <text>{{ s }}</text>
+              <text>{{ s.label }}</text>
             </view>
           </view>
         </view>
@@ -117,7 +117,13 @@ const TABS = [
 const STATUS_LABEL: Record<string, string> = {
   assigned: '待完成', in_progress: '进行中', pending_review: '待审核', completed: '已完成',
 }
-const SCALE_OPTIONS = ['SCL-90', 'PHQ-9', 'GAD-7', 'PSQI', 'SF-36', 'BFI-44']
+const SCALE_OPTIONS = [
+  { key: 'ttm7',     label: 'TTM行为阶段' },
+  { key: 'big5',     label: '大五人格' },
+  { key: 'bpt6',     label: '行为类型BPT6' },
+  { key: 'capacity', label: '能力评估' },
+  { key: 'spi',      label: '健康行为指数' },
+]
 
 const activeTab      = ref('all')
 const list           = ref<any[]>([])
