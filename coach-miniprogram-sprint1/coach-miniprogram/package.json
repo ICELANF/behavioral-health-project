@@ -1,0 +1,28 @@
+{
+  "name": "bhp-coach-miniprogram",
+  "version": "1.0.0",
+  "description": "行健平台 · 教练培养体系 · 微信小程序 + H5",
+  "scripts": {
+    "dev:mp-weixin": "uni",
+    "build:mp-weixin": "uni build -p mp-weixin",
+    "dev:h5": "uni --platform h5",
+    "build:h5": "uni build -p h5",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "@dcloudio/uni-app": "3.0.0-4030920240930001",
+    "@dcloudio/uni-components": "3.0.0-4030920240930001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-4030920240930001",
+    "@dcloudio/uni-ui": "^1.5.6",
+    "pinia": "^2.2.6",
+    "vue": "^3.4.21"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "*",
+    "@dcloudio/uni-cli-shared": "3.0.0-4030920240930001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-4030920240930001",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "vue-tsc": "^2.0.0"
+  }
+}

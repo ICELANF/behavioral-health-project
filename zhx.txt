@@ -1,0 +1,27 @@
+请根据以下项目信息，在当前目录创建完整的 uni-app 微信小程序项目文件。AppID 是 wx5755ae9b2491a04b，项目是行健平台教练培养体系。
+需要创建的文件：
+
+package.json（uni-app Vue3 + TypeScript + pinia）
+manifest.json（AppID: wx5755ae9b2491a04b）
+pages.json（含主包5页 + 7个分包 + tabBar配置）
+tsconfig.json
+vite.config.ts
+src/main.ts
+src/App.vue
+src/styles/bhp-design-tokens.css（BHP Design System CSS变量）
+src/api/request.ts（JWT自动刷新）
+src/api/auth.ts
+src/stores/user.ts（Pinia，角色判断 isCoach）
+src/stores/learning.ts
+src/stores/coach.ts
+src/utils/level.ts
+src/utils/wechat.ts
+src/components/BHPLevelBadge.vue
+src/components/BHPPointsCard.vue
+src/components/BHPRiskTag.vue
+src/components/BHPCourseCard.vue
+src/components/BHPTabBar.vue
+src/pages/auth/login.vue（微信一键登录 + 账号密码）
+src/pages/home/index.vue（学员/教练双视图）
+
+创建完成后执行 npm install，再执行 npm run dev:mp-weixin，直到编译成功输出 dist 目录。

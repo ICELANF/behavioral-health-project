@@ -1,9 +1,28 @@
-docker exec bhp_v3_api python -c "
-import sys; sys.path.insert(0, '.')
-from app.database import get_db
-from app.models import User
-db = next(get_db())
-users = db.query(User).all()
-for u in users:
-    print(f'{u.username:20} role={u.role}  active={u.is_active}')
-"
+请实现以下 3 个页面，完成后一起编译：
+
+1. src/pages/coach/analytics/index.vue — 数据分析看板
+   - 时间筛选器：本周/本月/近3月（Tab切换）
+   - 4个核心指标卡片：管理学员数 / 本期完课率 / 平均风险评分 / 待处理任务数
+   - 学员风险分布：高/中/低三色横向堆叠条形图（用CSS实现）
+   - 学员活跃度排行榜：前5名学员列表（姓名+积分+趋势箭头）
+   - 本期推送效果：发送数/通过数/完成数 三步漏斗图（CSS实现）
+   - 调用 GET /v1/coach/analytics?period=week
+
+2. src/pages/learning/content-detail.vue — 图文内容详情
+   - 顶部：封面图 + 标题 + 作者 + 发布时间
+   - 正文：rich-text 渲染 HTML 内容
+   - 进度追踪：滚动到底部触发 complete，调用 learningStore.completeContent()
+   - 底部互动栏：点赞/收藏/评论/分享（与 video-player 一致）
+   - 评论列表（tab 切换，支持发表评论）
+   - 调用 GET /v1/content/:id
+
+3. src/pages/exam/result.vue — 考试结果页
+   - 顶部：大圆形分数展示（及格绿色/不及格红色）
+   - 答题统计：总题数/答对/答错/未答
+   - 得分明细：按题型分组（单选/多选/案例题）
+   - 错题回顾列表：显示题干 + 正确答案
+   - 底部：「再做一次」+ 「返回课程」两个按钮
+   - 及格显示「🎉 恭喜通过！+20积分」，不及格显示「继续加油，还差X分」
+   - 调用 GET /v1/certification/sessions/:id/result
+
+完成后执行 npm run build:mp-weixin。

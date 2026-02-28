@@ -1,0 +1,67 @@
+{
+  "name": "行为重塑认知重塑大脑重塑",
+  "appid": "__UNI__BHP001",
+  "description": "行健平台 · 行为健康教练培养体系",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {
+    "usingComponents": true,
+    "nvueStyleCompiler": "uni-app",
+    "compilerVersion": 3,
+    "splashscreen": {
+      "alwaysShowBeforeRender": true,
+      "waiting": true,
+      "autoclose": true,
+      "delay": 0
+    },
+    "modules": {},
+    "distribute": {
+      "android": { "permissions": [] },
+      "ios": {},
+      "sdkConfigs": {}
+    }
+  },
+  "quickapp": {},
+  "mp-weixin": {
+    "appid": "wx5755ae9b2491a04b",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "postcss": true,
+      "minified": true
+    },
+    "usingComponents": true,
+    "permission": {
+      "scope.userLocation": {
+        "desc": "用于健康地图功能"
+      }
+    },
+    "requiredPrivateInfos": ["getLocation"],
+    "lazyCodeLoading": "requiredComponents",
+    "subPackages": true
+  },
+  "mp-alipay": { "usingComponents": true },
+  "mp-baidu": { "usingComponents": true },
+  "h5": {
+    "title": "行健平台 · 教练培养体系",
+    "template": "index.html",
+    "router": {
+      "mode": "history",
+      "base": "/"
+    },
+    "devServer": {
+      "port": 5173,
+      "disableHostCheck": true,
+      "proxy": {
+        "/api": {
+          "target": "http://localhost:8000",
+          "changeOrigin": true
+        }
+      }
+    },
+    "optimization": {
+      "treeShaking": { "enable": true }
+    }
+  }
+}
