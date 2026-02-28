@@ -37,7 +37,7 @@
           <text>{{ pendingList.length }}</text>
         </view>
       </view>
-      <view class="pq-tab" :class="{ 'pq-tab--active': activeTab === 'history' }" @tap="activeTab = 'history'; loadHistory()">
+      <view class="pq-tab" :class="{ 'pq-tab--active': activeTab === 'history' }" @tap="activeTab = 'history'">
         <text>已处理</text>
       </view>
     </view>
@@ -66,10 +66,10 @@
           <text class="pq-card__summary" v-if="item.ai_summary">{{ item.ai_summary }}</text>
 
           <!-- 内容预览（可展开） -->
-          <view class="pq-card__content" v-if="item.content_body" @tap="toggleExpand(item)">
+          <view class="pq-card__content" v-if="item.content_body || item.ai_summary" @tap="toggleExpand(item)">
             <text class="pq-card__content-label">推送内容 {{ item._expanded ? '▼' : '▶' }}</text>
-            <text class="pq-card__content-text" v-if="item._expanded">{{ item.content_body }}</text>
-            <text class="pq-card__content-text pq-card__content-text--collapsed" v-else>{{ item.content_body }}</text>
+            <text class="pq-card__content-text" v-if="item._expanded">{{ item.content_body || item.ai_summary }}</text>
+            <text class="pq-card__content-text pq-card__content-text--collapsed" v-else>{{ item.content_body || item.ai_summary }}</text>
           </view>
 
           <!-- 操作按钮 -->
@@ -258,7 +258,6 @@ function _post<T = any>(path: string, data?: any): Promise<T> {
 // ============================================================
 const api = {
   getPending: (p?: Record<string, any>) => _get<{ items: any[] }>('/v1/coach-push/pending', { page_size: 100, ...p }),
-  getHistory: (p?: Record<string, any>) => _get<{ items: any[] }>('/v1/coach-push/history', { page_size: 50, ...p }),
   approve:    (id: number, data?: Record<string, any>) => _post<any>(`/v1/coach-push/${id}/approve`, data || {}),
   reject:     (id: number, reason: string) => _post<any>(`/v1/coach-push/${id}/reject`, { reason }),
 }
@@ -300,7 +299,6 @@ const rejectedCount = computed(() => historyList.value.filter(i => i.status === 
 // ── 生命周期 ──
 onMounted(() => {
   loadPending()
-  loadHistory()
 })
 
 // ── 加载待审批 ──
@@ -318,16 +316,8 @@ async function loadPending() {
 
 // ── 加载已处理 ──
 async function loadHistory() {
-  if (historyList.value.length > 0 && !historyLoading.value) return // 已加载过
-  historyLoading.value = true
-  try {
-    const res = await api.getHistory()
-    historyList.value = res.items || []
-  } catch {
-    historyList.value = []
-  } finally {
-    historyLoading.value = false
-  }
+  // 历史记录由前端本地追踪（后端暂无 history 端点）
+  // 已处理项在 approve/reject 时已 unshift 到 historyList
 }
 
 // ── 展开/收起 ──

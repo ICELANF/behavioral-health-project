@@ -115,7 +115,7 @@
         { "path": "dashboard",         "style": { "navigationBarTitleText": "教练工作台", "enablePullDownRefresh": true } },
         { "path": "students/index",    "style": { "navigationBarTitleText": "我的学员", "enablePullDownRefresh": true } },
         { "path": "students/detail",   "style": { "navigationBarTitleText": "学员详情" } },
-        { "path": "push-queue",        "style": { "navigationBarTitleText": "推送审批" } },
+        { "path": "push-queue",        "style": { "navigationBarTitleText": "推送审批", "navigationStyle": "custom" } },
         { "path": "assessment/index",  "style": { "navigationBarTitleText": "评估管理" } },
         { "path": "assessment/review", "style": { "navigationBarTitleText": "审核评估" } },
         { "path": "analytics/index",   "style": { "navigationBarTitleText": "数据分析" } },

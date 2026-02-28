@@ -1,6 +1,27 @@
-# 删除 uni-app 编译产物目录
-rd /s /q dist
-rd /s /q unpackage
-
-# 重新编译
-npm run dev:mp-weixin
+找到这段：
+typescriptasync function loadHistory() {
+  if (historyList.value.length > 0 && !historyLoading.value) return // 已加载过
+  historyLoading.value = true
+  try {
+    const res = await api.getHistory()
+    historyList.value = res.items || []
+  } catch {
+    historyList.value = []
+  } finally {
+    historyLoading.value = false
+  }
+}
+替换为：
+typescriptasync function loadHistory() {
+  // 历史记录由前端本地追踪，approve/reject 时已 unshift 到 historyList
+}
+同时删掉 onMounted 里的 loadHistory() 调用，改为：
+找到：
+typescriptonMounted(() => {
+  loadPending()
+  loadHistory()
+})
+替换为：
+typescriptonMounted(() => {
+  loadPending()
+})
