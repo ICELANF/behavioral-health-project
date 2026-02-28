@@ -1,18 +1,25 @@
-1. 修改 src/pages/coach/assessment/index.vue：
-   找到量表选项列表，把 SCL-90/PHQ-9/GAD-7/PSQI/SF-36/BFI-44 
-   替换为后端支持的量表：
-   - ttm7（行为改变阶段）
-   - big5（大五人格）
-   - bpt6（行为类型）
-   - capacity（能力评估）
-   - spi（健康行为指数）
-   显示名称用中文：TTM行为阶段/大五人格/行为类型BPT6/能力评估/健康行为指数
-   
+# 确认正确的审核端点
+docker exec bhp_v3_api python -c "
+import sys; sys.path.insert(0, '.')
+import requests, json
+r = requests.post('http://localhost:8000/api/v1/auth/login', json={'username':'coach','password':'Coach@2026'})
+token = r.json().get('access_token')
+headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+
+# 查 review-list 返回的 item 结构
+r2 = requests.get('http://localhost:8000/api/v1/assessment-assignments/review-list', headers=headers)
+data = r2.json()
+print(json.dumps(data, ensure_ascii=False, indent=2)[:600])
+" 2>/dev/null
+
+1. 修改 src/pages/coach/assessment/review.vue：
+   把审核通过/退回的接口路径改为：
+   - 通过：PUT /v1/assessment-assignments/review-items/:id  body: {status: 'approved', note: ''}
+   - 退回：PUT /v1/assessment-assignments/review-items/:id  body: {status: 'rejected', note: reason}
+   id 从路由参数或列表数据中取
+
 2. 修改 src/pages/coach/flywheel/index.vue：
-   找到「一键生成跟进计划」调用 agent/run 的地方，
-   确认传参格式：
-   { agent_type: 'COACHING', user_id: String(studentId), input: '生成个性化跟进计划' }
-   agent/run 已验证返回200，如果还是422说明前端studentId未正确获取，
-   加一行 console.log('runAgent studentId:', studentId) 调试
+   在调用 coachApi.runAgent 前加 console.log 打印完整请求参数，
+   检查 studentId 是否正确获取（不为 undefined/null）
 
 完成后 npm run build:mp-weixin

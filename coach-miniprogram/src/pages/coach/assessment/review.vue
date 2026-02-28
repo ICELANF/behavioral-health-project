@@ -121,8 +121,17 @@ async function loadResult() {
 
 async function handleApprove() {
   try {
-    await http.post(`/v1/assessment-assignments/${assignId.value}/approve`, { note: reviewNote.value })
-    uni.showToast({ title: '已通过', icon: 'success' })
+    // 逐条审核 review_items，全部通过后推送
+    const items = result.value?.review_items || []
+    for (const item of items) {
+      await http.put(`/v1/assessment-assignments/review-items/${item.id}`, {
+        status: 'approved',
+        coach_note: reviewNote.value,
+      })
+    }
+    // 推送结果给学员
+    await http.post(`/v1/assessment-assignments/${assignId.value}/push`, {})
+    uni.showToast({ title: '已通过并推送', icon: 'success' })
     setTimeout(() => goBack(), 1000)
   } catch (e: any) {
     uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
@@ -135,7 +144,13 @@ async function handleReject() {
     return
   }
   try {
-    await http.post(`/v1/assessment-assignments/${assignId.value}/reject`, { note: reviewNote.value })
+    const items = result.value?.review_items || []
+    for (const item of items) {
+      await http.put(`/v1/assessment-assignments/review-items/${item.id}`, {
+        status: 'rejected',
+        coach_note: reviewNote.value,
+      })
+    }
     uni.showToast({ title: '已退回', icon: 'none' })
     setTimeout(() => goBack(), 1000)
   } catch (e: any) {
