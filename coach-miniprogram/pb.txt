@@ -1,28 +1,17 @@
-cd D:\behavioral-health-project\coach-miniprogram && git add -A && git commit -m "feat: 学员管理+风险管理升级 95%
+cd D:\behavioral-health-project\coach-miniprogram && git add -A && git commit -m "feat: Coach飞轮升级70%→90%
 
-students/index.vue (288→393行):
-- 零主包依赖（移除http+BHPLevelBadge+BHPRiskTag）
-- 内联风险标签/等级标签组件
-- safe-area导航栏(88rpx适配胶囊)
-- 新增中风险Tab筛选
-- 排序切换（风险/活跃/姓名）
-- 下拉刷新
-- 微行动7天进度条
-- 在线状态绿点
+flywheel/index.vue (367→785行):
+- 飞轮5步骤可视化(数据采集→AI分析→教练审核→推送执行→效果追踪)
+- 步骤可点击跳转对应功能+按压动画
+- Tab三分: 待审核/已处理/AI记录
+- 下拉刷新+30秒自动轮询
+- 批量通过(一键全部通过)
+- 编辑后通过(修改标题+内容)
+- AI记录历史Tab
+- 应用建议: ActionSheet选择创建草稿或复制
+- 自定义AI指令输入
+- 多端点fallback(review-queue/coach-push)
+- 事件冒泡修复(@tap.stop)
+- 手动刷新按钮
 
-students/detail.vue (527→683行):
-- 零主包依赖（移除http+store+BHPRiskTag）
-- safe-area导航栏+底部
-- 新增独立风险Tab:
-  - 风险等级渐变圆
-  - 风险因素列表
-  - 风险变化时间线
-  - 干预记录列表+添加弹窗(电话/消息/面谈/方案/转介)
-- 处方操作内联HTTP(不再依赖store)
-- onLoad改用getCurrentPages
-
-全局修复:
-- 统一8个coach分包页面navbar padding-top: 88rpx
-- 消息/AI端点待后端补齐(404 Not Found)
-
-整体进度 82%→88%"
+整体进度 88%→91%"
