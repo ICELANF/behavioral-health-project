@@ -1,27 +1,30 @@
-找到这段：
-typescriptasync function loadHistory() {
-  if (historyList.value.length > 0 && !historyLoading.value) return // 已加载过
-  historyLoading.value = true
-  try {
-    const res = await api.getHistory()
-    historyList.value = res.items || []
-  } catch {
-    historyList.value = []
-  } finally {
-    historyLoading.value = false
-  }
-}
-替换为：
-typescriptasync function loadHistory() {
-  // 历史记录由前端本地追踪，approve/reject 时已 unshift 到 historyList
-}
-同时删掉 onMounted 里的 loadHistory() 调用，改为：
-找到：
-typescriptonMounted(() => {
-  loadPending()
-  loadHistory()
-})
-替换为：
-typescriptonMounted(() => {
-  loadPending()
-})
+cd D:\behavioral-health-project\coach-miniprogram && git add -A && git commit -m "feat: 推送审批/消息系统/数据分析三模块升级
+
+推送审批 75%→95%:
+- 零主包依赖（内联HTTP）
+- 拒绝填原因弹窗
+- 编辑草稿后通过
+- 待审批/已处理双Tab
+- 统计栏+内容预览展开
+- safe-area导航栏
+
+消息系统 40%→70%:
+- 角色感知Tab（教练/学员不同视图）
+- 会话列表（头像+未读+风险标签）
+- 日期分组+下拉刷新
+- 快捷操作跳转审批/审核
+- Tab独立未读计数
+
+数据分析 60%→85%:
+- 零主包依赖（内联HTTP）
+- 时间筛选生效（重新加载数据）
+- 教练工作量统计卡片
+- 7天活跃趋势条形图
+- TTM行为阶段分布
+- 微行动完成率环形图
+- 排行榜带进度条
+- 推送漏斗加转化率
+
+其他:
+- 统一修复coach分包页面navigationStyle:custom
+- 整体进度 75%→82%"
