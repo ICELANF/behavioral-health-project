@@ -216,6 +216,7 @@
 </template>
 
 <script setup lang="ts">
+import { onLoad } from '@dcloudio/uni-app'
 import { ref, onMounted } from 'vue'
 import { useCoachStore } from '@/stores/coach'
 import BHPRiskTag from '@/components/BHPRiskTag.vue'

@@ -101,6 +101,7 @@
 </template>
 
 <script setup lang="ts">
+import { onLoad, onHide, onShareAppMessage } from '@dcloudio/uni-app'
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useLearningStore } from '@/stores/learning'
 import http from '@/api/request'

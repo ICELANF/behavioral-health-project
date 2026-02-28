@@ -211,6 +211,7 @@
 </template>
 
 <script setup lang="ts">
+import { onPullDownRefresh } from '@dcloudio/uni-app'
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore }    from '@/stores/user'
 import { useLearningStore } from '@/stores/learning'

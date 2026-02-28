@@ -181,6 +181,7 @@
 </template>
 
 <script setup lang="ts">
+import { onLoad, onShow, onHide } from '@dcloudio/uni-app'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import http from '@/api/request'
 

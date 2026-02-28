@@ -164,6 +164,7 @@
 </template>
 
 <script setup lang="ts">
+import { onLoad } from '@dcloudio/uni-app'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import http from '@/api/request'
 
