@@ -112,13 +112,13 @@
       "root": "pages/coach",
       "name": "coach",
       "pages": [
-        { "path": "dashboard",         "style": { "navigationBarTitleText": "教练工作台", "enablePullDownRefresh": true } },
+        { "path": "dashboard",         "style": { "navigationBarTitleText": "教练工作台", "enablePullDownRefresh": true, "navigationStyle": "custom" } },
         { "path": "students/index",    "style": { "navigationBarTitleText": "我的学员", "enablePullDownRefresh": true } },
         { "path": "students/detail",   "style": { "navigationBarTitleText": "学员详情" } },
         { "path": "push-queue",        "style": { "navigationBarTitleText": "推送审批", "navigationStyle": "custom" } },
-        { "path": "assessment/index",  "style": { "navigationBarTitleText": "评估管理" } },
-        { "path": "assessment/review", "style": { "navigationBarTitleText": "审核评估" } },
-        { "path": "analytics/index",   "style": { "navigationBarTitleText": "数据分析" } },
+        { "path": "assessment/index",  "style": { "navigationBarTitleText": "评估管理", "navigationStyle": "custom" } },
+        { "path": "assessment/review", "style": { "navigationBarTitleText": "审核评估", "navigationStyle": "custom" } },
+        { "path": "analytics/index",   "style": { "navigationBarTitleText": "数据分析", "navigationStyle": "custom" } },
         { "path": "flywheel/index",    "style": { "navigationBarTitleText": "AI跟进计划", "navigationStyle": "custom" } },
         { "path": "live/index",        "style": { "navigationBarTitleText": "直播管理" } }
       ]
