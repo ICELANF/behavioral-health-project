@@ -93,8 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { onLoad, onShow } from '@dcloudio/uni-app'
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import authApi from '@/api/auth'
 import { wechatLogin, isMiniprogram } from '@/utils/wechat'
@@ -158,7 +157,7 @@ function goRegister() {
   uni.navigateTo({ url: '/pages/auth/register' })
 }
 
-onLoad(() => {
+onMounted(() => {
   userStore.restoreFromStorage()
   if (userStore.isLoggedIn) afterLogin()
 })
