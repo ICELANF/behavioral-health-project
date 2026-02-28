@@ -448,7 +448,7 @@ function goBack() {
 /* 导航 */
 .ca-navbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8rpx 24rpx; padding-top: calc(8rpx + env(safe-area-inset-top));
+  padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top));
   background: var(--surface); border-bottom: 1px solid var(--border-light);
 }
 .ca-navbar__back { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; }

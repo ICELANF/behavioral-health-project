@@ -149,7 +149,7 @@ function goBack() { uni.navigateBack({ fail: () => uni.switchTab({ url: '/pages/
 
 <style scoped>
 .cd-page { background: var(--surface-secondary); min-height: 100vh; display: flex; flex-direction: column; }
-.cd-navbar { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 24rpx; background: var(--surface); border-bottom: 1px solid var(--border-light); }
+.cd-navbar { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: var(--surface); border-bottom: 1px solid var(--border-light); }
 .cd-navbar__back { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .cd-navbar__arrow { font-size: 48rpx; color: var(--text-primary); font-weight: 300; }
 .cd-navbar__title { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
