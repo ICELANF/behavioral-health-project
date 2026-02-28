@@ -57,6 +57,10 @@ const coachApi = {
   rejectReview(id: string, reason: string) {
     return http.post<any>(`/v1/coach/review/${id}/reject`, { reason })
   },
+  /** 教练为学员指派微行动 */
+  assignMicroAction(data: { student_id: number; title: string; domain?: string; description?: string; frequency?: string; duration_days?: number }) {
+    return http.post<any>('/v1/micro-actions/coach-assign', data)
+  },
   /** AI Agent 运行（生成跟进计划等） */
   runAgent(studentId: number, input?: string) {
     return http.post<any>('/v1/agent/run', {

@@ -1,25 +1,7 @@
-# 确认正确的审核端点
-docker exec bhp_v3_api python -c "
-import sys; sys.path.insert(0, '.')
-import requests, json
-r = requests.post('http://localhost:8000/api/v1/auth/login', json={'username':'coach','password':'Coach@2026'})
-token = r.json().get('access_token')
-headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+cd D:/behavioral-health-project/coach-miniprogram
 
-# 查 review-list 返回的 item 结构
-r2 = requests.get('http://localhost:8000/api/v1/assessment-assignments/review-list', headers=headers)
-data = r2.json()
-print(json.dumps(data, ensure_ascii=False, indent=2)[:600])
-" 2>/dev/null
+# 提交当前所有未提交的内容
+git add -A && git commit -m "feat: Coach AI飞轮功能开发中，flywheel分包模块加载问题待修复"
 
-1. 修改 src/pages/coach/assessment/review.vue：
-   把审核通过/退回的接口路径改为：
-   - 通过：PUT /v1/assessment-assignments/review-items/:id  body: {status: 'approved', note: ''}
-   - 退回：PUT /v1/assessment-assignments/review-items/:id  body: {status: 'rejected', note: reason}
-   id 从路由参数或列表数据中取
-
-2. 修改 src/pages/coach/flywheel/index.vue：
-   在调用 coachApi.runAgent 前加 console.log 打印完整请求参数，
-   检查 studentId 是否正确获取（不为 undefined/null）
-
-完成后 npm run build:mp-weixin
+# 查看完整提交记录
+git log --oneline | head -20

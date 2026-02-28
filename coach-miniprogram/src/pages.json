@@ -171,6 +171,9 @@
       "background": "#f9fafb"
     }
   },
+  "optimization": {
+    "subPackages": true
+  },
   "condition": {
     "current": 0,
     "list": [
