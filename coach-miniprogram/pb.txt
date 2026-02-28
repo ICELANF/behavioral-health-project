@@ -1,32 +1,27 @@
-请将 src/pages/coach/students/detail.vue 替换为完整的学员详情页面，实现以下功能：
+请将 src/pages/assessment/do.vue 替换为完整的评估作答页面，实现以下功能：
 
-1. 5个Tab页切换：画像 / 评估 / 处方 / 健康数据 / 消息
-   调用 GET /v1/coach/students/:id 获取学员完整数据
+1. 分步作答：按量表分组（TTM7→BIG5→BPT6→CAPACITY→SPI），
+   每个量表独立进度条，完成一组才能进入下一组，
+   顶部显示"第2组/共5组 · BIG5 大五人格"
 
-2. 画像Tab：
-   - 顶部：学员姓名、BHPRiskTag风险等级、TTM阶段标签
-   - 大五人格雷达图（用简单的CSS实现，5个维度数值）
-   - BPT6行为类型标签（最多6个）
-   - 行为改变阶段描述
+2. 5种题型渲染：
+   - single：单选，选项列表，选中高亮绿色
+   - multiple：多选，可多选，选中显示✅
+   - scale：量表滑动，1-7分，显示左右端点描述
+   - boolean：是/否两个大按钮
+   - text：多行文本输入框
 
-3. 评估Tab：
-   - 评估记录列表（时间/量表名/状态）
-   - "分配新评估"按钮：调用 POST /v1/assessment/assignments 分配给学员
-   - 待审核评估高亮显示，点击跳转 /pages/coach/assessment/review?id=xxx
+3. 暂存草稿：每题作答后立即存入本地 storage（key: assessment_draft_:id），
+   重新进入页面时自动恢复草稿，防止意外退出丢失
 
-4. 处方Tab：
-   - AI生成的行为处方列表
-   - 每条处方显示：内容摘要 / AI建议 / 状态（待审批/已发送/已拒绝）
-   - 待审批的处方显示审批/拒绝按钮，调用 coach store 的 approvePush/rejectPush
+4. 提交：全部量表完成后显示"提交评估"按钮，
+   调用 POST /v1/assessment/evaluate，
+   成功后跳转 /pages/assessment/result?id=xxx
 
-5. 消息Tab：
-   - 历史消息列表（教练→学员方向）
-   - 底部输入框 + AI建议按钮
-   - 点"AI建议"调用 GET /v1/coach/students/:id/ai-suggestion 获取建议文本填入输入框
-   - 发送调用 coachStore.sendMessage()，进入审批队列
+5. 进度保护：点返回时如有未提交答案弹窗确认"答案将丢失，确认退出？"
 
-6. 健康数据Tab：
-   - 最近7天血糖趋势（用简单折线或数值列表）
-   - 睡眠/运动/心率关键指标卡片
+6. 计时显示：右上角显示本次作答已用时长
+
+7. navigationStyle: custom 自定义导航栏
 
 使用 BHP Design System CSS变量，风格统一。完成后执行 npm run build:mp-weixin。
