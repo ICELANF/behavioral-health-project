@@ -1,25 +1,9 @@
-在 src/static/ 目录下创建一个简单的 logo.png 占位文件。
-用 Python 生成一个 120x120 的绿色圆形 PNG：
-
-import struct, zlib, base64
-# 直接复制一个最小的绿色PNG到 src/static/logo.png
-# 用 Python PIL 或者直接写入一个1x1绿色像素PNG的base64
-
-实际操作：执行以下命令创建一个绿色占位logo：
-python -c "
-try:
-    from PIL import Image, ImageDraw
-    img = Image.new('RGBA', (120, 120), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([0, 0, 120, 120], fill='#10b981')
-    img.save('src/static/logo.png')
-    print('ok')
-except:
-    # PIL不可用，复制default-avatar.png作为logo
-    import shutil, os
-    os.makedirs('src/static', exist_ok=True)
-    open('src/static/logo.png', 'wb').write(b'')
-    print('empty file created')
+docker exec bhp_v3_api python -c "
+import sys; sys.path.insert(0, '.')
+from app.database import get_db
+from app.models import User
+db = next(get_db())
+users = db.query(User).all()
+for u in users:
+    print(f'{u.username:20} role={u.role}  active={u.is_active}')
 "
-然后同样创建 src/static/default-avatar.png
-重新编译 npm run build:mp-weixin
