@@ -384,10 +384,16 @@ async function loadStudent() {
 async function loadAllData() {
   const sid = studentId.value
   await Promise.allSettled([
-    _get<any>(`/v1/coach/students/${sid}/assessments`).then(r => { assessments.value = r.items || r.assessments || [] }).catch(() => {}),
+    _get<any>(`/v1/coach/students/${sid}/assessment-detail`).then(r => { assessments.value = r.items || r.assessments || (r.assessment ? [r.assessment] : []) }).catch(() => {}),
     _get<any>(`/v1/coach/students/${sid}/prescriptions`).then(r => { prescriptions.value = r.items || r.prescriptions || [] }).catch(() => {}),
-    _get<any>(`/v1/coach/students/${sid}/messages`).then(r => { messages.value = r.items || r.messages || [] }).catch(() => {}),
-    _get<any>(`/v1/coach/students/${sid}/health-data`).then(r => { glucoseData.value = r.glucose_trend || []; healthMetrics.value = r.metrics || {} }).catch(() => {}),
+    _get<any>(`/v1/coach/messages/${sid}`).then(r => { messages.value = r.items || r.messages || [] }).catch(() => {}),
+    Promise.all([
+      _get<any>(`/v1/coach/students/${sid}/glucose`).catch(() => ({})),
+      _get<any>(`/v1/coach/students/${sid}/vitals`).catch(() => ({})),
+    ]).then(([glu, vit]) => {
+      glucoseData.value = glu.trend || glu.items || []
+      healthMetrics.value = { glucose: glu, vitals: vit, ...(glu.metrics || {}), ...(vit.metrics || {}) }
+    }).catch(() => {}),
     _get<any>(`/v1/coach/students/${sid}/risk-history`).then(r => { riskHistory.value = r.items || r.history || [] }).catch(() => {}),
     _get<any>(`/v1/coach/students/${sid}/interventions`).then(r => { interventions.value = r.items || r.interventions || [] }).catch(() => {}),
   ])
@@ -398,12 +404,13 @@ async function loadAllData() {
 // ============================================================
 async function assignAssessment() {
   try {
-    await _post('/v1/assessment-assignments/assign', { student_id: studentId.value, scales: ['ttm7', 'big5', 'bpt6'] })
+    await _post('/v1/assessment-assignments/assign', { student_id: Number(studentId.value), scales: ['ttm7', 'big5', 'bpt6'] })
     uni.showToast({ title: '已分配', icon: 'success' })
-    const res = await _get<any>(`/v1/coach/students/${studentId.value}/assessments`)
+    const res = await _get<any>(`/v1/coach/students/${studentId.value}/assessment-detail`)
     assessments.value = res.items || res.assessments || []
   } catch (e: any) {
-    uni.showToast({ title: e?.data?.detail || '分配失败', icon: 'none' })
+    const msg = e?.data?.detail || e?.message || '分配失败'
+    uni.showToast({ title: msg, icon: 'none' })
   }
 }
 
@@ -463,7 +470,7 @@ async function sendMsg() {
   const text = msgInput.value.trim()
   if (!text) return
   try {
-    await _post(`/v1/coach/students/${studentId.value}/messages`, { content: text, message_type: 'text' })
+    await _post('/v1/coach/messages', { student_id: Number(studentId.value), content: text, message_type: 'text' })
     messages.value.push({ id: Date.now(), content: text, direction: 'coach', created_at: new Date().toISOString() })
     msgInput.value = ''
   } catch {
@@ -474,7 +481,7 @@ async function sendMsg() {
 async function getAiSuggestion() {
   uni.showLoading({ title: '获取AI建议...' })
   try {
-    const res = await _get<any>(`/v1/coach/students/${studentId.value}/ai-suggestion`)
+    const res = await _get<any>(`/v1/coach/messages/ai-suggestions/${studentId.value}`)
     msgInput.value = res.suggestion || res.content || ''
   } catch {
     uni.showToast({ title: '获取失败', icon: 'none' })
@@ -506,7 +513,7 @@ function goBack() { uni.navigateBack({ fail: () => uni.switchTab({ url: '/pages/
 /* 导航 */
 .sd-navbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top));
+  padding: 8rpx 24rpx; padding-top: calc(8rpx + env(safe-area-inset-top));
   background: var(--surface); border-bottom: 1px solid var(--border-light);
 }
 .sd-navbar__back { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; }

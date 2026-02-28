@@ -326,14 +326,15 @@ async function submitAssign() {
   submitting.value = true
   try {
     await _post('/v1/assessment-assignments/assign', {
-      student_id: selectedStudent.value.id,
+      student_id: Number(selectedStudent.value.id),
       scales: selectedScales.value,
     })
     uni.showToast({ title: '分配成功', icon: 'success' })
     showAssignModal.value = false
     loadList()
   } catch (e: any) {
-    uni.showToast({ title: e?.data?.detail || '分配失败', icon: 'none' })
+    const msg = e?.data?.detail || e?.message || '分配失败'
+    uni.showToast({ title: msg, icon: 'none' })
   } finally {
     submitting.value = false
   }

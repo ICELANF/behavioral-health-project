@@ -251,6 +251,7 @@ const COACH_ACTIONS = [
   { key: 'assessment', label: '评估管理', icon: '📋', color: '#8b5cf6', fn: goCoachAssessment },
   { key: 'analytics',  label: '数据分析', icon: '📊', color: '#f59e0b', fn: goAnalytics },
   { key: 'flywheel',  label: 'AI飞轮',  icon: '🤖', color: '#059669', fn: goFlywheel },
+  { key: 'messages',  label: '消息中心', icon: '💬', color: '#06b6d4', fn: goMessages },
 ]
 
 onMounted(async () => {
@@ -375,6 +376,7 @@ function goPushQueue()       { uni.navigateTo({ url: '/pages/coach/push-queue' }
 function goCoachAssessment() { uni.navigateTo({ url: '/pages/coach/assessment/index' }) }
 function goAnalytics()       { uni.navigateTo({ url: '/pages/coach/analytics/index' }) }
 function goFlywheel()        { uni.navigateTo({ url: '/pages/coach/flywheel/index' }) }
+function goMessages()        { uni.navigateTo({ url: '/pages/coach/messages/index' }) }
 </script>
 
 <style scoped>
