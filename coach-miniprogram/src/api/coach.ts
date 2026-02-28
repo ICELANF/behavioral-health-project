@@ -41,6 +41,22 @@ const coachApi = {
   getPerformance() {
     return http.get<any>('/v1/coach/performance')
   },
+  /** 飞轮审核队列 */
+  getFlywheelQueue(params?: Record<string, any>) {
+    return http.get<{ items: any[]; total_pending: number; urgent_count: number }>('/v1/coach/review-queue', params)
+  },
+  /** 飞轮今日统计 */
+  getFlywheelStats() {
+    return http.get<any>('/v1/coach/stats/today')
+  },
+  /** 飞轮审核通过 */
+  approveReview(id: string, data?: Record<string, any>) {
+    return http.post<any>(`/v1/coach/review/${id}/approve`, data || {})
+  },
+  /** 飞轮审核退回 */
+  rejectReview(id: string, reason: string) {
+    return http.post<any>(`/v1/coach/review/${id}/reject`, { reason })
+  },
 }
 
 export default coachApi

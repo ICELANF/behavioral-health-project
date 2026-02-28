@@ -6,125 +6,123 @@
       <view class="cf-navbar__back" @tap="goBack">
         <text class="cf-navbar__arrow">&#8249;</text>
       </view>
-      <view class="cf-navbar__center">
-        <text class="cf-navbar__title">AI 跟进计划</text>
-        <text class="cf-navbar__sub">基于学员数据智能生成</text>
-      </view>
+      <text class="cf-navbar__title">AI 飞轮审核</text>
       <view class="cf-navbar__placeholder"></view>
     </view>
 
+    <!-- 今日统计 -->
+    <view class="cf-stats">
+      <view class="cf-stat">
+        <text class="cf-stat__val cf-stat__val--orange">{{ stats.pending }}</text>
+        <text class="cf-stat__label">待审核</text>
+      </view>
+      <view class="cf-stat">
+        <text class="cf-stat__val cf-stat__val--blue">{{ stats.total_reviewed }}</text>
+        <text class="cf-stat__label">已审核</text>
+      </view>
+      <view class="cf-stat">
+        <text class="cf-stat__val cf-stat__val--green">{{ stats.approved }}</text>
+        <text class="cf-stat__label">已通过</text>
+      </view>
+      <view class="cf-stat">
+        <text class="cf-stat__val cf-stat__val--red">{{ stats.rejected }}</text>
+        <text class="cf-stat__label">已退回</text>
+      </view>
+    </view>
+
+    <!-- 审核队列 -->
     <scroll-view scroll-y class="cf-body">
 
-      <!-- 学员选择器 -->
-      <view class="cf-section">
-        <text class="cf-section__label">选择学员</text>
-        <scroll-view scroll-x class="cf-students-scroll">
-          <view class="cf-students-row">
-            <view
-              v-for="stu in students"
-              :key="stu.id"
-              class="cf-stu-card"
-              :class="{ 'cf-stu-card--active': selectedStudent?.id === stu.id }"
-              @tap="selectStudent(stu)"
-            >
-              <text class="cf-stu-card__name">{{ stu.name || stu.full_name || stu.username }}</text>
-              <view class="cf-stu-card__risk" :class="`cf-stu-card__risk--${stu.risk_level || 'unknown'}`">
-                <text>{{ RISK_LABEL[stu.risk_level] || '未评估' }}</text>
-              </view>
-            </view>
-            <view class="cf-stu-card cf-stu-card--empty" v-if="!students.length && !loadingStudents">
-              <text class="cf-stu-card__name" style="color: var(--text-tertiary);">暂无学员</text>
-            </view>
-          </view>
-        </scroll-view>
-      </view>
-
-      <!-- 三栏 AI 建议区 -->
-      <template v-if="selectedStudent">
-
-        <!-- 消息建议 -->
-        <view class="cf-card">
-          <view class="cf-card__header">
-            <text class="cf-card__icon">💬</text>
-            <text class="cf-card__title">消息建议</text>
-          </view>
-          <template v-if="loadingMsg">
-            <view class="bhp-skeleton" v-for="i in 2" :key="i" style="height: 100rpx; border-radius: var(--radius-md); margin-bottom: 12rpx;"></view>
-          </template>
-          <view v-else-if="msgSuggestions.length" class="cf-suggestions">
-            <view v-for="(s, idx) in msgSuggestions" :key="idx" class="cf-sug-item">
-              <view class="cf-sug-item__body">
-                <text class="cf-sug-item__text">{{ s.content || s.message || s.text || s }}</text>
-                <text class="cf-sug-item__reason" v-if="s.rationale || s.reason">{{ s.rationale || s.reason }}</text>
-              </view>
-              <view class="cf-sug-item__btn" @tap="adoptMessage(s)">
-                <text>采纳</text>
-              </view>
-            </view>
-          </view>
-          <view v-else class="cf-empty-inline"><text>暂无建议</text></view>
-        </view>
-
-        <!-- 微行动建议 -->
-        <view class="cf-card">
-          <view class="cf-card__header">
-            <text class="cf-card__icon">⚡</text>
-            <text class="cf-card__title">微行动建议</text>
-          </view>
-          <template v-if="loadingAction">
-            <view class="bhp-skeleton" v-for="i in 2" :key="i" style="height: 100rpx; border-radius: var(--radius-md); margin-bottom: 12rpx;"></view>
-          </template>
-          <view v-else-if="actionSuggestions.length" class="cf-suggestions">
-            <view v-for="(s, idx) in actionSuggestions" :key="idx" class="cf-sug-item">
-              <view class="cf-sug-item__body">
-                <text class="cf-sug-item__text">{{ s.title || s.content || s }}</text>
-                <text class="cf-sug-item__reason" v-if="s.domain">{{ DOMAIN_LABEL[s.domain] || s.domain }}</text>
-              </view>
-              <view class="cf-sug-item__btn" @tap="adoptAction(s)">
-                <text>采纳</text>
-              </view>
-            </view>
-          </view>
-          <view v-else class="cf-empty-inline"><text>暂无建议</text></view>
-        </view>
-
-        <!-- 评估建议 -->
-        <view class="cf-card">
-          <view class="cf-card__header">
-            <text class="cf-card__icon">📋</text>
-            <text class="cf-card__title">评估建议</text>
-          </view>
-          <template v-if="loadingAssess">
-            <view class="bhp-skeleton" v-for="i in 2" :key="i" style="height: 100rpx; border-radius: var(--radius-md); margin-bottom: 12rpx;"></view>
-          </template>
-          <view v-else-if="assessSuggestions.length" class="cf-suggestions">
-            <view v-for="(s, idx) in assessSuggestions" :key="idx" class="cf-sug-item">
-              <view class="cf-sug-item__body">
-                <text class="cf-sug-item__text">{{ s.scale || s.title || s }}</text>
-                <text class="cf-sug-item__reason" v-if="s.rationale || s.reason">{{ s.rationale || s.reason }}</text>
-              </view>
-              <view class="cf-sug-item__btn" @tap="adoptAssessment(s)">
-                <text>采纳</text>
-              </view>
-            </view>
-          </view>
-          <view v-else class="cf-empty-inline"><text>暂无建议</text></view>
-        </view>
-
+      <template v-if="loading">
+        <view class="bhp-skeleton" v-for="i in 3" :key="i" style="height: 240rpx; border-radius: var(--radius-lg); margin-bottom: 16rpx;"></view>
       </template>
 
-      <!-- 未选择学员提示 -->
-      <view v-else class="cf-placeholder">
-        <text class="cf-placeholder__icon">👆</text>
-        <text class="cf-placeholder__text">请先选择一位学员</text>
+      <template v-else-if="queue.length">
+        <view
+          v-for="item in queue"
+          :key="item.id"
+          class="cf-card"
+          :class="{ 'cf-card--done': item._handled }"
+        >
+          <!-- 已处理遮罩 -->
+          <view class="cf-card__done-overlay" v-if="item._handled">
+            <text class="cf-card__done-text" :class="item._action === 'approved' ? 'cf-card__done-text--green' : 'cf-card__done-text--red'">
+              {{ item._action === 'approved' ? '已通过 ✓' : '已退回' }}
+            </text>
+          </view>
+
+          <!-- 卡片头部 -->
+          <view class="cf-card__header">
+            <text class="cf-card__name">{{ item.student_name }}</text>
+            <view class="cf-card__type" :class="`cf-card__type--${item.type}`">
+              <text>{{ TYPE_LABEL[item.type] || item.type }}</text>
+            </view>
+            <view class="cf-card__priority" v-if="item.priority === 'urgent'">
+              <text>紧急</text>
+            </view>
+          </view>
+
+          <!-- AI 摘要 -->
+          <text class="cf-card__summary" v-if="item.ai_summary">{{ item.ai_summary }}</text>
+
+          <!-- AI 草稿（可折叠） -->
+          <view class="cf-card__draft" v-if="item.ai_draft" @tap="toggleDraft(item)">
+            <text class="cf-card__draft-label">AI 草稿 {{ item._expanded ? '▼' : '▶' }}</text>
+            <text class="cf-card__draft-text" v-if="item._expanded">{{ item.ai_draft }}</text>
+            <text class="cf-card__draft-text cf-card__draft-text--collapsed" v-else>{{ item.ai_draft }}</text>
+          </view>
+
+          <!-- 处方字段 -->
+          <view class="cf-card__rx" v-if="item.rx_fields && item._expanded">
+            <view v-for="(val, key) in item.rx_fields" :key="key" class="cf-card__rx-row">
+              <text class="cf-card__rx-key">{{ key }}</text>
+              <text class="cf-card__rx-val">{{ val }}</text>
+            </view>
+          </view>
+
+          <!-- 操作按钮 -->
+          <view class="cf-card__actions" v-if="!item._handled">
+            <view class="cf-btn cf-btn--approve" @tap="handleApprove(item)">
+              <text>✓ 通过</text>
+            </view>
+            <view class="cf-btn cf-btn--reject" @tap="showRejectModal(item)">
+              <text>✗ 退回</text>
+            </view>
+          </view>
+
+          <!-- 等待时间 -->
+          <text class="cf-card__wait" v-if="item.wait_seconds > 0 && !item._handled">
+            等待 {{ formatWait(item.wait_seconds) }}
+          </text>
+        </view>
+      </template>
+
+      <!-- 空状态 -->
+      <view v-else class="cf-empty">
+        <text class="cf-empty__icon">✓</text>
+        <text class="cf-empty__text">今日审核已全部完成!</text>
       </view>
 
     </scroll-view>
 
-    <!-- 底部按钮 -->
-    <view class="cf-footer" v-if="selectedStudent">
-      <view class="cf-gen-btn" @tap="generatePlan" :class="{ 'cf-gen-btn--loading': generating }">
-        <text class="cf-gen-btn__text">{{ generating ? '生成中...' : '一键生成跟进计划' }}</text>
+    <!-- 退回原因弹窗 -->
+    <view class="cf-modal-mask" v-if="rejectTarget" @tap="rejectTarget = null">
+      <view class="cf-modal" @tap.stop>
+        <text class="cf-modal__title">退回原因</text>
+        <textarea
+          class="cf-modal__input"
+          v-model="rejectReason"
+          placeholder="请输入退回原因..."
+          :maxlength="200"
+        />
+        <view class="cf-modal__actions">
+          <view class="cf-modal__btn cf-modal__btn--cancel" @tap="rejectTarget = null">
+            <text>取消</text>
+          </view>
+          <view class="cf-modal__btn cf-modal__btn--ok" @tap="confirmReject">
+            <text>确认退回</text>
+          </view>
+        </view>
       </view>
     </view>
 
@@ -133,128 +131,96 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import http from '@/api/request'
+import coachApi from '@/api/coach'
 
-const RISK_LABEL: Record<string, string> = {
-  critical: '危急', high: '高风险', medium: '中风险', low: '低风险', unknown: '未评估',
-}
-const DOMAIN_LABEL: Record<string, string> = {
-  nutrition: '营养', exercise: '运动', sleep: '睡眠', emotion: '情绪',
-  stress: '压力', cognitive: '认知', social: '社交', tcm: '中医',
+const TYPE_LABEL: Record<string, string> = {
+  rx_push: '处方推送', prescription: '行为处方', assessment: '评估',
+  ai_reply: 'AI回复', push: '内容推送',
 }
 
-const students         = ref<any[]>([])
-const selectedStudent  = ref<any>(null)
-const loadingStudents  = ref(false)
-const loadingMsg       = ref(false)
-const loadingAction    = ref(false)
-const loadingAssess    = ref(false)
-const generating       = ref(false)
-const msgSuggestions   = ref<any[]>([])
-const actionSuggestions = ref<any[]>([])
-const assessSuggestions = ref<any[]>([])
+const loading       = ref(false)
+const queue         = ref<any[]>([])
+const stats         = ref<any>({ pending: 0, total_reviewed: 0, approved: 0, rejected: 0 })
+const rejectTarget  = ref<any>(null)
+const rejectReason  = ref('')
 
-onMounted(() => loadStudents())
+onMounted(() => {
+  loadQueue()
+  loadStats()
+})
 
-async function loadStudents() {
-  loadingStudents.value = true
+async function loadQueue() {
+  loading.value = true
   try {
-    const res = await http.get<any>('/v1/coach/dashboard')
-    students.value = (res.students || []).map((s: any) => ({
-      ...s,
-      name: s.name || s.full_name || s.username,
+    const res = await coachApi.getFlywheelQueue()
+    queue.value = (res.items || []).map((item: any) => ({
+      ...item,
+      _handled: false,
+      _action: '',
+      _expanded: false,
     }))
   } catch {
-    students.value = []
+    queue.value = []
   } finally {
-    loadingStudents.value = false
+    loading.value = false
   }
 }
 
-function selectStudent(stu: any) {
-  if (selectedStudent.value?.id === stu.id) return
-  selectedStudent.value = stu
-  loadAllSuggestions(stu.id)
-}
-
-async function loadAllSuggestions(studentId: number) {
-  msgSuggestions.value = []
-  actionSuggestions.value = []
-  assessSuggestions.value = []
-  loadingMsg.value = true
-  loadingAction.value = true
-  loadingAssess.value = true
-
-  const [msgRes, actionRes, assessRes] = await Promise.allSettled([
-    http.get<any>(`/v1/coach/messages/ai-suggestions/${studentId}`),
-    http.get<any>(`/v1/coach/micro-actions/ai-suggestions/${studentId}`),
-    http.get<any>(`/v1/coach/assessment/ai-suggestions/${studentId}`),
-  ])
-
-  if (msgRes.status === 'fulfilled') {
-    const d = msgRes.value
-    msgSuggestions.value = d.suggestions || d.items || (Array.isArray(d) ? d : [])
-  }
-  loadingMsg.value = false
-
-  if (actionRes.status === 'fulfilled') {
-    const d = actionRes.value
-    actionSuggestions.value = d.suggestions || d.items || (Array.isArray(d) ? d : [])
-  }
-  loadingAction.value = false
-
-  if (assessRes.status === 'fulfilled') {
-    const d = assessRes.value
-    assessSuggestions.value = d.suggestions || d.scales || d.items || (Array.isArray(d) ? d : [])
-  }
-  loadingAssess.value = false
-}
-
-function adoptMessage(s: any) {
-  const content = encodeURIComponent(s.content || s.message || s.text || String(s))
-  uni.navigateTo({
-    url: `/pages/coach/push-queue?prefill=${content}&student_id=${selectedStudent.value.id}`,
-  })
-}
-
-async function adoptAction(s: any) {
+async function loadStats() {
   try {
-    await http.post('/v1/micro-actions', {
-      student_id: selectedStudent.value.id,
-      title: s.title || s.content || String(s),
-      domain: s.domain || 'nutrition',
-      source: 'ai_recommended',
-    })
-    uni.showToast({ title: '已创建微行动', icon: 'success' })
-    // Remove from list
-    const idx = actionSuggestions.value.indexOf(s)
-    if (idx >= 0) actionSuggestions.value.splice(idx, 1)
-  } catch (e: any) {
-    uni.showToast({ title: e?.message || '创建失败', icon: 'none' })
-  }
+    const res = await coachApi.getFlywheelStats()
+    stats.value = {
+      pending: res.pending ?? 0,
+      total_reviewed: res.total_reviewed ?? 0,
+      approved: res.approved ?? 0,
+      rejected: res.rejected ?? 0,
+    }
+  } catch { /* keep defaults */ }
 }
 
-function adoptAssessment(_s: any) {
-  uni.navigateTo({ url: '/pages/coach/assessment/index' })
+function toggleDraft(item: any) {
+  item._expanded = !item._expanded
 }
 
-async function generatePlan() {
-  if (generating.value || !selectedStudent.value) return
-  generating.value = true
+async function handleApprove(item: any) {
   try {
-    await http.post('/v1/agent/run', {
-      agent_type: 'behavior_rx',
-      user_id: selectedStudent.value.id,
-      context: { source: 'coach_flywheel', action: 'generate_followup_plan' },
-    })
-    uni.showToast({ title: '跟进计划已生成', icon: 'success' })
-    // Reload suggestions
-    loadAllSuggestions(selectedStudent.value.id)
+    await coachApi.approveReview(item.id)
+    item._handled = true
+    item._action = 'approved'
+    uni.showToast({ title: '审核通过', icon: 'success' })
+    loadStats()
   } catch (e: any) {
-    uni.showToast({ title: e?.message || '生成失败', icon: 'none' })
-  } finally {
-    generating.value = false
+    uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
   }
+}
+
+function showRejectModal(item: any) {
+  rejectTarget.value = item
+  rejectReason.value = ''
+}
+
+async function confirmReject() {
+  if (!rejectReason.value.trim()) {
+    uni.showToast({ title: '请输入退回原因', icon: 'none' })
+    return
+  }
+  const item = rejectTarget.value
+  try {
+    await coachApi.rejectReview(item.id, rejectReason.value.trim())
+    item._handled = true
+    item._action = 'rejected'
+    rejectTarget.value = null
+    uni.showToast({ title: '已退回', icon: 'none' })
+    loadStats()
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
+  }
+}
+
+function formatWait(seconds: number): string {
+  if (seconds < 60) return `${seconds}秒`
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}分钟`
+  return `${Math.floor(seconds / 3600)}小时`
 }
 
 function goBack() {
@@ -267,99 +233,144 @@ function goBack() {
 
 .cf-navbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 8rpx 24rpx; background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-  border-bottom: 1px solid var(--border-light);
+  padding: 8rpx 24rpx; background: var(--surface); border-bottom: 1px solid var(--border-light);
 }
 .cf-navbar__back { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-.cf-navbar__arrow { font-size: 48rpx; color: #fff; font-weight: 300; }
-.cf-navbar__center { text-align: center; }
-.cf-navbar__title { display: block; font-size: 28rpx; font-weight: 700; color: #fff; }
-.cf-navbar__sub { display: block; font-size: 20rpx; color: rgba(255,255,255,0.75); margin-top: 2rpx; }
+.cf-navbar__arrow { font-size: 48rpx; color: var(--text-primary); font-weight: 300; }
+.cf-navbar__title { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }
 .cf-navbar__placeholder { width: 64rpx; }
 
-.cf-body { flex: 1; padding: 20rpx 0 160rpx; }
-
-/* 学员选择器 */
-.cf-section { padding: 0 32rpx; margin-bottom: 16rpx; }
-.cf-section__label { display: block; font-size: 24rpx; font-weight: 600; color: var(--text-secondary); margin-bottom: 12rpx; }
-.cf-students-scroll { white-space: nowrap; }
-.cf-students-row { display: inline-flex; gap: 16rpx; padding: 4rpx 0; }
-.cf-stu-card {
-  display: inline-flex; flex-direction: column; align-items: center; gap: 8rpx;
-  padding: 20rpx 24rpx; border-radius: var(--radius-lg);
-  background: var(--surface); border: 2px solid var(--border-light);
-  cursor: pointer; min-width: 140rpx;
+/* 今日统计 */
+.cf-stats {
+  display: flex; background: var(--surface); padding: 24rpx 32rpx;
+  border-bottom: 1px solid var(--border-light); gap: 8rpx;
 }
-.cf-stu-card--active { border-color: var(--bhp-primary-500); background: var(--bhp-primary-50); }
-.cf-stu-card__name { font-size: 24rpx; font-weight: 700; color: var(--text-primary); white-space: nowrap; }
-.cf-stu-card__risk {
-  font-size: 18rpx; font-weight: 600; padding: 2rpx 12rpx;
+.cf-stat { flex: 1; text-align: center; }
+.cf-stat__val { display: block; font-size: 40rpx; font-weight: 800; }
+.cf-stat__val--orange { color: #f59e0b; }
+.cf-stat__val--blue { color: #3b82f6; }
+.cf-stat__val--green { color: #10b981; }
+.cf-stat__val--red { color: #ef4444; }
+.cf-stat__label { display: block; font-size: 22rpx; color: var(--text-secondary); margin-top: 4rpx; }
+
+.cf-body { flex: 1; padding: 20rpx 32rpx 40rpx; }
+
+/* 审核卡片 */
+.cf-card {
+  position: relative; background: var(--surface); border-radius: var(--radius-lg);
+  padding: 24rpx; margin-bottom: 20rpx; border: 1px solid var(--border-light);
+  overflow: hidden; transition: opacity 0.3s;
+}
+.cf-card--done { opacity: 0.55; }
+
+.cf-card__done-overlay {
+  position: absolute; top: 16rpx; right: 16rpx; z-index: 2;
+}
+.cf-card__done-text {
+  font-size: 24rpx; font-weight: 700; padding: 4rpx 16rpx;
   border-radius: var(--radius-full);
 }
-.cf-stu-card__risk--critical,
-.cf-stu-card__risk--high { background: #fef2f2; color: #dc2626; }
-.cf-stu-card__risk--medium { background: #fffbeb; color: #d97706; }
-.cf-stu-card__risk--low { background: #f0fdf4; color: #16a34a; }
-.cf-stu-card__risk--unknown { background: #f8fafc; color: #94a3b8; }
+.cf-card__done-text--green { background: #f0fdf4; color: #16a34a; }
+.cf-card__done-text--red { background: #fef2f2; color: #dc2626; }
 
-/* 卡片 */
-.cf-card {
-  background: var(--surface); border-radius: var(--radius-lg);
-  padding: 24rpx 32rpx; margin: 0 32rpx 20rpx;
-  border: 1px solid var(--border-light);
+.cf-card__header { display: flex; align-items: center; gap: 12rpx; margin-bottom: 12rpx; flex-wrap: wrap; }
+.cf-card__name { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+.cf-card__type {
+  font-size: 20rpx; font-weight: 600; padding: 4rpx 14rpx;
+  border-radius: var(--radius-full);
 }
-.cf-card__header { display: flex; align-items: center; gap: 10rpx; margin-bottom: 20rpx; }
-.cf-card__icon { font-size: 32rpx; }
-.cf-card__title { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
+.cf-card__type--rx_push,
+.cf-card__type--prescription { background: #eff6ff; color: #2563eb; }
+.cf-card__type--assessment { background: #faf5ff; color: #7c3aed; }
+.cf-card__type--ai_reply { background: #f0fdf4; color: #16a34a; }
+.cf-card__type--push { background: #fffbeb; color: #d97706; }
+.cf-card__priority {
+  font-size: 18rpx; font-weight: 700; padding: 2rpx 12rpx;
+  border-radius: var(--radius-full); background: #fef2f2; color: #dc2626;
+}
 
-/* 建议列表 */
-.cf-suggestions { display: flex; flex-direction: column; gap: 16rpx; }
-.cf-sug-item {
-  display: flex; align-items: center; gap: 16rpx;
-  padding: 16rpx 20rpx; background: var(--surface-secondary);
-  border-radius: var(--radius-md);
+.cf-card__summary {
+  display: block; font-size: 24rpx; color: var(--text-tertiary);
+  line-height: 1.5; margin-bottom: 12rpx;
 }
-.cf-sug-item__body { flex: 1; min-width: 0; }
-.cf-sug-item__text {
+
+/* AI 草稿 */
+.cf-card__draft {
+  background: var(--surface-secondary); border-radius: var(--radius-md);
+  padding: 16rpx 20rpx; margin-bottom: 12rpx; cursor: pointer;
+}
+.cf-card__draft-label {
+  display: block; font-size: 22rpx; font-weight: 600; color: var(--text-secondary);
+  margin-bottom: 8rpx;
+}
+.cf-card__draft-text {
   display: block; font-size: 26rpx; color: var(--text-primary);
-  line-height: 1.5; word-break: break-all; white-space: normal;
+  line-height: 1.6; white-space: pre-wrap; word-break: break-all;
 }
-.cf-sug-item__reason {
-  display: block; font-size: 22rpx; color: var(--text-tertiary); margin-top: 6rpx;
-  line-height: 1.4; word-break: break-all; white-space: normal;
+.cf-card__draft-text--collapsed {
+  overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  white-space: normal;
 }
-.cf-sug-item__btn {
-  flex-shrink: 0; padding: 10rpx 24rpx;
-  background: var(--bhp-primary-500); color: #fff;
-  border-radius: var(--radius-full); font-size: 22rpx; font-weight: 700;
-  cursor: pointer;
-}
-.cf-sug-item__btn:active { opacity: 0.8; }
 
-.cf-empty-inline { text-align: center; padding: 32rpx; font-size: 24rpx; color: var(--text-tertiary); }
+/* 处方字段 */
+.cf-card__rx { margin-bottom: 12rpx; }
+.cf-card__rx-row { display: flex; gap: 12rpx; padding: 6rpx 0; border-bottom: 1px solid var(--border-light); }
+.cf-card__rx-row:last-child { border-bottom: none; }
+.cf-card__rx-key { font-size: 22rpx; color: var(--text-secondary); width: 160rpx; flex-shrink: 0; }
+.cf-card__rx-val { font-size: 22rpx; color: var(--text-primary); flex: 1; }
 
-/* 未选择提示 */
-.cf-placeholder {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 120rpx 0; gap: 16rpx;
-}
-.cf-placeholder__icon { font-size: 64rpx; }
-.cf-placeholder__text { font-size: 28rpx; color: var(--text-tertiary); }
-
-/* 底部按钮 */
-.cf-footer {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  padding: 20rpx 32rpx; padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
-  background: var(--surface);
-  border-top: 1px solid var(--border-light);
-}
-.cf-gen-btn {
-  height: 88rpx; border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+/* 操作按钮 */
+.cf-card__actions { display: flex; gap: 16rpx; margin-top: 16rpx; }
+.cf-btn {
+  flex: 1; height: 72rpx; border-radius: var(--radius-lg);
   display: flex; align-items: center; justify-content: center;
-  cursor: pointer; box-shadow: 0 4rpx 16rpx rgba(16,185,129,0.3);
+  font-size: 26rpx; font-weight: 700; cursor: pointer;
 }
-.cf-gen-btn--loading { opacity: 0.7; pointer-events: none; }
-.cf-gen-btn__text { font-size: 30rpx; font-weight: 700; color: #fff; }
-.cf-gen-btn:active { opacity: 0.85; }
+.cf-btn:active { opacity: 0.8; }
+.cf-btn--approve { background: #10b981; color: #fff; }
+.cf-btn--reject { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+.cf-card__wait {
+  display: block; font-size: 20rpx; color: var(--text-tertiary);
+  margin-top: 8rpx; text-align: right;
+}
+
+/* 空状态 */
+.cf-empty {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 160rpx 0; gap: 20rpx;
+}
+.cf-empty__icon {
+  width: 120rpx; height: 120rpx; border-radius: 50%;
+  background: #f0fdf4; color: #10b981;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 56rpx; font-weight: 700;
+}
+.cf-empty__text { font-size: 28rpx; color: var(--text-secondary); font-weight: 600; }
+
+/* 退回弹窗 */
+.cf-modal-mask {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999;
+}
+.cf-modal {
+  width: 85%; background: var(--surface); border-radius: var(--radius-xl);
+  padding: 32rpx;
+}
+.cf-modal__title { display: block; font-size: 30rpx; font-weight: 700; color: var(--text-primary); margin-bottom: 24rpx; }
+.cf-modal__input {
+  width: 100%; height: 180rpx; padding: 16rpx 20rpx;
+  background: var(--surface-secondary); border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light); font-size: 26rpx;
+  color: var(--text-primary); box-sizing: border-box;
+}
+.cf-modal__actions { display: flex; gap: 16rpx; margin-top: 24rpx; }
+.cf-modal__btn {
+  flex: 1; height: 80rpx; border-radius: var(--radius-lg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: 600; cursor: pointer;
+}
+.cf-modal__btn--cancel { background: var(--surface-secondary); color: var(--text-secondary); }
+.cf-modal__btn--ok { background: #ef4444; color: #fff; }
 </style>
