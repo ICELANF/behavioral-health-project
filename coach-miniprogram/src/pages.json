@@ -113,8 +113,8 @@
       "name": "coach",
       "pages": [
         { "path": "dashboard",         "style": { "navigationBarTitleText": "教练工作台", "enablePullDownRefresh": true, "navigationStyle": "custom" } },
-        { "path": "students/index",    "style": { "navigationBarTitleText": "我的学员", "enablePullDownRefresh": true } },
-        { "path": "students/detail",   "style": { "navigationBarTitleText": "学员详情" } },
+        { "path": "students/index",    "style": { "navigationBarTitleText": "我的学员", "enablePullDownRefresh": true, "navigationStyle": "custom" } },
+        { "path": "students/detail",   "style": { "navigationBarTitleText": "学员详情", "navigationStyle": "custom" } },
         { "path": "push-queue",        "style": { "navigationBarTitleText": "推送审批", "navigationStyle": "custom" } },
         { "path": "assessment/index",  "style": { "navigationBarTitleText": "评估管理", "navigationStyle": "custom" } },
         { "path": "assessment/review", "style": { "navigationBarTitleText": "审核评估", "navigationStyle": "custom" } },

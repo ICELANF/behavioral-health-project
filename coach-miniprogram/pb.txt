@@ -1,23 +1,28 @@
-cd D:\behavioral-health-project\coach-miniprogram && git add -A && git commit -m "feat: 评估管理升级80%→95%
+cd D:\behavioral-health-project\coach-miniprogram && git add -A && git commit -m "feat: 学员管理+风险管理升级 95%
 
-assessment/index.vue:
-- 零主包依赖（内联HTTP）
-- safe-area导航栏
-- 搜索学员筛选
+students/index.vue (288→393行):
+- 零主包依赖（移除http+BHPLevelBadge+BHPRiskTag）
+- 内联风险标签/等级标签组件
+- safe-area导航栏(88rpx适配胶囊)
+- 新增中风险Tab筛选
+- 排序切换（风险/活跃/姓名）
 - 下拉刷新
-- 评估预览(得分+TTM标签)
-- 量表全选/清空
-- 提交防抖
+- 微行动7天进度条
+- 在线状态绿点
 
-assessment/review.vue:
-- 零主包依赖（内联HTTP）
-- 综合评分摘要面板
-- 能力评估展示
-- AI干预建议(Agent调用)
-- TTM阶段进度可视化
-- 按钮防重复点击
-- 已完成状态提示
-- 加载失败重试
+students/detail.vue (527→683行):
+- 零主包依赖（移除http+store+BHPRiskTag）
+- safe-area导航栏+底部
+- 新增独立风险Tab:
+  - 风险等级渐变圆
+  - 风险因素列表
+  - 风险变化时间线
+  - 干预记录列表+添加弹窗(电话/消息/面谈/方案/转介)
+- 处方操作内联HTTP(不再依赖store)
+- onLoad改用getCurrentPages
 
-待后端补充:
-- GET /v1/assessment-assignments 通用列表端点(含assigned状态)"
+全局修复:
+- 统一8个coach分包页面navbar padding-top: 88rpx
+- 消息/AI端点待后端补齐(404 Not Found)
+
+整体进度 82%→88%"
