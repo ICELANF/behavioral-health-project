@@ -1,39 +1,21 @@
-请实现 Coach 飞轮完整功能：
+docker exec bhp_v3_api python -c "
+import sys; sys.path.insert(0, '.')
+import requests, json
+r = requests.post('http://localhost:8000/api/v1/auth/login', json={'username':'coach','password':'Coach@2026'})
+token = r.json().get('access_token')
+headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
 
-1. src/pages/coach/flywheel/index.vue — 飞轮审核主页
+# 1. 查 assessment-assignments/assign 需要什么参数
+r2 = requests.post('http://localhost:8000/api/v1/assessment-assignments/assign',
+    headers=headers, json={})
+print('assign 空body:', r2.status_code, r2.text[:200])
 
-布局设计：
-- 顶部：今日统计横排4格
-  · 待审核（pending，橙色）
-  · 已审核（reviewed，蓝色）  
-  · 已通过（approved，绿色）
-  · 已退回（rejected，红色）
-  · 调用 GET /v1/coach/stats/today
+r3 = requests.post('http://localhost:8000/api/v1/assessment-assignments/assign',
+    headers=headers, json={'student_id': 4, 'scales': ['BIG5'], 'coach_id': 3})
+print('assign with params:', r3.status_code, r3.text[:200])
 
-- 中间列表：待审核队列
-  · 调用 GET /v1/coach/review-queue
-  · 每张卡片显示：
-    - 学员姓名 + 风险标签（R1-R4色块）
-    - 类型标签（rx_push/prescription/assessment）
-    - AI摘要文字（item.ai_summary，灰色小字）
-    - AI草稿内容（item.ai_draft，主体文字，可折叠）
-    - 底部两个按钮：「✓ 通过」（绿色）和「✗ 退回」（红色）
-    - 通过 → POST /v1/coach/review/:id/approve
-    - 退回 → 弹窗输入原因 → POST /v1/coach/review/:id/reject
-
-- 通过后：卡片变灰+显示「已通过 ✓」，刷新今日统计
-- 退回后：卡片变灰+显示「已退回」，刷新今日统计
-- 空状态：绿色✓图标 + 「今日审核已全部完成！」
-
-2. 在 src/pages/coach/index/index.vue 工作台入口区：
-   在「数据分析」后新增「AI飞轮」入口
-   图标：🤖，标签：AI飞轮
-   点击跳转 /pages/coach/flywheel/index
-
-3. 在 src/api/coach.ts 新增：
-   - getFlywheelQueue() → GET /v1/coach/review-queue
-   - getFlywheelStats() → GET /v1/coach/stats/today
-   - approveReview(id) → POST /v1/coach/review/:id/approve
-   - rejectReview(id, reason) → POST /v1/coach/review/:id/reject
-
-完成后 npm run build:mp-weixin
+# 2. 查 agent/run 422 原因
+r4 = requests.post('http://localhost:8000/api/v1/agent/run',
+    headers=headers, json={'agent_type': 'COACHING', 'user_id': '4', 'input': '生成跟进计划'})
+print('agent/run:', r4.status_code, r4.text[:200])
+" 2>/dev/null

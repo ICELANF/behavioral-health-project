@@ -57,6 +57,14 @@ const coachApi = {
   rejectReview(id: string, reason: string) {
     return http.post<any>(`/v1/coach/review/${id}/reject`, { reason })
   },
+  /** AI Agent 运行（生成跟进计划等） */
+  runAgent(studentId: number, input?: string) {
+    return http.post<any>('/v1/agent/run', {
+      agent_type: 'COACHING',
+      user_id: String(studentId),
+      input: input || '为学员生成个性化跟进计划',
+    })
+  },
 }
 
 export default coachApi

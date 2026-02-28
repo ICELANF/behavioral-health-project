@@ -105,6 +105,59 @@
 
     </scroll-view>
 
+    <!-- 底部生成按钮 -->
+    <view class="cf-footer">
+      <view class="cf-gen-btn" @tap="showStudentPicker = true" :class="{ 'cf-gen-btn--loading': generating }">
+        <text class="cf-gen-btn__text">{{ generating ? 'AI 分析中...' : '生成跟进计划' }}</text>
+      </view>
+    </view>
+
+    <!-- 学员选择器弹窗 -->
+    <view class="cf-modal-mask" v-if="showStudentPicker" @tap="showStudentPicker = false">
+      <view class="cf-modal" @tap.stop>
+        <text class="cf-modal__title">选择学员</text>
+        <picker :range="studentNames" @change="onPickStudent">
+          <view class="cf-picker-trigger">
+            <text>{{ pickedStudent ? (pickedStudent.name || pickedStudent.full_name || pickedStudent.username) : '请选择学员' }}</text>
+            <text class="cf-picker-trigger__arrow">▼</text>
+          </view>
+        </picker>
+        <view class="cf-modal__actions">
+          <view class="cf-modal__btn cf-modal__btn--cancel" @tap="showStudentPicker = false">
+            <text>取消</text>
+          </view>
+          <view class="cf-modal__btn cf-modal__btn--confirm" @tap="runFollowup">
+            <text>开始生成</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- AI 结果弹窗 -->
+    <view class="cf-modal-mask" v-if="agentResult" @tap="agentResult = null">
+      <view class="cf-modal cf-modal--result" @tap.stop>
+        <text class="cf-modal__title">AI 跟进建议</text>
+        <view class="cf-result-confidence">
+          <text class="cf-result-confidence__label">置信度</text>
+          <text class="cf-result-confidence__val">{{ Math.round((agentResult.confidence || 0) * 100) }}%</text>
+        </view>
+        <view class="cf-result-list">
+          <view v-for="(sug, idx) in (agentResult.suggestions || [])" :key="idx" class="cf-result-item">
+            <view class="cf-result-item__idx"><text>{{ idx + 1 }}</text></view>
+            <text class="cf-result-item__text">{{ sug.text || sug.content || sug }}</text>
+          </view>
+          <view v-if="!(agentResult.suggestions || []).length" class="cf-empty-inline">
+            <text>暂无建议</text>
+          </view>
+        </view>
+        <view class="cf-modal__actions">
+          <view class="cf-modal__btn cf-modal__btn--confirm cf-modal__btn--full" @tap="agentResult = null">
+            <text>关闭</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- 退回原因弹窗 -->
     <view class="cf-modal-mask" v-if="rejectTarget" @tap="rejectTarget = null">
       <view class="cf-modal" @tap.stop>
@@ -130,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import coachApi from '@/api/coach'
 
 const TYPE_LABEL: Record<string, string> = {
@@ -144,9 +197,21 @@ const stats         = ref<any>({ pending: 0, total_reviewed: 0, approved: 0, rej
 const rejectTarget  = ref<any>(null)
 const rejectReason  = ref('')
 
+// AI 跟进计划
+const showStudentPicker = ref(false)
+const studentList       = ref<any[]>([])
+const pickedStudent     = ref<any>(null)
+const generating        = ref(false)
+const agentResult       = ref<any>(null)
+
+const studentNames = computed(() =>
+  studentList.value.map(s => s.name || s.full_name || s.username)
+)
+
 onMounted(() => {
   loadQueue()
   loadStats()
+  loadStudentList()
 })
 
 async function loadQueue() {
@@ -223,6 +288,38 @@ function formatWait(seconds: number): string {
   return `${Math.floor(seconds / 3600)}小时`
 }
 
+async function loadStudentList() {
+  try {
+    const res = await coachApi.getDashboard()
+    studentList.value = (res.students || []).map((s: any) => ({
+      ...s,
+      name: s.name || s.full_name || s.username,
+    }))
+  } catch { studentList.value = [] }
+}
+
+function onPickStudent(e: any) {
+  const idx = Number(e.detail.value)
+  pickedStudent.value = studentList.value[idx] || null
+}
+
+async function runFollowup() {
+  if (!pickedStudent.value) {
+    uni.showToast({ title: '请选择学员', icon: 'none' })
+    return
+  }
+  showStudentPicker.value = false
+  generating.value = true
+  try {
+    const res = await coachApi.runAgent(pickedStudent.value.id, '生成个性化跟进计划')
+    agentResult.value = res.data || res
+  } catch (e: any) {
+    uni.showToast({ title: e?.message || '生成失败', icon: 'none' })
+  } finally {
+    generating.value = false
+  }
+}
+
 function goBack() {
   uni.navigateBack({ fail: () => uni.switchTab({ url: '/pages/home/index' }) })
 }
@@ -253,7 +350,7 @@ function goBack() {
 .cf-stat__val--red { color: #ef4444; }
 .cf-stat__label { display: block; font-size: 22rpx; color: var(--text-secondary); margin-top: 4rpx; }
 
-.cf-body { flex: 1; padding: 20rpx 32rpx 40rpx; }
+.cf-body { flex: 1; padding: 20rpx 32rpx 140rpx; }
 
 /* 审核卡片 */
 .cf-card {
@@ -373,4 +470,57 @@ function goBack() {
 }
 .cf-modal__btn--cancel { background: var(--surface-secondary); color: var(--text-secondary); }
 .cf-modal__btn--ok { background: #ef4444; color: #fff; }
+.cf-modal__btn--confirm { background: #10b981; color: #fff; }
+.cf-modal__btn--full { flex: 1; }
+
+/* 底部生成按钮 */
+.cf-footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 20rpx 32rpx; padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  background: var(--surface); border-top: 1px solid var(--border-light);
+}
+.cf-gen-btn {
+  height: 88rpx; border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 4rpx 16rpx rgba(16,185,129,0.3);
+}
+.cf-gen-btn--loading { opacity: 0.7; pointer-events: none; }
+.cf-gen-btn__text { font-size: 30rpx; font-weight: 700; color: #fff; }
+.cf-gen-btn:active { opacity: 0.85; }
+
+/* 学员选择器 */
+.cf-picker-trigger {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20rpx 24rpx; background: var(--surface-secondary); border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light); font-size: 28rpx; color: var(--text-primary);
+  margin-bottom: 24rpx;
+}
+.cf-picker-trigger__arrow { font-size: 22rpx; color: var(--text-tertiary); }
+
+/* AI 结果弹窗 */
+.cf-modal--result { max-height: 80vh; overflow-y: auto; }
+.cf-result-confidence {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16rpx 20rpx; background: #f0fdf4; border-radius: var(--radius-md);
+  margin-bottom: 20rpx;
+}
+.cf-result-confidence__label { font-size: 24rpx; color: var(--text-secondary); }
+.cf-result-confidence__val { font-size: 32rpx; font-weight: 800; color: #10b981; }
+.cf-result-list { display: flex; flex-direction: column; gap: 12rpx; margin-bottom: 20rpx; }
+.cf-result-item {
+  display: flex; gap: 12rpx; padding: 16rpx 20rpx;
+  background: var(--surface-secondary); border-radius: var(--radius-md);
+}
+.cf-result-item__idx {
+  width: 40rpx; height: 40rpx; border-radius: 50%; flex-shrink: 0;
+  background: var(--bhp-primary-500); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22rpx; font-weight: 700;
+}
+.cf-result-item__text {
+  flex: 1; font-size: 26rpx; color: var(--text-primary);
+  line-height: 1.5; word-break: break-all; white-space: normal;
+}
+.cf-empty-inline { text-align: center; padding: 32rpx; font-size: 24rpx; color: var(--text-tertiary); }
 </style>
