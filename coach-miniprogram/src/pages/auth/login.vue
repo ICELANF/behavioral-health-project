@@ -93,6 +93,7 @@
 </template>
 
 <script setup lang="ts">
+import { onLoad, onShow } from '@dcloudio/uni-app'
 import { ref, reactive } from 'vue'
 import { useUserStore } from '@/stores/user'
 import authApi from '@/api/auth'
