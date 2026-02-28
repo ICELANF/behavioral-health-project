@@ -58,11 +58,24 @@ export const useCoachStore = defineStore('coach', () => {
   async function initDashboard() {
     loading.value = true
     try {
-      const [statsRes, queueRes] = await Promise.allSettled([
-        http.get<DashboardStats>('/v1/coach/dashboard'),
+      const [dashRes, queueRes] = await Promise.allSettled([
+        http.get<any>('/v1/coach/dashboard'),
         http.get<{ items: PushQueueItem[] }>('/v1/coach-push/pending', { page_size: 10 }),
       ])
-      if (statsRes.status === 'fulfilled') dashboardStats.value = statsRes.value
+      if (dashRes.status === 'fulfilled') {
+        const res = dashRes.value as any
+        const ts = res.today_stats || {}
+        const pushCount = queueRes.status === 'fulfilled' ? (queueRes.value.items || []).length : 0
+        dashboardStats.value = {
+          total_students:      ts.total_students ?? 0,
+          active_students_7d:  ts.active_students_7d ?? ts.total_students ?? 0,
+          high_risk_count:     ts.alert_students ?? 0,
+          pending_push_count:  pushCount,
+          pending_review_count:ts.pending_followups ?? 0,
+          coach_score:         res.coach?.score,
+          coach_level:         res.coach?.level,
+        }
+      }
       if (queueRes.status === 'fulfilled')  pendingQueue.value  = queueRes.value.items || []
     } finally {
       loading.value = false

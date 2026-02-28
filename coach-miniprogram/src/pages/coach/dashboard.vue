@@ -17,20 +17,20 @@
           <text class="cd-card__title">本月数据</text>
           <view class="cd-stats">
             <view class="cd-stat">
-              <text class="cd-stat__val">{{ dashboard.student_count ?? 0 }}</text>
+              <text class="cd-stat__val">{{ todayStats.total_students }}</text>
               <text class="cd-stat__label">服务学员</text>
             </view>
             <view class="cd-stat">
-              <text class="cd-stat__val">{{ dashboard.assessment_count ?? 0 }}</text>
-              <text class="cd-stat__label">完成评估</text>
+              <text class="cd-stat__val">{{ todayStats.alert_students }}</text>
+              <text class="cd-stat__label">预警学员</text>
             </view>
             <view class="cd-stat">
-              <text class="cd-stat__val">{{ dashboard.push_pass_rate ?? '0%' }}</text>
-              <text class="cd-stat__label">推送通过率</text>
+              <text class="cd-stat__val">{{ todayStats.pending_followups }}</text>
+              <text class="cd-stat__label">待跟进</text>
             </view>
             <view class="cd-stat">
-              <text class="cd-stat__val">{{ dashboard.avg_progress ?? 0 }}</text>
-              <text class="cd-stat__label">平均进步</text>
+              <text class="cd-stat__val">{{ todayStats.completed_followups }}</text>
+              <text class="cd-stat__label">已完成</text>
             </view>
           </view>
         </view>
@@ -78,9 +78,11 @@
 import { ref, computed, onMounted } from 'vue'
 import http from '@/api/request'
 
-const loading   = ref(false)
-const dashboard = ref<any>({})
-const todos     = ref<any[]>([])
+const loading     = ref(false)
+const todayStats  = ref<any>({})
+const coachInfo   = ref<any>({})
+const studentList = ref<any[]>([])
+const todos       = ref<any[]>([])
 
 const RISK_COLORS: Record<string, string> = {
   low: '#22c55e', medium: '#f59e0b', high: '#ef4444', unknown: '#94a3b8',
@@ -90,10 +92,15 @@ const RISK_LABELS: Record<string, string> = {
 }
 
 const riskSegments = computed(() => {
-  const dist = dashboard.value.risk_distribution || {}
+  // Compute risk distribution from students array
+  const dist: Record<string, number> = {}
+  for (const s of studentList.value) {
+    const key = s.risk_level || 'unknown'
+    dist[key] = (dist[key] || 0) + 1
+  }
   return Object.entries(dist).map(([key, count]) => ({
     label: RISK_LABELS[key] || key,
-    count: count as number,
+    count,
     color: RISK_COLORS[key] || '#94a3b8',
   }))
 })
@@ -117,11 +124,21 @@ async function loadDashboard() {
   loading.value = true
   try {
     const res = await http.get<any>('/v1/coach/dashboard')
-    dashboard.value = res
+    coachInfo.value   = res.coach || {}
+    todayStats.value  = res.today_stats || {}
+    studentList.value = res.students || []
+    // Build todos from students needing followup
     const todoItems = res.todos || res.pending_tasks || []
-    todos.value = todoItems.map((t: any) => ({ ...t, done: t.done ?? t.completed ?? false }))
+    if (todoItems.length) {
+      todos.value = todoItems.map((t: any) => ({ ...t, done: t.done ?? t.completed ?? false }))
+    } else {
+      // Auto-generate todos from pending followups
+      todos.value = studentList.value
+        .filter((s: any) => s.days_since_contact >= 7)
+        .map((s: any) => ({ title: `跟进 ${s.name}（${s.last_contact}）`, done: false }))
+    }
   } catch {
-    dashboard.value = {}
+    todayStats.value = {}
   } finally {
     loading.value = false
   }

@@ -1,29 +1,24 @@
-# 1. 检查教练相关页面实现状态
-grep -rl "页面开发中" src/pages/coach/ --include="*.vue"
+修改 src/pages/coach/index/index.vue（教练首页工作台）：
 
-# 2. 检查教练工作台的功能入口
-grep -n "navigateTo\|reLaunch\|switchTab" src/pages/coach/index/index.vue 2>/dev/null | head -30
+后端 GET /v1/coach/dashboard 返回结构：
+{
+  coach: { id, name, level },
+  today_stats: {
+    total_students: 4,
+    pending_followups: 4,
+    completed_followups: 0,
+    alert_students: 4,
+    unread_messages: 0
+  },
+  students: [...]
+}
 
-# 3. 列出所有coach页面文件
-find src/pages/coach -name "*.vue" | sort
+请更新首页顶部统计区域的字段映射：
+- 学员数 → today_stats.total_students
+- 高风险 → today_stats.alert_students  
+- 待审批 → 保持原有 coach-push/pending 接口（返回4条）
+- 待评审 → today_stats.pending_followups
 
-# 4. 检查后端教练相关接口
-docker exec bhp_v3_api python -c "
-import sys; sys.path.insert(0, '.')
-import requests, json
-r = requests.post('http://localhost:8000/api/v1/auth/login', json={'username':'coach','password':'Coach@2026'})
-token = r.json().get('access_token')
-headers = {'Authorization': f'Bearer {token}'}
-urls = [
-    'http://localhost:8000/api/v1/coach/dashboard',
-    'http://localhost:8000/api/v1/coach-push/pending',
-    'http://localhost:8000/api/v1/assessment-assignments',
-]
-for url in urls:
-    r = requests.get(url, headers=headers)
-    print(f'{r.status_code} {url}')
-    if r.status_code == 200:
-        d = r.json()
-        if isinstance(d, dict): print(f'  keys: {list(d.keys())}')
-        elif isinstance(d, list): print(f'  count: {len(d)}')
-" 2>/dev/null
+同样修改 src/pages/coach/dashboard.vue，对齐相同数据结构。
+
+完成后 npm run build:mp-weixin
