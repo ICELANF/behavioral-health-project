@@ -301,8 +301,11 @@ async function loadUserPoints() {
 async function loadTasks() {
   loadingTasks.value = true
   try {
-    const res = await http.get<{ items: any[] }>('/v1/micro-actions/today', { page_size: 10 })
-    todayTasks.value = res.items || []
+    const res = await http.get<{ tasks: any[]; total: number; completed: number }>('/v1/micro-actions/today', { page_size: 10 })
+    todayTasks.value = (res.tasks || []).map(t => ({
+      ...t,
+      completed: t.status === 'completed',
+    }))
   } catch {
     todayTasks.value = []
   } finally {
@@ -313,7 +316,7 @@ async function loadTasks() {
 async function loadRecommended() {
   loadingContent.value = true
   try {
-    const res = await http.get<{ items: any[] }>('/v1/content/recommended', { page_size: 8 })
+    const res = await http.get<{ items: any[]; reason?: string }>('/v1/content/recommendations', { page_size: 8 })
     recommended.value = res.items || []
   } catch {
     recommended.value = []
