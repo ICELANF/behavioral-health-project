@@ -123,7 +123,7 @@
       ]
     },
     {
-      "root": "pages/profile",
+      "root": "pages/profile-extra",
       "name": "profile-sub",
       "pages": [
         { "path": "certification", "style": { "navigationBarTitleText": "我的认证" } },
@@ -147,21 +147,15 @@
     "list": [
       {
         "pagePath": "pages/home/index",
-        "text": "首页",
-        "iconPath": "static/tabs/home.png",
-        "selectedIconPath": "static/tabs/home-active.png"
+        "text": "首页"
       },
       {
         "pagePath": "pages/notifications/index",
-        "text": "消息",
-        "iconPath": "static/tabs/notify.png",
-        "selectedIconPath": "static/tabs/notify-active.png"
+        "text": "消息"
       },
       {
         "pagePath": "pages/profile/index",
-        "text": "我的",
-        "iconPath": "static/tabs/profile.png",
-        "selectedIconPath": "static/tabs/profile-active.png"
+        "text": "我的"
       }
     ]
   },
