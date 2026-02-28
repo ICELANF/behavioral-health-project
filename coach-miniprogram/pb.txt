@@ -1,7 +1,6 @@
-cd D:/behavioral-health-project/coach-miniprogram
+# 删除 uni-app 编译产物目录
+rd /s /q dist
+rd /s /q unpackage
 
-# 提交当前所有未提交的内容
-git add -A && git commit -m "feat: Coach AI飞轮功能开发中，flywheel分包模块加载问题待修复"
-
-# 查看完整提交记录
-git log --oneline | head -20
+# 重新编译
+npm run dev:mp-weixin
