@@ -1,22 +1,32 @@
-请将 src/pages/journey/progress.vue 替换为完整的晋级进度页面，实现以下功能：
+请将 src/pages/coach/students/detail.vue 替换为完整的学员详情页面，实现以下功能：
 
-1. 三维积分展示：从 userStore 读取 growthPoints / contributionPoints / influencePoints，
-   用三个进度环或进度条分别展示，颜色对应 Design System（绿/蓝/琥珀）
+1. 5个Tab页切换：画像 / 评估 / 处方 / 健康数据 / 消息
+   调用 GET /v1/coach/students/:id 获取学员完整数据
 
-2. 晋级四维要求检查清单：调用 GET /v1/certification/paths/my-progress 获取数据，
-   展示当前等级晋升到下一级需要满足的条件：
-   - 成长积分达标（已有/需要，进度条）
-   - 贡献积分达标（已有/需要，进度条）
-   - 影响力积分达标（已有/需要，进度条）
-   - 认证考试通过（✅/❌）
-   - 同道者数量（已有/需要）
-   每项条件已满足显示绿色✅，未满足显示灰色带缺口数量
+2. 画像Tab：
+   - 顶部：学员姓名、BHPRiskTag风险等级、TTM阶段标签
+   - 大五人格雷达图（用简单的CSS实现，5个维度数值）
+   - BPT6行为类型标签（最多6个）
+   - 行为改变阶段描述
 
-3. 申请晋级按钮：所有条件满足时按钮高亮可点击，跳转 /pages/journey/promotion；
-   条件未满足时按钮置灰，显示"还差 XX 成长积分"最紧迫的缺口提示
+3. 评估Tab：
+   - 评估记录列表（时间/量表名/状态）
+   - "分配新评估"按钮：调用 POST /v1/assessment/assignments 分配给学员
+   - 待审核评估高亮显示，点击跳转 /pages/coach/assessment/review?id=xxx
 
-4. 当前等级展示：顶部显示当前角色 BHPLevelBadge + 六级路径时间线（当前位置高亮）
+4. 处方Tab：
+   - AI生成的行为处方列表
+   - 每条处方显示：内容摘要 / AI建议 / 状态（待审批/已发送/已拒绝）
+   - 待审批的处方显示审批/拒绝按钮，调用 coach store 的 approvePush/rejectPush
 
-5. 积分明细入口：点击任意积分卡片跳转到积分流水记录
+5. 消息Tab：
+   - 历史消息列表（教练→学员方向）
+   - 底部输入框 + AI建议按钮
+   - 点"AI建议"调用 GET /v1/coach/students/:id/ai-suggestion 获取建议文本填入输入框
+   - 发送调用 coachStore.sendMessage()，进入审批队列
+
+6. 健康数据Tab：
+   - 最近7天血糖趋势（用简单折线或数值列表）
+   - 睡眠/运动/心率关键指标卡片
 
 使用 BHP Design System CSS变量，风格统一。完成后执行 npm run build:mp-weixin。
