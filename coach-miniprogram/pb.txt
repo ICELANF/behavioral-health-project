@@ -1,16 +1,67 @@
-修改 src/pages/coach/analytics/index.vue：
+cd D:/behavioral-health-project/coach-miniprogram && python -c "
+import struct, zlib, os
 
-当前问题：调用 /v1/analytics/coach/risk-trend 等接口返回空数据
+def make_png(width, height, pixels):
+    def chunk(name, data):
+        c = struct.pack('>I', len(data)) + name + data
+        return c + struct.pack('>I', zlib.crc32(name + data) & 0xffffffff)
+    
+    raw = b''
+    for row in pixels:
+        raw += b'\x00' + bytes([v for px in row for v in px])
+    
+    compressed = zlib.compress(raw)
+    ihdr = struct.pack('>IIBBBBB', width, height, 8, 2, 0, 0, 0)
+    return b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', ihdr) + chunk(b'IDAT', compressed) + chunk(b'IEND', b'')
 
-解决方案：改为从已有的 dashboard 接口取数据来显示：
-- 管理学员数 → GET /v1/coach/dashboard 的 today_stats.total_students (4)
-- 本期完课率 → today_stats.completed_followups / today_stats.total_students * 100
-- 平均风险分 → 从 students[] 数组计算（risk_level: unknown=50, low=30, medium=60, high=80）
-- 待处理任务 → today_stats.pending_followups (4)
-- 推送效果 → GET /v1/coach-push/pending 的 total 作为已发送数
+# Logo 200x200 绿色圆形
+def make_logo():
+    size = 200
+    cx, cy, r = 100, 100, 98
+    pixels = []
+    for y in range(size):
+        row = []
+        for x in range(size):
+            d = ((x-cx)**2 + (y-cy)**2)**0.5
+            if d <= r:
+                # 绿色渐变
+                g = int(180 + 60*(1-d/r))
+                row.append((34, g, 70))
+            else:
+                row.append((255,255,255))
+        pixels.append(row)
+    # 写文字区域用白色块模拟
+    for y in range(80, 100):
+        for x in range(60, 140):
+            if pixels[y][x] != (255,255,255):
+                pixels[y][x] = (255,255,255)
+    return make_png(size, size, pixels)
 
-同时修改首页顶部统计栏（学员/高风险/待审批/待评审四个数字）：
-检查 src/pages/home/index.vue（coach视图），
-确认这4个数字绑定到 coachStore 的正确字段
+# 默认头像 200x200
+def make_avatar():
+    size = 200
+    pixels = []
+    for y in range(size):
+        row = []
+        for x in range(size):
+            # 背景圆
+            d = ((x-100)**2 + (y-100)**2)**0.5
+            # 头部圆
+            head = ((x-100)**2 + (y-72)**2)**0.5 <= 32
+            # 身体椭圆
+            body = ((x-100)/52)**2 + ((y-155)/42)**2 <= 1
+            if d <= 98:
+                if head or body:
+                    row.append((76, 175, 80))  # 绿色
+                else:
+                    row.append((232, 245, 233))  # 浅绿背景
+            else:
+                row.append((255,255,255))
+        pixels.append(row)
+    return make_png(size, size, pixels)
 
-完成后 npm run build:mp-weixin
+os.makedirs('src/static', exist_ok=True)
+with open('src/static/logo.png', 'wb') as f: f.write(make_logo())
+with open('src/static/default-avatar.png', 'wb') as f: f.write(make_avatar())
+print('PNG文件生成完成: logo.png + default-avatar.png')
+"
