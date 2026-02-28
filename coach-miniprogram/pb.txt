@@ -1,0 +1,28 @@
+当前 src/pages 目录只有 auth/login.vue 和 home/index.vue，但 pages.json 声明了44个页面导致小程序启动失败。
+请完成以下工作：
+
+为所有缺失页面创建 .vue 占位文件（显示"页面开发中"即可），需要创建的页面包括：
+
+
+src/pages/auth/register.vue
+src/pages/notifications/index.vue
+src/pages/profile/index.vue
+src/pages/learning/index.vue、catalog.vue、content-detail.vue、video-player.vue、audio-player.vue、course-detail.vue、course-chapter.vue、quiz.vue、quiz-result.vue、my-learning.vue、credits.vue
+src/pages/exam/index.vue、intro.vue、session.vue、result.vue、history.vue
+src/pages/journey/overview.vue、progress.vue、promotion.vue、history.vue
+src/pages/companions/index.vue、invite.vue、detail.vue、invitations.vue
+src/pages/assessment/pending.vue、do.vue、result.vue
+src/pages/coach/dashboard.vue、students/index.vue、students/detail.vue、push-queue.vue、assessment/index.vue、assessment/review.vue、analytics/index.vue、live/index.vue
+src/pages/profile/certification.vue、performance.vue、settings.vue、leaderboard.vue
+
+
+同时创建缺失的文件：
+
+
+src/api/learning.ts、exam.ts、journey.ts、companion.ts、assessment.ts、coach.ts、profile.ts
+src/components/BHPLevelBadge.vue、BHPPointsCard.vue、BHPRiskTag.vue、BHPCourseCard.vue、BHPTabBar.vue（如果不存在）
+src/stores/user.ts、learning.ts、coach.ts（如果不存在）
+src/utils/level.ts、wechat.ts（如果不存在）
+
+
+创建完成后执行 npm run build:mp-weixin，确认编译成功无报错。

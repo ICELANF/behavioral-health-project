@@ -1,0 +1,38 @@
+{
+  "name": "行健平台",
+  "appid": "wx5755ae9b2491a04b",
+  "description": "行健平台教练培养体系",
+  "versionName": "1.0.0",
+  "versionCode": 100,
+  "transformPx": false,
+  "mp-weixin": {
+    "appid": "wx5755ae9b2491a04b",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "enhance": true,
+      "postcss": true,
+      "minified": true
+    },
+    "usingComponents": true,
+    "permission": {
+      "scope.userInfo": {
+        "desc": "用于完善用户信息"
+      }
+    },
+    "requiredPrivateInfos": ["chooseAddress"],
+    "lazyCodeLoading": "requiredComponents"
+  },
+  "h5": {
+    "devServer": {
+      "port": 5175,
+      "proxy": {
+        "/api": {
+          "target": "http://localhost:8000",
+          "changeOrigin": true
+        }
+      }
+    },
+    "title": "行健平台"
+  }
+}

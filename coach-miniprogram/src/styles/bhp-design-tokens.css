@@ -1,0 +1,112 @@
+/* ════════════════════════════════════════════════════════
+   BHP Design System — CSS 变量 Token 表
+   行健平台教练培养体系 小程序专用
+   ════════════════════════════════════════════════════════ */
+
+page {
+  /* ── 品牌主色（绿色系 — 行为健康/活力）── */
+  --bhp-primary-50:  #ecfdf5;
+  --bhp-primary-100: #d1fae5;
+  --bhp-primary-200: #a7f3d0;
+  --bhp-primary-300: #6ee7b7;
+  --bhp-primary-400: #34d399;
+  --bhp-primary-500: #10b981;   /* 主品牌色 */
+  --bhp-primary-600: #059669;
+  --bhp-primary-700: #047857;
+  --bhp-primary-800: #065f46;
+  --bhp-primary-900: #064e3b;
+
+  /* ── 辅助色（蓝紫 — 认知/专业）── */
+  --bhp-accent-50:   #eff6ff;
+  --bhp-accent-100:  #dbeafe;
+  --bhp-accent-200:  #bfdbfe;
+  --bhp-accent-300:  #93c5fd;
+  --bhp-accent-400:  #60a5fa;
+  --bhp-accent-500:  #3b82f6;
+  --bhp-accent-600:  #2563eb;
+  --bhp-accent-700:  #1d4ed8;
+
+  /* ── 成功色 ── */
+  --bhp-success-50:  #f0fdf4;
+  --bhp-success-100: #dcfce7;
+  --bhp-success-500: #22c55e;
+  --bhp-success-600: #16a34a;
+  --bhp-success-700: #15803d;
+
+  /* ── 警告色 ── */
+  --bhp-warn-50:  #fffbeb;
+  --bhp-warn-100: #fef3c7;
+  --bhp-warn-500: #f59e0b;
+  --bhp-warn-600: #d97706;
+  --bhp-warn-700: #b45309;
+
+  /* ── 危险色 ── */
+  --bhp-danger:      #ef4444;
+  --bhp-error-500:   #ef4444;
+  --bhp-error-600:   #dc2626;
+
+  /* ── 灰阶 ── */
+  --bhp-gray-50:  #f9fafb;
+  --bhp-gray-100: #f3f4f6;
+  --bhp-gray-200: #e5e7eb;
+  --bhp-gray-300: #d1d5db;
+  --bhp-gray-400: #9ca3af;
+  --bhp-gray-500: #6b7280;
+  --bhp-gray-600: #4b5563;
+  --bhp-gray-700: #374151;
+  --bhp-gray-800: #1f2937;
+  --bhp-gray-900: #111827;
+
+  /* ── 语义色 ── */
+  --surface:           #ffffff;
+  --surface-secondary: #f9fafb;
+  --surface-tertiary:  #f3f4f6;
+  --border:            #e5e7eb;
+  --border-light:      #f3f4f6;
+  --text-primary:      #111827;
+  --text-secondary:    #6b7280;
+  --text-tertiary:     #9ca3af;
+  --text-inverse:      #ffffff;
+
+  /* ── 角色专属色 ── */
+  --role-observer:   #9ca3af;   /* 灰 — 观察者 */
+  --role-grower:     #10b981;   /* 主绿 — 成长者 */
+  --role-sharer:     #3b82f6;   /* 蓝 — 分享者 */
+  --role-coach:      #8b5cf6;   /* 紫 — 教练 */
+  --role-promoter:   #f59e0b;   /* 橙 — 促进师 */
+  --role-supervisor: #ec4899;   /* 粉 — 督导 */
+  --role-master:     #ef4444;   /* 红 — 大师 */
+  --role-admin:      #111827;   /* 黑 — 管理员 */
+
+  /* ── 圆角 ── */
+  --radius-xs:   4rpx;
+  --radius-sm:   8rpx;
+  --radius-md:   12rpx;
+  --radius-lg:   16rpx;
+  --radius-xl:   24rpx;
+  --radius-2xl:  32rpx;
+  --radius-full: 9999rpx;
+
+  /* ── 阴影 ── */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+
+  /* ── 间距 ── */
+  --space-1: 8rpx;
+  --space-2: 16rpx;
+  --space-3: 24rpx;
+  --space-4: 32rpx;
+  --space-5: 40rpx;
+  --space-6: 48rpx;
+
+  /* ── 字号 ── */
+  --text-size-xs:  22rpx;
+  --text-size-sm:  24rpx;
+  --text-size-base:28rpx;
+  --text-size-lg:  32rpx;
+  --text-size-xl:  36rpx;
+  --text-size-2xl: 44rpx;
+  --text-size-3xl: 52rpx;
+}
