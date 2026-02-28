@@ -1,30 +1,23 @@
-cd D:\behavioral-health-project\coach-miniprogram && git add -A && git commit -m "feat: 推送审批/消息系统/数据分析三模块升级
+cd D:\behavioral-health-project\coach-miniprogram && git add -A && git commit -m "feat: 评估管理升级80%→95%
 
-推送审批 75%→95%:
+assessment/index.vue:
 - 零主包依赖（内联HTTP）
-- 拒绝填原因弹窗
-- 编辑草稿后通过
-- 待审批/已处理双Tab
-- 统计栏+内容预览展开
 - safe-area导航栏
+- 搜索学员筛选
+- 下拉刷新
+- 评估预览(得分+TTM标签)
+- 量表全选/清空
+- 提交防抖
 
-消息系统 40%→70%:
-- 角色感知Tab（教练/学员不同视图）
-- 会话列表（头像+未读+风险标签）
-- 日期分组+下拉刷新
-- 快捷操作跳转审批/审核
-- Tab独立未读计数
-
-数据分析 60%→85%:
+assessment/review.vue:
 - 零主包依赖（内联HTTP）
-- 时间筛选生效（重新加载数据）
-- 教练工作量统计卡片
-- 7天活跃趋势条形图
-- TTM行为阶段分布
-- 微行动完成率环形图
-- 排行榜带进度条
-- 推送漏斗加转化率
+- 综合评分摘要面板
+- 能力评估展示
+- AI干预建议(Agent调用)
+- TTM阶段进度可视化
+- 按钮防重复点击
+- 已完成状态提示
+- 加载失败重试
 
-其他:
-- 统一修复coach分包页面navigationStyle:custom
-- 整体进度 75%→82%"
+待后端补充:
+- GET /v1/assessment-assignments 通用列表端点(含assigned状态)"
