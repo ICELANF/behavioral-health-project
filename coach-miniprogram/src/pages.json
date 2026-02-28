@@ -119,6 +119,7 @@
         { "path": "assessment/index",  "style": { "navigationBarTitleText": "评估管理" } },
         { "path": "assessment/review", "style": { "navigationBarTitleText": "审核评估" } },
         { "path": "analytics/index",   "style": { "navigationBarTitleText": "数据分析" } },
+        { "path": "flywheel/index",    "style": { "navigationBarTitleText": "AI跟进计划", "navigationStyle": "custom" } },
         { "path": "live/index",        "style": { "navigationBarTitleText": "直播管理" } }
       ]
     },

@@ -250,6 +250,7 @@ const COACH_ACTIONS = [
   { key: 'push',       label: '推送审批', icon: '📨', color: '#3b82f6', fn: goPushQueue },
   { key: 'assessment', label: '评估管理', icon: '📋', color: '#8b5cf6', fn: goCoachAssessment },
   { key: 'analytics',  label: '数据分析', icon: '📊', color: '#f59e0b', fn: goAnalytics },
+  { key: 'flywheel',  label: 'AI跟进',  icon: '🤖', color: '#059669', fn: goFlywheel },
 ]
 
 onMounted(async () => {
@@ -373,6 +374,7 @@ function goCoachStudents()   { uni.navigateTo({ url: '/pages/coach/students/inde
 function goPushQueue()       { uni.navigateTo({ url: '/pages/coach/push-queue' }) }
 function goCoachAssessment() { uni.navigateTo({ url: '/pages/coach/assessment/index' }) }
 function goAnalytics()       { uni.navigateTo({ url: '/pages/coach/analytics/index' }) }
+function goFlywheel()        { uni.navigateTo({ url: '/pages/coach/flywheel/index' }) }
 </script>
 
 <style scoped>
