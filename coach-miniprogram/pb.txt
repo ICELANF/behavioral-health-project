@@ -1,11 +1,24 @@
-修复 pages/profile 分包与主包冲突的问题：
+请将 src/pages/exam/session.vue 替换为完整的考试作答页面，实现以下功能：
 
-1. 把 src/pages.json 里 profile-sub 分包的 root 从 "pages/profile" 改为 "pages/profile-extra"
+1. 题型支持：单选题、多选题、案例题（图文）、案例题（视频）四种题型，根据 question_type 字段动态渲染
 
-2. 把 src/pages/profile/ 目录下的 certification.vue、performance.vue、settings.vue、leaderboard.vue 这4个文件移动到新目录 src/pages/profile-extra/
+2. 防丢失策略：每道题选完后立即调用 POST /v1/certification/sessions/:id/answer 保存，
+   不等提交才保存，断线重连后 GET /v1/certification/sessions/:id/questions 恢复已答状态
 
-3. 更新 pages.json 里 profile-sub 分包的所有页面路径，确保与新 root 对应
+3. 倒计时：从 exam.time_limit_minutes 开始倒计时，归零自动提交，
+   剩余5分钟时变红色警告
 
-4. 重新执行 npm run build:mp-weixin
+4. 题目导航：顶部显示题号进度（3/20），底部答题卡可跳题，
+   已答题号绿色，未答灰色
 
-5. 确认编译成功无报错
+5. 提交确认：点提交时检查未答题数，弹窗确认后调用 POST /v1/certification/sessions/:id/submit，
+   成功后跳转 /pages/exam/result?session_id=xxx
+
+6. 案例题渲染：先展示图文或视频内容，再显示题目，
+   视频案例题使用小程序原生 <video> 组件
+
+7. navigationStyle: custom 自定义导航栏，显示考试名称和倒计时
+
+8. 小程序切后台超过30秒弹出警告提示
+
+使用 BHP Design System CSS变量，风格统一。完成后执行 npm run build:mp-weixin。
