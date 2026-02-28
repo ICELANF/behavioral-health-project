@@ -281,7 +281,21 @@ async function loadLearnerData() {
     loadRecommended(),
     loadPendingAssessments(),
     learningStore.fetchStats(),
+    loadUserPoints(),
   ])
+}
+
+async function loadUserPoints() {
+  try {
+    const userId = userStore.userInfo?.id
+    if (!userId) return
+    const res = await http.get<any>(`/v1/learning/grower/stats/${userId}`)
+    userStore.updateUserInfo({
+      growth_points:       res.learning_points?.total_points ?? 0,
+      contribution_points: 0,
+      influence_points:    0,
+    })
+  } catch {/* ignore */}
 }
 
 async function loadTasks() {

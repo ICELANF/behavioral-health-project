@@ -32,9 +32,10 @@ export const useLearningStore = defineStore('learning', () => {
   const lastFetchedAt   = ref<number>(0)
 
   // ── Computed ──────────────────────────────────────────
-  const currentStreak   = computed(() => stats.value?.current_streak  ?? 0)
-  const totalMinutes    = computed(() => stats.value?.total_minutes    ?? 0)
-  const weeklyMinutes   = computed(() => stats.value?.weekly_minutes   ?? [0,0,0,0,0,0,0])
+  // API 返回嵌套结构: { streak: { current_streak }, learning_time: { total_minutes }, ... }
+  const currentStreak   = computed(() => (stats.value as any)?.streak?.current_streak ?? stats.value?.current_streak ?? 0)
+  const totalMinutes    = computed(() => (stats.value as any)?.learning_time?.total_minutes ?? stats.value?.total_minutes ?? 0)
+  const weeklyMinutes   = computed(() => stats.value?.weekly_minutes ?? [0,0,0,0,0,0,0])
 
   // ── Actions ───────────────────────────────────────────
   async function fetchStats(force = false) {
