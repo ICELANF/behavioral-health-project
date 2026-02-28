@@ -147,8 +147,28 @@ onMounted(() => { loadList(); loadStudents() })
 async function loadList() {
   loading.value = true
   try {
-    const res = await http.get<any>('/v1/assessment-assignments', { role: 'coach' })
-    list.value = res.items || (Array.isArray(res) ? res : [])
+    const [reviewRes, pushedRes, pendingRes] = await Promise.allSettled([
+      http.get<any>('/v1/assessment-assignments/review-list'),
+      http.get<any>('/v1/assessment-assignments/pushed-list'),
+      http.get<any>('/v1/assessment-assignments/my-pending'),
+    ])
+    const all: any[] = []
+    const extract = (r: PromiseSettledResult<any>) => {
+      if (r.status === 'fulfilled') {
+        const d = r.value as any
+        return d.assignments || d.items || (Array.isArray(d) ? d : [])
+      }
+      return []
+    }
+    // merge & deduplicate by id
+    const seen = new Set<string>()
+    for (const items of [extract(reviewRes), extract(pushedRes), extract(pendingRes)]) {
+      for (const item of items) {
+        const key = String(item.id || item.assignment_id || Math.random())
+        if (!seen.has(key)) { seen.add(key); all.push(item) }
+      }
+    }
+    list.value = all
   } catch {
     list.value = []
   } finally {
@@ -182,7 +202,7 @@ async function submitAssign() {
     return
   }
   try {
-    await http.post('/v1/assessment-assignments', {
+    await http.post('/v1/assessment-assignments/assign', {
       student_id: selectedStudent.value.id,
       scales: selectedScales.value,
     })
