@@ -7,7 +7,7 @@ import http from './request'
 const assessmentApi = {
   /** 待完成评估 */
   getPending(params?: Record<string, any>) {
-    return http.get<{ items: any[] }>('/v1/assessment-assignments/my', { status: 'assigned', ...params })
+    return http.get<{ items: any[] }>('/v1/assessment-assignments/my-pending', { status: 'assigned', ...params })
   },
   /** 评估详情 */
   getDetail(id: number) {

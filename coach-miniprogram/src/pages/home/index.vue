@@ -310,7 +310,7 @@ async function loadRecommended() {
 
 async function loadPendingAssessments() {
   try {
-    const res = await http.get<{ items: any[] }>('/v1/assessment-assignments/my', {
+    const res = await http.get<{ items: any[] }>('/v1/assessment-assignments/my-pending', {
       status: 'assigned', page_size: 5,
     })
     pendingAssessmentCount.value = (res.items || []).length
@@ -321,7 +321,7 @@ async function loadPendingAssessments() {
 
 async function loadUnread() {
   try {
-    const res = await http.get<{ unread_count: number }>('/v1/notifications/unread-count')
+    const res = await http.get<{ unread_count: number }>('/v1/messages/unread-count')
     unreadCount.value = res.unread_count ?? 0
   } catch {
     unreadCount.value = 0

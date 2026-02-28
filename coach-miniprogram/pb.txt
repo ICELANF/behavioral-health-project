@@ -1,27 +1,7 @@
-根据后端实际路由，批量更新前端 API 调用路径：
+修复最后2个404：
 
-1. src/api/request.ts 或各 API 模块里：
-   - GET /v1/users/me → GET /api/v1/auth/me
-   - GET /v1/notifications → GET /api/v1/notifications
-   - POST /v1/notifications/{id}/read → POST /api/v1/notifications/{id}/read
-   - GET /v1/coach/analytics → 改为分别调用：
-     GET /api/v1/analytics/coach/risk-trend
-     GET /api/v1/analytics/coach/stage-distribution
-   - GET /v1/content/:id → GET /api/v1/content/detail/{content_type}/{content_id}
-   - POST /v1/content/:id/like → POST /api/v1/content/{id}/like
-   - POST /v1/content/:id/bookmark → POST /api/v1/content/{id}/collect
-   - GET /v1/content/:id/comments → GET /api/v1/content/{id}/comments
-   - POST /v1/content/:id/comments → POST /api/v1/content/{id}/comment
-   - GET /v1/assessment/results/:id → GET /api/v1/assessment/profile/me
-   - GET /v1/coach/dashboard → GET /api/v1/coach/dashboard
-   - GET /v1/coach/students → GET /api/v1/coach/students
-   - GET /v1/coach-push/pending → GET /api/v1/coach-push/pending
-   - GET /v1/companions → GET /api/v1/companions/all
-   - GET /v1/journey/progress → GET /api/v1/journey/state
-   - GET /v1/learning/grower/stats → GET /api/v1/learning/grower/stats
+1. 全局搜索 /v1/notifications/unread-count，替换为 /v1/messages/unread-count
 
-2. 同时检查 src/api/ 目录下所有 .ts 文件，统一把 baseURL 前缀确认为 /api/v1
+2. 全局搜索 /v1/assessment-assignments/my，替换为 /v1/assessment-assignments/my-pending
 
-3. 更新完成后执行 npm run build:mp-weixin
-
-请列出修改了哪些文件和具体路径变更。
+完成后执行 npm run build:mp-weixin，然后 git add -A && git commit -m "fix: 修复最后2个404路径"
