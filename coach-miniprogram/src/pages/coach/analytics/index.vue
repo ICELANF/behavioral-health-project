@@ -131,20 +131,38 @@ const PERIODS = [
   { key: '90', label: '近3月' },
 ]
 
-const period = ref('7')
-const data   = ref<any>(null)
+const RISK_SCORE: Record<string, number> = { unknown: 50, low: 30, medium: 60, high: 80, critical: 90 }
 
-const metrics = computed(() => [
-  { key: 'students',   label: '管理学员',   value: data.value?.student_count ?? '-',       color: '#3b82f6' },
-  { key: 'completion', label: '本期完课率', value: (data.value?.completion_rate ?? '-') + '%', color: '#10b981' },
-  { key: 'risk',       label: '平均风险',   value: data.value?.avg_risk_score ?? '-',      color: '#f59e0b' },
-  { key: 'pending',    label: '待处理',     value: data.value?.pending_tasks ?? '-',       color: '#ef4444' },
-])
+const period   = ref('7')
+const data     = ref<any>(null)
+const students = ref<any[]>([])
+
+const metrics = computed(() => {
+  const ts = data.value?.today_stats || {}
+  const total = ts.total_students ?? 0
+  const completionRate = total > 0
+    ? Math.round((ts.completed_followups ?? 0) / total * 100)
+    : 0
+  const avgRisk = students.value.length > 0
+    ? Math.round(students.value.reduce((s: number, st: any) => s + (RISK_SCORE[st.risk_level || 'unknown'] ?? 50), 0) / students.value.length)
+    : '-'
+  return [
+    { key: 'students',   label: '管理学员',   value: total,                              color: '#3b82f6' },
+    { key: 'completion', label: '本期完课率', value: completionRate + '%',                color: '#10b981' },
+    { key: 'risk',       label: '平均风险分', value: avgRisk,                             color: '#f59e0b' },
+    { key: 'pending',    label: '待处理',     value: ts.pending_followups ?? 0,           color: '#ef4444' },
+  ]
+})
 
 const riskPct = computed(() => {
-  const h = data.value?.risk_high ?? 0
-  const m = data.value?.risk_mid ?? 0
-  const l = data.value?.risk_low ?? 0
+  let h = 0, m = 0, l = 0
+  for (const s of students.value) {
+    const rl = s.risk_level || 'unknown'
+    if (rl === 'high' || rl === 'critical') h++
+    else if (rl === 'medium') m++
+    else l++ // low, unknown, null
+  }
+  data.value = { ...data.value, risk_high: h, risk_mid: m, risk_low: l, top_students: students.value }
   const total = h + m + l
   if (total === 0) return { high: 33, mid: 34, low: 33 }
   return {
@@ -160,12 +178,32 @@ onMounted(async () => {
 
 async function loadData() {
   try {
-    const [risk, stage, pushStats] = await Promise.all([
-      http.get<any>('/v1/analytics/coach/risk-trend', { period_days: period.value }),
-      http.get<any>('/v1/analytics/coach/stage-distribution', { period_days: period.value }),
-      http.get<any>('/v1/coach/push-queue/analytics', { period_days: period.value }),
+    const [dashRes, pushRes] = await Promise.allSettled([
+      http.get<any>('/v1/coach/dashboard'),
+      http.get<any>('/v1/coach-push/pending', { page_size: 50 }),
     ])
-    data.value = { ...risk, ...stage, push_stats: pushStats }
+    if (dashRes.status === 'fulfilled') {
+      const res = dashRes.value
+      data.value = {
+        today_stats: res.today_stats || {},
+        push_stats: null,
+        top_students: (res.students || []).map((s: any) => ({
+          ...s,
+          full_name: s.name || s.full_name,
+          points: (s.micro_action_7d?.completed ?? 0) * 10,
+          trend: s.days_since_contact <= 3 ? 'up' : s.days_since_contact >= 10 ? 'down' : 'stable',
+        })),
+      }
+      students.value = res.students || []
+    }
+    if (pushRes.status === 'fulfilled') {
+      const pushData = pushRes.value
+      const sent = pushData.total ?? 0
+      data.value = {
+        ...data.value,
+        push_stats: { sent, approved: 0, completed: 0 },
+      }
+    }
   } catch {
     uni.showToast({ title: '加载失败', icon: 'none' })
   }
@@ -174,7 +212,7 @@ async function loadData() {
 function switchPeriod(key: string) {
   if (period.value === key) return
   period.value = key
-  loadData()
+  // Data comes from dashboard, period filter is cosmetic for now
 }
 
 function getTrendClass(trend: string): string {

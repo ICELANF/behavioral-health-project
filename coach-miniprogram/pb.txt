@@ -1,24 +1,16 @@
-修改 src/pages/coach/index/index.vue（教练首页工作台）：
+修改 src/pages/coach/analytics/index.vue：
 
-后端 GET /v1/coach/dashboard 返回结构：
-{
-  coach: { id, name, level },
-  today_stats: {
-    total_students: 4,
-    pending_followups: 4,
-    completed_followups: 0,
-    alert_students: 4,
-    unread_messages: 0
-  },
-  students: [...]
-}
+当前问题：调用 /v1/analytics/coach/risk-trend 等接口返回空数据
 
-请更新首页顶部统计区域的字段映射：
-- 学员数 → today_stats.total_students
-- 高风险 → today_stats.alert_students  
-- 待审批 → 保持原有 coach-push/pending 接口（返回4条）
-- 待评审 → today_stats.pending_followups
+解决方案：改为从已有的 dashboard 接口取数据来显示：
+- 管理学员数 → GET /v1/coach/dashboard 的 today_stats.total_students (4)
+- 本期完课率 → today_stats.completed_followups / today_stats.total_students * 100
+- 平均风险分 → 从 students[] 数组计算（risk_level: unknown=50, low=30, medium=60, high=80）
+- 待处理任务 → today_stats.pending_followups (4)
+- 推送效果 → GET /v1/coach-push/pending 的 total 作为已发送数
 
-同样修改 src/pages/coach/dashboard.vue，对齐相同数据结构。
+同时修改首页顶部统计栏（学员/高风险/待审批/待评审四个数字）：
+检查 src/pages/home/index.vue（coach视图），
+确认这4个数字绑定到 coachStore 的正确字段
 
 完成后 npm run build:mp-weixin
