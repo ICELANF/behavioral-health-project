@@ -1,44 +1,52 @@
-请实现以下最后一批低优先级页面，完成后一起编译：
+请实现以下最后8个占位页面，完成后一起编译：
 
-1. src/pages/companions/invite.vue — 邀请同道者
-   - 搜索框搜索平台用户
-   - 搜索结果列表：头像+姓名+等级+邀请按钮
-   - 我的邀请码大字展示 + 复制按钮
-   - 调用 GET /v1/users/search?q=xxx，POST /v1/companions/invite/:id
+1. src/pages/companions/invitations.vue — 邀请记录
+   - Tab：发出的邀请/收到的邀请
+   - 列表：头像+姓名+邀请时间+状态（待接受/已接受/已拒绝）
+   - 收到的邀请显示接受/拒绝按钮
+   - 调用 GET /v1/companions/invitations
 
-2. src/pages/companions/detail.vue — 同道者详情
-   - 头像+姓名+等级+加入时间
-   - 互动统计：互动次数/最近互动时间
-   - 互动记录列表
-   - 调用 GET /v1/companions/:id
+2. src/pages/coach/dashboard.vue — 教练仪表盘详情
+   - 本月数据：服务学员数/完成评估数/推送通过率/学员平均进步
+   - 学员风险分布饼图（CSS实现）
+   - 本周待办清单
+   - 调用 GET /v1/coach/dashboard
 
-3. src/pages/journey/history.vue — 晋级历史
-   - 时间线：每次晋级记录（时间+从XX级到XX级+获得积分）
-   - 调用 GET /v1/journey/history
+3. src/pages/coach/live/index.vue — 直播/活动中心
+   - 进行中直播列表（标题+主讲人+在线人数+进入按钮）
+   - 即将开始列表（时间+标题+预约按钮）
+   - 历史回放列表
+   - 空状态：暂无直播
 
-4. src/pages/journey/promotion.vue — 申请晋级
-   - 当前等级 vs 目标等级对比
-   - 晋级条件检查清单（满足✅/未满足❌）
-   - 提交申请按钮
-   - 调用 POST /v1/journey/stage/advance
+4. src/pages/exam/history.vue — 考试历史
+   - 考试记录列表：考试名+日期+得分+是否通过+用时
+   - 顶部统计：参加次数/通过次数/最高分
+   - 点击查看详情跳转 exam/result?id=xxx
+   - 调用 GET /v1/certification/sessions/my-history
 
-5. src/pages/profile-extra/certification.vue — 成就与证书
-   - 已获证书列表：证书名+获得时间+查看按钮
-   - 成就徽章展示
-   - 调用 GET /v1/certification/my-certs
+5. src/pages/learning/course-chapter.vue — 课程章节详情
+   - 章节标题+所属课程
+   - 视频/图文内容展示
+   - 上一章/下一章导航
+   - 完成标记
+   - 调用 GET /v1/content/chapter/:id
 
-6. src/pages/learning/audio-player.vue — 音频播放器
-   - 封面图+标题+作者
-   - 播放控制：播放/暂停/进度条/时间显示
-   - 倍速选择：0.75/1.0/1.25/1.5
-   - 底部互动栏（与video-player一致）
-   - 调用 GET /v1/content/detail/audio/:id
+6. src/pages/learning/credits.vue — 学分记录
+   - 顶部：总学分+本月获得
+   - 学分流水列表：来源+学分+获得时间
+   - 按月分组展示
+   - 调用 GET /v1/learning/credits
 
-7. src/pages/coach/assessment/review.vue — 评估审核
-   - 学员基本信息
-   - 评估结果展示：大五人格条形图+BPT6标签+TTM阶段
-   - 教练备注输入框
-   - 通过/退回 两个按钮
-   - 调用 GET /v1/assessment-assignments/:id/result，POST approve/reject
+7. src/pages/learning/quiz-result.vue — 测验结果
+   - 得分环形图（满分/得分）
+   - 答题明细：题干+你的答案+正确答案+解析
+   - 底部：再做一次/返回
+   - 调用 GET /v1/quiz/result/:id
 
-完成后执行 npm run build:mp-weixin
+8. src/pages/profile-extra/performance.vue — 绩效表现
+   - 本月行为改变指数雷达图（CSS实现）
+   - 各维度得分：饮食/运动/睡眠/心理/社交
+   - 与上月对比（+/-趋势）
+   - 调用 GET /v1/users/me/performance
+
+完成后执行 npm run build:mp-weixin，然后确认零占位符。
