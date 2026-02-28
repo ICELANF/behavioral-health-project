@@ -1,25 +1,25 @@
-请完成以下3个页面的实现，每个页面功能相对独立，完成后一起编译：
+在 src/static/ 目录下创建一个简单的 logo.png 占位文件。
+用 Python 生成一个 120x120 的绿色圆形 PNG：
 
-1. src/pages/learning/quiz.vue — 随堂测验
-   - 支持单选和多选两种题型
-   - 每题提交后立即显示解析（对/错 + 正确答案说明）
-   - 全部完成后显示得分和"返回继续学习"按钮
-   - 满分显示额外 +5 积分提示
-   - 从 query 参数获取 content_id，调用 GET /v1/content/:id/quiz 获取题目
+import struct, zlib, base64
+# 直接复制一个最小的绿色PNG到 src/static/logo.png
+# 用 Python PIL 或者直接写入一个1x1绿色像素PNG的base64
 
-2. src/pages/coach/push-queue.vue — 推送审批队列
-   - 列表展示所有 pending 状态的推送条目
-   - 每条显示：目标学员姓名 / 内容摘要 / 来源类型（AI推荐/评估触发）/ 时间
-   - 单条审批：通过/拒绝按钮
-   - 批量审批：顶部"全部通过"按钮，二次确认后批量处理
-   - 空状态：显示"暂无待审批内容"
-   - 调用 coachStore.approvePush / rejectPush
-
-3. src/pages/learning/catalog.vue — 课程目录
-   - M1-M4 四个模块 Tab 切换
-   - 每个模块下显示课程列表，使用 BHPCourseCard 组件
-   - 支持按内容类型筛选（全部/视频/图文/音频/课程）
-   - 等级门控：用户等级不够的内容显示锁定状态
-   - 调用 GET /v1/content?module=M1&content_type=video 获取数据
-
-全部完成后执行 npm run build:mp-weixin。
+实际操作：执行以下命令创建一个绿色占位logo：
+python -c "
+try:
+    from PIL import Image, ImageDraw
+    img = Image.new('RGBA', (120, 120), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    draw.ellipse([0, 0, 120, 120], fill='#10b981')
+    img.save('src/static/logo.png')
+    print('ok')
+except:
+    # PIL不可用，复制default-avatar.png作为logo
+    import shutil, os
+    os.makedirs('src/static', exist_ok=True)
+    open('src/static/logo.png', 'wb').write(b'')
+    print('empty file created')
+"
+然后同样创建 src/static/default-avatar.png
+重新编译 npm run build:mp-weixin
