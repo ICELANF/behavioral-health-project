@@ -64,7 +64,32 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import http from '@/api/request'
+
+/* ── 内联 request（分包独立，不依赖主包 @/api/request）── */
+const _BASE = 'http://localhost:8002/api'
+function _getToken(): string {
+  try { return uni.getStorageSync('access_token') || '' } catch { return '' }
+}
+function _request<T = any>(method: string, url: string, data?: any): Promise<T> {
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url: `${_BASE}${url}`,
+      method: method as any,
+      data,
+      header: { Authorization: `Bearer ${_getToken()}`, 'Content-Type': 'application/json' },
+      success: (res: any) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T)
+        else reject({ message: res.data?.detail || `HTTP ${res.statusCode}`, statusCode: res.statusCode })
+      },
+      fail: (err: any) => reject({ message: err.errMsg || '网络异常' }),
+    })
+  })
+}
+const http = {
+  get: <T = any>(url: string) => _request<T>('GET', url),
+  post: <T = any>(url: string, data?: any) => _request<T>('POST', url, data),
+}
+/* ── end inline request ── */
 
 const loading  = ref(false)
 const liveNow  = ref<any[]>([])
@@ -117,7 +142,7 @@ function goBack() { uni.navigateBack({ fail: () => uni.switchTab({ url: '/pages/
 
 <style scoped>
 .lv-page { background: var(--surface-secondary); min-height: 100vh; display: flex; flex-direction: column; }
-.lv-navbar { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 24rpx; background: var(--surface); border-bottom: 1px solid var(--border-light); }
+.lv-navbar { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: var(--surface); border-bottom: 1px solid var(--border-light); }
 .lv-navbar__back { width: 64rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 .lv-navbar__arrow { font-size: 48rpx; color: var(--text-primary); font-weight: 300; }
 .lv-navbar__title { font-size: 28rpx; font-weight: 600; color: var(--text-primary); }

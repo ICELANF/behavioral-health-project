@@ -76,7 +76,32 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import http from '@/api/request'
+
+/* ── 内联 request（分包独立，不依赖主包 @/api/request）── */
+const _BASE = 'http://localhost:8002/api'
+function _getToken(): string {
+  try { return uni.getStorageSync('access_token') || '' } catch { return '' }
+}
+function _request<T = any>(method: string, url: string, data?: any): Promise<T> {
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url: `${_BASE}${url}`,
+      method: method as any,
+      data,
+      header: { Authorization: `Bearer ${_getToken()}`, 'Content-Type': 'application/json' },
+      success: (res: any) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T)
+        else reject({ message: res.data?.detail || `HTTP ${res.statusCode}`, statusCode: res.statusCode })
+      },
+      fail: (err: any) => reject({ message: err.errMsg || '网络异常' }),
+    })
+  })
+}
+const http = {
+  get: <T = any>(url: string) => _request<T>('GET', url),
+  post: <T = any>(url: string, data?: any) => _request<T>('POST', url, data),
+}
+/* ── end inline request ── */
 
 const loading     = ref(false)
 const todayStats  = ref<any>({})
@@ -92,7 +117,6 @@ const RISK_LABELS: Record<string, string> = {
 }
 
 const riskSegments = computed(() => {
-  // Compute risk distribution from students array
   const dist: Record<string, number> = {}
   for (const s of studentList.value) {
     const key = s.risk_level || 'unknown'
@@ -127,12 +151,10 @@ async function loadDashboard() {
     coachInfo.value   = res.coach || {}
     todayStats.value  = res.today_stats || {}
     studentList.value = res.students || []
-    // Build todos from students needing followup
     const todoItems = res.todos || res.pending_tasks || []
     if (todoItems.length) {
       todos.value = todoItems.map((t: any) => ({ ...t, done: t.done ?? t.completed ?? false }))
     } else {
-      // Auto-generate todos from pending followups
       todos.value = studentList.value
         .filter((s: any) => s.days_since_contact >= 7)
         .map((s: any) => ({ title: `跟进 ${s.name}（${s.last_contact}）`, done: false }))
