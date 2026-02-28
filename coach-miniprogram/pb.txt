@@ -1,13 +1,44 @@
-docker exec bhp_v3_api python -c "
-import sys; sys.path.insert(0, '.')
-from app.database import get_db
-import sqlalchemy as sa
-db = next(get_db())
-inspector = sa.inspect(db.bind)
-tables = inspector.get_table_names()
-content_tables = [t for t in tables if any(k in t for k in ['content', 'course', 'video', 'article', 'task', 'recommend'])]
-print(content_tables)
-for t in content_tables[:3]:
-    cols = [c['name'] for c in inspector.get_columns(t)]
-    print(f'{t}: {cols}')
-" 2>/dev/null
+请实现以下最后一批低优先级页面，完成后一起编译：
+
+1. src/pages/companions/invite.vue — 邀请同道者
+   - 搜索框搜索平台用户
+   - 搜索结果列表：头像+姓名+等级+邀请按钮
+   - 我的邀请码大字展示 + 复制按钮
+   - 调用 GET /v1/users/search?q=xxx，POST /v1/companions/invite/:id
+
+2. src/pages/companions/detail.vue — 同道者详情
+   - 头像+姓名+等级+加入时间
+   - 互动统计：互动次数/最近互动时间
+   - 互动记录列表
+   - 调用 GET /v1/companions/:id
+
+3. src/pages/journey/history.vue — 晋级历史
+   - 时间线：每次晋级记录（时间+从XX级到XX级+获得积分）
+   - 调用 GET /v1/journey/history
+
+4. src/pages/journey/promotion.vue — 申请晋级
+   - 当前等级 vs 目标等级对比
+   - 晋级条件检查清单（满足✅/未满足❌）
+   - 提交申请按钮
+   - 调用 POST /v1/journey/stage/advance
+
+5. src/pages/profile-extra/certification.vue — 成就与证书
+   - 已获证书列表：证书名+获得时间+查看按钮
+   - 成就徽章展示
+   - 调用 GET /v1/certification/my-certs
+
+6. src/pages/learning/audio-player.vue — 音频播放器
+   - 封面图+标题+作者
+   - 播放控制：播放/暂停/进度条/时间显示
+   - 倍速选择：0.75/1.0/1.25/1.5
+   - 底部互动栏（与video-player一致）
+   - 调用 GET /v1/content/detail/audio/:id
+
+7. src/pages/coach/assessment/review.vue — 评估审核
+   - 学员基本信息
+   - 评估结果展示：大五人格条形图+BPT6标签+TTM阶段
+   - 教练备注输入框
+   - 通过/退回 两个按钮
+   - 调用 GET /v1/assessment-assignments/:id/result，POST approve/reject
+
+完成后执行 npm run build:mp-weixin
