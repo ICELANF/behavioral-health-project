@@ -7,7 +7,7 @@ import http from './request'
 const companionApi = {
   /** 我的同道者列表 */
   getCompanions(params?: Record<string, any>) {
-    return http.get<{ items: any[]; total: number }>('/v1/companions', params)
+    return http.get<{ items: any[]; total: number }>('/v1/companions/all', params)
   },
   /** 同道者详情 */
   getCompanionDetail(id: number) {

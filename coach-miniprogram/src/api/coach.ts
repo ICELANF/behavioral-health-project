@@ -19,15 +19,15 @@ const coachApi = {
   },
   /** 推送审批队列 */
   getPushQueue(params?: Record<string, any>) {
-    return http.get<{ items: any[] }>('/v1/coach/push-queue', params)
+    return http.get<{ items: any[] }>('/v1/coach-push/pending', params)
   },
   /** 审批推送 */
   approvePush(id: number) {
-    return http.post<any>(`/v1/coach/push-queue/${id}/approve`, {})
+    return http.post<any>(`/v1/coach-push/${id}/approve`, {})
   },
   /** 拒绝推送 */
   rejectPush(id: number, reason?: string) {
-    return http.post<any>(`/v1/coach/push-queue/${id}/reject`, { reason })
+    return http.post<any>(`/v1/coach-push/${id}/reject`, { reason })
   },
   /** 评估列表 */
   getAssessments(params?: Record<string, any>) {

@@ -101,7 +101,7 @@ onMounted(async () => {
 
 async function loadProfile() {
   try {
-    const res = await http.get<any>('/v1/users/me')
+    const res = await http.get<any>('/v1/auth/me')
     user.value = res
   } catch {
     // 使用本地缓存

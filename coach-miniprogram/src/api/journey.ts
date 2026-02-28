@@ -7,11 +7,11 @@ import http from './request'
 const journeyApi = {
   /** 成长路径总览 */
   getOverview() {
-    return http.get<any>('/v1/journey/overview')
+    return http.get<any>('/v1/journey/state')
   },
   /** 我的进度 */
   getProgress() {
-    return http.get<any>('/v1/journey/progress')
+    return http.get<any>('/v1/journey/stage/progress')
   },
   /** 申请晋级 */
   applyPromotion(data: Record<string, any>) {

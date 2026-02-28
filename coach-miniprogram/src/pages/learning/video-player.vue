@@ -267,22 +267,14 @@ function checkCompletion() {
 // ── 互动 ─────────────────────────────────────────────
 async function toggleLike() {
   try {
-    if (liked.value) {
-      await http.post(`/v1/content/${contentId.value}/unlike`, {})
-    } else {
-      await http.post(`/v1/content/${contentId.value}/like`, {})
-    }
+    await http.post(`/v1/content/${contentId.value}/like`, {})
     liked.value = !liked.value
   } catch {/* ignore */}
 }
 
 async function toggleFavorite() {
   try {
-    if (favorited.value) {
-      await http.post(`/v1/content/${contentId.value}/unfavorite`, {})
-    } else {
-      await http.post(`/v1/content/${contentId.value}/favorite`, {})
-    }
+    await http.post(`/v1/content/${contentId.value}/collect`, {})
     favorited.value = !favorited.value
   } catch {/* ignore */}
 }

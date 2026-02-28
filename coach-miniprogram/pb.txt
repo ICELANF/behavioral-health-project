@@ -1,21 +1,27 @@
-检查 src/pages/notifications/index.vue 文件内容，
-如果还是占位符（包含"页面开发中"），
-说明上批实现的是错误的文件路径。
+根据后端实际路由，批量更新前端 API 调用路径：
 
-请重新实现 src/pages/notifications/index.vue，
-实现消息通知页：
-- 顶部 Tab：全部/系统/学习/教练
-- 通知列表（未读红点 + 标题 + 摘要 + 时间）
-- 顶部「全部已读」按钮
-- 空状态显示「暂无消息」
-- 调用 GET /v1/notifications?type=all
+1. src/api/request.ts 或各 API 模块里：
+   - GET /v1/users/me → GET /api/v1/auth/me
+   - GET /v1/notifications → GET /api/v1/notifications
+   - POST /v1/notifications/{id}/read → POST /api/v1/notifications/{id}/read
+   - GET /v1/coach/analytics → 改为分别调用：
+     GET /api/v1/analytics/coach/risk-trend
+     GET /api/v1/analytics/coach/stage-distribution
+   - GET /v1/content/:id → GET /api/v1/content/detail/{content_type}/{content_id}
+   - POST /v1/content/:id/like → POST /api/v1/content/{id}/like
+   - POST /v1/content/:id/bookmark → POST /api/v1/content/{id}/collect
+   - GET /v1/content/:id/comments → GET /api/v1/content/{id}/comments
+   - POST /v1/content/:id/comments → POST /api/v1/content/{id}/comment
+   - GET /v1/assessment/results/:id → GET /api/v1/assessment/profile/me
+   - GET /v1/coach/dashboard → GET /api/v1/coach/dashboard
+   - GET /v1/coach/students → GET /api/v1/coach/students
+   - GET /v1/coach-push/pending → GET /api/v1/coach-push/pending
+   - GET /v1/companions → GET /api/v1/companions/all
+   - GET /v1/journey/progress → GET /api/v1/journey/state
+   - GET /v1/learning/grower/stats → GET /api/v1/learning/grower/stats
 
-同时检查 src/pages/profile/index.vue 是否也是占位符，
-如果是也一并重新实现：
-- 头像 + 姓名 + 等级徽章
-- 三维积分小卡片
-- 功能菜单列表（学习记录/评估/考试/晋级/证书/排行/设置）
-- 退出登录按钮
-- 调用 GET /v1/users/me
+2. 同时检查 src/api/ 目录下所有 .ts 文件，统一把 baseURL 前缀确认为 /api/v1
 
-完成后执行 npm run build:mp-weixin。
+3. 更新完成后执行 npm run build:mp-weixin
+
+请列出修改了哪些文件和具体路径变更。

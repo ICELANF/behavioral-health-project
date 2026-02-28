@@ -174,7 +174,7 @@ onMounted(async () => {
 
 async function loadProgress() {
   try {
-    const res = await http.get<any>('/v1/certification/paths/my-progress')
+    const res = await http.get<any>('/v1/journey/stage/progress')
     requirements.value = res
   } catch {
     // 用本地数据兜底

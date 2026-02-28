@@ -120,7 +120,7 @@ onMounted(async () => {
 
 async function loadResult() {
   try {
-    const res = await http.get<any>(`/v1/assessment/results/${assessmentId.value}`)
+    const res = await http.get<any>('/v1/assessment/profile/me')
     result.value = res
   } catch {
     uni.showToast({ title: '加载失败', icon: 'none' })
@@ -138,7 +138,7 @@ function shareToCoach() {
     success: async (res) => {
       if (!res.confirm) return
       try {
-        await http.post(`/v1/assessment/results/${assessmentId.value}/share`, {})
+        await http.post('/v1/assessment/profile/me/share', {})
         uni.showToast({ title: '已分享', icon: 'success' })
       } catch {
         uni.showToast({ title: '分享失败', icon: 'none' })

@@ -160,8 +160,12 @@ onMounted(async () => {
 
 async function loadData() {
   try {
-    const res = await http.get<any>('/v1/coach/analytics', { period: period.value })
-    data.value = res
+    const [risk, stage, pushStats] = await Promise.all([
+      http.get<any>('/v1/analytics/coach/risk-trend', { period: period.value }),
+      http.get<any>('/v1/analytics/coach/stage-distribution', { period: period.value }),
+      http.get<any>('/v1/coach/push-queue/analytics', { period: period.value }),
+    ])
+    data.value = { ...risk, ...stage, push_stats: pushStats }
   } catch {
     uni.showToast({ title: '加载失败', icon: 'none' })
   }

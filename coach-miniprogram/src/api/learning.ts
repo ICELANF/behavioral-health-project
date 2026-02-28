@@ -11,11 +11,11 @@ const learningApi = {
   },
   /** 课程详情 */
   getCourseDetail(id: number) {
-    return http.get<any>(`/v1/content/courses/${id}`)
+    return http.get<any>(`/v1/content/course/${id}`)
   },
   /** 内容详情 */
-  getContentDetail(id: number) {
-    return http.get<any>(`/v1/content/${id}`)
+  getContentDetail(id: number | string, contentType = 'article') {
+    return http.get<any>(`/v1/content/detail/${contentType}/${id}`)
   },
   /** 推荐内容 */
   getRecommended(params?: Record<string, any>) {

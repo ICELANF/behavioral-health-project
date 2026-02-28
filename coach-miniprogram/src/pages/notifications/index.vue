@@ -128,7 +128,9 @@ function loadMore() {
 
 async function markAllRead() {
   try {
-    await http.post('/v1/notifications/read-all', {})
+    // 逐条标记已读（后端无 read-all 接口）
+    const unread = notifications.value.filter(n => !n.is_read)
+    await Promise.all(unread.map(n => http.post(`/v1/notifications/${n.id}/read`, {})))
     notifications.value = notifications.value.map(n => ({ ...n, is_read: true }))
     uni.showToast({ title: '已全部标记已读', icon: 'success' })
   } catch {

@@ -118,7 +118,7 @@ async function loadCompanions() {
   if (loading.value) return
   loading.value = true
   try {
-    const res = await http.get<any>('/v1/companions', { page: page.value, page_size: 20 })
+    const res = await http.get<any>('/v1/companions/all', { page: page.value, page_size: 20 })
     const items: Companion[] = res.items || res.companions || []
     if (page.value === 1) {
       companions.value = items

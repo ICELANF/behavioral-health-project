@@ -195,34 +195,30 @@ function onScroll(e: any) {
 
 async function markComplete() {
   try {
-    await http.post(`/v1/content/${contentId.value}/complete`, {})
+    await http.post('/v1/content/user/learning-progress', { content_id: contentId.value, progress_pct: 100 })
   } catch {}
 }
 
 async function toggleLike() {
   try {
-    if (liked.value) {
-      await http.post(`/v1/content/${contentId.value}/unlike`, {})
-      liked.value = false
-      if (content.value) content.value.like_count = Math.max(0, (content.value.like_count || 1) - 1)
-    } else {
-      await http.post(`/v1/content/${contentId.value}/like`, {})
-      liked.value = true
-      if (content.value) content.value.like_count = (content.value.like_count || 0) + 1
+    await http.post(`/v1/content/${contentId.value}/like`, {})
+    liked.value = !liked.value
+    if (content.value) {
+      content.value.like_count = liked.value
+        ? (content.value.like_count || 0) + 1
+        : Math.max(0, (content.value.like_count || 1) - 1)
     }
   } catch {}
 }
 
 async function toggleFav() {
   try {
-    if (favorited.value) {
-      await http.post(`/v1/content/${contentId.value}/unfavorite`, {})
-      favorited.value = false
-      if (content.value) content.value.fav_count = Math.max(0, (content.value.fav_count || 1) - 1)
-    } else {
-      await http.post(`/v1/content/${contentId.value}/favorite`, {})
-      favorited.value = true
-      if (content.value) content.value.fav_count = (content.value.fav_count || 0) + 1
+    await http.post(`/v1/content/${contentId.value}/collect`, {})
+    favorited.value = !favorited.value
+    if (content.value) {
+      content.value.fav_count = favorited.value
+        ? (content.value.fav_count || 0) + 1
+        : Math.max(0, (content.value.fav_count || 1) - 1)
     }
   } catch {}
 }
@@ -243,7 +239,7 @@ async function submitComment() {
     return
   }
   try {
-    await http.post(`/v1/content/${contentId.value}/comments`, { content: text })
+    await http.post(`/v1/content/${contentId.value}/comment`, { content: text })
     showCommentModal.value = false
     commentText.value = ''
     uni.showToast({ title: '评论成功', icon: 'success' })

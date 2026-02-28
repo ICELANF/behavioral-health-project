@@ -7,7 +7,7 @@ import http from './request'
 const profileApi = {
   /** 个人信息 */
   getProfile() {
-    return http.get<any>('/v1/profile')
+    return http.get<any>('/v1/auth/me')
   },
   /** 更新个人信息 */
   updateProfile(data: Record<string, any>) {

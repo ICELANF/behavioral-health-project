@@ -5,6 +5,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import http from '@/api/request'
+import { useUserStore } from './user'
 
 interface LearningStats {
   total_minutes:       number
@@ -41,7 +42,9 @@ export const useLearningStore = defineStore('learning', () => {
     if (!force && stats.value && now - lastFetchedAt.value < 60_000) return
     loading.value = true
     try {
-      const res = await http.get<LearningStats>('/v1/learning/grower/stats')
+      const userStore = useUserStore()
+      const userId = userStore.userInfo?.id || 0
+      const res = await http.get<LearningStats>(`/v1/learning/grower/stats/${userId}`)
       stats.value = res
       lastFetchedAt.value = now
     } catch {
@@ -72,7 +75,7 @@ export const useLearningStore = defineStore('learning', () => {
     time_spent_seconds?: number
   }) {
     try {
-      await http.post(`/v1/content/${contentId}/progress`, data)
+      await http.post('/v1/content/user/learning-progress', { content_id: contentId, ...data })
       setProgress(contentId, data as Partial<ContentProgress>)
     } catch {/* ignore */}
   }

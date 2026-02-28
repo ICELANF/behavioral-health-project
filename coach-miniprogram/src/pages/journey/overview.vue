@@ -126,7 +126,7 @@ onMounted(async () => {
 
 async function loadOverview() {
   try {
-    const res = await http.get<any>('/v1/certification/paths/overview')
+    const res = await http.get<any>('/v1/journey/state')
     overview.value = res
   } catch {
     uni.showToast({ title: '加载失败', icon: 'none' })
