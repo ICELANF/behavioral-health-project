@@ -320,6 +320,23 @@ except ImportError as e:
     logger.warning(f"[v16] Admin行为配置路由加载失败: {e}")
 
 # ============================================
+
+# [coach] 教练端路由
+try:
+    from api.coach_api import router as coach_router
+    app.include_router(coach_router)
+    logger.info('[coach] 教练端路由已加载')
+except Exception as e:
+    logger.warning(f'[coach] 教练端路由加载失败: {e}')
+
+# [coach-message] 教练消息路由
+try:
+    from api.coach_message_api import router as coach_message_router
+    app.include_router(coach_message_router)
+    logger.info('[coach-message] 教练消息路由已加载')
+except Exception as e:
+    logger.warning(f'[coach-message] 教练消息路由加载失败: {e}')
+
 # [copilot] CoachCopilot 分析路由
 # ============================================
 try:

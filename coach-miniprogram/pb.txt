@@ -1,28 +1,13 @@
-📤按钮被胶囊遮挡，快速修复 — 在本地 src/pages/coach/analytics/index.vue 找到：
-html<view class="ca-navbar__action" @tap="exportReport"><text>📤</text></view>
-改为：
-html<view class="ca-navbar__action" @tap="exportReport"><text>导出</text></view>
-然后在 CSS 里找到 .ca-navbar__action，改为：
-css.ca-navbar__action { font-size: 22rpx; font-weight: 600; color: var(--bhp-primary-500, #10b981); padding: 8rpx 16rpx; }
-这样用文字"导出"替代emoji，避免被胶囊遮挡。改完编译测试，没问题就提交：
-bashgit add -A && git commit -m "feat: 数据分析85%→95% + API路径对齐
+git add -A && git commit -m "fix: 注册coach路由到根main.py + 补3个缺失端点
 
-analytics/index.vue (549→682行):
-- 新增教练响应效率卡片(响应时间/回复数/待回复/满意度)
-- 新增健康指标汇总(血糖/血压/睡眠/运动达标率)
-- 核心指标环比对比
-- 导出报告(复制到剪贴板)
-- API fallback: dashboard-stats替代performance
+main.py:
+- include_router(coach_router) 注册到根app
+- include_router(coach_message_router) 注册到根app
 
-messages/index.vue API对齐:
-- conversations → students-with-messages
-- students/{id}/messages → coach/messages/{id}
-- POST messages body格式对齐
+coach_api.py:
+- 新增 GET /students/{id}/prescriptions (行为处方)
+- 新增 GET /students/{id}/risk-history (风险历史)
+- 新增 GET /students/{id}/interventions (干预记录)
+- imports 新增 Intervention, BehaviorPrescription
 
-students/detail.vue API对齐:
-- assessments → assessment-detail
-- health-data → glucose+vitals
-- ai-suggestion → messages/ai-suggestions/{id}
-- send message → POST /coach/messages
-
-整体进度 93%→95%"
+消除前端3个404错误，整体进度 95%→97%"

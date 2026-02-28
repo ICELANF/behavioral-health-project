@@ -7,7 +7,7 @@
         <text class="ca-navbar__arrow">&#8249;</text>
       </view>
       <text class="ca-navbar__title">数据分析</text>
-      <view class="ca-navbar__action" @tap="exportReport"><text>导出</text></view>
+      <view class="ca-navbar__placeholder"></view>
     </view>
 
     <!-- 时间筛选 -->
@@ -21,6 +21,7 @@
       >
         <text>{{ tab.label }}</text>
       </view>
+      <view class="ca-tab ca-tab--export" @tap="exportReport"><text>📤 导出</text></view>
     </view>
 
     <scroll-view scroll-y class="ca-body" refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="onRefresh">
@@ -573,6 +574,7 @@ function goBack() {
 .ca-tabs { display: flex; background: var(--surface); padding: 12rpx 32rpx 16rpx; gap: 16rpx; border-bottom: 1px solid var(--border-light); }
 .ca-tab { flex: 1; text-align: center; padding: 12rpx 0; border-radius: var(--radius-full); font-size: 24rpx; font-weight: 600; color: var(--text-secondary); background: var(--surface-secondary); }
 .ca-tab--active { background: var(--bhp-primary-500, #10b981); color: #fff; }
+.ca-tab--export { background: transparent; color: var(--bhp-primary-500, #10b981); font-weight: 700; flex: none; padding: 12rpx 20rpx; }
 
 .ca-body { flex: 1; padding: 20rpx 32rpx 40rpx; }
 
