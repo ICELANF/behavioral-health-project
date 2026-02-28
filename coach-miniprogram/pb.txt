@@ -1,24 +1,22 @@
-请将 src/pages/exam/session.vue 替换为完整的考试作答页面，实现以下功能：
+请将 src/pages/journey/progress.vue 替换为完整的晋级进度页面，实现以下功能：
 
-1. 题型支持：单选题、多选题、案例题（图文）、案例题（视频）四种题型，根据 question_type 字段动态渲染
+1. 三维积分展示：从 userStore 读取 growthPoints / contributionPoints / influencePoints，
+   用三个进度环或进度条分别展示，颜色对应 Design System（绿/蓝/琥珀）
 
-2. 防丢失策略：每道题选完后立即调用 POST /v1/certification/sessions/:id/answer 保存，
-   不等提交才保存，断线重连后 GET /v1/certification/sessions/:id/questions 恢复已答状态
+2. 晋级四维要求检查清单：调用 GET /v1/certification/paths/my-progress 获取数据，
+   展示当前等级晋升到下一级需要满足的条件：
+   - 成长积分达标（已有/需要，进度条）
+   - 贡献积分达标（已有/需要，进度条）
+   - 影响力积分达标（已有/需要，进度条）
+   - 认证考试通过（✅/❌）
+   - 同道者数量（已有/需要）
+   每项条件已满足显示绿色✅，未满足显示灰色带缺口数量
 
-3. 倒计时：从 exam.time_limit_minutes 开始倒计时，归零自动提交，
-   剩余5分钟时变红色警告
+3. 申请晋级按钮：所有条件满足时按钮高亮可点击，跳转 /pages/journey/promotion；
+   条件未满足时按钮置灰，显示"还差 XX 成长积分"最紧迫的缺口提示
 
-4. 题目导航：顶部显示题号进度（3/20），底部答题卡可跳题，
-   已答题号绿色，未答灰色
+4. 当前等级展示：顶部显示当前角色 BHPLevelBadge + 六级路径时间线（当前位置高亮）
 
-5. 提交确认：点提交时检查未答题数，弹窗确认后调用 POST /v1/certification/sessions/:id/submit，
-   成功后跳转 /pages/exam/result?session_id=xxx
-
-6. 案例题渲染：先展示图文或视频内容，再显示题目，
-   视频案例题使用小程序原生 <video> 组件
-
-7. navigationStyle: custom 自定义导航栏，显示考试名称和倒计时
-
-8. 小程序切后台超过30秒弹出警告提示
+5. 积分明细入口：点击任意积分卡片跳转到积分流水记录
 
 使用 BHP Design System CSS变量，风格统一。完成后执行 npm run build:mp-weixin。
