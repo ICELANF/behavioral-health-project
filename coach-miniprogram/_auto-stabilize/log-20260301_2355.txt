@@ -80,3 +80,18 @@
 [23:57:28][INFO]     Moved: dashboard.vue -> dashboard\index.vue
 [23:57:28][PASS]   [PASS] Files migrated -- 2 files
 [23:57:29][INFO]   Fixing hardcoded values in UI files...
+[23:57:30][INFO]   [GIT] auto-phase5: BOS UI integration + hardcode fix
+[23:57:30][HEAD] 
+[23:57:30][HEAD] === PHASE 6: pages.json route alignment ===
+[23:57:30][FAIL]   [FAIL] Route completeness -- Missing 10 routes
+[23:57:30][WARN]     Missing: coach/dashboard/index
+[23:57:30][WARN]     Missing: coach/flywheel/index
+[23:57:30][WARN]     Missing: coach/students/index
+[23:57:30][WARN]     Missing: coach/students/detail
+[23:57:30][WARN]     Missing: coach/risk/index
+[23:57:30][WARN]     Missing: coach/assessment/index
+[23:57:30][WARN]     Missing: coach/push-queue/index
+[23:57:30][WARN]     Missing: coach/analytics/index
+[23:57:30][WARN]     Missing: coach/messages/index
+[23:57:30][WARN]     Missing: coach/live/index
+[23:57:30][WARN]   [TODO] Add missing routes to pages.json: coach/dashboard/index, coach/flywheel/index, coach/students/index, coach/students/detail, coach/risk/index, coach/assessment/index, coach/push-queue/index, coach/analytics/index, coach/messages/index, coach/live/index
