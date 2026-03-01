@@ -79,3 +79,4 @@
 [23:57:28][INFO]     Moved: push-queue.vue -> push-queue\index.vue
 [23:57:28][INFO]     Moved: dashboard.vue -> dashboard\index.vue
 [23:57:28][PASS]   [PASS] Files migrated -- 2 files
+[23:57:29][INFO]   Fixing hardcoded values in UI files...
