@@ -1,273 +1,116 @@
 <template>
-  <view class="msg-page">
-    <!-- 顶部导航 -->
-    <view class="msg-navbar safe-area-top">
-      <text class="msg-navbar__title">消息</text>
-      <view class="msg-navbar__actions">
-        <view class="msg-navbar__btn" @tap="markAllRead" v-if="unreadTotal > 0">
-          <text class="msg-navbar__btn-text">全部已读</text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 消息分类 Tab -->
-    <view class="msg-tabs">
-      <view
-        v-for="tab in tabs" :key="tab.key"
-        class="msg-tab" :class="{ 'msg-tab--active': activeTab === tab.key }"
-        @tap="activeTab = tab.key"
-      >
-        <text class="msg-tab__text">{{ tab.label }}</text>
-        <view class="msg-tab__badge" v-if="tab.unread > 0">
-          <text>{{ tab.unread > 99 ? '99+' : tab.unread }}</text>
-        </view>
-      </view>
-    </view>
-
-    <!-- 消息列表 -->
-    <scroll-view scroll-y class="msg-body" @scrolltolower="loadMore">
-      <template v-if="loading && !messages.length">
-        <view class="bhp-skeleton" v-for="i in 5" :key="i" style="height: 120rpx; border-radius: var(--radius-lg); margin-bottom: 12rpx;"></view>
-      </template>
-
-      <template v-else-if="filteredMessages.length">
-        <view
-          v-for="msg in filteredMessages" :key="msg.id"
-          class="msg-item" :class="{ 'msg-item--unread': !msg.is_read }"
-          @tap="openMessage(msg)"
-        >
-          <!-- 头像/图标 -->
-          <view class="msg-item__avatar" :class="`msg-item__avatar--${msg.type || 'system'}`">
-            <text>{{ getIcon(msg.type) }}</text>
-          </view>
-
-          <!-- 内容 -->
-          <view class="msg-item__content">
-            <view class="msg-item__header">
-              <text class="msg-item__title">{{ msg.title || getTypeLabel(msg.type) }}</text>
-              <text class="msg-item__time">{{ formatTime(msg.created_at) }}</text>
-            </view>
-            <text class="msg-item__preview">{{ msg.content || msg.summary || '点击查看详情' }}</text>
-          </view>
-
-          <!-- 未读点 -->
-          <view class="msg-item__dot" v-if="!msg.is_read"></view>
-        </view>
-      </template>
-
-      <!-- 空状态 -->
-      <view v-else class="msg-empty">
-        <text class="msg-empty__icon">📭</text>
-        <text class="msg-empty__text">暂无{{ activeTab === 'all' ? '' : tabs.find(t => t.key === activeTab)?.label }}消息</text>
-      </view>
-
-      <!-- 加载更多 -->
-      <view v-if="hasMore && filteredMessages.length" class="msg-loadmore">
-        <text class="msg-loadmore__text">{{ loadingMore ? '加载中...' : '上拉加载更多' }}</text>
-      </view>
-    </scroll-view>
+<view class="bos-page">
+  <view class="bos-navbar">
+    <view class="bos-navbar__back" @tap="goBack"><text class="bos-navbar__arrow">‹</text></view>
+    <text class="bos-navbar__title">教练消息</text>
+    <view class="bos-navbar__placeholder"></view>
   </view>
+
+  <!-- 搜索 -->
+  <view class="search-wrap">
+    <view class="search-box">
+      <text class="search-box__icon">🔍</text>
+      <input class="search-box__input" v-model="keyword" placeholder="搜索学员..." confirm-type="search" @confirm="filterConvos" />
+    </view>
+  </view>
+
+  <!-- 消息分类 Tab -->
+  <view class="tab-wrap"><view class="bos-tabs">
+    <view v-for="t in MSG_TABS" :key="t.key" class="bos-tab" :class="{'bos-tab--active':activeTab===t.key}" @tap="activeTab=t.key">
+      <text>{{t.label}}</text>
+      <view class="bos-tab__dot" v-if="t.key==='unread'&&unreadCount>0"></view>
+    </view>
+  </view></view>
+
+  <scroll-view scroll-y class="bos-scroll" refresher-enabled :refresher-triggered="refreshing" @refresherrefresh="onRefresh">
+    <template v-if="loading"><view class="bos-skeleton" v-for="i in 5" :key="i" style="height:100rpx;margin-bottom:12rpx;"></view></template>
+    <template v-else-if="displayList.length">
+      <view v-for="convo in displayList" :key="convo.id" class="convo-item" :class="{'convo-item--unread':convo.unread>0}" @tap="goChat(convo)">
+        <view class="convo-avatar" :class="avatarClass(convo.risk_level)">
+          <text>{{(convo.student_name||'?')[0]}}</text>
+          <view class="convo-avatar__dot" v-if="convo.unread>0"></view>
+        </view>
+        <view class="convo-item__body">
+          <view class="convo-item__row1">
+            <text class="convo-item__name">{{convo.student_name}}</text>
+            <text class="convo-item__time">{{formatTime(convo.last_message_at)}}</text>
+          </view>
+          <view class="convo-item__row2">
+            <text class="convo-item__preview">{{convo.last_message||'暂无消息'}}</text>
+            <view class="convo-item__badge" v-if="convo.unread>0"><text>{{convo.unread>99?'99+':convo.unread}}</text></view>
+          </view>
+        </view>
+      </view>
+    </template>
+    <view v-else class="bos-empty"><text class="bos-empty__icon">💬</text><text class="bos-empty__text">暂无消息记录</text></view>
+  </scroll-view>
+</view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { http } from '@/utils/request'
 
-/* ── 内联 request ── */
-const _BASE = 'http://localhost:8002/api'
-function _getToken(): string {
-  try { return uni.getStorageSync('access_token') || '' } catch { return '' }
-}
-function _request<T = any>(method: string, url: string, data?: any): Promise<T> {
-  return new Promise((resolve, reject) => {
-    uni.request({
-      url: `${_BASE}${url}`,
-      method: method as any,
-      data,
-      header: { Authorization: `Bearer ${_getToken()}`, 'Content-Type': 'application/json' },
-      success: (res: any) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T)
-        else reject({ message: res.data?.detail || `HTTP ${res.statusCode}`, statusCode: res.statusCode })
-      },
-      fail: (err: any) => reject({ message: err.errMsg || '网络异常' }),
-    })
-  })
-}
-const http = {
-  get: <T = any>(url: string) => _request<T>('GET', url),
-  post: <T = any>(url: string, data?: any) => _request<T>('POST', url, data),
-}
-/* ── end inline request ── */
+const MSG_TABS=[{key:'all',label:'全部'},{key:'unread',label:'未读'},{key:'starred',label:'重要'}]
 
-const loading     = ref(false)
-const loadingMore = ref(false)
-const activeTab   = ref('all')
-const messages    = ref<any[]>([])
-const page        = ref(1)
-const hasMore     = ref(false)
+const loading=ref(false),refreshing=ref(false),keyword=ref(''),activeTab=ref('all'),conversations=ref<any[]>([])
 
-const TYPE_MAP: Record<string, string> = {
-  system: '系统通知',
-  coach: '教练消息',
-  reminder: '健康提醒',
-  task: '任务通知',
-  encouragement: '激励消息',
-  alert: '预警通知',
-}
-const ICON_MAP: Record<string, string> = {
-  system: '🔔',
-  coach: '👨‍⚕️',
-  reminder: '⏰',
-  task: '📋',
-  encouragement: '💪',
-  alert: '⚠️',
-}
-
-const tabs = computed(() => {
-  const countByType: Record<string, number> = {}
-  for (const m of messages.value) {
-    if (!m.is_read) {
-      const key = m.type || 'system'
-      countByType[key] = (countByType[key] || 0) + 1
-    }
-  }
-  const totalUnread = Object.values(countByType).reduce((s, n) => s + n, 0)
-  return [
-    { key: 'all', label: '全部', unread: totalUnread },
-    { key: 'coach', label: '教练', unread: countByType['coach'] || 0 },
-    { key: 'reminder', label: '提醒', unread: countByType['reminder'] || 0 },
-    { key: 'system', label: '系统', unread: countByType['system'] || 0 },
-  ]
+const unreadCount=computed(()=>conversations.value.reduce((a,c)=>a+(c.unread||0),0))
+const displayList=computed(()=>{
+  let list=conversations.value
+  if(keyword.value){const kw=keyword.value.toLowerCase();list=list.filter(c=>(c.student_name||'').toLowerCase().includes(kw))}
+  if(activeTab.value==='unread')list=list.filter(c=>c.unread>0)
+  if(activeTab.value==='starred')list=list.filter(c=>c.starred)
+  return list
 })
 
-const unreadTotal = computed(() => tabs.value[0].unread)
+function avatarClass(risk:string){const m:Record<string,string>={high:'convo-avatar--red',medium:'convo-avatar--amber',low:'convo-avatar--green'};return m[risk]||'convo-avatar--green'}
 
-const filteredMessages = computed(() => {
-  if (activeTab.value === 'all') return messages.value
-  return messages.value.filter(m => (m.type || 'system') === activeTab.value)
-})
+onMounted(()=>loadConversations())
 
-function getTypeLabel(type: string): string { return TYPE_MAP[type] || '消息' }
-function getIcon(type: string): string { return ICON_MAP[type] || '🔔' }
-
-function formatTime(dt: string): string {
-  if (!dt) return ''
-  const d = new Date(dt)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return '刚刚'
-  if (diffMin < 60) return `${diffMin}分钟前`
-  const diffH = Math.floor(diffMin / 60)
-  if (diffH < 24) return `${diffH}小时前`
-  const diffD = Math.floor(diffH / 24)
-  if (diffD < 7) return `${diffD}天前`
-  return `${d.getMonth() + 1}/${d.getDate()}`
+async function loadConversations(){
+  loading.value=true
+  try{
+    const res=await http.get<any>('/v1/coach/students-with-messages')
+    conversations.value=res.items||res.conversations||(Array.isArray(res)?res:[])
+  }catch{conversations.value=[]}finally{loading.value=false}
 }
-
-onMounted(() => loadMessages())
-
-async function loadMessages() {
-  loading.value = true
-  page.value = 1
-  try {
-    const res = await http.get<any>('/v1/messages?page=1&page_size=30')
-    messages.value = res.items || res.messages || (Array.isArray(res) ? res : [])
-    hasMore.value = (res.total || 0) > messages.value.length
-  } catch {
-    // fallback: 生成示例消息
-    messages.value = [
-      { id: 1, type: 'system', title: '欢迎使用行健平台', content: '您已成功注册，开始您的健康管理之旅。', is_read: true, created_at: new Date().toISOString() },
-      { id: 2, type: 'reminder', title: '健康提醒', content: '今天别忘了记录血糖数据哦！', is_read: false, created_at: new Date(Date.now() - 3600000).toISOString() },
-    ]
-    hasMore.value = false
-  } finally {
-    loading.value = false
-  }
-}
-
-async function loadMore() {
-  if (loadingMore.value || !hasMore.value) return
-  loadingMore.value = true
-  page.value++
-  try {
-    const res = await http.get<any>(`/v1/messages?page=${page.value}&page_size=30`)
-    const newItems = res.items || res.messages || []
-    messages.value.push(...newItems)
-    hasMore.value = newItems.length >= 30
-  } catch { hasMore.value = false }
-  finally { loadingMore.value = false }
-}
-
-async function openMessage(msg: any) {
-  // 标记已读
-  if (!msg.is_read) {
-    msg.is_read = true
-    try { await http.post(`/v1/messages/${msg.id}/read`) } catch { /* 静默 */ }
-  }
-  // 跳转详情或弹窗
-  uni.showModal({
-    title: msg.title || getTypeLabel(msg.type),
-    content: msg.content || '无详细内容',
-    showCancel: false,
-    confirmText: '知道了',
-  })
-}
-
-async function markAllRead() {
-  try {
-    await http.post('/v1/messages/read-all')
-    messages.value.forEach(m => m.is_read = true)
-    uni.showToast({ title: '已全部标记已读', icon: 'success' })
-  } catch {
-    // 本地标记
-    messages.value.forEach(m => m.is_read = true)
-  }
-}
+async function onRefresh(){refreshing.value=true;await loadConversations();refreshing.value=false}
+function filterConvos(){}
+function goChat(convo:any){uni.navigateTo({url:`/pages/coach/students/detail?id=${convo.student_id}&tab=message`})}
+function formatTime(dt:string):string{if(!dt)return'';const d=new Date(dt);const now=new Date();const diff=now.getTime()-d.getTime();if(diff<86400000)return dt.slice(11,16);if(diff<604800000)return['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];return dt.slice(5,10)}
+function goBack(){uni.navigateBack({fail:()=>uni.switchTab({url:'/pages/home/index'})})}
 </script>
 
 <style scoped>
-.msg-page { background: var(--surface-secondary); min-height: 100vh; display: flex; flex-direction: column; }
+.bos-page{min-height:100vh;background:linear-gradient(180deg,#f0fdf4 0%,#f8fafc 30%,#f0f9ff 100%);display:flex;flex-direction:column;}
+.bos-navbar{display:flex;align-items:center;justify-content:space-between;padding:16rpx 32rpx;padding-top:calc(88rpx + env(safe-area-inset-top));background:rgba(255,255,255,0.72);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1rpx solid rgba(226,232,240,0.4);position:sticky;top:0;z-index:100;}
+.bos-navbar__back{width:64rpx;height:64rpx;display:flex;align-items:center;justify-content:center;background:#e2e8f0;border-radius:16rpx;}.bos-navbar__arrow{font-size:48rpx;color:#0f172a;font-weight:800;line-height:1;}.bos-navbar__title{font-size:30rpx;font-weight:700;color:#1e293b;}.bos-navbar__placeholder{width:64rpx;}
 
-.msg-navbar { display: flex; align-items: center; justify-content: space-between; padding: 8rpx 32rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: var(--surface); }
-.msg-navbar__title { font-size: 34rpx; font-weight: 700; color: var(--text-primary); }
-.msg-navbar__btn { padding: 8rpx 20rpx; background: var(--surface-secondary); border-radius: var(--radius-full); }
-.msg-navbar__btn-text { font-size: 22rpx; color: var(--bhp-primary-600); font-weight: 600; }
+.search-wrap{padding:12rpx 32rpx;background:rgba(255,255,255,0.72);backdrop-filter:blur(20px);}
+.search-box{display:flex;align-items:center;gap:12rpx;background:#f1f5f9;border-radius:20rpx;padding:0 20rpx;height:68rpx;}
+.search-box__icon{font-size:26rpx;flex-shrink:0;}.search-box__input{flex:1;font-size:26rpx;background:transparent;}
 
-.msg-tabs { display: flex; gap: 0; background: var(--surface); border-bottom: 1px solid var(--border-light); padding: 0 32rpx; }
-.msg-tab { position: relative; padding: 16rpx 24rpx; cursor: pointer; display: flex; align-items: center; gap: 8rpx; }
-.msg-tab__text { font-size: 26rpx; color: var(--text-secondary); font-weight: 500; }
-.msg-tab--active { border-bottom: 4rpx solid var(--bhp-primary-600); }
-.msg-tab--active .msg-tab__text { color: var(--bhp-primary-600); font-weight: 700; }
-.msg-tab__badge { background: #ef4444; color: #fff; font-size: 18rpx; padding: 2rpx 10rpx; border-radius: var(--radius-full); min-width: 28rpx; text-align: center; }
+.tab-wrap{padding:0 32rpx;padding-top:8rpx;background:rgba(255,255,255,0.72);backdrop-filter:blur(20px);}
+.bos-tabs{display:flex;gap:4rpx;background:#f1f5f9;padding:6rpx;border-radius:20rpx;}
+.bos-tab{flex:1;padding:14rpx 8rpx;border-radius:16rpx;font-size:22rpx;font-weight:600;color:#64748b;text-align:center;position:relative;}.bos-tab--active{background:#fff;color:#16a34a;box-shadow:0 4rpx 12rpx rgba(0,0,0,0.06);}
+.bos-tab__dot{position:absolute;top:6rpx;right:calc(50% - 40rpx);width:12rpx;height:12rpx;background:#ef4444;border-radius:50%;animation:bos-breathe 1.5s ease-in-out infinite;}
+@keyframes bos-breathe{0%,100%{transform:scale(1);opacity:1;}50%{transform:scale(1.4);opacity:0.5;}}
+.bos-scroll{flex:1;padding:16rpx 32rpx 120rpx;}
 
-.msg-body { flex: 1; padding: 16rpx 32rpx 120rpx; }
+.convo-item{display:flex;align-items:center;gap:20rpx;padding:20rpx;background:rgba(255,255,255,0.75);border-radius:24rpx;margin-bottom:12rpx;border:2rpx solid rgba(226,232,240,0.3);}
+.convo-item--unread{background:rgba(240,253,244,0.8);border-color:rgba(187,247,208,0.5);}
+.convo-avatar{width:80rpx;height:80rpx;border-radius:24rpx;display:flex;align-items:center;justify-content:center;font-size:32rpx;font-weight:700;color:#fff;flex-shrink:0;position:relative;}
+.convo-avatar--green{background:linear-gradient(135deg,#22c55e,#16a34a);}.convo-avatar--amber{background:linear-gradient(135deg,#f59e0b,#d97706);}.convo-avatar--red{background:linear-gradient(135deg,#ef4444,#dc2626);}
+.convo-avatar__dot{position:absolute;top:-4rpx;right:-4rpx;width:20rpx;height:20rpx;background:#ef4444;border-radius:50%;border:3rpx solid #fff;animation:bos-breathe 1.5s ease-in-out infinite;}
+.convo-item__body{flex:1;min-width:0;}
+.convo-item__row1{display:flex;justify-content:space-between;align-items:center;margin-bottom:6rpx;}
+.convo-item__name{font-size:28rpx;font-weight:700;color:#1e293b;}.convo-item__time{font-size:20rpx;color:#94a3b8;}
+.convo-item__row2{display:flex;justify-content:space-between;align-items:center;}
+.convo-item__preview{font-size:24rpx;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
+.convo-item__badge{min-width:32rpx;height:32rpx;border-radius:999rpx;background:#ef4444;color:#fff;font-size:18rpx;font-weight:700;display:flex;align-items:center;justify-content:center;padding:0 8rpx;flex-shrink:0;margin-left:12rpx;}
 
-.msg-item {
-  display: flex; align-items: center; gap: 20rpx;
-  background: var(--surface); border-radius: var(--radius-lg); padding: 24rpx; margin-bottom: 12rpx;
-  border: 1px solid var(--border-light); position: relative;
-}
-.msg-item--unread { background: var(--bhp-primary-50); border-color: var(--bhp-primary-100); }
-
-.msg-item__avatar { width: 72rpx; height: 72rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 32rpx; flex-shrink: 0; background: var(--surface-secondary); }
-.msg-item__avatar--coach { background: #dbeafe; }
-.msg-item__avatar--reminder { background: #fef3c7; }
-.msg-item__avatar--alert { background: #fee2e2; }
-.msg-item__avatar--task { background: #d1fae5; }
-.msg-item__avatar--encouragement { background: #ede9fe; }
-
-.msg-item__content { flex: 1; min-width: 0; }
-.msg-item__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6rpx; }
-.msg-item__title { font-size: 26rpx; font-weight: 600; color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
-.msg-item__time { font-size: 20rpx; color: var(--text-tertiary); flex-shrink: 0; margin-left: 12rpx; }
-.msg-item__preview { display: block; font-size: 24rpx; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-.msg-item__dot { position: absolute; top: 20rpx; right: 20rpx; width: 14rpx; height: 14rpx; border-radius: 50%; background: #ef4444; }
-
-.msg-empty { display: flex; flex-direction: column; align-items: center; padding: 160rpx 0; gap: 16rpx; }
-.msg-empty__icon { font-size: 80rpx; }
-.msg-empty__text { font-size: 26rpx; color: var(--text-tertiary); }
-
-.msg-loadmore { text-align: center; padding: 24rpx; }
-.msg-loadmore__text { font-size: 22rpx; color: var(--text-tertiary); }
+.bos-empty{display:flex;flex-direction:column;align-items:center;padding:160rpx 0;gap:20rpx;}.bos-empty__icon{font-size:96rpx;opacity:0.6;}.bos-empty__text{font-size:26rpx;color:#94a3b8;}
+.bos-skeleton{background:linear-gradient(90deg,#f1f5f9 25%,#f8fafc 50%,#f1f5f9 75%);background-size:200% 100%;animation:bos-shimmer 1.5s ease-in-out infinite;border-radius:24rpx;}
+@keyframes bos-shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
 </style>

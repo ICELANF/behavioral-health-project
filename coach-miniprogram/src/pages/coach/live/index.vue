@@ -65,32 +65,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-/* ── 内联 request（分包独立，不依赖主包 @/api/request）── */
-const _BASE = 'http://localhost:8002/api'
-function _getToken(): string {
-  try { return uni.getStorageSync('access_token') || '' } catch { return '' }
-}
-function _request<T = any>(method: string, url: string, data?: any): Promise<T> {
-  return new Promise((resolve, reject) => {
-    uni.request({
-      url: `${_BASE}${url}`,
-      method: method as any,
-      data,
-      header: { Authorization: `Bearer ${_getToken()}`, 'Content-Type': 'application/json' },
-      success: (res: any) => {
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T)
-        else reject({ message: res.data?.detail || `HTTP ${res.statusCode}`, statusCode: res.statusCode })
-      },
-      fail: (err: any) => reject({ message: err.errMsg || '网络异常' }),
-    })
-  })
-}
-const http = {
-  get: <T = any>(url: string) => _request<T>('GET', url),
-  post: <T = any>(url: string, data?: any) => _request<T>('POST', url, data),
-}
-/* ── end inline request ── */
-
 const loading  = ref(false)
 const liveNow  = ref<any[]>([])
 const upcoming = ref<any[]>([])
@@ -100,31 +74,28 @@ onMounted(() => loadLives())
 
 async function loadLives() {
   loading.value = true
-  try {
-    const res = await http.get<any>('/v1/coach/lives')
-    const items = res.items || res.lives || (Array.isArray(res) ? res : [])
-    liveNow.value  = items.filter((i: any) => i.status === 'live' || i.status === 'streaming')
-    upcoming.value = items.filter((i: any) => i.status === 'upcoming' || i.status === 'scheduled')
-    history.value  = items.filter((i: any) => i.status === 'ended' || i.status === 'replay')
-  } catch {
-    liveNow.value = []; upcoming.value = []; history.value = []
-  } finally {
+  // 后端暂无 /v1/coach/lives 路由，使用静态 mock 数据
+  setTimeout(() => {
+    upcoming.value = [
+      { id: 1, title: '血糖管理实战课', host_name: '王教练', start_time: '2026-03-05T14:00:00', status: 'upcoming', reserved: false },
+      { id: 2, title: '情绪与饮食关系', host_name: '李教练', start_time: '2026-03-08T10:00:00', status: 'upcoming', reserved: false },
+    ]
+    history.value = [
+      { id: 3, title: '行为改变入门', host_name: '张教练', start_time: '2026-02-20T15:00:00', status: 'ended', view_count: 128 },
+    ]
+    liveNow.value = []
     loading.value = false
-  }
+  }, 300)
 }
 
 function enterLive(item: any) {
   uni.showToast({ title: '直播功能开发中', icon: 'none' })
 }
 
-async function toggleReserve(item: any) {
-  try {
-    await http.post(`/v1/coach/lives/${item.id}/reserve`, {})
-    item.reserved = !item.reserved
-    uni.showToast({ title: item.reserved ? '已预约' : '已取消', icon: 'success' })
-  } catch (e: any) {
-    uni.showToast({ title: e?.message || '操作失败', icon: 'none' })
-  }
+function toggleReserve(item: any) {
+  // 后端暂无预约路由，使用本地状态切换
+  item.reserved = !item.reserved
+  uni.showToast({ title: item.reserved ? '已预约' : '已取消', icon: 'success' })
 }
 
 function watchReplay(item: any) {

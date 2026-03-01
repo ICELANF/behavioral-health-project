@@ -5,7 +5,7 @@
  * - 统一错误 Toast（可通过 noToast 选项关闭）
  */
 
-const BASE_URL = 'http://localhost:8000/api'
+import { BASE_URL } from '@/config/env'
 
 interface RequestOptions {
   noAuth?:  boolean   // 跳过 Authorization 头（登录/注册接口）
