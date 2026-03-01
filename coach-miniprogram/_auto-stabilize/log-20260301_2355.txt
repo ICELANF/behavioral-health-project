@@ -1,0 +1,24 @@
+[23:55:38][HEAD] ========================================================
+[23:55:38][HEAD]   BehaviorOS auto-stabilize v2.1
+[23:55:38][HEAD]   Unattended mode - go have some tea
+[23:55:38][HEAD] ========================================================
+[23:55:38][INFO] Project: D:\behavioral-health-project\coach-miniprogram
+[23:55:38][INFO] Log: D:\behavioral-health-project\coach-miniprogram\_auto-stabilize\log-20260301_2355.txt
+[23:55:38][HEAD] 
+[23:55:38][HEAD] === PHASE 0: Environment check ===
+[23:55:38][PASS]   [PASS] Branch=stabilize-from-sprint1 -- Actual: stabilize-from-sprint1
+[23:55:38][PASS]   [PASS] package.json exists
+[23:55:38][PASS]   [PASS] Node.js available -- v24.13.0
+[23:55:38][PASS]   [PASS] bhp_v3_api running
+[23:55:38][PASS]   [PASS] API /docs reachable -- Code: 200
+[23:55:39][PASS]   [PASS] Coach login
+[23:55:39][PASS]   [PASS] Grower login
+[23:55:39][HEAD] 
+[23:55:39][HEAD] === PHASE 1: Infrastructure auto-fix ===
+[23:55:39][INFO]   Scanning source for wrong ports...
+[23:55:39][PASS]   [PASS] No wrong port references
+[23:55:39][FIX]   Adding dev:mp-weixin script...
+[23:55:39][FIX]   [FIX ] Added dev:mp-weixin -- script added
+[23:55:39][PASS]   [PASS] .env exists
+[23:55:40][FIX]   Stopping app.yaml containers...
+[23:55:48][FIX]   [FIX ] Stopped app.yaml -- stopped
