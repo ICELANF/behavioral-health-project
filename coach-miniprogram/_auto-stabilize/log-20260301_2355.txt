@@ -95,3 +95,12 @@
 [23:57:30][WARN]     Missing: coach/messages/index
 [23:57:30][WARN]     Missing: coach/live/index
 [23:57:30][WARN]   [TODO] Add missing routes to pages.json: coach/dashboard/index, coach/flywheel/index, coach/students/index, coach/students/detail, coach/risk/index, coach/assessment/index, coach/push-queue/index, coach/analytics/index, coach/messages/index, coach/live/index
+[23:57:30][INFO]   [GIT] auto-phase6: route check
+[23:57:30][HEAD] 
+[23:57:30][HEAD] === PHASE 7: Final compile + page analysis ===
+[23:57:30][INFO]   Final compile...
+[23:59:04][FAIL]   [FAIL] Final compile -- all modes failed
+[23:59:04][HEAD] 
+[23:59:04][HEAD] === PHASE 8: WeChat DevTools ===
+[23:59:04][SKIP]   DevTools CLI not found or no dist - skip
+[23:59:04][WARN]   [TODO] Open WeChat DevTools manually and load: 
