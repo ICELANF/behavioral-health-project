@@ -158,20 +158,33 @@ async function loadData() {
 async function sendPush(item: any) {
   try {
     await http('/api/v1/coach/push-queue/' + item.id + '/approve', { method: 'POST', data: {} })
-    item.status = 'sent'
     uni.showToast({ title: '已发送', icon: 'success' })
-  } catch {
-    uni.showToast({ title: '发送失败', icon: 'none' })
+    await loadData()
+  } catch (e: any) {
+    // 400 = 状态已变更（被他人或后台处理），刷新列表
+    const code = e?.statusCode || 0
+    if (code === 400) {
+      uni.showToast({ title: '状态已更新，刷新中', icon: 'none' })
+    } else {
+      uni.showToast({ title: '发送失败', icon: 'none' })
+    }
+    await loadData()
   }
 }
 
 async function cancelPush(item: any) {
   try {
     await http('/api/v1/coach/push-queue/' + item.id + '/reject', { method: 'POST', data: {} })
-    item.status = 'cancelled'
     uni.showToast({ title: '已取消', icon: 'success' })
-  } catch {
-    uni.showToast({ title: '取消失败', icon: 'none' })
+    await loadData()
+  } catch (e: any) {
+    const code = e?.statusCode || 0
+    if (code === 400) {
+      uni.showToast({ title: '状态已更新，刷新中', icon: 'none' })
+    } else {
+      uni.showToast({ title: '取消失败', icon: 'none' })
+    }
+    await loadData()
   }
 }
 
