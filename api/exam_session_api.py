@@ -203,6 +203,7 @@ def get_result(
     }
 
 
+@router.get("/my", summary="我的考试历史(别名)")
 @router.get("/my-results")
 def my_results(
     skip: int = 0,

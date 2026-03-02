@@ -1519,3 +1519,141 @@ def coach_sharing_history(
         "page": page,
         "pageSize": pageSize,
     }
+
+
+# ============================================================================
+# 学员行为记录（微行动完成日志）
+# ============================================================================
+
+@router.get("/behavior/{student_id}/recent")
+def get_student_behavior_recent(
+    student_id: int,
+    limit: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """学员近期行为记录 — 基于微行动完成日志"""
+    from sqlalchemy import text as sa_text
+
+    # 鉴权：确认是自己绑定的学员
+    my_ids = _get_my_student_ids(db, current_user)
+    if student_id not in my_ids:
+        raise HTTPException(status_code=403, detail="无权查看该学员数据")
+
+    rows = db.execute(sa_text("""
+        SELECT
+            mal.id,
+            mal.action,
+            mal.note,
+            mal.mood_score,
+            mal.created_at,
+            mat.title       AS task_title,
+            mat.domain      AS behavior_type
+        FROM micro_action_logs mal
+        JOIN micro_action_tasks mat ON mal.task_id = mat.id
+        WHERE mal.user_id = :uid
+        ORDER BY mal.created_at DESC
+        LIMIT :lim
+    """), {"uid": student_id, "lim": limit}).fetchall()
+
+    _TYPE_LABEL = {
+        "exercise": "运动", "diet": "饮食", "sleep": "睡眠",
+        "medication": "用药", "mood": "情绪", "checkin": "打卡",
+    }
+
+    items = []
+    for r in rows:
+        btype = r.behavior_type or "checkin"
+        items.append({
+            "id": r.id,
+            "behavior_type": btype,
+            "type_label": _TYPE_LABEL.get(btype, btype),
+            "description": r.task_title or r.note or r.action or "完成微行动",
+            "note": r.note or "",
+            "mood_score": r.mood_score,
+            "recorded_at": r.created_at.isoformat() if r.created_at else None,
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+        })
+
+    return {"items": items, "total": len(items)}
+
+
+# ============================================================================
+# 学员督导笔记（教练对学员的备注记录）
+# ============================================================================
+
+from pydantic import BaseModel as _BaseModel
+
+class _NoteBody(_BaseModel):
+    content: str
+
+
+@router.get("/students/{student_id}/notes")
+def get_student_notes(
+    student_id: int,
+    limit: int = Query(20, ge=1, le=50),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """获取教练对该学员的督导笔记"""
+    from sqlalchemy import text as sa_text
+
+    my_ids = _get_my_student_ids(db, current_user)
+    if student_id not in my_ids:
+        raise HTTPException(status_code=403, detail="无权查看该学员数据")
+
+    rows = db.execute(sa_text("""
+        SELECT id, note, created_at
+        FROM coach_review_logs
+        WHERE coach_id = :cid
+          AND review_id = :rid
+          AND note IS NOT NULL AND note != ''
+        ORDER BY created_at DESC
+        LIMIT :lim
+    """), {
+        "cid": current_user.id,
+        "rid": f"s_{student_id}",
+        "lim": limit,
+    }).fetchall()
+
+    items = [
+        {
+            "id": r.id,
+            "content": r.note,
+            "author": current_user.full_name or current_user.username or "教练",
+            "created_at": r.created_at.isoformat() if r.created_at else None,
+            "date": r.created_at.strftime("%Y-%m-%d") if r.created_at else "",
+        }
+        for r in rows
+    ]
+    return {"items": items, "total": len(items)}
+
+
+@router.post("/students/{student_id}/notes")
+def create_student_note(
+    student_id: int,
+    body: _NoteBody,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """新增教练对学员的督导笔记"""
+    from sqlalchemy import text as sa_text
+
+    my_ids = _get_my_student_ids(db, current_user)
+    if student_id not in my_ids:
+        raise HTTPException(status_code=403, detail="无权操作该学员数据")
+
+    if not body.content or not body.content.strip():
+        raise HTTPException(status_code=422, detail="笔记内容不能为空")
+
+    db.execute(sa_text("""
+        INSERT INTO coach_review_logs (coach_id, review_id, action, note, created_at, reviewed_at)
+        VALUES (:cid, :rid, 'note', :note, NOW(), NOW())
+    """), {
+        "cid": current_user.id,
+        "rid": f"s_{student_id}",
+        "note": body.content.strip(),
+    })
+    db.commit()
+
+    return {"success": True, "message": "笔记已保存"}

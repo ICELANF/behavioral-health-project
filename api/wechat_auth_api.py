@@ -492,3 +492,152 @@ async def confirm_phone_code(
     )
     await db.commit()
     return {"success": True, "phone": phone[:3] + "****" + phone[-4:]}
+
+
+# ═══════════════════════════════════════════════════
+# 微信小程序登录 (jscode2session)
+# ═══════════════════════════════════════════════════
+
+class MiniProgramLoginRequest(BaseModel):
+    code: str
+    nickname: str = ""
+    avatar_url: str = ""
+
+
+@router.post("/api/v1/auth/wechat/miniprogram")
+async def miniprogram_login(
+    req: MiniProgramLoginRequest,
+    db: AsyncSession = Depends(get_async_db),
+):
+    """
+    微信小程序登录
+    前端 wx.login() 获取 code，POST 到此端点换取 JWT。
+    流程: code → jscode2session(openid) → 查或创建用户 → 返回 access_token
+    """
+    import os
+    import httpx
+
+    appid = os.getenv("WECHAT_APP_ID", "wx7da71ddbc7890598")
+    secret = os.getenv("WECHAT_APP_SECRET", "")
+
+    if not secret:
+        # 开发模式: secret 未配置时，用 code 模拟 openid，便于本地测试
+        logger.warning("[MiniProgram] WECHAT_APP_SECRET 未配置，使用开发模式 mock openid")
+        openid = f"dev_{req.code[:16]}"
+        session_key = ""
+    else:
+        try:
+            async with httpx.AsyncClient(timeout=10) as client:
+                resp = await client.get(
+                    "https://api.weixin.qq.com/sns/jscode2session",
+                    params={
+                        "appid": appid,
+                        "secret": secret,
+                        "js_code": req.code,
+                        "grant_type": "authorization_code",
+                    },
+                )
+            data = resp.json()
+        except Exception as e:
+            logger.error(f"[MiniProgram] jscode2session 请求失败: {e}")
+            raise HTTPException(status_code=502, detail="微信服务暂时不可用，请稍后重试")
+
+        if "errcode" in data and data["errcode"] != 0:
+            logger.warning(f"[MiniProgram] jscode2session error: {data}")
+            raise HTTPException(status_code=400, detail=f"微信登录失败: {data.get('errmsg','')}")
+
+        openid = data.get("openid", "")
+        session_key = data.get("session_key", "")
+        if not openid:
+            raise HTTPException(status_code=400, detail="未获取到 openid")
+
+    # 查找已有用户
+    result = await db.execute(
+        text("SELECT id, username, role::text AS role, full_name, avatar_url FROM users WHERE wx_openid = :oid LIMIT 1"),
+        {"oid": openid},
+    )
+    user_row = result.mappings().first()
+
+    ROLE_LEVELS = {
+        "OBSERVER": 1, "GROWER": 2, "SHARER": 3,
+        "COACH": 4, "PROMOTER": 5, "SUPERVISOR": 5, "MASTER": 6, "ADMIN": 99,
+    }
+
+    if user_row:
+        # 更新 nickname/avatar（如果微信侧有新值）
+        if req.nickname or req.avatar_url:
+            await db.execute(
+                text("""
+                    UPDATE users
+                    SET nickname    = COALESCE(NULLIF(:nick, ''), nickname),
+                        avatar_url  = COALESCE(NULLIF(:av,   ''), avatar_url),
+                        updated_at  = NOW()
+                    WHERE id = :uid
+                """),
+                {"nick": req.nickname, "av": req.avatar_url, "uid": user_row["id"]},
+            )
+            await db.commit()
+
+        jwt_token = _create_token(user_row["id"], user_row["username"], user_row["role"])
+        return {
+            "access_token": jwt_token,
+            "token_type": "bearer",
+            "is_new_user": False,
+            "user": {
+                "id": user_row["id"],
+                "username": user_row["username"],
+                "role": user_row["role"].lower(),
+                "role_level": ROLE_LEVELS.get(user_row["role"], 1),
+                "full_name": user_row.get("full_name") or req.nickname or user_row["username"],
+                "avatar_url": user_row.get("avatar_url") or req.avatar_url or "",
+            },
+        }
+
+    # 新用户：自动注册为 OBSERVER
+    username = f"wx_{openid[:12]}"
+    fake_email = f"{username}@wx.miniprogram.local"
+    from passlib.hash import bcrypt as _bcrypt
+    pw_hash = _bcrypt.hash(uuid.uuid4().hex)
+    nickname = req.nickname or username
+
+    await db.execute(
+        text("""
+            INSERT INTO users (
+                username, email, password_hash, role, is_active,
+                full_name, nickname, avatar_url,
+                wx_openid, preferred_channel, created_at, updated_at
+            ) VALUES (
+                :un, :em, :pw, 'OBSERVER', true,
+                :fn, :nick, :av,
+                :oid, 'miniprogram', NOW(), NOW()
+            )
+        """),
+        {
+            "un": username, "em": fake_email, "pw": pw_hash,
+            "fn": nickname, "nick": nickname, "av": req.avatar_url,
+            "oid": openid,
+        },
+    )
+    await db.commit()
+
+    result = await db.execute(
+        text("SELECT id, username, role::text AS role FROM users WHERE wx_openid = :oid LIMIT 1"),
+        {"oid": openid},
+    )
+    new_user = result.mappings().first()
+    jwt_token = _create_token(new_user["id"], new_user["username"], new_user["role"])
+    logger.info(f"[MiniProgram] 新用户注册: {username}, openid={openid[:8]}****")
+
+    return {
+        "access_token": jwt_token,
+        "token_type": "bearer",
+        "is_new_user": True,
+        "user": {
+            "id": new_user["id"],
+            "username": new_user["username"],
+            "role": "observer",
+            "role_level": 1,
+            "full_name": nickname,
+            "avatar_url": req.avatar_url or "",
+        },
+    }

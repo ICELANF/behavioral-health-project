@@ -226,21 +226,39 @@ async function loadData() {
     }
   } catch {}
 
-  // 行为记录 / 督导记录：后端路由尚未开放，展示空状态
-  behaviorLogs.value = []
-  supervisionNotes.value = []
+  // 行为记录
+  try {
+    const bRes = await http<any>('/api/v1/coach/behavior/' + studentId.value + '/recent?limit=20')
+    behaviorLogs.value = (bRes.items || []).map((r: any) => ({
+      type: r.behavior_type,
+      type_label: r.type_label || r.behavior_type,
+      content: r.description || r.note || '完成微行动',
+      time: r.recorded_at ? r.recorded_at.slice(0, 10) : '',
+    }))
+  } catch { behaviorLogs.value = [] }
+
+  // 督导记录
+  try {
+    const nRes = await http<any>('/api/v1/coach/students/' + studentId.value + '/notes')
+    supervisionNotes.value = nRes.items || []
+  } catch { supervisionNotes.value = [] }
 }
 
 async function submitNote() {
   if (!newNote.value.trim()) return
-  // 督导笔记后端暂未开放，本地追加展示
-  supervisionNotes.value.unshift({
-    date: new Date().toISOString().slice(0, 10),
-    author: '教练',
-    content: newNote.value.trim(),
-  })
-  newNote.value = ''
-  uni.showToast({ title: '已记录', icon: 'success' })
+  try {
+    await http('/api/v1/coach/students/' + studentId.value + '/notes', {
+      method: 'POST',
+      data: { content: newNote.value.trim() },
+    })
+    newNote.value = ''
+    uni.showToast({ title: '已记录', icon: 'success' })
+    // 重新拉取笔记列表
+    const nRes = await http<any>('/api/v1/coach/students/' + studentId.value + '/notes')
+    supervisionNotes.value = nRes.items || []
+  } catch {
+    uni.showToast({ title: '提交失败', icon: 'none' })
+  }
 }
 
 function sendMessage() {
