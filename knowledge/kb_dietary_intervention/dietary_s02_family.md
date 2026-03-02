@@ -1,18 +1,11 @@
----
-title: "S02 家庭现实冲突 - 被爱与节奏吞噬"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.0"
-domain: "metabolism"
-scenario_id: "S02"
-ttm_stages: ["S2", "S3"]
-target_agent: "metabolic"
----
-
 # S02 · 家庭现实冲突 — 被「爱」与「节奏」吞噬
 
 > **典型话语**：「家里做饭重油重盐，不吃怕伤感情，吃了又焦虑」
 
 ---
+<!-- scope:platform | 证据:P2→T4 | 领域:nutrition,social | 等级:B级
+     InterventionMatcher: stage=[S2,S3] | psych=[L2,L3] | bpt6=[relation,environment] | spi_min=15 | domain=[nutrition,social]
+     交互模式:EMPATHY→CHALLENGE | document_version:v2.1 | ingest_date:2026-02-28 -->
 
 ## 适用识别条件
 
@@ -140,3 +133,12 @@ Agent话术：
 | ❌ 禁止忽视环境 | 「意志力足够就能克服」——环境支配力远大于个人意志 |
 | ❌ 禁止孤立建议 | 「别管家里人，你自己决定」——忽视家庭系统的干预必然失败 |
 | ⚕️ 医疗转诊条件 | 血压持续 ≥ 140/90 或餐后血糖持续 ≥ 11.1 → 必须转医疗干预 |
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S2-S3（思考期→准备期）
+* **交互模式**: EMPATHY→CHALLENGE
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定

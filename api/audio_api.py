@@ -25,7 +25,7 @@ async def transcribe_audio(
     语音转文字 (ASR)
 
     - 支持 webm, wav, mp3, m4a, ogg, flac 格式
-    - 策略: cloud_first (OpenAI Whisper → 本地 ASR fallback)
+    - 策略: 本地 ASR 服务 (FunASR/Whisper standalone)
     - Returns: {"text": str, "provider": str, "language": str}
     """
     from core.asr_service import ASRService
@@ -45,7 +45,7 @@ async def transcribe_audio(
     if not audio_bytes:
         raise HTTPException(status_code=400, detail="音频文件为空")
 
-    # 限制文件大小 (25MB — OpenAI Whisper 限制)
+    # 限制文件大小 (25MB)
     max_size = 25 * 1024 * 1024
     if len(audio_bytes) > max_size:
         raise HTTPException(

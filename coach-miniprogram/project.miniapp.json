@@ -1,0 +1,14 @@
+{
+  "description": "miniapp",
+  "setting": {
+    "es6": true,
+    "enhance": true,
+    "minified": true,
+    "postcss": true,
+    "urlCheck": false,
+    "bigPackageSizeSupport": true
+  },
+  "compileType": "miniprogram",
+  "appid": "wx5755ae9b2491a04b",
+  "projectname": "coach-miniprogram"
+}

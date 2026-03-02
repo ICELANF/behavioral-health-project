@@ -1,24 +1,17 @@
----
-title: "S05 职场高压 - 身不由己的职场精英"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.0"
-domain: "metabolism"
-scenario_id: "S05"
-ttm_stages: ["S1", "S2"]
-target_agent: "metabolic"
----
-
 # S05 · 职场高压 — 身不由己的「职场精英」
 
 > **典型话语**：「早8晚10，三餐靠外卖，你让我去健身房完全不现实」
 
 ---
+<!-- scope:platform | 证据:P2→T4 | 领域:nutrition,exercise | 等级:B级
+     InterventionMatcher: stage=[S1,S2] | psych=[L2,L3] | bpt6=[environment,action] | spi_min=10 | domain=[nutrition,exercise]
+     交互模式:EMPATHY | document_version:v2.1 | ingest_date:2026-02-28 -->
 
 ## 适用识别条件
 
 | 维度 | 判断标准 |
 |------|---------|
-| TTM阶段 | S1–S2（前意向→意向期） |
+| TTM阶段 | S1–S2（觉醒期→思考期） |
 | 信任分 | building（30–50%） |
 | BPT6特征 | 时间管理资源耗尽 · 环境控制受限 · 行为启动成本高 |
 | 触发关键词 | 太忙/没时间/早8晚10/外卖/应酬/抽不出时间/拼命换钱/不现实 |
@@ -152,3 +145,12 @@ Agent话术：
 ## 叠加情境提示
 
 - **S05 + S07**（职场高压 + 社交应酬）：职场人群高发组合；两个情境共享「行为嵌入」策略，可合并设计行为处方
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S1-S2（觉醒期→思考期）
+* **交互模式**: EMPATHY
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定

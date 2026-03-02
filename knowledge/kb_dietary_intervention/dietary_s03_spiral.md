@@ -1,24 +1,17 @@
----
-title: "S03 自我否定螺旋 - 深陷泥潭的意志力失败者"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.0"
-domain: "metabolism"
-scenario_id: "S03"
-ttm_stages: ["S0", "S1"]
-target_agent: "emotion"
----
-
 # S03 · 自我否定螺旋 — 深陷泥潭的「意志力失败者」
 
 > **典型话语**：「又没忍住，我这辈子可能就是没救了，干什么都半途而废」
 
 ---
+<!-- scope:platform | 证据:P2→T4 | 领域:emotion,cognitive | 等级:B级
+     InterventionMatcher: stage=[S0,S1] | psych=[L1,L2] | bpt6=[emotion,ambivalent] | spi_min=10 | domain=[emotion,cognitive]
+     交互模式:EMPATHY | document_version:v2.1 | ingest_date:2026-02-28 -->
 
 ## 适用识别条件
 
 | 维度 | 判断标准 |
 |------|---------|
-| TTM阶段 | S0–S1（前意向期）—— 反复复发特征 |
+| TTM阶段 | S0–S1（觉醒期（S0-S1））—— 反复复发特征 |
 | 信任分 | not_established（< 30%） |
 | BPT6特征 | 自我效能极低 · 认知扭曲（全或无）· 情绪调节失败 |
 | 触发关键词 | 没救/没毅力/自责/厌恶自己/循环/破罐/放弃/半途而废 |
@@ -144,3 +137,12 @@ Agent话术：
 | ❌ 禁止廉价安慰 | 「没事，偶尔吃一顿没关系」——忽视内在痛苦，无法提供防复发策略 |
 | ❌ 禁止道德绑架 | 将健康行为与「人品素质自律」挂钩是慢病管理中最危险的教育方式 |
 | ⚕️ CrisisAgent边界 | 自责+无望感+体重长期失控组合 → 评估心理健康风险，及时转专业支持 |
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S0-S1（探索期→觉醒期）
+* **交互模式**: EMPATHY
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定

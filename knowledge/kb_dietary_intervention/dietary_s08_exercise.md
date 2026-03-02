@@ -1,24 +1,17 @@
----
-title: "S08 运动恐惧 - 被身体背叛的畏惧者"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.0"
-domain: "metabolism"
-scenario_id: "S08"
-ttm_stages: ["S0", "S1"]
-target_agent: "motivation"
----
-
 # S08 · 运动恐惧 — 被身体「背叛」的畏惧者
 
 > **典型话语**：「跑几步心跳就快得像要炸，在健身房觉得大家都在盯着我」
 
 ---
+<!-- scope:platform | 证据:P2→T4 | 领域:exercise,emotion | 等级:B级
+     InterventionMatcher: stage=[S0,S1] | psych=[L1,L2] | bpt6=[emotion,ambivalent] | spi_min=10 | domain=[exercise,emotion]
+     交互模式:EMPATHY | document_version:v2.1 | ingest_date:2026-02-28 -->
 
 ## 适用识别条件
 
 | 维度 | 判断标准 |
 |------|---------|
-| TTM阶段 | S0–S1（前意向期） |
+| TTM阶段 | S0–S1（觉醒期（S0-S1）） |
 | 信任分 | not_established（< 35%） |
 | BPT6特征 | 躯体感知扭曲 · 社交羞耻 · 自我效能极低 · 灾难化认知 |
 | 触发关键词 | 害怕运动/心跳快/炸开/健身房/被看/肥肉/酷刑/不敢/昏过去 |
@@ -152,3 +145,12 @@ Agent话术：
 ## 叠加情境提示
 
 - **S08 + S09**（运动恐惧 + 价值矛盾）：低动力型患者高发组合；S09先建立「健康=快乐」联结，再用NEAT策略切入S08
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S0-S1（探索期→觉醒期）
+* **交互模式**: EMPATHY
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定

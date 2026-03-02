@@ -1,18 +1,11 @@
----
-title: "S06 工具依赖 - 被CGM绑架的精密机器"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.0"
-domain: "metabolism"
-scenario_id: "S06"
-ttm_stages: ["S3", "S4"]
-target_agent: "metabolic"
----
-
 # S06 · 工具依赖 — 被CGM绑架的「精密机器」
 
 > **典型话语**：「CGM摘掉就觉得没人管我了，周末连续暴食两天」
 
 ---
+<!-- scope:platform | 证据:P2→T4 | 领域:nutrition,cognitive | 等级:B级
+     InterventionMatcher: stage=[S4,S5] | psych=[L3,L4] | bpt6=[knowledge,action] | spi_min=20 | domain=[nutrition,cognitive]
+     交互模式:EXECUTION | document_version:v2.1 | ingest_date:2026-02-28 -->
 
 ## 适用识别条件
 
@@ -154,3 +147,12 @@ Agent话术：
 ## 叠加情境提示
 
 - **S06 + S04**（工具依赖 + 绩效焦虑）：数字控制型患者高发组合；先处理S04降低频率反馈，再处理S06建立内感觉知
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S4-S5（行动期→成长期）
+* **交互模式**: EXECUTION
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定

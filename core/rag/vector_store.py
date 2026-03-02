@@ -16,7 +16,7 @@ QDRANT_URL = os.environ.get("QDRANT_URL", "http://localhost:6333")
 
 # BHP 知识库集合名
 COLLECTION_NAME = "bhp_knowledge"
-EMBEDDING_DIM = 1024  # text-embedding-v3 维度
+EMBEDDING_DIM = 1024  # mxbai-embed-large 维度
 
 
 @dataclass

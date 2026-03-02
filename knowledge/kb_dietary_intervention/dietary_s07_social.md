@@ -1,18 +1,11 @@
----
-title: "S07 社交应酬 - 身不由己的餐桌交际者"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.0"
-domain: "metabolism"
-scenario_id: "S07"
-ttm_stages: ["S2", "S3"]
-target_agent: "metabolic"
----
-
 # S07 · 社交应酬 — 身不由己的「餐桌交际者」
 
 > **典型话语**：「每周三次应酬，客户劝酒老板盯着，血糖血压每次都爆表」
 
 ---
+<!-- scope:platform | 证据:P2→T4 | 领域:nutrition,social | 等级:B级
+     InterventionMatcher: stage=[S2,S3] | psych=[L2,L3] | bpt6=[relation,environment] | spi_min=15 | domain=[nutrition,social]
+     交互模式:EMPATHY→CHALLENGE | document_version:v2.1 | ingest_date:2026-02-28 -->
 
 ## 适用识别条件
 
@@ -152,3 +145,12 @@ Agent话术：
 ## 叠加情境提示
 
 - **S07 + S05**（应酬 + 职场高压）：最高频叠加；两个情境共享「行为嵌入」策略，可合并设计行为处方
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S2-S3（思考期→准备期）
+* **交互模式**: EMPATHY→CHALLENGE
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定

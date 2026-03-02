@@ -1,17 +1,7 @@
----
-title: "S01 情绪性进食 - 失控的补偿者"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.1"
-domain: "metabolism"
-scenario_id: "S01"
-ttm_stages: ["S1", "S2", "S3"]
-target_agent: "metabolic"
----
-
 # dietary_s01_emotion · 情绪进食 — "心情不好，好想喝杯奶茶/吃顿火锅"
 
 ## 1. 适用识别条件（触发层）
-* **TTM阶段范围**：主要集中在 S01（前意向期）至 S03（准备期）。
+* **TTM阶段范围**：主要集中在 S01（觉醒期→准备期）。
 * **信任分范围**：2~8分（低分需侧重情感同频，高分侧重行为置换）。
 * **BPT6特征描述**：高情绪化倾向、低自我效能感、高压力暴露。
 * **触发关键词列表**：压力大、烦躁、委屈、犒劳一下、嘴馋、想喝奶茶、心情不好、暴饮暴食。
@@ -25,6 +15,9 @@ target_agent: "metabolic"
 
 | 节点 | 触发条件 | Agent 话术（示例） | 教练行动 |
 | :--- | :--- | :--- | :--- |
+<!-- scope:platform | 证据:P2(影子专家经验)→T4 | 领域:nutrition,emotion | 等级:B级
+     InterventionMatcher: stage=[S1,S2,S3] | psych=[L2,L3] | bpt6=[emotion,ambivalent] | spi_min=10 | domain=[nutrition,emotion]
+     交互模式:EMPATHY→CHALLENGE | document_version:v2.1 | ingest_date:2026-02-28 -->
 | **N1：情感承接** | 用户表达负面情绪/压力 | "听起来你今天确实不容易，如果是我遇到这些事，可能也想找点好吃的慰藉一下。" | 确认用户情绪真实性，建立安全感。 |
 | **N2：BFR回溯** | 用户提到具体食物 | "在你想喝奶茶的前一刻，发生了什么特别的事吗？或者是某种感觉突然跳出来的？" | 引导用户识别触发情绪的具体事件（BFR要素）。 |
 | **N3：代谢科普** | 用户表示"无法控制" | "这其实是身体的本能：压力大时皮质醇升高，大脑会'骗'你需要糖分来解压。这不怪你。" | 去道德化，用生理机制缓解用户的羞耻感。 |
@@ -58,3 +51,12 @@ target_agent: "metabolic"
 ## 8. 话术变体库（扩展层）
 * **低信任度（2~4分）**："我完全理解这种感觉，压力大的时候，吃点甜的确实能让人瞬间放松。"
 * **高信任度（7~9分）**："我们之前聊过皮质醇的坏习惯，现在它又在诱惑你了，我们要不要用'200ml温水策略'反击一下？"
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S1-S3（觉醒期→准备期）
+* **交互模式**: EMPATHY→CHALLENGE
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定

@@ -22,7 +22,7 @@ OLLAMA_TIMEOUT = float(os.getenv("OLLAMA_TIMEOUT", "300.0"))
 HEALTH_CACHE_TTL = int(os.getenv("HEALTH_CACHE_TTL", "30"))
 
 # ── 云 LLM 配置 (V005) ──
-CLOUD_LLM_PROVIDER = os.getenv("CLOUD_LLM_PROVIDER", "")          # deepseek / qwen / openai
+CLOUD_LLM_PROVIDER = os.getenv("CLOUD_LLM_PROVIDER", "")          # deepseek / qwen
 CLOUD_LLM_API_KEY = os.getenv("CLOUD_LLM_API_KEY", "")
 CLOUD_LLM_BASE_URL = os.getenv("CLOUD_LLM_BASE_URL", "https://api.deepseek.com/v1")
 CLOUD_LLM_MODEL = os.getenv("CLOUD_LLM_MODEL", "deepseek-chat")
@@ -35,10 +35,7 @@ SAFETY_LOG_PII = os.getenv("SAFETY_LOG_PII", "false").lower() in ("true", "1", "
 SAFETY_STRICT_MODE = os.getenv("SAFETY_STRICT_MODE", "false").lower() in ("true", "1", "yes")
 
 # ── ASR 语音识别配置 (V5.2.0) ──
-ASR_PROVIDER = os.getenv("ASR_PROVIDER", "cloud_first")       # cloud_first / openai / ollama / disabled
-ASR_OPENAI_API_KEY = os.getenv("ASR_OPENAI_API_KEY", "") or CLOUD_LLM_API_KEY  # 复用LLM key
-ASR_OPENAI_BASE_URL = os.getenv("ASR_OPENAI_BASE_URL", "https://api.openai.com/v1")
-ASR_OPENAI_MODEL = os.getenv("ASR_OPENAI_MODEL", "whisper-1")
+ASR_PROVIDER = os.getenv("ASR_PROVIDER", "ollama")             # ollama / disabled
 ASR_LANGUAGE = os.getenv("ASR_LANGUAGE", "zh")                 # zh / en / auto
 ASR_TIMEOUT = float(os.getenv("ASR_TIMEOUT", "60.0"))
 

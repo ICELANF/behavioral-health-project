@@ -1,24 +1,17 @@
----
-title: "S10 习得性无助 - 从权威依赖到自主回归"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.0"
-domain: "metabolism"
-scenario_id: "S10"
-ttm_stages: ["S0"]
-target_agent: "motivation"
----
-
 # S10 · 习得性无助 — 从「权威依赖」到「自主回归」
 
 > **典型话语**：「医生每次都警告，每次指标都红，我可能天生就没救了」
 
 ---
+<!-- scope:platform | 证据:P2→T4 | 领域:emotion,cognitive | 等级:B级
+     InterventionMatcher: stage=[S0] | psych=[L1] | bpt6=[emotion,ambivalent] | spi_min=10 | domain=[emotion,cognitive]
+     交互模式:EMPATHY | document_version:v2.1 | ingest_date:2026-02-28 -->
 
 ## 适用识别条件
 
 | 维度 | 判断标准 |
 |------|---------|
-| TTM阶段 | S0（前意向期）—— 慢性失败状态 |
+| TTM阶段 | S0（觉醒期（S0-S1））—— 慢性失败状态 |
 | 信任分 | not_established（< 25%） |
 | BPT6特征 | 自我效能归零 · 外控依赖 · 习得性无助 · 行动路径缺失 |
 | 触发关键词 | 没救/天生/没那根筋/反正/做不到/指标都红/医生说/干什么都不行 |
@@ -150,3 +143,12 @@ Agent话术：
 
 - **S10 + S02**（习得性无助 + 家庭冲突）：S10优先重建自我效能，S02作为支撑系统干预并行推进
 - **S10 + S03**（习得性无助 + 自我否定螺旋）：最严重组合，须教练主动介入，AI仅做辅助陪伴
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S0（探索期）
+* **交互模式**: EMPATHY
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定

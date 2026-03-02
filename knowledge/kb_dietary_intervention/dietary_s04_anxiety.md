@@ -1,18 +1,11 @@
----
-title: "S04 绩效焦虑 - 越急越胖的精密机器"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.0"
-domain: "metabolism"
-scenario_id: "S04"
-ttm_stages: ["S2", "S3"]
-target_agent: "metabolic"
----
-
 # S04 · 绩效焦虑 — 越急越胖的「精密机器」
 
 > **典型话语**：「血糖一波动就崩溃，月减10斤完不成就彻底放弃」
 
 ---
+<!-- scope:platform | 证据:P2→T4 | 领域:nutrition,stress | 等级:B级
+     InterventionMatcher: stage=[S2,S3] | psych=[L2,L3] | bpt6=[knowledge,emotion] | spi_min=15 | domain=[nutrition,stress]
+     交互模式:EMPATHY→CHALLENGE | document_version:v2.1 | ingest_date:2026-02-28 -->
 
 ## 适用识别条件
 
@@ -141,3 +134,12 @@ Agent话术：
 | ❌ 禁止每日体重汇报 | 每日称重打卡会强化「数字绑架」，是主动制造绩效焦虑 |
 | ❌ 禁止补偿性指令 | 「明天断食补偿」「多跑5公里抵消」——极端补偿破坏代谢弹性 |
 | ⚕️ 医疗联动条件 | HbA1c持续上升 + 腰围增大 + HRV持续低下 → 联合内分泌科评估 |
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S2-S3（思考期→准备期）
+* **交互模式**: EMPATHY→CHALLENGE
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定

@@ -1,24 +1,17 @@
----
-title: "S09 价值矛盾 - 矛盾的生命取向"
-author: "行为健康教练实训教材"
-source: "代谢健康饮食行为干预知识库 V1.0"
-domain: "metabolism"
-scenario_id: "S09"
-ttm_stages: ["S0", "S1"]
-target_agent: "motivation"
----
-
 # S09 · 价值矛盾 — 矛盾的生命取向
 
 > **典型话语**：「看体检报告时觉得健康最重要，面对火锅又觉得人生苦短开心就好」
 
 ---
+<!-- scope:platform | 证据:P2→T4 | 领域:cognitive,emotion | 等级:B级
+     InterventionMatcher: stage=[S0,S1] | psych=[L1,L2] | bpt6=[ambivalent,knowledge] | spi_min=10 | domain=[cognitive,emotion]
+     交互模式:EMPATHY | document_version:v2.1 | ingest_date:2026-02-28 -->
 
 ## 适用识别条件
 
 | 维度 | 判断标准 |
 |------|---------|
-| TTM阶段 | S0–S1（前意向→意向期摇摆） |
+| TTM阶段 | S0–S1（觉醒期→思考期摇摆） |
 | 信任分 | building（35–55%） |
 | BPT6特征 | 动机冲突 · 延迟满足能力低 · 价值观整合未完成 |
 | 触发关键词 | 矛盾/人生苦短/开心就好/三分钟热度/两难/想改又不想改/懒得坚持 |
@@ -148,3 +141,12 @@ Agent话术：
 | ❌ 禁止人生观辩论 | 教练不是哲学家，不应介入客户的价值观选择——接受「两个我」共存是干预的前提 |
 | ❌ 禁止全面改造 | 一次性要求全面改变生活方式必然失败——从一个「代谢保护动作」开始 |
 | ⚕️ 进展评估周期 | 价值整合需要3–6个月，不能以短期指标（2周血糖）评估此类人群的干预效果 |
+
+---
+
+## BehaviorFacts 阶段关联
+* **适用阶段**: S0-S1（探索期→觉醒期，摇摆型）
+* **交互模式**: EMPATHY
+* **晋级触发**: action_completed_7d ≥ 3 → 推进下一阶段
+* **回退触发**: action_interrupt_72h = True → 情感承接优先
+* **数据回传**: 每次 M-Action 完成记入 BehaviorFacts → StageRuntimeBuilder 判定
