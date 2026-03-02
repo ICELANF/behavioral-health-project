@@ -151,6 +151,11 @@ async function http<T = any>(url: string, options: any = {}): Promise<T> {
         'Content-Type': 'application/json'
       },
       success: (res: any) => {
+        if (res.statusCode === 401) {
+          uni.removeStorageSync('access_token')
+          uni.reLaunch({ url: '/pages/auth/login' })
+          reject(new Error('401')); return
+        }
         if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T)
         else reject(new Error(`HTTP ${res.statusCode}`))
       },

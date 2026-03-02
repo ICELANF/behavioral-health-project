@@ -15,14 +15,6 @@
       "minified": true
     },
     "usingComponents": true,
-    "permission": {
-      "scope.userInfo": {
-        "desc": "用于完善用户信息"
-      }
-    },
-    "requiredPrivateInfos": [
-      "chooseAddress"
-    ],
     "lazyCodeLoading": "requiredComponents"
   },
   "h5": {
