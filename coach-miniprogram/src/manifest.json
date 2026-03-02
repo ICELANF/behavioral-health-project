@@ -1,12 +1,12 @@
 {
   "name": "行健平台",
-  "appid": "wx5755ae9b2491a04b",
+  "appid": "wx7da71ddbc7890598",
   "description": "行健平台教练培养体系",
   "versionName": "1.0.0",
   "versionCode": 100,
   "transformPx": false,
   "mp-weixin": {
-    "appid": "wx5755ae9b2491a04b",
+    "appid": "wx7da71ddbc7890598",
     "setting": {
       "urlCheck": false,
       "es6": true,
