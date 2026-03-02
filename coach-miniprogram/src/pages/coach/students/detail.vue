@@ -175,9 +175,10 @@ const weekActions = computed(() => {
   })
 })
 
-function riskColor(level: number): string {
-  if (level >= 3) return '#E74C3C'
-  if (level >= 2) return '#E67E22'
+function riskColor(level: number | string): string {
+  const n = typeof level === 'string' ? parseInt(level.replace(/\D/g, '')) : (level || 0)
+  if (n >= 3) return '#E74C3C'
+  if (n >= 2) return '#E67E22'
   return '#27AE60'
 }
 function logColor(type: string): string {
@@ -187,55 +188,59 @@ function logColor(type: string): string {
 
 async function loadData() {
   if (!studentId.value) return
-  // 学员详情
+
+  // 主数据来源：dashboard students 数组（含 risk_level/stage/health_data/micro_action_7d）
+  try {
+    const dash = await http<any>('/api/v1/coach/dashboard')
+    const found = (dash.students || []).find((s: any) => (s.id || s.user_id) === studentId.value)
+    if (found) {
+      const ma = found.micro_action_7d || {}
+      student.value = {
+        ...found,
+        name: found.name || found.full_name || found.username || '学员',
+        // 解析 "R3" → 3
+        risk_level: typeof found.risk_level === 'string'
+          ? parseInt(found.risk_level.replace(/\D/g, '')) || 0
+          : (found.risk_level || 0),
+        micro_action_count: ma.completed ?? 0,
+        micro_action_total: ma.total ?? 0,
+        week_active_days: ma.completed != null ? Math.min(ma.completed, 7) : undefined,
+        // 从 health_data 展开
+        fasting_glucose: found.health_data?.fasting_glucose,
+        weight: found.health_data?.weight,
+        exercise_minutes: found.health_data?.exercise_minutes,
+      }
+    }
+  } catch {}
+
+  // 补充：profile 端点有 height/weight/goals 等字段
   try {
     const res = await http<any>('/api/v1/coach/students/' + studentId.value)
-    student.value = res || {}
-    if (!student.value.name) student.value.name = res.full_name || res.username || '学员'
-  } catch {
-    // fallback: 从dashboard找
-    try {
-      const dash = await http<any>('/api/v1/coach/dashboard')
-      const found = (dash.students || []).find((s: any) => (s.id || s.user_id) === studentId.value)
-      if (found) student.value = { ...found, name: found.name || found.full_name || '学员' }
-    } catch {}
-  }
+    const profile = res?.profile || {}
+    student.value = {
+      ...student.value,
+      name: student.value.name || res.full_name || res.username || '学员',
+      height: profile.height || student.value.height,
+      weight: profile.weight || student.value.weight,
+      goals: profile.goals || [],
+    }
+  } catch {}
 
-  // 行为记录
-  try {
-    const res = await http<any>('/api/v1/behavior/' + studentId.value + '/recent?limit=20')
-    behaviorLogs.value = (res.items || res.logs || (Array.isArray(res) ? res : [])).map((l: any) => ({
-      type: l.behavior_type || l.type || 'checkin',
-      type_label: l.type_label || l.behavior_type || '打卡',
-      content: l.description || l.content || l.note || JSON.stringify(l.data || {}),
-      time: l.recorded_at || l.created_at || '',
-    }))
-  } catch { behaviorLogs.value = [] }
-
-  // 督导记录
-  try {
-    const res = await http<any>('/api/v1/coach/students/' + studentId.value + '/notes')
-    supervisionNotes.value = (res.items || res.notes || (Array.isArray(res) ? res : [])).map((n: any) => ({
-      date: (n.created_at || '').slice(0, 10),
-      author: n.author || n.coach_name || '教练',
-      content: n.content || n.note || '',
-    }))
-  } catch { supervisionNotes.value = [] }
+  // 行为记录 / 督导记录：后端路由尚未开放，展示空状态
+  behaviorLogs.value = []
+  supervisionNotes.value = []
 }
 
 async function submitNote() {
   if (!newNote.value.trim()) return
-  try {
-    await http('/api/v1/coach/students/' + studentId.value + '/notes', {
-      method: 'POST',
-      data: { content: newNote.value }
-    })
-    uni.showToast({ title: '已保存', icon: 'success' })
-    newNote.value = ''
-    loadData()
-  } catch {
-    uni.showToast({ title: '保存失败', icon: 'none' })
-  }
+  // 督导笔记后端暂未开放，本地追加展示
+  supervisionNotes.value.unshift({
+    date: new Date().toISOString().slice(0, 10),
+    author: '教练',
+    content: newNote.value.trim(),
+  })
+  newNote.value = ''
+  uni.showToast({ title: '已记录', icon: 'success' })
 }
 
 function sendMessage() {
