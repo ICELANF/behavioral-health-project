@@ -168,7 +168,7 @@ function statusLabel(s: string): string {
 }
 function formatDate(d: string): string { return d ? d.slice(0, 10) : '-' }
 
-const canReview = computed(() => ['submitted', 'review', 'completed_pending_review'].includes(data.value.status))
+const canReview = computed(() => ['submitted', 'review', 'completed', 'completed_pending_review'].includes(data.value.status))
 
 const big5Data = computed(() => {
   const r = data.value.big5 || data.value.personality || data.value.results?.big5
@@ -232,6 +232,10 @@ async function loadData() {
     try {
       const res = await http<any>(ep)
       data.value = res.result || res.assignment || res || {}
+      // 确保 id 字段存在（result 端点只返回 assignment_id）
+      if (!data.value.id) {
+        data.value.id = data.value.assignment_id || parseInt(id)
+      }
       break
     } catch { continue }
   }
@@ -240,28 +244,29 @@ async function loadData() {
 
 async function doReview(action: string) {
   const id = data.value.id
-  if (!id) return
+  if (!id) {
+    uni.showToast({ title: '评估ID缺失，请返回重试', icon: 'none' })
+    return
+  }
 
-  const confirmText = action === 'approved' ? '确认通过此评估？' : '确认退回此评估？'
+  const confirmText = action === 'approved' ? '确认通过并推送结果给学员？' : '确认退回此评估？'
   uni.showModal({
     title: '确认操作',
     content: confirmText,
     success: async (res) => {
       if (!res.confirm) return
       try {
-        // 尝试多个审核端点
-        try {
-          await http(`/api/v1/assessment-assignments/${id}/review`, {
-            method: 'POST',
-            data: { action, note: coachNote.value }
-          })
-        } catch {
-          await http(`/api/v1/assessment-assignments/${id}/${action === 'approved' ? 'approve' : 'reject'}`, {
-            method: 'POST',
-            data: { note: coachNote.value }
+        if (action === 'approved') {
+          // 通过 → 推送评估结果给学员
+          await http(`/api/v1/assessment-assignments/${id}/push`, { method: 'POST', data: {} })
+        } else {
+          // 退回 → 重置为 pending 并记录备注（用 review-items PUT 或降级处理）
+          await http(`/api/v1/assessment-assignments/review-items/${id}`, {
+            method: 'PUT',
+            data: { status: 'rejected', coach_note: coachNote.value || '需修改后重新提交' }
           })
         }
-        uni.showToast({ title: action === 'approved' ? '审核通过' : '已退回', icon: 'success' })
+        uni.showToast({ title: action === 'approved' ? '已通过并推送' : '已退回', icon: 'success' })
         setTimeout(() => uni.navigateBack(), 800)
       } catch (e: any) {
         uni.showToast({ title: '操作失败', icon: 'none' })

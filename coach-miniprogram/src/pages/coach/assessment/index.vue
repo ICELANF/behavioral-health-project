@@ -54,7 +54,7 @@
             <text class="assess-meta-item" v-if="item.score != null">📊 {{ item.score }}分</text>
           </view>
           <!-- 待审核：快捷操作 -->
-          <view v-if="item.status === 'submitted' || item.status === 'review' || item.status === 'completed_pending_review'" class="assess-card-actions">
+          <view v-if="['submitted','review','completed','completed_pending_review'].includes(item.status)" class="assess-card-actions">
             <view class="assess-action-btn assess-action-review" @tap.stop="goReview(item)">查看评估</view>
           </view>
           <!-- 待分配/进行中：提醒 -->
@@ -183,7 +183,7 @@ const estimatedTime = computed(() => {
 const overviewStats = computed(() => [
   { label: '总评估', value: assignments.value.length, color: '#2C3E50' },
   { label: '待完成', value: assignments.value.filter(a => ['pending', 'assigned', 'in_progress'].includes(a.status)).length, color: '#E67E22' },
-  { label: '待审核', value: assignments.value.filter(a => ['submitted', 'review', 'completed_pending_review'].includes(a.status)).length, color: '#9B59B6' },
+  { label: '待审核', value: assignments.value.filter(a => ['submitted', 'review', 'completed', 'completed_pending_review'].includes(a.status)).length, color: '#9B59B6' },
   { label: '已完成', value: assignments.value.filter(a => a.status === 'completed' || a.status === 'reviewed').length, color: '#27AE60' },
 ])
 
@@ -191,7 +191,7 @@ const statusTabs = computed(() => [
   { key: 'all', label: '全部', count: assignments.value.length },
   { key: 'pending', label: '待分配', count: assignments.value.filter(a => ['pending', 'assigned'].includes(a.status)).length },
   { key: 'in_progress', label: '进行中', count: assignments.value.filter(a => a.status === 'in_progress').length },
-  { key: 'review', label: '待审核', count: assignments.value.filter(a => ['submitted', 'review', 'completed_pending_review'].includes(a.status)).length },
+  { key: 'review', label: '待审核', count: assignments.value.filter(a => ['submitted', 'review', 'completed', 'completed_pending_review'].includes(a.status)).length },
   { key: 'completed', label: '已完成', count: assignments.value.filter(a => ['completed', 'reviewed'].includes(a.status)).length },
 ])
 
@@ -201,7 +201,7 @@ const filteredItems = computed(() => {
   let list = assignments.value
   if (activeTab.value !== 'all') {
     if (activeTab.value === 'pending') list = list.filter(a => ['pending', 'assigned'].includes(a.status))
-    else if (activeTab.value === 'review') list = list.filter(a => ['submitted', 'review', 'completed_pending_review'].includes(a.status))
+    else if (activeTab.value === 'review') list = list.filter(a => ['submitted', 'review', 'completed', 'completed_pending_review'].includes(a.status))
     else if (activeTab.value === 'completed') list = list.filter(a => ['completed', 'reviewed'].includes(a.status))
     else list = list.filter(a => a.status === activeTab.value)
   }
