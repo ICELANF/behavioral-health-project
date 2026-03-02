@@ -1,29 +1,126 @@
 <template>
-  <view class="page-placeholder">
-    <view class="page-placeholder__icon">
-      <text>⚙️</text>
-    </view>
-    <text class="page-placeholder__title">账号设置</text>
-    <text class="page-placeholder__sub">页面开发中</text>
-    <view class="page-placeholder__back" @tap="goBack">
-      <text class="text-sm text-primary-color">返回</text>
-    </view>
+  <view class="set-page">
+    <scroll-view scroll-y class="set-scroll">
+      <!-- 账号信息 -->
+      <view class="set-group">
+        <view class="set-group-title">账号信息</view>
+        <view class="set-item">
+          <text class="set-item-label">用户名</text>
+          <text class="set-item-value">{{ userInfo.username || '—' }}</text>
+        </view>
+        <view class="set-item">
+          <text class="set-item-label">姓名</text>
+          <text class="set-item-value">{{ userInfo.name || '—' }}</text>
+        </view>
+        <view class="set-item">
+          <text class="set-item-label">角色</text>
+          <text class="set-item-value">{{ userInfo.role_label || '健康教练' }}</text>
+        </view>
+      </view>
+
+      <!-- 通知设置 -->
+      <view class="set-group">
+        <view class="set-group-title">通知设置</view>
+        <view class="set-item">
+          <text class="set-item-label">系统通知</text>
+          <switch :checked="notifySystem" @change="notifySystem = $event.detail.value" color="#2D8E69" />
+        </view>
+        <view class="set-item">
+          <text class="set-item-label">评估提醒</text>
+          <switch :checked="notifyAssess" @change="notifyAssess = $event.detail.value" color="#2D8E69" />
+        </view>
+        <view class="set-item">
+          <text class="set-item-label">学习提醒</text>
+          <switch :checked="notifyLearn" @change="notifyLearn = $event.detail.value" color="#2D8E69" />
+        </view>
+      </view>
+
+      <!-- 其他 -->
+      <view class="set-group">
+        <view class="set-group-title">其他</view>
+        <view class="set-item set-item--tap" @tap="clearCache">
+          <text class="set-item-label">清除缓存</text>
+          <text class="set-item-arrow">›</text>
+        </view>
+        <view class="set-item set-item--tap" @tap="showAbout">
+          <text class="set-item-label">关于平台</text>
+          <text class="set-item-arrow">›</text>
+        </view>
+      </view>
+
+      <view class="set-logout-btn" @tap="doLogout">
+        <text>退出登录</text>
+      </view>
+
+      <view style="height:80rpx;"></view>
+    </scroll-view>
   </view>
 </template>
 
 <script setup lang="ts">
-function goBack() {
-  uni.navigateBack({ fail: () => uni.switchTab({ url: '/pages/home/index' }) })
+import { ref, onMounted } from 'vue'
+
+const userInfo = ref<any>({})
+const notifySystem = ref(true)
+const notifyAssess = ref(true)
+const notifyLearn = ref(true)
+
+onMounted(() => {
+  try {
+    const stored = uni.getStorageSync('user_info')
+    if (stored) {
+      const u = typeof stored === 'string' ? JSON.parse(stored) : stored
+      userInfo.value = {
+        username: u.username || '',
+        name: u.full_name || u.display_name || u.username || '教练',
+        role_label: u.role === 'coach' ? '健康教练' : u.role || '用户'
+      }
+    }
+  } catch {}
+})
+
+function clearCache() {
+  uni.showModal({
+    title: '清除缓存',
+    content: '将清除本地缓存数据，不影响账号信息',
+    success: (res) => {
+      if (res.confirm) {
+        uni.clearStorageSync()
+        uni.showToast({ title: '缓存已清除', icon: 'success' })
+      }
+    }
+  })
+}
+
+function showAbout() {
+  uni.showModal({ title: '关于', content: '行健平台 v5.0\n行为健康促进与慢病逆转\n\n© 2026 BehaviorOS', showCancel: false })
+}
+
+function doLogout() {
+  uni.showModal({
+    title: '确认退出',
+    content: '退出后需要重新登录',
+    success: (res) => {
+      if (res.confirm) {
+        uni.removeStorageSync('access_token')
+        uni.removeStorageSync('user_info')
+        uni.reLaunch({ url: '/pages/auth/login' })
+      }
+    }
+  })
 }
 </script>
 
 <style scoped>
-.page-placeholder {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 100vh; background: var(--surface-secondary); gap: 20rpx;
-}
-.page-placeholder__icon { font-size: 80rpx; }
-.page-placeholder__title { font-size: 32rpx; font-weight: 700; color: var(--text-primary); }
-.page-placeholder__sub { font-size: 26rpx; color: var(--text-secondary); }
-.page-placeholder__back { margin-top: 40rpx; padding: 16rpx 48rpx; border-radius: var(--radius-full); border: 1px solid var(--bhp-primary-500); }
+.set-page { min-height: 100vh; background: #F5F6FA; }
+.set-scroll { height: 100vh; }
+.set-group { background: #fff; margin: 16rpx 24rpx; border-radius: 16rpx; overflow: hidden; }
+.set-group-title { font-size: 22rpx; color: #8E99A4; padding: 16rpx 24rpx 8rpx; text-transform: uppercase; }
+.set-item { display: flex; justify-content: space-between; align-items: center; padding: 20rpx 24rpx; border-bottom: 1rpx solid #F8F8F8; }
+.set-item:last-child { border-bottom: none; }
+.set-item--tap:active { background: #F8F8F8; }
+.set-item-label { font-size: 28rpx; color: #2C3E50; }
+.set-item-value { font-size: 26rpx; color: #8E99A4; }
+.set-item-arrow { font-size: 32rpx; color: #CCC; }
+.set-logout-btn { margin: 24rpx; background: #FDEDEC; border-radius: 16rpx; padding: 24rpx; text-align: center; color: #E74C3C; font-size: 30rpx; font-weight: 600; }
 </style>

@@ -1,29 +1,97 @@
 <template>
-  <view class="page-placeholder">
-    <view class="page-placeholder__icon">
-      <text>📜</text>
-    </view>
-    <text class="page-placeholder__title">考试记录</text>
-    <text class="page-placeholder__sub">页面开发中</text>
-    <view class="page-placeholder__back" @tap="goBack">
-      <text class="text-sm text-primary-color">返回</text>
-    </view>
+  <view class="eh-page">
+    <scroll-view scroll-y class="eh-scroll" refresher-enabled
+      @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
+
+      <view class="eh-list">
+        <view v-for="item in records" :key="item.id" class="eh-card" @tap="goResult(item)">
+          <view class="eh-card-top">
+            <text class="eh-card-name">{{ item.exam_name || '认证考试' }}</text>
+            <view class="eh-result-badge" :class="item.passed ? 'eh-badge--pass' : 'eh-badge--fail'">
+              {{ item.passed ? '通过' : '未通过' }}
+            </view>
+          </view>
+          <view class="eh-card-meta">
+            <text class="eh-meta-item">得分: <text class="eh-meta-em">{{ item.score ?? '—' }}</text></text>
+            <text class="eh-meta-item">满分: {{ item.total_score ?? 100 }}</text>
+            <text class="eh-meta-item">{{ formatDate(item.created_at) }}</text>
+          </view>
+        </view>
+      </view>
+
+      <view v-if="records.length === 0 && !loading" class="eh-empty">
+        <text class="eh-empty-icon">📜</text>
+        <text class="eh-empty-text">还没有考试记录</text>
+        <view class="eh-go-exam" @tap="goExams"><text>去参加考试</text></view>
+      </view>
+
+      <view style="height:80rpx;"></view>
+    </scroll-view>
   </view>
 </template>
 
 <script setup lang="ts">
-function goBack() {
-  uni.navigateBack({ fail: () => uni.switchTab({ url: '/pages/home/index' }) })
+import { ref, onMounted } from 'vue'
+
+const BASE_URL = 'http://localhost:8000'
+function getToken() { return uni.getStorageSync('access_token') || '' }
+
+async function http<T = any>(url: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url: BASE_URL + url, method: 'GET',
+      header: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
+      success: (res: any) => {
+        if (res.statusCode === 401) { uni.removeStorageSync('access_token'); uni.reLaunch({ url: '/pages/auth/login' }); reject(new Error('401')); return }
+        res.statusCode < 300 ? resolve(res.data as T) : reject(new Error(`${res.statusCode}`))
+      },
+      fail: (e: any) => reject(e),
+    })
+  })
 }
+
+const records = ref<any[]>([])
+const refreshing = ref(false)
+const loading = ref(false)
+
+async function loadData() {
+  loading.value = true
+  try {
+    const res = await http<any>('/api/v1/certification/sessions/my')
+    records.value = res?.items || []
+  } catch { records.value = [] } finally { loading.value = false }
+}
+
+function formatDate(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`
+}
+
+function goResult(item: any) {
+  uni.navigateTo({ url: '/pages/exam/result?session_id=' + item.id })
+}
+function goExams() { uni.navigateBack({ fail: () => uni.navigateTo({ url: '/pages/exam/index' }) }) }
+
+async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }
+onMounted(() => { loadData() })
 </script>
 
 <style scoped>
-.page-placeholder {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: 100vh; background: var(--surface-secondary); gap: 20rpx;
-}
-.page-placeholder__icon { font-size: 80rpx; }
-.page-placeholder__title { font-size: 32rpx; font-weight: 700; color: var(--text-primary); }
-.page-placeholder__sub { font-size: 26rpx; color: var(--text-secondary); }
-.page-placeholder__back { margin-top: 40rpx; padding: 16rpx 48rpx; border-radius: var(--radius-full); border: 1px solid var(--bhp-primary-500); }
+.eh-page { min-height: 100vh; background: #F5F6FA; }
+.eh-scroll { height: 100vh; }
+.eh-list { padding: 16rpx 24rpx; }
+.eh-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
+.eh-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
+.eh-card-name { font-size: 28rpx; font-weight: 600; color: #2C3E50; flex: 1; }
+.eh-result-badge { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 10rpx; font-weight: 600; }
+.eh-badge--pass { background: #E8F8F0; color: #2D8E69; }
+.eh-badge--fail { background: #FDEDEC; color: #E74C3C; }
+.eh-card-meta { display: flex; gap: 20rpx; flex-wrap: wrap; }
+.eh-meta-item { font-size: 22rpx; color: #8E99A4; }
+.eh-meta-em { color: #2D8E69; font-weight: 600; }
+.eh-empty { text-align: center; padding: 120rpx 0; }
+.eh-empty-icon { display: block; font-size: 80rpx; margin-bottom: 16rpx; }
+.eh-empty-text { display: block; font-size: 26rpx; color: #8E99A4; margin-bottom: 32rpx; }
+.eh-go-exam { display: inline-block; padding: 16rpx 48rpx; background: #2D8E69; color: #fff; border-radius: 16rpx; font-size: 28rpx; }
 </style>
