@@ -77,7 +77,7 @@ async def get_mentee_progress(
         # 查询 companion_relations 中当前用户作为 mentor 的记录
         result = await db.execute(text("""
             SELECT cr.mentee_id, cr.status,
-                   u.username, u.role,
+                   u.username, u.full_name, u.role,
                    COALESCE(us.current_streak, 0) AS streak,
                    (SELECT COUNT(*) FROM daily_tasks dt
                     WHERE dt.user_id = cr.mentee_id AND dt.task_date = :today) AS total_tasks,
@@ -87,7 +87,7 @@ async def get_mentee_progress(
             JOIN users u ON u.id = cr.mentee_id
             LEFT JOIN user_streaks us ON us.user_id = cr.mentee_id
             WHERE cr.mentor_id = :uid
-            ORDER BY cr.created_at
+            ORDER BY cr.started_at
             LIMIT 4
         """), {"uid": user_id, "today": today})
         rows = result.mappings().all()
@@ -98,7 +98,7 @@ async def get_mentee_progress(
             pct = int(done / total * 100) if total > 0 else 0
             mentees.append(MenteeSlot(
                 user_id=r["mentee_id"],
-                name=r["username"] or f"用户{r['mentee_id']}",
+                name=r["full_name"] or r["username"] or f"用户{r['mentee_id']}",
                 role=(r["role"] or "observer").lower(),
                 status=r["status"] or "active",
                 streak=r["streak"] or 0,

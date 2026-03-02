@@ -226,7 +226,7 @@ const completeTask = async () => {
   todayTask.value.completed = true
   showToast({ message: '打卡成功！', type: 'success' })
   try {
-    await api.post('/api/v1/tasks/today-micro/complete')
+    await api.post('/api/v1/observer/quota/consume', { action: 'checkin' })
   } catch { /* 乐观更新已生效，静默失败 */ }
 }
 
@@ -234,16 +234,10 @@ onMounted(async () => {
   const token = storage.getToken()
   if (!token) return // 未登录观察员: 使用默认值，不触发 API 调用
 
-  // 加载今日微任务
+  // 加载剩余对话次数（Observer 专属配额接口）
   try {
-    const res: any = await api.get('/api/v1/tasks/today-micro')
-    if (res) todayTask.value = { content: res.content, completed: res.completed }
-  } catch { /* 静默失败，不影响首页渲染 */ }
-
-  // 加载剩余对话次数
-  try {
-    const res: any = await api.get('/api/v1/chat/remaining-today')
-    remainingChats.value = res?.remaining ?? 3
+    const res: any = await api.get('/api/v1/observer/quota/today')
+    remainingChats.value = res?.chat_remaining ?? 3
   } catch {}
 })
 </script>
