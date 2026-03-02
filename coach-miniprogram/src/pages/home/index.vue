@@ -1,475 +1,385 @@
 <template>
   <view class="home-page">
+    <!-- 顶部问候 -->
+    <view class="home-header">
+      <view class="home-greeting">
+        <text class="home-hello">{{ greetText }}</text>
+        <text class="home-name">{{ coachName }}</text>
+      </view>
+      <view class="home-date">{{ todayStr }}</view>
+    </view>
 
-    <!-- ════════════════════════════════════════
-         学员视图（L1-L3：grower/sharer/学员）
-    ════════════════════════════════════════ -->
-    <template v-if="!userStore.isCoach">
+    <scroll-view scroll-y class="home-scroll" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
+      <!-- 核心统计卡片 -->
+      <view class="home-stats">
+        <view class="home-stat-card" @tap="goStudents">
+          <text class="home-stat-icon">👥</text>
+          <text class="home-stat-num">{{ stats.clientCount }}</text>
+          <text class="home-stat-label">我的学员</text>
+        </view>
+        <view class="home-stat-card home-stat-card--warn" @tap="goPage('/pages/coach/risk/index')">
+          <text class="home-stat-icon">⚠️</text>
+          <text class="home-stat-num">{{ stats.riskCount }}</text>
+          <text class="home-stat-label">风险预警</text>
+        </view>
+        <view class="home-stat-card home-stat-card--blue" @tap="goPage('/pages/coach/flywheel/index')">
+          <text class="home-stat-icon">📋</text>
+          <text class="home-stat-num">{{ stats.pendingRx }}</text>
+          <text class="home-stat-label">待审处方</text>
+        </view>
+        <view class="home-stat-card home-stat-card--purple" @tap="goPage('/pages/coach/assessment/index')">
+          <text class="home-stat-icon">📊</text>
+          <text class="home-stat-num">{{ stats.pendingAssess }}</text>
+          <text class="home-stat-label">待审评估</text>
+        </view>
+      </view>
 
-      <!-- 顶部 Header -->
-      <view class="home-header">
-        <view class="home-header__left">
-          <image class="home-header__avatar" :src="avatar" mode="aspectFill" />
-          <view>
-            <view class="home-header__greeting-row">
-              <text class="home-header__greeting">{{ greeting }}，</text>
-              <text class="home-header__name">{{ userStore.displayName }}</text>
+      <!-- 今日待办 -->
+      <view class="home-section">
+        <view class="home-section-header">
+          <text class="home-section-title">📌 今日待办</text>
+          <text class="home-section-more" @tap="goPage('/pages/coach/flywheel/index')">查看全部 ›</text>
+        </view>
+        <view v-if="todos.length > 0" class="home-todo-list">
+          <view v-for="(item, idx) in todos.slice(0, 5)" :key="idx" class="home-todo-item" @tap="handleTodo(item)">
+            <view class="home-todo-dot" :style="{ background: priorityColor(item.priority) }"></view>
+            <view class="home-todo-body">
+              <text class="home-todo-title">{{ item.title }}</text>
+              <text class="home-todo-sub">{{ item.student_name || '' }} · {{ item.type_label || item.type || '任务' }}</text>
             </view>
-            <view class="mt-1">
-              <BHPLevelBadge :role="userStore.role" size="xs" />
+            <text class="home-todo-arrow">›</text>
+          </view>
+        </view>
+        <view v-else class="home-empty-hint">
+          <text>✅ 今日待办已清空，辛苦了！</text>
+        </view>
+      </view>
+
+      <!-- 学员动态 -->
+      <view class="home-section">
+        <view class="home-section-header">
+          <text class="home-section-title">🔔 学员动态</text>
+          <text class="home-section-more" @tap="goPage('/pages/coach/messages/index')">更多 ›</text>
+        </view>
+        <view v-if="activities.length > 0" class="home-activity-list">
+          <view v-for="(a, idx) in activities.slice(0, 6)" :key="idx" class="home-activity-item">
+            <view class="home-activity-avatar" :style="{ background: avatarColor(a.student_name) }">
+              {{ (a.student_name || '?')[0] }}
             </view>
-          </view>
-        </view>
-        <view class="home-header__right" @tap="goNotify">
-          <text class="home-header__bell">🔔</text>
-          <view class="home-header__bell-dot" v-if="unreadCount > 0">
-            <text>{{ unreadCount > 9 ? '9+' : unreadCount }}</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 积分卡 -->
-      <view class="home-section px-4">
-        <BHPPointsCard
-          :role="userStore.role"
-          :growth-points="userStore.growthPoints"
-          :contribution-points="userStore.contributionPts"
-          :influence-points="userStore.influencePts"
-          :streak="learningStore.currentStreak"
-        />
-      </view>
-
-      <!-- 待完成评估提醒 -->
-      <view class="home-alert px-4" v-if="pendingAssessmentCount > 0">
-        <view class="home-alert__card" @tap="goAssessment">
-          <text class="home-alert__icon">📋</text>
-          <view class="home-alert__body">
-            <text class="home-alert__title">您有 {{ pendingAssessmentCount }} 个待完成评估</text>
-            <text class="home-alert__sub text-xs text-secondary-color">点击查看并完成</text>
-          </view>
-          <text class="home-alert__arrow">›</text>
-        </view>
-      </view>
-
-      <!-- 今日任务 -->
-      <view class="home-section px-4">
-        <view class="home-section__header">
-          <text class="home-section__title">今日任务</text>
-          <text class="home-section__more text-primary-color" @tap="goTasks">全部 ›</text>
-        </view>
-        <template v-if="loadingTasks">
-          <view class="bhp-skeleton" style="height: 80rpx; margin-bottom: 10rpx; border-radius: var(--radius-md);"></view>
-          <view class="bhp-skeleton" style="height: 80rpx; border-radius: var(--radius-md);"></view>
-        </template>
-        <view v-else-if="todayTasks.length" class="home-tasks">
-          <view
-            v-for="task in todayTasks.slice(0, 3)"
-            :key="task.id"
-            class="home-task-item bhp-card bhp-card--flat"
-            :class="{ 'home-task-item--done': task.completed }"
-            @tap="toggleTask(task)"
-          >
-            <view class="home-task-item__check" :class="{ 'home-task-item__check--done': task.completed }">
-              <text v-if="task.completed">✓</text>
-            </view>
-            <text class="home-task-item__text" :class="{ 'home-task-item__text--done': task.completed }">
-              {{ task.title }}
-            </text>
-            <text class="home-task-item__pts text-xs text-primary-color" v-if="task.points">
-              +{{ task.points }}
-            </text>
-          </view>
-        </view>
-        <view v-else class="home-empty-tip">
-          <text class="text-secondary-color text-sm">今日任务已全部完成 🎉</text>
-        </view>
-      </view>
-
-      <!-- 推荐学习 -->
-      <view class="home-section px-4">
-        <view class="home-section__header">
-          <text class="home-section__title">推荐学习</text>
-          <text class="home-section__more text-primary-color" @tap="goLearning">更多 ›</text>
-        </view>
-        <template v-if="loadingContent">
-          <view class="bhp-skeleton" style="height: 200rpx; border-radius: var(--radius-lg);"></view>
-        </template>
-        <scroll-view v-else-if="recommended.length" scroll-x class="home-recommend-scroll">
-          <view class="home-recommend-row">
-            <BHPCourseCard
-              v-for="item in recommended"
-              :key="item.id"
-              :title="item.title"
-              :cover="item.cover_url"
-              :type="item.type"
-              :duration="item.estimated_minutes ? item.estimated_minutes + '分钟' : ''"
-              :points="item.points"
-              class="home-recommend-card"
-              @tap="goContent(item.id)"
-            />
-          </view>
-        </scroll-view>
-        <view v-else class="home-empty-tip">
-          <text class="text-secondary-color text-sm">暂无推荐内容</text>
-        </view>
-      </view>
-
-    </template>
-
-    <!-- ════════════════════════════════════════
-         教练视图（L4+）
-    ════════════════════════════════════════ -->
-    <template v-else>
-
-      <!-- 教练 Header -->
-      <view class="home-header home-header--coach">
-        <view class="home-header__left">
-          <image class="home-header__avatar home-header__avatar--coach" :src="avatar" mode="aspectFill" />
-          <view>
-            <view class="home-header__greeting-row">
-              <text class="home-header__greeting">{{ greeting }}，</text>
-              <text class="home-header__name">{{ userStore.displayName }} 教练</text>
-            </view>
-            <BHPLevelBadge :role="userStore.role" size="xs" />
-          </view>
-        </view>
-        <view class="home-header__right" @tap="goNotify">
-          <text class="home-header__bell">🔔</text>
-        </view>
-      </view>
-
-      <!-- 快速统计 -->
-      <view class="home-coach-stats px-4" v-if="coachStore.dashboardStats">
-        <view class="home-coach-stat-grid">
-          <view class="home-coach-stat" @tap="goCoachStudents">
-            <text class="home-coach-stat__val">{{ coachStore.dashboardStats.total_students }}</text>
-            <text class="home-coach-stat__lbl">学员</text>
-          </view>
-          <view class="home-coach-stat" @tap="goCoachStudents">
-            <text class="home-coach-stat__val" :class="{ 'text-error-color': coachStore.dashboardStats.high_risk_count > 0 }">
-              {{ coachStore.dashboardStats.high_risk_count }}
-            </text>
-            <text class="home-coach-stat__lbl">高风险</text>
-          </view>
-          <view class="home-coach-stat" @tap="goPushQueue">
-            <text class="home-coach-stat__val text-primary-color">{{ coachStore.dashboardStats.pending_push_count }}</text>
-            <text class="home-coach-stat__lbl">待审批</text>
-          </view>
-          <view class="home-coach-stat" @tap="goCoachAssessment">
-            <text class="home-coach-stat__val">{{ coachStore.dashboardStats.pending_review_count }}</text>
-            <text class="home-coach-stat__lbl">待评审</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 待审批推送 -->
-      <view class="home-section px-4" v-if="coachStore.pendingQueue.length">
-        <view class="home-section__header">
-          <text class="home-section__title">待审批推送</text>
-          <text class="home-section__more text-primary-color" @tap="goPushQueue">全部 ›</text>
-        </view>
-        <view
-          v-for="item in coachStore.pendingQueue.slice(0, 2)"
-          :key="item.id"
-          class="home-push-item bhp-card bhp-card--flat"
-          @tap="goPushQueue"
-        >
-          <view class="home-push-item__left">
-            <text class="home-push-item__name text-sm font-semibold">{{ item.student_name }}</text>
-            <text class="home-push-item__title text-xs text-secondary-color">{{ item.content_title }}</text>
-          </view>
-          <view class="home-push-item__actions">
-            <view class="home-push-btn home-push-btn--reject" @tap.stop="quickReject(item.id)">
-              <text class="text-xs">拒绝</text>
-            </view>
-            <view class="home-push-btn home-push-btn--approve" @tap.stop="quickApprove(item.id)">
-              <text class="text-xs">通过</text>
+            <view class="home-activity-body">
+              <text class="home-activity-text">
+                <text style="font-weight:600;">{{ a.student_name }}</text> {{ a.action_text || '完成了一项任务' }}
+              </text>
+              <text class="home-activity-time">{{ a.time_ago || '' }}</text>
             </view>
           </view>
         </view>
+        <view v-else class="home-empty-hint">
+          <text>暂无新动态</text>
+        </view>
       </view>
 
-      <!-- 教练工作台入口 -->
-      <view class="home-section px-4">
-        <view class="home-section__header">
-          <text class="home-section__title">工作台</text>
-        </view>
-        <view class="home-coach-actions">
-          <view class="home-coach-action" v-for="action in COACH_ACTIONS" :key="action.key" @tap="action.fn()">
-            <view class="home-coach-action__icon" :style="{ background: action.color + '18' }">
-              <text>{{ action.icon }}</text>
-            </view>
-            <text class="home-coach-action__label text-xs">{{ action.label }}</text>
+      <!-- 快捷入口 -->
+      <view class="home-section">
+        <text class="home-section-title">⚡ 快捷入口</text>
+        <view class="home-shortcuts">
+          <view class="home-shortcut" @tap="goPage('/pages/coach/analytics/index')">
+            <view class="home-sc-icon" style="background:#EEF6FF;">📈</view>
+            <text class="home-sc-label">数据分析</text>
+          </view>
+          <view class="home-shortcut" @tap="goPage('/pages/coach/risk/index')">
+            <view class="home-sc-icon" style="background:#FFF2F2;">🛡️</view>
+            <text class="home-sc-label">风险管理</text>
+          </view>
+          <view class="home-shortcut" @tap="goPage('/pages/coach/live/index')">
+            <view class="home-sc-icon" style="background:#FFF8EE;">📡</view>
+            <text class="home-sc-label">直播中心</text>
+          </view>
+          <view class="home-shortcut" @tap="goPage('/pages/coach/push-queue/index')">
+            <view class="home-sc-icon" style="background:#F0FFF0;">📤</view>
+            <text class="home-sc-label">推送队列</text>
           </view>
         </view>
       </view>
 
-    </template>
+      <!-- 本周概览 -->
+      <view class="home-section">
+        <text class="home-section-title">📊 本周概览</text>
+        <view class="home-week-stats">
+          <view class="home-week-item">
+            <text class="home-week-num" style="color:#27AE60;">{{ weekStats.actionsCompleted }}</text>
+            <text class="home-week-label">微行动完成</text>
+          </view>
+          <view class="home-week-item">
+            <text class="home-week-num" style="color:#3498DB;">{{ weekStats.sessionsCount }}</text>
+            <text class="home-week-label">督导会话</text>
+          </view>
+          <view class="home-week-item">
+            <text class="home-week-num" style="color:#9B59B6;">{{ weekStats.assessments }}</text>
+            <text class="home-week-label">评估审核</text>
+          </view>
+          <view class="home-week-item">
+            <text class="home-week-num" style="color:#E67E22;">{{ weekStats.interventions }}</text>
+            <text class="home-week-label">干预次数</text>
+          </view>
+        </view>
+      </view>
 
-    <view style="height: 40rpx;"></view>
+      <view style="height:120rpx;"></view>
+    </scroll-view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useUserStore }    from '@/stores/user'
-import { useLearningStore } from '@/stores/learning'
-import { useCoachStore }   from '@/stores/coach'
-import http from '@/api/request'
-import BHPLevelBadge  from '@/components/BHPLevelBadge.vue'
-import BHPPointsCard  from '@/components/BHPPointsCard.vue'
-import BHPCourseCard  from '@/components/BHPCourseCard.vue'
 
-const userStore     = useUserStore()
-const learningStore = useLearningStore()
-const coachStore    = useCoachStore()
+const BASE_URL = 'http://localhost:8000'
 
-const loadingTasks   = ref(false)
-const loadingContent = ref(false)
-const todayTasks     = ref<any[]>([])
-const recommended    = ref<any[]>([])
-const unreadCount    = ref(0)
-const pendingAssessmentCount = ref(0)
-
-const greeting = computed(() => {
-  const h = new Date().getHours()
-  if (h < 6)  return '夜深了'
-  if (h < 12) return '早上好'
-  if (h < 14) return '中午好'
-  if (h < 18) return '下午好'
-  return '晚上好'
-})
-
-const avatar = computed(() =>
-  userStore.userInfo?.avatar_url || '/static/default-avatar.png'
-)
-
-const COACH_ACTIONS = [
-  { key: 'students',   label: '我的学员', icon: '👥', color: '#10b981', fn: goCoachStudents },
-  { key: 'push',       label: '推送审批', icon: '📨', color: '#3b82f6', fn: goPushQueue },
-  { key: 'assessment', label: '评估管理', icon: '📋', color: '#8b5cf6', fn: goCoachAssessment },
-  { key: 'analytics',  label: '数据分析', icon: '📊', color: '#f59e0b', fn: goAnalytics },
-]
-
-onMounted(async () => {
-  userStore.restoreFromStorage()
-  if (!userStore.isLoggedIn) {
-    uni.reLaunch({ url: '/pages/auth/login' })
-    return
-  }
-  if (userStore.isCoach) {
-    coachStore.initDashboard()
-  } else {
-    loadLearnerData()
-  }
-  loadUnread()
-})
-
-onPullDownRefresh(async () => {
-  if (userStore.isCoach) {
-    await coachStore.initDashboard()
-  } else {
-    await loadLearnerData()
-  }
-  uni.stopPullDownRefresh()
-})
-
-async function loadLearnerData() {
-  await Promise.allSettled([
-    loadTasks(),
-    loadRecommended(),
-    loadPendingAssessments(),
-    learningStore.fetchStats(),
-  ])
+function getToken(): string {
+  return uni.getStorageSync('access_token') || ''
 }
 
-async function loadTasks() {
-  loadingTasks.value = true
-  try {
-    const res = await http.get<{ items: any[] }>('/v1/micro-actions/today', { page_size: 10 })
-    todayTasks.value = res.items || []
-  } catch {
-    todayTasks.value = []
-  } finally {
-    loadingTasks.value = false
-  }
-}
-
-async function loadRecommended() {
-  loadingContent.value = true
-  try {
-    const res = await http.get<{ items: any[] }>('/v1/content/recommended', { page_size: 8 })
-    recommended.value = res.items || []
-  } catch {
-    recommended.value = []
-  } finally {
-    loadingContent.value = false
-  }
-}
-
-async function loadPendingAssessments() {
-  try {
-    const res = await http.get<{ items: any[] }>('/v1/assessment-assignments/my', {
-      status: 'assigned', page_size: 5,
+async function http<T = any>(url: string, options: any = {}): Promise<T> {
+  const { method = 'GET', data } = options
+  return new Promise((resolve, reject) => {
+    uni.request({
+      url: BASE_URL + url,
+      method,
+      data,
+      header: {
+        'Authorization': 'Bearer ' + getToken(),
+        'Content-Type': 'application/json'
+      },
+      success: (res: any) => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T)
+        else reject(new Error(`HTTP ${res.statusCode}`))
+      },
+      fail: (err: any) => reject(err)
     })
-    pendingAssessmentCount.value = (res.items || []).length
+  })
+}
+
+const refreshing = ref(false)
+const coachName = ref('教练')
+const dashboard = ref<any>({})
+const todoList = ref<any[]>([])
+const activityList = ref<any[]>([])
+
+// 问候语
+const greetText = computed(() => {
+  const h = new Date().getHours()
+  if (h < 6) return '夜深了,'
+  if (h < 12) return '早上好,'
+  if (h < 14) return '中午好,'
+  if (h < 18) return '下午好,'
+  return '晚上好,'
+})
+
+const todayStr = computed(() => {
+  const d = new Date()
+  const weekDays = ['日','一','二','三','四','五','六']
+  return (d.getMonth()+1) + '月' + d.getDate() + '日 周' + weekDays[d.getDay()]
+})
+
+// 统计数据（对齐 /v1/coach/dashboard 响应：{coach, today_stats, students}）
+const stats = computed(() => {
+  const d = dashboard.value
+  const ts = d.today_stats || {}
+  const students = d.students || []
+  return {
+    clientCount:   ts.total_students   ?? students.length ?? 0,
+    riskCount:     ts.alert_students   ?? 0,
+    pendingRx:     ts.pending_followups ?? 0,
+    pendingAssess: ts.pending_followups ?? 0,
+  }
+})
+
+const todos = computed(() => todoList.value)
+const activities = computed(() => activityList.value)
+
+const weekStats = computed(() => ({
+  actionsCompleted: dashboard.value.week_stats?.actions_completed ?? dashboard.value.micro_actions_completed ?? 0,
+  sessionsCount: dashboard.value.week_stats?.sessions ?? dashboard.value.upcoming_sessions ?? 0,
+  assessments: dashboard.value.week_stats?.assessments ?? 0,
+  interventions: dashboard.value.week_stats?.interventions ?? 0,
+}))
+
+function priorityColor(p: string): string {
+  const map: Record<string, string> = { urgent: '#E74C3C', high: '#E67E22', normal: '#3498DB', low: '#27AE60' }
+  return map[p] || '#8E99A4'
+}
+
+const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C','#34495E']
+function avatarColor(name: string): string {
+  if (!name) return '#8E99A4'
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return colorPool[Math.abs(hash) % colorPool.length]
+}
+
+async function loadData() {
+  // 1. coach name (key matches stores/user.ts: 'user_info')
+  try {
+    const raw = uni.getStorageSync('user_info')
+    if (raw) {
+      const u = typeof raw === 'string' ? JSON.parse(raw) : raw
+      coachName.value = u.full_name || u.username || '教练'
+    }
+  } catch {}
+
+  // 2. dashboard
+  try {
+    const res = await http<any>('/api/v1/coach/dashboard')
+    dashboard.value = res || {}
+
+    // 构建学员动态
+    const students = res.students || res.data?.students || []
+    activityList.value = students.slice(0, 10).map((s: any) => {
+      const actions = []
+      if (s.last_action) actions.push(s.last_action)
+      else if (s.micro_action_count) actions.push('完成了' + s.micro_action_count + '个微行动')
+      else if (s.days_since_last_contact != null) {
+        if (s.days_since_last_contact === 0) actions.push('今天活跃')
+        else if (s.days_since_last_contact <= 1) actions.push('昨天活跃')
+        else actions.push(s.days_since_last_contact + '天未活跃')
+      }
+      return {
+        student_name: s.name || s.full_name || s.username || '未知',
+        action_text: actions[0] || '最近有动态',
+        time_ago: s.last_active_time || '',
+      }
+    })
+  } catch (e) {
+    console.warn('[Home] dashboard failed:', e)
+  }
+
+  // 3. 今日待办 (从push-queue或micro-actions获取)
+  try {
+    const res = await http<any>('/api/v1/coach/push-queue?status=pending&page_size=10')
+    const items = res.items || res.queue || (Array.isArray(res) ? res : [])
+    todoList.value = items.map((item: any) => ({
+      id: item.id,
+      title: item.title || item.ai_summary || item.content?.slice(0, 30) || '待处理任务',
+      student_name: item.student_name || item.grower_name || '',
+      type: item.type || 'rx_push',
+      type_label: item.type === 'rx_push' ? '处方推送' : item.type === 'assessment' ? '评估审核' : '待办',
+      priority: item.priority || 'normal',
+      link: item.link || '',
+    }))
   } catch {
-    pendingAssessmentCount.value = 0
+    // fallback: 用micro-actions
+    try {
+      const res2 = await http<any>('/api/v1/micro-actions/today')
+      const items = res2.actions || res2.items || []
+      todoList.value = items.filter((a: any) => !a.completed).slice(0, 5).map((a: any) => ({
+        id: a.id,
+        title: a.title || a.description || '微行动',
+        student_name: '',
+        type: 'micro_action',
+        type_label: '微行动',
+        priority: 'normal',
+      }))
+    } catch { todoList.value = [] }
   }
 }
 
-async function loadUnread() {
-  try {
-    const res = await http.get<{ unread_count: number }>('/v1/notifications/unread-count')
-    unreadCount.value = res.unread_count ?? 0
-  } catch {
-    unreadCount.value = 0
+async function onRefresh() {
+  refreshing.value = true
+  await loadData()
+  refreshing.value = false
+}
+
+function goStudents() {
+  uni.navigateTo({ url: '/pages/coach/students/index' })
+}
+
+function goPage(url: string) {
+  uni.navigateTo({ url })
+}
+
+function handleTodo(item: any) {
+  if (item.link) {
+    uni.navigateTo({ url: item.link })
+  } else if (item.type === 'rx_push' || item.type === 'assessment') {
+    uni.navigateTo({ url: '/pages/coach/flywheel/index' })
+  } else {
+    uni.navigateTo({ url: '/pages/coach/students/index' })
   }
 }
 
-async function toggleTask(task: any) {
-  if (task.completed) return
-  try {
-    await http.post(`/v1/micro-actions/${task.id}/complete`, {})
-    task.completed = true
-    if (task.points) userStore.addPoints(task.points)
-  } catch {/* ignore */}
-}
-
-async function quickApprove(id: number) {
-  const ok = await coachStore.approvePush(id)
-  if (ok) uni.showToast({ title: '已通过', icon: 'success' })
-}
-async function quickReject(id: number) {
-  const ok = await coachStore.rejectPush(id)
-  if (ok) uni.showToast({ title: '已拒绝', icon: 'none' })
-}
-
-// ─── 导航 ──────────────────────────────────────
-function goNotify()          { uni.switchTab({ url: '/pages/notifications/index' }) }
-function goLearning()        { uni.navigateTo({ url: '/pages/learning/index' }) }
-function goContent(id: number) { uni.navigateTo({ url: `/pages/learning/content-detail?id=${id}` }) }
-function goAssessment()      { uni.navigateTo({ url: '/pages/assessment/pending' }) }
-function goTasks()           { uni.navigateTo({ url: '/pages/learning/my-learning' }) }
-function goCoachStudents()   { uni.navigateTo({ url: '/pages/coach/students/index' }) }
-function goPushQueue()       { uni.navigateTo({ url: '/pages/coach/push-queue' }) }
-function goCoachAssessment() { uni.navigateTo({ url: '/pages/coach/assessment/index' }) }
-function goAnalytics()       { uni.navigateTo({ url: '/pages/coach/analytics/index' }) }
+onMounted(() => { loadData() })
 </script>
 
 <style scoped>
-.home-page { background: var(--surface-secondary); min-height: 100vh; }
+.home-page { min-height: 100vh; background: #F5F6FA; }
 
-/* Header */
 .home-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 16rpx 32rpx 12rpx;
-  background: var(--surface);
+  padding: 24rpx 32rpx;
+  padding-top: calc(80rpx + env(safe-area-inset-top));
+  background: linear-gradient(135deg, #2D8E69 0%, #3BAF7C 60%, #48C78E 100%);
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
 }
-.home-header--coach { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
-.home-header--coach .home-header__greeting,
-.home-header--coach .home-header__name { color: #fff; }
-.home-header__left     { display: flex; align-items: center; gap: 16rpx; }
-.home-header__avatar   { width: 72rpx; height: 72rpx; border-radius: 50%; background: var(--bhp-gray-100); }
-.home-header__avatar--coach { border: 2px solid rgba(255,255,255,0.5); }
-.home-header__greeting-row { display: flex; align-items: baseline; }
-.home-header__greeting { font-size: 26rpx; color: var(--text-secondary); }
-.home-header__name     { font-size: 28rpx; font-weight: 700; color: var(--text-primary); }
-.home-header__right    { position: relative; cursor: pointer; }
-.home-header__bell     { font-size: 44rpx; }
-.home-header__bell-dot {
-  position: absolute; top: -4rpx; right: -4rpx;
-  background: #ff4d4f; color: #fff;
-  font-size: 16rpx; min-width: 28rpx; height: 28rpx;
-  border-radius: var(--radius-full);
-  display: flex; align-items: center; justify-content: center; padding: 0 4rpx;
+.home-greeting { display: flex; flex-direction: column; }
+.home-hello { font-size: 26rpx; opacity: 0.85; }
+.home-name { font-size: 38rpx; font-weight: 700; margin-top: 4rpx; }
+.home-date { font-size: 24rpx; opacity: 0.8; }
+
+.home-scroll { height: calc(100vh - 200rpx); }
+
+/* 统计卡片 */
+.home-stats { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 24rpx; }
+.home-stat-card {
+  flex: 1; min-width: 42%;
+  background: #fff; border-radius: 20rpx; padding: 24rpx;
+  display: flex; flex-direction: column; align-items: center;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.04);
+  position: relative; overflow: hidden;
 }
+.home-stat-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6rpx; background: #2D8E69; }
+.home-stat-card--warn::after { background: #E74C3C; }
+.home-stat-card--blue::after { background: #3498DB; }
+.home-stat-card--purple::after { background: #9B59B6; }
+.home-stat-icon { font-size: 40rpx; margin-bottom: 8rpx; }
+.home-stat-num { font-size: 48rpx; font-weight: 800; color: #2C3E50; }
+.home-stat-label { font-size: 24rpx; color: #8E99A4; margin-top: 4rpx; }
 
 /* Section */
-.home-section      { padding-top: 24rpx; }
-.home-section__header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
-.home-section__title  { font-size: 30rpx; font-weight: 700; color: var(--text-primary); }
-.home-section__more   { font-size: 24rpx; cursor: pointer; }
-.home-empty-tip       { padding: 24rpx 0; text-align: center; }
+.home-section { margin: 0 24rpx 24rpx; background: #fff; border-radius: 20rpx; padding: 24rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.03); }
+.home-section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
+.home-section-title { font-size: 30rpx; font-weight: 700; color: #2C3E50; }
+.home-section-more { font-size: 24rpx; color: #3498DB; }
 
-/* 评估提醒 */
-.home-alert { padding-top: 16rpx; }
-.home-alert__card {
-  display: flex; align-items: center; gap: 16rpx;
-  background: var(--bhp-warn-50); border: 1px solid var(--bhp-warn-100);
-  border-radius: var(--radius-lg); padding: 20rpx 24rpx; cursor: pointer;
-}
-.home-alert__icon   { font-size: 40rpx; }
-.home-alert__body   { flex: 1; }
-.home-alert__title  { font-size: 26rpx; font-weight: 600; color: var(--bhp-warn-700); display: block; }
-.home-alert__arrow  { font-size: 36rpx; color: var(--bhp-warn-700); }
+/* 待办 */
+.home-todo-item { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 0; border-bottom: 1rpx solid #F8F8F8; }
+.home-todo-item:last-child { border-bottom: none; }
+.home-todo-dot { width: 12rpx; height: 12rpx; border-radius: 50%; flex-shrink: 0; }
+.home-todo-body { flex: 1; }
+.home-todo-title { display: block; font-size: 28rpx; color: #2C3E50; font-weight: 500; }
+.home-todo-sub { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
+.home-todo-arrow { font-size: 28rpx; color: #CCC; }
 
-/* 今日任务 */
-.home-tasks { display: flex; flex-direction: column; gap: 10rpx; }
-.home-task-item {
-  display: flex; align-items: center; gap: 16rpx;
-  padding: 20rpx 20rpx; cursor: pointer; transition: opacity 0.15s;
-}
-.home-task-item:active { opacity: 0.8; }
-.home-task-item--done  { opacity: 0.6; }
-.home-task-item__check {
-  width: 36rpx; height: 36rpx; border-radius: 50%;
-  border: 2px solid var(--bhp-gray-300);
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-  font-size: 20rpx;
-}
-.home-task-item__check--done { background: var(--bhp-primary-500); border-color: var(--bhp-primary-500); color: #fff; }
-.home-task-item__text         { flex: 1; font-size: 26rpx; color: var(--text-primary); }
-.home-task-item__text--done   { text-decoration: line-through; color: var(--text-tertiary); }
-.home-task-item__pts          { flex-shrink: 0; font-weight: 600; }
+/* 动态 */
+.home-activity-item { display: flex; align-items: center; gap: 16rpx; padding: 14rpx 0; border-bottom: 1rpx solid #F8F8F8; }
+.home-activity-item:last-child { border-bottom: none; }
+.home-activity-avatar { width: 56rpx; height: 56rpx; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24rpx; font-weight: 600; flex-shrink: 0; }
+.home-activity-body { flex: 1; }
+.home-activity-text { display: block; font-size: 26rpx; color: #2C3E50; line-height: 1.5; }
+.home-activity-time { display: block; font-size: 22rpx; color: #BDC3C7; margin-top: 4rpx; }
 
-/* 推荐学习 */
-.home-recommend-scroll { white-space: nowrap; }
-.home-recommend-row    { display: flex; gap: 16rpx; }
-.home-recommend-card   { width: 280rpx; flex-shrink: 0; display: inline-block; white-space: normal; }
+/* 快捷入口 */
+.home-shortcuts { display: flex; flex-wrap: wrap; gap: 24rpx; margin-top: 16rpx; }
+.home-shortcut { flex: 1; min-width: 20%; display: flex; flex-direction: column; align-items: center; }
+.home-sc-icon { width: 88rpx; height: 88rpx; border-radius: 20rpx; display: flex; align-items: center; justify-content: center; font-size: 40rpx; }
+.home-sc-label { font-size: 22rpx; color: #5B6B7F; margin-top: 8rpx; }
 
-/* 教练统计 */
-.home-coach-stats { padding-top: 16rpx; }
-.home-coach-stat-grid {
-  display: grid; grid-template-columns: repeat(4, 1fr);
-  background: var(--surface); border-radius: var(--radius-lg);
-  border: 1px solid var(--border-light);
-}
-.home-coach-stat {
-  display: flex; flex-direction: column; align-items: center;
-  padding: 24rpx 8rpx; cursor: pointer; gap: 6rpx;
-  border-right: 1px solid var(--border-light);
-}
-.home-coach-stat:last-child { border-right: none; }
-.home-coach-stat__val { font-size: 40rpx; font-weight: 700; color: var(--text-primary); }
-.home-coach-stat__lbl { font-size: 20rpx; color: var(--text-secondary); }
+/* 本周概览 */
+.home-week-stats { display: flex; margin-top: 16rpx; }
+.home-week-item { flex: 1; text-align: center; }
+.home-week-num { display: block; font-size: 40rpx; font-weight: 700; }
+.home-week-label { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
 
-/* 待审批推送 */
-.home-push-item {
-  display: flex; align-items: center; gap: 16rpx;
-  padding: 20rpx; margin-bottom: 10rpx; cursor: pointer;
-}
-.home-push-item__left  { flex: 1; display: flex; flex-direction: column; gap: 4rpx; }
-.home-push-item__actions { display: flex; gap: 12rpx; flex-shrink: 0; }
-.home-push-btn {
-  padding: 8rpx 20rpx; border-radius: var(--radius-full); cursor: pointer;
-  font-weight: 600;
-}
-.home-push-btn--approve { background: var(--bhp-primary-500); color: #fff; }
-.home-push-btn--reject  { background: var(--bhp-gray-100); color: var(--text-secondary); }
-
-/* 教练操作网格 */
-.home-coach-actions {
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16rpx;
-}
-.home-coach-action {
-  display: flex; flex-direction: column; align-items: center; gap: 10rpx; cursor: pointer;
-}
-.home-coach-action:active { opacity: 0.7; }
-.home-coach-action__icon {
-  width: 96rpx; height: 96rpx; border-radius: var(--radius-xl);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 40rpx;
-}
-.home-coach-action__label { color: var(--text-secondary); text-align: center; }
+.home-empty-hint { text-align: center; padding: 32rpx 0; font-size: 26rpx; color: #8E99A4; }
 </style>

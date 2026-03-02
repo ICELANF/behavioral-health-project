@@ -134,11 +134,18 @@ def get_pending_items(
         .all()
     )
 
+    # Batch-lookup student names
+    student_ids = list({i.student_id for i in items if i.student_id})
+    name_map: Dict[int, str] = {}
+    if student_ids:
+        users = db.query(User.id, User.full_name).filter(User.id.in_(student_ids)).all()
+        name_map = {u.id: (u.full_name or "") for u in users}
+
     return {
         "total": total,
         "page": page,
         "page_size": page_size,
-        "items": [_item_to_dict(i) for i in items],
+        "items": [_item_to_dict(i, name_map) for i in items],
     }
 
 
@@ -734,11 +741,12 @@ def _source_label(source_type: str) -> str:
     return labels.get(source_type, source_type)
 
 
-def _item_to_dict(item: CoachPushQueue) -> Dict[str, Any]:
+def _item_to_dict(item: CoachPushQueue, name_map: Optional[Dict[int, str]] = None) -> Dict[str, Any]:
     return {
         "id": item.id,
         "coach_id": item.coach_id,
         "student_id": item.student_id,
+        "student_name": (name_map or {}).get(item.student_id, "") if item.student_id else "",
         "source_type": item.source_type,
         "source_id": item.source_id,
         "title": item.title,

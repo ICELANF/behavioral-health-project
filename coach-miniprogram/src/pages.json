@@ -256,75 +256,81 @@
         {
           "path": "dashboard/index",
           "style": {
-            "navigationBarTitleText": "��������̨",
+            "navigationBarTitleText": "教练工作台",
             "enablePullDownRefresh": true
           }
         },
         {
           "path": "students/index",
           "style": {
-            "navigationBarTitleText": "�ҵ�ѧԱ",
+            "navigationBarTitleText": "我的学员",
             "enablePullDownRefresh": true
           }
         },
         {
           "path": "students/detail",
           "style": {
-            "navigationBarTitleText": "ѧԱ����"
+            "navigationBarTitleText": "学员详情"
           }
         },
         {
           "path": "push-queue/index",
           "style": {
-            "navigationBarTitleText": "��������"
+            "navigationBarTitleText": "推送审批"
           }
         },
         {
           "path": "assessment/index",
           "style": {
-            "navigationBarTitleText": "��������"
+            "navigationBarTitleText": "评估管理",
+            "navigationStyle": "custom"
           }
         },
         {
           "path": "assessment/review",
           "style": {
-            "navigationBarTitleText": "�������"
+            "navigationBarTitleText": "评估审核"
           }
         },
         {
           "path": "analytics/index",
           "style": {
-            "navigationBarTitleText": "���ݷ���"
+            "navigationBarTitleText": "数据分析",
+            "navigationStyle": "custom"
           }
         },
         {
           "path": "live/index",
           "style": {
-            "navigationBarTitleText": "ֱ������"
+            "navigationBarTitleText": "直播中心",
+            "navigationStyle": "custom"
           }
         },
         {
           "path": "flywheel/index",
           "style": {
-            "navigationBarTitleText": "AI����"
+            "navigationBarTitleText": "AI飞轮",
+            "navigationStyle": "custom"
           }
         },
         {
           "path": "messages/index",
           "style": {
-            "navigationBarTitleText": "��Ϣ"
+            "navigationBarTitleText": "消息",
+            "navigationStyle": "custom"
           }
         },
         {
           "path": "risk/index",
           "style": {
-            "navigationBarTitleText": "���չ���"
+            "navigationBarTitleText": "风险管理",
+            "navigationStyle": "custom"
           }
         }
       ]
     },
     {
-      "root": "pages/profile",
+      "root": "pages/profile-extra",
       "name": "profile-sub",
       "pages": [
         {

@@ -58,12 +58,42 @@ export const useCoachStore = defineStore('coach', () => {
   async function initDashboard() {
     loading.value = true
     try {
-      const [statsRes, queueRes] = await Promise.allSettled([
-        http.get<DashboardStats>('/v1/coach/dashboard'),
-        http.get<{ items: PushQueueItem[] }>('/v1/coach-push/pending', { page_size: 10 }),
+      const [dashRes, queueRes] = await Promise.allSettled([
+        http.get<any>('/v1/coach/dashboard'),
+        http.get<{ total: number; items: PushQueueItem[] }>('/v1/coach-push/pending', { page_size: 10 }),
       ])
-      if (statsRes.status === 'fulfilled') dashboardStats.value = statsRes.value
-      if (queueRes.status === 'fulfilled')  pendingQueue.value  = queueRes.value.items || []
+      if (dashRes.status === 'fulfilled') {
+        const d = dashRes.value
+        const ts = d.today_stats || {}
+        dashboardStats.value = {
+          total_students:       ts.total_students        ?? 0,
+          active_students_7d:   ts.active_students_7d    ?? 0,
+          high_risk_count:      ts.alert_students         ?? 0,
+          pending_push_count:   ts.pending_push_count     ?? 0,
+          pending_review_count: ts.pending_followups      ?? 0,
+          coach_score:          d.coach?.score,
+          coach_level:          d.coach?.level_name,
+        }
+        // pre-fill students list from dashboard response
+        if (Array.isArray(d.students) && d.students.length) {
+          students.value = d.students.map((s: any) => ({
+            id:           s.id,
+            username:     s.name || '',
+            full_name:    s.name || '',
+            avatar_url:   s.avatar || '',
+            role:         'grower',
+            risk_level:   s.priority === 'high' ? 'high' : 'normal',
+            growth_points: 0,
+          }))
+          studentsLoaded.value = true
+        }
+      }
+      if (queueRes.status === 'fulfilled') {
+        pendingQueue.value = queueRes.value.items || []
+        if (dashboardStats.value) {
+          dashboardStats.value.pending_push_count = queueRes.value.total ?? pendingQueue.value.length
+        }
+      }
     } finally {
       loading.value = false
     }

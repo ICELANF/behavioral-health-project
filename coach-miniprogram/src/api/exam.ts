@@ -7,31 +7,31 @@ import http from './request'
 const examApi = {
   /** 可用考试列表 */
   getExams(params?: Record<string, any>) {
-    return http.get<{ items: any[]; total: number }>('/v1/exams', params)
+    return http.get<{ items: any[]; total: number }>('/v1/certification/exams', params)
   },
   /** 考试详情 */
   getExamDetail(id: number) {
-    return http.get<any>(`/v1/exams/${id}`)
+    return http.get<any>(`/v1/certification/exams/${id}`)
   },
   /** 开始考试 */
   startSession(examId: number) {
-    return http.post<any>(`/v1/exams/${examId}/start`, {})
+    return http.post<any>(`/v1/certification/exams/${examId}/start`, {})
   },
   /** 提交答案 */
   submitAnswer(sessionId: number, questionId: number, answer: any) {
-    return http.post<any>(`/v1/exam-sessions/${sessionId}/answer`, { question_id: questionId, answer })
+    return http.post<any>(`/v1/certification/sessions/${sessionId}/answer`, { question_id: questionId, answer })
   },
   /** 完成考试 */
   finishSession(sessionId: number) {
-    return http.post<any>(`/v1/exam-sessions/${sessionId}/finish`, {})
+    return http.post<any>(`/v1/certification/sessions/${sessionId}/finish`, {})
   },
   /** 考试结果 */
   getResult(sessionId: number) {
-    return http.get<any>(`/v1/exam-sessions/${sessionId}/result`)
+    return http.get<any>(`/v1/certification/sessions/${sessionId}/result`)
   },
   /** 考试历史 */
   getHistory(params?: Record<string, any>) {
-    return http.get<{ items: any[]; total: number }>('/v1/exam-sessions/my', params)
+    return http.get<{ items: any[]; total: number }>('/v1/certification/sessions/my', params)
   },
 }
 
