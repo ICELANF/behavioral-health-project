@@ -133,19 +133,10 @@ function formatDate(t: string): string {
 }
 
 async function loadData() {
-  // 尝试加载直播数据 (后端可能未实现)
-  try {
-    const res = await http<any>('/api/v1/live/sessions')
-    const items = res.items || res.sessions || (Array.isArray(res) ? res : [])
-    liveNow.value = items.filter((i: any) => i.status === 'live').map((i: any) => ({ ...i }))
-    upcoming.value = items.filter((i: any) => i.status === 'upcoming').map((i: any) => ({ ...i, _reserved: false }))
-    replays.value = items.filter((i: any) => i.status === 'ended' || i.status === 'replay')
-  } catch {
-    // 后端直播功能预留未实现，显示空状态
-    liveNow.value = []
-    upcoming.value = []
-    replays.value = []
-  }
+  // 直播功能后端尚未开放，直接展示空状态，避免 404 控制台报错
+  liveNow.value = []
+  upcoming.value = []
+  replays.value = []
 }
 
 function enterLive(item: any) {

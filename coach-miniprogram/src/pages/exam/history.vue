@@ -55,11 +55,9 @@ const refreshing = ref(false)
 const loading = ref(false)
 
 async function loadData() {
-  loading.value = true
-  try {
-    const res = await http<any>('/api/v1/certification/sessions/my')
-    records.value = res?.items || []
-  } catch { records.value = [] } finally { loading.value = false }
+  // /api/v1/certification/sessions/my 后端尚未开放，直接展示空状态
+  loading.value = false
+  records.value = []
 }
 
 function formatDate(iso: string): string {

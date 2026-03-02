@@ -79,16 +79,9 @@ function avatarColor(name: string): string {
 function levelName(k: string) { return { observer:'观察者', grower:'成长者', sharer:'分享者' }[k] || (k || '') }
 
 async function loadData() {
-  loading.value = true
-  try {
-    const res = await http<any>('/api/v1/leaderboard/credits')
-    list.value = res?.items || []
-    myRank.value = res?.my_rank || 0
-    myPoints.value = res?.my_points || 0
-  } catch {
-    // fallback: show empty
-    list.value = []
-  } finally { loading.value = false }
+  // /api/v1/leaderboard/credits 后端尚未开放，直接展示空状态
+  loading.value = false
+  list.value = []
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }
