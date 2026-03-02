@@ -27,7 +27,7 @@
         </view>
       </view>
 
-      <!-- 功能菜单 -->
+      <!-- 教练工作 -->
       <view class="prof-menu">
         <view class="prof-menu-item" @tap="goPage('/pages/coach/analytics/index')">
           <text class="prof-menu-icon">📊</text>
@@ -39,17 +39,37 @@
           <text class="prof-menu-text">评估管理</text>
           <text class="prof-menu-arrow">›</text>
         </view>
-        <view class="prof-menu-item" @tap="goLearning">
+        <view class="prof-menu-item" @tap="goPage('/pages/learning/index')">
           <text class="prof-menu-icon">📚</text>
           <text class="prof-menu-text">学习成长</text>
           <text class="prof-menu-arrow">›</text>
         </view>
       </view>
 
+      <!-- 个人成长 -->
       <view class="prof-menu">
-        <view class="prof-menu-item" @tap="goSettings">
+        <view class="prof-menu-item" @tap="goPage('/pages/profile-extra/performance')">
+          <text class="prof-menu-icon">📈</text>
+          <text class="prof-menu-text">我的绩效</text>
+          <text class="prof-menu-arrow">›</text>
+        </view>
+        <view class="prof-menu-item" @tap="goPage('/pages/profile-extra/leaderboard')">
+          <text class="prof-menu-icon">🏅</text>
+          <text class="prof-menu-text">积分排行</text>
+          <text class="prof-menu-arrow">›</text>
+        </view>
+        <view class="prof-menu-item" @tap="goPage('/pages/profile-extra/certification')">
+          <text class="prof-menu-icon">🏆</text>
+          <text class="prof-menu-text">我的认证</text>
+          <text class="prof-menu-arrow">›</text>
+        </view>
+      </view>
+
+      <!-- 系统 -->
+      <view class="prof-menu">
+        <view class="prof-menu-item" @tap="goPage('/pages/profile-extra/settings')">
           <text class="prof-menu-icon">⚙️</text>
-          <text class="prof-menu-text">设置</text>
+          <text class="prof-menu-text">账号设置</text>
           <text class="prof-menu-arrow">›</text>
         </view>
         <view class="prof-menu-item" @tap="showAbout">
@@ -153,16 +173,6 @@ function editProfile() {
 
 function goPage(url: string) {
   uni.navigateTo({ url })
-}
-
-function goLearning() {
-  uni.navigateTo({ url: '/pages/learning/index' }).catch(() => {
-    uni.showToast({ title: '学习中心即将上线', icon: 'none' })
-  })
-}
-
-function goSettings() {
-  uni.showToast({ title: '设置功能开发中', icon: 'none' })
 }
 
 function showAbout() {
