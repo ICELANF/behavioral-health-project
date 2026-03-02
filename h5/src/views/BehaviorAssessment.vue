@@ -243,9 +243,11 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import api from '@/api/index'
+import { useGoBack } from '@/composables/useGoBack'
 
 const router = useRouter()
 const route = useRoute()
+const { goBack } = useGoBack()
 const currentStep = ref<'questionnaire' | 'result'>('questionnaire')
 const currentIndex = ref(0)
 const submitting = ref(false)
@@ -378,7 +380,7 @@ function handleBack() {
   } else if (currentIndex.value > 0) {
     currentIndex.value--
   } else {
-    router.back()
+    goBack()
   }
 }
 

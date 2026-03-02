@@ -41,6 +41,7 @@
 import { computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import TabBar from '@/components/common/TabBar.vue'
+import { useGoBack } from '@/composables/useGoBack'
 
 const props = withDefaults(defineProps<{
   title?: string
@@ -58,6 +59,7 @@ const props = withDefaults(defineProps<{
 
 const router = useRouter()
 const route = useRoute()
+const { goBack } = useGoBack()
 
 // Tab 页面路径 — 这些页面默认不显示返回键
 const TAB_PATHS = ['/', '/home', '/chat', '/learn', '/tasks', '/profile']
@@ -70,7 +72,7 @@ const shouldShowBack = computed(() => {
 
 function onBack() {
   if (shouldShowBack.value) {
-    router.back()
+    goBack()
   }
 }
 </script>

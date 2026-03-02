@@ -1,6 +1,6 @@
 <template>
   <div class="promotion-progress">
-    <van-nav-bar title="晋级进度" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="晋级进度" left-arrow @click-left="goBack()" />
 
     <!-- 当前等级 -->
     <div class="level-card">
@@ -114,6 +114,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import * as echarts from 'echarts'

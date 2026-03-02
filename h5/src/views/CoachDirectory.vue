@@ -7,7 +7,7 @@
     <van-nav-bar
       title="教练目录"
       left-arrow
-      @click-left="router.back()"
+      @click-left="goBack()"
     />
 
     <div class="page-content coach-directory-page">
@@ -77,11 +77,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import api from '@/api/index'
 
 const router = useRouter()
+const { goBack } = useGoBack()
 
 const loading = ref(true)
 const keyword = ref('')

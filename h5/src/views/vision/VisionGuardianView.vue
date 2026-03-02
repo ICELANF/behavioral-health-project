@@ -1,6 +1,6 @@
 <template>
   <div class="vision-guardian">
-    <van-nav-bar title="孩子视力报告" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="孩子视力报告" left-arrow @click-left="goBack()" />
 
     <!-- 孩子选择器 -->
     <div class="student-selector" v-if="students.length > 0">
@@ -90,10 +90,12 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter } from 'vue-router'
 import { visionApi } from '@/api/vision'
 
 const router = useRouter()
+const { goBack } = useGoBack()
 const loading = ref(true)
 const students = ref<any[]>([])
 const activeStudentIdx = ref(0)

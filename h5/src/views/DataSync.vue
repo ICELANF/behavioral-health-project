@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="数据同步" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="数据同步" left-arrow @click-left="goBack()" />
 
     <div class="page-content">
       <!-- 设备列表 -->
@@ -100,6 +100,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, reactive, onMounted } from 'vue'
 import { showToast } from 'vant'
 import api from '@/api/index'

@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="我的行为状态" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="我的行为状态" left-arrow @click-left="goBack()" />
 
     <div class="page-content">
       <van-loading v-if="loading" class="loading" />
@@ -121,6 +121,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, computed, onMounted } from 'vue'
 import { showSuccessToast } from 'vant'
 import api from '@/api/index'

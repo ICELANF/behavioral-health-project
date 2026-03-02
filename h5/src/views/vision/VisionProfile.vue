@@ -1,6 +1,6 @@
 <template>
   <div class="vision-profile">
-    <van-nav-bar title="视力档案" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="视力档案" left-arrow @click-left="goBack()" />
 
     <van-loading v-if="loading" class="page-loading" />
 
@@ -82,6 +82,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, computed, onMounted } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import { visionApi } from '@/api/vision'

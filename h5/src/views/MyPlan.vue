@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="我的管理方案" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="我的管理方案" left-arrow @click-left="goBack()" />
 
     <div class="page-content">
       <!-- 我的健康计划 (Program Enrollments) -->
@@ -202,11 +202,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/api/index'
 
 const route = useRoute()
 const router = useRouter()
+const { goBack } = useGoBack()
 const routeAssignmentId = ref<number | null>(null)
 const currentId = ref<number | null>(null)
 const activeTab = ref(0)

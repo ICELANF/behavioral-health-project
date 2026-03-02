@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="我的挑战" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="我的挑战" left-arrow @click-left="goBack()" />
 
     <div class="page-content">
       <van-pull-refresh v-model="refreshing" @refresh="loadEnrollments">
@@ -132,6 +132,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter } from 'vue-router'
 import { showToast, showSuccessToast } from 'vant'
 import api from '@/api/index'
@@ -151,6 +152,7 @@ interface Enrollment {
 }
 
 const router = useRouter()
+const { goBack } = useGoBack()
 
 const loading = ref(true)
 const refreshing = ref(false)

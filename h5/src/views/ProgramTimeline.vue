@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="行为轨迹" left-arrow @click-left="$router.back()">
+    <van-nav-bar title="行为轨迹" left-arrow @click-left="goBack()">
       <template #right>
         <van-icon name="bar-chart-o" size="20" @click="$router.push(`/program/${eid}/progress`)" />
       </template>
@@ -44,10 +44,12 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRoute } from 'vue-router'
 import { programApi } from '@/api/program'
 
 const route = useRoute()
+const { goBack } = useGoBack()
 const eid = route.params.id as string
 
 const loading = ref(true)

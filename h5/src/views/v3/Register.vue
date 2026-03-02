@@ -1,6 +1,6 @@
 <template>
   <div class="register-page">
-    <van-nav-bar title="注册" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="注册" left-arrow @click-left="goBack()" />
 
     <!-- 来源提示 -->
     <div v-if="fromChat" class="source-hint">
@@ -51,6 +51,7 @@
 
 <script setup>
 import { ref, computed, onUnmounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast } from 'vant'
 import api from '@/api/index'
@@ -58,6 +59,7 @@ import { authApi } from '../../api/v3/index.js'
 import storage from '@/utils/storage'
 
 const router = useRouter()
+const { goBack } = useGoBack()
 const route = useRoute()
 
 const phone = ref('')

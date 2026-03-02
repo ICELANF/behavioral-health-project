@@ -7,7 +7,7 @@
     <van-nav-bar
       title="内容详情"
       left-arrow
-      @click-left="router.back()"
+      @click-left="goBack()"
     />
 
     <div class="page-content content-detail-page">
@@ -128,6 +128,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import DOMPurify from 'dompurify'
@@ -137,6 +138,7 @@ import ShareSheet from '@/components/ShareSheet.vue'
 
 const route = useRoute()
 const router = useRouter()
+const { goBack } = useGoBack()
 
 // 路由参数
 const contentType = computed(() => route.params.type as string)

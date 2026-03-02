@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="消息通知" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="消息通知" left-arrow @click-left="goBack()" />
 
     <div class="page-content">
       <van-tabs v-model:active="activeTab">
@@ -201,12 +201,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter } from 'vue-router'
 import { showNotify } from 'vant'
 import api from '@/api/index'
 import { useNotificationStore } from '@/stores/notification'
 
 const router = useRouter()
+const { goBack } = useGoBack()
 const notifStore = useNotificationStore()
 const activeTab = ref(0)
 const sessions = ref<any[]>([])

@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="行为特征" left-arrow @click-left="$router.back()">
+    <van-nav-bar title="行为特征" left-arrow @click-left="goBack()">
       <template #right>
         <van-icon name="clock-o" size="20" @click="$router.push(`/program/${eid}/timeline`)" />
       </template>
@@ -55,11 +55,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRoute } from 'vue-router'
 import { programApi } from '@/api/program'
 import * as echarts from 'echarts'
 
 const route = useRoute()
+const { goBack } = useGoBack()
 const eid = route.params.id as string
 
 const loading = ref(true)

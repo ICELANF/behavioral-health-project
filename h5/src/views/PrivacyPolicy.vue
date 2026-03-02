@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="隐私政策" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="隐私政策" left-arrow @click-left="goBack()" />
 
     <div class="page-content">
       <div class="card policy-card">
@@ -72,6 +72,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 </script>
 
 <style lang="scss" scoped>

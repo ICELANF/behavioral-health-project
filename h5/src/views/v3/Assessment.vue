@@ -1,6 +1,6 @@
 <template>
   <div>
-    <van-nav-bar title="评估中心" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="评估中心" left-arrow @click-left="goBack()" />
 
     <!-- 推荐下一个 -->
     <van-notice-bar v-if="recommended" left-icon="bullhorn-o" @click="$router.push(`/v3/assessment/${recommended.batch_id}`)">
@@ -31,6 +31,8 @@
 </template>
 
 <script setup>
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, computed, onMounted } from 'vue'
 import { assessmentApi } from '../../api/v3/index.js'
 

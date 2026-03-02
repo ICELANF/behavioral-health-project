@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50">
-    <van-nav-bar title="健康成长伙伴" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="健康成长伙伴" left-arrow @click-left="goBack()" />
 
     <div class="px-4 py-6">
       <!-- Latest insight -->
@@ -38,6 +38,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { onMounted, ref } from 'vue'
 import { fetchPublishedNarrative } from '@/api/tasks'
 

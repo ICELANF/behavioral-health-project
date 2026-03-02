@@ -1,6 +1,6 @@
 <template>
   <div class="knowledge-page">
-    <van-nav-bar title="健康知识库" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="健康知识库" left-arrow @click-left="goBack()" />
 
     <van-search v-model="query" placeholder="搜索健康知识..." @search="onSearch" show-action>
       <template #action>
@@ -38,6 +38,8 @@
 </template>
 
 <script setup>
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref } from 'vue'
 import { showToast } from 'vant'
 import { chatApi } from '../../api/v3/index.js'

@@ -4,7 +4,7 @@
 -->
 <template>
   <div class="expert-register">
-    <van-nav-bar title="申请入驻" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="申请入驻" left-arrow @click-left="goBack()" />
 
     <!-- 步骤标签 (可点击切换) -->
     <div class="step-tabs">
@@ -236,6 +236,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter } from 'vue-router'
 import { showToast, showFailToast } from 'vant'
 import storage from '@/utils/storage'
@@ -244,6 +245,7 @@ import request from '@/api/request'
 const DRAFT_KEY = 'expert_register_draft'
 
 const router = useRouter()
+const { goBack } = useGoBack()
 const step = ref(0)
 const maxReached = ref(0)
 const agreed = ref(false)

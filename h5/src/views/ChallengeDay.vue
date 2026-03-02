@@ -3,7 +3,7 @@
     <van-nav-bar
       :title="headerTitle"
       left-arrow
-      @click-left="$router.back()"
+      @click-left="goBack()"
     />
 
     <div class="page-content">
@@ -347,6 +347,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRoute, useRouter } from 'vue-router'
 import { showToast, showSuccessToast, showLoadingToast } from 'vant'
 import api from '@/api/index'
@@ -405,6 +406,7 @@ interface DeviceDataItem {
 
 const route = useRoute()
 const router = useRouter()
+const { goBack } = useGoBack()
 const enrollmentId = route.params.id as string
 
 const loading = ref(true)

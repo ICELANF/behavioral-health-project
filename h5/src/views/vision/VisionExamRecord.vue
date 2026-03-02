@@ -1,6 +1,6 @@
 <template>
   <div class="vision-exam">
-    <van-nav-bar title="视力检查记录" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="视力检查记录" left-arrow @click-left="goBack()" />
 
     <van-tabs v-model:active="activeTab">
       <!-- 录入检查 -->
@@ -117,6 +117,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, onMounted } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import { visionApi } from '@/api/vision'

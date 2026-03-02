@@ -7,7 +7,7 @@
     <van-nav-bar
       title="知识投稿"
       left-arrow
-      @click-left="router.back()"
+      @click-left="goBack()"
     />
 
     <div class="page-content contribute-page">
@@ -117,11 +117,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import api from '@/api/index'
 
 const router = useRouter()
+const { goBack } = useGoBack()
 
 // 表单
 const formRef = ref()

@@ -1,6 +1,6 @@
 <template>
   <div class="coach-page">
-    <van-nav-bar title="AI 健康教练" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="AI 健康教练" left-arrow @click-left="goBack()" />
 
     <div class="messages" ref="msgBox">
       <div v-for="(m, i) in messages" :key="i" :class="['bubble-row', m.role]">
@@ -33,6 +33,8 @@
 </template>
 
 <script setup>
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, nextTick } from 'vue'
 import { chatApi } from '../../api/v3/index.js'
 

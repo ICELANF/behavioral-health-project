@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="智能监测方案" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="智能监测方案" left-arrow @click-left="goBack()" />
 
     <div class="page-content">
       <van-loading v-if="loading" class="loading" />
@@ -86,11 +86,13 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import { programApi } from '@/api/program'
 
 const router = useRouter()
+const { goBack } = useGoBack()
 const loading = ref(true)
 const myPrograms = ref<any[]>([])
 const templates = ref<any[]>([])

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <van-nav-bar :title="batchName" left-arrow @click-left="$router.back()" />
+    <van-nav-bar :title="batchName" left-arrow @click-left="goBack()" />
 
     <div v-if="!submitted" class="batch-content">
       <!-- 进度 -->
@@ -41,6 +41,8 @@
 </template>
 
 <script setup>
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, onMounted } from 'vue'
 import { showToast } from 'vant'
 import { assessmentApi } from '../../api/v3/index.js'

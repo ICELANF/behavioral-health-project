@@ -1,6 +1,6 @@
 <template>
   <div class="page-container">
-    <van-nav-bar title="健康档案" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="健康档案" left-arrow @click-left="goBack()" />
 
     <div class="page-content">
       <!-- 用户基本信息 -->
@@ -85,6 +85,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import api from '@/api/index'

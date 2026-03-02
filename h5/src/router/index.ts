@@ -402,13 +402,16 @@ const router = createRouter({
   ]
 })
 
-// ═══ 全局修补 router.back() — 历史栈为空时回首页，防止导航卡死 ═══
+// ═══ 全局修补 router.back() — 历史栈为空时直接跳角色首页，防止卡死 ═══
 const _originalBack = router.back.bind(router)
 router.back = () => {
-  if (window.history.state?.back) {
+  // window.history.state.back 是 Vue Router 写入的前一页路径，为 null 表示无历史
+  const prevPath = window.history.state?.back as string | null
+  if (prevPath) {
     _originalBack()
   } else {
-    router.replace('/')
+    // 无历史（直接打开、刷新）→ 跳角色首页
+    router.replace(getRoleHomePath())
   }
 }
 

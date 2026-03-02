@@ -7,7 +7,7 @@
     <van-nav-bar
       title="我的学习"
       left-arrow
-      @click-left="router.back()"
+      @click-left="goBack()"
     />
 
     <div class="page-content my-learning-page">
@@ -128,12 +128,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import api from '@/api/index'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const { goBack } = useGoBack()
 const userStore = useUserStore()
 
 const loading = ref(true)

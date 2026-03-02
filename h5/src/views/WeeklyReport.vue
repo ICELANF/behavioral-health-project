@@ -7,7 +7,7 @@
     <van-nav-bar
       title="行为周报"
       left-arrow
-      @click-left="router.back()"
+      @click-left="goBack()"
     />
 
     <div class="page-content weekly-report-page">
@@ -122,12 +122,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useGoBack } from '@/composables/useGoBack'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import AiContentBadge from '@/components/common/AiContentBadge.vue'
 import request from '@/api/request'
 
 const router = useRouter()
+const { goBack } = useGoBack()
 
 const loading = ref(true)
 const report = ref<any>(null)

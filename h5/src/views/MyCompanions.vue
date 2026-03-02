@@ -1,6 +1,6 @@
 <template>
   <div class="my-companions">
-    <van-nav-bar title="我的同道者" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="我的同道者" left-arrow @click-left="goBack()" />
 
     <!-- 统计卡片 -->
     <div class="stats-card">
@@ -64,6 +64,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, reactive, onMounted } from 'vue'
 import { companionApi } from '@/api/credit-promotion'
 

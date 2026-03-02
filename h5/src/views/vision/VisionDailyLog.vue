@@ -1,7 +1,7 @@
 <template>
   <div class="vision-daily-log">
     <!-- 顶部导航 -->
-    <van-nav-bar title="视力行为打卡" left-arrow @click-left="$router.back()" />
+    <van-nav-bar title="视力行为打卡" left-arrow @click-left="goBack()" />
 
     <!-- 日期选择 -->
     <div class="date-selector">
@@ -117,6 +117,8 @@
 </template>
 
 <script setup lang="ts">
+import { useGoBack } from '@/composables/useGoBack'
+const { goBack } = useGoBack()
 import { ref, computed, onMounted, watch } from 'vue'
 import { showToast, showSuccessToast } from 'vant'
 import { visionApi } from '@/api/vision'
