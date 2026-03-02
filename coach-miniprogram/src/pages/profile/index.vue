@@ -108,7 +108,7 @@ const userInfo = ref<any>({ name: '教练', role_label: '健康教练' })
 
 async function loadProfile() {
   try {
-    const stored = uni.getStorageSync('userInfo')
+    const stored = uni.getStorageSync('user_info')
     if (stored) {
       const u = typeof stored === 'string' ? JSON.parse(stored) : stored
       userInfo.value = {

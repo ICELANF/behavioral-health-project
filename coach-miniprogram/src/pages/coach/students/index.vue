@@ -169,7 +169,7 @@ async function loadStudents() {
     students.value = (Array.isArray(raw) ? raw : []).map((s: any) => ({
       id: s.id || s.user_id,
       name: s.name || s.full_name || s.username || '未知',
-      stage: s.ttm_stage || s.stage || '未评估',
+      stage: (s.ttm_stage && s.ttm_stage !== 'unknown') ? s.ttm_stage : (s.stage && s.stage !== 'unknown') ? s.stage : '未评估',
       risk_level: parseRisk(s.risk_level ?? s.risk_score),
       day_index: s.day_index ?? s.journey_day ?? 0,
       micro_action_count: s.micro_action_count ?? 0,
@@ -186,7 +186,7 @@ async function loadStudents() {
       students.value = raw2.map((s: any) => ({
         id: s.id || s.user_id,
         name: s.name || s.full_name || '未知',
-        stage: s.ttm_stage || s.current_stage || '未评估',
+        stage: (s.ttm_stage && s.ttm_stage !== 'unknown') ? s.ttm_stage : (s.current_stage && s.current_stage !== 'unknown') ? s.current_stage : '未评估',
         risk_level: parseRisk(s.risk_level ?? s.latest_risk),
         day_index: 0,
         micro_action_count: 0,
