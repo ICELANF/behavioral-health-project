@@ -92,6 +92,35 @@
       <view style="height:120rpx;"></view>
     </scroll-view>
   </view>
+
+  <!-- 编辑资料 Modal -->
+  <view v-if="showEditModal" class="edit-mask" @tap.self="showEditModal = false">
+    <view class="edit-sheet">
+      <view class="edit-sheet-title">编辑个人资料</view>
+
+      <view class="edit-field">
+        <text class="edit-label">姓名</text>
+        <input class="edit-input" v-model="editForm.full_name" placeholder="请输入姓名" maxlength="20" />
+      </view>
+
+      <view class="edit-field">
+        <text class="edit-label">用户名</text>
+        <input class="edit-input edit-input--disabled" :value="userInfo.username" disabled placeholder="用户名不可修改" />
+      </view>
+
+      <view class="edit-field">
+        <text class="edit-label">角色</text>
+        <input class="edit-input edit-input--disabled" :value="userInfo.role_label" disabled />
+      </view>
+
+      <view class="edit-actions">
+        <view class="edit-btn edit-btn--cancel" @tap="showEditModal = false">取消</view>
+        <view class="edit-btn edit-btn--save" :class="{ 'edit-btn--saving': saving }" @tap="saveProfile">
+          {{ saving ? '保存中…' : '保存' }}
+        </view>
+      </view>
+    </view>
+  </view>
 </template>
 
 <script setup lang="ts">
@@ -129,7 +158,10 @@ async function http<T = any>(url: string, options: any = {}): Promise<T> {
   })
 }
 
-const userInfo = ref<any>({ name: '教练', role_label: '健康教练' })
+const userInfo = ref<any>({ name: '教练', role_label: '健康教练', username: '' })
+const showEditModal = ref(false)
+const saving = ref(false)
+const editForm = ref({ full_name: '' })
 
 async function loadProfile() {
   try {
@@ -153,6 +185,7 @@ async function loadProfile() {
       userInfo.value = {
         ...userInfo.value,
         name: res.full_name || res.display_name || res.username || userInfo.value.name,
+        username: res.username || '',
         role_label: res.role === 'coach' ? '健康教练' : res.role || userInfo.value.role_label,
         student_count: res.student_count ?? userInfo.value.student_count,
       }
@@ -168,7 +201,35 @@ async function loadProfile() {
 }
 
 function editProfile() {
-  uni.showToast({ title: '编辑功能开发中', icon: 'none' })
+  editForm.value.full_name = userInfo.value.name || ''
+  showEditModal.value = true
+}
+
+async function saveProfile() {
+  if (saving.value) return
+  const name = editForm.value.full_name.trim()
+  if (!name) { uni.showToast({ title: '姓名不能为空', icon: 'none' }); return }
+  saving.value = true
+  try {
+    const res = await http<any>('/api/v1/auth/profile', {
+      method: 'PUT',
+      data: { full_name: name },
+    })
+    userInfo.value.name = res.full_name || name
+    // 同步更新本地缓存
+    const stored = uni.getStorageSync('user_info')
+    if (stored) {
+      const u = typeof stored === 'string' ? JSON.parse(stored) : stored
+      u.full_name = res.full_name || name
+      uni.setStorageSync('user_info', JSON.stringify(u))
+    }
+    showEditModal.value = false
+    uni.showToast({ title: '保存成功', icon: 'success' })
+  } catch {
+    uni.showToast({ title: '保存失败', icon: 'none' })
+  } finally {
+    saving.value = false
+  }
 }
 
 function goPage(url: string) {
@@ -231,4 +292,18 @@ onMounted(() => { loadProfile() })
 .prof-menu-arrow { font-size: 28rpx; color: #CCC; }
 
 .prof-version { text-align: center; padding: 32rpx; font-size: 24rpx; color: #BDC3C7; }
+
+/* 编辑 Modal */
+.edit-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; }
+.edit-sheet { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding: 40rpx 32rpx calc(48rpx + env(safe-area-inset-bottom)); }
+.edit-sheet-title { font-size: 34rpx; font-weight: 700; color: #2C3E50; text-align: center; margin-bottom: 40rpx; }
+.edit-field { margin-bottom: 28rpx; }
+.edit-label { display: block; font-size: 24rpx; color: #8E99A4; margin-bottom: 10rpx; }
+.edit-input { width: 100%; padding: 20rpx 24rpx; background: #F5F6FA; border-radius: 12rpx; font-size: 28rpx; color: #2C3E50; box-sizing: border-box; }
+.edit-input--disabled { color: #BDC3C7; }
+.edit-actions { display: flex; gap: 20rpx; margin-top: 40rpx; }
+.edit-btn { flex: 1; text-align: center; padding: 26rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }
+.edit-btn--cancel { background: #F0F0F0; color: #5B6B7F; }
+.edit-btn--save { background: #2D8E69; color: #fff; }
+.edit-btn--saving { background: #8DC9B3; }
 </style>
