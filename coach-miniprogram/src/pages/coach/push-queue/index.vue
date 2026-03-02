@@ -47,7 +47,9 @@
         <view class="pq-card-footer">
           <text class="pq-card-time">{{ item.scheduled_at || item.created_at || '' }}</text>
           <view v-if="item.status === 'pending'" class="pq-card-actions">
-            <view class="pq-btn pq-btn--send" @tap="sendPush(item)">发送</view>
+            <view class="pq-btn" :class="processingIds.has(item.id) ? 'pq-btn--loading' : 'pq-btn--send'" @tap="sendPush(item)">
+              {{ processingIds.has(item.id) ? '…' : '发送' }}
+            </view>
             <view class="pq-btn pq-btn--cancel" @tap="cancelPush(item)">取消</view>
           </view>
         </view>
@@ -98,6 +100,7 @@ async function http<T = any>(url: string, options: any = {}): Promise<T> {
 const activeTab = ref('pending')
 const refreshing = ref(false)
 const queueItems = ref<any[]>([])
+const processingIds = ref<Set<number>>(new Set())
 
 const pendingCount = computed(() => queueItems.value.filter(i => i.status === 'pending').length)
 const sentToday = computed(() => queueItems.value.filter(i => i.status === 'sent' || i.status === 'approved').length)
@@ -156,35 +159,34 @@ async function loadData() {
 }
 
 async function sendPush(item: any) {
+  if (processingIds.value.has(item.id)) return   // 防重复点击
+  processingIds.value.add(item.id)
   try {
     await http('/api/v1/coach/push-queue/' + item.id + '/approve', { method: 'POST', data: {} })
     uni.showToast({ title: '已发送', icon: 'success' })
     await loadData()
   } catch (e: any) {
-    // 400 = 状态已变更（被他人或后台处理），刷新列表
-    const code = e?.statusCode || 0
-    if (code === 400) {
-      uni.showToast({ title: '状态已更新，刷新中', icon: 'none' })
-    } else {
-      uni.showToast({ title: '发送失败', icon: 'none' })
-    }
+    const code = (e as any)?.statusCode || 0
+    uni.showToast({ title: code === 400 ? '状态已更新，刷新中' : '发送失败', icon: 'none' })
     await loadData()
+  } finally {
+    processingIds.value.delete(item.id)
   }
 }
 
 async function cancelPush(item: any) {
+  if (processingIds.value.has(item.id)) return   // 防重复点击
+  processingIds.value.add(item.id)
   try {
     await http('/api/v1/coach/push-queue/' + item.id + '/reject', { method: 'POST', data: {} })
     uni.showToast({ title: '已取消', icon: 'success' })
     await loadData()
   } catch (e: any) {
-    const code = e?.statusCode || 0
-    if (code === 400) {
-      uni.showToast({ title: '状态已更新，刷新中', icon: 'none' })
-    } else {
-      uni.showToast({ title: '取消失败', icon: 'none' })
-    }
+    const code = (e as any)?.statusCode || 0
+    uni.showToast({ title: code === 400 ? '状态已更新，刷新中' : '取消失败', icon: 'none' })
     await loadData()
+  } finally {
+    processingIds.value.delete(item.id)
   }
 }
 
@@ -231,6 +233,7 @@ onMounted(() => { loadData() })
 .pq-btn { padding: 10rpx 24rpx; border-radius: 8rpx; font-size: 24rpx; font-weight: 600; }
 .pq-btn--send { background: #27AE60; color: #fff; }
 .pq-btn--cancel { background: #F0F0F0; color: #5B6B7F; }
+.pq-btn--loading { background: #BDC3C7; color: #fff; }
 
 .pq-empty { text-align: center; padding: 120rpx 0; }
 .pq-empty-icon { display: block; font-size: 80rpx; margin-bottom: 16rpx; }
