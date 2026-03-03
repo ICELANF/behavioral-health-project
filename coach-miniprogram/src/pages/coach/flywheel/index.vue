@@ -206,7 +206,16 @@ async function runAgent() {
         input: customPrompt.value || '请为该学员生成个性化跟进计划',
       }
     })
-    agentResult.value = res.result || res.output || res.text || JSON.stringify(res)
+    const d = res.data || res
+    if (Array.isArray(d.suggestions) && d.suggestions.length) {
+      agentResult.value = d.suggestions
+        .sort((a: any, b: any) => (b.priority ?? 0) - (a.priority ?? 0))
+        .map((s: any, i: number) => `${i + 1}. ${s.text || s.content || ''}`)
+        .filter(Boolean)
+        .join('\n\n')
+    } else {
+      agentResult.value = d.output || d.text || d.result || d.content || '暂无跟进建议'
+    }
   } catch (e: any) {
     agentResult.value = '生成失败: ' + (e.message || '请重试')
   }

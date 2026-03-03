@@ -76,46 +76,103 @@
     </scroll-view>
 
     <!-- 分配评估弹窗 -->
-    <view v-if="showAssign" class="assess-modal-mask" @tap="showAssign = false">
+    <view v-if="showAssign" class="assess-modal-mask" @tap="closeAssign">
       <view class="assess-modal" @tap.stop>
         <text class="assess-modal-title">分配新评估</text>
 
-        <view class="assess-modal-section">
-          <text class="assess-modal-label">选择学员</text>
-          <picker :range="studentNames" @change="selectedStudent = Number($event.detail.value)">
-            <view class="assess-picker">{{ studentNames[selectedStudent] || '请选择学员' }}</view>
-          </picker>
-        </view>
-
-        <view class="assess-modal-section">
-          <text class="assess-modal-label">量表组合</text>
-          <view class="assess-scale-options">
-            <view
-              v-for="s in scaleOptions" :key="s.value"
-              class="assess-scale-opt" :class="{ 'assess-scale-opt--active': selectedScales.includes(s.value) }"
-              @tap="toggleScale(s.value)"
-            >
-              {{ s.label }}
+        <!-- ① 学员选择面板（未选时显示） -->
+        <view v-if="!selectedStudentObj" class="assess-modal-section">
+          <view class="assess-modal-hrow">
+            <text class="assess-modal-label">选择学员</text>
+            <view class="assess-search-toggle" @tap="modalSearchMode = !modalSearchMode">
+              {{ modalSearchMode ? '📋 推荐' : '🔍 搜索' }}
             </view>
           </view>
-          <text class="assess-scale-hint">已选 {{ selectedScales.length }} 个量表，预计 {{ estimatedTime }} 分钟</text>
+
+          <!-- 搜索框 -->
+          <view v-if="modalSearchMode" class="assess-modal-searchbox">
+            <input class="assess-modal-sinput" v-model="modalSearchQuery" placeholder="输入姓名搜索..." focus />
+          </view>
+
+          <!-- 学员卡片列表 -->
+          <view class="assess-student-cards">
+            <view
+              v-for="s in currentBatchStudents" :key="s.id"
+              class="assess-sc-card"
+              @tap="selectStudentObj(s)"
+            >
+              <view class="assess-sc-avatar" :style="{ background: avatarColor(s.name) }">{{ (s.name||'?')[0] }}</view>
+              <view class="assess-sc-info">
+                <text class="assess-sc-name">{{ s.name }}</text>
+                <text class="assess-sc-sub">{{ formatStudentSub(s) }}</text>
+              </view>
+              <view class="assess-sc-risk" :style="{ background: riskBg(s.risk_level) }">R{{ parseRisk(s.risk_level) }}</view>
+            </view>
+            <view v-if="currentBatchStudents.length === 0" class="assess-sc-empty">
+              {{ modalSearchMode ? '未找到匹配学员' : '暂无学员数据' }}
+            </view>
+          </view>
+
+          <!-- 批次导航（仅推荐模式） -->
+          <view v-if="!modalSearchMode && prioritizedStudents.length > BATCH_SIZE" class="assess-batch-nav">
+            <view class="assess-batch-btn" :class="{ 'assess-batch-btn--off': batchIndex === 0 }" @tap="prevBatch">‹ 上一批</view>
+            <text class="assess-batch-info">{{ Math.floor(batchIndex / BATCH_SIZE) + 1 }} / {{ Math.ceil(prioritizedStudents.length / BATCH_SIZE) }}</text>
+            <view class="assess-batch-btn" :class="{ 'assess-batch-btn--off': !hasNextBatch }" @tap="nextBatch">下一批 ›</view>
+          </view>
         </view>
 
-        <view class="assess-modal-section">
-          <text class="assess-modal-label">截止时间</text>
-          <picker mode="date" @change="deadline = $event.detail.value">
-            <view class="assess-picker">{{ deadline || '选择截止日期（可选）' }}</view>
-          </picker>
+        <!-- ② 已选学员展示（已选时显示） -->
+        <view v-else class="assess-modal-section">
+          <view class="assess-modal-hrow">
+            <text class="assess-modal-label">已选学员</text>
+            <view class="assess-reselect" @tap="selectedStudentObj = null">↩ 重新选择</view>
+          </view>
+          <view class="assess-selected-card">
+            <view class="assess-sc-avatar" :style="{ background: avatarColor(selectedStudentObj.name) }">{{ (selectedStudentObj.name||'?')[0] }}</view>
+            <view class="assess-sc-info">
+              <text class="assess-sc-name">{{ selectedStudentObj.name }}</text>
+              <text class="assess-sc-sub">{{ formatStudentSub(selectedStudentObj) }}</text>
+            </view>
+            <view class="assess-sc-risk" :style="{ background: riskBg(selectedStudentObj.risk_level) }">R{{ parseRisk(selectedStudentObj.risk_level) }}</view>
+          </view>
         </view>
 
-        <view class="assess-modal-section">
-          <text class="assess-modal-label">备注</text>
-          <textarea class="assess-textarea" placeholder="给学员的备注说明（可选）" v-model="assignNote" maxlength="200" />
-        </view>
+        <!-- ③ 量表/时间/备注（仅已选学员后展示） -->
+        <template v-if="selectedStudentObj">
+          <view class="assess-modal-section">
+            <text class="assess-modal-label">量表组合</text>
+            <view class="assess-scale-options">
+              <view
+                v-for="s in scaleOptions" :key="s.value"
+                class="assess-scale-opt" :class="{ 'assess-scale-opt--active': selectedScales.includes(s.value) }"
+                @tap="toggleScale(s.value)"
+              >
+                {{ s.label }}
+              </view>
+            </view>
+            <text class="assess-scale-hint">已选 {{ selectedScales.length }} 个量表，预计 {{ estimatedTime }} 分钟</text>
+          </view>
+
+          <view class="assess-modal-section">
+            <text class="assess-modal-label">截止时间</text>
+            <picker mode="date" @change="deadline = $event.detail.value">
+              <view class="assess-picker">{{ deadline || '选择截止日期（可选）' }}</view>
+            </picker>
+          </view>
+
+          <view class="assess-modal-section">
+            <text class="assess-modal-label">备注</text>
+            <textarea class="assess-textarea" placeholder="给学员的备注说明（可选）" v-model="assignNote" maxlength="200" />
+          </view>
+        </template>
 
         <view class="assess-modal-actions">
-          <view class="assess-modal-btn assess-modal-cancel" @tap="showAssign = false">取消</view>
-          <view class="assess-modal-btn assess-modal-confirm" @tap="doAssign">确认分配</view>
+          <view class="assess-modal-btn assess-modal-cancel" @tap="closeAssign">取消</view>
+          <view
+            class="assess-modal-btn assess-modal-confirm"
+            :class="{ 'assess-modal-confirm--off': !selectedStudentObj }"
+            @tap="doAssign"
+          >确认分配</view>
         </view>
       </view>
     </view>
@@ -133,8 +190,12 @@ const loading = ref(false)
 const assignments = ref<any[]>([])
 const studentsData = ref<any[]>([])
 const showAssign = ref(false)
-const selectedStudent = ref(0)
+const selectedStudentObj = ref<any>(null)
 const selectedScales = ref<string[]>(['big5', 'ttm7'])
+const BATCH_SIZE = 5
+const batchIndex = ref(0)
+const modalSearchMode = ref(false)
+const modalSearchQuery = ref('')
 const deadline = ref('')
 const assignNote = ref('')
 
@@ -165,7 +226,62 @@ const statusTabs = computed(() => [
   { key: 'completed', label: '已完成', count: assignments.value.filter(a => ['completed', 'reviewed'].includes(a.status)).length },
 ])
 
-const studentNames = computed(() => studentsData.value.map(s => s.name || s.full_name || s.username || '未知'))
+function parseRisk(r: any): number {
+  return parseInt(String(r ?? '0').replace(/\D/g, '') || '0')
+}
+function riskBg(r: any): string {
+  const n = parseRisk(r)
+  if (n >= 4) return '#E74C3C'
+  if (n === 3) return '#E67E22'
+  if (n === 2) return '#F39C12'
+  return '#27AE60'
+}
+function formatStudentSub(s: any): string {
+  const days = s.days_since_last_contact ?? s.days_no_contact ?? null
+  const stage = s.stage_label || s.stage || ''
+  if (days === null) return stage || '从未联系'
+  if (days > 30) return `${stage} · ${days}天未联系`
+  return `${stage} · ${days}天前联系`
+}
+function selectStudentObj(s: any) {
+  selectedStudentObj.value = s
+  modalSearchMode.value = false
+  modalSearchQuery.value = ''
+}
+function nextBatch() {
+  if (hasNextBatch.value) batchIndex.value += BATCH_SIZE
+}
+function prevBatch() {
+  if (batchIndex.value >= BATCH_SIZE) batchIndex.value -= BATCH_SIZE
+}
+function closeAssign() {
+  showAssign.value = false
+  selectedStudentObj.value = null
+  batchIndex.value = 0
+  modalSearchMode.value = false
+  modalSearchQuery.value = ''
+}
+
+const prioritizedStudents = computed(() => {
+  return [...studentsData.value].sort((a: any, b: any) => {
+    const ra = parseRisk(a.risk_level), rb = parseRisk(b.risk_level)
+    if (rb !== ra) return rb - ra
+    const da = a.days_since_last_contact ?? a.days_no_contact ?? 999
+    const db = b.days_since_last_contact ?? b.days_no_contact ?? 999
+    return db - da
+  })
+})
+const currentBatchStudents = computed(() => {
+  if (modalSearchMode.value) {
+    const q = modalSearchQuery.value.toLowerCase()
+    if (!q) return prioritizedStudents.value.slice(0, BATCH_SIZE)
+    return studentsData.value.filter((s: any) =>
+      (s.name || s.full_name || '').toLowerCase().includes(q)
+    ).slice(0, BATCH_SIZE)
+  }
+  return prioritizedStudents.value.slice(batchIndex.value, batchIndex.value + BATCH_SIZE)
+})
+const hasNextBatch = computed(() => batchIndex.value + BATCH_SIZE < prioritizedStudents.value.length)
 
 const filteredItems = computed(() => {
   let list = assignments.value
@@ -283,7 +399,7 @@ async function loadData() {
 }
 
 async function doAssign() {
-  if (!studentsData.value[selectedStudent.value]) {
+  if (!selectedStudentObj.value) {
     uni.showToast({ title: '请选择学员', icon: 'none' })
     return
   }
@@ -292,7 +408,7 @@ async function doAssign() {
     return
   }
 
-  const student = studentsData.value[selectedStudent.value]
+  const student = selectedStudentObj.value
   try {
     await http('/api/v1/assessment-assignments/assign', {
       method: 'POST',
@@ -306,7 +422,7 @@ async function doAssign() {
       }
     })
     uni.showToast({ title: '分配成功', icon: 'success' })
-    showAssign.value = false
+    closeAssign()
     assignNote.value = ''
     deadline.value = ''
     loadData()
@@ -409,4 +525,31 @@ onMounted(() => { loadData() })
 .assess-modal-btn { flex: 1; text-align: center; padding: 20rpx 0; border-radius: 12rpx; font-size: 28rpx; }
 .assess-modal-cancel { background: #F0F0F0; color: #5B6B7F; }
 .assess-modal-confirm { background: #9B59B6; color: #fff; }
+.assess-modal-confirm--off { background: #C0C0C0; pointer-events: none; }
+
+/* ── 学员选择器 ── */
+.assess-modal-hrow { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
+.assess-search-toggle { font-size: 24rpx; color: #9B59B6; padding: 6rpx 16rpx; background: #F5F0FF; border-radius: 8rpx; }
+.assess-modal-searchbox { margin-bottom: 12rpx; }
+.assess-modal-sinput { width: 100%; padding: 14rpx 20rpx; background: #F5F6FA; border-radius: 12rpx; font-size: 28rpx; box-sizing: border-box; }
+
+.assess-student-cards { display: flex; flex-direction: column; gap: 10rpx; }
+.assess-sc-card { display: flex; align-items: center; gap: 16rpx; padding: 16rpx; background: #F8F9FA; border-radius: 14rpx; border: 2rpx solid transparent; }
+.assess-sc-card:active { border-color: #9B59B6; background: #F5F0FF; }
+.assess-sc-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26rpx; font-weight: 600; flex-shrink: 0; }
+.assess-sc-info { flex: 1; }
+.assess-sc-name { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.assess-sc-sub { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
+.assess-sc-risk { padding: 4rpx 12rpx; border-radius: 6rpx; color: #fff; font-size: 22rpx; font-weight: 600; flex-shrink: 0; }
+.assess-sc-empty { text-align: center; padding: 40rpx 0; font-size: 26rpx; color: #8E99A4; }
+
+/* ── 批次导航 ── */
+.assess-batch-nav { display: flex; align-items: center; justify-content: space-between; padding: 12rpx 0; margin-top: 8rpx; }
+.assess-batch-btn { font-size: 24rpx; color: #9B59B6; padding: 8rpx 20rpx; background: #F5F0FF; border-radius: 8rpx; }
+.assess-batch-btn--off { color: #C0C0C0; background: #F5F5F5; pointer-events: none; }
+.assess-batch-info { font-size: 24rpx; color: #8E99A4; }
+
+/* ── 已选学员卡片 ── */
+.assess-selected-card { display: flex; align-items: center; gap: 16rpx; padding: 16rpx; background: #F5F0FF; border-radius: 14rpx; border: 2rpx solid #9B59B6; }
+.assess-reselect { font-size: 24rpx; color: #9B59B6; }
 </style>
