@@ -7,23 +7,15 @@
       <view class="assess-nav-action" @tap="showAssign = true">+ 分配</view>
     </view>
 
-    <!-- 统计概览 -->
-    <view class="assess-stats">
-      <view class="assess-stat-card" v-for="s in overviewStats" :key="s.label">
-        <text class="assess-stat-num" :style="{ color: s.color }">{{ s.value }}</text>
-        <text class="assess-stat-label">{{ s.label }}</text>
-      </view>
-    </view>
-
-    <!-- 状态Tab -->
-    <view class="assess-tabs">
+    <!-- 统计 + Tab 合并单排 -->
+    <view class="assess-stattabs">
       <view
-        v-for="tab in statusTabs" :key="tab.key"
-        class="assess-tab" :class="{ 'assess-tab--active': activeTab === tab.key }"
-        @tap="activeTab = tab.key"
+        v-for="t in statTabs" :key="t.key"
+        class="assess-st" :class="{ 'assess-st--active': activeTab === t.key }"
+        @tap="activeTab = t.key"
       >
-        {{ tab.label }}
-        <view v-if="tab.count > 0" class="assess-tab-badge">{{ tab.count }}</view>
+        <text class="assess-st-num" :style="activeTab === t.key ? {} : { color: t.color }">{{ t.count }}</text>
+        <text class="assess-st-label">{{ t.label }}</text>
       </view>
     </view>
 
@@ -66,7 +58,7 @@
 
       <view v-if="!loading && filteredItems.length === 0" class="assess-empty">
         <text class="assess-empty-icon">📋</text>
-        <text class="assess-empty-text">暂无{{ activeTab === 'all' ? '' : statusLabel(activeTab) }}评估</text>
+        <text class="assess-empty-text">暂无{{ statTabs.find(t => t.key === activeTab)?.label || '' }}评估</text>
         <view class="assess-empty-action" @tap="showAssign = true">分配新评估</view>
       </view>
 
@@ -211,19 +203,12 @@ const estimatedTime = computed(() => {
   return scaleOptions.filter(s => selectedScales.value.includes(s.value)).reduce((a, s) => a + s.time, 0)
 })
 
-// 实际状态流: pending(已分配待完成) → completed(已提交待审) → reviewed → pushed
-const overviewStats = computed(() => [
-  { label: '总评估', value: assignments.value.filter(a => a.status !== 'cancelled').length, color: '#2C3E50' },
-  { label: '待完成', value: assignments.value.filter(a => a.status === 'pending').length, color: '#E67E22' },
-  { label: '待审核', value: assignments.value.filter(a => a.status === 'completed').length, color: '#9B59B6' },
-  { label: '已完成', value: assignments.value.filter(a => ['reviewed', 'pushed'].includes(a.status)).length, color: '#27AE60' },
-])
-
-const statusTabs = computed(() => [
-  { key: 'all', label: '全部', count: assignments.value.filter(a => a.status !== 'cancelled').length },
-  { key: 'pending', label: '待完成', count: assignments.value.filter(a => a.status === 'pending').length },
-  { key: 'review', label: '待审核', count: assignments.value.filter(a => a.status === 'completed').length },
-  { key: 'completed', label: '已完成', count: assignments.value.filter(a => ['reviewed', 'pushed'].includes(a.status)).length },
+// 统计 + Tab 合并：单排四格，既是数字展示又是筛选器
+const statTabs = computed(() => [
+  { key: 'all',       label: '全部', color: '#9B59B6', count: assignments.value.filter(a => a.status !== 'cancelled').length },
+  { key: 'pending',   label: '待完成', color: '#E67E22', count: assignments.value.filter(a => a.status === 'pending').length },
+  { key: 'review',    label: '待审核', color: '#9B59B6', count: assignments.value.filter(a => a.status === 'completed').length },
+  { key: 'completed', label: '已完成', color: '#27AE60', count: assignments.value.filter(a => ['reviewed', 'pushed'].includes(a.status)).length },
 ])
 
 function parseRisk(r: any): number {
@@ -453,20 +438,19 @@ onMounted(() => { loadData() })
 .assess-nav-title { flex: 1; text-align: center; font-size: 34rpx; font-weight: 600; }
 .assess-nav-action { font-size: 26rpx; padding: 8rpx 16rpx; background: rgba(255,255,255,0.2); border-radius: 8rpx; }
 
-.assess-stats { display: flex; padding: 20rpx 24rpx 8rpx; gap: 12rpx; }
-.assess-stat-card { flex: 1; background: #fff; border-radius: 12rpx; padding: 16rpx; text-align: center; }
-.assess-stat-num { display: block; font-size: 36rpx; font-weight: 700; }
-.assess-stat-label { display: block; font-size: 20rpx; color: #8E99A4; margin-top: 4rpx; }
-
-.assess-tabs { display: flex; padding: 12rpx 16rpx 0; gap: 8rpx; overflow-x: auto; white-space: nowrap; }
-.assess-tab { position: relative; display: inline-flex; align-items: center; gap: 6rpx; padding: 12rpx 20rpx; border-radius: 24rpx; background: #fff; font-size: 24rpx; color: #5B6B7F; flex-shrink: 0; }
-.assess-tab--active { background: #9B59B6; color: #fff; }
-.assess-tab-badge { min-width: 28rpx; height: 28rpx; border-radius: 14rpx; background: #E74C3C; color: #fff; font-size: 18rpx; display: flex; align-items: center; justify-content: center; padding: 0 6rpx; }
+/* ── 统计+Tab 合并单排 ── */
+.assess-stattabs { display: flex; padding: 16rpx 24rpx 12rpx; gap: 12rpx; }
+.assess-st { flex: 1; background: #fff; border-radius: 14rpx; padding: 18rpx 8rpx 14rpx; text-align: center; }
+.assess-st--active { background: #9B59B6; }
+.assess-st-num { display: block; font-size: 36rpx; font-weight: 700; color: #2C3E50; }
+.assess-st--active .assess-st-num { color: #fff; }
+.assess-st-label { display: block; font-size: 20rpx; color: #8E99A4; margin-top: 4rpx; }
+.assess-st--active .assess-st-label { color: rgba(255,255,255,0.85); }
 
 .assess-search { padding: 12rpx 24rpx; }
 .assess-search-input { background: #fff; border-radius: 12rpx; padding: 16rpx 24rpx; font-size: 28rpx; }
 
-.assess-list { height: calc(100vh - 560rpx); padding: 0 24rpx 24rpx; }
+.assess-list { height: calc(100vh - 480rpx); padding: 0 24rpx 24rpx; }
 
 .assess-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
 .assess-card-header { display: flex; align-items: center; gap: 16rpx; }
