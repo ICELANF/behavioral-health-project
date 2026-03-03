@@ -42,8 +42,8 @@
           </view>
           <view class="fs-field">
             <text class="fs-field-label">餐次</text>
-            <picker :range="mealTypes" :value="mealIdx" @change="mealIdx = $event.detail.value">
-              <view class="fs-field-picker">{{ mealTypes[mealIdx] }}</view>
+            <picker :range="mealLabels" :value="mealIdx" @change="mealIdx = $event.detail.value">
+              <view class="fs-field-picker">{{ mealLabels[mealIdx] }}</view>
             </picker>
           </view>
         </view>
@@ -108,7 +108,16 @@ async function http<T = any>(url: string, opts: any = {}): Promise<T> {
   })
 }
 
-const mealTypes = ['早餐', '上午点心', '午餐', '下午点心', '晚餐', '夜宵']
+// 餐次：label 显示中文，key 传给后端
+const mealTypes = [
+  { label: '早餐',    key: 'breakfast' },
+  { label: '上午点心', key: 'morning_snack' },
+  { label: '午餐',    key: 'lunch' },
+  { label: '下午点心', key: 'afternoon_snack' },
+  { label: '晚餐',    key: 'dinner' },
+  { label: '夜宵',    key: 'supper' },
+]
+const mealLabels = mealTypes.map(m => m.label)
 const mealIdx = ref(0)
 const photoPreview = ref('')
 const photoResult = ref<any>(null)
@@ -158,7 +167,7 @@ async function saveRecord() {
       method: 'POST',
       data: {
         food_name: photoResult.value.food_name,
-        meal_type: mealTypes[mealIdx.value],
+        meal_type: mealTypes[mealIdx.value].key,
         image_url: photoPreview.value,
         nutrition: photoResult.value.nutrition,
         recorded_at: new Date().toISOString(),
@@ -184,7 +193,7 @@ async function saveManual() {
       method: 'POST',
       data: {
         food_name: manualForm.name,
-        meal_type: mealTypes[mealIdx.value],
+        meal_type: mealTypes[mealIdx.value].key,
         nutrition: {
           calories: manualForm.calories ? parseInt(manualForm.calories) : null,
           carbs: manualForm.carbs ? parseFloat(manualForm.carbs) : null,

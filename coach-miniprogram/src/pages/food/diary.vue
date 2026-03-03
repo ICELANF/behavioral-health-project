@@ -126,13 +126,13 @@ const displayDate = computed(() => {
   return `${d.getMonth() + 1}月${d.getDate()}日`
 })
 
-const MEAL_ORDER = ['breakfast', 'lunch', 'dinner', 'snack']
+const MEAL_ORDER = ['breakfast', 'morning_snack', 'lunch', 'afternoon_snack', 'dinner', 'supper']
 
 const mealGroups = computed(() => {
   return MEAL_ORDER.map(type => ({
     type,
     items: allItems.value.filter(i => i.meal_type === type),
-  }))
+  })).filter(g => g.items.length > 0)  // 隐藏空餐次，减少滚动高度
 })
 
 const totalItems = computed(() => allItems.value.length)
@@ -155,19 +155,35 @@ function mealCalories(items: any[]): number {
 }
 
 function mealName(type: string): string {
-  const m: Record<string, string> = { breakfast: '早餐', lunch: '午餐', dinner: '晚餐', snack: '点心' }
+  const m: Record<string, string> = {
+    breakfast: '早餐', morning_snack: '上午点心',
+    lunch: '午餐', afternoon_snack: '下午点心',
+    dinner: '晚餐', supper: '夜宵',
+  }
   return m[type] || type
 }
 function mealEmoji(type: string): string {
-  const m: Record<string, string> = { breakfast: '🌅', lunch: '☀️', dinner: '🌙', snack: '🍎' }
+  const m: Record<string, string> = {
+    breakfast: '🌅', morning_snack: '🧃',
+    lunch: '☀️', afternoon_snack: '🍎',
+    dinner: '🌙', supper: '🌛',
+  }
   return m[type] || '🍽'
 }
 function mealIconBg(type: string): string {
-  const m: Record<string, string> = { breakfast: '#FFF8E8', lunch: '#FFF3E0', dinner: '#EEF2FF', snack: '#E8F8F0' }
+  const m: Record<string, string> = {
+    breakfast: '#FFF8E8', morning_snack: '#FFF0F5',
+    lunch: '#FFF3E0', afternoon_snack: '#E8F8F0',
+    dinner: '#EEF2FF', supper: '#F0EEF8',
+  }
   return m[type] || '#F5F5F5'
 }
 function mealIconColor(type: string): string {
-  const m: Record<string, string> = { breakfast: '#F39C12', lunch: '#E67E22', dinner: '#5B6ED4', snack: '#27AE60' }
+  const m: Record<string, string> = {
+    breakfast: '#F39C12', morning_snack: '#E91E8C',
+    lunch: '#E67E22', afternoon_snack: '#27AE60',
+    dinner: '#5B6ED4', supper: '#9B59B6',
+  }
   return m[type] || '#8E99A4'
 }
 

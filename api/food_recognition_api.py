@@ -15,10 +15,12 @@ from datetime import datetime, date, timedelta
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from loguru import logger
+from typing import Any, Dict, List
 
 from core.database import get_db, get_db_session
 from core.models import FoodAnalysis, DailyTask, TaskCheckin
@@ -363,3 +365,208 @@ async def vlm_status(current_user=Depends(get_current_user)):
         "message": "success",
         "data": svc.is_available(),
     }
+
+
+# ─────────────────────────────────────────────────────────────
+# 小程序前端专用端点（food/scan.vue + food/diary.vue）
+# ─────────────────────────────────────────────────────────────
+
+class NutritionInfo(BaseModel):
+    calories: Optional[float] = None
+    carbs:    Optional[float] = None
+    protein:  Optional[float] = None
+    fat:      Optional[float] = None
+    fiber:    Optional[float] = None
+
+
+class FoodRecordRequest(BaseModel):
+    food_name:   str
+    meal_type:   Optional[str] = None     # 早餐|上午点心|午餐|下午点心|晚餐|夜宵
+    image_url:   Optional[str] = None
+    nutrition:   Optional[NutritionInfo] = None
+    recorded_at: Optional[str] = None     # ISO8601，不传则取服务器时间
+
+
+@router.post("/analyze")
+async def analyze_food_image(
+    image: UploadFile = File(...),
+    meal_type: Optional[str] = Form(None),
+    current_user: Any = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    食物图片 AI 分析（小程序 food/scan.vue 调用）
+    返回格式：{food_name, nutrition:{calories,carbs,protein,fat}, advice}
+    """
+    # 验证文件类型
+    ext = os.path.splitext(image.filename or "photo.jpg")[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        ext = ".jpg"
+
+    contents = await image.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="图片不能超过 5MB")
+
+    # 保存图片
+    ts = int(time.time())
+    short_uuid = uuid.uuid4().hex[:8]
+    filename = f"{current_user.id}_{ts}_{short_uuid}{ext}"
+    filepath = os.path.join(FOOD_IMAGE_DIR, filename)
+    with open(filepath, "wb") as f:
+        f.write(contents)
+    image_url = f"/api/static/uploads/food_images/{filename}"
+
+    # 调用 VLM
+    parsed: dict = {}
+    try:
+        b64_data = base64.b64encode(contents).decode("utf-8")
+        from core.vlm_service import VLMService
+        vlm = VLMService()
+        result = await vlm.analyze_image(b64_data, FOOD_ANALYSIS_PROMPT, temperature=0.3)
+        raw_text = result.get("text", "")
+        parsed = _parse_llm_response(raw_text) if raw_text else {}
+        logger.info(f"[Food/analyze] VLM provider: {result.get('provider')}")
+    except Exception as e:
+        logger.warning(f"[Food/analyze] VLM 不可用: {e}")
+
+    # 写入数据库
+    try:
+        record = FoodAnalysis(
+            user_id=current_user.id,
+            image_url=image_url,
+            food_name=parsed.get("food_name"),
+            calories=parsed.get("calories"),
+            protein=parsed.get("protein"),
+            fat=parsed.get("fat"),
+            carbs=parsed.get("carbs"),
+            fiber=parsed.get("fiber"),
+            advice=parsed.get("advice"),
+            raw_response=json.dumps(parsed, ensure_ascii=False),
+            meal_type=meal_type,
+        )
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+    except Exception as e:
+        logger.warning(f"[Food/analyze] DB write failed: {e}")
+        db.rollback()
+
+    return {
+        "food_name": parsed.get("food_name") or "未能识别",
+        "nutrition": {
+            "calories": parsed.get("calories"),
+            "carbs":    parsed.get("carbs"),
+            "protein":  parsed.get("protein"),
+            "fat":      parsed.get("fat"),
+        },
+        "advice":    parsed.get("advice") or "",
+        "image_url": image_url,
+        "foods":     parsed.get("foods", []),
+    }
+
+
+@router.post("/record")
+async def save_food_record(
+    body: FoodRecordRequest,
+    current_user: Any = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    手动保存饮食记录（小程序 food/scan.vue saveManual 调用）
+    写入 food_analyses 表（image_url 可为空）
+    """
+    nut = body.nutrition or NutritionInfo()
+    try:
+        record = FoodAnalysis(
+            user_id=current_user.id,
+            image_url=body.image_url or "",
+            food_name=body.food_name,
+            calories=nut.calories,
+            protein=nut.protein,
+            fat=nut.fat,
+            carbs=nut.carbs,
+            fiber=nut.fiber,
+            meal_type=body.meal_type,
+            advice=None,
+            raw_response=None,
+        )
+        # 覆盖 created_at（前端传了 recorded_at 时用前端时间）
+        if body.recorded_at:
+            try:
+                record.created_at = datetime.fromisoformat(
+                    body.recorded_at.replace("Z", "+00:00")
+                ).replace(tzinfo=None)
+            except Exception:
+                pass
+
+        db.add(record)
+        db.commit()
+        db.refresh(record)
+        return {"success": True, "id": record.id}
+    except Exception as e:
+        db.rollback()
+        logger.error(f"[Food/record] save failed: {e}")
+        raise HTTPException(status_code=500, detail="保存失败")
+
+
+@router.get("/diary")
+async def food_diary(
+    date_str: Optional[str] = Query(None, alias="date",
+                                    description="YYYY-MM-DD，默认今日"),
+    current_user: Any = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    获取指定日期的饮食日记（小程序 food/diary.vue + scan.vue 摘要调用）
+    返回：{items: [...], date, total_calories, total_carbs, total_protein, total_fat}
+    """
+    target_date = date_str or date.today().isoformat()
+
+    try:
+        rows = db.execute(text("""
+            SELECT id, food_name, meal_type, calories, protein, fat, carbs, fiber,
+                   advice, image_url, created_at
+            FROM food_analyses
+            WHERE user_id = :uid
+              AND DATE(created_at) = :d
+            ORDER BY created_at ASC
+        """), {"uid": current_user.id, "d": target_date}).mappings().all()
+
+        items = []
+        total = {"calories": 0.0, "carbs": 0.0, "protein": 0.0, "fat": 0.0}
+        for r in rows:
+            ts = r["created_at"].isoformat() if r["created_at"] else None
+            item = {
+                "id":          r["id"],
+                "food_name":   r["food_name"] or "",
+                "meal_type":   r["meal_type"] or "",
+                "image_url":   r["image_url"] or "",
+                "advice":      r["advice"] or "",
+                "created_at":  ts,
+                "recorded_at": ts,   # diary.vue 兼容字段
+                "nutrition": {
+                    "calories": r["calories"],
+                    "carbs":    r["carbs"],
+                    "protein":  r["protein"],
+                    "fat":      r["fat"],
+                    "fiber":    r["fiber"],
+                },
+            }
+            items.append(item)
+            total["calories"] += r["calories"] or 0
+            total["carbs"]    += r["carbs"]    or 0
+            total["protein"]  += r["protein"]  or 0
+            total["fat"]      += r["fat"]      or 0
+
+        return {
+            "items": items,
+            "date":  target_date,
+            "total_calories": round(total["calories"]),
+            "total_carbs":    round(total["carbs"], 1),
+            "total_protein":  round(total["protein"], 1),
+            "total_fat":      round(total["fat"], 1),
+        }
+    except Exception as e:
+        logger.warning(f"[Food/diary] query failed: {e}")
+        return {"items": [], "date": target_date,
+                "total_calories": 0, "total_carbs": 0, "total_protein": 0, "total_fat": 0}
