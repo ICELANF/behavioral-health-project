@@ -221,7 +221,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { API_HOST } from '@/api/request'
+import { apiHost as API_HOST } from '@/api/request'
 
 // ── 角色定义 ──────────────────────────────────────────
 const roles = [

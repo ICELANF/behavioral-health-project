@@ -177,6 +177,7 @@ export function httpReq<T = any>(
   return request<T>(method, url, opts.data)
 }
 
-export { getToken, API_HOST }
+export { getToken }
+export const apiHost = API_HOST
 
 export default http

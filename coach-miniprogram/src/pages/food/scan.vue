@@ -90,7 +90,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import { httpReq as http, getToken, API_HOST } from '@/api/request'
+import { httpReq as http, getToken, apiHost as API_HOST } from '@/api/request'
 
 // 餐次：label 显示中文，key 传给后端
 const mealTypes = [
