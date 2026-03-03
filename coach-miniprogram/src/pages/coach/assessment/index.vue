@@ -57,8 +57,8 @@
           <view v-if="['submitted','review','completed','completed_pending_review'].includes(item.status)" class="assess-card-actions">
             <view class="assess-action-btn assess-action-review" @tap.stop="goReview(item)">查看评估</view>
           </view>
-          <!-- 待分配/进行中：提醒 -->
-          <view v-if="item.status === 'assigned' || item.status === 'pending'" class="assess-card-actions">
+          <!-- 待完成：提醒学员 -->
+          <view v-if="item.status === 'pending'" class="assess-card-actions">
             <view class="assess-action-btn assess-action-remind" @tap.stop="remindStudent(item)">提醒完成</view>
           </view>
         </view>
@@ -211,19 +211,19 @@ const estimatedTime = computed(() => {
   return scaleOptions.filter(s => selectedScales.value.includes(s.value)).reduce((a, s) => a + s.time, 0)
 })
 
+// 实际状态流: pending(已分配待完成) → completed(已提交待审) → reviewed → pushed
 const overviewStats = computed(() => [
-  { label: '总评估', value: assignments.value.length, color: '#2C3E50' },
-  { label: '待完成', value: assignments.value.filter(a => ['pending', 'assigned', 'in_progress'].includes(a.status)).length, color: '#E67E22' },
-  { label: '待审核', value: assignments.value.filter(a => ['submitted', 'review', 'completed', 'completed_pending_review'].includes(a.status)).length, color: '#9B59B6' },
-  { label: '已完成', value: assignments.value.filter(a => a.status === 'completed' || a.status === 'reviewed').length, color: '#27AE60' },
+  { label: '总评估', value: assignments.value.filter(a => a.status !== 'cancelled').length, color: '#2C3E50' },
+  { label: '待完成', value: assignments.value.filter(a => a.status === 'pending').length, color: '#E67E22' },
+  { label: '待审核', value: assignments.value.filter(a => a.status === 'completed').length, color: '#9B59B6' },
+  { label: '已完成', value: assignments.value.filter(a => ['reviewed', 'pushed'].includes(a.status)).length, color: '#27AE60' },
 ])
 
 const statusTabs = computed(() => [
-  { key: 'all', label: '全部', count: assignments.value.length },
-  { key: 'pending', label: '待分配', count: assignments.value.filter(a => ['pending', 'assigned'].includes(a.status)).length },
-  { key: 'in_progress', label: '进行中', count: assignments.value.filter(a => a.status === 'in_progress').length },
-  { key: 'review', label: '待审核', count: assignments.value.filter(a => ['submitted', 'review', 'completed', 'completed_pending_review'].includes(a.status)).length },
-  { key: 'completed', label: '已完成', count: assignments.value.filter(a => ['completed', 'reviewed'].includes(a.status)).length },
+  { key: 'all', label: '全部', count: assignments.value.filter(a => a.status !== 'cancelled').length },
+  { key: 'pending', label: '待完成', count: assignments.value.filter(a => a.status === 'pending').length },
+  { key: 'review', label: '待审核', count: assignments.value.filter(a => a.status === 'completed').length },
+  { key: 'completed', label: '已完成', count: assignments.value.filter(a => ['reviewed', 'pushed'].includes(a.status)).length },
 ])
 
 function parseRisk(r: any): number {
@@ -284,12 +284,12 @@ const currentBatchStudents = computed(() => {
 const hasNextBatch = computed(() => batchIndex.value + BATCH_SIZE < prioritizedStudents.value.length)
 
 const filteredItems = computed(() => {
-  let list = assignments.value
+  // 全部Tab不显示已取消，保持列表干净
+  let list = assignments.value.filter(a => a.status !== 'cancelled')
   if (activeTab.value !== 'all') {
-    if (activeTab.value === 'pending') list = list.filter(a => ['pending', 'assigned'].includes(a.status))
-    else if (activeTab.value === 'review') list = list.filter(a => ['submitted', 'review', 'completed', 'completed_pending_review'].includes(a.status))
-    else if (activeTab.value === 'completed') list = list.filter(a => ['completed', 'reviewed'].includes(a.status))
-    else list = list.filter(a => a.status === activeTab.value)
+    if (activeTab.value === 'pending') list = list.filter(a => a.status === 'pending')
+    else if (activeTab.value === 'review') list = list.filter(a => a.status === 'completed')
+    else if (activeTab.value === 'completed') list = list.filter(a => ['reviewed', 'pushed'].includes(a.status))
   }
   if (searchText.value) {
     const q = searchText.value.toLowerCase()
@@ -312,20 +312,18 @@ function avatarColor(name: string): string {
 
 function statusColor(s: string): string {
   const map: Record<string, string> = {
-    pending: '#E67E22', assigned: '#E67E22',
-    in_progress: '#3498DB',
-    submitted: '#9B59B6', review: '#9B59B6', completed_pending_review: '#9B59B6',
-    completed: '#27AE60', reviewed: '#27AE60'
+    pending: '#E67E22',
+    completed: '#9B59B6',
+    reviewed: '#27AE60', pushed: '#27AE60',
+    cancelled: '#BDC3C7'
   }
   return map[s] || '#8E99A4'
 }
 
 function statusLabel(s: string): string {
   const map: Record<string, string> = {
-    all: '', pending: '待分配', assigned: '已分配',
-    in_progress: '进行中',
-    submitted: '待审核', review: '待审核', completed_pending_review: '待审核',
-    completed: '已完成', reviewed: '已审核'
+    pending: '待完成', completed: '待审核',
+    reviewed: '已审核', pushed: '已推送', cancelled: '已取消'
   }
   return map[s] || s
 }
@@ -352,35 +350,18 @@ function toggleScale(val: string) {
 
 async function loadData() {
   loading.value = true
-  
-  // ★ 关键修复: 使用已验证的 review-list 端点 ★
+
+  // 主数据源: /coach-list 返回教练所有状态的评估任务
   try {
-    const res = await http<any>('/api/v1/assessment-assignments/review-list')
-    assignments.value = res.assignments || res.items || (Array.isArray(res) ? res : [])
+    const res = await http<any>('/api/v1/assessment-assignments/coach-list')
+    assignments.value = res.assignments || (Array.isArray(res) ? res : [])
   } catch (e) {
-    console.warn('[assessment/index] review-list:', e)
-    // fallback: 尝试其他可能的端点
+    console.warn('[assessment/index] coach-list:', e)
+    // fallback: review-list 只含 completed/reviewed
     try {
-      const res2 = await http<any>('/api/v1/assessment-assignments/my-pending')
-      assignments.value = res2.items || res2.assignments || (Array.isArray(res2) ? res2 : [])
-    } catch (e2) {
-      console.warn('[assessment/index] my-pending:', e2)
-      try {
-        // 最终fallback: 从教练dashboard的students中构造
-        const dash = await http<any>('/api/v1/coach/dashboard')
-        if (dash.students) {
-          assignments.value = dash.students
-            .filter((s: any) => s.latest_assessment || s.assessment_status)
-            .map((s: any) => ({
-              id: s.assessment_id || s.id,
-              student_name: s.name || s.full_name,
-              status: s.assessment_status || 'pending',
-              created_at: s.assessment_date || s.created_at,
-              score: s.assessment_score
-            }))
-        }
-      } catch (e3) { console.warn('[assessment/index] dashboard fallback:', e3); assignments.value = [] }
-    }
+      const res2 = await http<any>('/api/v1/assessment-assignments/review-list')
+      assignments.value = res2.assignments || res2.items || (Array.isArray(res2) ? res2 : [])
+    } catch (e2) { console.warn('[assessment/index] review-list:', e2); assignments.value = [] }
   }
 
   // 加载学员列表（用于分配弹窗）

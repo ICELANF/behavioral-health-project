@@ -457,6 +457,37 @@ async def submit_assessment(
         raise HTTPException(status_code=400, detail=f"评估提交失败: {str(e)}")
 
 
+@router.get("/coach-list")
+async def get_coach_assignments(
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """教练查看所有评估任务（可按 status 过滤，不传则返回全部）"""
+    query = db.query(AssessmentAssignment).filter(
+        AssessmentAssignment.coach_id == current_user.id,
+    )
+    if status:
+        query = query.filter(AssessmentAssignment.status == status)
+    rows = query.order_by(AssessmentAssignment.created_at.desc()).all()
+
+    result = []
+    for a in rows:
+        student = db.query(User).filter(User.id == a.student_id).first()
+        result.append({
+            "id": a.id,
+            "student_id": a.student_id,
+            "student_name": student.full_name or student.username if student else "未知",
+            "scales": a.scales,
+            "note": a.note,
+            "status": a.status,
+            "assigned_at": a.created_at.isoformat() if a.created_at else None,
+            "completed_at": a.completed_at.isoformat() if a.completed_at else None,
+        })
+
+    return {"assignments": result, "total": len(result)}
+
+
 @router.get("/review-list")
 async def get_review_list(
     db: Session = Depends(get_db),
