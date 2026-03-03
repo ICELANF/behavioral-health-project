@@ -6,32 +6,19 @@
       <view class="pq-nav-action" @tap="refresh">↻</view>
     </view>
 
-    <!-- 统计 -->
-    <view class="pq-stats">
-      <view class="pq-stat">
-        <text class="pq-stat-num" style="color:#E67E22;">{{ pendingCount }}</text>
-        <text class="pq-stat-label">待推送</text>
-      </view>
-      <view class="pq-stat">
-        <text class="pq-stat-num" style="color:#27AE60;">{{ sentToday }}</text>
-        <text class="pq-stat-label">今日已推</text>
-      </view>
-      <view class="pq-stat">
-        <text class="pq-stat-num" style="color:#3498DB;">{{ totalStudents }}</text>
-        <text class="pq-stat-label">覆盖学员</text>
-      </view>
-    </view>
-
-    <!-- Tab -->
-    <view class="pq-tabs">
-      <view v-for="t in queueTabs" :key="t.key" class="pq-tab" :class="{ 'pq-tab--active': activeTab === t.key }" @tap="activeTab = t.key">
-        {{ t.label }}
-        <view v-if="t.count > 0" class="pq-tab-badge">{{ t.count }}</view>
+    <!-- 统计 + Tab 合并单行 -->
+    <view class="pq-stattabs">
+      <view v-for="t in statTabs" :key="t.key"
+        class="pq-st" :class="{ 'pq-st--active': activeTab === t.key }"
+        :style="activeTab === t.key ? { background: t.color } : {}"
+        @tap="activeTab = t.key">
+        <text class="pq-st-n" :style="activeTab === t.key ? { color: '#fff' } : { color: t.color }">{{ t.count }}</text>
+        <text class="pq-st-l">{{ t.label }}</text>
       </view>
     </view>
 
     <!-- 队列列表 -->
-    <scroll-view scroll-y class="pq-list" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
+    <scroll-view scroll-y class="pq-list" style="height:calc(100vh - 380rpx);" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
       <view v-for="item in filteredItems" :key="item.id" class="pq-card">
         <view class="pq-card-header">
           <view class="pq-card-avatar">{{ (item.student_name || '?')[0] }}</view>
@@ -72,14 +59,10 @@ const refreshing = ref(false)
 const queueItems = ref<any[]>([])
 const processingIds = ref<Set<number>>(new Set())
 
-const pendingCount = computed(() => queueItems.value.filter(i => i.status === 'pending').length)
-const sentToday = computed(() => queueItems.value.filter(i => i.status === 'sent' || i.status === 'approved').length)
-const totalStudents = computed(() => new Set(queueItems.value.map(i => i.student_id)).size)
-
-const queueTabs = computed(() => [
-  { key: 'pending', label: '待推送', count: pendingCount.value },
-  { key: 'sent', label: '已推送', count: sentToday.value },
-  { key: 'all', label: '全部', count: queueItems.value.length },
+const statTabs = computed(() => [
+  { key: 'pending', label: '待推送', count: queueItems.value.filter(i => i.status === 'pending').length, color: '#E67E22' },
+  { key: 'sent',    label: '已推送', count: queueItems.value.filter(i => i.status === 'sent').length,    color: '#27AE60' },
+  { key: 'all',     label: '全部',   count: queueItems.value.length,                                      color: '#3498DB' },
 ])
 
 const filteredItems = computed(() => {
@@ -178,17 +161,13 @@ onMounted(() => { loadData() })
 .pq-nav-title { flex: 1; text-align: center; font-size: 34rpx; font-weight: 600; }
 .pq-nav-action { font-size: 36rpx; padding: 16rpx; }
 
-.pq-stats { display: flex; padding: 20rpx 24rpx; gap: 16rpx; }
-.pq-stat { flex: 1; background: #fff; border-radius: 16rpx; padding: 20rpx; text-align: center; }
-.pq-stat-num { display: block; font-size: 44rpx; font-weight: 700; }
-.pq-stat-label { display: block; font-size: 22rpx; color: #8E99A4; }
+.pq-stattabs { display: flex; padding: 16rpx 24rpx; gap: 12rpx; }
+.pq-st { flex: 1; background: #fff; border-radius: 16rpx; padding: 18rpx 0; text-align: center; transition: background 0.2s; }
+.pq-st-n { display: block; font-size: 40rpx; font-weight: 800; }
+.pq-st-l { display: block; font-size: 20rpx; color: #8E99A4; margin-top: 4rpx; }
+.pq-st--active .pq-st-l { color: rgba(255,255,255,0.85); }
 
-.pq-tabs { display: flex; padding: 0 24rpx; gap: 12rpx; margin-bottom: 16rpx; }
-.pq-tab { position: relative; flex: 1; text-align: center; padding: 14rpx 0; background: #fff; border-radius: 12rpx; font-size: 26rpx; color: #5B6B7F; }
-.pq-tab--active { background: #E67E22; color: #fff; }
-.pq-tab-badge { position: absolute; top: -8rpx; right: 12rpx; min-width: 28rpx; height: 28rpx; border-radius: 14rpx; background: #E74C3C; color: #fff; font-size: 18rpx; display: flex; align-items: center; justify-content: center; padding: 0 6rpx; }
-
-.pq-list { height: calc(100vh - 480rpx); padding: 0 24rpx; }
+.pq-list { padding: 0 24rpx; }
 .pq-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 12rpx; }
 .pq-card-header { display: flex; align-items: center; gap: 12rpx; margin-bottom: 12rpx; }
 .pq-card-avatar { width: 56rpx; height: 56rpx; border-radius: 50%; background: #3498DB; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24rpx; font-weight: 600; }
