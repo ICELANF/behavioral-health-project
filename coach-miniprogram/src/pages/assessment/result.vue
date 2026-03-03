@@ -188,8 +188,20 @@ function viewFullReport() {
   uni.showToast({ title: '完整报告生成中...', icon: 'none' })
 }
 
-function shareToCoach() {
-  uni.showToast({ title: '已分享给教练', icon: 'success' })
+async function shareToCoach() {
+  const page = getCurrentPages().slice(-1)[0] as any
+  const assignmentId = data.value.assignment_id || page?.options?.id
+  if (!assignmentId) {
+    uni.showToast({ title: '暂无可分享的评估记录', icon: 'none' })
+    return
+  }
+  try {
+    await http(`/api/v1/assessment-assignments/${assignmentId}/notify-coach`, { method: 'POST' })
+    uni.showToast({ title: '已通知教练查看', icon: 'success' })
+  } catch (e) {
+    console.warn('[assessment/result] shareToCoach:', e)
+    uni.showToast({ title: '通知失败，请重试', icon: 'none' })
+  }
 }
 
 function shareResult() {

@@ -27,7 +27,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.database import get_db
 from core.models import (
-    AssessmentAssignment, CoachReviewItem, CoachMessage, User
+    AssessmentAssignment, CoachReviewItem, CoachMessage, User, Notification
 )
 from core.baps.scoring_engine import BAPSScoringEngine
 from core.behavioral_profile_service import BehavioralProfileService
@@ -679,3 +679,30 @@ async def get_pushed_list(
         })
 
     return {"assignments": result}
+
+
+@router.post("/{assignment_id}/notify-coach")
+def notify_coach_of_result(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """学员通知教练查看评估结果（写入教练 notifications 表）"""
+    assignment = db.query(AssessmentAssignment).filter(
+        AssessmentAssignment.id == assignment_id,
+        AssessmentAssignment.student_id == current_user.id,
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="评估任务不存在或无权操作")
+
+    student_name = current_user.full_name or current_user.username
+    notif = Notification(
+        user_id=assignment.coach_id,
+        title="学员请您查看评估结果",
+        body=f"{student_name} 请您查看其评估结果（任务 #{assignment_id}）",
+        type="assessment_share",
+        priority="normal",
+    )
+    db.add(notif)
+    db.commit()
+    return {"success": True, "message": "已通知教练"}

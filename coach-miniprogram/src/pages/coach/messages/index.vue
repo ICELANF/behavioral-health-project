@@ -188,8 +188,22 @@ function openNotification(n: any) {
   if (n.link) uni.navigateTo({ url: n.link })
 }
 
-function adoptSuggestion(sug: any) {
-  uni.showToast({ title: '已采纳，准备发送', icon: 'success' })
+async function adoptSuggestion(sug: any) {
+  try {
+    await http('/api/v1/coach/messages', {
+      method: 'POST',
+      data: {
+        student_id: sug.student_id,
+        content: sug.content,
+        message_type: 'text',
+        auto_approve: true,
+      }
+    })
+    uni.showToast({ title: '消息已发送给学员', icon: 'success' })
+  } catch (e) {
+    console.warn('[messages] adoptSuggestion:', e)
+    uni.showToast({ title: '发送失败，请重试', icon: 'none' })
+  }
 }
 
 function editSuggestion(sug: any) {
