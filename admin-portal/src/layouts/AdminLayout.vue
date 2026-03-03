@@ -8,249 +8,228 @@
       v-model:collapsed="siderCollapsed"
       :collapsible="!isCompact"
       :trigger="isCompact ? null : undefined"
-      theme="dark"
-      :width="isCompact ? 260 : 220"
+      theme="light"
+      :width="isCompact ? 260 : 240"
       :class="{ 'sider-mobile': isCompact, 'sider-mobile-open': isCompact && mobileDrawerVisible }"
     >
       <div class="logo">
-        <span v-if="!collapsed">教练认证管理</span>
-        <span v-else>认证</span>
+        <span v-if="!siderCollapsed">🏥 行健平台管理</span>
+        <span v-else>行健</span>
       </div>
       <a-menu
         v-model:selectedKeys="selectedKeys"
         v-model:openKeys="openKeys"
-        theme="dark"
+        theme="light"
         mode="inline"
         @click="onMenuClick"
       >
-        <!-- 所有用户可见 -->
+        <!-- ══════ 顶层入口 ══════ -->
         <a-menu-item key="dashboard" @click="$router.push('/dashboard')">
           <template #icon><DashboardOutlined /></template>
           <span>工作台</span>
         </a-menu-item>
 
-        <!-- 教练"我的"子菜单 - 教练及以上可见 -->
-        <a-sub-menu v-if="isCoach" key="coach-my">
-          <template #icon><UserOutlined /></template>
-          <template #title>我的</template>
-          <a-menu-item key="coach-my-students" @click="$router.push('/coach/my/students')">我的学员</a-menu-item>
-          <a-menu-item key="coach-my-performance" @click="$router.push('/coach/my/performance')">我的绩效</a-menu-item>
-          <a-menu-item key="coach-my-certification" @click="$router.push('/coach/my/certification')">我的认证</a-menu-item>
-          <a-menu-item key="coach-my-tools" @click="$router.push('/coach/my/tools')">我的工具箱</a-menu-item>
-          <a-menu-item key="coach-my-analytics" @click="$router.push('/coach/my/analytics')">
-            <BarChartOutlined /> 数据分析
+        <!-- 指挥中心 - 仅 admin -->
+        <a-menu-item v-if="isAdmin" key="command-center" @click="$router.push('/admin/command-center')">
+          <template #icon><AppstoreOutlined /></template>
+          <span>全局指挥中心</span>
+        </a-menu-item>
+
+        <!-- ══════ 平台管理（admin专属）══════ -->
+        <a-menu-item-group v-if="isAdmin" title="平台管理">
+          <a-menu-item key="platform-overview" @click="$router.push('/admin/platform-overview')">
+            <template #icon><CloudUploadOutlined /></template>
+            <span>H5 / 小程序管理</span>
           </a-menu-item>
-        </a-sub-menu>
+          <a-menu-item key="admin-analytics" @click="$router.push('/admin/analytics')">
+            <template #icon><BarChartOutlined /></template>
+            <span>数据分析</span>
+          </a-menu-item>
+          <a-menu-item key="admin-activity-report" @click="$router.push('/admin/activity-report')">
+            <template #icon><LineChartOutlined /></template>
+            <span>活动报告</span>
+          </a-menu-item>
+        </a-menu-item-group>
 
-        <!-- 教练内容分享 - 教练及以上可见 -->
-        <a-menu-item v-if="isCoach" key="coach-content-sharing" @click="$router.push('/coach/content-sharing')">
-          <template #icon><ShareAltOutlined /></template>
-          <span>内容分享</span>
-        </a-menu-item>
+        <!-- ══════ 内容运营 ══════ -->
+        <a-menu-item-group v-if="isExpert" title="内容运营">
+          <a-sub-menu key="content">
+            <template #icon><FileSearchOutlined /></template>
+            <template #title>内容管理</template>
+            <a-menu-item key="content-review" @click="$router.push('/content/review')">内容审核</a-menu-item>
+            <a-menu-item key="content-articles" @click="$router.push('/content/articles')">文章管理</a-menu-item>
+            <a-menu-item key="content-cases" @click="$router.push('/content/cases')">案例分享</a-menu-item>
+            <a-menu-item key="content-cards" @click="$router.push('/content/cards')">练习卡片</a-menu-item>
+          </a-sub-menu>
+          <a-menu-item key="admin-content-manage" @click="$router.push('/admin/content-manage')">
+            <template #icon><FileAddOutlined /></template>
+            <span>内容发布</span>
+          </a-menu-item>
+          <a-sub-menu key="course">
+            <template #icon><VideoCameraOutlined /></template>
+            <template #title>课程管理</template>
+            <a-menu-item key="course-list" @click="$router.push('/course/list')">课程列表</a-menu-item>
+            <a-menu-item v-if="isAdmin" key="course-create" @click="$router.push('/course/create')">创建课程</a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="live">
+            <template #icon><PlayCircleOutlined /></template>
+            <template #title>直播管理</template>
+            <a-menu-item key="live-list" @click="$router.push('/live/list')">直播列表</a-menu-item>
+            <a-menu-item v-if="isAdmin" key="live-create" @click="$router.push('/live/create')">创建直播</a-menu-item>
+          </a-sub-menu>
+          <a-menu-item key="admin-batch-ingestion" @click="$router.push('/admin/batch-ingestion')">
+            <template #icon><CloudUploadOutlined /></template>
+            <span>知识灌注</span>
+          </a-menu-item>
+          <a-menu-item key="admin-knowledge-sharing" @click="$router.push('/admin/knowledge-sharing')">
+            <template #icon><ShareAltOutlined /></template>
+            <span>知识共享</span>
+          </a-menu-item>
+        </a-menu-item-group>
 
-        <!-- 专家"我的"子菜单 - 专家及以上可见 -->
-        <a-sub-menu v-if="isExpert" key="expert-my">
-          <template #icon><SafetyCertificateOutlined /></template>
-          <template #title>督导中心</template>
-          <a-menu-item key="expert-my-supervision" @click="$router.push('/expert/my/supervision')">我的督导</a-menu-item>
-          <a-menu-item key="expert-my-reviews" @click="$router.push('/expert/my/reviews')">我的审核</a-menu-item>
-          <a-menu-item key="expert-my-research" @click="$router.push('/expert/my/research')">研究数据</a-menu-item>
-          <a-menu-item key="expert-my-agents" @click="$router.push('/expert/my-agents')">我的 Agent</a-menu-item>
-        </a-sub-menu>
+        <!-- ══════ 人员管理 ══════ -->
+        <a-menu-item-group v-if="isAdmin" title="人员管理">
+          <a-menu-item key="admin-user-management" @click="$router.push('/admin/user-management')">
+            <template #icon><UsergroupAddOutlined /></template>
+            <span>用户管理</span>
+          </a-menu-item>
+          <a-menu-item key="admin-user-import" @click="$router.push('/admin/user-import')">
+            <template #icon><UploadOutlined /></template>
+            <span>批量导入</span>
+          </a-menu-item>
+          <a-sub-menu key="coach-manage">
+            <template #icon><TeamOutlined /></template>
+            <template #title>教练管理</template>
+            <a-menu-item key="coach-list" @click="$router.push('/coach/list')">教练列表</a-menu-item>
+            <a-menu-item key="coach-review" @click="$router.push('/coach/review')">晋级审核</a-menu-item>
+            <a-menu-item key="admin-expert-applications" @click="$router.push('/admin/expert-applications')">入驻审核</a-menu-item>
+          </a-sub-menu>
+          <a-menu-item key="student" @click="$router.push('/student')">
+            <template #icon><UserOutlined /></template>
+            <span>学员管理</span>
+          </a-menu-item>
+          <a-menu-item key="admin-bindings" @click="$router.push('/admin/bindings')">
+            <template #icon><LinkOutlined /></template>
+            <span>绑定管理</span>
+          </a-menu-item>
+          <a-menu-item key="admin-distribution" @click="$router.push('/admin/distribution')">
+            <template #icon><ApartmentOutlined /></template>
+            <span>分配管理</span>
+          </a-menu-item>
+        </a-menu-item-group>
 
-        <!-- 专家及以上可见 -->
-        <a-sub-menu v-if="isExpert" key="course">
-          <template #icon><VideoCameraOutlined /></template>
-          <template #title>课程管理</template>
-          <a-menu-item key="course-list" @click="$router.push('/course/list')">课程列表</a-menu-item>
-          <a-menu-item v-if="isAdmin" key="course-create" @click="$router.push('/course/create')">创建课程</a-menu-item>
-        </a-sub-menu>
+        <!-- ══════ 考核体系 ══════ -->
+        <a-menu-item-group v-if="isCoach" title="考核体系">
+          <a-sub-menu key="question">
+            <template #icon><FileTextOutlined /></template>
+            <template #title>题库管理</template>
+            <a-menu-item key="question-bank" @click="$router.push('/question/bank')">题库列表</a-menu-item>
+            <a-menu-item v-if="isAdmin" key="question-create" @click="$router.push('/question/create')">创建题目</a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="exam">
+            <template #icon><SolutionOutlined /></template>
+            <template #title>考试管理</template>
+            <a-menu-item key="exam-list" @click="$router.push('/exam/list')">考试列表</a-menu-item>
+            <a-menu-item v-if="isExpert" key="exam-create" @click="$router.push('/exam/create')">创建考试</a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu v-if="isAdmin" key="admin-credit-system">
+            <template #icon><TrophyOutlined /></template>
+            <template #title>学分晋级</template>
+            <a-menu-item key="admin-credit-dashboard" @click="$router.push('/admin/credit-system/dashboard')">学分概览</a-menu-item>
+            <a-menu-item key="admin-credit-modules" @click="$router.push('/admin/credit-system/modules')">课程模块</a-menu-item>
+            <a-menu-item key="admin-credit-companions" @click="$router.push('/admin/credit-system/companions')">同道者管理</a-menu-item>
+            <a-menu-item key="admin-credit-promotion" @click="$router.push('/admin/credit-system/promotion-review')">晋级审核</a-menu-item>
+          </a-sub-menu>
+        </a-menu-item-group>
 
-        <!-- 内容管理 - 专家及以上可见 -->
-        <a-sub-menu v-if="isExpert" key="content">
-          <template #icon><FileSearchOutlined /></template>
-          <template #title>内容管理</template>
-          <a-menu-item key="content-review" @click="$router.push('/content/review')">内容审核</a-menu-item>
-          <a-menu-item key="content-articles" @click="$router.push('/content/articles')">文章管理</a-menu-item>
-          <a-menu-item key="content-cases" @click="$router.push('/content/cases')">案例分享</a-menu-item>
-          <a-menu-item key="content-cards" @click="$router.push('/content/cards')">练习卡片</a-menu-item>
-        </a-sub-menu>
+        <!-- ══════ 业务运营 ══════ -->
+        <a-menu-item-group v-if="isCoach" title="业务运营">
+          <a-menu-item key="coach-push-queue" @click="$router.push('/coach/push-queue')">
+            <template #icon><BellOutlined /></template>
+            <span>推送队列</span>
+          </a-menu-item>
+          <a-menu-item key="admin-challenges" @click="$router.push('/admin/challenges')">
+            <template #icon><TrophyOutlined /></template>
+            <span>挑战活动</span>
+          </a-menu-item>
+          <a-sub-menu key="rx">
+            <template #icon><MedicineBoxOutlined /></template>
+            <template #title>行为处方</template>
+            <a-menu-item key="rx-dashboard" @click="$router.push('/rx/dashboard')">处方仪表盘</a-menu-item>
+            <a-menu-item key="rx-agents" @click="$router.push('/rx/agents')">Agent 集群</a-menu-item>
+            <a-menu-item key="rx-strategies" @click="$router.push('/rx/strategies')">策略模板库</a-menu-item>
+          </a-sub-menu>
+          <a-menu-item key="interventions" @click="$router.push('/interventions')">
+            <template #icon><MedicineBoxOutlined /></template>
+            <span>干预包管理</span>
+          </a-menu-item>
+          <a-menu-item key="coach-content-sharing" @click="$router.push('/coach/content-sharing')">
+            <template #icon><ShareAltOutlined /></template>
+            <span>内容分享</span>
+          </a-menu-item>
+        </a-menu-item-group>
 
-        <!-- 专家及以上可见 -->
-        <a-sub-menu v-if="isExpert" key="question">
-          <template #icon><FileTextOutlined /></template>
-          <template #title>题库管理</template>
-          <a-menu-item key="question-bank" @click="$router.push('/question/bank')">题库列表</a-menu-item>
-          <a-menu-item v-if="isAdmin" key="question-create" @click="$router.push('/question/create')">创建题目</a-menu-item>
-        </a-sub-menu>
+        <!-- ══════ 督导中心（专家+）══════ -->
+        <a-menu-item-group v-if="isExpert" title="督导中心">
+          <a-menu-item key="expert-my-supervision" @click="$router.push('/expert/my/supervision')">
+            <template #icon><SafetyCertificateOutlined /></template>
+            <span>督导管理</span>
+          </a-menu-item>
+          <a-menu-item key="expert-my-reviews" @click="$router.push('/expert/my/reviews')">
+            <template #icon><FileSearchOutlined /></template>
+            <span>我的审核</span>
+          </a-menu-item>
+          <a-menu-item key="expert-my-research" @click="$router.push('/expert/my/research')">
+            <template #icon><BarChartOutlined /></template>
+            <span>研究数据</span>
+          </a-menu-item>
+        </a-menu-item-group>
 
-        <!-- 教练及以上可见 -->
-        <a-sub-menu v-if="isCoach" key="exam">
-          <template #icon><SolutionOutlined /></template>
-          <template #title>考试管理</template>
-          <a-menu-item key="exam-list" @click="$router.push('/exam/list')">考试列表</a-menu-item>
-          <a-menu-item v-if="isExpert" key="exam-create" @click="$router.push('/exam/create')">创建考试</a-menu-item>
-        </a-sub-menu>
-
-        <!-- 专家及以上可见 -->
-        <a-sub-menu v-if="isExpert" key="live">
-          <template #icon><PlayCircleOutlined /></template>
-          <template #title>直播管理</template>
-          <a-menu-item key="live-list" @click="$router.push('/live/list')">直播列表</a-menu-item>
-          <a-menu-item v-if="isAdmin" key="live-create" @click="$router.push('/live/create')">创建直播</a-menu-item>
-        </a-sub-menu>
-
-        <!-- 专家及以上可见 -->
-        <a-sub-menu v-if="isExpert" key="coach">
-          <template #icon><TeamOutlined /></template>
-          <template #title>教练管理</template>
-          <a-menu-item key="coach-list" @click="$router.push('/coach/list')">教练列表</a-menu-item>
-          <a-menu-item key="coach-review" @click="$router.push('/coach/review')">晋级审核</a-menu-item>
-        </a-sub-menu>
-
-        <!-- 教练及以上可见 -->
-        <a-menu-item v-if="isCoach" key="student" @click="$router.push('/student')">
-          <template #icon><UserOutlined /></template>
-          <span>学员管理</span>
-        </a-menu-item>
-
-        <!-- 教练及以上可见 - 推送队列 -->
-        <a-menu-item v-if="isCoach" key="coach-push-queue" @click="$router.push('/coach/push-queue')">
-          <template #icon><BellOutlined /></template>
-          <span>推送队列</span>
-        </a-menu-item>
-
-        <!-- Prompt管理 - 专家及以上可见 -->
-        <a-sub-menu v-if="isExpert" key="prompts">
-          <template #icon><EditOutlined /></template>
-          <template #title>Prompt管理</template>
-          <a-menu-item key="prompts-list" @click="$router.push('/prompts/list')">Prompt列表</a-menu-item>
-          <a-menu-item v-if="isAdmin" key="prompts-create" @click="$router.push('/prompts/create')">创建Prompt</a-menu-item>
-        </a-sub-menu>
-
-        <!-- 干预包管理 - 专家及以上可见 -->
-        <a-menu-item v-if="isExpert" key="interventions" @click="$router.push('/interventions')">
-          <template #icon><MedicineBoxOutlined /></template>
-          <span>干预包管理</span>
-        </a-menu-item>
-
-        <!-- 挑战活动管理 -->
-        <a-menu-item v-if="isAdmin || isCoach" key="admin-challenges" @click="$router.push('/admin/challenges')">
-          <template #icon><TrophyOutlined /></template>
-          <span>挑战活动管理</span>
-        </a-menu-item>
-
-        <!-- 管理员可见 - 用户管理 -->
-        <a-menu-item v-if="isAdmin" key="admin-user-management" @click="$router.push('/admin/user-management')">
-          <template #icon><UsergroupAddOutlined /></template>
-          <span>用户管理</span>
-        </a-menu-item>
-
-        <a-menu-item v-if="isAdmin" key="admin-user-import" @click="$router.push('/admin/user-import')">
-          <template #icon><UploadOutlined /></template>
-          <span>批量导入</span>
-        </a-menu-item>
-
-        <!-- 管理员可见 - 分配管理 -->
-        <a-menu-item v-if="isAdmin" key="admin-distribution" @click="$router.push('/admin/distribution')">
-          <template #icon><ApartmentOutlined /></template>
-          <span>分配管理</span>
-        </a-menu-item>
-
-        <!-- 专家及以上可见 - 绑定管理 -->
-        <a-menu-item v-if="isExpert" key="admin-bindings" @click="$router.push('/admin/bindings')">
-          <template #icon><LinkOutlined /></template>
-          <span>绑定管理</span>
-        </a-menu-item>
-
-        <!-- 专家及以上可见 - 数据分析 -->
-        <a-menu-item v-if="isExpert" key="admin-analytics" @click="$router.push('/admin/analytics')">
-          <template #icon><BarChartOutlined /></template>
-          <span>数据分析</span>
-        </a-menu-item>
-
-        <!-- 管理员可见 - 批量灌注 -->
-        <a-menu-item v-if="isAdmin || isCoach" key="admin-batch-ingestion" @click="$router.push('/admin/batch-ingestion')">
-          <template #icon><CloudUploadOutlined /></template>
-          <span>知识灌注</span>
-        </a-menu-item>
-
-        <!-- 管理员可见 - 内容管理(新) -->
-        <a-menu-item v-if="isAdmin || isCoach" key="admin-content-manage" @click="$router.push('/admin/content-manage')">
-          <template #icon><FileAddOutlined /></template>
-          <span>内容发布</span>
-        </a-menu-item>
-
-        <!-- 管理员可见 - 用户活动报告 -->
-        <a-menu-item v-if="isAdmin" key="admin-activity-report" @click="$router.push('/admin/activity-report')">
-          <template #icon><LineChartOutlined /></template>
-          <span>活动报告</span>
-        </a-menu-item>
-
-        <!-- 管理员可见 - 学分晋级管理 -->
-        <a-sub-menu v-if="isAdmin" key="admin-credit-system">
-          <template #icon><TrophyOutlined /></template>
-          <template #title>学分晋级管理</template>
-          <a-menu-item key="admin-credit-dashboard" @click="$router.push('/admin/credit-system/dashboard')">学分概览</a-menu-item>
-          <a-menu-item key="admin-credit-modules" @click="$router.push('/admin/credit-system/modules')">课程模块</a-menu-item>
-          <a-menu-item key="admin-credit-companions" @click="$router.push('/admin/credit-system/companions')">同道者管理</a-menu-item>
-          <a-menu-item key="admin-credit-promotion" @click="$router.push('/admin/credit-system/promotion-review')">晋级审核</a-menu-item>
-        </a-sub-menu>
-
-        <!-- 教练及以上可见 - 行为处方 (Behavior Rx) -->
-        <a-sub-menu v-if="isCoach" key="rx">
-          <template #icon><MedicineBoxOutlined /></template>
-          <template #title>行为处方</template>
-          <a-menu-item key="rx-dashboard" @click="$router.push('/rx/dashboard')">处方仪表盘</a-menu-item>
-          <a-menu-item key="rx-agents" @click="$router.push('/rx/agents')">Agent 集群</a-menu-item>
-          <a-menu-item key="rx-strategies" @click="$router.push('/rx/strategies')">策略模板库</a-menu-item>
-        </a-sub-menu>
-
-        <!-- 管理员可见 - 专家入驻审核 -->
-        <a-menu-item v-if="isAdmin" key="admin-expert-applications" @click="$router.push('/admin/expert-applications')">
-          <template #icon><SolutionOutlined /></template>
-          <span>入驻审核</span>
-        </a-menu-item>
-
-        <!-- 管理员可见 - Agent 管理 (V006 + Phase 2) -->
-        <a-sub-menu v-if="isAdmin" key="admin-agent">
-          <template #icon><RobotOutlined /></template>
-          <template #title>Agent 管理</template>
-          <a-menu-item key="admin-agent-templates" @click="$router.push('/admin/agent-templates')">模板管理</a-menu-item>
-          <a-menu-item key="admin-tenant-routing" @click="showTenantPicker = true">路由配置</a-menu-item>
-          <a-menu-item key="admin-agent-growth" @click="$router.push('/admin/agent-growth')">成长报告</a-menu-item>
-          <a-menu-item key="admin-agent-ecosystem" @click="$router.push('/admin/agent-ecosystem')">模板市场</a-menu-item>
-        </a-sub-menu>
-
-        <!-- 管理员可见 - 安全管理 (V005) -->
-        <a-sub-menu v-if="isAdmin" key="admin-safety">
-          <template #icon><SafetyCertificateOutlined /></template>
-          <template #title>安全管理</template>
-          <a-menu-item key="admin-safety-dashboard" @click="$router.push('/safety/dashboard')">安全仪表盘</a-menu-item>
-          <a-menu-item key="admin-safety-review" @click="$router.push('/safety/review')">审核队列</a-menu-item>
-        </a-sub-menu>
-
-        <!-- 管理员可见 - 知识共享 (Phase 3) -->
-        <a-menu-item v-if="isAdmin" key="admin-knowledge-sharing" @click="$router.push('/admin/knowledge-sharing')">
-          <template #icon><ShareAltOutlined /></template>
-          <span>知识共享</span>
-        </a-menu-item>
-
-        <!-- 管理员可见 -->
-        <a-menu-item v-if="isAdmin" key="settings" @click="$router.push('/settings')">
-          <template #icon><SettingOutlined /></template>
-          <span>系统设置</span>
-        </a-menu-item>
-
-        <!-- ═══ 新版界面（零侵入集成） ═══ -->
-        <a-menu-item-group title="新版界面 v16.1">
-          <a-menu-item key="ui1-bridge" @click="$router.push('/ui1')">
+        <!-- ══════ 我的（教练视角）══════ -->
+        <a-menu-item-group v-if="isCoach && !isAdmin" title="我的">
+          <a-menu-item key="coach-my-students" @click="$router.push('/coach/my/students')">
+            <template #icon><UserOutlined /></template>
+            <span>我的学员</span>
+          </a-menu-item>
+          <a-menu-item key="coach-my-performance" @click="$router.push('/coach/my/performance')">
+            <template #icon><BarChartOutlined /></template>
+            <span>我的绩效</span>
+          </a-menu-item>
+          <a-menu-item key="coach-my-tools" @click="$router.push('/coach/my/tools')">
             <template #icon><AppstoreOutlined /></template>
-            <span>行为健康组件库</span>
+            <span>工具箱</span>
           </a-menu-item>
-          <a-menu-item key="ui2-bridge" @click="$router.push('/ui2')">
-            <template #icon><ExperimentOutlined /></template>
-            <span>专家双签工作台</span>
+        </a-menu-item-group>
+
+        <!-- ══════ 系统管理（admin专属）══════ -->
+        <a-menu-item-group v-if="isAdmin" title="系统管理">
+          <a-sub-menu key="admin-agent">
+            <template #icon><RobotOutlined /></template>
+            <template #title>Agent 管理</template>
+            <a-menu-item key="admin-agent-templates" @click="$router.push('/agent-templates')">模板管理</a-menu-item>
+            <a-menu-item key="admin-tenant-routing" @click="showTenantPicker = true">路由配置</a-menu-item>
+            <a-menu-item key="admin-agent-growth" @click="$router.push('/agent-growth')">成长报告</a-menu-item>
+            <a-menu-item key="admin-agent-ecosystem" @click="$router.push('/agent-ecosystem')">模板市场</a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="prompts">
+            <template #icon><EditOutlined /></template>
+            <template #title>Prompt管理</template>
+            <a-menu-item key="prompts-list" @click="$router.push('/prompts/list')">Prompt列表</a-menu-item>
+            <a-menu-item key="prompts-create" @click="$router.push('/prompts/create')">创建Prompt</a-menu-item>
+          </a-sub-menu>
+          <a-sub-menu key="admin-safety">
+            <template #icon><SafetyCertificateOutlined /></template>
+            <template #title>安全管理</template>
+            <a-menu-item key="admin-safety-dashboard" @click="$router.push('/safety/dashboard')">安全仪表盘</a-menu-item>
+            <a-menu-item key="admin-safety-review" @click="$router.push('/safety/review')">审核队列</a-menu-item>
+          </a-sub-menu>
+          <a-menu-item key="admin-operation-center" @click="$router.push('/admin/operation-center')">
+            <template #icon><AppstoreOutlined /></template>
+            <span>运营中心</span>
+          </a-menu-item>
+          <a-menu-item key="settings" @click="$router.push('/settings')">
+            <template #icon><SettingOutlined /></template>
+            <span>系统设置</span>
           </a-menu-item>
         </a-menu-item-group>
       </a-menu>
@@ -596,6 +575,20 @@ watch(() => route.path, (path) => {
     selectedKeys.value = ['coach-push-queue']
   } else if (path === '/admin/analytics') {
     selectedKeys.value = ['admin-analytics']
+  } else if (path === '/admin/platform-overview') {
+    selectedKeys.value = ['platform-overview']
+  } else if (path === '/admin/knowledge-sharing') {
+    selectedKeys.value = ['admin-knowledge-sharing']
+  } else if (path === '/admin/command-center') {
+    selectedKeys.value = ['command-center']
+  } else if (path === '/admin/activity-report') {
+    selectedKeys.value = ['admin-activity-report']
+  } else if (path === '/admin/batch-ingestion') {
+    selectedKeys.value = ['admin-batch-ingestion']
+  } else if (path === '/admin/content-manage') {
+    selectedKeys.value = ['admin-content-manage']
+  } else if (path === '/admin/operation-center') {
+    selectedKeys.value = ['admin-operation-center']
   } else if (path.startsWith('/course')) {
     openKeys.value = ['course']
     selectedKeys.value = path.includes('create') ? ['course-create'] : ['course-list']
@@ -788,10 +781,15 @@ const onMenuClick = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 18px;
-  font-weight: bold;
-  background: rgba(255, 255, 255, 0.1);
+  color: #1a7a50;
+  font-size: 16px;
+  font-weight: 700;
+  background: #f0faf5;
+  border-bottom: 1px solid #e8f5ef;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  padding: 0 12px;
 }
 
 .header {
@@ -809,11 +807,11 @@ const onMenuClick = () => {
 }
 
 .content {
-  margin: 24px;
+  margin: 16px;
   padding: 24px;
-  background: #fff;
-  min-height: calc(100vh - 64px - 48px);
-  border-radius: 4px;
+  background: #f5f7fa;
+  min-height: calc(100vh - 64px - 32px);
+  border-radius: 8px;
 }
 
 .header-center {

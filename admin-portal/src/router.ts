@@ -717,10 +717,17 @@ const routes: RouteRecordRaw[] = [
       },
       // ============ 知识共享管理 (Phase 3) ============
       {
-        path: 'knowledge-sharing',
+        path: 'admin/knowledge-sharing',
         name: 'KnowledgeSharingReview',
         component: () => import('./views/admin/KnowledgeSharingReview.vue'),
         meta: { title: '知识共享管理', requiresAdmin: true }
+      },
+      // ============ H5 / 小程序管理 ============
+      {
+        path: 'admin/platform-overview',
+        name: 'AdminPlatformOverview',
+        component: () => import('./views/admin/PlatformOverview.vue'),
+        meta: { title: 'H5 / 小程序管理', requiresAdmin: true }
       },
       // ============ XZB 知识确认 (V5.3.0) ============
       {
@@ -835,12 +842,12 @@ router.beforeEach((to, from, next) => {
     }
   }
 
-  // 4. 飞轮角色分流: 访问 /dashboard 时按角色跳转 (2026-02-17)
+  // 4. 飞轮角色分流: 访问 /dashboard 时按角色跳转
+  // admin(99) 留在 dashboard 使用完整侧边栏; 其他角色分流到专属工作台
   if (to.path === '/dashboard' && token) {
     const roleLevel = getUserRoleLevel()
     if (roleLevel >= 99) {
-      next('/admin/command-center')
-      return
+      // admin 直接使用 dashboard，侧边栏包含全部管理功能
     } else if (roleLevel >= 5) {
       next('/expert/audit')
       return
