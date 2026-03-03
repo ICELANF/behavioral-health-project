@@ -91,6 +91,10 @@ class RegisterRequest(BaseModel):
     password: str
     full_name: Optional[str] = None
     phone: Optional[str] = None
+    role: Optional[str] = None          # grower|sharer|coach|supervisor|master (默认observer)
+    gender: Optional[str] = None        # male|female|other
+    health_goals: Optional[str] = None  # 逗号分隔的健康目标（成长者/分享者用）
+    specialty: Optional[str] = None     # 专业领域（教练/督导/专家用）
 
 
 class LoginRequest(BaseModel):
@@ -217,17 +221,35 @@ def register(request: RegisterRequest, req: Request = None, db: Session = Depend
     # 密码强度验证 (FIX-05: 增强策略)
     _validate_password_strength(request.password)
 
-    # 创建新用户（默认角色为观察员）
+    # 解析角色（允许前端传入，默认观察员）
+    ALLOWED_SELF_REGISTER_ROLES = {
+        "grower": UserRole.GROWER,
+        "sharer": UserRole.SHARER,
+        "coach": UserRole.COACH,
+        "supervisor": UserRole.SUPERVISOR,
+        "master": UserRole.MASTER,
+    }
+    requested_role = (request.role or "").lower().strip()
+    user_role = ALLOWED_SELF_REGISTER_ROLES.get(requested_role, UserRole.OBSERVER)
+
+    # 创建新用户
     new_user = User(
         username=request.username,
         email=request.email,
         password_hash=hash_password(request.password),
         full_name=request.full_name,
         phone=request.phone,
-        role=UserRole.OBSERVER,  # 默认为观察员角色（L0）
+        role=user_role,
         is_active=True,
         is_verified=False
     )
+    # 保存扩展字段（如字段存在）
+    if request.gender and hasattr(new_user, 'gender'):
+        new_user.gender = request.gender
+    if request.health_goals and hasattr(new_user, 'health_goals'):
+        new_user.health_goals = request.health_goals
+    if request.specialty and hasattr(new_user, 'specialty'):
+        new_user.specialty = request.specialty
 
     db.add(new_user)
     db.commit()
