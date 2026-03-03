@@ -544,6 +544,18 @@ def create_glucose_reading(
     except Exception as e:
         logger.warning(f"DeviceAlertService glucose检查失败: {e}")
 
+    # ── 风险评估 → 自动写入审核队列 ──────────────────────
+    try:
+        from api.health_risk_engine import trigger_glucose_review
+        queued = trigger_glucose_review(db, current_user.id, req.value, req.meal_tag)
+        if queued:
+            logger.info(
+                "create_glucose | risk queued | user={} value={} meal_tag={}",
+                current_user.id, req.value, req.meal_tag,
+            )
+    except Exception as e:
+        logger.warning(f"[RiskEngine] glucose触发失败（不影响主流程）: {e}")
+
     logger.info("create_glucose | success | id={}", reading.id)
     return reading
 
@@ -720,6 +732,28 @@ def create_vital_sign(
     db.add(vital)
     db.commit()
     db.refresh(vital)
+
+    # ── 风险评估 → 自动写入审核队列 ──────────────────────
+    try:
+        from api.health_risk_engine import trigger_vitals_review
+        queued = trigger_vitals_review(
+            db, current_user.id, req.data_type,
+            weight_kg=req.weight_kg,
+            bmi=req.bmi,
+            body_fat_percent=req.body_fat_percent,
+            systolic=req.systolic,
+            diastolic=req.diastolic,
+            pulse=req.pulse,
+            spo2=req.spo2,
+            temperature=req.temperature,
+        )
+        if queued:
+            logger.info(
+                "create_vital | risk queued | user={} data_type={}",
+                current_user.id, req.data_type,
+            )
+    except Exception as e:
+        logger.warning(f"[RiskEngine] vitals触发失败（不影响主流程）: {e}")
 
     logger.info("create_vital | success | id={}", vital.id)
     return vital

@@ -266,6 +266,8 @@ async def sync_werun_data(
             "start_time": target_date + "T00:00:00",
         })
         db.commit()
+        # ── 活动量风险评估（连续低步数） ──────────────────
+        _check_activity_risk(db, current_user.id, steps)
         return {"success": True, "steps": steps, "date": target_date}
     except Exception as e:
         db.rollback()
@@ -277,6 +279,7 @@ async def sync_werun_data(
                 VALUES (:uid, 'walking', :steps, 'werun', :start_time, NOW())
             """), {"uid": current_user.id, "steps": steps, "start_time": target_date + "T00:00:00"})
             db.commit()
+            _check_activity_risk(db, current_user.id, steps)
             return {"success": True, "steps": steps, "date": target_date}
         except Exception as e2:
             db.rollback()
@@ -400,3 +403,39 @@ async def reject_knowledge(
     current_user: Any = Depends(get_current_user),
 ):
     return {"success": True, "message": "已退回", "id": item_id}
+
+
+# ─────────────────────────────────────────────────────────────
+# 内部：活动量风险检查（连续低步数）
+# ─────────────────────────────────────────────────────────────
+def _check_activity_risk(db: Session, user_id: int, today_steps: int) -> None:
+    """
+    查询最近7天步数记录，统计连续低步数天数，触发风险评估。
+    设计为"不阻塞主流程"——所有异常直接 swallow。
+    """
+    try:
+        rows = db.execute(sa_text("""
+            SELECT steps FROM activity_records
+            WHERE user_id = :uid
+              AND created_at > NOW() - INTERVAL '7 days'
+            ORDER BY created_at DESC
+            LIMIT 7
+        """), {"uid": user_id}).fetchall()
+
+        # 计算连续低步数天数（含今天）
+        low_threshold = 3000
+        consecutive = 0
+        for r in rows:
+            s = r[0] or 0
+            if s < low_threshold:
+                consecutive += 1
+            else:
+                break
+
+        if today_steps < low_threshold:
+            consecutive = max(consecutive, 1)
+
+        from api.health_risk_engine import trigger_activity_review
+        trigger_activity_review(db, user_id, today_steps, consecutive)
+    except Exception as e:
+        logger.warning(f"[WeRun] 活动量风险检查失败（不影响主流程）: {e}")
