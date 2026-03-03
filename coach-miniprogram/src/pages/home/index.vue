@@ -35,19 +35,21 @@
         <view class="home-section">
           <view class="home-section-header">
             <text class="home-section-title">📌 今日待办</text>
-            <text class="home-section-more" @tap="goPage('/pages/coach/flywheel/index')">查看全部 ›</text>
           </view>
           <view v-if="todos.length > 0" class="home-todo-list">
-            <view v-for="(item, idx) in todos.slice(0,5)" :key="idx" class="home-todo-item" @tap="handleTodo(item)">
+            <view v-for="(item, idx) in todos.slice(0,6)" :key="idx" class="home-todo-item" @tap="handleTodo(item)">
               <view class="home-todo-dot" :style="{ background: priorityColor(item.priority) }"></view>
               <view class="home-todo-body">
                 <text class="home-todo-title">{{ item.title }}</text>
-                <text class="home-todo-sub">{{ item.student_name || '' }} · {{ item.type_label || '任务' }}</text>
+                <view class="home-todo-meta">
+                  <view class="home-todo-tag" :style="{ background: todoTagBg(item.type) }">{{ item.type_label }}</view>
+                  <text v-if="item.student_name" class="home-todo-student">{{ item.student_name }}</text>
+                </view>
               </view>
               <text class="home-todo-arrow">›</text>
             </view>
           </view>
-          <view v-else class="home-empty-hint"><text>✅ 今日待办已清空，辛苦了！</text></view>
+          <view v-else class="home-empty-hint"><text>✅ 今日无待办，继续保持！</text></view>
         </view>
         <view class="home-section">
           <view class="home-section-header">
@@ -440,85 +442,136 @@ const todos = ref<any[]>([])
 const activities = ref<any[]>([])
 
 async function loadCoach() {
-  // 学员动态（活跃度展示）
-  try {
-    const res = await http<any>('/api/v1/coach/dashboard')
-    const students = res.students || []
-    activities.value = students.slice(0, 10).map((s: any) => ({
-      student_name: s.name || s.full_name || s.username || '未知',
-      action_text: s.micro_action_count
-        ? `完成了${s.micro_action_count}个微行动`
-        : (s.days_since_last_contact === 0 ? '今天活跃' : `${s.days_since_last_contact ?? '?'}天未活跃`),
-      time_ago: s.last_active_time || '',
-    }))
-  } catch (e) { console.warn('[Home] dashboard:', e) }
+  // ─── 并行加载全部数据源 ──────────────────────────────────────
+  const [dashRes, assessRes, aiRes, healthRes, rxRes, learningRes, examRes] =
+    await Promise.allSettled([
+      http<any>('/api/v1/coach/dashboard'),
+      http<any>('/api/v1/assessment-assignments/coach-list?status=completed'),
+      http<any>('/api/v1/coach/review-queue?status=pending'),
+      http<any>('/api/v1/health-review/queue?reviewer_role=coach'),
+      http<any>('/api/v1/coach/push-queue?status=pending&page_size=20'),
+      http<any>('/api/v1/learning/my?status=in_progress&limit=3'),
+      http<any>('/api/v1/certification/exams'),
+    ])
 
-  const assessTodos: any[] = []
-  const aiTodos: any[] = []
-  const healthTodos: any[] = []
-  const rxTodos: any[] = []
+  const ok = <T>(r: PromiseSettledResult<T>, fallback: T): T =>
+    r.status === 'fulfilled' ? r.value : fallback
 
-  // ① 待审评估 — assessment_assignments status=completed
-  try {
-    const res = await http<any>('/api/v1/assessment-assignments/coach-list?status=completed')
-    const items = res.items || res.assignments || (Array.isArray(res) ? res : [])
-    coachStats.value.pendingAssess = items.length
-    assessTodos.push(...items.slice(0, 2).map((a: any) => ({
-      id: 'assess_' + a.id,
-      title: (a.student_name || '学员') + ' 已完成评估，待审核',
-      student_name: a.student_name || '',
-      type: 'assessment', type_label: '待审评估', priority: 'high',
-      url: '/pages/coach/assessment/review?id=' + a.id,
-    })))
-  } catch (e) { console.warn('[Home] assess-list:', e) }
+  const dash      = ok(dashRes,     {} as any)
+  const assessD   = ok(assessRes,   {} as any)
+  const aiD       = ok(aiRes,       {} as any)
+  const healthD   = ok(healthRes,   {} as any)
+  const rxD       = ok(rxRes,       {} as any)
+  const learningD = ok(learningRes, {} as any)
+  const examD     = ok(examRes,     {} as any)
 
-  // ② 待审AI计划 — coach_review_queue status=pending
-  try {
-    const res = await http<any>('/api/v1/coach/review-queue?status=pending')
-    coachStats.value.pendingAiPlan = res.total_pending ?? (res.items || []).length
-    aiTodos.push(...(res.items || []).slice(0, 2).map((i: any) => ({
-      id: 'ai_' + i.id,
-      title: (i.student_name || '学员') + ' AI跟进计划待审核',
+  // ─── 学员动态 ─────────────────────────────────────────────────
+  const students: any[] = dash.students || []
+  activities.value = students.slice(0, 10).map((s: any) => ({
+    student_name: s.name || s.full_name || s.username || '未知',
+    action_text: s.micro_action_count
+      ? `完成了${s.micro_action_count}个微行动`
+      : (s.days_since_last_contact === 0 ? '今天活跃' : `${s.days_since_last_contact ?? '?'}天未活跃`),
+    time_ago: s.last_active_time || '',
+  }))
+
+  // ─── 4张卡数量 ────────────────────────────────────────────────
+  const assessItems: any[] = assessD.items || assessD.assignments || (Array.isArray(assessD) ? assessD : [])
+  const aiItems:     any[] = aiD.items || []
+  const healthItems: any[] = healthD.items || healthD.queue || (Array.isArray(healthD) ? healthD : [])
+  const rxItems:     any[] = rxD.items || []
+
+  coachStats.value.pendingAssess       = assessItems.length
+  coachStats.value.pendingAiPlan       = aiD.total_pending ?? aiItems.length
+  coachStats.value.pendingHealthReview = healthD.total ?? healthItems.length
+  coachStats.value.pendingRx           = rxD.total ?? rxItems.length
+
+  // ─── 今日待办（三方案合并） ────────────────────────────────────
+  const todoList: any[] = []
+
+  // 【方案2】紧急审核 — 任意队列中 priority=urgent 的条目优先浮出
+  aiItems.filter((i: any) => i.priority === 'urgent').slice(0, 2).forEach((i: any) => {
+    todoList.push({
+      id: 'urg_' + i.id,
+      title: `${i.student_name || '学员'} 的AI跟进计划急需审核`,
       student_name: i.student_name || '',
-      type: 'ai_plan', type_label: '待审AI计划', priority: i.priority === 'urgent' ? 'urgent' : 'high',
+      type: 'urgent', type_label: '紧急审核', priority: 'urgent',
       url: '/pages/coach/flywheel/index',
-    })))
-  } catch (e) { console.warn('[Home] review-queue:', e) }
+    })
+  })
 
-  // ③ 待审健康数据 — health_review_queue reviewer_role=coach
-  try {
-    const res = await http<any>('/api/v1/health-review/queue?reviewer_role=coach')
-    const items = res.items || res.queue || (Array.isArray(res) ? res : [])
-    coachStats.value.pendingHealthReview = res.total ?? items.length
-    healthTodos.push(...items.slice(0, 2).map((i: any) => ({
-      id: 'health_' + i.id,
-      title: (i.student_name || '学员') + ' 健康数据待审核',
-      student_name: i.student_name || '',
-      type: 'health', type_label: '待审健康', priority: i.risk_level === 'medium' ? 'high' : 'normal',
-      url: '/pages/coach/health-review/index',
-    })))
-  } catch (e) { console.warn('[Home] health-review:', e) }
+  // 【方案1】重点学员 — R3高危 或 连续3天以上未联系
+  students
+    .map((s: any) => ({
+      ...s,
+      _rl: typeof s.risk_level === 'string'
+        ? parseInt(s.risk_level.replace(/\D/g, '')) || 0
+        : (s.risk_level || 0),
+    }))
+    .filter(s => s._rl >= 3 || (s.days_since_last_contact ?? 0) >= 3)
+    .sort((a, b) => b._rl - a._rl)
+    .slice(0, 3)
+    .forEach(s => {
+      const days = s.days_since_last_contact ?? 0
+      todoList.push({
+        id: 'stu_' + s.id,
+        title: s._rl >= 3
+          ? `${s.name} — R${s._rl} 高危，建议立即跟进`
+          : `${s.name} — 已 ${days} 天未联系`,
+        student_name: s.name || '',
+        type: s._rl >= 3 ? 'high_risk' : 'inactive',
+        type_label: s._rl >= 3 ? '高危学员' : '长期未联系',
+        priority: s._rl >= 3 ? 'urgent' : 'high',
+        url: '/pages/coach/students/detail?id=' + s.id,
+      })
+    })
 
-  // ④ 待审处方/推送 — coach_push_queue status=pending
-  try {
-    const res = await http<any>('/api/v1/coach/push-queue?status=pending&page_size=10')
-    coachStats.value.pendingRx = res.total ?? (res.items || []).length
-    rxTodos.push(...(res.items || []).slice(0, 2).map((i: any) => ({
-      id: 'pq_' + i.id,
-      title: i.title || i.content?.slice(0, 30) || '待推送消息',
-      student_name: i.student_name || '',
-      type: 'rx_push', type_label: '待审处方', priority: i.priority || 'normal',
-      url: '/pages/coach/push-queue/index',
-    })))
-  } catch (e) { console.warn('[Home] push-queue:', e) }
+  // 【方案4】我的成长 — 在途学习课程（最多1条）
+  const learningItems: any[] = learningD.items || []
+  if (learningItems.length) {
+    const l = learningItems[0]
+    todoList.push({
+      id: 'learn_' + l.id,
+      title: `继续学习：${l.title || '培训课程'}`,
+      student_name: '',
+      type: 'learning', type_label: '我的学习', priority: 'normal',
+      url: '/pages/learning/index',
+    })
+  }
 
-  // 今日待办：评估 > AI计划 > 健康数据 > 处方，各取前2
-  todos.value = [...assessTodos, ...aiTodos, ...healthTodos, ...rxTodos]
+  // 【方案4】我的成长 — 近期考试提醒（最多1条）
+  const examItems: any[] = examD.items || []
+  if (examItems.length) {
+    const e = examItems[0]
+    todoList.push({
+      id: 'exam_' + e.exam_id,
+      title: `备考提醒：${e.exam_name || '教练认证考试'}`,
+      student_name: '',
+      type: 'exam', type_label: '考试备考', priority: 'normal',
+      url: '/pages/exam/list',
+    })
+  }
+
+  todos.value = todoList.slice(0, 6)
 }
 
 function handleTodo(item: any) {
-  const url = item.url || '/pages/coach/push-queue/index'
-  uni.navigateTo({ url })
+  uni.navigateTo({ url: item.url || '/pages/coach/flywheel/index' })
+}
+
+function todoTagBg(type: string): string {
+  const m: Record<string, string> = {
+    urgent:        '#FDEDEC',
+    high_risk:     '#FDEDEC',
+    inactive:      '#FFF3E0',
+    learning:      '#EBF5FB',
+    exam:          '#F5EEF8',
+    assessment:    '#EAF4FB',
+    ai_plan:       '#E8F8F5',
+    health:        '#FEF9E7',
+    rx_push:       '#EAFAF1',
+  }
+  return m[type] || '#F5F5F5'
 }
 
 // ── GROWER 数据 ────────────────────────────────────────
@@ -683,9 +736,11 @@ onShow(() => { loadData() })
 .home-todo-item:last-child { border-bottom: none; }
 .home-todo-dot  { width: 12rpx; height: 12rpx; border-radius: 50%; flex-shrink: 0; }
 .home-todo-body { flex: 1; }
-.home-todo-title { display: block; font-size: 28rpx; color: #2C3E50; font-weight: 500; }
-.home-todo-sub   { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
-.home-todo-arrow { font-size: 28rpx; color: #CCC; }
+.home-todo-title   { display: block; font-size: 28rpx; color: #2C3E50; font-weight: 500; }
+.home-todo-meta    { display: flex; align-items: center; gap: 8rpx; margin-top: 6rpx; }
+.home-todo-tag     { font-size: 20rpx; color: #5B6B7F; padding: 2rpx 10rpx; border-radius: 6rpx; font-weight: 500; }
+.home-todo-student { font-size: 22rpx; color: #8E99A4; }
+.home-todo-arrow   { font-size: 28rpx; color: #CCC; }
 
 /* 动态 */
 .home-activity-item { display: flex; align-items: center; gap: 16rpx; padding: 14rpx 0; border-bottom: 1rpx solid #F8F8F8; }
