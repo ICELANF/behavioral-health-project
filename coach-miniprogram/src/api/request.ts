@@ -76,7 +76,7 @@ function request<T = any>(
 
     uni.request({
       url,
-      method,
+      method: method as any,
       data,
       header: headers,
       success(res) {
@@ -91,7 +91,7 @@ function request<T = any>(
             refreshQueue.push((newToken) => {
               headers['Authorization'] = `Bearer ${newToken}`
               uni.request({
-                url, method, data, header: headers,
+                url, method: method as any, data, header: headers,
                 success: (r2) => resolve(r2.data as T),
                 fail:    (e2) => reject(e2),
               })
@@ -106,7 +106,7 @@ function request<T = any>(
               refreshQueue = []
               headers['Authorization'] = `Bearer ${newToken}`
               uni.request({
-                url, method, data, header: headers,
+                url, method: method as any, data, header: headers,
                 success: (r2) => {
                   if (r2.statusCode >= 200 && r2.statusCode < 300) resolve(r2.data as T)
                   else reject(r2.data)

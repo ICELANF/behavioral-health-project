@@ -78,7 +78,7 @@ async function loadData() {
       http<any>('/api/v1/learning/credits'),
     ])
     if (rec.status === 'fulfilled') {
-      items.value = Array.isArray(rec.value) ? rec.value : (rec.value?.items || [])
+      items.value = Array.isArray(rec.value) ? rec.value : ((rec.value as any)?.items || [])
     }
     if (cr.status === 'fulfilled') {
       credits.value = cr.value?.total_credits ?? 0

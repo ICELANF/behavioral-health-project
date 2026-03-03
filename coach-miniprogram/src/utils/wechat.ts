@@ -3,6 +3,9 @@
  * - isMiniprogram: 运行环境检测
  * - wechatLogin: 微信一键登录流程
  */
+// wx is a global provided by the WeChat miniprogram runtime
+declare const wx: any
+
 import authApi from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 

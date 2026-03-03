@@ -17,7 +17,7 @@
       <!-- 核心指标 -->
       <view class="ana-metrics">
         <view class="ana-metric" v-for="m in coreMetrics" :key="m.label"
-          @tap="m.url && uni.navigateTo({ url: m.url })">
+          @tap="m.url && navigate(m.url)">
           <text class="ana-metric-val" :style="{ color: m.color }">{{ m.value }}</text>
           <text class="ana-metric-label">{{ m.url ? m.label + ' ›' : m.label }}</text>
         </view>
@@ -119,6 +119,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+
+function navigate(url: string) { uni.navigateTo({ url }) }
 
 const activePeriod = ref('week')
 const refreshing = ref(false)

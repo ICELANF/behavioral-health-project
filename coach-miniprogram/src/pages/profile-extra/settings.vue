@@ -23,15 +23,15 @@
         <view class="set-group-title">通知设置</view>
         <view class="set-item">
           <text class="set-item-label">系统通知</text>
-          <switch :checked="notifySystem" @change="notifySystem = $event.detail.value" color="#2D8E69" />
+          <switch :checked="notifySystem" @change="(e: any) => notifySystem = e.detail.value" color="#2D8E69" />
         </view>
         <view class="set-item">
           <text class="set-item-label">评估提醒</text>
-          <switch :checked="notifyAssess" @change="notifyAssess = $event.detail.value" color="#2D8E69" />
+          <switch :checked="notifyAssess" @change="(e: any) => notifyAssess = e.detail.value" color="#2D8E69" />
         </view>
         <view class="set-item">
           <text class="set-item-label">学习提醒</text>
-          <switch :checked="notifyLearn" @change="notifyLearn = $event.detail.value" color="#2D8E69" />
+          <switch :checked="notifyLearn" @change="(e: any) => notifyLearn = e.detail.value" color="#2D8E69" />
         </view>
       </view>
 
