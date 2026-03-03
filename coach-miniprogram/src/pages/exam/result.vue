@@ -73,7 +73,7 @@ async function loadData() {
   loading.value = true
   try {
     result.value = await http<any>(`/api/v1/certification/sessions/${sessionId}/result`)
-  } catch { result.value = {} } finally { loading.value = false }
+  } catch (e) { console.warn('[exam/result] load:', e); result.value = {} } finally { loading.value = false }
 }
 
 function formatDate(iso: string): string {

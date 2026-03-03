@@ -176,14 +176,14 @@ async function onRefresh() {
 }
 
 async function markAllRead() {
-  try { await http('/api/v1/notifications/mark-all-read', { method: 'POST' }) } catch (e) { console.warn('[coach/messages/index] markAllRead:', e) }
+  try { await http('/api/v1/notifications/read-all', { method: 'POST' }) } catch (e) { console.warn('[coach/messages/index] markAllRead:', e) }
   notifications.value.forEach(n => n.is_read = true)
 }
 
 function openNotification(n: any) {
   if (!n.is_read) {
     n.is_read = true
-    http(`/api/v1/notifications/${n.id}/read`, { method: 'POST' }).catch(() => {})
+    http(`/api/v1/notifications/${n.id}/read`, { method: 'POST' }).catch((e: any) => console.warn('[messages] mark-read:', e))
   }
   if (n.link) uni.navigateTo({ url: n.link })
 }

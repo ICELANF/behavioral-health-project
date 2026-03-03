@@ -22,6 +22,7 @@ from core.models import (
     CoachMessage, MicroActionTask, MicroActionLog,
     Reminder, BehaviorHistory,
     GlucoseReading, SleepRecord, ActivityRecord, VitalSign,
+    Notification,
 )
 from core.behavioral_profile_service import BehavioralProfileService
 from core.intervention_matcher import InterventionMatcher
@@ -1657,3 +1658,35 @@ def create_student_note(
     db.commit()
 
     return {"success": True, "message": "笔记已保存"}
+
+
+# ── 教练提醒学员 ──────────────────────────────────────────
+class _RemindBody(_BaseModel):
+    title: str = "教练提醒"
+    message: str = "请尽快完成待办任务"
+    type: str = "coach_remind"
+
+
+@router.post("/students/{student_id}/remind")
+def remind_student(
+    student_id: int,
+    body: _RemindBody,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """教练向学员发送提醒通知（写入 notifications 表）"""
+    student = db.query(User).filter(User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="学员不存在")
+
+    notif = Notification(
+        user_id=student_id,
+        title=body.title,
+        body=body.message,
+        type=body.type,
+        priority="high",
+    )
+    db.add(notif)
+    db.commit()
+
+    return {"success": True, "message": "提醒已发送", "notification_id": notif.id}

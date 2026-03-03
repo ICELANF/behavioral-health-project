@@ -316,9 +316,21 @@ async function doAssign() {
 }
 
 async function remindStudent(item: any) {
-  // coach-push/send 端点不存在，推送系统走 coach_push_queue 审批流
-  // 暂用本地提示，后续可对接 push-recommendations/apply
-  uni.showToast({ title: '已提醒学员完成评估', icon: 'success' })
+  const sid = item.student_id || item.user_id || item.id
+  try {
+    await http(`/api/v1/coach/students/${sid}/remind`, {
+      method: 'POST',
+      data: {
+        title: '评估提醒',
+        message: '请尽快完成评估任务',
+        type: 'assessment_remind',
+      }
+    })
+    uni.showToast({ title: '已发送提醒', icon: 'success' })
+  } catch (e) {
+    console.warn('[assessment/index] remind:', e)
+    uni.showToast({ title: '提醒发送失败', icon: 'none' })
+  }
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }

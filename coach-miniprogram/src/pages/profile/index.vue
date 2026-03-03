@@ -267,9 +267,9 @@ onMounted(() => { loadProfile() })
 .edit-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; }
 .edit-sheet { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding: 40rpx 32rpx calc(48rpx + env(safe-area-inset-bottom)); }
 .edit-sheet-title { font-size: 34rpx; font-weight: 700; color: #2C3E50; text-align: center; margin-bottom: 40rpx; }
-.edit-field { margin-bottom: 28rpx; }
-.edit-label { display: block; font-size: 24rpx; color: #8E99A4; margin-bottom: 10rpx; }
-.edit-input { width: 100%; padding: 20rpx 24rpx; background: #F5F6FA; border-radius: 12rpx; font-size: 28rpx; color: #2C3E50; box-sizing: border-box; }
+.edit-field { margin-bottom: 32rpx; }
+.edit-label { display: block; font-size: 28rpx; color: #5B6B7F; margin-bottom: 12rpx; font-weight: 500; }
+.edit-input { width: 100%; padding: 16rpx 24rpx; background: #F5F6FA; border-radius: 12rpx; font-size: 28rpx; color: #2C3E50; box-sizing: border-box; }
 .edit-input--disabled { color: #BDC3C7; }
 .edit-actions { display: flex; gap: 20rpx; margin-top: 40rpx; }
 .edit-btn { flex: 1; text-align: center; padding: 26rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }

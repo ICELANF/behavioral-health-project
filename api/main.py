@@ -1113,6 +1113,29 @@ async def get_all_notifications(
     return {"notifications": items, "total": len(items)}
 
 
+@app.post("/api/v1/notifications/read-all")
+async def mark_all_notifications_read(
+    current_user: User = Depends(get_current_user),
+):
+    """标记当前用户所有通知为已读"""
+    try:
+        from core.database import SessionLocal
+        from sqlalchemy import text as sa_text
+        db = SessionLocal()
+        try:
+            db.execute(sa_text("""
+                UPDATE notifications SET is_read = true
+                WHERE user_id = CAST(:uid AS integer) AND is_read = false
+            """), {"uid": current_user.id})
+            db.commit()
+        finally:
+            db.close()
+    except Exception as e:
+        logger.warning(f"[notifications/read-all] update failed: {e}")
+        raise HTTPException(status_code=500, detail="更新失败")
+    return {"success": True}
+
+
 @app.post("/api/v1/notifications/{notif_id}/read")
 async def mark_notification_read(
     notif_id: int,
