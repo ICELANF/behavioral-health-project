@@ -1,0 +1,144 @@
+# .github/workflows/ci.yml
+# BehaviorOS — 每轮修改后自动回归测试
+# 触发: push 到 stabilize-from-sprint1 / master 分支，或手动触发
+#
+# 本地等价命令:
+#   cd D:\behavioral-health-project
+#   docker-compose -f docker-compose.yml up -d
+#   pip install requests pytest
+#   pytest "C:\Users\Administrator\Desktop\test\单元imya.py" -v
+#   pytest "C:\Users\Administrator\Desktop\test\集成测试.py" -v
+
+name: BehaviorOS 回归测试
+
+on:
+  push:
+    branches: [stabilize-from-sprint1, master]
+  pull_request:
+    branches: [master]
+  workflow_dispatch:   # 支持手动触发
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+
+    env:
+      DATABASE_URL: postgresql://bhp_user:bhp_pass@localhost:5432/bhp_db
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET_KEY: ci-test-secret-key-not-for-prod
+      ENVIRONMENT: test
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: bhp_user
+          POSTGRES_PASSWORD: bhp_pass
+          POSTGRES_DB: bhp_db
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: 安装依赖
+        run: |
+          pip install -r requirements.txt
+          pip install requests pytest pytest-asyncio httpx
+
+      - name: 数据库迁移
+        run: |
+          python -c "from api.main import app; print('app import ok')"
+          alembic upgrade head || python -m api.create_tables
+
+      - name: 植入测试数据
+        run: |
+          node seed-test-data.js || true
+          node seed-health-review.js || true
+
+      - name: 启动 API 服务 (后台)
+        run: |
+          uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          sleep 8
+          curl -f http://localhost:8000/api/v1/system/health || exit 1
+        env:
+          ENVIRONMENT: test
+
+      - name: 运行单元测试
+        run: |
+          pytest tests/ -v --tb=short -m "not slow" \
+            --ignore=tests/integration_test.py
+        env:
+          ENVIRONMENT: test
+
+      - name: 运行接口契约集成测试
+        run: |
+          python 集成测试.py
+        working-directory: ${{ github.workspace }}
+        continue-on-error: false
+
+      - name: 运行教练快捷操作单元测试
+        run: |
+          python 单元imya.py
+        working-directory: ${{ github.workspace }}
+
+      - name: 前端编译检查
+        run: |
+          cd coach-miniprogram
+          npm ci
+          timeout 60 npm run build:mp-weixin 2>&1 | tail -5 || true
+
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: tests/reports/
+          retention-days: 14
+
+  miniprogram-build:
+    runs-on: ubuntu-latest
+    needs: regression
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: coach-miniprogram/package-lock.json
+
+      - name: 安装前端依赖
+        run: npm ci
+        working-directory: coach-miniprogram
+
+      - name: 编译小程序 (0错误验证)
+        run: |
+          timeout 90 npm run build:mp-weixin 2>&1 | tee /tmp/build.log
+          # 检查无 error 输出
+          if grep -i "error\b" /tmp/build.log | grep -v "DeprecationWarning"; then
+            echo "编译有错误！"
+            exit 1
+          fi
+          echo "编译通过 ✓"
+        working-directory: coach-miniprogram
