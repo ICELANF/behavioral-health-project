@@ -10,18 +10,22 @@ services:
     restart: always
     ports:
       - "8000:8000"
-    env_file: .env
+    env_file:
+      - path: .env.bhp
+        required: false
+      - path: .env
+        required: false
     environment:
-      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
-      - REDIS_URL=redis://redis:6379/0
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
       - QDRANT_URL=http://qdrant:6333
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=.
-      - ENVIRONMENT=development
-      - LOG_LEVEL=INFO
-      - OLLAMA_API_URL=http://host.docker.internal:11434
-      - OLLAMA_EMBED_MODEL=mxbai-embed-large:latest
-      - EMBEDDING_DIMENSION=1024
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - OLLAMA_API_URL=${OLLAMA_API_URL:-http://host.docker.internal:11434}
+      - OLLAMA_EMBED_MODEL=${OLLAMA_EMBED_MODEL:-mxbai-embed-large:latest}
+      - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-1024}
     depends_on:
       db:
         condition: service_healthy
@@ -29,6 +33,12 @@ services:
         condition: service_healthy
       qdrant:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/v1/system/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
     volumes:
       - .:/app
       - ./static:/app/api/static  # 确保静态资源可用
@@ -49,9 +59,9 @@ services:
       timeout: 15s
       retries: 3
     environment:
-      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
       - PYTHONPATH=.
     depends_on:
       - redis
@@ -84,7 +94,7 @@ services:
 
   # 4. Qdrant 向量数据库 (保留知识库支持)
   qdrant:
-    image: qdrant/qdrant:latest
+    image: qdrant/qdrant:v1.7.4
     container_name: bhp_v3_qdrant
     restart: always
     ports:
@@ -126,9 +136,9 @@ services:
       timeout: 10s
       retries: 3
     environment:
-      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
-      - REDIS_URL=redis://redis:6379/0
-      - CELERY_BROKER_URL=redis://redis:6379/1
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db}
+      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
       - PYTHONPATH=.
     depends_on:
       - redis
@@ -170,6 +180,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl:ro
     depends_on:
       - app
     restart: unless-stopped

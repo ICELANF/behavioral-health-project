@@ -1,0 +1,8 @@
+# 将 SSL 证书放到此目录:
+#   cert.pem  — 证书链 (fullchain)
+#   key.pem   — 私钥
+#
+# 获取免费证书 (Let's Encrypt):
+#   certbot certonly --standalone -d api.xingjian.health
+#   cp /etc/letsencrypt/live/api.xingjian.health/fullchain.pem nginx/ssl/cert.pem
+#   cp /etc/letsencrypt/live/api.xingjian.health/privkey.pem nginx/ssl/key.pem
