@@ -181,7 +181,16 @@ const capacityScores = computed(() => {
 
 const aiSuggestions = computed(() => {
   const s = data.value.ai_suggestions || data.value.suggestions || data.value.results?.suggestions
-  if (Array.isArray(s)) return s.slice(0, 5)
+  if (Array.isArray(s)) {
+    return s.slice(0, 5).map((item: any) => {
+      if (typeof item === 'string') return item
+      // item.content 可能是字符串或嵌套对象
+      const c = item.content
+      if (typeof c === 'string') return c
+      if (c && typeof c === 'object') return c.content || c.text || c.message || c.suggestion || ''
+      return item.text || item.message || item.suggestion || ''
+    }).filter(Boolean)
+  }
   if (typeof s === 'string') return s.split('\n').filter(Boolean).slice(0, 5)
   return []
 })

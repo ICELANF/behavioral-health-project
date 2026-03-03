@@ -311,7 +311,8 @@ async function doAssign() {
     deadline.value = ''
     loadData()
   } catch (e: any) {
-    uni.showToast({ title: '分配失败: ' + (e.message || '未知错误'), icon: 'none' })
+    const detail = e?.data?.detail || e?.detail || e?.message || '未知错误'
+    uni.showToast({ title: detail.length > 20 ? detail.slice(0, 20) + '…' : detail, icon: 'none' })
   }
 }
 
