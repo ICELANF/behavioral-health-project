@@ -61,7 +61,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { httpReq as http } from '@/api/request'
 
 const activeTab = ref('all')
@@ -201,7 +202,7 @@ function editSuggestion(sg: any) {
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }
 
-onMounted(() => { loadData() })
+onShow(() => { loadData() })
 </script>
 
 <style scoped>
