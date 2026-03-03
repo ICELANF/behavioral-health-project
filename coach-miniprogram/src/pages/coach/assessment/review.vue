@@ -191,12 +191,10 @@ async function loadData() {
   const id = (getCurrentPages().slice(-1)[0] as any)?.options?.id
   if (!id) { loading.value = false; return }
 
-  // 尝试多个端点获取评估详情
+  // 评估详情端点（仅保留已验证的路径，避免 404）
   const endpoints = [
     `/api/v1/assessment-assignments/${id}/result`,
     `/api/v1/assessment-assignments/${id}`,
-    `/api/v1/assessment/results/${id}`,
-    `/api/v1/assessment/${id}`,
   ]
   for (const ep of endpoints) {
     try {
@@ -207,7 +205,7 @@ async function loadData() {
         data.value.id = data.value.assignment_id || parseInt(id)
       }
       break
-    } catch { continue }
+    } catch (e) { console.warn('[assessment/review] endpoint:', ep, e); continue }
   }
   loading.value = false
 }

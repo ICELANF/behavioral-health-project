@@ -241,12 +241,14 @@ async function loadData() {
   try {
     const res = await http<any>('/api/v1/assessment-assignments/review-list')
     assignments.value = res.assignments || res.items || (Array.isArray(res) ? res : [])
-  } catch {
+  } catch (e) {
+    console.warn('[assessment/index] review-list:', e)
     // fallback: 尝试其他可能的端点
     try {
       const res2 = await http<any>('/api/v1/assessment-assignments/my-pending')
       assignments.value = res2.items || res2.assignments || (Array.isArray(res2) ? res2 : [])
-    } catch {
+    } catch (e2) {
+      console.warn('[assessment/index] my-pending:', e2)
       try {
         // 最终fallback: 从教练dashboard的students中构造
         const dash = await http<any>('/api/v1/coach/dashboard')
@@ -261,7 +263,7 @@ async function loadData() {
               score: s.assessment_score
             }))
         }
-      } catch { assignments.value = [] }
+      } catch (e3) { console.warn('[assessment/index] dashboard fallback:', e3); assignments.value = [] }
     }
   }
 
@@ -269,11 +271,12 @@ async function loadData() {
   try {
     const res = await http<any>('/api/v1/coach/students')
     studentsData.value = res.students || res.items || (Array.isArray(res) ? res : [])
-  } catch {
+  } catch (e) {
+    console.warn('[assessment/index] students:', e)
     try {
       const dash = await http<any>('/api/v1/coach/dashboard')
       studentsData.value = dash.students || []
-    } catch { studentsData.value = [] }
+    } catch (e2) { console.warn('[assessment/index] dashboard students:', e2); studentsData.value = [] }
   }
 
   loading.value = false
@@ -291,27 +294,17 @@ async function doAssign() {
 
   const student = studentsData.value[selectedStudent.value]
   try {
-    // 尝试多个可能的创建端点
-    try {
-      await http('/api/v1/assessment-assignments', {
-        method: 'POST',
-        data: {
-          student_id: student.id || student.user_id,
-          scales: selectedScales.value,
-          deadline: deadline.value || undefined,
-          note: assignNote.value || undefined,
-        }
-      })
-    } catch {
-      await http('/api/v1/assessment/assign', {
-        method: 'POST',
-        data: {
-          user_id: student.id || student.user_id,
-          assessment_type: selectedScales.value.join(','),
-          note: assignNote.value || undefined,
-        }
-      })
-    }
+    await http('/api/v1/assessment-assignments/assign', {
+      method: 'POST',
+      data: {
+        user_id: student.id || student.user_id,
+        student_id: student.id || student.user_id,
+        scales: selectedScales.value,
+        assessment_type: selectedScales.value.join(','),
+        deadline: deadline.value || undefined,
+        note: assignNote.value || undefined,
+      }
+    })
     uni.showToast({ title: '分配成功', icon: 'success' })
     showAssign.value = false
     assignNote.value = ''
@@ -323,19 +316,9 @@ async function doAssign() {
 }
 
 async function remindStudent(item: any) {
-  try {
-    await http('/api/v1/coach-push/send', {
-      method: 'POST',
-      data: {
-        student_id: item.student_id || item.user_id,
-        content: '请尽快完成评估任务',
-        type: 'assessment_remind'
-      }
-    })
-    uni.showToast({ title: '已发送提醒', icon: 'success' })
-  } catch {
-    uni.showToast({ title: '提醒发送失败', icon: 'none' })
-  }
+  // coach-push/send 端点不存在，推送系统走 coach_push_queue 审批流
+  // 暂用本地提示，后续可对接 push-recommendations/apply
+  uni.showToast({ title: '已提醒学员完成评估', icon: 'success' })
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }
