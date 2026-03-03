@@ -561,6 +561,39 @@ async def remind_student(
     return {"success": True, "message": "提醒已发送"}
 
 
+@router.post("/{assignment_id}/reject")
+async def reject_assignment(
+    assignment_id: int,
+    request: dict,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """教练退回评估，重置为 pending 让学员修改重做，并通知学员"""
+    assignment = db.query(AssessmentAssignment).filter(
+        AssessmentAssignment.id == assignment_id,
+        AssessmentAssignment.coach_id == current_user.id,
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="评估任务不存在或无权操作")
+    if assignment.status not in ("completed", "reviewed"):
+        raise HTTPException(status_code=400, detail="该评估任务状态不支持退回")
+
+    coach_note = request.get("coach_note", "需修改后重新提交") if isinstance(request, dict) else "需修改后重新提交"
+    assignment.status = "pending"
+    assignment.completed_at = None
+
+    notif = Notification(
+        user_id=assignment.student_id,
+        title="评估已退回，请重新完成",
+        body=f"您的教练已退回您的评估，原因：{coach_note}，请修改后重新提交。",
+        type="assessment_remind",
+        priority="high",
+    )
+    db.add(notif)
+    db.commit()
+    return {"success": True, "message": "评估已退回"}
+
+
 @router.get("/review-list")
 async def get_review_list(
     db: Session = Depends(get_db),
