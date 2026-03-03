@@ -221,8 +221,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-
-const BASE_URL = 'http://localhost:8000'
+import { API_HOST } from '@/api/request'
 
 // ── 角色定义 ──────────────────────────────────────────
 const roles = [
@@ -367,7 +366,7 @@ async function doRegister() {
 
     const res = await new Promise<any>((resolve, reject) => {
       uni.request({
-        url: BASE_URL + '/api/v1/auth/register',
+        url: API_HOST + '/api/v1/auth/register',
         method: 'POST',
         data: payload,
         header: { 'Content-Type': 'application/json' },

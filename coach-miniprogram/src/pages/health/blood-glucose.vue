@@ -81,23 +81,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-
-const BASE_URL = 'http://localhost:8000'
-function getToken() { return uni.getStorageSync('access_token') || '' }
-async function http<T = any>(url: string, opts: any = {}): Promise<T> {
-  return new Promise((resolve, reject) => {
-    uni.request({
-      url: BASE_URL + url, method: opts.method || 'GET', data: opts.data,
-      header: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
-      success: (res: any) => {
-        if (res.statusCode === 401) { uni.removeStorageSync('access_token'); uni.reLaunch({ url: '/pages/auth/login' }); reject(new Error('401')); return }
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T)
-        else reject(new Error(`HTTP ${res.statusCode}`))
-      },
-      fail: reject,
-    })
-  })
-}
+import { httpReq as http } from '@/api/request'
 
 const mealTimes = ['空腹', '早餐前', '早餐后2h', '午餐前', '午餐后2h', '晚餐前', '晚餐后2h', '睡前', '随机']
 const mealTimeIdx = ref(0)

@@ -124,37 +124,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-
-const BASE_URL = 'http://localhost:8000'
-
-function getToken(): string {
-  return uni.getStorageSync('access_token') || ''
-}
-
-async function http<T = any>(url: string, options: any = {}): Promise<T> {
-  const { method = 'GET', data } = options
-  return new Promise((resolve, reject) => {
-    uni.request({
-      url: BASE_URL + url,
-      method,
-      data,
-      header: {
-        'Authorization': 'Bearer ' + getToken(),
-        'Content-Type': 'application/json'
-      },
-      success: (res: any) => {
-        if (res.statusCode === 401) {
-          uni.removeStorageSync('access_token')
-          uni.reLaunch({ url: '/pages/auth/login' })
-          reject(new Error('401')); return
-        }
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T)
-        else reject(new Error(`HTTP ${res.statusCode}`))
-      },
-      fail: (err: any) => reject(err)
-    })
-  })
-}
+import { httpReq as http } from '@/api/request'
 
 const activeTab = ref('all')
 const searchText = ref('')

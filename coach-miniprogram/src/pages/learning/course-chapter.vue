@@ -28,23 +28,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-
-const BASE_URL = 'http://localhost:8000'
-function getToken() { return uni.getStorageSync('access_token') || '' }
-
-async function http<T = any>(url: string): Promise<T> {
-  return new Promise((resolve, reject) => {
-    uni.request({
-      url: BASE_URL + url, method: 'GET',
-      header: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
-      success: (res: any) => {
-        if (res.statusCode === 401) { uni.removeStorageSync('access_token'); uni.reLaunch({ url: '/pages/auth/login' }); reject(new Error('401')); return }
-        res.statusCode < 300 ? resolve(res.data as T) : reject(new Error(`${res.statusCode}`))
-      },
-      fail: (e: any) => reject(e),
-    })
-  })
-}
+import { httpReq as http } from '@/api/request'
 
 const title = ref('章节学习')
 const content = ref('')

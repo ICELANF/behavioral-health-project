@@ -5,7 +5,7 @@
  * - 统一错误 Toast（可通过 noToast 选项关闭）
  */
 
-import { API_BASE } from '@/config/env'
+import { API_BASE, API_HOST } from '@/config/env'
 
 const BASE_URL = API_BASE
 
@@ -70,7 +70,9 @@ function request<T = any>(
       if (token) headers['Authorization'] = `Bearer ${token}`
     }
 
-    const url = path.startsWith('http') ? path : `${BASE_URL}/${path.replace(/^\//, '')}`
+    const url = path.startsWith('http') ? path
+      : path.startsWith('/api/') ? `${API_HOST}${path}`
+      : `${BASE_URL}/${path.replace(/^\//, '')}`
 
     uni.request({
       url,
@@ -162,5 +164,19 @@ const http = {
     return request<T>('DELETE', path, undefined, opts)
   },
 }
+
+/**
+ * Function-style HTTP request (compatible with inline http() pattern used in pages).
+ * Usage: httpReq<T>('/api/v1/endpoint', { method: 'POST', data: {...} })
+ */
+export function httpReq<T = any>(
+  url: string,
+  opts: { method?: string; data?: any } = {}
+): Promise<T> {
+  const method = (opts.method || 'GET') as 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
+  return request<T>(method, url, opts.data)
+}
+
+export { getToken, API_HOST }
 
 export default http

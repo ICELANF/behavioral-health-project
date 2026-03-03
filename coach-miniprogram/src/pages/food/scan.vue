@@ -90,23 +90,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-
-const BASE_URL = 'http://localhost:8000'
-function getToken() { return uni.getStorageSync('access_token') || '' }
-async function http<T = any>(url: string, opts: any = {}): Promise<T> {
-  return new Promise((resolve, reject) => {
-    uni.request({
-      url: BASE_URL + url, method: opts.method || 'GET', data: opts.data,
-      header: { 'Authorization': 'Bearer ' + getToken(), 'Content-Type': 'application/json' },
-      success: (res: any) => {
-        if (res.statusCode === 401) { uni.removeStorageSync('access_token'); uni.reLaunch({ url: '/pages/auth/login' }); reject(new Error('401')); return }
-        if (res.statusCode >= 200 && res.statusCode < 300) resolve(res.data as T)
-        else reject(new Error(`HTTP ${res.statusCode}`))
-      },
-      fail: reject,
-    })
-  })
-}
+import { httpReq as http, getToken, API_HOST } from '@/api/request'
 
 // 餐次：label 显示中文，key 传给后端
 const mealTypes = [
@@ -136,7 +120,7 @@ function takePhoto() {
         // 上传图片并分析
         const uploadRes: any = await new Promise((resolve, reject) => {
           uni.uploadFile({
-            url: BASE_URL + '/api/v1/food/analyze',
+            url: API_HOST + '/api/v1/food/analyze',
             filePath: res.tempFilePaths[0],
             name: 'image',
             header: { 'Authorization': 'Bearer ' + getToken() },
