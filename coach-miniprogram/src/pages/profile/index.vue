@@ -13,17 +13,17 @@
     <scroll-view scroll-y class="prof-scroll">
       <!-- 教练数据概览 -->
       <view class="prof-stats">
-        <view class="prof-stat-item">
+        <view class="prof-stat-item" @tap="goPage('/pages/coach/students/index')">
           <text class="prof-stat-num">{{ userInfo.student_count || 0 }}</text>
-          <text class="prof-stat-label">管理学员</text>
+          <text class="prof-stat-label">管理学员 ›</text>
         </view>
         <view class="prof-stat-item">
           <text class="prof-stat-num">{{ userInfo.total_days || 0 }}</text>
           <text class="prof-stat-label">服务天数</text>
         </view>
-        <view class="prof-stat-item">
+        <view class="prof-stat-item" @tap="goPage('/pages/coach/analytics/index')">
           <text class="prof-stat-num">{{ userInfo.total_interventions || 0 }}</text>
-          <text class="prof-stat-label">干预次数</text>
+          <text class="prof-stat-label">干预次数 ›</text>
         </view>
       </view>
 

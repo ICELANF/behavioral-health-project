@@ -9,17 +9,17 @@
 
       <!-- 统计卡片 -->
       <view class="sv-stat-grid">
-        <view class="sv-stat-card">
+        <view class="sv-stat-card" @tap="navTo('/pages/supervisor/coaches')">
           <text class="sv-stat-num">{{ stats.coach_count || 0 }}</text>
-          <text class="sv-stat-label">管理教练数</text>
+          <text class="sv-stat-label">管理教练数 ›</text>
         </view>
-        <view class="sv-stat-card">
+        <view class="sv-stat-card" @tap="navTo('/pages/supervisor/review-queue')">
           <text class="sv-stat-num" style="color:#E67E22;">{{ stats.pending_review || 0 }}</text>
-          <text class="sv-stat-label">待审核</text>
+          <text class="sv-stat-label">待审核 ›</text>
         </view>
-        <view class="sv-stat-card">
+        <view class="sv-stat-card" @tap="navTo('/pages/supervisor/review-queue')">
           <text class="sv-stat-num" style="color:#E74C3C;">{{ stats.high_risk_count || 0 }}</text>
-          <text class="sv-stat-label">高风险</text>
+          <text class="sv-stat-label">高风险 ›</text>
         </view>
         <view class="sv-stat-card">
           <text class="sv-stat-num" style="color:#27AE60;">{{ stats.approved_today || 0 }}</text>

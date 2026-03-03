@@ -283,7 +283,7 @@
             <text class="home-stat-num">{{ supervisorData.pendingReview }}</text>
             <text class="home-stat-label">待审核</text>
           </view>
-          <view class="home-stat-card home-stat-card--warn">
+          <view class="home-stat-card home-stat-card--warn" @tap="goPage('/pages/supervisor/review-queue')">
             <text class="home-stat-icon">⚠️</text>
             <text class="home-stat-num">{{ supervisorData.highRisk }}</text>
             <text class="home-stat-label">高风险学员</text>
@@ -335,7 +335,7 @@
             <text class="home-stat-num">{{ masterData.critical }}</text>
             <text class="home-stat-label">危急病例</text>
           </view>
-          <view class="home-stat-card home-stat-card--blue">
+          <view class="home-stat-card home-stat-card--blue" @tap="goPage('/pages/master/dashboard')">
             <text class="home-stat-icon">🤖</text>
             <text class="home-stat-num">{{ masterData.aiPending }}</text>
             <text class="home-stat-label">AI分析待审</text>

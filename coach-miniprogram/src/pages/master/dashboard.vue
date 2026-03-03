@@ -9,17 +9,17 @@
 
       <!-- 统计卡片 -->
       <view class="md-stat-grid">
-        <view class="md-stat-card">
+        <view class="md-stat-card" @tap="navTo('/pages/master/critical-review')">
           <text class="md-stat-num" style="color:#E74C3C;">{{ stats.critical_count || 0 }}</text>
-          <text class="md-stat-label">危急病例</text>
+          <text class="md-stat-label">危急病例 ›</text>
         </view>
         <view class="md-stat-card">
           <text class="md-stat-num" style="color:#E67E22;">{{ stats.ai_pending || 0 }}</text>
           <text class="md-stat-label">AI分析待审</text>
         </view>
-        <view class="md-stat-card">
+        <view class="md-stat-card" @tap="navTo('/pages/master/knowledge')">
           <text class="md-stat-num" style="color:#9B59B6;">{{ stats.knowledge_pending || 0 }}</text>
-          <text class="md-stat-label">知识待发布</text>
+          <text class="md-stat-label">知识待发布 ›</text>
         </view>
         <view class="md-stat-card">
           <text class="md-stat-num" style="color:#27AE60;">{{ stats.reviewed_today || 0 }}</text>

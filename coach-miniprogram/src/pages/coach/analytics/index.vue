@@ -16,9 +16,10 @@
     <scroll-view scroll-y class="ana-scroll" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
       <!-- 核心指标 -->
       <view class="ana-metrics">
-        <view class="ana-metric" v-for="m in coreMetrics" :key="m.label">
+        <view class="ana-metric" v-for="m in coreMetrics" :key="m.label"
+          @tap="m.url && uni.navigateTo({ url: m.url })">
           <text class="ana-metric-val" :style="{ color: m.color }">{{ m.value }}</text>
-          <text class="ana-metric-label">{{ m.label }}</text>
+          <text class="ana-metric-label">{{ m.url ? m.label + ' ›' : m.label }}</text>
         </view>
       </view>
 
@@ -133,10 +134,10 @@ const periods = [
 const coreMetrics = computed(() => {
   const stats = dashboardData.value.today_stats || {}
   return [
-    { label: '管理学员', value: students.value.length, color: '#3498DB' },
-    { label: '高风险', value: students.value.filter(s => (s.risk_level || 0) >= 3).length, color: '#E74C3C' },
-    { label: '行动完成率', value: actionRate.value + '%', color: '#27AE60' },
-    { label: '待处理', value: stats.pending_reviews || stats.pending_followups || 0, color: '#E67E22' },
+    { label: '管理学员', value: students.value.length, color: '#3498DB', url: '/pages/coach/students/index' },
+    { label: '高风险', value: students.value.filter(s => (s.risk_level || 0) >= 3).length, color: '#E74C3C', url: '/pages/coach/risk/index' },
+    { label: '行动完成率', value: actionRate.value + '%', color: '#27AE60', url: '' },
+    { label: '待处理', value: stats.pending_reviews || stats.pending_followups || 0, color: '#E67E22', url: '/pages/coach/assessment/index' },
   ]
 })
 
