@@ -284,6 +284,31 @@ function generateDemoQuestions(): any[] {
   ]
 }
 
+// 将 {gi_qi: value} 格式转换为 SubmitRequest 各量表字段
+function buildSubmitPayload(): Record<string, any> {
+  const fieldMap: Record<string, string> = {
+    ttm7: 'ttm7', big5: 'big_five', bpt6: 'bpt6', capacity: 'capacity', spi: 'spi',
+  }
+  const payload: Record<string, any> = {}
+  groups.value.forEach((g, gi) => {
+    const field = fieldMap[g.key] || 'custom_answers'
+    const scaleAnswers: Record<string, number> = {}
+    g.questions.forEach((_: any, qi: number) => {
+      const val = answers[`${gi}_${qi}`]
+      if (val === undefined || val === null || val === '') return
+      let score: number
+      if (typeof val === 'boolean') score = val ? 1 : 0
+      else if (Array.isArray(val)) score = val.length   // 多选：选中数量
+      else score = Number(val)
+      scaleAnswers[`q${qi + 1}`] = isNaN(score) ? 0 : score
+    })
+    if (Object.keys(scaleAnswers).length > 0) {
+      payload[field] = { ...((payload[field] as any) || {}), ...scaleAnswers }
+    }
+  })
+  return payload
+}
+
 async function submitAssessment() {
   uni.showModal({
     title: '确认提交',
@@ -291,12 +316,11 @@ async function submitAssessment() {
     success: async (res) => {
       if (!res.confirm) return
       try {
-        await http('/api/v1/assessment/evaluate', {
+        await http(`/api/v1/assessment-assignments/${assessmentId.value}/submit`, {
           method: 'POST',
-          data: { assignment_id: assessmentId.value, answers, duration: timer.value }
+          data: buildSubmitPayload(),
         })
-        // 清除草稿
-        try { uni.removeStorageSync('assessment_draft_' + assessmentId.value) } catch (e) { console.warn('[assessment/do] evaluate:', e) }
+        try { uni.removeStorageSync('assessment_draft_' + assessmentId.value) } catch (e) { console.warn('[assessment/do] draft:', e) }
         uni.showToast({ title: '提交成功', icon: 'success' })
         setTimeout(() => {
           uni.redirectTo({ url: '/pages/assessment/result?id=' + assessmentId.value })

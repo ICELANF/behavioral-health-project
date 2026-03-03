@@ -72,32 +72,46 @@ const pendingList = computed(() => allItems.value.filter(a => ['pending', 'assig
 const inProgressList = computed(() => allItems.value.filter(a => a.status === 'in_progress'))
 const completedList = computed(() => allItems.value.filter(a => ['completed', 'submitted', 'reviewed'].includes(a.status)))
 
+const SCALE_LABELS: Record<string, string> = {
+  ttm7: 'TTM 行为阶段', big5: 'BIG5 大五人格', bpt6: 'BPT6 行为类型',
+  capacity: '能力评估', spi: 'SPI 自我评估',
+}
+
 function formatDate(d: string): string { return d ? d.slice(0, 10) : '-' }
+
+function normalizeItem(item: any, defaultStatus = 'pending'): any {
+  // 补充 status（my-pending 接口不返回 status 字段）
+  if (!item.status) item.status = defaultStatus
+  // 补充 assessment_name（从 scales 结构格式化）
+  if (!item.assessment_name) {
+    const keys: string[] = Array.isArray(item.scales)
+      ? item.scales
+      : (item.scales?.scales || [])
+    item.assessment_name = keys.map((k: string) => SCALE_LABELS[k] || k).join(' + ') || '综合评估'
+  }
+  return item
+}
 
 async function loadData() {
   loading.value = true
-  // ★ 使用已验证端点 ★
-  const endpoints = [
-    '/api/v1/assessment-assignments/my-pending',
-    '/api/v1/assessment-assignments/review-list',
-    '/api/v1/assessment/user/latest',
-  ]
-  for (const ep of endpoints) {
-    try {
-      const res = await http<any>(ep)
-      const list = res.items || res.assignments || (Array.isArray(res) ? res : [])
-      if (list.length > 0 || allItems.value.length === 0) {
-        allItems.value = [...allItems.value, ...list]
+  try {
+    // my-pending 专属学员端点，优先加载
+    const res = await http<any>('/api/v1/assessment-assignments/my-pending')
+    const list: any[] = res.assignments || res.items || (Array.isArray(res) ? res : [])
+    allItems.value = list.map(item => normalizeItem(item, 'pending'))
+  } catch { /* 无 pending 任务 */ }
+
+  try {
+    // 已完成结果（状态包含 completed/reviewed）
+    const res = await http<any>('/api/v1/assessment-assignments/review-list')
+    const done: any[] = res.items || res.assignments || (Array.isArray(res) ? res : [])
+    done.forEach(item => {
+      if (!allItems.value.find(a => a.id === item.id)) {
+        allItems.value.push(normalizeItem(item))
       }
-    } catch { /* 继续尝试 */ }
-  }
-  // 去重
-  const seen = new Set()
-  allItems.value = allItems.value.filter(item => {
-    const key = item.id || (item.student_id + '_' + item.assessment_type)
-    if (seen.has(key)) return false
-    seen.add(key); return true
-  })
+    })
+  } catch { /* 教练端接口对学员 403，静默跳过 */ }
+
   loading.value = false
 }
 

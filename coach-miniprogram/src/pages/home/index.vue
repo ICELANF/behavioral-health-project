@@ -590,8 +590,8 @@ async function loadGrower() {
     const res = await http<any>('/api/v1/health-data/summary')
     growerHealth.value = {
       glucose: res.latest_glucose?.value?.toFixed(1) ?? null,
-      weight:  res.latest_weight?.toFixed(1) ?? null,
-      steps:   res.today_steps ?? null,
+      weight:  res.latest_weight_kg?.toFixed(1) ?? null,
+      steps:   res.steps_today ?? null,
     }
   } catch (e) { console.warn('[home/index] summary:', e) }
   try {
