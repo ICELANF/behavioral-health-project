@@ -1701,3 +1701,165 @@ def remind_student(
     db.commit()
 
     return {"success": True, "message": "提醒已发送", "notification_id": notif.id}
+
+
+# ============================================================
+# P1a: AI 处方起草
+# ============================================================
+
+@router.post("/students/{student_id}/ai-prescription-draft")
+def ai_prescription_draft(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """
+    P1a: AI 辅助起草行为处方草稿。
+    - 读取学员行为画像 + 最近完成的评估 + 近期行为日志
+    - 调用 Ollama 生成结构化处方草稿（不保存，教练修改后手动保存）
+    - 返回: {draft_content, type, rationale, micro_actions[], source}
+    """
+    import json as _json
+    from core.models import BehavioralProfile, AssessmentAssignment
+
+    # 1. 行为画像
+    profile = db.query(BehavioralProfile).filter(
+        BehavioralProfile.user_id == student_id
+    ).first()
+    stage = (profile.current_stage or "S1") if profile else "S1"
+    domains = []
+    if profile and profile.dominant_domains:
+        domains = (profile.dominant_domains if isinstance(profile.dominant_domains, list)
+                   else [profile.dominant_domains])
+
+    # 2. 最近完成的评估结果
+    latest_aa = db.query(AssessmentAssignment).filter(
+        AssessmentAssignment.student_id == student_id,
+        AssessmentAssignment.status.in_(["completed", "reviewed", "pushed"]),
+    ).order_by(AssessmentAssignment.completed_at.desc()).first()
+    ai_report = None
+    if latest_aa and latest_aa.pipeline_result:
+        ai_report = latest_aa.pipeline_result.get("ai_report")
+
+    # 3. 构建 prompt
+    from core.agents.ollama_client import get_ollama_client
+    _STAGE_LABEL = {
+        "S0":"前意向期","S1":"意向期","S2":"准备期","S3":"行动期","S4":"维持期","S5":"巩固期","S6":"融入期",
+    }
+    stage_label = _STAGE_LABEL.get(stage, stage)
+    domain_str = "、".join(domains[:3]) if domains else "综合健康"
+    assessment_hint = ""
+    if ai_report:
+        assessment_hint = f"\n评估AI解读摘要：{ai_report.get('prescription_hint', '')}"
+        assessment_hint += f"\n识别风险：{', '.join(ai_report.get('risks', []))}"
+
+    system = """你是一位行为健康处方专家，为教练起草个性化行为处方草稿。
+输出必须是合法 JSON，不要输出任何 JSON 之外的文字：
+{
+  "type": "behavior|exercise|nutrition|emotion",
+  "draft_content": "处方正文（教练可直接修改），150字以内，具体可执行",
+  "rationale": "起草理由（对教练的说明），60字以内",
+  "micro_actions": ["微行动1（每天5分钟）", "微行动2"],
+  "duration": "建议执行周期，如 2周",
+  "follow_up": "建议随访节点",
+  "confidence": 0.8
+}"""
+
+    user = f"""请为以下学员起草行为处方：
+
+行为改变阶段：{stage}（{stage_label}）
+主要干预领域：{domain_str}{assessment_hint}
+
+请生成一份具体可执行的处方草稿（JSON格式）。"""
+
+    draft = None
+    source = "rules"
+    try:
+        client = get_ollama_client()
+        if client.is_available():
+            resp = client.chat(system=system, user=user)
+            if resp.success and resp.content:
+                raw = resp.content.strip()
+                if "```" in raw:
+                    raw = raw.split("```")[1].lstrip("json").strip()
+                try:
+                    draft = _json.loads(raw)
+                    source = "llm"
+                    logger.info(f"[coach_api/ai_rx] student={student_id} LLM处方起草成功")
+                except Exception as e:
+                    logger.warning(f"[coach_api/ai_rx] JSON解析失败: {e}")
+    except Exception as e:
+        logger.warning(f"[coach_api/ai_rx] Ollama调用失败: {e}")
+
+    if draft is None:
+        # 规则降级
+        _RX_TEMPLATES = {
+            "S0": ("behavior", "每天观察自己的一个想法，记录在日记本上。不强求改变，先建立觉察习惯。"),
+            "S1": ("behavior", "每天花5分钟思考：如果改变了X，我的生活会有什么不同？写下你的想法。"),
+            "S2": ("behavior", "制定一个本周可完成的最小目标，例如：每天饭后散步10分钟。"),
+            "S3": ("exercise", "本周坚持每天完成一个微行动打卡，遇到障碍时立即记录并联系教练。"),
+            "S4": ("exercise", "在现有习惯基础上，增加一个新的健康行为，每周递进5%难度。"),
+        }
+        rx_type, rx_text = _RX_TEMPLATES.get(stage, ("behavior", "根据当前阶段制定个性化行为改变计划。"))
+        draft = {
+            "type": rx_type,
+            "draft_content": rx_text,
+            "rationale": f"基于{stage_label}阶段特征自动生成，请教练根据学员实际情况修改",
+            "micro_actions": ["每日打卡记录", "每周1次跟进"],
+            "duration": "2周",
+            "follow_up": "1周后回访",
+            "confidence": 0.5,
+        }
+
+    draft["source"] = source
+    draft["student_id"] = student_id
+    draft["stage"] = stage
+    return draft
+
+
+# ============================================================
+# P3: 请求专家副签（高风险处方）
+# ============================================================
+
+@router.post("/students/{student_id}/prescriptions/request-expert-review")
+def request_expert_review(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """
+    P3: 教练将高风险/复杂处方提交专家副签。
+    写入 health_review_queue（risk_level=high，reviewer_role=supervisor）。
+    """
+    from sqlalchemy import text
+    from pydantic import BaseModel
+
+    class _ReviewBody(BaseModel):
+        prescription_content: str
+        risk_reason: str = ""
+
+    student = db.query(User).filter(User.id == student_id).first()
+    if not student:
+        raise HTTPException(status_code=404, detail="学员不存在")
+
+    # 写入 health_review_queue
+    try:
+        db.execute(text("""
+            INSERT INTO health_review_queue
+                (user_id, reviewer_role, risk_level, trigger_type,
+                 summary, status, created_at, created_by)
+            VALUES
+                (:uid, 'supervisor', 'high', 'coach_prescription_review',
+                 :summary, 'pending', NOW(), :coach_id)
+        """), {
+            "uid": student_id,
+            "summary": f"教练提交处方副签申请（教练ID: {current_user.id}）",
+            "coach_id": current_user.id,
+        })
+        db.commit()
+    except Exception as e:
+        logger.warning(f"[coach_api/p3] health_review_queue 写入失败: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail="提交失败，请重试")
+
+    return {"success": True, "message": "已提交专家副签申请，督导将在24小时内审核"}

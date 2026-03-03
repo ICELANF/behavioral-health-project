@@ -47,6 +47,9 @@
           </view>
           <!-- 待审核：快捷操作 -->
           <view v-if="['submitted','review','completed','completed_pending_review'].includes(item.status)" class="assess-card-actions">
+            <view class="assess-action-btn assess-action-ai" @tap.stop="openAiReport(item)">
+              {{ aiLoadingId === item.id ? '解读中…' : '🤖 AI解读' }}
+            </view>
             <view class="assess-action-btn assess-action-review" @tap.stop="goReview(item)">查看评估</view>
           </view>
           <!-- 待完成：提醒学员 -->
@@ -66,6 +69,52 @@
         <text>加载中...</text>
       </view>
     </scroll-view>
+
+    <!-- AI 解读报告底部弹窗 -->
+    <view v-if="showAiSheet" class="assess-modal-mask" @tap="showAiSheet = false">
+      <view class="assess-modal assess-ai-sheet" @tap.stop>
+        <view class="assess-ai-header">
+          <text class="assess-ai-title">🤖 AI 评估解读报告</text>
+          <view class="assess-ai-close" @tap="showAiSheet = false">✕</view>
+        </view>
+        <view v-if="aiReport" class="assess-ai-body">
+          <view class="assess-ai-section">
+            <text class="assess-ai-label">📋 总结</text>
+            <text class="assess-ai-text">{{ aiReport.summary }}</text>
+          </view>
+          <view class="assess-ai-section">
+            <text class="assess-ai-label">📊 阶段解读</text>
+            <text class="assess-ai-text">{{ aiReport.stage_interpretation }}</text>
+          </view>
+          <view class="assess-ai-section" v-if="aiReport.strengths?.length">
+            <text class="assess-ai-label">✅ 优势</text>
+            <view v-for="(s, i) in aiReport.strengths" :key="i" class="assess-ai-tag assess-ai-tag--green">{{ s }}</view>
+          </view>
+          <view class="assess-ai-section" v-if="aiReport.risks?.length">
+            <text class="assess-ai-label">⚠️ 风险</text>
+            <view v-for="(r, i) in aiReport.risks" :key="i" class="assess-ai-tag assess-ai-tag--orange">{{ r }}</view>
+          </view>
+          <view class="assess-ai-section" v-if="aiReport.coach_actions?.length">
+            <text class="assess-ai-label">💡 建议行动</text>
+            <view v-for="(a, i) in aiReport.coach_actions" :key="i" class="assess-ai-action-item">{{ i+1 }}. {{ a }}</view>
+          </view>
+          <view class="assess-ai-section" v-if="aiReport.prescription_hint">
+            <text class="assess-ai-label">📝 处方方向</text>
+            <text class="assess-ai-text assess-ai-hint">{{ aiReport.prescription_hint }}</text>
+          </view>
+          <view class="assess-ai-footer">
+            <text class="assess-ai-source">来源: {{ aiReport.source === 'llm' ? 'AI大模型' : '规则引擎' }}</text>
+            <text class="assess-ai-conf">置信度: {{ Math.round((aiReport.confidence || 0) * 100) }}%</text>
+          </view>
+        </view>
+        <view v-else class="assess-ai-loading">
+          <text>正在生成解读报告，请稍候…</text>
+        </view>
+        <view class="assess-modal-actions" style="margin-top:24rpx">
+          <view class="assess-modal-btn assess-modal-confirm" @tap="showAiSheet = false">确认</view>
+        </view>
+      </view>
+    </view>
 
     <!-- 分配评估弹窗 -->
     <view v-if="showAssign" class="assess-modal-mask" @tap="closeAssign">
@@ -182,6 +231,34 @@ const loading = ref(false)
 const assignments = ref<any[]>([])
 const studentsData = ref<any[]>([])
 const showAssign = ref(false)
+
+// AI 解读状态
+const showAiSheet = ref(false)
+const aiReport = ref<any>(null)
+const aiLoadingId = ref<number | null>(null)
+
+async function openAiReport(item: any) {
+  if (aiLoadingId.value) return
+  showAiSheet.value = true
+  aiReport.value = null
+  aiLoadingId.value = item.id
+  try {
+    // 先尝试获取已有报告
+    const cached = await http<any>(`/api/v1/assessment-assignments/${item.id}/ai-report`)
+    if (cached.has_report && cached.report) {
+      aiReport.value = cached.report
+    } else {
+      // 触发 AI 解读
+      const res = await http<any>(`/api/v1/assessment-assignments/${item.id}/ai-interpret`, { method: 'POST' })
+      aiReport.value = res.report
+    }
+  } catch (e: any) {
+    uni.showToast({ title: e?.data?.detail || 'AI解读失败', icon: 'none' })
+    showAiSheet.value = false
+  } finally {
+    aiLoadingId.value = null
+  }
+}
 const selectedStudentObj = ref<any>(null)
 const selectedScales = ref<string[]>(['big5', 'ttm7'])
 const BATCH_SIZE = 5
@@ -459,6 +536,25 @@ onMounted(() => { loadData() })
 .assess-action-btn { padding: 10rpx 24rpx; border-radius: 8rpx; font-size: 24rpx; }
 .assess-action-review { background: #9B59B6; color: #fff; }
 .assess-action-remind { background: #F0F0F0; color: #E67E22; }
+.assess-action-ai { background: linear-gradient(135deg, #1a7a50, #27AE60); color: #fff; }
+
+/* ── AI 解读底部弹窗 ── */
+.assess-ai-sheet { max-height: 88vh; display: flex; flex-direction: column; }
+.assess-ai-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+.assess-ai-title { font-size: 32rpx; font-weight: 700; color: #2C3E50; }
+.assess-ai-close { font-size: 36rpx; color: #8E99A4; padding: 8rpx; }
+.assess-ai-body { flex: 1; overflow-y: auto; }
+.assess-ai-section { margin-bottom: 20rpx; }
+.assess-ai-label { display: block; font-size: 24rpx; color: #5B6B7F; font-weight: 600; margin-bottom: 8rpx; }
+.assess-ai-text { display: block; font-size: 28rpx; color: #2C3E50; line-height: 1.6; }
+.assess-ai-hint { background: #f0faf5; padding: 12rpx 16rpx; border-radius: 10rpx; color: #1a7a50; font-weight: 500; }
+.assess-ai-tag { display: inline-block; padding: 6rpx 16rpx; border-radius: 8rpx; font-size: 24rpx; margin: 4rpx 6rpx 4rpx 0; }
+.assess-ai-tag--green { background: #e8f8f0; color: #27AE60; }
+.assess-ai-tag--orange { background: #fff3e6; color: #E67E22; }
+.assess-ai-action-item { font-size: 26rpx; color: #2C3E50; padding: 6rpx 0; line-height: 1.5; }
+.assess-ai-footer { display: flex; gap: 20rpx; margin-top: 16rpx; padding-top: 12rpx; border-top: 1rpx solid #F0F0F0; }
+.assess-ai-source, .assess-ai-conf { font-size: 22rpx; color: #8E99A4; }
+.assess-ai-loading { text-align: center; padding: 60rpx 0; font-size: 28rpx; color: #8E99A4; }
 
 .assess-empty { text-align: center; padding: 120rpx 0; }
 .assess-empty-icon { display: block; font-size: 80rpx; margin-bottom: 16rpx; }

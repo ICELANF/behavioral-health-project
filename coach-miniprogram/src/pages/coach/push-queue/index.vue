@@ -21,9 +21,14 @@
     <scroll-view scroll-y class="pq-list" style="height:calc(100vh - 380rpx);" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
       <view v-for="item in filteredItems" :key="item.id" class="pq-card">
         <view class="pq-card-header">
-          <view class="pq-card-avatar">{{ (item.student_name || '?')[0] }}</view>
+          <view class="pq-card-avatar" :style="{ background: avatarBg(item.source_type) }">{{ (item.student_name || '?')[0] }}</view>
           <view class="pq-card-info">
-            <text class="pq-card-name">{{ item.student_name }}</text>
+            <view class="pq-card-name-row">
+              <text class="pq-card-name">{{ item.student_name }}</text>
+              <view class="pq-source-badge" :style="{ background: sourceBadgeBg(item.source_type), color: sourceBadgeColor(item.source_type) }">
+                {{ item.source_label }}
+              </view>
+            </view>
             <text class="pq-card-type">{{ item.type_label }}</text>
           </view>
           <view class="pq-card-status" :style="{ background: statusColor(item.status) }">
@@ -81,8 +86,30 @@ function statusLabel(s: string): string {
 
 const SOURCE_LABELS: Record<string, string> = {
   rx_push: '处方推送', reminder: '提醒', assessment: '评估邀请',
-  ai_recommendation: 'AI推荐', content: '内容推送', system: '系统通知',
+  ai_recommendation: 'AI推荐', ai_interpretation: 'AI解读', ai_prescription: 'AI处方',
+  content: '内容推送', system: '系统通知',
   coach_message: '消息推送', challenge: '挑战任务',
+  micro_action: '微行动', device_alert: '设备预警',
+}
+
+// 来源徽标样式
+function sourceBadgeBg(type: string): string {
+  const ai = ['ai_recommendation', 'ai_interpretation', 'ai_prescription']
+  if (ai.includes(type)) return '#e8f8f0'
+  if (type === 'challenge') return '#fff0e6'
+  if (type === 'device_alert') return '#ffe6e6'
+  return '#f0f4ff'
+}
+function sourceBadgeColor(type: string): string {
+  const ai = ['ai_recommendation', 'ai_interpretation', 'ai_prescription']
+  if (ai.includes(type)) return '#1a7a50'
+  if (type === 'challenge') return '#E67E22'
+  if (type === 'device_alert') return '#E74C3C'
+  return '#3498DB'
+}
+function avatarBg(type: string): string {
+  const ai = ['ai_recommendation', 'ai_interpretation', 'ai_prescription']
+  return ai.includes(type) ? '#1a7a50' : '#3498DB'
 }
 
 async function loadData() {
@@ -100,6 +127,8 @@ async function loadData() {
       id: i.id,
       student_id: i.student_id,
       student_name: i.student_name || i.grower_name || '学员',
+      source_type: i.source_type || i.type || 'system',
+      source_label: SOURCE_LABELS[i.source_type] || SOURCE_LABELS[i.type] || '推送',
       type_label: SOURCE_LABELS[i.source_type] || SOURCE_LABELS[i.type] || '消息推送',
       content: i.content || i.ai_summary || i.title || '',
       status: i.status === 'approved' ? 'sent' : (i.status || 'pending'),
@@ -172,7 +201,9 @@ onMounted(() => { loadData() })
 .pq-card-header { display: flex; align-items: center; gap: 12rpx; margin-bottom: 12rpx; }
 .pq-card-avatar { width: 56rpx; height: 56rpx; border-radius: 50%; background: #3498DB; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24rpx; font-weight: 600; }
 .pq-card-info { flex: 1; }
-.pq-card-name { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.pq-card-name-row { display: flex; align-items: center; gap: 10rpx; }
+.pq-card-name { font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.pq-source-badge { padding: 3rpx 12rpx; border-radius: 8rpx; font-size: 20rpx; font-weight: 600; white-space: nowrap; }
 .pq-card-type { display: block; font-size: 22rpx; color: #8E99A4; }
 .pq-card-status { padding: 6rpx 16rpx; border-radius: 8rpx; color: #fff; font-size: 22rpx; }
 .pq-card-content { display: block; font-size: 26rpx; color: #5B6B7F; line-height: 1.5; margin-bottom: 12rpx; }

@@ -29,6 +29,7 @@ celery_app.config_from_object({
         "api.tasks.scheduler_tasks",
         "api.tasks.governance_tasks",
         "api.tasks.event_tasks",
+        "api.tasks.ai_recommendation_tasks",
     ],
 })
 
@@ -52,6 +53,11 @@ celery_app.conf.beat_schedule = {
     "coach-challenge-7d-push": {"task":"api.tasks.governance_tasks.coach_challenge_7d_push","schedule":crontab(hour=9,  minute=0)},
     "expert-program-14d-push": {"task":"api.tasks.governance_tasks.expert_program_14d_push","schedule":crontab(hour=0,  minute=5)},
     # promotion_ceremony 不在 Beat — 事件驱动 .delay()
+    # === P2: AI 每日内容推荐 ===
+    "ai-daily-content-recommendation": {
+        "task": "api.tasks.ai_recommendation_tasks.daily_ai_content_recommendation",
+        "schedule": crontab(hour=8, minute=0),
+    },
 }
 
 logger.info("BHP Celery | broker=%s | %d beat tasks", BROKER_URL, len(celery_app.conf.beat_schedule))

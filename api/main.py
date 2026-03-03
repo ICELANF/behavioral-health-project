@@ -549,6 +549,14 @@ try:
 except ImportError as e:
     logger.warning(f"[API] 评估推送与审核路由注册失败: {e}")
 
+# P0: 注册 AI 评估解读路由
+try:
+    from api.assessment_ai_api import router as assessment_ai_router
+    app.include_router(assessment_ai_router)
+    logger.info("[API] AI评估解读路由已注册")
+except ImportError as e:
+    logger.warning(f"[API] AI评估解读路由注册失败: {e}")
+
 # 注册高频题目路由
 try:
     from api.high_freq_api import router as high_freq_router

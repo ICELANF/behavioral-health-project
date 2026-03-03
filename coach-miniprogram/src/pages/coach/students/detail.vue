@@ -240,9 +240,31 @@
         </view>
       </view>
 
+      <!-- AI 起草入口 -->
       <view class="modal-field">
-        <text class="modal-label">处方内容</text>
-        <textarea class="modal-textarea" v-model="rxForm.content" placeholder="请输入具体处方内容…" />
+        <view class="rx-ai-bar">
+          <text class="modal-label" style="margin-bottom:0">处方内容</text>
+          <view class="rx-ai-btn" :class="{ 'rx-ai-btn--loading': rxAiLoading }" @tap="loadAiDraft">
+            {{ rxAiLoading ? '生成中…' : '🤖 AI起草' }}
+          </view>
+        </view>
+        <textarea class="modal-textarea" v-model="rxForm.content" placeholder="输入处方内容，或点击右上角 AI起草 自动生成…" />
+        <view v-if="rxForm.aiSource" class="rx-ai-source-tip">
+          ✨ AI草稿已填入（{{ rxForm.aiSource === 'llm' ? '大模型' : '规则引擎' }}），请检查并修改后开具
+        </view>
+        <view v-if="rxForm.rationale" class="rx-ai-rationale">
+          起草依据：{{ rxForm.rationale }}
+        </view>
+      </view>
+
+      <!-- 高风险副签选项 -->
+      <view class="modal-field" v-if="(student.risk_level || 0) >= 3">
+        <view class="rx-expert-bar" @tap="rxForm.requestExpertReview = !rxForm.requestExpertReview">
+          <view class="rx-expert-checkbox" :class="{ 'rx-expert-checkbox--on': rxForm.requestExpertReview }">
+            {{ rxForm.requestExpertReview ? '✓' : '' }}
+          </view>
+          <text class="rx-expert-label">提交专家副签（风险 R{{ student.risk_level }}，建议开启）</text>
+        </view>
       </view>
 
       <view class="modal-actions">
@@ -275,7 +297,28 @@ const showAssignModal = ref(false)
 const showRxModal = ref(false)
 const submitting = ref(false)
 const assignForm = ref({ type: 'comprehensive', note: '' })
-const rxForm = ref({ type: 'behavior', content: '' })
+const rxForm = ref({ type: 'behavior', content: '', aiSource: '', rationale: '', requestExpertReview: false })
+const rxAiLoading = ref(false)
+
+async function loadAiDraft() {
+  if (rxAiLoading.value) return
+  rxAiLoading.value = true
+  try {
+    const res = await http<any>('/api/v1/coach/students/' + studentId.value + '/ai-prescription-draft', { method: 'POST' })
+    rxForm.value.content = res.draft_content || ''
+    rxForm.value.type = res.type || rxForm.value.type
+    rxForm.value.aiSource = res.source || 'rules'
+    rxForm.value.rationale = res.rationale || ''
+    // 微行动追加到内容末尾
+    if (res.micro_actions?.length) {
+      rxForm.value.content += '\n\n微行动：\n' + (res.micro_actions as string[]).map((a: string) => '• ' + a).join('\n')
+    }
+  } catch (e: any) {
+    uni.showToast({ title: e?.data?.detail || 'AI起草失败', icon: 'none' })
+  } finally {
+    rxAiLoading.value = false
+  }
+}
 
 // Health data for 健康数据 tab
 const healthData = ref<any>({})
@@ -469,9 +512,16 @@ async function submitRx() {
       method: 'POST',
       data: { content: `[${label}] ${content}` },
     })
+    // P3: 如勾选专家副签，提交副签申请
+    const wantExpertReview = rxForm.value.requestExpertReview
+    if (wantExpertReview) {
+      try {
+        await http('/api/v1/coach/students/' + studentId.value + '/prescriptions/request-expert-review', { method: 'POST' })
+      } catch (e) { console.warn('[detail] expert review request:', e) }
+    }
     showRxModal.value = false
-    rxForm.value = { type: 'behavior', content: '' }
-    uni.showToast({ title: '处方已开具', icon: 'success' })
+    rxForm.value = { type: 'behavior', content: '', aiSource: '', rationale: '', requestExpertReview: false }
+    uni.showToast({ title: wantExpertReview ? '处方已开具，已提交专家副签' : '处方已开具', icon: 'success' })
     // 刷新督导记录（处方存入督导记录）
     const nRes = await http<any>('/api/v1/coach/students/' + studentId.value + '/notes')
     supervisionNotes.value = nRes.items || []
@@ -605,4 +655,17 @@ onLoad((opts: any) => {
 .modal-btn--submitting { background: #8DC9B3; }
 
 .detail-empty { text-align: center; padding: 60rpx; font-size: 26rpx; color: #8E99A4; }
+
+/* ── AI 起草处方 ── */
+.rx-ai-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
+.rx-ai-btn { padding: 8rpx 20rpx; background: linear-gradient(135deg, #1a7a50, #27AE60); color: #fff; border-radius: 10rpx; font-size: 24rpx; font-weight: 600; }
+.rx-ai-btn--loading { background: #8DC9B3; }
+.rx-ai-source-tip { font-size: 22rpx; color: #1a7a50; margin-top: 8rpx; padding: 8rpx 12rpx; background: #f0faf5; border-radius: 8rpx; }
+.rx-ai-rationale { font-size: 22rpx; color: #8E99A4; margin-top: 6rpx; line-height: 1.4; }
+
+/* ── 专家副签 ── */
+.rx-expert-bar { display: flex; align-items: center; gap: 12rpx; padding: 16rpx; background: #FFF8E6; border-radius: 12rpx; border: 2rpx solid #F39C12; }
+.rx-expert-checkbox { width: 40rpx; height: 40rpx; border-radius: 8rpx; border: 2rpx solid #F39C12; display: flex; align-items: center; justify-content: center; font-size: 28rpx; color: #F39C12; flex-shrink: 0; }
+.rx-expert-checkbox--on { background: #F39C12; color: #fff; border-color: #F39C12; }
+.rx-expert-label { font-size: 26rpx; color: #E67E22; flex: 1; line-height: 1.4; }
 </style>
