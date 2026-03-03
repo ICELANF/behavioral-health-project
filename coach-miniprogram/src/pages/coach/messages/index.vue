@@ -70,39 +70,14 @@ async function loadData() {
     const res = await http<any>('/api/v1/coach/dashboard')
     const raw: any[] = res.students || res.data?.students || []
 
-    // 尝试加载推送队列以获取推送历史
-    let pushMap: Record<number, any[]> = {}
-    try {
-      const pushRes = await http<any>('/api/v1/coach-push/history?page_size=100')
-      const pushItems: any[] = pushRes.items || []
-      pushItems.forEach((p: any) => {
-        const sid = p.student_id || p.receiver_id
-        if (!pushMap[sid]) pushMap[sid] = []
-        pushMap[sid].push(p)
-      })
-    } catch { /* push history 不可用，使用 dashboard 数据替代 */ }
-
     students.value = (Array.isArray(raw) ? raw : []).map((s: any) => {
       const sid = s.id || s.user_id
-      const pushes = pushMap[sid] || []
-      const lastPush = pushes[0]
-
-      // 最后推送内容：优先 push history，否则用 dashboard 字段
-      const lastContent = lastPush
-        ? (lastPush.content || lastPush.summary || '已推送内容')
-        : (s.last_action || '点击查看学员档案')
-
-      // 最后推送时间
-      const lastTime = lastPush?.pushed_at || lastPush?.created_at
-        ? (lastPush.pushed_at || lastPush.created_at).slice(0, 10)
-        : ''
-
       return {
         id: sid,
         name: s.name || s.full_name || '未知',
-        last_push_content: lastContent,
-        last_push_time: lastTime,
-        push_count: pushes.length || (s.push_count ?? 0),
+        last_push_content: s.last_action || '点击查看学员处方与督导记录',
+        last_push_time: '',
+        push_count: s.push_count ?? 0,
         unread: s.unread_count || 0,
       }
     })

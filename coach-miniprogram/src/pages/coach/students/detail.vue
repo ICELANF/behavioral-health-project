@@ -179,6 +179,23 @@
     </scroll-view>
   </view>
 
+  <!-- 发消息 Modal — 直接发给此学员，无需跳转列表页 -->
+  <view v-if="showMsgModal" class="modal-mask" @tap.self="showMsgModal = false">
+    <view class="modal-sheet">
+      <view class="modal-title">发消息 — {{ student.name }}</view>
+      <view class="modal-field">
+        <text class="modal-label">消息内容</text>
+        <textarea class="modal-textarea" v-model="msgContent" placeholder="请输入要发给学员的消息…" />
+      </view>
+      <view class="modal-actions">
+        <view class="modal-btn modal-btn--cancel" @tap="showMsgModal = false">取消</view>
+        <view class="modal-btn modal-btn--confirm" :class="{ 'modal-btn--submitting': submitting }" @tap="submitMsg">
+          {{ submitting ? '发送中…' : '发送' }}
+        </view>
+      </view>
+    </view>
+  </view>
+
   <!-- 分配评估 Modal — 学员已预选，无需二次筛选 -->
   <view v-if="showAssignModal" class="modal-mask" @tap.self="showAssignModal = false">
     <view class="modal-sheet">
@@ -252,6 +269,8 @@ const supervisionNotes = ref<any[]>([])
 const newNote = ref('')
 
 // Modal state
+const showMsgModal = ref(false)
+const msgContent = ref('')
 const showAssignModal = ref(false)
 const showRxModal = ref(false)
 const submitting = ref(false)
@@ -464,7 +483,30 @@ async function submitRx() {
 }
 
 function sendMessage() {
-  uni.navigateTo({ url: '/pages/coach/messages/index?student_id=' + studentId.value })
+  msgContent.value = ''
+  showMsgModal.value = true
+}
+
+async function submitMsg() {
+  if (submitting.value) return
+  const content = msgContent.value.trim()
+  if (!content) { uni.showToast({ title: '请输入消息内容', icon: 'none' }); return }
+  submitting.value = true
+  try {
+    await http('/api/v1/coach/students/' + studentId.value + '/notes', {
+      method: 'POST',
+      data: { content: '[消息] ' + content },
+    })
+    showMsgModal.value = false
+    msgContent.value = ''
+    uni.showToast({ title: '消息已发送', icon: 'success' })
+    const nRes = await http<any>('/api/v1/coach/students/' + studentId.value + '/notes')
+    supervisionNotes.value = nRes.items || []
+  } catch {
+    uni.showToast({ title: '发送失败，请稍后重试', icon: 'none' })
+  } finally {
+    submitting.value = false
+  }
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }

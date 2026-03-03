@@ -478,16 +478,8 @@ async function loadData() {
     if (res.rejected) rejectedCount.value = res.rejected
   } catch (e) { console.warn('[flywheel] today stats:', e) }
 
-  // 步骤3：推送执行历史
-  try {
-    const res = await http<any>('/api/v1/coach-push/history?page_size=30')
-    pushItems.value = res.items || []
-  } catch {
-    try {
-      const r2 = await http<any>('/api/v1/coach-push/?status=pushed&page_size=30')
-      pushItems.value = r2.items || []
-    } catch { pushItems.value = [] }
-  }
+  // 步骤3：推送执行历史（使用已通过的审核记录替代）
+  pushItems.value = approvedItems.value
 
   // 学员列表（按风险降序）
   try {
