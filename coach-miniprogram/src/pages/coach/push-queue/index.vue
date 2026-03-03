@@ -115,7 +115,7 @@ async function sendPush(item: any) {
   if (processingIds.value.has(item.id)) return   // 防重复点击
   processingIds.value.add(item.id)
   try {
-    await http('/api/v1/coach/push-queue/' + item.id + '/approve', { method: 'POST', data: {} })
+    await http('/api/v1/coach/push-queue/' + item.id + '/approve', { method: 'POST' })
     uni.showToast({ title: '已发送', icon: 'success' })
     await loadData()
   } catch (e: any) {
@@ -131,7 +131,7 @@ async function cancelPush(item: any) {
   if (processingIds.value.has(item.id)) return   // 防重复点击
   processingIds.value.add(item.id)
   try {
-    await http('/api/v1/coach/push-queue/' + item.id + '/reject', { method: 'POST', data: {} })
+    await http('/api/v1/coach/push-queue/' + item.id + '/reject', { method: 'POST' })
     uni.showToast({ title: '已取消', icon: 'success' })
     await loadData()
   } catch (e: any) {

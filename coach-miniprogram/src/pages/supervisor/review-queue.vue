@@ -116,7 +116,7 @@ async function approveItem(item: any) {
   if (processingIds.value.has(item.id)) return
   processingIds.value.add(item.id)
   try {
-    await http(`/api/v1/health-review/${item.id}/approve`, { method: 'POST', data: {} })
+    await http(`/api/v1/health-review/${item.id}/approve`, { method: 'POST' })
     uni.showToast({ title: '已通过', icon: 'success' })
     await loadData()
   } catch {
@@ -152,7 +152,7 @@ async function rejectItem(item: any) {
   if (processingIds.value.has(item.id)) return
   processingIds.value.add(item.id)
   try {
-    await http(`/api/v1/health-review/${item.id}/reject`, { method: 'POST', data: {} })
+    await http(`/api/v1/health-review/${item.id}/reject`, { method: 'POST' })
     uni.showToast({ title: '已退回', icon: 'success' })
     await loadData()
   } catch {
