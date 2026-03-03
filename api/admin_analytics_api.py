@@ -89,16 +89,16 @@ def get_overview(
         total_courses = db.query(func.count(ContentItem.id)).filter(
             ContentItem.content_type == "course"
         ).scalar() or 0
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Analytics] total_courses query failed: {e}")
 
     today_learning = 0
     try:
         today_learning = db.query(func.count(distinct(LearningTimeLog.user_id))).filter(
             func.date(LearningTimeLog.created_at) == date.today()
         ).scalar() or 0
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Analytics] today_learning query failed: {e}")
 
     # 等级分布 (按 role 统计)
     level_distribution = {}
@@ -111,8 +111,8 @@ def get_overview(
         )
         for r in role_rows:
             level_distribution[_ROLE_LABEL.get(r.role.value, r.role.value)] = int(r.cnt)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Analytics] level_distribution query failed: {e}")
 
     # 待处理事项
     pending_todos = []
@@ -136,8 +136,8 @@ def get_overview(
                 "target_level": p.get("to_role", ""),
                 "applied_at": str(p.get("created_at", "")),
             })
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Analytics] recent_promotions query failed: {e}")
 
     return {
         "total_users": total_users,
@@ -398,8 +398,8 @@ def get_system_info(
         from sqlalchemy import text as sa_text
         row = db.execute(sa_text("SELECT COUNT(*) FROM knowledge_documents")).scalar()
         knowledge_chunks = int(row or 0)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Analytics] knowledge_chunks query failed: {e}")
 
     # 平台版本
     platform_version = os.getenv("PLATFORM_VERSION", "V5.3.0")

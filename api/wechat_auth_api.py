@@ -223,8 +223,8 @@ async def wechat_exchange(
                     {"nick": wx_nick, "av": wx_avatar, "uid": user_row["id"]},
                 )
                 await db.commit()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[WeChat] profile sync failed: {e}")
 
         jwt_token = _create_token(user_row["id"], user_row["username"], user_row["role"])
         ROLE_LEVELS = {"OBSERVER": 1, "GROWER": 2, "SHARER": 3, "COACH": 4, "PROMOTER": 5, "SUPERVISOR": 5, "MASTER": 6, "ADMIN": 99}
@@ -314,8 +314,8 @@ async def wechat_bind(
         wx_info = await get_user_info(token_data["access_token"], openid) or {}
         wx_nick = wx_info.get("nickname", "")
         wx_avatar = wx_info.get("avatar", "")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[WeChat] get_user_info failed: {e}")
 
     await db.execute(
         text("""

@@ -26,9 +26,9 @@ services:
       db:
         condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
       qdrant:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - .:/app
       - ./static:/app/api/static  # 确保静态资源可用
@@ -86,10 +86,16 @@ services:
   qdrant:
     image: qdrant/qdrant:latest
     container_name: bhp_v3_qdrant
+    restart: always
     ports:
       - "6333:6333"
     volumes:
       - bhp_qdrant_data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:6333/healthz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - bhp_network
 
@@ -97,6 +103,12 @@ services:
   redis:
     image: redis:7-alpine
     container_name: bhp_v3_redis
+    restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - bhp_network
 

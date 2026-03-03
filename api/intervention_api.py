@@ -11,6 +11,7 @@ import os
 import json
 from fastapi import APIRouter, HTTPException, Query
 from typing import Optional, List
+from loguru import logger
 
 router = APIRouter(prefix="/api/v1/interventions", tags=["干预包"])
 
@@ -23,9 +24,9 @@ _config_path = os.path.join(
 try:
     with open(_config_path, "r", encoding="utf-8") as f:
         _PACKS = json.load(f)
-    print(f"[API] 已加载 {len(_PACKS)} 个干预包配置")
+    logger.info(f"[API] 已加载 {len(_PACKS)} 个干预包配置")
 except Exception as e:
-    print(f"[API] 加载干预包配置失败: {e}")
+    logger.warning(f"[API] 加载干预包配置失败: {e}")
 
 # 教练等级顺序
 _LEVEL_ORDER = {"L0": 0, "L1": 1, "L2": 2, "L3": 3, "L4": 4, "L5": 5}

@@ -79,20 +79,20 @@ def get_master_agent(db_session=None):
             if _registry is None:
                 from core.agents.startup import create_registry
                 _registry = create_registry(db_session=db_session)
-                print(f"[API] AgentRegistry 已冻结: {_registry.count()} 个 Agent")
+                logger.info(f"[API] AgentRegistry 已冻结: {_registry.count()} 个 Agent")
             # Phase 2: 统一 MasterAgent
             from core.agents.master_agent import MasterAgent
             _master_agent = MasterAgent(registry=_registry, db_session=db_session)
-            print("[API] MasterAgent (统一版) 初始化完成")
+            logger.info("[API] MasterAgent (统一版) 初始化完成")
         except Exception as e:
-            print(f"[API] MasterAgent 初始化失败: {e}")
+            logger.warning(f"[API] MasterAgent 初始化失败: {e}")
             # 降级: 尝试旧版
             try:
                 from core.master_agent_unified import UnifiedMasterAgent
                 _master_agent = UnifiedMasterAgent(db_session=db_session)
-                print("[API] 降级到 UnifiedMasterAgent")
+                logger.info("[API] 降级到 UnifiedMasterAgent")
             except Exception as e2:
-                print(f"[API] 降级也失败: {e2}")
+                logger.warning(f"[API] 降级也失败: {e2}")
     return _master_agent
 
 
@@ -252,7 +252,7 @@ def _seed_agent_presets(db):
             priority=priority, is_preset=True, is_enabled=True,
         ))
     db.commit()
-    print(f"[API] Agent 预设模板已 seed: {len(presets)} 个")
+    logger.info(f"[API] Agent 预设模板已 seed: {len(presets)} 个")
 
 
 _scheduler = None
@@ -267,9 +267,9 @@ async def lifespan(app):
         _scheduler = setup_scheduler()
         if _scheduler:
             _scheduler.start()
-            print("[API] APScheduler 已启动")
+            logger.info("[API] APScheduler 已启动")
     except Exception as e:
-        print(f"[API] APScheduler 启动失败: {e}")
+        logger.warning(f"[API] APScheduler 启动失败: {e}")
 
     # Agent 模板: 自动 seed 预设 + 缓存预热
     try:
@@ -282,19 +282,19 @@ async def lifespan(app):
             if existing == 0:
                 _seed_agent_presets(db)
             templates = load_templates(db)
-            print(f"[API] Agent 模板缓存预热完成: {len(templates)} 个模板")
+            logger.info(f"[API] Agent 模板缓存预热完成: {len(templates)} 个模板")
         finally:
             db.close()
     except Exception as e:
-        print(f"[API] Agent 模板缓存预热失败 (非阻塞): {e}")
+        logger.warning(f"[API] Agent 模板缓存预热失败 (非阻塞): {e}")
 
     # v6 AgentMaster 初始化 (template-aware, 用于 agent routing)
     try:
         am = get_agent_master()
         if am:
-            print(f"[API] AgentMaster (v6) 初始化完成, {len(am._agents)} 个 Agent")
+            logger.info(f"[API] AgentMaster (v6) 初始化完成, {len(am._agents)} 个 Agent")
     except Exception as e:
-        print(f"[API] AgentMaster (v6) 初始化失败 (非阻塞): {e}")
+        logger.warning(f"[API] AgentMaster (v6) 初始化失败 (非阻塞): {e}")
 
     # V007 PolicyEngine 规则缓存预热
     try:
@@ -304,11 +304,11 @@ async def lifespan(app):
         try:
             registry = RuleRegistry(db_session_factory=lambda: db)
             registry.initialize()
-            print(f"[API] V007 PolicyEngine 规则缓存预热完成")
+            logger.info("[API] V007 PolicyEngine 规则缓存预热完成")
         finally:
             db.close()
     except Exception as e:
-        print(f"[API] V007 PolicyEngine 规则缓存预热失败 (非阻塞): {e}")
+        logger.warning(f"[API] V007 PolicyEngine 规则缓存预热失败 (非阻塞): {e}")
 
     # Behavior Rx: 专家 Agent 初始化 + MasterAgent 补丁 + DI 注入
     try:
@@ -339,15 +339,15 @@ async def lifespan(app):
                 orchestrator=expert_router._orchestrator,
             )
         except Exception as inject_err:
-            print(f"[API] Behavior Rx DI 注入失败: {inject_err}")
-        print("[API] Behavior Rx 专家 Agent 已初始化 + MasterAgent 已补丁 + DI 已注入")
+            logger.warning(f"[API] Behavior Rx DI 注入失败: {inject_err}")
+        logger.info("[API] Behavior Rx 专家 Agent 已初始化 + MasterAgent 已补丁 + DI 已注入")
     except Exception as e:
-        print(f"[API] Behavior Rx 初始化失败 (非阻塞): {e}")
+        logger.warning(f"[API] Behavior Rx 初始化失败 (非阻塞): {e}")
 
     yield
     if _scheduler:
         _scheduler.shutdown(wait=False)
-        print("[API] APScheduler 已关闭")
+        logger.info("[API] APScheduler 已关闭")
 
 # FIX-07: 生产环境禁用 API 文档
 _env = os.getenv("ENVIRONMENT", "production")
@@ -393,266 +393,266 @@ except Exception as e:
 try:
     from api.auth_api import router as auth_router
     app.include_router(auth_router)
-    print("[API] 认证路由已注册")
+    logger.info("[API] 认证路由已注册")
 except ImportError as e:
-    print(f"[API] 认证路由注册失败: {e}")
+    logger.warning(f"[API] 认证路由注册失败: {e}")
 
 # 注册评估路由
 try:
     from api.assessment_api import router as assessment_router
     app.include_router(assessment_router)
-    print("[API] 评估路由已注册")
+    logger.info("[API] 评估路由已注册")
 except ImportError as e:
-    print(f"[API] 评估路由注册失败: {e}")
+    logger.warning(f"[API] 评估路由注册失败: {e}")
 
 # 注册小程序路由
 try:
     from api.miniprogram import router as mp_router
     app.include_router(mp_router, prefix="/api/v1")
-    print("[API] 小程序路由已注册")
+    logger.info("[API] 小程序路由已注册")
 except ImportError as e:
-    print(f"[API] 小程序路由注册失败: {e}")
+    logger.warning(f"[API] 小程序路由注册失败: {e}")
 
 # 注册设备数据路由
 try:
     from api.device_data import router as device_router
     app.include_router(device_router, prefix="/api/v1/mp")
-    print("[API] 设备数据路由已注册")
+    logger.info("[API] 设备数据路由已注册")
 except ImportError as e:
-    print(f"[API] 设备数据路由注册失败: {e}")
+    logger.warning(f"[API] 设备数据路由注册失败: {e}")
 
 # 注册内容管理路由
 try:
     from api.content_api import router as content_router
     app.include_router(content_router)
-    print("[API] 内容管理路由已注册")
+    logger.info("[API] 内容管理路由已注册")
 except ImportError as e:
-    print(f"[API] 内容管理路由注册失败: {e}")
+    logger.warning(f"[API] 内容管理路由注册失败: {e}")
 
 # 注册学习激励路由
 try:
     from api.learning_api import router as learning_router
     app.include_router(learning_router)
-    print("[API] 学习激励路由已注册")
+    logger.info("[API] 学习激励路由已注册")
 except ImportError as e:
-    print(f"[API] 学习激励路由注册失败: {e}")
+    logger.warning(f"[API] 学习激励路由注册失败: {e}")
 
 # 注册 WebSocket 实时推送路由
 try:
     from api.websocket_api import router as ws_router
     app.include_router(ws_router)
-    print("[API] WebSocket 实时推送路由已注册")
+    logger.info("[API] WebSocket 实时推送路由已注册")
 except ImportError as e:
-    print(f"[API] WebSocket 路由注册失败: {e}")
+    logger.warning(f"[API] WebSocket 路由注册失败: {e}")
 
 # 注册教练等级体系路由
 try:
     from api.paths_api import router as paths_router
     app.include_router(paths_router)
-    print("[API] 教练等级体系路由已注册")
+    logger.info("[API] 教练等级体系路由已注册")
 except ImportError as e:
-    print(f"[API] 教练等级体系路由注册失败: {e}")
+    logger.warning(f"[API] 教练等级体系路由注册失败: {e}")
 
 # 注册用户分层路由
 try:
     from api.segments_api import router as segments_router
     app.include_router(segments_router)
-    print("[API] 用户分层路由已注册")
+    logger.info("[API] 用户分层路由已注册")
 except ImportError as e:
-    print(f"[API] 用户分层路由注册失败: {e}")
+    logger.warning(f"[API] 用户分层路由注册失败: {e}")
 
 # 注册用户管理路由（管理后台）
 try:
     from api.user_api import router as user_admin_router
     app.include_router(user_admin_router)
-    print("[API] 用户管理路由已注册")
+    logger.info("[API] 用户管理路由已注册")
 except ImportError as e:
-    print(f"[API] 用户管理路由注册失败: {e}")
+    logger.warning(f"[API] 用户管理路由注册失败: {e}")
 
 # 注册设备数据REST路由
 try:
     from api.device_rest_api import router as device_rest_router
     app.include_router(device_rest_router)
-    print("[API] 设备REST路由已注册")
+    logger.info("[API] 设备REST路由已注册")
 except ImportError as e:
-    print(f"[API] 设备REST路由注册失败: {e}")
+    logger.warning(f"[API] 设备REST路由注册失败: {e}")
 
 # 注册健康数据审核队列路由 (WeRun + health_review_queue + supervisor/master dashboards)
 try:
     from api.health_review_api import router as health_review_router
     app.include_router(health_review_router)
-    print("[API] 健康审核队列路由已注册")
+    logger.info("[API] 健康审核队列路由已注册")
 except Exception as e:
-    print(f"[API] 健康审核队列路由注册失败: {e}")
+    logger.warning(f"[API] 健康审核队列路由注册失败: {e}")
 
 # 注册聊天REST路由
 try:
     from api.chat_rest_api import router as chat_rest_router
     app.include_router(chat_rest_router)
-    print("[API] 聊天REST路由已注册")
+    logger.info("[API] 聊天REST路由已注册")
 except ImportError as e:
-    print(f"[API] 聊天REST路由注册失败: {e}")
+    logger.warning(f"[API] 聊天REST路由注册失败: {e}")
 
 # 注册教练端路由
 try:
     from api.coach_api import router as coach_router
     app.include_router(coach_router)
-    print("[API] 教练端路由已注册")
+    logger.info("[API] 教练端路由已注册")
 except ImportError as e:
-    print(f"[API] 教练端路由注册失败: {e}")
+    logger.warning(f"[API] 教练端路由注册失败: {e}")
 
 # 注册评估管道路由
 try:
     from api.assessment_pipeline_api import router as pipeline_router
     app.include_router(pipeline_router)
-    print("[API] 评估管道路由已注册")
+    logger.info("[API] 评估管道路由已注册")
 except ImportError as e:
-    print(f"[API] 评估管道路由注册失败: {e}")
+    logger.warning(f"[API] 评估管道路由注册失败: {e}")
 
 # 注册微行动路由
 try:
     from api.micro_action_api import router as micro_action_router
     app.include_router(micro_action_router)
-    print("[API] 微行动路由已注册")
+    logger.info("[API] 微行动路由已注册")
 except ImportError as e:
-    print(f"[API] 微行动路由注册失败: {e}")
+    logger.warning(f"[API] 微行动路由注册失败: {e}")
 
 # 注册今日任务路由（GrowerTodayHome.vue 数据层）
 try:
     from api.daily_tasks_api import router as daily_tasks_router
     app.include_router(daily_tasks_router)
-    print("[API] 今日任务路由已注册")
+    logger.info("[API] 今日任务路由已注册")
 except ImportError as e:
-    print(f"[API] 今日任务路由注册失败: {e}")
+    logger.warning(f"[API] 今日任务路由注册失败: {e}")
 
 # 注册教练消息路由
 try:
     from api.coach_message_api import router as coach_message_router
     app.include_router(coach_message_router)
-    print("[API] 教练消息路由已注册")
+    logger.info("[API] 教练消息路由已注册")
 except ImportError as e:
-    print(f"[API] 教练消息路由注册失败: {e}")
+    logger.warning(f"[API] 教练消息路由注册失败: {e}")
 
 # 注册提醒管理路由
 try:
     from api.reminder_api import router as reminder_router
     app.include_router(reminder_router)
-    print("[API] 提醒管理路由已注册")
+    logger.info("[API] 提醒管理路由已注册")
 except ImportError as e:
-    print(f"[API] 提醒管理路由注册失败: {e}")
+    logger.warning(f"[API] 提醒管理路由注册失败: {e}")
 
 # 注册评估推送与审核路由
 try:
     from api.assessment_assignment_api import router as assessment_assignment_router
     app.include_router(assessment_assignment_router)
-    print("[API] 评估推送与审核路由已注册")
+    logger.info("[API] 评估推送与审核路由已注册")
 except ImportError as e:
-    print(f"[API] 评估推送与审核路由注册失败: {e}")
+    logger.warning(f"[API] 评估推送与审核路由注册失败: {e}")
 
 # 注册高频题目路由
 try:
     from api.high_freq_api import router as high_freq_router
     app.include_router(high_freq_router)
-    print("[API] 高频题目路由已注册")
+    logger.info("[API] 高频题目路由已注册")
 except ImportError as e:
-    print(f"[API] 高频题目路由注册失败: {e}")
+    logger.warning(f"[API] 高频题目路由注册失败: {e}")
 
 # 注册设备预警路由
 try:
     from api.device_alert_api import router as device_alert_router
     app.include_router(device_alert_router)
-    print("[API] 设备预警路由已注册")
+    logger.info("[API] 设备预警路由已注册")
 except ImportError as e:
-    print(f"[API] 设备预警路由注册失败: {e}")
+    logger.warning(f"[API] 设备预警路由注册失败: {e}")
 
 # 注册AI推送建议路由
 try:
     from api.push_recommendation_api import router as push_recommendation_router
     app.include_router(push_recommendation_router)
-    print("[API] AI推送建议路由已注册")
+    logger.info("[API] AI推送建议路由已注册")
 except ImportError as e:
-    print(f"[API] AI推送建议路由注册失败: {e}")
+    logger.warning(f"[API] AI推送建议路由注册失败: {e}")
 
 # 注册Prompt模板路由
 try:
     from api.prompt_api import router as prompt_router
     app.include_router(prompt_router)
-    print("[API] Prompt模板路由已注册")
+    logger.info("[API] Prompt模板路由已注册")
 except ImportError as e:
-    print(f"[API] Prompt模板路由注册失败: {e}")
+    logger.warning(f"[API] Prompt模板路由注册失败: {e}")
 
 # 注册干预包路由
 try:
     from api.intervention_api import router as intervention_router
     app.include_router(intervention_router)
-    print("[API] 干预包路由已注册")
+    logger.info("[API] 干预包路由已注册")
 except ImportError as e:
-    print(f"[API] 干预包路由注册失败: {e}")
+    logger.warning(f"[API] 干预包路由注册失败: {e}")
 
 # 注册挑战/打卡活动路由
 try:
     from api.challenge_api import router as challenge_router
     app.include_router(challenge_router)
-    print("[API] 挑战/打卡活动路由已注册")
+    logger.info("[API] 挑战/打卡活动路由已注册")
 except ImportError as e:
-    print(f"[API] 挑战/打卡活动路由注册失败: {e}")
+    logger.warning(f"[API] 挑战/打卡活动路由注册失败: {e}")
 
 # 注册教练推送审批队列路由
 try:
     from api.coach_push_queue_api import router as push_queue_router, alias_router as coach_push_alias_router
     app.include_router(push_queue_router)
     app.include_router(coach_push_alias_router)
-    print("[API] 教练推送审批队列路由已注册 (+ /coach-push 兼容别名)")
+    logger.info("[API] 教练推送审批队列路由已注册 (+ /coach-push 兼容别名)")
 except ImportError as e:
-    print(f"[API] 教练推送审批队列路由注册失败: {e}")
+    logger.warning(f"[API] 教练推送审批队列路由注册失败: {e}")
 
 # 注册全平台搜索路由
 try:
     from api.search_api import router as search_router
     app.include_router(search_router)
-    print("[API] 全平台搜索路由已注册")
+    logger.info("[API] 全平台搜索路由已注册")
 except ImportError as e:
-    print(f"[API] 全平台搜索路由注册失败: {e}")
+    logger.warning(f"[API] 全平台搜索路由注册失败: {e}")
 
 # 注册用户行为周报路由
 try:
     from api.weekly_report_api import router as weekly_report_router
     app.include_router(weekly_report_router)
-    print("[API] 用户行为周报路由已注册")
+    logger.info("[API] 用户行为周报路由已注册")
 except ImportError as e:
-    print(f"[API] 用户行为周报路由注册失败: {e}")
+    logger.warning(f"[API] 用户行为周报路由注册失败: {e}")
 
 # 注册多Agent协作路由
 try:
     from api.agent_api import router as agent_router
     app.include_router(agent_router)
-    print("[API] 多Agent协作路由已注册")
+    logger.info("[API] 多Agent协作路由已注册")
 except ImportError as e:
-    print(f"[API] 多Agent协作路由注册失败: {e}")
+    logger.warning(f"[API] 多Agent协作路由注册失败: {e}")
 
 # 注册图片上传路由
 try:
     from api.upload_api import router as upload_router
     app.include_router(upload_router)
-    print("[API] 图片上传路由已注册")
+    logger.info("[API] 图片上传路由已注册")
 except ImportError as e:
-    print(f"[API] 图片上传路由注册失败: {e}")
+    logger.warning(f"[API] 图片上传路由注册失败: {e}")
 
 # 注册食物识别路由
 try:
     from api.food_recognition_api import router as food_router
     app.include_router(food_router)
-    print("[API] 食物识别路由已注册")
+    logger.info("[API] 食物识别路由已注册")
 except ImportError as e:
-    print(f"[API] 食物识别路由注册失败: {e}")
+    logger.warning(f"[API] 食物识别路由注册失败: {e}")
 
 # ========== 注册音频处理路由 (V5.2.0 ASR) ==========
 try:
     from api.audio_api import router as audio_router
     app.include_router(audio_router)
-    print("[API] 音频处理路由已注册")
+    logger.info("[API] 音频处理路由已注册")
 except ImportError as e:
-    print(f"[API] 音频处理路由注册失败: {e}")
+    logger.warning(f"[API] 音频处理路由注册失败: {e}")
 
 # ============================================
 # 注册 v3 路由 (诊断管道/Coach对话/渐进评估/效果追踪/激励积分/知识库)
@@ -676,9 +676,9 @@ try:
     app.include_router(v3_tracking.router)
     app.include_router(v3_incentive.router)
     app.include_router(v3_knowledge.router)
-    print("[API] v3 路由已注册 (8 routers: auth/diagnostic/chat/assessment/tracking/incentive/knowledge/health)")
+    logger.info("[API] v3 路由已注册 (8 routers: auth/diagnostic/chat/assessment/tracking/incentive/knowledge/health)")
 except Exception as e:
-    print(f"[API] v3 路由注册失败: {e}")
+    logger.warning(f"[API] v3 路由注册失败: {e}")
 
 # ============================================
 # 注册 行智诊疗 (XZB) 专家个人AGENT路由
@@ -686,9 +686,9 @@ except Exception as e:
 try:
     from api.xzb_api import router as xzb_router
     app.include_router(xzb_router)
-    print("[API] 行智诊疗(XZB)路由已注册 (29 endpoints: experts/knowledge/chat/rx/med-circle)")
+    logger.info("[API] 行智诊疗(XZB)路由已注册 (29 endpoints: experts/knowledge/chat/rx/med-circle)")
 except ImportError as e:
-    print(f"[API] 行智诊疗路由注册失败: {e}")
+    logger.warning(f"[API] 行智诊疗路由注册失败: {e}")
 
 # 挂载静态文件服务
 try:
@@ -696,9 +696,9 @@ try:
     _static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
     os.makedirs(_static_dir, exist_ok=True)
     app.mount("/api/static", StaticFiles(directory=_static_dir), name="static")
-    print("[API] 静态文件服务已挂载 /api/static")
+    logger.info("[API] 静态文件服务已挂载 /api/static")
 except Exception as e:
-    print(f"[API] 静态文件服务挂载失败: {e}")
+    logger.warning(f"[API] 静态文件服务挂载失败: {e}")
 
 class AgentGateway:
     """行健行为教练网关：连接编排层与模型层"""
@@ -1839,9 +1839,9 @@ async def brain_evaluate(
 try:
     from api.v14.admin_routes import router as admin_behavior_router
     app.include_router(admin_behavior_router, prefix="/api/v1")
-    print("[API] v16 Admin行为配置路由已注册")
+    logger.info("[API] v16 Admin行为配置路由已注册")
 except ImportError as e:
-    print(f"[API] v16 Admin行为配置路由注册失败: {e}")
+    logger.warning(f"[API] v16 Admin行为配置路由注册失败: {e}")
 
 # ============================================================================
 # CoachCopilot 路由 (copilot/analyze + copilot/suggested-actions)
@@ -1849,9 +1849,9 @@ except ImportError as e:
 try:
     from api.v14.copilot_routes import router as copilot_router
     app.include_router(copilot_router, prefix="/api/v1")
-    print("[API] CoachCopilot路由已注册")
+    logger.info("[API] CoachCopilot路由已注册")
 except ImportError as e:
-    print(f"[API] CoachCopilot路由注册失败: {e}")
+    logger.warning(f"[API] CoachCopilot路由注册失败: {e}")
 
 # ============================================================================
 # Patient 档案路由
@@ -1859,9 +1859,9 @@ except ImportError as e:
 try:
     from api.patient_api import router as patient_router
     app.include_router(patient_router)
-    print("[API] Patient路由已注册")
+    logger.info("[API] Patient路由已注册")
 except ImportError as e:
-    print(f"[API] Patient路由注册失败: {e}")
+    logger.warning(f"[API] Patient路由注册失败: {e}")
 
 # ============================================================================
 # Recommendation 推荐系统路由
@@ -1869,9 +1869,9 @@ except ImportError as e:
 try:
     from api.recommendation_api import router as recommendation_router
     app.include_router(recommendation_router)
-    print("[API] Recommendation路由已注册")
+    logger.info("[API] Recommendation路由已注册")
 except ImportError as e:
-    print(f"[API] Recommendation路由注册失败: {e}")
+    logger.warning(f"[API] Recommendation路由注册失败: {e}")
 
 # ============================================================================
 # [v16-NEW] 注册专家白标租户路由
@@ -1879,246 +1879,246 @@ except ImportError as e:
 try:
     from api.tenant_api import router as tenant_router
     app.include_router(tenant_router)
-    print("[API] 专家租户路由已注册")
+    logger.info("[API] 专家租户路由已注册")
 except ImportError as e:
-    print(f"[API] 专家租户路由注册失败: {e}")
+    logger.warning(f"[API] 专家租户路由注册失败: {e}")
 
 # 注册督导会议路由
 try:
     from api.supervision_api import router as supervision_router
     app.include_router(supervision_router)
-    print("[API] 督导会议路由已注册")
+    logger.info("[API] 督导会议路由已注册")
 except ImportError as e:
-    print(f"[API] 督导会议路由注册失败: {e}")
+    logger.warning(f"[API] 督导会议路由注册失败: {e}")
 
 # 注册专家内容工作室路由
 try:
     from api.expert_content_api import router as expert_content_router
     app.include_router(expert_content_router)
-    print("[API] 专家内容工作室路由已注册")
+    logger.info("[API] 专家内容工作室路由已注册")
 except ImportError as e:
-    print(f"[API] 专家内容工作室路由注册失败: {e}")
+    logger.warning(f"[API] 专家内容工作室路由注册失败: {e}")
 
 # 注册Coach分析路由
 try:
     from api.analytics_api import router as coach_analytics_router
     app.include_router(coach_analytics_router)
-    print("[API] Coach分析路由已注册")
+    logger.info("[API] Coach分析路由已注册")
 except ImportError as e:
-    print(f"[API] Coach分析路由注册失败: {e}")
+    logger.warning(f"[API] Coach分析路由注册失败: {e}")
 
 # 注册Admin分析路由
 try:
     from api.admin_analytics_api import router as admin_analytics_router
     app.include_router(admin_analytics_router)
-    print("[API] Admin分析路由已注册")
+    logger.info("[API] Admin分析路由已注册")
 except ImportError as e:
-    print(f"[API] Admin分析路由注册失败: {e}")
+    logger.warning(f"[API] Admin分析路由注册失败: {e}")
 
 # 注册用户知识投稿路由
 try:
     from api.content_contribution_api import router as contribution_router
     app.include_router(contribution_router)
-    print("[API] 用户知识投稿路由已注册")
+    logger.info("[API] 用户知识投稿路由已注册")
 except ImportError as e:
-    print(f"[API] 用户知识投稿路由注册失败: {e}")
+    logger.warning(f"[API] 用户知识投稿路由注册失败: {e}")
 
 # 注册批量知识灌注路由
 try:
     from api.batch_ingestion_api import router as batch_ingestion_router
     app.include_router(batch_ingestion_router)
-    print("[API] 批量知识灌注路由已注册")
+    logger.info("[API] 批量知识灌注路由已注册")
 except ImportError as e:
-    print(f"[API] 批量知识灌注路由注册失败: {e}")
+    logger.warning(f"[API] 批量知识灌注路由注册失败: {e}")
 
 # 注册内容管理路由
 try:
     from api.content_manage_api import router as content_manage_router
     app.include_router(content_manage_router)
-    print("[API] 内容管理路由已注册")
+    logger.info("[API] 内容管理路由已注册")
 except ImportError as e:
-    print(f"[API] 内容管理路由注册失败: {e}")
+    logger.warning(f"[API] 内容管理路由注册失败: {e}")
 
 # 注册考试管理路由
 try:
     from api.exam_api import router as exam_admin_router
     app.include_router(exam_admin_router)
-    print("[API] 考试管理路由已注册")
+    logger.info("[API] 考试管理路由已注册")
 except ImportError as e:
-    print(f"[API] 考试管理路由注册失败: {e}")
+    logger.warning(f"[API] 考试管理路由注册失败: {e}")
 
 # 注册题库管理路由
 try:
     from api.question_api import router as question_router
     app.include_router(question_router)
-    print("[API] 题库管理路由已注册")
+    logger.info("[API] 题库管理路由已注册")
 except ImportError as e:
-    print(f"[API] 题库管理路由注册失败: {e}")
+    logger.warning(f"[API] 题库管理路由注册失败: {e}")
 
 # 注册考试会话路由
 try:
     from api.exam_session_api import router as exam_session_router
     app.include_router(exam_session_router)
-    print("[API] 考试会话路由已注册")
+    logger.info("[API] 考试会话路由已注册")
 except ImportError as e:
-    print(f"[API] 考试会话路由注册失败: {e}")
+    logger.warning(f"[API] 考试会话路由注册失败: {e}")
 
 # 注册用户统计路由
 try:
     from api.user_stats_api import router as user_stats_router
     app.include_router(user_stats_router)
-    print("[API] 用户统计路由已注册")
+    logger.info("[API] 用户统计路由已注册")
 except ImportError as e:
-    print(f"[API] 用户统计路由注册失败: {e}")
+    logger.warning(f"[API] 用户统计路由注册失败: {e}")
 
 # 注册问卷引擎路由 (3个子模块: 管理/填写/统计)
 try:
     from api.survey_api import router as survey_mgmt_router
     app.include_router(survey_mgmt_router)
-    print("[API] 问卷管理路由已注册")
+    logger.info("[API] 问卷管理路由已注册")
 except ImportError as e:
-    print(f"[API] 问卷管理路由注册失败: {e}")
+    logger.warning(f"[API] 问卷管理路由注册失败: {e}")
 
 try:
     from api.survey_response_api import router as survey_respond_router
     app.include_router(survey_respond_router)
-    print("[API] 问卷填写路由已注册")
+    logger.info("[API] 问卷填写路由已注册")
 except ImportError as e:
-    print(f"[API] 问卷填写路由注册失败: {e}")
+    logger.warning(f"[API] 问卷填写路由注册失败: {e}")
 
 try:
     from api.survey_stats_api import router as survey_stats_router
     app.include_router(survey_stats_router)
-    print("[API] 问卷统计路由已注册")
+    logger.info("[API] 问卷统计路由已注册")
 except ImportError as e:
-    print(f"[API] 问卷统计路由注册失败: {e}")
+    logger.warning(f"[API] 问卷统计路由注册失败: {e}")
 
 
 # ========== 学分制+晋级体系 (V002) ==========
 try:
     from api.credits_api import router as credits_router
     app.include_router(credits_router)
-    print("[API] 学分管理路由已注册")
+    logger.info("[API] 学分管理路由已注册")
 except ImportError as e:
-    print(f"[API] 学分管理路由注册失败: {e}")
+    logger.warning(f"[API] 学分管理路由注册失败: {e}")
 
 try:
     from api.companion_api import router as companion_router
     app.include_router(companion_router)
-    print("[API] 同道者关系路由已注册")
+    logger.info("[API] 同道者关系路由已注册")
 except ImportError as e:
-    print(f"[API] 同道者关系路由注册失败: {e}")
+    logger.warning(f"[API] 同道者关系路由注册失败: {e}")
 
 try:
     from api.promotion_api import router as promotion_router
     app.include_router(promotion_router)
-    print("[API] 晋级系统路由已注册")
+    logger.info("[API] 晋级系统路由已注册")
 except ImportError as e:
-    print(f"[API] 晋级系统路由注册失败: {e}")
+    logger.warning(f"[API] 晋级系统路由注册失败: {e}")
 
 # ========== V004 智能监测方案引擎路由 ==========
 try:
     from api.program_api import router as program_router
     app.include_router(program_router)
-    print("[API] V004 智能监测方案路由已注册")
+    logger.info("[API] V004 智能监测方案路由已注册")
 except ImportError as e:
-    print(f"[API] V004 智能监测方案路由注册失败: {e}")
+    logger.warning(f"[API] V004 智能监测方案路由注册失败: {e}")
 
 # ========== V005 安全管理路由 ==========
 try:
     from api.safety_api import router as safety_router
     app.include_router(safety_router)
-    print("[API] V005 安全管理路由已注册")
+    logger.info("[API] V005 安全管理路由已注册")
 except ImportError as e:
-    print(f"[API] V005 安全管理路由注册失败: {e}")
+    logger.warning(f"[API] V005 安全管理路由注册失败: {e}")
 
 # ========== V007 策略引擎路由 ==========
 try:
     from api.policy_api import router as policy_router
     app.include_router(policy_router)
-    print("[API] V007 策略引擎路由已注册")
+    logger.info("[API] V007 策略引擎路由已注册")
 except ImportError as e:
-    print(f"[API] V007 策略引擎路由注册失败: {e}")
+    logger.warning(f"[API] V007 策略引擎路由注册失败: {e}")
 
 # ========== V006 Agent 模板管理路由 ==========
 try:
     from api.agent_template_api import router as agent_template_router
     app.include_router(agent_template_router)
-    print("[API] V006 Agent 模板管理路由已注册")
+    logger.info("[API] V006 Agent 模板管理路由已注册")
 except ImportError as e:
-    print(f"[API] V006 Agent 模板管理路由注册失败: {e}")
+    logger.warning(f"[API] V006 Agent 模板管理路由注册失败: {e}")
 
 # ========== 专家自助注册入驻路由 ==========
 try:
     from api.expert_registration_api import router as expert_registration_router
     app.include_router(expert_registration_router)
-    print("[API] 专家自助注册入驻路由已注册")
+    logger.info("[API] 专家自助注册入驻路由已注册")
 except ImportError as e:
-    print(f"[API] 专家自助注册入驻路由注册失败: {e}")
+    logger.warning(f"[API] 专家自助注册入驻路由注册失败: {e}")
 
 # ========== 专家自助 Agent 管理路由 ==========
 try:
     from api.expert_agent_api import router as expert_agent_router
     app.include_router(expert_agent_router)
-    print("[API] 专家自助 Agent 管理路由已注册")
+    logger.info("[API] 专家自助 Agent 管理路由已注册")
 except ImportError as e:
-    print(f"[API] 专家自助 Agent 管理路由注册失败: {e}")
+    logger.warning(f"[API] 专家自助 Agent 管理路由注册失败: {e}")
 
 # ========== Phase 5 Agent 生态路由 ==========
 try:
     from api.agent_ecosystem_api import router as agent_ecosystem_router
     app.include_router(agent_ecosystem_router)
-    print("[API] Phase 5 Agent 生态路由已注册")
+    logger.info("[API] Phase 5 Agent 生态路由已注册")
 except ImportError as e:
-    print(f"[API] Phase 5 Agent 生态路由注册失败: {e}")
+    logger.warning(f"[API] Phase 5 Agent 生态路由注册失败: {e}")
 
 # ========== Phase 4 反馈学习闭环路由 ==========
 try:
     from api.agent_feedback_api import router as agent_feedback_router
     app.include_router(agent_feedback_router)
-    print("[API] Phase 4 反馈学习闭环路由已注册")
+    logger.info("[API] Phase 4 反馈学习闭环路由已注册")
 except ImportError as e:
-    print(f"[API] Phase 4 反馈学习闭环路由注册失败: {e}")
+    logger.warning(f"[API] Phase 4 反馈学习闭环路由注册失败: {e}")
 
 # ========== Phase 3 知识共享路由 ==========
 try:
     from api.knowledge_sharing_api import router as knowledge_sharing_router
     app.include_router(knowledge_sharing_router)
-    print("[API] Phase 3 知识共享路由已注册")
+    logger.info("[API] Phase 3 知识共享路由已注册")
 except ImportError as e:
-    print(f"[API] Phase 3 知识共享路由注册失败: {e}")
+    logger.warning(f"[API] Phase 3 知识共享路由注册失败: {e}")
 
 # ========== V003 激励体系路由 ==========
 try:
     from core.milestone_service import incentive_router
     app.include_router(incentive_router)
-    print("[API] V003 激励体系路由已注册")
+    logger.info("[API] V003 激励体系路由已注册")
 except Exception as e:
-    print(f"[API] V003 激励体系路由注册失败: {e}")
+    logger.warning(f"[API] V003 激励体系路由注册失败: {e}")
 
 # ========== 行为处方 (Behavior Rx) 路由 ==========
 try:
     from behavior_rx.rx_routes import router as rx_router
     app.include_router(rx_router)
-    print("[API] 行为处方 (Behavior Rx) 路由已注册")
+    logger.info("[API] 行为处方 (Behavior Rx) 路由已注册")
 except ImportError as e:
-    print(f"[API] 行为处方路由注册失败: {e}")
+    logger.warning(f"[API] 行为处方路由注册失败: {e}")
 
 # ========== V4.0 旅程状态路由 ==========
 try:
     from api.journey_api import router as journey_router
     app.include_router(journey_router)
-    print("[API] V4.0 旅程状态路由已注册")
+    logger.info("[API] V4.0 旅程状态路由已注册")
 except ImportError as e:
-    print(f"[API] V4.0 旅程状态路由注册失败: {e}")
+    logger.warning(f"[API] V4.0 旅程状态路由注册失败: {e}")
 
 # ========== V4.0 治理体系路由 ==========
 try:
     from api.governance_api import router as governance_router
     app.include_router(governance_router)
-    print("[API] V4.0 治理体系路由已注册")
+    logger.info("[API] V4.0 治理体系路由已注册")
 except ImportError as e:
-    print(f"[API] V4.0 治理体系路由注册失败: {e}")
+    logger.warning(f"[API] V4.0 治理体系路由注册失败: {e}")
 
 # ========== V4.0 Sprint 2: 价值重塑路由 ==========
 for _mod, _name in [
@@ -2136,24 +2136,24 @@ for _mod, _name in [
     try:
         _m = __import__(_mod, fromlist=["router"])
         app.include_router(_m.router)
-        print(f"[API] V4.0 {_name}路由已注册")
+        logger.info(f"[API] V4.0 {_name}路由已注册")
     except ImportError as e:
-        print(f"[API] V4.0 {_name}路由注册失败: {e}")
+        logger.warning(f"[API] V4.0 {_name}路由注册失败: {e}")
 
 # 注册遗漏的 routes.py 路由（审计修复 #7）
 try:
     from api.routes import router as legacy_v1_router
     app.include_router(legacy_v1_router)
-    print("[API] v1 通用路由已注册")
+    logger.info("[API] v1 通用路由已注册")
 except ImportError as e:
-    print(f"[API] v1 通用路由注册失败: {e}")
+    logger.warning(f"[API] v1 通用路由注册失败: {e}")
 
 # ========== V4.1 Agent双层分离路由 ==========
 # [SURGERY] 已通过 Registry 注册, 不再需要独立路由
 # try:
 #     from assistant_agents.router import router as assistant_router
 #     app.include_router(assistant_router)
-    print("[API] V4.1 用户层Agent路由已注册 (/v1/assistant)")
+    logger.info("[API] V4.1 用户层Agent路由已注册 (/v1/assistant)")
 # except ImportError as e:
 #     print(f"[API] V4.1 用户层Agent路由注册失败: {e}")
 
@@ -2161,88 +2161,88 @@ except ImportError as e:
 # try:
 #     from professional_agents.router import router as professional_router
 #     app.include_router(professional_router)
-    print("[API] V4.1 教练层Agent路由已注册 (/v1/professional)")
+    logger.info("[API] V4.1 教练层Agent路由已注册 (/v1/professional)")
 # except ImportError as e:
 #     print(f"[API] V4.1 教练层Agent路由注册失败: {e}")
 
 try:
     from gateway.router import router as gateway_router
     app.include_router(gateway_router)
-    print("[API] V4.1 跨层网关路由已注册 (/v1/gateway)")
+    logger.info("[API] V4.1 跨层网关路由已注册 (/v1/gateway)")
 except ImportError as e:
-    print(f"[API] V4.1 跨层网关路由注册失败: {e}")
+    logger.warning(f"[API] V4.1 跨层网关路由注册失败: {e}")
 
 # ========== R2-R8 飞轮实装路由 (必须在bridge之前注册, 避免catch-all拦截) ==========
 try:
     from api.r2_scheduler_agent import scheduler_router
     app.include_router(scheduler_router)
-    print("[API] R2 scheduler_agent API 已注册")
+    logger.info("[API] R2 scheduler_agent API 已注册")
 except Exception as e:
-    print(f"[API] R2 scheduler_agent: {e}")
+    logger.info(f"[API] R2 scheduler_agent: {e}")
 
 try:
     from api.r3_grower_flywheel_api_live import router as grower_live_router
     app.include_router(grower_live_router)
-    print("[API] R3 Grower飞轮(Live) 已注册 (5 endpoints)")
+    logger.info("[API] R3 Grower飞轮(Live) 已注册 (5 endpoints)")
 except Exception as e:
-    print(f"[API] R3 Grower(Live): {e}")
+    logger.info(f"[API] R3 Grower(Live): {e}")
 
 try:
     from api.r4_role_upgrade_trigger import router as upgrade_router
     app.include_router(upgrade_router)
-    print("[API] R4 角色升级触发器 已注册 (2 endpoints)")
+    logger.info("[API] R4 角色升级触发器 已注册 (2 endpoints)")
 except Exception as e:
-    print(f"[API] R4 role_upgrade: {e}")
+    logger.info(f"[API] R4 role_upgrade: {e}")
 
 try:
     from api.r5_observer_flywheel_api_live import router as observer_live_router
     app.include_router(observer_live_router)
-    print("[API] R5 Observer飞轮(Live) 已注册 (3 endpoints)")
+    logger.info("[API] R5 Observer飞轮(Live) 已注册 (3 endpoints)")
 except Exception as e:
-    print(f"[API] R5 Observer(Live): {e}")
+    logger.info(f"[API] R5 Observer(Live): {e}")
 
 try:
     from api.r6_coach_flywheel_api_live import router as coach_live_router
     app.include_router(coach_live_router)
-    print("[API] R6 Coach飞轮(Live) 已注册 (4 endpoints)")
+    logger.info("[API] R6 Coach飞轮(Live) 已注册 (4 endpoints)")
 except Exception as e:
-    print(f"[API] R6 Coach(Live): {e}")
+    logger.info(f"[API] R6 Coach(Live): {e}")
 
 try:
     from api.r7_notification_agent import notif_router
     app.include_router(notif_router)
-    print("[API] R7 通知API 已注册 (2 endpoints)")
+    logger.info("[API] R7 通知API 已注册 (2 endpoints)")
 except Exception as e:
-    print(f"[API] R7 notification: {e}")
+    logger.info(f"[API] R7 notification: {e}")
 
 try:
     from api.r8_user_context import router as context_router
     app.include_router(context_router)
-    print("[API] R8 用户上下文 已注册 (3 endpoints)")
+    logger.info("[API] R8 用户上下文 已注册 (3 endpoints)")
 except Exception as e:
-    print(f"[API] R8 user_context: {e}")
+    logger.info(f"[API] R8 user_context: {e}")
 
 try:
     from gateway.bridge import bridge_router
     app.include_router(bridge_router)
-    print("[API] V4.1 兼容桥接路由已注册 (旧路径→新路径)")
+    logger.info("[API] V4.1 兼容桥接路由已注册 (旧路径→新路径)")
 except ImportError as e:
-    print(f"[API] V4.1 兼容桥接路由注册失败: {e}")
+    logger.warning(f"[API] V4.1 兼容桥接路由注册失败: {e}")
 
 # ========== V4.2 Admin绑定管理路由 ==========
 try:
     from api.admin_bindings_api import router as admin_bindings_router
     app.include_router(admin_bindings_router)
-    print("[API] V4.2 Admin绑定管理路由已注册 (/v1/admin/bindings)")
+    logger.info("[API] V4.2 Admin绑定管理路由已注册 (/v1/admin/bindings)")
 except ImportError as e:
-    print(f"[API] V4.2 Admin绑定管理路由注册失败: {e}")
+    logger.warning(f"[API] V4.2 Admin绑定管理路由注册失败: {e}")
 
 # ========== V4.3 中医骨科康复Agent注册表 ==========
 try:
     from api.routes_tcm_ortho import TCM_ORTHO_AGENT_REGISTRY, GATEWAY_EXTENSIONS
-    print(f"[API] V4.3 中医骨科Agent注册表已加载 ({len(TCM_ORTHO_AGENT_REGISTRY)} agents, {len(GATEWAY_EXTENSIONS)} gateway endpoints)")
+    logger.info(f"[API] V4.3 中医骨科Agent注册表已加载 ({len(TCM_ORTHO_AGENT_REGISTRY)} agents, {len(GATEWAY_EXTENSIONS)} gateway endpoints)")
 except ImportError as e:
-    print(f"[API] V4.3 中医骨科Agent注册表加载失败: {e}")
+    logger.warning(f"[API] V4.3 中医骨科Agent注册表加载失败: {e}")
 
 
 # ========== V5.0 飞轮API路由 ==========
@@ -2250,60 +2250,60 @@ except ImportError as e:
 try:
     from api.expert_flywheel_api import router as expert_flywheel_router
     app.include_router(expert_flywheel_router)
-    print("[API] V5.0 Expert飞轮路由已注册 (4 endpoints)")
+    logger.info("[API] V5.0 Expert飞轮路由已注册 (4 endpoints)")
 except ImportError as e:
-    print(f"[API] V5.0 Expert飞轮路由注册失败: {e}")
+    logger.warning(f"[API] V5.0 Expert飞轮路由注册失败: {e}")
 
 try:
     from api.admin_flywheel_api import router as admin_flywheel_router
     app.include_router(admin_flywheel_router)
-    print("[API] V5.0 Admin飞轮路由已注册 (12 endpoints)")
+    logger.info("[API] V5.0 Admin飞轮路由已注册 (12 endpoints)")
 except ImportError as e:
-    print(f"[API] V5.0 Admin飞轮路由注册失败: {e}")
+    logger.warning(f"[API] V5.0 Admin飞轮路由注册失败: {e}")
 
 try:
     from api.settings_api import router as settings_router
     app.include_router(settings_router)
-    print("[API] P4 Settings路由已注册 (2 endpoints)")
+    logger.info("[API] P4 Settings路由已注册 (2 endpoints)")
 except ImportError as e:
-    print(f"[API] P4 Settings路由注册失败: {e}")
+    logger.warning(f"[API] P4 Settings路由注册失败: {e}")
 
 
 # ========== P5 Routes ==========
 try:
     from api.wechat_auth_api import router as wechat_auth_router
     app.include_router(wechat_auth_router)
-    print("[API] P5A WeChat Auth路由已注册 (7 endpoints)")
+    logger.info("[API] P5A WeChat Auth路由已注册 (7 endpoints)")
 except ImportError as e:
-    print(f"[API] P5A WeChat Auth路由注册失败: {e}")
+    logger.warning(f"[API] P5A WeChat Auth路由注册失败: {e}")
 
 try:
     from api.event_tracking_api import router as event_tracking_router
     app.include_router(event_tracking_router)
-    print("[API] P5B Event Tracking路由已注册 (1 endpoint)")
+    logger.info("[API] P5B Event Tracking路由已注册 (1 endpoint)")
 except ImportError as e:
-    print(f"[API] P5B Event Tracking路由注册失败: {e}")
+    logger.warning(f"[API] P5B Event Tracking路由注册失败: {e}")
 
 try:
     from api.operations_report_api import router as ops_report_router
     app.include_router(ops_report_router)
-    print("[API] P5B Operations Report路由已注册 (3 endpoints)")
+    logger.info("[API] P5B Operations Report路由已注册 (3 endpoints)")
 except ImportError as e:
-    print(f"[API] P5B Operations Report路由注册失败: {e}")
+    logger.warning(f"[API] P5B Operations Report路由注册失败: {e}")
 
 try:
     from api.feature_flag_api import router as feature_flag_router
     app.include_router(feature_flag_router)
-    print("[API] P5C Feature Flags路由已注册 (6 endpoints)")
+    logger.info("[API] P5C Feature Flags路由已注册 (6 endpoints)")
 except ImportError as e:
-    print(f"[API] P5C Feature Flags路由注册失败: {e}")
+    logger.warning(f"[API] P5C Feature Flags路由注册失败: {e}")
 
 try:
     from api.sharer_flywheel_api import router as sharer_flywheel_router
     app.include_router(sharer_flywheel_router)
-    print("[API] Sharer飞轮API已注册 (3 endpoints)")
+    logger.info("[API] Sharer飞轮API已注册 (3 endpoints)")
 except Exception as e:
-    print(f"[API] Sharer飞轮API: {e}")
+    logger.info(f"[API] Sharer飞轮API: {e}")
 
 
 # (R2-R8 已移到 bridge 之前注册, 见上方)
@@ -2313,70 +2313,70 @@ except Exception as e:
 try:
     from api.supervisor_credential_api import router as credential_router
     app.include_router(credential_router)
-    print("[API] I-07 督导资质管理路由已注册 (4 endpoints)")
+    logger.info("[API] I-07 督导资质管理路由已注册 (4 endpoints)")
 except ImportError as e:
-    print(f"[API] I-07 督导资质管理路由注册失败: {e}")
+    logger.warning(f"[API] I-07 督导资质管理路由注册失败: {e}")
 
 
 # ========== VisionGuard 视力行为保护 ==========
 try:
     from api.vision_api import router as vision_router
     app.include_router(vision_router)
-    print("[API] VisionGuard 视力行为保护路由已注册 (14 endpoints)")
+    logger.info("[API] VisionGuard 视力行为保护路由已注册 (14 endpoints)")
 except ImportError as e:
-    print(f"[API] VisionGuard 路由注册失败: {e}")
+    logger.warning(f"[API] VisionGuard 路由注册失败: {e}")
 
 
 # ========== 统一首页API ==========
 try:
     from api.home_api import router as home_router
     app.include_router(home_router)
-    print("[API] 统一首页API已注册 (1 endpoint: GET /api/v1/home)")
+    logger.info("[API] 统一首页API已注册 (1 endpoint: GET /api/v1/home)")
 except ImportError as e:
-    print(f"[API] 统一首页API注册失败: {e}")
+    logger.warning(f"[API] 统一首页API注册失败: {e}")
 
 # ========== 首页激励统计API ==========
 try:
     from api.motivation_api import router as motivation_router
     app.include_router(motivation_router)
-    print("[API] 首页激励统计API已注册 (1 endpoint: GET /api/v1/home/motivation-stats)")
+    logger.info("[API] 首页激励统计API已注册 (1 endpoint: GET /api/v1/home/motivation-stats)")
 except ImportError as e:
-    print(f"[API] 首页激励统计API注册失败: {e}")
+    logger.warning(f"[API] 首页激励统计API注册失败: {e}")
 
 
 # ========== Expert 独立AGENT API (V5.3.0) ==========
 try:
     from api.expert_api import router as expert_api_router
     app.include_router(expert_api_router)
-    print("[API] Expert独立AGENT API已注册 (18 endpoints: /api/v1/expert)")
+    logger.info("[API] Expert独立AGENT API已注册 (18 endpoints: /api/v1/expert)")
 except ImportError as e:
-    print(f"[API] Expert API注册失败: {e}")
+    logger.warning(f"[API] Expert API注册失败: {e}")
 
 # ========== 机构合作 + 合伙人体系 API (V5.3.0) ==========
 try:
     from api.institution_partner_api import institution_router, partner_router
     app.include_router(institution_router)
     app.include_router(partner_router)
-    print("[API] 机构合作API已注册 (6 endpoints: /api/v1/institutions)")
-    print("[API] 合伙人体系API已注册 (6 endpoints: /api/v1/partners)")
+    logger.info("[API] 机构合作API已注册 (6 endpoints: /api/v1/institutions)")
+    logger.info("[API] 合伙人体系API已注册 (6 endpoints: /api/v1/partners)")
 except ImportError as e:
-    print(f"[API] 机构/合伙人API注册失败: {e}")
+    logger.warning(f"[API] 机构/合伙人API注册失败: {e}")
 
 # ========== 预约演示 API ==========
 try:
     from api.demo_request_api import router as demo_request_router
     app.include_router(demo_request_router)
-    print("[API] Landing Page API已注册 (POST+GET /api/v1/demo-requests + GET /api/v1/landing/platform-stats)")
+    logger.info("[API] Landing Page API已注册 (POST+GET /api/v1/demo-requests + GET /api/v1/landing/platform-stats)")
 except ImportError as e:
-    print(f"[API] 预约演示API注册失败: {e}")
+    logger.warning(f"[API] 预约演示API注册失败: {e}")
 
 # ========== 运营中心 API ==========
 try:
     from api.platform_event_log_api import router as operation_center_router
     app.include_router(operation_center_router)
-    print("[API] 运营中心API已注册 (GET /api/v1/admin/operation-center/stats|events|logs)")
+    logger.info("[API] 运营中心API已注册 (GET /api/v1/admin/operation-center/stats|events|logs)")
 except ImportError as e:
-    print(f"[API] 运营中心API注册失败: {e}")
+    logger.warning(f"[API] 运营中心API注册失败: {e}")
 
 
 
@@ -2385,25 +2385,25 @@ try:
     from api.route_audit import router as audit_router, audit_startup
     app.include_router(audit_router)
     audit_startup(app)
-    print("[API] S1 Route Audit: ACTIVE")
+    logger.info("[API] S1 Route Audit: ACTIVE")
 except ImportError as e:
-    print(f"[API] S1 FAILED: {e}")
+    logger.info(f"[API] S1 FAILED: {e}")
 
 # === S2: Frontend Stubs ===
 try:
     from api.frontend_stubs import router as stubs_router
     app.include_router(stubs_router)
-    print("[API] S2 Frontend Stubs: ACTIVE")
+    logger.info("[API] S2 Frontend Stubs: ACTIVE")
 except ImportError as e:
-    print(f"[API] S2 FAILED: {e}")
+    logger.info(f"[API] S2 FAILED: {e}")
 
 # === S4: Agent Health ===
 try:
     from api.agent_health import router as agent_health_router
     app.include_router(agent_health_router)
-    print("[API] S4 Agent Health: ACTIVE")
+    logger.info("[API] S4 Agent Health: ACTIVE")
 except ImportError as e:
-    print(f"[API] S4 FAILED: {e}")
+    logger.info(f"[API] S4 FAILED: {e}")
 
 if __name__ == "__main__":
     import uvicorn

@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
 import logging
+from loguru import logger
 
 from core.database import get_db
 from api.dependencies import get_current_user, resolve_tenant_ctx
@@ -335,8 +336,8 @@ async def list_agents(
                     "keywords": tpl.get("keywords", []),
                 })
             return {"success": True, "data": agents, "source": "template_cache"}
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Agent] template cache lookup failed, falling back to hardcoded: {e}")
 
     # 回退到硬编码列表
     return {"success": True, "data": _registered_agents, "source": "hardcoded"}
@@ -690,8 +691,8 @@ async def agent_system_status(current_user=Depends(get_current_user)):
             registry = getattr(ma, '_registry', None)
             if registry:
                 unified_agent_count = len(registry._agents) if hasattr(registry, '_agents') else 0
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Agent] MasterAgent status check failed: {e}")
 
     # 统一架构: v6 = master (向后兼容字段)
     agent_master_v6 = master_available
@@ -703,16 +704,16 @@ async def agent_system_status(current_user=Depends(get_current_user)):
         from core.agent_template_service import get_cached_templates, is_cache_loaded
         if is_cache_loaded():
             template_count = len(get_cached_templates())
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Agent] template cache status check failed: {e}")
 
     # 检查 Scheduler 状态
     scheduler_running = False
     try:
         from core.scheduler import HAS_APSCHEDULER
         scheduler_running = HAS_APSCHEDULER
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[Agent] scheduler status check failed: {e}")
 
     online_agents = [a for a in _registered_agents if a["status"] == "online"]
 

@@ -309,11 +309,21 @@ async def supervisor_dashboard(
             "SELECT COUNT(*) FROM users WHERE role='coach' AND is_active=true"
         )).scalar() or 0
 
+        high_risk = 0
+        approved_today = 0
+        if check:
+            high_risk = db.execute(sa_text(
+                "SELECT COUNT(*) FROM health_review_queue WHERE risk_level IN ('high','critical') AND status='pending'"
+            )).scalar() or 0
+            approved_today = db.execute(sa_text(
+                "SELECT COUNT(*) FROM health_review_queue WHERE reviewer_role='supervisor' AND status='approved' AND reviewed_at >= CURRENT_DATE"
+            )).scalar() or 0
+
         return {
             "coach_count": int(coach_count),
             "pending_review": int(pending),
-            "high_risk_count": 0,
-            "approved_today": 0,
+            "high_risk_count": int(high_risk),
+            "approved_today": int(approved_today),
         }
     except Exception as e:
         logger.warning(f"[Supervisor] dashboard failed: {e}")
@@ -356,11 +366,21 @@ async def master_dashboard(
                 "SELECT COUNT(*) FROM health_review_queue WHERE reviewer_role='master' AND status='pending'"
             )).scalar() or 0
 
+        knowledge_pending = db.execute(sa_text(
+            "SELECT COUNT(*) FROM knowledge_chunks WHERE 1=1"
+        )).scalar() or 0
+
+        reviewed_today = 0
+        if check:
+            reviewed_today = db.execute(sa_text(
+                "SELECT COUNT(*) FROM health_review_queue WHERE reviewer_role='master' AND status IN ('approved','rejected') AND reviewed_at >= CURRENT_DATE"
+            )).scalar() or 0
+
         return {
             "critical_count": int(critical),
             "ai_pending": int(ai_pending),
-            "knowledge_pending": 0,
-            "reviewed_today": 0,
+            "knowledge_pending": int(knowledge_pending),
+            "reviewed_today": int(reviewed_today),
         }
     except Exception as e:
         logger.warning(f"[Master] dashboard failed: {e}")
