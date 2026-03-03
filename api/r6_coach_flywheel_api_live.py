@@ -56,6 +56,18 @@ class ReviewQueueResponse(BaseModel):
     urgent_count: int
 
 
+class SavePlanRequest(BaseModel):
+    student_id: int
+    ai_draft: str
+    summary: Optional[str] = None
+    priority: str = "normal"
+
+
+class SavePlanResponse(BaseModel):
+    success: bool
+    review_id: str
+
+
 class ApproveRequest(BaseModel):
     review_note: Optional[str] = None
     edited_content: Optional[str] = None
@@ -188,6 +200,51 @@ async def get_review_queue(
         total_pending=total_pending,
         urgent_count=urgent_count,
     )
+
+
+# ═══════════════════════════════════════════════════
+# POST /flywheel/save-plan — 保存AI生成计划至审核队列
+# ═══════════════════════════════════════════════════
+
+@router.post("/flywheel/save-plan", response_model=SavePlanResponse)
+async def save_flywheel_plan(
+    data: SavePlanRequest,
+    current_user=Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    将飞轮AI生成的跟进计划保存到教练审核队列
+
+    由前端在 runAgent() 成功后调用，创建一条 pending 状态的审核记录。
+    """
+    import uuid
+    review_id = f"fw_{uuid.uuid4().hex[:12]}"
+    coach_id = current_user.id
+    now = datetime.now()
+    summary = data.summary or (data.ai_draft[:80] + "…" if len(data.ai_draft) > 80 else data.ai_draft)
+
+    try:
+        await db.execute(text("""
+            INSERT INTO coach_review_queue
+                (id, coach_id, student_id, type, priority, status, ai_summary, ai_draft, created_at)
+            VALUES
+                (:id, :coach_id, :student_id, 'prescription', :priority, 'pending', :summary, :draft, :now)
+        """), {
+            "id": review_id,
+            "coach_id": coach_id,
+            "student_id": data.student_id,
+            "priority": data.priority,
+            "summary": summary,
+            "draft": data.ai_draft,
+            "now": now,
+        })
+        await db.commit()
+    except Exception as e:
+        logger.warning(f"保存飞轮计划失败: {e}")
+        raise HTTPException(status_code=500, detail="保存失败，请重试")
+
+    logger.info(f"Coach {coach_id} saved flywheel plan {review_id} for student {data.student_id}")
+    return SavePlanResponse(success=True, review_id=review_id)
 
 
 # ═══════════════════════════════════════════════════

@@ -324,7 +324,8 @@
         </view>
         <scroll-view scroll-y class="fw-result-scroll">
           <text class="fw-result-text">{{ agentResult }}</text>
-          <view class="fw-result-hint">↑ 已自动进入待审核队列，可在「教练审核」Tab 查看</view>
+          <view class="fw-result-hint" v-if="savedReviewId">✅ 已保存至待审核队列（编号 {{ savedReviewId }}），点击「前往审核」可立即审核</view>
+          <view class="fw-result-hint" v-else>💡 点击「前往审核」进入教练审核队列</view>
         </scroll-view>
         <view class="fw-result-footer">
           <view class="fw-result-btn fw-result-btn--review" @tap="goToPending">前往审核 →</view>
@@ -371,6 +372,7 @@ const approvedCount = ref(0)
 const rejectedCount = ref(0)
 const showResultSheet = ref(false)
 const resultStudent = ref('')
+const savedReviewId = ref('')
 
 // 搜索与筛选
 const searchText = ref('')
@@ -554,6 +556,7 @@ async function runAgent() {
   if (!selectedStudent.value || generating.value) return
   generating.value = true
   agentResult.value = ''
+  savedReviewId.value = ''
   resultStudent.value = selectedStudent.value.name
   try {
     const res = await http<any>('/api/v1/agent/run', {
@@ -574,6 +577,20 @@ async function runAgent() {
     } else {
       agentResult.value = d.output || d.text || d.result || d.content || '暂无跟进建议'
     }
+    // 保存到审核队列
+    try {
+      const saveRes = await http<any>('/api/v1/coach/flywheel/save-plan', {
+        method: 'POST',
+        data: {
+          student_id: selectedStudent.value.id,
+          ai_draft: agentResult.value,
+          summary: agentResult.value.slice(0, 60) + (agentResult.value.length > 60 ? '…' : ''),
+        },
+      })
+      savedReviewId.value = saveRes.review_id || ''
+    } catch (e) {
+      console.warn('[flywheel] save-plan failed:', e)
+    }
     // 生成完成后自动弹出结果抽屉
     showResultSheet.value = true
   } catch (e: any) {
@@ -583,9 +600,10 @@ async function runAgent() {
   generating.value = false
 }
 
-function goToPending() {
+async function goToPending() {
   showResultSheet.value = false
   activeTab.value = 'pending'
+  await loadData()
 }
 
 function regenCurrent() {
