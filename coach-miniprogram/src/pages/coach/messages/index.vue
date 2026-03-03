@@ -2,31 +2,41 @@
   <view class="msg-page">
     <view class="msg-navbar">
       <view class="msg-nav-back" @tap="goBack">←</view>
-      <text class="msg-nav-title">学员会话</text>
-      <view class="msg-nav-action" />
+      <text class="msg-nav-title">推送记录</text>
+      <view class="msg-nav-badge" v-if="unreadTotal > 0">{{ unreadTotal }}</view>
+      <view v-else class="msg-nav-action" />
+    </view>
+
+    <!-- 说明条：与「我的学员」的区别 -->
+    <view class="msg-desc-bar">
+      <text class="msg-desc-text">教练→学员的处方、评估、AI建议推送历史 · {{ students.length }}名绑定学员</text>
     </view>
 
     <scroll-view scroll-y class="msg-list"
       refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
 
-      <view v-for="s in students" :key="s.id" class="msg-conv-card" @tap="goStudentDetail(s.id)">
-        <view class="msg-conv-avatar" :style="{ background: s.risk_level >= 3 ? '#E74C3C' : '#27AE60' }">
+      <view v-for="s in students" :key="s.id" class="msg-conv-card" @tap="goDetail(s.id)">
+        <view class="msg-conv-avatar" :style="{ background: avatarColor(s.name) }">
           {{ (s.name || '?')[0] }}
         </view>
         <view class="msg-conv-body">
           <view class="msg-conv-header">
             <text class="msg-conv-name">{{ s.name }}</text>
-            <text class="msg-conv-time">{{ s.last_time }}</text>
+            <text class="msg-conv-time">{{ s.last_push_time }}</text>
           </view>
-          <text class="msg-conv-preview">{{ s.last_message }}</text>
+          <text class="msg-conv-preview">{{ s.last_push_content }}</text>
         </view>
-        <view v-if="s.unread > 0" class="msg-conv-unread">{{ s.unread }}</view>
-        <text v-else class="msg-conv-arrow">›</text>
+        <view class="msg-conv-meta">
+          <view v-if="s.unread > 0" class="msg-conv-unread">{{ s.unread }}</view>
+          <text v-else class="msg-conv-arrow">›</text>
+          <text class="msg-push-count" v-if="s.push_count > 0">{{ s.push_count }}条推送</text>
+        </view>
       </view>
 
       <view v-if="!loading && students.length === 0" class="msg-empty">
-        <text class="msg-empty-icon">💬</text>
-        <text class="msg-empty-text">暂无学员会话</text>
+        <text class="msg-empty-icon">📤</text>
+        <text class="msg-empty-text">暂无推送记录</text>
+        <text class="msg-empty-sub">在学员档案中开具处方或分配评估后会显示在这里</text>
       </view>
       <view v-if="loading" class="msg-empty">
         <text class="msg-empty-text">加载中...</text>
@@ -36,49 +46,79 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import { httpReq as http } from '@/api/request'
 
 const refreshing = ref(false)
 const loading = ref(false)
 const students = ref<any[]>([])
 
+const unreadTotal = computed(() => students.value.reduce((s, i) => s + (i.unread || 0), 0))
+
+const AVATAR_COLORS = ['#3498DB', '#E67E22', '#27AE60', '#9B59B6', '#E74C3C', '#1ABC9C']
+function avatarColor(name: string): string {
+  if (!name) return '#8E99A4'
+  let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length]
+}
+
 async function loadData() {
   loading.value = true
   try {
+    // 仅加载教练绑定学员（dashboard 数据）
     const res = await http<any>('/api/v1/coach/dashboard')
-    const raw = res.students || res.data?.students || []
-    students.value = (Array.isArray(raw) ? raw : []).map((s: any) => ({
-      id: s.id || s.user_id,
-      name: s.name || s.full_name || '未知',
-      risk_level: parseInt(String(s.risk_level ?? '0').replace(/\D/g, '') || '0'),
-      last_message: s.last_action || ('最近活跃' + (s.days_since_last_contact ?? '—') + '天前'),
-      last_time: '',
-      unread: s.unread_count || 0,
-    }))
-  } catch (e) {
-    console.warn('[coach/messages] load:', e)
+    const raw: any[] = res.students || res.data?.students || []
+
+    // 尝试加载推送队列以获取推送历史
+    let pushMap: Record<number, any[]> = {}
     try {
-      const res2 = await http<any>('/api/v1/coach/students')
-      const raw2 = res2.items || res2.students || (Array.isArray(res2) ? res2 : [])
-      students.value = raw2.map((s: any) => ({
-        id: s.id || s.user_id,
+      const pushRes = await http<any>('/api/v1/coach-push/history?page_size=100')
+      const pushItems: any[] = pushRes.items || []
+      pushItems.forEach((p: any) => {
+        const sid = p.student_id || p.receiver_id
+        if (!pushMap[sid]) pushMap[sid] = []
+        pushMap[sid].push(p)
+      })
+    } catch { /* push history 不可用，使用 dashboard 数据替代 */ }
+
+    students.value = (Array.isArray(raw) ? raw : []).map((s: any) => {
+      const sid = s.id || s.user_id
+      const pushes = pushMap[sid] || []
+      const lastPush = pushes[0]
+
+      // 最后推送内容：优先 push history，否则用 dashboard 字段
+      const lastContent = lastPush
+        ? (lastPush.content || lastPush.summary || '已推送内容')
+        : (s.last_action || '点击查看学员档案')
+
+      // 最后推送时间
+      const lastTime = lastPush?.pushed_at || lastPush?.created_at
+        ? (lastPush.pushed_at || lastPush.created_at).slice(0, 10)
+        : ''
+
+      return {
+        id: sid,
         name: s.name || s.full_name || '未知',
-        risk_level: parseInt(String(s.risk_level ?? '0').replace(/\D/g, '') || '0'),
-        last_message: '最近活跃' + (s.days_since_last_contact ?? '—') + '天前',
-        last_time: '',
-        unread: 0,
-      }))
-    } catch (e2) { console.warn('[coach/messages] fallback:', e2) }
+        last_push_content: lastContent,
+        last_push_time: lastTime,
+        push_count: pushes.length || (s.push_count ?? 0),
+        unread: s.unread_count || 0,
+      }
+    })
+  } catch (e) {
+    console.warn('[coach/messages] loadData:', e)
+    students.value = []
   }
   loading.value = false
 }
 
-async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }
-
-function goStudentDetail(id: number) {
-  uni.navigateTo({ url: '/pages/coach/students/detail?id=' + id })
+function goDetail(id: number) {
+  // 进入学员档案 → 督导记录 Tab 直接展示推送/处方互动历史
+  uni.navigateTo({ url: '/pages/coach/students/detail?id=' + id + '&tab=supervision' })
 }
+
+async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }
 
 function goBack() {
   const pages = getCurrentPages()
@@ -86,7 +126,7 @@ function goBack() {
   else uni.switchTab({ url: '/pages/home/index' })
 }
 
-onMounted(() => { loadData() })
+onShow(() => { loadData() })
 </script>
 
 <style scoped>
@@ -98,9 +138,17 @@ onMounted(() => { loadData() })
 }
 .msg-nav-back { font-size: 40rpx; padding: 16rpx; }
 .msg-nav-title { flex: 1; text-align: center; font-size: 34rpx; font-weight: 600; }
-.msg-nav-action { width: 60rpx; }
+.msg-nav-badge {
+  min-width: 40rpx; height: 40rpx; border-radius: 20rpx;
+  background: #E74C3C; color: #fff; font-size: 22rpx;
+  display: flex; align-items: center; justify-content: center; padding: 0 8rpx;
+}
+.msg-nav-action { width: 72rpx; }
 
-.msg-list { height: calc(100vh - 180rpx); padding: 16rpx 24rpx; }
+.msg-desc-bar { padding: 12rpx 24rpx; background: #EBF5FB; }
+.msg-desc-text { font-size: 22rpx; color: #3498DB; display: block; }
+
+.msg-list { height: calc(100vh - 220rpx); padding: 16rpx 24rpx; }
 
 .msg-conv-card {
   display: flex; align-items: center; gap: 16rpx;
@@ -120,14 +168,17 @@ onMounted(() => { loadData() })
   display: block; font-size: 24rpx; color: #8E99A4;
   margin-top: 6rpx; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
+.msg-conv-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6rpx; }
 .msg-conv-unread {
   min-width: 36rpx; height: 36rpx; border-radius: 18rpx;
   background: #E74C3C; color: #fff; font-size: 22rpx;
   display: flex; align-items: center; justify-content: center; padding: 0 8rpx;
 }
 .msg-conv-arrow { font-size: 36rpx; color: #CCC; }
+.msg-push-count { font-size: 20rpx; color: #3498DB; }
 
-.msg-empty { text-align: center; padding: 120rpx 0; }
+.msg-empty { text-align: center; padding: 100rpx 32rpx; }
 .msg-empty-icon { display: block; font-size: 80rpx; margin-bottom: 16rpx; }
-.msg-empty-text { font-size: 28rpx; color: #8E99A4; }
+.msg-empty-text { display: block; font-size: 28rpx; color: #8E99A4; }
+.msg-empty-sub { display: block; font-size: 24rpx; color: #BDC3C7; margin-top: 12rpx; line-height: 1.5; }
 </style>

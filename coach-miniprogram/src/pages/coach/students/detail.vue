@@ -368,7 +368,7 @@ async function loadData() {
     }
   } catch (e) { console.warn('[coach/students/detail] profile:', e) }
 
-  // 健康数据 tab 初始化（从已有字段填充）
+  // 健康数据 tab 初始化（仅使用 dashboard health_data 字段，无额外端点请求）
   const hd = student.value.health_data || {}
   healthData.value = {
     fasting_glucose: hd.fasting_glucose ?? student.value.fasting_glucose ?? null,
@@ -376,41 +376,6 @@ async function loadData() {
     exercise_minutes: hd.exercise_minutes ?? student.value.exercise_minutes ?? null,
     sleep_hours: hd.sleep_hours ?? null,
   }
-
-  // 尝试加载扩展健康数据（含趋势）
-  try {
-    const res = await http<any>('/api/v1/health-data/user/' + studentId.value + '/recent?limit=7')
-    const items: any[] = res?.items || []
-    if (items.length) {
-      const latest = items[0]
-      healthData.value = {
-        fasting_glucose: healthData.value.fasting_glucose ?? latest.fasting_glucose ?? null,
-        weight: healthData.value.weight ?? latest.weight ?? null,
-        exercise_minutes: healthData.value.exercise_minutes ?? latest.exercise_minutes ?? null,
-        sleep_hours: healthData.value.sleep_hours ?? latest.sleep_hours ?? null,
-      }
-      const days = ['一','二','三','四','五','六','日']
-      const reversed = [...items].reverse()
-      if (reversed.some((i: any) => i.fasting_glucose)) {
-        const vals = reversed.map((i: any) => i.fasting_glucose || 0)
-        const maxV = Math.max(...vals) || 1
-        glucoseTrend.value = reversed.map((i: any, idx: number) => ({
-          label: days[idx] || '',
-          val: i.fasting_glucose,
-          height: i.fasting_glucose ? Math.max(20, (i.fasting_glucose / maxV) * 120) : 10,
-        }))
-      }
-      if (reversed.some((i: any) => i.weight)) {
-        const vals = reversed.map((i: any) => i.weight || 0)
-        const maxV = Math.max(...vals) || 1
-        weightTrend.value = reversed.map((i: any, idx: number) => ({
-          label: days[idx] || '',
-          val: i.weight,
-          height: i.weight ? Math.max(20, (i.weight / maxV) * 120) : 10,
-        }))
-      }
-    }
-  } catch { /* 无扩展健康数据，使用已有字段 */ }
 
   // 行为记录（仅此学员）
   try {
@@ -508,6 +473,7 @@ function goBack() { uni.navigateBack() }
 
 onLoad((opts: any) => {
   studentId.value = parseInt(opts?.id) || 0
+  if (opts?.tab) activeTab.value = opts.tab
   loadData()
 })
 </script>
