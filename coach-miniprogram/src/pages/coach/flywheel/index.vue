@@ -181,13 +181,6 @@
             {{ searchText ? '未找到匹配学员' : '暂无学员数据' }}
           </view>
         </view>
-        <view v-if="agentResult" class="fw-gen-result">
-          <view class="fw-gen-result-header">
-            <text class="fw-gen-result-title">AI 跟进建议 — {{ selectedStudent?.name }}</text>
-          </view>
-          <text class="fw-gen-result-text">{{ agentResult }}</text>
-          <view class="fw-gen-result-hint">已自动进入待审核队列</view>
-        </view>
         <view style="height:160rpx;"></view>
       </template>
 
@@ -312,8 +305,31 @@
       <view class="fw-fixed-prompt">
         <input class="fw-fixed-input" v-model="customPrompt" placeholder="自定义AI指令（可选）…" />
       </view>
-      <view class="fw-fixed-btn" @tap="runAgent" :class="{ 'fw-fixed-btn--loading': generating }">
-        {{ generating ? '生成中…' : '🚀 生成跟进计划' }}
+      <view class="fw-fixed-actions">
+        <view class="fw-fixed-btn" :class="{ 'fw-fixed-btn--loading': generating }" @tap="runAgent">
+          {{ generating ? '生成中…' : '🚀 生成跟进计划' }}
+        </view>
+        <view v-if="agentResult" class="fw-fixed-view-btn" @tap="showResultSheet = true">
+          查看结果 ↑
+        </view>
+      </view>
+    </view>
+
+    <!-- 跟进计划结果抽屉 -->
+    <view v-if="showResultSheet" class="fw-result-mask" @tap="showResultSheet = false">
+      <view class="fw-result-sheet" @tap.stop>
+        <view class="fw-result-header">
+          <text class="fw-result-title">🤖 AI 跟进计划 — {{ resultStudent }}</text>
+          <view class="fw-result-close" @tap="showResultSheet = false">✕</view>
+        </view>
+        <scroll-view scroll-y class="fw-result-scroll">
+          <text class="fw-result-text">{{ agentResult }}</text>
+          <view class="fw-result-hint">↑ 已自动进入待审核队列，可在「教练审核」Tab 查看</view>
+        </scroll-view>
+        <view class="fw-result-footer">
+          <view class="fw-result-btn fw-result-btn--review" @tap="goToPending">前往审核 →</view>
+          <view class="fw-result-btn fw-result-btn--regen" @tap="regenCurrent">重新生成</view>
+        </view>
       </view>
     </view>
 
@@ -353,6 +369,8 @@ const rejectModal = ref<any>(null)
 const rejectReason = ref('')
 const approvedCount = ref(0)
 const rejectedCount = ref(0)
+const showResultSheet = ref(false)
+const resultStudent = ref('')
 
 // 搜索与筛选
 const searchText = ref('')
@@ -536,6 +554,7 @@ async function runAgent() {
   if (!selectedStudent.value || generating.value) return
   generating.value = true
   agentResult.value = ''
+  resultStudent.value = selectedStudent.value.name
   try {
     const res = await http<any>('/api/v1/agent/run', {
       method: 'POST',
@@ -555,10 +574,24 @@ async function runAgent() {
     } else {
       agentResult.value = d.output || d.text || d.result || d.content || '暂无跟进建议'
     }
+    // 生成完成后自动弹出结果抽屉
+    showResultSheet.value = true
   } catch (e: any) {
     agentResult.value = '生成失败: ' + (e.message || '请重试')
+    uni.showToast({ title: '生成失败，请重试', icon: 'none' })
   }
   generating.value = false
+}
+
+function goToPending() {
+  showResultSheet.value = false
+  activeTab.value = 'pending'
+}
+
+function regenCurrent() {
+  showResultSheet.value = false
+  agentResult.value = ''
+  runAgent()
 }
 
 function regenFromRejected(item: any) {
@@ -701,8 +734,24 @@ onLoad(() => { loadData() })
 .fw-fixed-clear { font-size: 28rpx; color: #BDC3C7; padding: 8rpx; }
 .fw-fixed-prompt { margin-bottom: 12rpx; }
 .fw-fixed-input { width: 100%; background: #F5F6FA; border-radius: 10rpx; padding: 12rpx 16rpx; font-size: 26rpx; box-sizing: border-box; }
-.fw-fixed-btn { text-align: center; padding: 20rpx; background: #27AE60; color: #fff; border-radius: 14rpx; font-size: 30rpx; font-weight: 600; }
+.fw-fixed-actions { display: flex; gap: 12rpx; }
+.fw-fixed-btn { flex: 1; text-align: center; padding: 20rpx; background: #27AE60; color: #fff; border-radius: 14rpx; font-size: 30rpx; font-weight: 600; }
 .fw-fixed-btn--loading { opacity: 0.6; }
+.fw-fixed-view-btn { padding: 20rpx 28rpx; background: #F0FFF8; color: #27AE60; border-radius: 14rpx; font-size: 26rpx; font-weight: 600; border: 2rpx solid #27AE60; white-space: nowrap; }
+
+/* 跟进计划结果抽屉 */
+.fw-result-mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: flex-end; }
+.fw-result-sheet { width: 100%; background: #fff; border-radius: 32rpx 32rpx 0 0; padding: 32rpx 32rpx calc(40rpx + env(safe-area-inset-bottom)); max-height: 80vh; display: flex; flex-direction: column; }
+.fw-result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+.fw-result-title { font-size: 30rpx; font-weight: 700; color: #27AE60; flex: 1; }
+.fw-result-close { font-size: 36rpx; color: #BDC3C7; padding: 8rpx; }
+.fw-result-scroll { flex: 1; overflow-y: auto; }
+.fw-result-text { display: block; font-size: 28rpx; color: #2C3E50; line-height: 1.8; white-space: pre-wrap; }
+.fw-result-hint { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 20rpx; padding: 16rpx; background: #F8F9FA; border-radius: 10rpx; }
+.fw-result-footer { display: flex; gap: 16rpx; margin-top: 24rpx; }
+.fw-result-btn { flex: 1; text-align: center; padding: 22rpx 0; border-radius: 14rpx; font-size: 28rpx; font-weight: 600; }
+.fw-result-btn--review { background: #27AE60; color: #fff; }
+.fw-result-btn--regen { background: #F0F0F0; color: #5B6B7F; }
 
 .fw-empty { text-align: center; padding: 100rpx 0; }
 .fw-empty-icon { display: block; font-size: 80rpx; margin-bottom: 16rpx; }
