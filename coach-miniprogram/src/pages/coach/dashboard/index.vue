@@ -131,7 +131,7 @@ const tools = [
   { icon: '📤', label: '推送队列', url: '/pages/coach/push-queue/index', bg: '#F0FBF6' },
   { icon: '🛡️', label: '风险管理', url: '/pages/coach/risk/index', bg: '#FFF2F2' },
   { icon: '📡', label: '直播中心', url: '/pages/coach/live/index', bg: '#FFF8EE' },
-  { icon: '💬', label: '消息', url: '/pages/coach/messages/index', bg: '#F5F0FF' },
+  { icon: '💬', label: '学员会话', url: '/pages/coach/messages/index', bg: '#F5F0FF' },
 ]
 
 const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C']
