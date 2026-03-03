@@ -246,9 +246,11 @@ def setup_production_middleware(app: FastAPI):
     # 请求日志
     app.add_middleware(RequestLoggingMiddleware)
 
-    # 速率限制
-    rpm = int(os.getenv("RATE_LIMIT_RPM", "120"))
-    app.add_middleware(RateLimitMiddleware, requests_per_minute=rpm)
+    # 速率限制（test 环境豁免，避免 CI 96个测试打出 429）
+    env = os.getenv("ENVIRONMENT", "production")
+    if env != "test":
+        rpm = int(os.getenv("RATE_LIMIT_RPM", "120"))
+        app.add_middleware(RateLimitMiddleware, requests_per_minute=rpm)
 
     # Prometheus metrics (after middleware so /metrics route is not wrapped incorrectly)
     from core.metrics import setup_prometheus
