@@ -11,19 +11,19 @@
     </view>
 
     <scroll-view scroll-y class="prof-scroll">
-      <!-- 教练数据概览 -->
+      <!-- 个人成就概览 -->
       <view class="prof-stats">
-        <view class="prof-stat-item" @tap="goPage('/pages/coach/students/index')">
-          <text class="prof-stat-num">{{ userInfo.student_count || 0 }}</text>
-          <text class="prof-stat-label">管理学员 ›</text>
+        <view class="prof-stat-item" @tap="goPage('/pages/learning/index')">
+          <text class="prof-stat-num">{{ userInfo.learning_credits || 0 }}</text>
+          <text class="prof-stat-label">学习积分 ›</text>
         </view>
         <view class="prof-stat-item">
-          <text class="prof-stat-num">{{ userInfo.total_days || 0 }}</text>
-          <text class="prof-stat-label">服务天数</text>
+          <text class="prof-stat-num">{{ userInfo.joined_days || 0 }}</text>
+          <text class="prof-stat-label">加入天数</text>
         </view>
-        <view class="prof-stat-item" @tap="goPage('/pages/coach/analytics/index')">
-          <text class="prof-stat-num">{{ userInfo.total_interventions || 0 }}</text>
-          <text class="prof-stat-label">干预次数 ›</text>
+        <view class="prof-stat-item" @tap="goPage('/pages/profile-extra/certification')">
+          <text class="prof-stat-num">{{ userInfo.cert_count || 0 }}</text>
+          <text class="prof-stat-label">获得认证 ›</text>
         </view>
       </view>
 
@@ -141,33 +141,41 @@ async function loadProfile() {
       userInfo.value = {
         name: u.full_name || u.display_name || u.username || u.nickname || '教练',
         role_label: (u.role||'').toLowerCase() === 'coach' ? '健康教练' : (u.role||'').toLowerCase() === 'admin' ? '管理员' : u.role || '用户',
-        student_count: u.student_count || 0,
-        total_days: u.total_days || 0,
-        total_interventions: u.total_interventions || 0,
+        learning_credits: 0,
+        joined_days: 0,
+        cert_count: 0,
       }
     }
   } catch (e) { console.warn('[profile/index] loadProfile:', e) }
 
-  // 尝试从后端获取更新信息
+  // 从后端获取基本信息
   try {
     const res = await http<any>('/api/v1/auth/me')
     if (res) {
+      const joinedDays = res.created_at
+        ? Math.floor((Date.now() - new Date(res.created_at).getTime()) / 86400000)
+        : 0
       userInfo.value = {
         ...userInfo.value,
         name: res.full_name || res.display_name || res.username || userInfo.value.name,
         username: res.username || '',
         role_label: (res.role||'').toLowerCase() === 'coach' ? '健康教练' : res.role || userInfo.value.role_label,
-        student_count: res.student_count ?? userInfo.value.student_count,
+        joined_days: joinedDays,
       }
     }
   } catch (e) { console.warn('[profile/index] me:', e) }
 
-  // 从dashboard获取统计
+  // 个人学习积分
   try {
-    const dash = await http<any>('/api/v1/coach/dashboard')
-    userInfo.value.student_count = dash.client_count ?? (dash.students || []).length ?? userInfo.value.student_count
-    userInfo.value.total_interventions = dash.total_interventions ?? userInfo.value.total_interventions
-  } catch (e) { console.warn('[profile/index] dashboard:', e) }
+    const credits = await http<any>('/api/v1/learning/credits')
+    userInfo.value.learning_credits = credits.total_credits ?? credits.credits ?? 0
+  } catch (e) { console.warn('[profile/index] credits:', e) }
+
+  // 获得认证数
+  try {
+    const sessions = await http<any>('/api/v1/certification/sessions/my?status=passed')
+    userInfo.value.cert_count = sessions.total ?? (sessions.items || []).length ?? 0
+  } catch (e) { console.warn('[profile/index] certs:', e) }
 }
 
 function editProfile() {

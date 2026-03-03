@@ -68,13 +68,21 @@
         <view class="home-section">
           <text class="home-section-title">⚡ 快捷入口</text>
           <view class="home-shortcuts">
-            <view class="home-shortcut" @tap="goPage('/pages/coach/analytics/index')">
-              <view class="home-sc-icon" style="background:#EEF6FF;">📈</view>
-              <text class="home-sc-label">数据分析</text>
+            <view class="home-shortcut" @tap="goPage('/pages/coach/flywheel/index')">
+              <view class="home-sc-icon" style="background:#E8F4FD;">🤖</view>
+              <text class="home-sc-label">AI跟进</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/coach/students/index')">
+              <view class="home-sc-icon" style="background:#EEF6FF;">👥</view>
+              <text class="home-sc-label">学员管理</text>
             </view>
             <view class="home-shortcut" @tap="goPage('/pages/coach/risk/index')">
               <view class="home-sc-icon" style="background:#FFF2F2;">🛡️</view>
               <text class="home-sc-label">风险管理</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/coach/analytics/index')">
+              <view class="home-sc-icon" style="background:#F0FFF8;">📈</view>
+              <text class="home-sc-label">数据分析</text>
             </view>
             <view class="home-shortcut" @tap="goPage('/pages/coach/health-review/index')">
               <view class="home-sc-icon" style="background:#FFF0E6;">🩺</view>
@@ -659,9 +667,9 @@ onShow(() => { loadData() })
 .home-activity-text { display: block; font-size: 26rpx; color: #2C3E50; line-height: 1.5; }
 .home-activity-time { display: block; font-size: 22rpx; color: #BDC3C7; margin-top: 4rpx; }
 
-/* 快捷入口 */
-.home-shortcuts { display: flex; flex-wrap: wrap; gap: 24rpx; margin-top: 16rpx; }
-.home-shortcut  { flex: 1; min-width: 20%; display: flex; flex-direction: column; align-items: center; }
+/* 快捷入口 — 每行3个，自动换行 */
+.home-shortcuts { display: flex; flex-wrap: wrap; gap: 20rpx; margin-top: 16rpx; }
+.home-shortcut  { width: calc(33.33% - 14rpx); display: flex; flex-direction: column; align-items: center; }
 .home-sc-icon   { width: 88rpx; height: 88rpx; border-radius: 20rpx; display: flex; align-items: center; justify-content: center; font-size: 40rpx; }
 .home-sc-label  { font-size: 22rpx; color: #5B6B7F; margin-top: 8rpx; }
 
