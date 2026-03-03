@@ -47,8 +47,8 @@
     </scroll-view>
 
     <!-- 修订 Modal -->
-    <view v-if="showReviseModal" class="rq-mask" @tap.self="showReviseModal = false">
-      <view class="rq-modal">
+    <view v-if="showReviseModal" class="rq-mask" @tap="showReviseModal = false">
+      <view class="rq-modal" @tap.stop>
         <text class="rq-modal-title">修订意见</text>
         <text class="rq-modal-label">请输入修订说明</text>
         <textarea class="rq-modal-textarea" v-model="reviseNote" placeholder="请描述需要修订的内容…" maxlength="500" />

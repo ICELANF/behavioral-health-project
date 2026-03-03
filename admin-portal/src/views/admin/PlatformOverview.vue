@@ -255,12 +255,16 @@ async function loadHealth() {
   try {
     const res = await request.get('v1/system/health')
     const d = res.data
+    // checks.database / checks.redis may be plain strings ("healthy") or objects ({status:...})
+    const dbVal = d.checks?.database
+    const rdVal = d.checks?.redis
     health.value = {
       status: d.status,
-      database: d.checks?.database?.status ?? d.database,
-      redis: d.checks?.redis?.status ?? d.redis,
-      routes: d.checks?.route_modules?.route_count ?? d.route_count ?? '--',
-      checked_at: d.checked_at ? new Date(d.checked_at).toLocaleString('zh-CN') : ''
+      database: typeof dbVal === 'string' ? dbVal : (dbVal?.status ?? 'unknown'),
+      redis:    typeof rdVal === 'string' ? rdVal : (rdVal?.status ?? 'unknown'),
+      routes:   d.total_routes ?? d.route_count ?? d.checks?.route_modules?.route_count ?? '--',
+      checked_at: (d.timestamp ?? d.checked_at)
+        ? new Date(d.timestamp ?? d.checked_at).toLocaleString('zh-CN') : ''
     }
   } catch {
     health.value = { status: 'error', database: 'unknown', redis: 'unknown' }
@@ -301,32 +305,33 @@ async function loadContract() {
   try {
     const res = await request.get('v1/system/routes/frontend-contract')
     const d = res.data
-    // Backend returns { coverage: {module: [{path, method, exists, ...}]} }
+    // Response: { matched_endpoints:[{method,path,status:"LIVE"}], missing_endpoints:[...],
+    //             matched:42, total_frontend_endpoints:42, coverage:"100%" }
     const items: any[] = []
-    if (d.coverage) {
-      for (const [mod, endpoints] of Object.entries(d.coverage)) {
-        for (const ep of (endpoints as any[])) {
-          items.push({
-            key: `${mod}-${ep.path}`,
-            module: mod,
-            method: ep.method || 'GET',
-            path: ep.path,
-            status: ep.exists ? 'ok' : 'missing',
-            note: ep.note || ''
-          })
-        }
-      }
-    } else if (Array.isArray(d)) {
-      for (const ep of d) {
-        items.push({
-          key: ep.path,
-          module: ep.module || '--',
-          method: ep.method || 'GET',
-          path: ep.path,
-          status: ep.exists ? 'ok' : 'missing',
-          note: ep.note || ''
-        })
-      }
+    const extractModule = (path: string) => {
+      // "/api/v1/auth/login" → "auth"
+      const parts = path.replace(/^\/api\/v1\//, '').split('/')
+      return parts[0] || '--'
+    }
+    for (const ep of (d.matched_endpoints ?? [])) {
+      items.push({
+        key: `ok-${ep.path}`,
+        module: ep.module ?? extractModule(ep.path),
+        method: ep.method || 'GET',
+        path: ep.path,
+        status: 'ok',
+        note: ep.status === 'LIVE' ? 'LIVE' : (ep.status ?? '')
+      })
+    }
+    for (const ep of (d.missing_endpoints ?? [])) {
+      items.push({
+        key: `miss-${ep.path}`,
+        module: ep.module ?? extractModule(ep.path),
+        method: ep.method || 'GET',
+        path: ep.path,
+        status: 'missing',
+        note: ep.note ?? ''
+      })
     }
     contractItems.value = items
   } catch {

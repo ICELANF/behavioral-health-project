@@ -1863,3 +1863,258 @@ def request_expert_review(
         raise HTTPException(status_code=500, detail="提交失败，请重试")
 
     return {"success": True, "message": "已提交专家副签申请，督导将在24小时内审核"}
+
+
+# ============================================================
+# AI 消息起草
+# ============================================================
+
+@router.post("/students/{student_id}/ai-message-draft")
+def ai_message_draft(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """
+    AI 辅助起草发给学员的消息草稿。
+    根据学员阶段、风险等级、近期行为给出一条具体的沟通建议。
+    """
+    import json as _json
+    from core.models import BehavioralProfile
+
+    profile = db.query(BehavioralProfile).filter(
+        BehavioralProfile.user_id == student_id
+    ).first()
+    stage = (profile.current_stage or "S1") if profile else "S1"
+    domains = []
+    if profile and profile.dominant_domains:
+        domains = (profile.dominant_domains if isinstance(profile.dominant_domains, list)
+                   else [profile.dominant_domains])
+
+    student_user = db.query(User).filter(User.id == student_id).first()
+    student_name = (student_user.full_name or student_user.username or "学员") if student_user else "学员"
+
+    _STAGE_LABEL = {
+        "S0":"前意向期","S1":"意向期","S2":"准备期","S3":"行动期","S4":"维持期","S5":"巩固期","S6":"融入期",
+    }
+    stage_label = _STAGE_LABEL.get(stage, stage)
+    domain_str = "、".join(domains[:3]) if domains else "综合健康"
+
+    system = """你是一位行为健康教练，帮助教练撰写给学员的关怀消息。
+消息要求：温暖、具体、简短（60字以内）、有行动引导，避免说教语气。
+输出必须是合法 JSON，不要输出任何 JSON 之外的文字：
+{
+  "draft_content": "消息正文，60字以内，第一人称教练视角",
+  "rationale": "起草依据，给教练看，30字以内",
+  "confidence": 0.8
+}"""
+
+    user = f"""请为以下学员起草一条关怀消息：
+
+学员姓名：{student_name}
+行为改变阶段：{stage}（{stage_label}）
+主要干预领域：{domain_str}
+
+消息场景：教练主动联系，关心学员近期状态并给予鼓励。"""
+
+    draft = None
+    source = "rules"
+    try:
+        from core.agents.ollama_client import get_ollama_client
+        client = get_ollama_client()
+        if client.is_available():
+            resp = client.chat(system=system, user=user)
+            if resp.success and resp.content:
+                raw = resp.content.strip()
+                if "```" in raw:
+                    raw = raw.split("```")[1].lstrip("json").strip()
+                try:
+                    draft = _json.loads(raw)
+                    source = "llm"
+                except Exception as e:
+                    logger.warning(f"[coach_api/ai_msg] JSON解析失败: {e}")
+    except Exception as e:
+        logger.warning(f"[coach_api/ai_msg] Ollama调用失败: {e}")
+
+    if draft is None:
+        _MSG_TEMPLATES = {
+            "S0": f"你好 {student_name}，最近状态如何？我一直在关注你，有任何想法都可以和我聊聊，没有压力。",
+            "S1": f"{student_name}，你之前提到想改变的想法让我很受触动。这周有没有机会思考一下，迈出一小步会是什么样子？",
+            "S2": f"{student_name}，你正在准备阶段，这很关键！我们一起来制定一个本周最小可行目标，怎么样？",
+            "S3": f"{student_name}，你这周的微行动完成得怎么样？坚持是最难的部分，有遇到什么困难吗？",
+            "S4": f"{student_name}，保持得很棒！现在是巩固习惯的好时机，我们来聊聊如何让这个改变更稳固？",
+        }
+        msg = _MSG_TEMPLATES.get(stage, f"{student_name}，最近状态如何？有什么需要帮助的请告诉我。")
+        draft = {
+            "draft_content": msg,
+            "rationale": f"基于{stage_label}阶段特征生成，建议教练结合实际情况调整语气",
+            "confidence": 0.5,
+        }
+
+    draft["source"] = source
+    draft["student_id"] = student_id
+    draft["stage"] = stage
+    return draft
+
+
+# ============================================================
+# AI 评估类型建议
+# ============================================================
+
+@router.post("/students/{student_id}/ai-assessment-suggestion")
+def ai_assessment_suggestion(
+    student_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """
+    AI 建议为学员分配哪种评估类型，及原因说明。
+    根据学员行为阶段、已完成评估历史、主要干预域来判断。
+    """
+    import json as _json
+    from core.models import BehavioralProfile, AssessmentAssignment
+
+    profile = db.query(BehavioralProfile).filter(
+        BehavioralProfile.user_id == student_id
+    ).first()
+    stage = (profile.current_stage or "S1") if profile else "S1"
+    domains = []
+    if profile and profile.dominant_domains:
+        domains = (profile.dominant_domains if isinstance(profile.dominant_domains, list)
+                   else [profile.dominant_domains])
+
+    # 最近完成的评估类型
+    recent_assessments = db.query(AssessmentAssignment).filter(
+        AssessmentAssignment.student_id == student_id,
+    ).order_by(AssessmentAssignment.created_at.desc()).limit(5).all()
+    def _first_scale(s: any) -> str:
+        if isinstance(s, list) and s:
+            return str(s[0])
+        if isinstance(s, dict):
+            return next(iter(s.keys()), "")
+        return str(s) if s else ""
+    recent_types = [_first_scale(a.scales) for a in recent_assessments if a.scales]
+
+    _STAGE_LABEL = {
+        "S0":"前意向期","S1":"意向期","S2":"准备期","S3":"行动期","S4":"维持期","S5":"巩固期","S6":"融入期",
+    }
+    stage_label = _STAGE_LABEL.get(stage, stage)
+    domain_str = "、".join(domains[:3]) if domains else "综合健康"
+    recent_str = "、".join(recent_types[:3]) if recent_types else "无历史评估"
+
+    # 量表注册表（与前端 src/utils/scales.ts 保持同步）
+    _SCALES_INFO = {
+        "ttm7":     {"label": "TTM行为阶段",   "desc": "识别行为改变阶段 S0-S6",       "time": 5},
+        "big5":     {"label": "大五人格 BIG5", "desc": "人格特征基线，个性化干预依据",  "time": 8},
+        "bpt6":     {"label": "BPT行为类型",   "desc": "行为偏好分型（6个维度）",       "time": 6},
+        "capacity": {"label": "饮食能力 CAP",  "desc": "饮食习惯与执行能力评估",        "time": 10},
+        "spi":      {"label": "运动偏好 SPI",  "desc": "运动习惯与偏好基线",            "time": 7},
+    }
+    _PACKS = {
+        "comprehensive": {"label": "综合评估",  "scales": ["ttm7", "big5", "bpt6"]},
+        "behavior":      {"label": "行为评估",  "scales": ["bpt6"]},
+        "nutrition":     {"label": "饮食评估",  "scales": ["capacity"]},
+        "exercise":      {"label": "运动评估",  "scales": ["spi"]},
+    }
+
+    system = """你是行为健康评估专家，为教练推荐具体量表组合。
+
+可选量表：
+- ttm7: TTM行为阶段 — 识别行为改变阶段（S0-S6），首次评估必选
+- big5: 大五人格 BIG5 — 人格特征基线，个性化干预依据，首次必选
+- bpt6: BPT行为类型 — 行为偏好分型，月度追踪进展
+- capacity: 饮食能力 CAP — 主诉饮食问题时使用
+- spi: 运动偏好 SPI — 运动干预重点时使用
+
+输出必须是合法 JSON，不要输出任何 JSON 之外的文字：
+{
+  "suggested_scales": ["ttm7","big5","bpt6"],
+  "per_scale_rationale": {
+    "ttm7": "量表推荐理由（20字以内）",
+    "big5": "量表推荐理由（20字以内）"
+  },
+  "pack_name": "综合评估",
+  "rationale": "整体推荐说明（50字以内）",
+  "confidence": 0.8
+}"""
+
+    user = f"""请为以下学员推荐量表组合：
+
+行为改变阶段：{stage}（{stage_label}）
+主要干预域：{domain_str}
+近期已做评估：{recent_str}
+
+请选择最适合的量表并说明每个量表的选择原因。"""
+
+    result = None
+    source = "rules"
+    try:
+        from core.agents.ollama_client import get_ollama_client
+        client = get_ollama_client()
+        if client.is_available():
+            resp = client.chat(system=system, user=user)
+            if resp.success and resp.content:
+                raw = resp.content.strip()
+                if "```" in raw:
+                    raw = raw.split("```")[1].lstrip("json").strip()
+                try:
+                    result = _json.loads(raw)
+                    source = "llm"
+                except Exception as e:
+                    logger.warning(f"[coach_api/ai_assess] JSON解析失败: {e}")
+    except Exception as e:
+        logger.warning(f"[coach_api/ai_assess] Ollama调用失败: {e}")
+
+    if result is None:
+        # 规则降级：按照阶段和历史选择量表
+        if not recent_types:
+            pack_key, pack_label = "comprehensive", "综合评估"
+            scales = ["ttm7", "big5", "bpt6"]
+            rationale = f"学员处于{stage_label}，无历史评估记录，建议综合评估建立基线"
+            per_scale = {
+                "ttm7": "首次评估需确认行为改变阶段",
+                "big5": "建立人格特征基线，支撑个性化干预",
+                "bpt6": "了解行为偏好分型，制定微行动方向",
+            }
+        elif "nutrition" in domain_str or "饮食" in domain_str:
+            pack_key, pack_label = "nutrition", "饮食评估"
+            scales = ["capacity"]
+            rationale = f"干预域为{domain_str}，针对饮食能力进行专项评估"
+            per_scale = {"capacity": "饮食能力基线测量，找出执行障碍"}
+        elif "exercise" in domain_str or "运动" in domain_str:
+            pack_key, pack_label = "exercise", "运动评估"
+            scales = ["spi"]
+            rationale = f"干预域为{domain_str}，运动偏好评估指导个性化运动方案"
+            per_scale = {"spi": "了解运动偏好，设计可坚持的运动微行动"}
+        else:
+            pack_key, pack_label = "behavior", "行为评估"
+            scales = ["bpt6"]
+            rationale = f"学员已完成基线，{stage_label}阶段月度行为评估追踪进展"
+            per_scale = {"bpt6": "月度复测追踪行为偏好变化趋势"}
+        result = {
+            "suggested_scales": scales,
+            "per_scale_rationale": per_scale,
+            "pack_name": pack_label,
+            "pack_key": pack_key,
+            "rationale": rationale,
+            "confidence": 0.6,
+        }
+
+    # 兼容旧字段：保留 suggested_type / type_label 供旧版前端使用
+    pack_key = result.get("pack_key") or _guess_pack(result.get("suggested_scales", []), _PACKS)
+    result.setdefault("suggested_type", pack_key)
+    result.setdefault("type_label", _PACKS.get(pack_key, {}).get("label", "综合评估"))
+    result["source"] = source
+    result["student_id"] = student_id
+    result["stage"] = stage
+    return result
+
+
+def _guess_pack(scales: list, packs: dict) -> str:
+    """根据推荐量表列表猜测最匹配的预设包"""
+    best, best_score = "comprehensive", -1
+    for pk, pv in packs.items():
+        score = len(set(scales) & set(pv["scales"]))
+        if score > best_score:
+            best, best_score = pk, score
+    return best

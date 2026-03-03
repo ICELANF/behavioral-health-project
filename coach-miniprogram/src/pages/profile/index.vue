@@ -98,8 +98,8 @@
   </view>
 
   <!-- 编辑资料 Modal -->
-  <view v-if="showEditModal" class="edit-mask" @tap.self="showEditModal = false">
-    <view class="edit-sheet">
+  <view v-if="showEditModal" class="edit-mask" @tap="showEditModal = false">
+    <view class="edit-sheet" @tap.stop>
       <view class="edit-sheet-title">编辑个人资料</view>
 
       <view class="edit-field">

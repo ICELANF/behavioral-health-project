@@ -50,8 +50,8 @@
     </scroll-view>
 
     <!-- 绑定 Modal -->
-    <view v-if="bindModal.show" class="db-mask" @tap.self="bindModal.show = false">
-      <view class="db-modal">
+    <view v-if="bindModal.show" class="db-mask" @tap="bindModal.show = false">
+      <view class="db-modal" @tap.stop>
         <text class="db-modal-title">绑定 {{ bindModal.device?.name }}</text>
         <view class="db-modal-field">
           <text class="db-modal-label">品牌/厂商</text>

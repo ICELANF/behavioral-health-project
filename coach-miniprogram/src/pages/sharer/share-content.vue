@@ -40,8 +40,8 @@
     <view class="sc-fab" @tap="showModal = true">＋ 发布新内容</view>
 
     <!-- 发布 Modal -->
-    <view v-if="showModal" class="sc-mask" @tap.self="showModal = false">
-      <view class="sc-modal">
+    <view v-if="showModal" class="sc-mask" @tap="showModal = false">
+      <view class="sc-modal" @tap.stop>
         <text class="sc-modal-title">发布内容</text>
         <text class="sc-modal-label">标题 *</text>
         <input class="sc-modal-input" v-model="form.title" placeholder="请输入内容标题" maxlength="50" />

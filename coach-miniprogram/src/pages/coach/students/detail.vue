@@ -27,11 +27,11 @@
           <text class="detail-act-icon">💬</text>
           <text class="detail-act-label">发消息</text>
         </view>
-        <view class="detail-act-btn" @tap="showAssignModal = true">
+        <view class="detail-act-btn" @tap="openAssignModal">
           <text class="detail-act-icon">📋</text>
           <text class="detail-act-label">分配评估</text>
         </view>
-        <view class="detail-act-btn" @tap="showRxModal = true">
+        <view class="detail-act-btn" @tap="openRxModal">
           <text class="detail-act-icon">📝</text>
           <text class="detail-act-label">开处方</text>
         </view>
@@ -179,16 +179,32 @@
     </scroll-view>
   </view>
 
-  <!-- 发消息 Modal — 直接发给此学员，无需跳转列表页 -->
-  <view v-if="showMsgModal" class="modal-mask" @tap.self="showMsgModal = false">
-    <view class="modal-sheet">
+  <!-- 发消息 Modal -->
+  <view v-if="showMsgModal" class="modal-mask" @tap="closeMsgModal">
+    <view class="modal-sheet" @tap.stop>
       <view class="modal-title">发消息 — {{ student.name }}</view>
+
+      <!-- AI 建议区 -->
       <view class="modal-field">
-        <text class="modal-label">消息内容</text>
-        <textarea class="modal-textarea" v-model="msgContent" placeholder="请输入要发给学员的消息…" />
+        <view class="ai-bar">
+          <text class="modal-label" style="margin-bottom:0">消息内容</text>
+          <view class="ai-btn" :class="{ 'ai-btn--loading': msgAiLoading }" @tap="loadAiMessage">
+            {{ msgAiLoading ? '生成中…' : '🤖 AI建议' }}
+          </view>
+        </view>
+        <textarea class="modal-textarea" v-model="msgContent" placeholder="输入消息，或点击右上角 AI建议 自动生成…" />
+        <!-- AI 内容展示区（持久显示直到关闭） -->
+        <view v-if="msgAiInfo.rationale" class="ai-suggestion-box">
+          <view class="ai-sug-header">
+            <text class="ai-sug-tag">✨ AI建议（{{ msgAiInfo.source === 'llm' ? '大模型' : '规则引擎' }}，可信度 {{ Math.round((msgAiInfo.confidence || 0.5) * 100) }}%）</text>
+          </view>
+          <text class="ai-sug-rationale">建议依据：{{ msgAiInfo.rationale }}</text>
+          <text class="ai-sug-hint">↑ 内容已填入输入框，请按需修改后发送</text>
+        </view>
       </view>
+
       <view class="modal-actions">
-        <view class="modal-btn modal-btn--cancel" @tap="showMsgModal = false">取消</view>
+        <view class="modal-btn modal-btn--cancel" @tap="closeMsgModal">取消</view>
         <view class="modal-btn modal-btn--confirm" :class="{ 'modal-btn--submitting': submitting }" @tap="submitMsg">
           {{ submitting ? '发送中…' : '发送' }}
         </view>
@@ -196,18 +212,51 @@
     </view>
   </view>
 
-  <!-- 分配评估 Modal — 学员已预选，无需二次筛选 -->
-  <view v-if="showAssignModal" class="modal-mask" @tap.self="showAssignModal = false">
-    <view class="modal-sheet">
+  <!-- 分配评估 Modal -->
+  <view v-if="showAssignModal" class="modal-mask" @tap="closeAssignModal">
+    <view class="modal-sheet assign-sheet" @tap.stop>
       <view class="modal-title">分配评估 — {{ student.name }}</view>
 
+      <!-- 量表选择 + AI建议 -->
       <view class="modal-field">
-        <text class="modal-label">评估类型</text>
-        <view class="modal-options">
-          <view v-for="t in assessTypes" :key="t.key" class="modal-option"
-            :class="{ 'modal-option--active': assignForm.type === t.key }" @tap="assignForm.type = t.key">
-            {{ t.label }}
+        <view class="ai-bar">
+          <text class="modal-label" style="margin-bottom:0">量表选择（约{{ assignScaleTime }}分钟）</text>
+          <view class="ai-btn" :class="{ 'ai-btn--loading': assignAiLoading }" @tap="loadAiAssessment">
+            {{ assignAiLoading ? '分析中…' : '🤖 AI建议' }}
           </view>
+        </view>
+        <!-- 快速包选 -->
+        <view class="assign-packs">
+          <view v-for="(pack, pKey) in SCALE_PACKS" :key="pKey"
+            class="assign-pack-btn"
+            :class="{ 'assign-pack-btn--active': isPackActive(String(pKey)) }"
+            @tap="selectPack(String(pKey))">
+            {{ pack.label }}
+          </view>
+        </view>
+        <!-- 量表明细勾选 -->
+        <view class="assign-scales">
+          <view v-for="s in SCALES_REGISTRY" :key="s.key"
+            class="assign-scale-item"
+            :class="{ 'assign-scale-item--active': assignForm.scales.includes(s.key),
+                       'assign-scale-item--ai': assignAiInfo.suggested_scales?.includes(s.key) }"
+            @tap="toggleAssignScale(s.key)">
+            <view class="assign-scale-check">{{ assignForm.scales.includes(s.key) ? '✓' : '' }}</view>
+            <view class="assign-scale-info">
+              <text class="assign-scale-name">{{ s.shortLabel }} · {{ s.label }}</text>
+              <text v-if="assignAiInfo.per_scale_rationale?.[s.key]" class="assign-scale-ai-reason">🤖 {{ assignAiInfo.per_scale_rationale[s.key] }}</text>
+              <text v-else class="assign-scale-desc">{{ s.desc }}</text>
+            </view>
+            <text class="assign-scale-time">{{ s.time }}min</text>
+          </view>
+        </view>
+        <!-- AI 总体建议 -->
+        <view v-if="assignAiInfo.rationale" class="ai-suggestion-box" style="margin-top:12rpx">
+          <view class="ai-sug-header">
+            <text class="ai-sug-tag">✨ AI推荐{{ assignAiInfo.pack_name ? '「' + assignAiInfo.pack_name + '」' : '' }}（{{ assignAiInfo.source === 'llm' ? '大模型' : '规则引擎' }}，可信度 {{ Math.round((assignAiInfo.confidence || 0.6) * 100) }}%）</text>
+          </view>
+          <text class="ai-sug-rationale">推荐原因：{{ assignAiInfo.rationale }}</text>
+          <text class="ai-sug-hint">↑ 已自动勾选推荐量表，可手动增减</text>
         </view>
       </view>
 
@@ -217,7 +266,7 @@
       </view>
 
       <view class="modal-actions">
-        <view class="modal-btn modal-btn--cancel" @tap="showAssignModal = false">取消</view>
+        <view class="modal-btn modal-btn--cancel" @tap="closeAssignModal">取消</view>
         <view class="modal-btn modal-btn--confirm" :class="{ 'modal-btn--submitting': submitting }" @tap="submitAssign">
           {{ submitting ? '提交中…' : '确认分配' }}
         </view>
@@ -225,9 +274,9 @@
     </view>
   </view>
 
-  <!-- 开处方 Modal — 学员已预选，无需二次筛选 -->
-  <view v-if="showRxModal" class="modal-mask" @tap.self="showRxModal = false">
-    <view class="modal-sheet">
+  <!-- 开处方 Modal -->
+  <view v-if="showRxModal" class="modal-mask" @tap="closeRxModal">
+    <view class="modal-sheet" @tap.stop>
       <view class="modal-title">开具处方 — {{ student.name }}</view>
 
       <view class="modal-field">
@@ -242,22 +291,25 @@
 
       <!-- AI 起草入口 -->
       <view class="modal-field">
-        <view class="rx-ai-bar">
+        <view class="ai-bar">
           <text class="modal-label" style="margin-bottom:0">处方内容</text>
-          <view class="rx-ai-btn" :class="{ 'rx-ai-btn--loading': rxAiLoading }" @tap="loadAiDraft">
+          <view class="ai-btn" :class="{ 'ai-btn--loading': rxAiLoading }" @tap="loadAiDraft">
             {{ rxAiLoading ? '生成中…' : '🤖 AI起草' }}
           </view>
         </view>
         <textarea class="modal-textarea" v-model="rxForm.content" placeholder="输入处方内容，或点击右上角 AI起草 自动生成…" />
-        <view v-if="rxForm.aiSource" class="rx-ai-source-tip">
-          ✨ AI草稿已填入（{{ rxForm.aiSource === 'llm' ? '大模型' : '规则引擎' }}），请检查并修改后开具
-        </view>
-        <view v-if="rxForm.rationale" class="rx-ai-rationale">
-          起草依据：{{ rxForm.rationale }}
+        <!-- AI 建议展示区（持久显示） -->
+        <view v-if="rxForm.aiSource" class="ai-suggestion-box">
+          <view class="ai-sug-header">
+            <text class="ai-sug-tag">✨ AI草稿已生成（{{ rxForm.aiSource === 'llm' ? '大模型' : '规则引擎' }}，可信度 {{ Math.round((rxForm.confidence || 0.5) * 100) }}%）</text>
+          </view>
+          <text v-if="rxForm.rationale" class="ai-sug-rationale">起草依据：{{ rxForm.rationale }}</text>
+          <text v-if="rxForm.duration" class="ai-sug-rationale">建议周期：{{ rxForm.duration }}，随访：{{ rxForm.followUp }}</text>
+          <text class="ai-sug-hint">↑ 内容已填入，请检查修改后再开具</text>
         </view>
       </view>
 
-      <!-- 高风险副签选项 -->
+      <!-- 高风险副签 -->
       <view class="modal-field" v-if="(student.risk_level || 0) >= 3">
         <view class="rx-expert-bar" @tap="rxForm.requestExpertReview = !rxForm.requestExpertReview">
           <view class="rx-expert-checkbox" :class="{ 'rx-expert-checkbox--on': rxForm.requestExpertReview }">
@@ -268,7 +320,7 @@
       </view>
 
       <view class="modal-actions">
-        <view class="modal-btn modal-btn--cancel" @tap="showRxModal = false">取消</view>
+        <view class="modal-btn modal-btn--cancel" @tap="closeRxModal">取消</view>
         <view class="modal-btn modal-btn--confirm" :class="{ 'modal-btn--submitting': submitting }" @tap="submitRx">
           {{ submitting ? '提交中…' : '确认开具' }}
         </view>
@@ -281,6 +333,7 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { httpReq as http } from '@/api/request'
+import { SCALES_REGISTRY, SCALE_PACKS, estimateTime } from '@/utils/scales'
 
 const studentId = ref(0)
 const activeTab = ref('overview')
@@ -293,13 +346,94 @@ const newNote = ref('')
 // Modal state
 const showMsgModal = ref(false)
 const msgContent = ref('')
+const msgAiLoading = ref(false)
+const msgAiInfo = ref<any>({})
+
 const showAssignModal = ref(false)
+const assignAiLoading = ref(false)
+const assignAiInfo = ref<any>({})
+
 const showRxModal = ref(false)
 const submitting = ref(false)
-const assignForm = ref({ type: 'comprehensive', note: '' })
-const rxForm = ref({ type: 'behavior', content: '', aiSource: '', rationale: '', requestExpertReview: false })
+const assignForm = ref<{ scales: string[], note: string }>({ scales: ['big5', 'ttm7'], note: '' })
+const rxForm = ref({
+  type: 'behavior', content: '', aiSource: '', rationale: '',
+  confidence: 0.5, duration: '', followUp: '', requestExpertReview: false,
+})
 const rxAiLoading = ref(false)
 
+// ── 弹窗开关（重置 AI 状态） ──
+function closeMsgModal() { showMsgModal.value = false; msgAiInfo.value = {}; msgContent.value = '' }
+function closeAssignModal() { showAssignModal.value = false; assignAiInfo.value = {}; assignForm.value = { scales: ['big5', 'ttm7'], note: '' } }
+function closeRxModal() {
+  showRxModal.value = false
+  rxForm.value = { type: 'behavior', content: '', aiSource: '', rationale: '', confidence: 0.5, duration: '', followUp: '', requestExpertReview: false }
+}
+function openAssignModal() { assignAiInfo.value = {}; assignForm.value = { scales: ['big5', 'ttm7'], note: '' }; showAssignModal.value = true }
+function openRxModal() {
+  rxForm.value = { type: 'behavior', content: '', aiSource: '', rationale: '', confidence: 0.5, duration: '', followUp: '', requestExpertReview: false }
+  showRxModal.value = true
+}
+
+// ── 分配评估 — 量表选择辅助 ──
+const assignScaleTime = computed(() => estimateTime(assignForm.value.scales))
+function toggleAssignScale(key: string) {
+  const idx = assignForm.value.scales.indexOf(key)
+  if (idx >= 0) assignForm.value.scales.splice(idx, 1)
+  else assignForm.value.scales.push(key)
+}
+function isPackActive(packKey: string): boolean {
+  const pack = (SCALE_PACKS as Record<string, { scales: string[] }>)[packKey]
+  if (!pack) return false
+  return pack.scales.every(k => assignForm.value.scales.includes(k)) &&
+    assignForm.value.scales.length === pack.scales.length
+}
+function selectPack(packKey: string) {
+  const pack = (SCALE_PACKS as Record<string, { scales: string[] }>)[packKey]
+  if (!pack) return
+  if (isPackActive(packKey)) assignForm.value.scales = []
+  else assignForm.value.scales = [...pack.scales]
+}
+
+// ── AI：发消息建议 ──
+async function loadAiMessage() {
+  if (msgAiLoading.value) return
+  msgAiLoading.value = true
+  try {
+    const res = await http<any>('/api/v1/coach/students/' + studentId.value + '/ai-message-draft', { method: 'POST' })
+    msgContent.value = res.draft_content || ''
+    msgAiInfo.value = { rationale: res.rationale || '', confidence: res.confidence ?? 0.5, source: res.source || 'rules' }
+  } catch (e: any) {
+    uni.showToast({ title: e?.data?.detail || 'AI建议失败', icon: 'none', duration: 2000 })
+  } finally {
+    msgAiLoading.value = false
+  }
+}
+
+// ── AI：评估量表建议 ──
+async function loadAiAssessment() {
+  if (assignAiLoading.value) return
+  assignAiLoading.value = true
+  try {
+    const res = await http<any>('/api/v1/coach/students/' + studentId.value + '/ai-assessment-suggestion', { method: 'POST' })
+    assignAiInfo.value = {
+      suggested_scales: res.suggested_scales || [],
+      per_scale_rationale: res.per_scale_rationale || {},
+      pack_name: res.pack_name || '',
+      pack_key: res.pack_key || '',
+      rationale: res.rationale || '',
+      confidence: res.confidence ?? 0.6,
+      source: res.source || 'rules',
+    }
+    if (res.suggested_scales?.length) assignForm.value.scales = [...res.suggested_scales]
+  } catch (e: any) {
+    uni.showToast({ title: e?.data?.detail || 'AI建议失败', icon: 'none', duration: 2000 })
+  } finally {
+    assignAiLoading.value = false
+  }
+}
+
+// ── AI：处方起草 ──
 async function loadAiDraft() {
   if (rxAiLoading.value) return
   rxAiLoading.value = true
@@ -309,12 +443,14 @@ async function loadAiDraft() {
     rxForm.value.type = res.type || rxForm.value.type
     rxForm.value.aiSource = res.source || 'rules'
     rxForm.value.rationale = res.rationale || ''
-    // 微行动追加到内容末尾
+    rxForm.value.confidence = res.confidence ?? 0.5
+    rxForm.value.duration = res.duration || ''
+    rxForm.value.followUp = res.follow_up || ''
     if (res.micro_actions?.length) {
       rxForm.value.content += '\n\n微行动：\n' + (res.micro_actions as string[]).map((a: string) => '• ' + a).join('\n')
     }
   } catch (e: any) {
-    uni.showToast({ title: e?.data?.detail || 'AI起草失败', icon: 'none' })
+    uni.showToast({ title: e?.data?.detail || 'AI起草失败', icon: 'none', duration: 2000 })
   } finally {
     rxAiLoading.value = false
   }
@@ -330,13 +466,6 @@ const detailTabs = [
   { key: 'behavior', label: '行为记录' },
   { key: 'supervision', label: '督导记录' },
   { key: 'health', label: '健康数据' },
-]
-
-const assessTypes = [
-  { key: 'comprehensive', label: '综合评估' },
-  { key: 'behavior', label: '行为评估' },
-  { key: 'nutrition', label: '饮食评估' },
-  { key: 'exercise', label: '运动评估' },
 ]
 
 const rxTypes = [
@@ -475,24 +604,20 @@ async function submitNote() {
 
 async function submitAssign() {
   if (submitting.value) return
-  submitting.value = true
-  const scaleMap: Record<string, string[]> = {
-    comprehensive: ['ttm7', 'big5', 'bpt6'],
-    behavior: ['bpt6'],
-    nutrition: ['capacity'],
-    exercise: ['spi'],
+  if (!assignForm.value.scales.length) {
+    uni.showToast({ title: '请选择至少一个量表', icon: 'none' }); return
   }
+  submitting.value = true
   try {
     await http('/api/v1/assessment-assignments/assign', {
       method: 'POST',
       data: {
         student_id: studentId.value,
-        scales: scaleMap[assignForm.value.type] || ['ttm7'],
+        scales: assignForm.value.scales,
         note: assignForm.value.note || '',
       },
     })
-    showAssignModal.value = false
-    assignForm.value = { type: 'comprehensive', note: '' }
+    closeAssignModal()
     uni.showToast({ title: '评估已分配', icon: 'success' })
   } catch {
     uni.showToast({ title: '分配失败，请稍后重试', icon: 'none' })
@@ -519,8 +644,7 @@ async function submitRx() {
         await http('/api/v1/coach/students/' + studentId.value + '/prescriptions/request-expert-review', { method: 'POST' })
       } catch (e) { console.warn('[detail] expert review request:', e) }
     }
-    showRxModal.value = false
-    rxForm.value = { type: 'behavior', content: '', aiSource: '', rationale: '', requestExpertReview: false }
+    closeRxModal()
     uni.showToast({ title: wantExpertReview ? '处方已开具，已提交专家副签' : '处方已开具', icon: 'success' })
     // 刷新督导记录（处方存入督导记录）
     const nRes = await http<any>('/api/v1/coach/students/' + studentId.value + '/notes')
@@ -534,6 +658,7 @@ async function submitRx() {
 
 function sendMessage() {
   msgContent.value = ''
+  msgAiInfo.value = {}
   showMsgModal.value = true
 }
 
@@ -547,8 +672,7 @@ async function submitMsg() {
       method: 'POST',
       data: { content: '[消息] ' + content },
     })
-    showMsgModal.value = false
-    msgContent.value = ''
+    closeMsgModal()
     uni.showToast({ title: '消息已发送', icon: 'success' })
     const nRes = await http<any>('/api/v1/coach/students/' + studentId.value + '/notes')
     supervisionNotes.value = nRes.items || []
@@ -656,16 +780,47 @@ onLoad((opts: any) => {
 
 .detail-empty { text-align: center; padding: 60rpx; font-size: 26rpx; color: #8E99A4; }
 
-/* ── AI 起草处方 ── */
-.rx-ai-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
-.rx-ai-btn { padding: 8rpx 20rpx; background: linear-gradient(135deg, #1a7a50, #27AE60); color: #fff; border-radius: 10rpx; font-size: 24rpx; font-weight: 600; }
-.rx-ai-btn--loading { background: #8DC9B3; }
-.rx-ai-source-tip { font-size: 22rpx; color: #1a7a50; margin-top: 8rpx; padding: 8rpx 12rpx; background: #f0faf5; border-radius: 8rpx; }
-.rx-ai-rationale { font-size: 22rpx; color: #8E99A4; margin-top: 6rpx; line-height: 1.4; }
+/* ── AI 通用按钮 ── */
+.ai-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
+.ai-btn { padding: 8rpx 20rpx; background: linear-gradient(135deg, #1a7a50, #27AE60); color: #fff; border-radius: 10rpx; font-size: 24rpx; font-weight: 600; }
+.ai-btn--loading { background: #8DC9B3; }
 
-/* ── 专家副签 ── */
+/* ── AI 建议展示框（持久显示，不会自动消失） ── */
+.ai-suggestion-box {
+  margin-top: 12rpx; padding: 20rpx 24rpx;
+  background: linear-gradient(135deg, #f0faf5, #eaf6ff);
+  border-radius: 16rpx; border-left: 6rpx solid #27AE60;
+}
+.ai-sug-header { margin-bottom: 10rpx; }
+.ai-sug-tag { font-size: 22rpx; font-weight: 700; color: #1a7a50; }
+.ai-sug-rationale { display: block; font-size: 24rpx; color: #2C3E50; line-height: 1.6; margin-bottom: 6rpx; }
+.ai-sug-hint { display: block; font-size: 20rpx; color: #8E99A4; margin-top: 8rpx; }
+
+/* ── 评估选项 AI 高亮 ── */
+.modal-option--ai { border: 2rpx solid #27AE60 !important; }
+.option-ai-mark { font-size: 20rpx; }
+
+/* ── 专家副签（开处方 Modal） ── */
 .rx-expert-bar { display: flex; align-items: center; gap: 12rpx; padding: 16rpx; background: #FFF8E6; border-radius: 12rpx; border: 2rpx solid #F39C12; }
 .rx-expert-checkbox { width: 40rpx; height: 40rpx; border-radius: 8rpx; border: 2rpx solid #F39C12; display: flex; align-items: center; justify-content: center; font-size: 28rpx; color: #F39C12; flex-shrink: 0; }
 .rx-expert-checkbox--on { background: #F39C12; color: #fff; border-color: #F39C12; }
 .rx-expert-label { font-size: 26rpx; color: #E67E22; flex: 1; line-height: 1.4; }
+
+/* ── 分配评估 Modal — 量表选择 ── */
+.assign-sheet { max-height: 92vh; overflow-y: auto; }
+.assign-packs { display: flex; gap: 10rpx; flex-wrap: wrap; margin: 12rpx 0 8rpx; }
+.assign-pack-btn { padding: 10rpx 28rpx; border-radius: 32rpx; font-size: 24rpx; background: #F0F0F0; color: #5B6B7F; }
+.assign-pack-btn--active { background: #2D8E69; color: #fff; }
+.assign-scales { display: flex; flex-direction: column; gap: 8rpx; }
+.assign-scale-item { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 12rpx; background: #F8F9FA; border-radius: 12rpx; border: 2rpx solid transparent; }
+.assign-scale-item--active { background: #F0FFF8; border-color: #2D8E69; }
+.assign-scale-item--ai { border-color: #F39C12; }
+.assign-scale-item--active.assign-scale-item--ai { background: #FFF8F0; border-color: #E67E22; }
+.assign-scale-check { width: 36rpx; height: 36rpx; border-radius: 8rpx; border: 2rpx solid #CCC; display: flex; align-items: center; justify-content: center; font-size: 22rpx; color: #2D8E69; font-weight: 700; background: #fff; flex-shrink: 0; }
+.assign-scale-item--active .assign-scale-check { background: #2D8E69; color: #fff; border-color: #2D8E69; }
+.assign-scale-info { flex: 1; min-width: 0; }
+.assign-scale-name { display: block; font-size: 26rpx; font-weight: 600; color: #2C3E50; }
+.assign-scale-desc { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 2rpx; }
+.assign-scale-ai-reason { display: block; font-size: 22rpx; color: #E67E22; margin-top: 2rpx; }
+.assign-scale-time { font-size: 22rpx; color: #8E99A4; flex-shrink: 0; }
 </style>

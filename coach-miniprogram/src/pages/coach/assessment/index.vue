@@ -181,14 +181,38 @@
         <!-- ③ 量表/时间/备注（仅已选学员后展示） -->
         <template v-if="selectedStudentObj">
           <view class="assess-modal-section">
-            <text class="assess-modal-label">量表组合</text>
+            <view class="assess-modal-hrow">
+              <text class="assess-modal-label">量表组合</text>
+              <view class="assess-ai-suggest-btn" :class="{ 'assess-ai-suggest-btn--loading': assignAiLoading }" @tap="loadAiSuggestion">
+                {{ assignAiLoading ? '分析中…' : '🤖 AI建议' }}
+              </view>
+            </view>
+            <!-- 包预设快选 -->
+            <view class="assess-pack-row">
+              <view v-for="(pack, pKey) in SCALE_PACKS" :key="pKey"
+                class="assess-pack-chip"
+                :class="{ 'assess-pack-chip--active': isPackSelected(String(pKey)) }"
+                @tap="applyPack(String(pKey))">
+                {{ pack.label }}
+              </view>
+            </view>
             <view class="assess-scale-options">
               <view
-                v-for="s in scaleOptions" :key="s.value"
-                class="assess-scale-opt" :class="{ 'assess-scale-opt--active': selectedScales.includes(s.value) }"
-                @tap="toggleScale(s.value)"
+                v-for="s in SCALES_REGISTRY" :key="s.key"
+                class="assess-scale-opt"
+                :class="{ 'assess-scale-opt--active': selectedScales.includes(s.key),
+                           'assess-scale-opt--ai': assignAiInfo.suggested_scales?.includes(s.key) }"
+                @tap="toggleScale(s.key)"
               >
-                {{ s.label }}
+                {{ s.shortLabel }}<text v-if="assignAiInfo.suggested_scales?.includes(s.key)" style="font-size:18rpx"> 🤖</text>
+              </view>
+            </view>
+            <!-- AI 建议展示 -->
+            <view v-if="assignAiInfo.rationale" class="assess-ai-box">
+              <text class="assess-ai-box-tag">✨ AI推荐{{ assignAiInfo.pack_name ? '「'+assignAiInfo.pack_name+'」' : '' }}（{{ assignAiInfo.source==='llm'?'大模型':'规则引擎' }}，{{ Math.round((assignAiInfo.confidence||0.6)*100) }}%）</text>
+              <text class="assess-ai-box-text">{{ assignAiInfo.rationale }}</text>
+              <view v-for="s in SCALES_REGISTRY" :key="'r-'+s.key">
+                <text v-if="assignAiInfo.per_scale_rationale?.[s.key]" class="assess-scale-reason">{{ s.shortLabel }}：{{ assignAiInfo.per_scale_rationale[s.key] }}</text>
               </view>
             </view>
             <text class="assess-scale-hint">已选 {{ selectedScales.length }} 个量表，预计 {{ estimatedTime }} 分钟</text>
@@ -223,6 +247,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { SCALES_REGISTRY, SCALE_PACKS, estimateTime, SCALE_NAME_MAP } from '@/utils/scales'
 
 const activeTab = ref('all')
 const searchText = ref('')
@@ -268,17 +293,46 @@ const modalSearchQuery = ref('')
 const deadline = ref('')
 const assignNote = ref('')
 
-const scaleOptions = [
-  { label: '大五人格 BIG5', value: 'big5', time: 8 },
-  { label: 'TTM行为阶段', value: 'ttm7', time: 5 },
-  { label: 'BPT行为类型', value: 'bpt6', time: 6 },
-  { label: '能力评估 CAP', value: 'capacity', time: 10 },
-  { label: 'SPI自我评估', value: 'spi', time: 7 },
-]
+const estimatedTime = computed(() => estimateTime(selectedScales.value))
 
-const estimatedTime = computed(() => {
-  return scaleOptions.filter(s => selectedScales.value.includes(s.value)).reduce((a, s) => a + s.time, 0)
-})
+// AI 量表建议
+const assignAiInfo = ref<any>({})
+const assignAiLoading = ref(false)
+
+async function loadAiSuggestion() {
+  if (!selectedStudentObj.value || assignAiLoading.value) return
+  assignAiLoading.value = true
+  try {
+    const sid = selectedStudentObj.value.id || selectedStudentObj.value.user_id
+    const res = await http<any>(`/api/v1/coach/students/${sid}/ai-assessment-suggestion`, { method: 'POST' })
+    assignAiInfo.value = {
+      suggested_scales: res.suggested_scales || [],
+      per_scale_rationale: res.per_scale_rationale || {},
+      pack_name: res.pack_name || '',
+      rationale: res.rationale || '',
+      confidence: res.confidence ?? 0.6,
+      source: res.source || 'rules',
+    }
+    if (res.suggested_scales?.length) selectedScales.value = [...res.suggested_scales]
+  } catch (e: any) {
+    uni.showToast({ title: e?.data?.detail || 'AI建议失败', icon: 'none', duration: 2000 })
+  } finally {
+    assignAiLoading.value = false
+  }
+}
+
+function isPackSelected(packKey: string): boolean {
+  const pack = (SCALE_PACKS as Record<string, { scales: string[] }>)[packKey]
+  if (!pack) return false
+  return pack.scales.every(k => selectedScales.value.includes(k)) &&
+    selectedScales.value.length === pack.scales.length
+}
+function applyPack(packKey: string) {
+  const pack = (SCALE_PACKS as Record<string, { scales: string[] }>)[packKey]
+  if (!pack) return
+  if (isPackSelected(packKey)) selectedScales.value = []
+  else selectedScales.value = [...pack.scales]
+}
 
 // 统计 + Tab 合并：单排四格，既是数字展示又是筛选器
 const statTabs = computed(() => [
@@ -322,6 +376,7 @@ function closeAssign() {
   batchIndex.value = 0
   modalSearchMode.value = false
   modalSearchQuery.value = ''
+  assignAiInfo.value = {}
 }
 
 const prioritizedStudents = computed(() => {
@@ -398,8 +453,7 @@ function formatDate(d: string): string {
 function formatScales(item: any): string {
   if (item.scale_names) return item.scale_names
   if (item.scales && Array.isArray(item.scales)) {
-    const nameMap: Record<string, string> = { big5: '大五人格', ttm7: 'TTM', bpt6: 'BPT', capacity: '能力', spi: 'SPI' }
-    return item.scales.map((s: string) => nameMap[s] || s).join(' + ')
+    return item.scales.map((s: string) => SCALE_NAME_MAP[s] || s).join(' + ')
   }
   return item.assessment_type || '综合评估'
 }
@@ -605,4 +659,16 @@ onMounted(() => { loadData() })
 /* ── 已选学员卡片 ── */
 .assess-selected-card { display: flex; align-items: center; gap: 16rpx; padding: 16rpx; background: #F5F0FF; border-radius: 14rpx; border: 2rpx solid #9B59B6; }
 .assess-reselect { font-size: 24rpx; color: #9B59B6; }
+
+/* ── AI 量表建议 ── */
+.assess-ai-suggest-btn { padding: 8rpx 20rpx; background: linear-gradient(135deg, #1a7a50, #27AE60); color: #fff; border-radius: 10rpx; font-size: 24rpx; font-weight: 600; }
+.assess-ai-suggest-btn--loading { background: #8DC9B3; }
+.assess-pack-row { display: flex; gap: 10rpx; flex-wrap: wrap; margin-bottom: 12rpx; }
+.assess-pack-chip { padding: 8rpx 22rpx; border-radius: 28rpx; font-size: 24rpx; background: #F0F0F0; color: #5B6B7F; }
+.assess-pack-chip--active { background: #9B59B6; color: #fff; }
+.assess-scale-opt--ai { border: 2rpx solid #F39C12 !important; background: #FFF9EC; }
+.assess-ai-box { margin-top: 12rpx; padding: 16rpx 20rpx; background: linear-gradient(135deg, #f0faf5, #eaf6ff); border-radius: 12rpx; border-left: 4rpx solid #27AE60; }
+.assess-ai-box-tag { display: block; font-size: 22rpx; font-weight: 700; color: #1a7a50; margin-bottom: 6rpx; }
+.assess-ai-box-text { display: block; font-size: 24rpx; color: #2C3E50; line-height: 1.5; margin-bottom: 4rpx; }
+.assess-scale-reason { display: block; font-size: 22rpx; color: #E67E22; margin-top: 4rpx; }
 </style>
