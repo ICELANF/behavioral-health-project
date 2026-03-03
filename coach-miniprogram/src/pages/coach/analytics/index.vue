@@ -224,7 +224,7 @@ async function loadData() {
     const res2 = await http<any>('/api/v1/micro-actions/today')
     actionTotal.value = res2.total || 0
     actionCompleted.value = res2.completed || 0
-  } catch {}
+  } catch (e) { console.warn('[coach/analytics/index] today:', e) }
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }

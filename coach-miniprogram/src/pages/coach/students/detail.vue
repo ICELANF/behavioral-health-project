@@ -181,7 +181,7 @@ async function loadData() {
         exercise_minutes: found.health_data?.exercise_minutes,
       }
     }
-  } catch {}
+  } catch (e) { console.warn('[coach/students/detail] dashboard:', e) }
 
   // 补充：profile 端点有 height/weight/goals 等字段
   try {
@@ -194,7 +194,7 @@ async function loadData() {
       weight: profile.weight || student.value.weight,
       goals: profile.goals || [],
     }
-  } catch {}
+  } catch (e) { console.warn('[coach/students/detail] api:', e) }
 
   // 行为记录
   try {

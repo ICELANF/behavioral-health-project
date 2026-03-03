@@ -76,7 +76,7 @@ onMounted(() => {
         role_label: (u.role||'').toLowerCase() === 'coach' ? '健康教练' : u.role || '用户'
       }
     }
-  } catch {}
+  } catch (e) { console.warn('[profile-extra/settings] operation:', e) }
 })
 
 function clearCache() {

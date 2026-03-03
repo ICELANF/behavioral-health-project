@@ -142,7 +142,7 @@ async function loadStudents() {
         risk_factors: [],
         has_intervention: false,
       }))
-    } catch {}
+    } catch (e) { console.warn('[coach/risk/index] students:', e) }
   }
   loading.value = false
 }

@@ -209,7 +209,7 @@ async function loadSummary() {
       acc.fat      += (i.nutrition?.fat || 0)
       return acc
     }, { calories: 0, carbs: 0, protein: 0, fat: 0 })
-  } catch {}
+  } catch (e) { console.warn('[food/scan] loadSummary:', e) }
 }
 
 function goBack() {

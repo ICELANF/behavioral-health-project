@@ -212,7 +212,7 @@ function saveDraft() {
     uni.setStorageSync('assessment_draft_' + assessmentId.value, JSON.stringify({
       answers, currentGroupIndex: currentGroupIndex.value, currentQuestionIndex: currentQuestionIndex.value, timer: timer.value
     }))
-  } catch {}
+  } catch (e) { console.warn('[assessment/do] saveDraft:', e) }
 }
 
 function loadDraft() {
@@ -225,7 +225,7 @@ function loadDraft() {
       currentQuestionIndex.value = parsed.currentQuestionIndex || 0
       timer.value = parsed.timer || 0
     }
-  } catch {}
+  } catch (e) { console.warn('[assessment/do] loadDraft:', e) }
 }
 
 async function loadQuestions() {
@@ -296,7 +296,7 @@ async function submitAssessment() {
           data: { assignment_id: assessmentId.value, answers, duration: timer.value }
         })
         // 清除草稿
-        try { uni.removeStorageSync('assessment_draft_' + assessmentId.value) } catch {}
+        try { uni.removeStorageSync('assessment_draft_' + assessmentId.value) } catch (e) { console.warn('[assessment/do] evaluate:', e) }
         uni.showToast({ title: '提交成功', icon: 'success' })
         setTimeout(() => {
           uni.redirectTo({ url: '/pages/assessment/result?id=' + assessmentId.value })

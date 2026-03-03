@@ -138,7 +138,7 @@ async function loadData() {
       last_time: '',
       unread: s.unread_count || 0,
     }))
-  } catch {}
+  } catch (e) { console.warn('[coach/messages/index] dashboard:', e) }
 
   // 通知
   try {
@@ -163,10 +163,10 @@ async function loadData() {
             content: s.content || s.message || s.text || JSON.stringify(s),
           })
         })
-      } catch {}
+      } catch (e) { console.warn('[coach/messages/index] operation:', e) }
     }
     aiSuggestions.value = results
-  } catch {}
+  } catch (e) { console.warn('[coach/messages/index] operation:', e) }
 }
 
 async function onRefresh() {
@@ -176,7 +176,7 @@ async function onRefresh() {
 }
 
 async function markAllRead() {
-  try { await http('/api/v1/notifications/mark-all-read', { method: 'POST' }) } catch {}
+  try { await http('/api/v1/notifications/mark-all-read', { method: 'POST' }) } catch (e) { console.warn('[coach/messages/index] markAllRead:', e) }
   notifications.value.forEach(n => n.is_read = true)
 }
 

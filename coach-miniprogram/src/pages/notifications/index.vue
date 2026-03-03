@@ -105,7 +105,7 @@ async function openNotif(n: any) {
     try {
       await http(`/api/v1/notifications/${n.id}/read`, { method: 'POST' })
       n.is_read = true
-    } catch {}
+    } catch (e) { console.warn('[notifications/index] openNotif:', e) }
   }
   // 按类型跳转
   const links: Record<string, string> = {

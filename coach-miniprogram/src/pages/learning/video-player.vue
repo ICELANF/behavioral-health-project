@@ -48,7 +48,7 @@ onMounted(async () => {
     author.value = data?.author?.name || ''
     viewCount.value = data?.view_count || 0
     description.value = data?.subtitle || ''
-  } catch {} finally { loading.value = false }
+  } catch (e) { console.warn('[learning/video-player] operation:', e) } finally { loading.value = false }
 })
 </script>
 

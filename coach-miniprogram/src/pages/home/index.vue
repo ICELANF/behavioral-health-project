@@ -411,7 +411,7 @@ function detectRole() {
       userRole.value = (u.role || 'coach').toLowerCase()
       userName.value = u.full_name || u.display_name || u.username || '用户'
     }
-  } catch {}
+  } catch (e) { console.warn('[home/index] detectRole:', e) }
 }
 
 function goPage(url: string) { uni.navigateTo({ url }) }
@@ -481,7 +481,7 @@ async function loadGrower() {
       weight:  res.latest_weight?.toFixed(1) ?? null,
       steps:   res.today_steps ?? null,
     }
-  } catch {}
+  } catch (e) { console.warn('[home/index] summary:', e) }
   try {
     const res = await http<any>('/api/v1/daily-tasks/today')
     growerTasks.value = (res.tasks || []).map((t: any) => ({
@@ -489,11 +489,11 @@ async function loadGrower() {
       done: t.status === 'completed' || t.completed === true,
       points: t.points || 10,
     }))
-  } catch {}
+  } catch (e) { console.warn('[home/index] today:', e) }
   try {
     const res = await http<any>('/api/v1/assessment-assignments/my-pending')
     growerPendingAssess.value = (res.items || res.assignments || []).filter((a: any) => ['pending','assigned'].includes(a.status)).length
-  } catch {}
+  } catch (e) { console.warn('[home/index] my-pending:', e) }
 }
 
 async function toggleTask(task: any) {
@@ -517,15 +517,15 @@ async function loadSharer() {
     sharerMentees.value = res.mentees || []
     sharerData.value.menteeCount = sharerMentees.value.length
     sharerData.value.activeToday = sharerMentees.value.filter((m: any) => m.status === 'active').length
-  } catch {}
+  } catch (e) { console.warn('[home/index] mentee-progress:', e) }
   try {
     const res = await http<any>('/api/v1/sharer/contribution-stats')
     sharerData.value.published = res.published ?? 0
-  } catch {}
+  } catch (e) { console.warn('[home/index] contribution-stats:', e) }
   try {
     const res = await http<any>('/api/v1/sharer/influence-score')
     sharerData.value.influence = res.total ?? 0
-  } catch {}
+  } catch (e) { console.warn('[home/index] influence-score:', e) }
 }
 
 // ── SUPERVISOR 数据 ────────────────────────────────────
@@ -540,7 +540,7 @@ async function loadSupervisor() {
       highRisk:      res.high_risk_count ?? 0,
       approvedToday: res.approved_today ?? 0,
     }
-  } catch {}
+  } catch (e) { console.warn('[home/index] dashboard:', e) }
 }
 
 // ── MASTER 数据 ────────────────────────────────────────
@@ -555,7 +555,7 @@ async function loadMaster() {
       knowledgePending: res.knowledge_pending ?? 0,
       reviewedToday:   res.reviewed_today ?? 0,
     }
-  } catch {}
+  } catch (e) { console.warn('[home/index] dashboard:', e) }
 }
 
 // ── 主加载 ─────────────────────────────────────────────

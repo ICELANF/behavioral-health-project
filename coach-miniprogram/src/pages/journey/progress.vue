@@ -73,7 +73,7 @@ async function loadData() {
   loading.value = true
   try {
     data.value = await http<any>('/api/v1/journey/progress')
-  } catch {} finally { loading.value = false }
+  } catch (e) { console.warn('[journey/progress] progress:', e) } finally { loading.value = false }
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }

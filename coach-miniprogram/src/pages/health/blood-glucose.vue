@@ -124,7 +124,7 @@ async function loadHistory() {
       latestGlucose.value = items[0].value
       latestTime.value = formatTime(items[0].measured_at || items[0].recorded_at)
     }
-  } catch {}
+  } catch (e) { console.warn('[health/blood-glucose] loadHistory:', e) }
 }
 
 async function submitReading() {

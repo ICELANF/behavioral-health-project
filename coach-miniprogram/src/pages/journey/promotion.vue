@@ -77,7 +77,7 @@ async function loadOverview() {
     currentLevel.value = res?.current_level || 'observer'
     const nextIdx = levelOrder.indexOf(currentLevel.value) + 1
     targetLevel.value = levelOrder[nextIdx] || 'grower'
-  } catch {}
+  } catch (e) { console.warn('[journey/promotion] overview:', e) }
 }
 
 async function submitPromotion() {

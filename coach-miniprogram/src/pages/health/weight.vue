@@ -140,7 +140,7 @@ async function loadData() {
         body_fat: l.body_fat_percentage?.toFixed(1),
       }
     }
-  } catch {}
+  } catch (e) { console.warn('[health/weight] vitals?limit=20&type=weight:', e) }
 }
 
 async function submitWeight() {

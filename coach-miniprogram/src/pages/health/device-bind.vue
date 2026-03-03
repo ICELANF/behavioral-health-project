@@ -114,7 +114,7 @@ async function loadDevices() {
   try {
     const res = await http<any>('/api/v1/devices')
     myDevices.value = res.devices || res.items || (Array.isArray(res) ? res : [])
-  } catch {}
+  } catch (e) { console.warn('[health/device-bind] devices:', e) }
 }
 
 function showBindModal(cat: any) {

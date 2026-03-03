@@ -154,7 +154,7 @@ async function loadData() {
     const res = await http<any>('/api/v1/coach/stats/today')
     approvedCount.value = res.approved || 0
     rejectedCount.value = res.rejected || 0
-  } catch {}
+  } catch (e) { console.warn('[coach/flywheel/index] today:', e) }
 
   // 学员列表
   try {
@@ -170,7 +170,7 @@ async function approveItem(item: any) {
   try {
     await http(`/api/v1/coach/review/${item.id}/approve`, { method: 'POST' })
   } catch {
-    try { await http(`/api/v1/coach-push/${item.id}/approve`, { method: 'POST' }) } catch {}
+    try { await http(`/api/v1/coach-push/${item.id}/approve`, { method: 'POST' }) } catch (e) { console.warn('[coach/flywheel/index] approveItem:', e) }
   }
   item._done = 'approved'
   approvedCount.value++
@@ -186,7 +186,7 @@ async function doReject() {
   try {
     await http(`/api/v1/coach/review/${rejectModal.value.id}/reject`, { method: 'POST', data: { reason: rejectReason.value } })
   } catch {
-    try { await http(`/api/v1/coach-push/${rejectModal.value.id}/reject`, { method: 'POST', data: { reason: rejectReason.value } }) } catch {}
+    try { await http(`/api/v1/coach-push/${rejectModal.value.id}/reject`, { method: 'POST', data: { reason: rejectReason.value } }) } catch (e) { console.warn('[coach/flywheel/index] doReject:', e) }
   }
   rejectModal.value._done = 'rejected'
   rejectedCount.value++

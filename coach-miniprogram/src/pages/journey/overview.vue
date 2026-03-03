@@ -94,7 +94,7 @@ function isLevelDone(levelKey: string, currentKey: string): boolean {
 async function loadData() {
   try {
     overview.value = await http<any>('/api/v1/journey/overview')
-  } catch {}
+  } catch (e) { console.warn('[journey/overview] overview:', e) }
 }
 
 function goProgress() { uni.navigateTo({ url: '/pages/journey/progress' }) }

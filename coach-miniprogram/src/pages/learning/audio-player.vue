@@ -86,7 +86,7 @@ onMounted(async () => {
       title.value = data?.title || '音频学习'
       author.value = data?.author?.name || ''
       cover.value = data?.cover_url || ''
-    } catch {}
+    } catch (e) { console.warn('[learning/audio-player] seekForward:', e) }
   }
 
   if (audioUrl.value) {

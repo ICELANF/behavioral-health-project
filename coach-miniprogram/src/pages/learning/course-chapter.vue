@@ -51,7 +51,7 @@ onMounted(async () => {
       content.value = data?.subtitle || data?.content || ''
       duration.value = data?.estimated_minutes || 10
       hasQuiz.value = !!data?.has_quiz
-    } catch {} finally { loading.value = false }
+    } catch (e) { console.warn('[learning/course-chapter] operation:', e) } finally { loading.value = false }
   }
 })
 

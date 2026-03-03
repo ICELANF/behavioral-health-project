@@ -163,11 +163,11 @@ async function loadData() {
       steps:   res.today_steps ?? null,
       sleep:   res.last_sleep_hours?.toFixed(1) ?? null,
     }
-  } catch {}
+  } catch (e) { console.warn('[health/index] summary:', e) }
   try {
     const res = await http<any>('/api/v1/devices')
     devices.value = res.devices || res.items || (Array.isArray(res) ? res : [])
-  } catch {}
+  } catch (e) { console.warn('[health/index] devices:', e) }
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }

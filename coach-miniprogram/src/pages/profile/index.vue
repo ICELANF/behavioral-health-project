@@ -146,7 +146,7 @@ async function loadProfile() {
         total_interventions: u.total_interventions || 0,
       }
     }
-  } catch {}
+  } catch (e) { console.warn('[profile/index] loadProfile:', e) }
 
   // 尝试从后端获取更新信息
   try {
@@ -160,14 +160,14 @@ async function loadProfile() {
         student_count: res.student_count ?? userInfo.value.student_count,
       }
     }
-  } catch {}
+  } catch (e) { console.warn('[profile/index] me:', e) }
 
   // 从dashboard获取统计
   try {
     const dash = await http<any>('/api/v1/coach/dashboard')
     userInfo.value.student_count = dash.client_count ?? (dash.students || []).length ?? userInfo.value.student_count
     userInfo.value.total_interventions = dash.total_interventions ?? userInfo.value.total_interventions
-  } catch {}
+  } catch (e) { console.warn('[profile/index] dashboard:', e) }
 }
 
 function editProfile() {

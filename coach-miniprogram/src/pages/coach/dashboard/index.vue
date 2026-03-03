@@ -165,13 +165,13 @@ async function loadData() {
       const u = typeof raw === 'string' ? JSON.parse(raw) : raw
       coachName.value = u.full_name || u.username || '教练'
     }
-  } catch {}
+  } catch (e) { console.warn('[coach/dashboard/index] loadData:', e) }
   try {
     const dash = await http<any>('/api/v1/coach/dashboard')
     coach.value = dash?.coach || {}
     ts.value = dash?.today_stats || {}
     students.value = dash?.students || []
-  } catch {} finally { loading.value = false }
+  } catch (e) { console.warn('[coach/dashboard/index] dashboard:', e) } finally { loading.value = false }
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }

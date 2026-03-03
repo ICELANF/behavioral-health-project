@@ -74,7 +74,7 @@ async function loadData() {
       pending: dash?.today_stats?.pending_followups || 0,
       alert_count: dash?.today_stats?.alert_students || 0,
     }
-  } catch {}
+  } catch (e) { console.warn('[profile-extra/performance] dashboard:', e) }
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }

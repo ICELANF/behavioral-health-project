@@ -144,11 +144,11 @@ async function loadData() {
       todayCalories.value = Math.round(items.reduce((sum: number, i: any) => sum + (i.calories_burned || 0), 0))
       todayMinutes.value = items.reduce((sum: number, i: any) => sum + (i.duration_minutes || 0), 0)
     }
-  } catch {}
+  } catch (e) { console.warn('[health/exercise] loadData:', e) }
   try {
     const res = await http<any>('/api/v1/health-data/activity?limit=20')
     history.value = res.records || res.items || (Array.isArray(res) ? res : [])
-  } catch {}
+  } catch (e) { console.warn('[health/exercise] activity?limit=20:', e) }
   // 检查 WeRun 授权状态
   werunAuthed.value = !!uni.getStorageSync('werun_authed')
 }
