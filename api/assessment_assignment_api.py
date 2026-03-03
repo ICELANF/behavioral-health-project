@@ -158,14 +158,6 @@ async def assign_assessment(
     if not student:
         raise HTTPException(status_code=404, detail="学员不存在")
 
-    # 检查是否有未完成的评估
-    existing = db.query(AssessmentAssignment).filter(
-        AssessmentAssignment.coach_id == current_user.id,
-        AssessmentAssignment.student_id == request.student_id,
-        AssessmentAssignment.status == "pending",
-    ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="该学员已有待完成的评估任务")
 
     # scales 字段存储复合JSON
     scales_data = {

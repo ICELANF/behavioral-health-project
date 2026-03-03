@@ -275,8 +275,8 @@ def assign_survey_to_students(
                     (survey_id, channel, channel_config, tracking_code, click_count, submit_count, created_at, created_by)
                 VALUES
                     (:sid, 'coach',
-                     :cfg::jsonb,
-                     substr(md5(random()::text), 1, 12),
+                     CAST(:cfg AS jsonb),
+                     substr(md5(CAST(random() AS text)), 1, 12),
                      0, 0, :now, :creator)
                 RETURNING id
             """), {
