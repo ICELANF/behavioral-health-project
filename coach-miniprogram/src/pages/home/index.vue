@@ -1,7 +1,7 @@
 <template>
   <view class="home-page">
-    <!-- ═══ COACH 首页 ═══ -->
-    <template v-if="userRole === 'coach'">
+    <!-- ═══ COACH / ADMIN 首页 ═══ -->
+    <template v-if="userRole === 'coach' || userRole === 'admin'">
       <view class="home-header home-header--coach">
         <view class="home-greeting">
           <text class="home-hello">{{ greetText }}</text>
