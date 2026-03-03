@@ -447,7 +447,7 @@ async function loadCoach() {
       action_text: s.micro_action_count ? `完成了${s.micro_action_count}个微行动` : (s.days_since_last_contact === 0 ? '今天活跃' : `${s.days_since_last_contact ?? '?'}天未活跃`),
       time_ago: s.last_active_time || '',
     }))
-  } catch {}
+  } catch (e) { console.warn('[Home] loadCoach dashboard failed:', e) }
   try {
     const res = await http<any>('/api/v1/coach/push-queue?status=pending&page_size=10')
     todos.value = (res.items || []).map((i: any) => ({
@@ -455,7 +455,7 @@ async function loadCoach() {
       student_name: i.student_name || '', type: i.source_type || 'rx_push',
       type_label: i.source_type === 'rx_push' ? '处方推送' : '待办', priority: i.priority || 'normal',
     }))
-  } catch {}
+  } catch (e) { console.warn('[Home] loadCoach push-queue failed:', e) }
 }
 
 function handleTodo(item: any) {
@@ -561,7 +561,7 @@ async function loadMaster() {
 // ── 主加载 ─────────────────────────────────────────────
 async function loadData() {
   detectRole()
-  if (userRole.value === 'coach')      await loadCoach()
+  if (userRole.value === 'coach' || userRole.value === 'admin') await loadCoach()
   else if (userRole.value === 'grower')     await loadGrower()
   else if (userRole.value === 'sharer')     await loadSharer()
   else if (userRole.value === 'supervisor') await loadSupervisor()
