@@ -439,8 +439,8 @@ async function loadCoach() {
     coachStats.value = {
       clientCount:   ts.total_students ?? students.length ?? 0,
       riskCount:     ts.alert_students ?? 0,
-      pendingRx:     ts.pending_followups ?? 0,  // overridden after push-queue fetch
-      pendingAssess: ts.pending_assessments ?? 0,
+      pendingRx:     0,
+      pendingAssess: ts.pending_assessments ?? 0,  // status=completed 等教练审核
     }
     activities.value = students.slice(0,10).map((s: any) => ({
       student_name: s.name || s.full_name || s.username || '未知',
@@ -448,20 +448,42 @@ async function loadCoach() {
       time_ago: s.last_active_time || '',
     }))
   } catch (e) { console.warn('[Home] loadCoach dashboard failed:', e) }
+
+  // 处方推送待办
+  const rxTodos: any[] = []
   try {
     const res = await http<any>('/api/v1/coach/push-queue?status=pending&page_size=10')
-    todos.value = (res.items || []).map((i: any) => ({
-      id: i.id, title: i.title || i.content?.slice(0,30) || '待处理',
-      student_name: i.student_name || '', type: i.source_type || 'rx_push',
-      type_label: i.source_type === 'rx_push' ? '处方推送' : '待办', priority: i.priority || 'normal',
-    }))
-    // 用推送队列的真实总数更新"待审处方"
-    coachStats.value.pendingRx = res.total ?? todos.value.length
+    rxTodos.push(...(res.items || []).map((i: any) => ({
+      id: 'pq_' + i.id,
+      title: i.title || i.content?.slice(0, 30) || '待推送消息',
+      student_name: i.student_name || '',
+      type: 'rx_push', type_label: '处方推送', priority: i.priority || 'normal',
+      url: '/pages/coach/push-queue/index',
+    })))
+    coachStats.value.pendingRx = res.total ?? rxTodos.length
   } catch (e) { console.warn('[Home] loadCoach push-queue failed:', e) }
+
+  // 评估审核待办（学员已完成→教练待审）
+  const assessTodos: any[] = []
+  try {
+    const res = await http<any>('/api/v1/assessment-assignments/coach-list?status=completed')
+    const pending = res.items || res.assignments || (Array.isArray(res) ? res : [])
+    if (pending.length) coachStats.value.pendingAssess = pending.length
+    assessTodos.push(...pending.slice(0, 3).map((a: any) => ({
+      id: 'assess_' + a.id,
+      title: (a.student_name || '学员') + ' 已完成评估，待审核',
+      student_name: a.student_name || '',
+      type: 'assessment', type_label: '待审评估', priority: 'high',
+      url: '/pages/coach/assessment/review?id=' + a.id,
+    })))
+  } catch (e) { console.warn('[Home] loadCoach assess-list failed:', e) }
+
+  // 待审评估高优先排前，处方推送在后
+  todos.value = [...assessTodos, ...rxTodos]
 }
 
 function handleTodo(item: any) {
-  uni.navigateTo({ url: '/pages/coach/push-queue/index' })
+  uni.navigateTo({ url: item.url || '/pages/coach/push-queue/index' })
 }
 
 // ── GROWER 数据 ────────────────────────────────────────
