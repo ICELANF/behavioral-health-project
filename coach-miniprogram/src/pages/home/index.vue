@@ -439,8 +439,8 @@ async function loadCoach() {
     coachStats.value = {
       clientCount:   ts.total_students ?? students.length ?? 0,
       riskCount:     ts.alert_students ?? 0,
-      pendingRx:     ts.pending_followups ?? 0,
-      pendingAssess: ts.pending_followups ?? 0,
+      pendingRx:     ts.pending_followups ?? 0,  // overridden after push-queue fetch
+      pendingAssess: ts.pending_assessments ?? 0,
     }
     activities.value = students.slice(0,10).map((s: any) => ({
       student_name: s.name || s.full_name || s.username || '未知',
@@ -455,6 +455,8 @@ async function loadCoach() {
       student_name: i.student_name || '', type: i.source_type || 'rx_push',
       type_label: i.source_type === 'rx_push' ? '处方推送' : '待办', priority: i.priority || 'normal',
     }))
+    // 用推送队列的真实总数更新"待审处方"
+    coachStats.value.pendingRx = res.total ?? todos.value.length
   } catch (e) { console.warn('[Home] loadCoach push-queue failed:', e) }
 }
 

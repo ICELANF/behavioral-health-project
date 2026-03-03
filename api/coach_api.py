@@ -22,7 +22,7 @@ from core.models import (
     CoachMessage, MicroActionTask, MicroActionLog,
     Reminder, BehaviorHistory,
     GlucoseReading, SleepRecord, ActivityRecord, VitalSign,
-    Notification,
+    Notification, AssessmentAssignment,
 )
 from core.behavioral_profile_service import BehavioralProfileService
 from core.intervention_matcher import InterventionMatcher
@@ -243,12 +243,23 @@ def get_coach_dashboard(
     except Exception:
         pass
 
+    # ── 6. 待审评估 (学员已完成，教练未审核) ──
+    pending_assessment_count = 0
+    try:
+        pending_assessment_count = db.query(func.count(AssessmentAssignment.id)).filter(
+            AssessmentAssignment.coach_id == current_user.id,
+            AssessmentAssignment.status == "completed",
+        ).scalar() or 0
+    except Exception:
+        pass
+
     today_stats = {
         "pending_followups": pending_followup_count,
         "completed_followups": completed_followups,
         "alert_students": alert_count,
         "unread_messages": unread_count,
         "total_students": len(students),
+        "pending_assessments": pending_assessment_count,
     }
 
     return {

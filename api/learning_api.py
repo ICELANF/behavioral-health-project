@@ -941,3 +941,30 @@ def handle_learning_event(
         "new_total_minutes": stats.total_minutes,
         "new_total_points": stats.total_points,
     }
+
+
+@router.get("/credits")
+def get_my_credits(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """获取当前用户的学分汇总（覆盖 frontend_stubs.py 的同名 stub）"""
+    stats = db.query(UserLearningStats).filter(UserLearningStats.user_id == current_user.id).first()
+    total_credits = stats.total_points if stats else 0
+
+    # 最近20条积分记录
+    logs = db.query(LearningPointsLog).filter(
+        LearningPointsLog.user_id == current_user.id
+    ).order_by(LearningPointsLog.earned_at.desc()).limit(20).all()
+
+    items = [
+        {
+            "id": log.id,
+            "points": log.points,
+            "source_type": log.source_type,
+            "category": log.category,
+            "earned_at": log.earned_at.isoformat() if log.earned_at else None,
+        }
+        for log in logs
+    ]
+    return {"total_credits": total_credits, "items": items}

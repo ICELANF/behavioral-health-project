@@ -259,6 +259,34 @@ def get_recommended_content(
     return [_item_to_card(item, _get_author_info(db, item.author_id)) for item in items]
 
 
+@router.get("/{content_id}")
+def get_content_detail(
+    content_id: int,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_user),
+):
+    """获取内容详情（支持匿名浏览，含等级门控）"""
+    item = db.query(ContentItem).filter(
+        ContentItem.id == content_id,
+        ContentItem.status == "published",
+    ).first()
+    if not item:
+        raise HTTPException(404, "内容不存在")
+
+    user_level = get_user_level(current_user) if current_user else 0
+    detail = _item_to_detail(db, item)
+    # frontend content-detail.vue uses item.subtitle for rich-text body display
+    detail["subtitle"] = item.body
+    detail["view_count"] = item.view_count or 0
+    detail["like_count"] = item.like_count or 0
+    access = get_access_status(user_level, item.level or "L0")
+    detail["access_status"] = access
+    if not access["accessible"]:
+        detail.pop("body", None)
+        detail.pop("subtitle", None)
+    return detail
+
+
 # ============================================================================
 # 课程 API
 # ============================================================================
