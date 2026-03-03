@@ -16,14 +16,20 @@
   PUT    /api/v1/surveys/{id}/questions/reorder  题目排序
   DELETE /api/v1/surveys/{id}/questions/{qid} 删除单题
 """
+import logging
+from datetime import datetime
 from typing import Optional, List
 from fastapi import APIRouter, Depends, HTTPException, Query, Body
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from core.database import get_db
 from core.models import User
 from api.dependencies import get_current_user, require_coach_or_admin
 from core.survey_service import SurveyService
+
+logger = logging.getLogger("survey_api")
 
 router = APIRouter(prefix="/api/v1/surveys", tags=["surveys"])
 
@@ -218,3 +224,104 @@ def delete_question(
         return {"success": True}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ─── 教练分配问卷给学员 ──────────────────────────────────────────────────────
+
+class AssignSurveyRequest(BaseModel):
+    student_ids: List[int]
+    message: Optional[str] = None
+
+
+@router.post("/{survey_id}/assign", summary="教练分配问卷给学员")
+def assign_survey_to_students(
+    survey_id: int,
+    body: AssignSurveyRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_coach_or_admin),
+):
+    """
+    教练将已发布问卷分配给一个或多个学员。
+
+    流程:
+    1. 验证问卷已发布
+    2. 写入 survey_distributions (channel='coach')
+    3. 向每个学员发送站内通知（含问卷短链）
+    返回: {success, survey_id, distribution_ids, student_count}
+    """
+    # 验证问卷存在且已发布
+    survey_row = db.execute(
+        text("SELECT id, title, status, short_code FROM surveys WHERE id = :sid"),
+        {"sid": survey_id}
+    ).mappings().first()
+
+    if not survey_row:
+        raise HTTPException(status_code=404, detail="问卷不存在")
+    if survey_row["status"] != "published":
+        raise HTTPException(status_code=400, detail="只能分配已发布的问卷")
+
+    survey_title = survey_row["title"]
+    short_code   = survey_row["short_code"]
+    survey_url   = f"/pages/assessment/survey?code={short_code}"
+    now = datetime.now()
+
+    distribution_ids = []
+
+    for student_id in body.student_ids:
+        # 创建分发记录
+        try:
+            result = db.execute(text("""
+                INSERT INTO survey_distributions
+                    (survey_id, channel, channel_config, tracking_code, click_count, submit_count, created_at, created_by)
+                VALUES
+                    (:sid, 'coach',
+                     :cfg::jsonb,
+                     substr(md5(random()::text), 1, 12),
+                     0, 0, :now, :creator)
+                RETURNING id
+            """), {
+                "sid":     survey_id,
+                "cfg":     f'{{"student_id": {student_id}, "coach_id": {current_user.id}, "message": "{body.message or ""}"}}',
+                "now":     now,
+                "creator": current_user.id,
+            })
+            dist_id = result.scalar()
+            if dist_id:
+                distribution_ids.append(dist_id)
+        except Exception as e:
+            logger.warning(f"创建分发记录失败 student={student_id}: {e}")
+            continue
+
+        # 站内通知
+        try:
+            notif_body = (
+                f"教练为您安排了问卷《{survey_title}》，"
+                f"完成后可获得积分。"
+                f"{body.message or ''} [link:{survey_url}]"
+            )
+            db.execute(text("""
+                INSERT INTO notifications (user_id, title, body, notification_type, is_read, created_at)
+                VALUES (:uid, :title, :body, 'survey_assigned', false, :now)
+            """), {
+                "uid":   student_id,
+                "title": f"新问卷：{survey_title}",
+                "body":  notif_body,
+                "now":   now,
+            })
+        except Exception as e:
+            logger.warning(f"发送通知失败 student={student_id}: {e}")
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logger.error(f"assign_survey commit failed: {e}")
+        raise HTTPException(status_code=500, detail="分配失败，请重试")
+
+    logger.info(f"Coach {current_user.id} assigned survey {survey_id} to {len(body.student_ids)} students")
+    return {
+        "success":          True,
+        "survey_id":        survey_id,
+        "distribution_ids": distribution_ids,
+        "student_count":    len(body.student_ids),
+    }

@@ -4,7 +4,7 @@
     <view class="assess-navbar">
       <view class="assess-nav-back" @tap="goBack">←</view>
       <text class="assess-nav-title">评估管理</text>
-      <view class="assess-nav-action" @tap="showAssign = true">+ 分配</view>
+      <view class="assess-nav-action" @tap="openAssign()">+ 分配</view>
     </view>
 
     <!-- 统计 + Tab 合并单排 -->
@@ -62,7 +62,7 @@
       <view v-if="!loading && filteredItems.length === 0" class="assess-empty">
         <text class="assess-empty-icon">📋</text>
         <text class="assess-empty-text">暂无{{ statTabs.find(t => t.key === activeTab)?.label || '' }}评估</text>
-        <view class="assess-empty-action" @tap="showAssign = true">分配新评估</view>
+        <view class="assess-empty-action" @tap="openAssign()">分配新评估</view>
       </view>
 
       <view v-if="loading" class="assess-loading">
@@ -218,6 +218,31 @@
             <text class="assess-scale-hint">已选 {{ selectedScales.length }} 个量表，预计 {{ estimatedTime }} 分钟</text>
           </view>
 
+          <!-- 问卷区 -->
+          <view class="assess-modal-section" v-if="surveyTools.length">
+            <view class="assess-survey-header">
+              <text class="assess-modal-label">问卷（可选）</text>
+              <text class="assess-survey-hint">{{ selectedSurveys.length ? selectedSurveys.length + '份已选' : '可与量表同时分配' }}</text>
+            </view>
+            <view class="assess-survey-list">
+              <view v-for="sv in surveyTools" :key="sv.key"
+                class="assess-survey-item"
+                :class="{ 'assess-survey-item--active': selectedSurveys.includes(sv.surveyId!),
+                           'assess-survey-item--ai': assignAiInfo.suggested_surveys?.some((s:any) => s.id === sv.surveyId) }"
+                @tap="selectedSurveys.includes(sv.surveyId!) ? selectedSurveys.splice(selectedSurveys.indexOf(sv.surveyId!),1) : selectedSurveys.push(sv.surveyId!)">
+                <view class="assess-survey-check">{{ selectedSurveys.includes(sv.surveyId!) ? '✓' : '' }}</view>
+                <view class="assess-survey-info">
+                  <text class="assess-survey-title">📝 {{ sv.label }}</text>
+                  <text class="assess-survey-reason" v-if="assignAiInfo.suggested_surveys?.find((s:any) => s.id === sv.surveyId)">
+                    🤖 {{ assignAiInfo.suggested_surveys.find((s:any) => s.id === sv.surveyId)?.rationale }}
+                  </text>
+                  <text v-else class="assess-survey-desc">{{ sv.desc }}</text>
+                </view>
+                <text class="assess-survey-time">{{ sv.time }}min</text>
+              </view>
+            </view>
+          </view>
+
           <view class="assess-modal-section">
             <text class="assess-modal-label">截止时间</text>
             <picker mode="date" @change="deadline = $event.detail.value">
@@ -247,7 +272,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
-import { SCALES_REGISTRY, SCALE_PACKS, estimateTime, SCALE_NAME_MAP } from '@/utils/scales'
+import { SCALES_REGISTRY, SCALE_PACKS, estimateTime, SCALE_NAME_MAP, loadSurveyTools } from '@/utils/assessmentTools'
+import type { ToolDef } from '@/utils/assessmentTools'
 
 const activeTab = ref('all')
 const searchText = ref('')
@@ -299,6 +325,10 @@ const estimatedTime = computed(() => estimateTime(selectedScales.value))
 const assignAiInfo = ref<any>({})
 const assignAiLoading = ref(false)
 
+// 问卷
+const surveyTools = ref<ToolDef[]>([])
+const selectedSurveys = ref<number[]>([])
+
 async function loadAiSuggestion() {
   if (!selectedStudentObj.value || assignAiLoading.value) return
   assignAiLoading.value = true
@@ -314,6 +344,7 @@ async function loadAiSuggestion() {
       source: res.source || 'rules',
     }
     if (res.suggested_scales?.length) selectedScales.value = [...res.suggested_scales]
+    if (res.suggested_surveys?.length) selectedSurveys.value = res.suggested_surveys.map((s: any) => s.id)
   } catch (e: any) {
     uni.showToast({ title: e?.data?.detail || 'AI建议失败', icon: 'none', duration: 2000 })
   } finally {
@@ -377,6 +408,12 @@ function closeAssign() {
   modalSearchMode.value = false
   modalSearchQuery.value = ''
   assignAiInfo.value = {}
+  selectedSurveys.value = []
+}
+
+async function openAssign() {
+  showAssign.value = true
+  surveyTools.value = await loadSurveyTools()
 }
 
 const prioritizedStudents = computed(() => {
@@ -500,32 +537,51 @@ async function doAssign() {
     uni.showToast({ title: '请选择学员', icon: 'none' })
     return
   }
-  if (selectedScales.value.length === 0) {
-    uni.showToast({ title: '请选择量表', icon: 'none' })
+  if (selectedScales.value.length === 0 && selectedSurveys.value.length === 0) {
+    uni.showToast({ title: '请选择量表或问卷', icon: 'none' })
     return
   }
 
   const student = selectedStudentObj.value
-  try {
-    await http('/api/v1/assessment-assignments/assign', {
-      method: 'POST',
-      data: {
-        user_id: student.id || student.user_id,
-        student_id: student.id || student.user_id,
-        scales: selectedScales.value,
-        assessment_type: selectedScales.value.join(','),
-        deadline: deadline.value || undefined,
-        note: assignNote.value || undefined,
-      }
-    })
-    uni.showToast({ title: '分配成功', icon: 'success' })
+  const parts: string[] = []
+  let ok = true
+
+  if (selectedScales.value.length) {
+    try {
+      await http('/api/v1/assessment-assignments/assign', {
+        method: 'POST',
+        data: {
+          user_id: student.id || student.user_id,
+          student_id: student.id || student.user_id,
+          scales: selectedScales.value,
+          assessment_type: selectedScales.value.join(','),
+          deadline: deadline.value || undefined,
+          note: assignNote.value || undefined,
+        }
+      })
+      parts.push(`${selectedScales.value.length}个量表`)
+    } catch (e: any) {
+      const detail = e?.data?.detail || e?.detail || e?.message || '量表分配失败'
+      uni.showToast({ title: detail.slice(0, 20), icon: 'none' }); ok = false
+    }
+  }
+
+  for (const surveyId of selectedSurveys.value) {
+    try {
+      await http(`/api/v1/surveys/${surveyId}/assign`, {
+        method: 'POST',
+        data: { student_ids: [student.id || student.user_id], message: assignNote.value || '' },
+      })
+    } catch { /* 静默，不阻断 */ }
+  }
+  if (selectedSurveys.value.length) parts.push(`${selectedSurveys.value.length}份问卷`)
+
+  if (ok) {
+    uni.showToast({ title: parts.join(' + ') + ' 已分配', icon: 'success' })
     closeAssign()
     assignNote.value = ''
     deadline.value = ''
     loadData()
-  } catch (e: any) {
-    const detail = e?.data?.detail || e?.detail || e?.message || '未知错误'
-    uni.showToast({ title: detail.length > 20 ? detail.slice(0, 20) + '…' : detail, icon: 'none' })
   }
 }
 
@@ -627,6 +683,19 @@ onMounted(() => { loadData() })
 .assess-scale-opt { padding: 10rpx 20rpx; border-radius: 8rpx; background: #F0F0F0; font-size: 24rpx; color: #5B6B7F; }
 .assess-scale-opt--active { background: #9B59B6; color: #fff; }
 .assess-scale-hint { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 12rpx; }
+.assess-survey-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
+.assess-survey-hint { font-size: 22rpx; color: #8E99A4; }
+.assess-survey-list { display: flex; flex-direction: column; gap: 8rpx; }
+.assess-survey-item { display: flex; align-items: center; gap: 12rpx; padding: 14rpx 12rpx; background: #F8F9FA; border-radius: 12rpx; border: 2rpx solid transparent; }
+.assess-survey-item--active { background: #F0FFF8; border-color: #2D8E69; }
+.assess-survey-item--ai { border-color: #E67E22; }
+.assess-survey-check { width: 36rpx; height: 36rpx; border-radius: 8rpx; border: 2rpx solid #CCC; display: flex; align-items: center; justify-content: center; font-size: 22rpx; color: #2D8E69; font-weight: 700; flex-shrink: 0; }
+.assess-survey-item--active .assess-survey-check { background: #2D8E69; border-color: #2D8E69; color: #fff; }
+.assess-survey-info { flex: 1; }
+.assess-survey-title { display: block; font-size: 26rpx; font-weight: 600; color: #2C3E50; }
+.assess-survey-desc { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
+.assess-survey-reason { display: block; font-size: 22rpx; color: #E67E22; margin-top: 4rpx; }
+.assess-survey-time { font-size: 22rpx; color: #8E99A4; white-space: nowrap; flex-shrink: 0; }
 .assess-textarea { width: 100%; height: 120rpx; padding: 16rpx; background: #F5F6FA; border-radius: 12rpx; font-size: 26rpx; }
 .assess-modal-actions { display: flex; gap: 16rpx; margin-top: 24rpx; }
 .assess-modal-btn { flex: 1; text-align: center; padding: 20rpx 0; border-radius: 12rpx; font-size: 28rpx; }

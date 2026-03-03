@@ -2107,6 +2107,53 @@ def ai_assessment_suggestion(
     result["source"] = source
     result["student_id"] = student_id
     result["stage"] = stage
+
+    # ── P2: 问卷推荐 ──────────────────────────────────────────────────────────
+    # 查询已发布问卷，根据学员档案做简单匹配推荐
+    suggested_surveys = []
+    try:
+        from sqlalchemy import text as _text
+        survey_rows = db.execute(_text("""
+            SELECT id, title, description, survey_type, short_code
+            FROM surveys
+            WHERE status = 'published'
+            ORDER BY published_at DESC
+            LIMIT 10
+        """)).mappings().all()
+
+        # 简单规则匹配：survey_type 与干预域、阶段的关联
+        _SURVEY_MATCH = {
+            "health":       ["nutrition", "exercise", "饮食", "运动", "健康"],
+            "screening":    ["S0", "S1", "S2", "前意向", "意向"],
+            "satisfaction": ["S4", "S5", "S6", "维持", "巩固"],
+            "feedback":     ["S3", "行动"],
+        }
+        context_tokens = [stage] + domains + [stage_label] + domain_str.split("、")
+
+        for row in survey_rows:
+            stype = row["survey_type"] or "general"
+            keywords = _SURVEY_MATCH.get(stype, [])
+            matched = any(kw in context_tokens for kw in keywords)
+
+            # health 类型：饮食/运动域强匹配；screening 类型：早期阶段匹配
+            if matched or stype == "general":
+                rationale = (
+                    f"该问卷类型（{stype}）与当前干预域{domain_str}匹配" if matched
+                    else "通用问卷，适合任何阶段补充数据"
+                )
+                suggested_surveys.append({
+                    "id":         row["id"],
+                    "title":      row["title"],
+                    "short_code": row["short_code"],
+                    "survey_type": stype,
+                    "rationale":  rationale,
+                })
+                if len(suggested_surveys) >= 3:
+                    break
+    except Exception as e:
+        logger.warning(f"[coach_api/ai_assess] 问卷推荐失败: {e}")
+
+    result["suggested_surveys"] = suggested_surveys
     return result
 
 

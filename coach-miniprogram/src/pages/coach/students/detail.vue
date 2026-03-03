@@ -260,6 +260,31 @@
         </view>
       </view>
 
+      <!-- 问卷区 -->
+      <view class="modal-field" v-if="surveyTools.length">
+        <view class="assign-section-title">
+          <text class="modal-label" style="margin-bottom:0">问卷（可选）</text>
+          <text class="assign-section-hint">{{ selectedSurveys.length ? selectedSurveys.length + '份已选' : '可与量表同时分配' }}</text>
+        </view>
+        <view class="assign-scales">
+          <view v-for="sv in surveyTools" :key="sv.key"
+            class="assign-scale-item"
+            :class="{ 'assign-scale-item--active': selectedSurveys.includes(sv.surveyId!),
+                       'assign-scale-item--ai': assignAiInfo.suggested_surveys?.some((s:any) => s.id === sv.surveyId) }"
+            @tap="selectedSurveys.includes(sv.surveyId!) ? selectedSurveys.splice(selectedSurveys.indexOf(sv.surveyId!),1) : selectedSurveys.push(sv.surveyId!)">
+            <view class="assign-scale-check">{{ selectedSurveys.includes(sv.surveyId!) ? '✓' : '' }}</view>
+            <view class="assign-scale-info">
+              <text class="assign-scale-name">📝 {{ sv.label }}</text>
+              <text class="assign-scale-ai-reason" v-if="assignAiInfo.suggested_surveys?.find((s:any) => s.id === sv.surveyId)">
+                🤖 {{ assignAiInfo.suggested_surveys.find((s:any) => s.id === sv.surveyId)?.rationale }}
+              </text>
+              <text v-else class="assign-scale-desc">{{ sv.desc }}</text>
+            </view>
+            <text class="assign-scale-time">{{ sv.time }}min</text>
+          </view>
+        </view>
+      </view>
+
       <view class="modal-field">
         <text class="modal-label">备注（可选）</text>
         <textarea class="modal-textarea" v-model="assignForm.note" placeholder="请输入备注…" />
@@ -333,7 +358,8 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { httpReq as http } from '@/api/request'
-import { SCALES_REGISTRY, SCALE_PACKS, estimateTime } from '@/utils/scales'
+import { SCALES_REGISTRY, SCALE_PACKS, estimateTime, loadSurveyTools } from '@/utils/assessmentTools'
+import type { ToolDef } from '@/utils/assessmentTools'
 
 const studentId = ref(0)
 const activeTab = ref('overview')
@@ -356,6 +382,8 @@ const assignAiInfo = ref<any>({})
 const showRxModal = ref(false)
 const submitting = ref(false)
 const assignForm = ref<{ scales: string[], note: string }>({ scales: ['big5', 'ttm7'], note: '' })
+const surveyTools = ref<ToolDef[]>([])
+const selectedSurveys = ref<number[]>([])
 const rxForm = ref({
   type: 'behavior', content: '', aiSource: '', rationale: '',
   confidence: 0.5, duration: '', followUp: '', requestExpertReview: false,
@@ -364,12 +392,23 @@ const rxAiLoading = ref(false)
 
 // ── 弹窗开关（重置 AI 状态） ──
 function closeMsgModal() { showMsgModal.value = false; msgAiInfo.value = {}; msgContent.value = '' }
-function closeAssignModal() { showAssignModal.value = false; assignAiInfo.value = {}; assignForm.value = { scales: ['big5', 'ttm7'], note: '' } }
+function closeAssignModal() {
+  showAssignModal.value = false
+  assignAiInfo.value = {}
+  assignForm.value = { scales: ['big5', 'ttm7'], note: '' }
+  selectedSurveys.value = []
+}
 function closeRxModal() {
   showRxModal.value = false
   rxForm.value = { type: 'behavior', content: '', aiSource: '', rationale: '', confidence: 0.5, duration: '', followUp: '', requestExpertReview: false }
 }
-function openAssignModal() { assignAiInfo.value = {}; assignForm.value = { scales: ['big5', 'ttm7'], note: '' }; showAssignModal.value = true }
+async function openAssignModal() {
+  assignAiInfo.value = {}
+  assignForm.value = { scales: ['big5', 'ttm7'], note: '' }
+  selectedSurveys.value = []
+  showAssignModal.value = true
+  surveyTools.value = await loadSurveyTools()
+}
 function openRxModal() {
   rxForm.value = { type: 'behavior', content: '', aiSource: '', rationale: '', confidence: 0.5, duration: '', followUp: '', requestExpertReview: false }
   showRxModal.value = true
@@ -426,6 +465,10 @@ async function loadAiAssessment() {
       source: res.source || 'rules',
     }
     if (res.suggested_scales?.length) assignForm.value.scales = [...res.suggested_scales]
+    // P2: AI 推荐问卷自动预选
+    if (res.suggested_surveys?.length) {
+      selectedSurveys.value = res.suggested_surveys.map((s: any) => s.id)
+    }
   } catch (e: any) {
     uni.showToast({ title: e?.data?.detail || 'AI建议失败', icon: 'none', duration: 2000 })
   } finally {
@@ -604,25 +647,44 @@ async function submitNote() {
 
 async function submitAssign() {
   if (submitting.value) return
-  if (!assignForm.value.scales.length) {
-    uni.showToast({ title: '请选择至少一个量表', icon: 'none' }); return
+  if (!assignForm.value.scales.length && !selectedSurveys.value.length) {
+    uni.showToast({ title: '请选择至少一个量表或问卷', icon: 'none' }); return
   }
   submitting.value = true
+  let scaleOk = true, surveyOk = true
   try {
-    await http('/api/v1/assessment-assignments/assign', {
-      method: 'POST',
-      data: {
-        student_id: studentId.value,
-        scales: assignForm.value.scales,
-        note: assignForm.value.note || '',
-      },
-    })
-    closeAssignModal()
-    uni.showToast({ title: '评估已分配', icon: 'success' })
-  } catch {
+    // 分配量表
+    if (assignForm.value.scales.length) {
+      await http('/api/v1/assessment-assignments/assign', {
+        method: 'POST',
+        data: {
+          student_id: studentId.value,
+          scales: assignForm.value.scales,
+          note: assignForm.value.note || '',
+        },
+      })
+    }
+  } catch { scaleOk = false }
+
+  // 分配问卷（逐条，静默失败不阻断）
+  for (const surveyId of selectedSurveys.value) {
+    try {
+      await http(`/api/v1/surveys/${surveyId}/assign`, {
+        method: 'POST',
+        data: { student_ids: [studentId.value], message: assignForm.value.note || '' },
+      })
+    } catch { surveyOk = false }
+  }
+
+  submitting.value = false
+  closeAssignModal()
+  if (!scaleOk && !surveyOk) {
     uni.showToast({ title: '分配失败，请稍后重试', icon: 'none' })
-  } finally {
-    submitting.value = false
+  } else {
+    const parts = []
+    if (assignForm.value.scales.length && scaleOk) parts.push(`${assignForm.value.scales.length}个量表`)
+    if (selectedSurveys.value.length) parts.push(`${selectedSurveys.value.length}份问卷`)
+    uni.showToast({ title: parts.join(' + ') + ' 已分配', icon: 'success' })
   }
 }
 
@@ -811,6 +873,8 @@ onLoad((opts: any) => {
 .assign-packs { display: flex; gap: 10rpx; flex-wrap: wrap; margin: 12rpx 0 8rpx; }
 .assign-pack-btn { padding: 10rpx 28rpx; border-radius: 32rpx; font-size: 24rpx; background: #F0F0F0; color: #5B6B7F; }
 .assign-pack-btn--active { background: #2D8E69; color: #fff; }
+.assign-section-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
+.assign-section-hint { font-size: 22rpx; color: #8E99A4; }
 .assign-scales { display: flex; flex-direction: column; gap: 8rpx; }
 .assign-scale-item { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 12rpx; background: #F8F9FA; border-radius: 12rpx; border: 2rpx solid transparent; }
 .assign-scale-item--active { background: #F0FFF8; border-color: #2D8E69; }
