@@ -14,18 +14,23 @@
       </view>
     </view>
 
-    <!-- 今日统计 -->
-    <view class="fw-stats">
-      <view class="fw-stat" v-for="s in todayStats" :key="s.label">
-        <text class="fw-stat-num" :style="{ color: s.color }">{{ s.value }}</text>
-        <text class="fw-stat-label">{{ s.label }}</text>
+    <!-- 统计+Tab 合并单排: AI跟进第一位 -->
+    <view class="fw-stattabs">
+      <view class="fw-st" :class="{ 'fw-st--active': activeTab === 'generate' }" @tap="activeTab = 'generate'">
+        <text class="fw-st-num">{{ studentList.length }}</text>
+        <text class="fw-st-label">AI跟进</text>
       </view>
-    </view>
-
-    <!-- Tab -->
-    <view class="fw-tabs">
-      <view v-for="tab in fwTabs" :key="tab.key" class="fw-tab" :class="{ 'fw-tab--active': activeTab === tab.key }" @tap="activeTab = tab.key">
-        {{ tab.label }}
+      <view class="fw-st" :class="{ 'fw-st--active': activeTab === 'pending' }" @tap="activeTab = 'pending'">
+        <text class="fw-st-num" :style="activeTab === 'pending' ? {} : { color: '#E67E22' }">{{ pendingItems.filter(i => !i._done).length }}</text>
+        <text class="fw-st-label">待审核</text>
+      </view>
+      <view class="fw-st">
+        <text class="fw-st-num" style="color:#27AE60;">{{ approvedCount }}</text>
+        <text class="fw-st-label">已通过</text>
+      </view>
+      <view class="fw-st">
+        <text class="fw-st-num" style="color:#E74C3C;">{{ rejectedCount }}</text>
+        <text class="fw-st-label">已退回</text>
       </view>
     </view>
 
@@ -62,11 +67,22 @@
       <template v-if="activeTab === 'generate'">
         <view class="fw-gen-section">
           <text class="fw-gen-title">选择学员生成AI跟进计划</text>
-          <scroll-view scroll-x class="fw-student-picker">
-            <view v-for="s in studentList" :key="s.id" class="fw-student-chip" :class="{ 'fw-student-chip--active': selectedStudent?.id === s.id }" @tap="selectedStudent = s">
-              {{ s.name }}
+          <!-- 纵向学员列表，便于浏览和选择 -->
+          <view class="fw-student-list">
+            <view
+              v-for="s in studentList" :key="s.id"
+              class="fw-student-row" :class="{ 'fw-student-row--active': selectedStudent?.id === s.id }"
+              @tap="selectedStudent = s"
+            >
+              <view class="fw-student-avatar" :style="{ background: avatarColor(s.name) }">{{ (s.name||'?')[0] }}</view>
+              <view class="fw-student-info">
+                <text class="fw-student-name">{{ s.name }}</text>
+                <text class="fw-student-sub">{{ s.stage_label || s.stage || '进行中' }} · 风险 R{{ s.risk_level || 0 }}</text>
+              </view>
+              <text v-if="selectedStudent?.id === s.id" class="fw-student-check">✓</text>
             </view>
-          </scroll-view>
+            <view v-if="studentList.length === 0" class="fw-student-empty">暂无学员数据</view>
+          </view>
           <view v-if="selectedStudent" class="fw-gen-form">
             <textarea class="fw-gen-input" placeholder="自定义AI指令（可选）" v-model="customPrompt" />
             <view class="fw-gen-btn" @tap="runAgent" :class="{ 'fw-gen-btn--loading': generating }">
@@ -121,16 +137,12 @@ const wheelSteps = [
   { icon: '📈', label: '效果追踪' },
 ]
 
-const fwTabs = [
-  { key: 'pending', label: '待审核' },
-  { key: 'generate', label: 'AI跟进' },
-]
-
-const todayStats = computed(() => [
-  { label: '待审核', value: pendingItems.value.filter(i => !i._done).length, color: '#E67E22' },
-  { label: '已通过', value: approvedCount.value, color: '#27AE60' },
-  { label: '已退回', value: rejectedCount.value, color: '#E74C3C' },
-])
+const AVATAR_COLORS = ['#3498DB', '#E67E22', '#27AE60', '#9B59B6', '#E74C3C', '#1ABC9C']
+function avatarColor(name: string): string {
+  if (!name) return '#8E99A4'
+  let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length]
+}
 
 function typeColor(t: string): string {
   const map: Record<string, string> = { rx_push: '#3498DB', prescription: '#9B59B6', assessment: '#E67E22' }
@@ -156,12 +168,16 @@ async function loadData() {
     rejectedCount.value = res.rejected || 0
   } catch (e) { console.warn('[coach/flywheel/index] today:', e) }
 
-  // 学员列表
+  // 学员列表（含 stage/risk 信息，用于纵向列表展示）
   try {
     const res = await http<any>('/api/v1/coach/dashboard')
     studentList.value = (res.students || []).map((s: any) => ({
       id: s.id || s.user_id,
       name: s.name || s.full_name || '未知',
+      stage_label: s.stage_label || s.stage || '',
+      risk_level: typeof s.risk_level === 'string'
+        ? parseInt(s.risk_level.replace(/\D/g, '')) || 0
+        : (s.risk_level || 0),
     }))
   } catch { studentList.value = [] }
 }
@@ -248,16 +264,16 @@ onMounted(() => { loadData() })
 .fw-wheel-icon { display: block; font-size: 28rpx; }
 .fw-wheel-label { display: block; font-size: 18rpx; color: #5B6B7F; margin-top: 4rpx; }
 
-.fw-stats { display: flex; padding: 0 24rpx 16rpx; gap: 12rpx; }
-.fw-stat { flex: 1; text-align: center; background: #fff; border-radius: 12rpx; padding: 16rpx; }
-.fw-stat-num { display: block; font-size: 40rpx; font-weight: 700; }
-.fw-stat-label { display: block; font-size: 22rpx; color: #8E99A4; }
+/* 统计+Tab 合并单排 */
+.fw-stattabs { display: flex; padding: 0 24rpx 16rpx; gap: 12rpx; }
+.fw-st { flex: 1; background: #fff; border-radius: 14rpx; padding: 18rpx 8rpx 14rpx; text-align: center; }
+.fw-st--active { background: #27AE60; }
+.fw-st-num { display: block; font-size: 36rpx; font-weight: 700; color: #2C3E50; }
+.fw-st--active .fw-st-num { color: #fff; }
+.fw-st-label { display: block; font-size: 20rpx; color: #8E99A4; margin-top: 4rpx; }
+.fw-st--active .fw-st-label { color: rgba(255,255,255,0.85); }
 
-.fw-tabs { display: flex; padding: 0 24rpx 12rpx; gap: 12rpx; }
-.fw-tab { flex: 1; text-align: center; padding: 14rpx 0; background: #fff; border-radius: 12rpx; font-size: 26rpx; color: #5B6B7F; }
-.fw-tab--active { background: #27AE60; color: #fff; }
-
-.fw-list { height: calc(100vh - 580rpx); padding: 0 24rpx; }
+.fw-list { height: calc(100vh - 460rpx); padding: 0 24rpx; }
 .fw-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 12rpx; }
 .fw-card--done { opacity: 0.6; }
 .fw-card-header { display: flex; align-items: center; justify-content: space-between; }
@@ -275,9 +291,17 @@ onMounted(() => { loadData() })
 
 .fw-gen-section { background: #fff; border-radius: 16rpx; padding: 24rpx; }
 .fw-gen-title { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; margin-bottom: 16rpx; }
-.fw-student-picker { display: flex; white-space: nowrap; gap: 12rpx; padding-bottom: 16rpx; }
-.fw-student-chip { display: inline-block; padding: 12rpx 24rpx; border-radius: 24rpx; background: #F0F0F0; font-size: 26rpx; color: #5B6B7F; }
-.fw-student-chip--active { background: #27AE60; color: #fff; }
+
+/* 纵向学员列表 */
+.fw-student-list { display: flex; flex-direction: column; gap: 10rpx; margin-bottom: 16rpx; }
+.fw-student-row { display: flex; align-items: center; gap: 16rpx; padding: 16rpx; background: #F8F9FA; border-radius: 14rpx; border: 2rpx solid transparent; }
+.fw-student-row--active { background: #F0FFF8; border-color: #27AE60; }
+.fw-student-avatar { width: 64rpx; height: 64rpx; border-radius: 50%; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 26rpx; font-weight: 600; flex-shrink: 0; }
+.fw-student-info { flex: 1; }
+.fw-student-name { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.fw-student-sub { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
+.fw-student-check { font-size: 32rpx; color: #27AE60; font-weight: 700; }
+.fw-student-empty { text-align: center; padding: 40rpx 0; font-size: 26rpx; color: #8E99A4; }
 .fw-gen-form { margin-top: 16rpx; }
 .fw-gen-input { width: 100%; height: 120rpx; padding: 16rpx; background: #F8F9FA; border-radius: 12rpx; font-size: 26rpx; box-sizing: border-box; }
 .fw-gen-btn { text-align: center; padding: 20rpx; background: #27AE60; color: #fff; border-radius: 12rpx; font-size: 30rpx; font-weight: 600; margin-top: 16rpx; }

@@ -27,27 +27,14 @@
         </view>
       </view>
 
-      <!-- 教练工作 -->
+      <!-- 个人成长（我自己的成就数据） -->
+      <view class="prof-section-label">个人成长</view>
       <view class="prof-menu">
-        <view class="prof-menu-item" @tap="goPage('/pages/coach/analytics/index')">
-          <text class="prof-menu-icon">📊</text>
-          <text class="prof-menu-text">工作数据</text>
-          <text class="prof-menu-arrow">›</text>
-        </view>
-        <view class="prof-menu-item" @tap="goPage('/pages/coach/assessment/index')">
-          <text class="prof-menu-icon">📋</text>
-          <text class="prof-menu-text">评估管理</text>
-          <text class="prof-menu-arrow">›</text>
-        </view>
         <view class="prof-menu-item" @tap="goPage('/pages/learning/index')">
           <text class="prof-menu-icon">📚</text>
           <text class="prof-menu-text">学习成长</text>
           <text class="prof-menu-arrow">›</text>
         </view>
-      </view>
-
-      <!-- 个人成长 -->
-      <view class="prof-menu">
         <view class="prof-menu-item" @tap="goPage('/pages/profile-extra/performance')">
           <text class="prof-menu-icon">📈</text>
           <text class="prof-menu-text">我的绩效</text>
@@ -61,6 +48,23 @@
         <view class="prof-menu-item" @tap="goPage('/pages/profile-extra/certification')">
           <text class="prof-menu-icon">🏆</text>
           <text class="prof-menu-text">我的认证</text>
+          <text class="prof-menu-arrow">›</text>
+        </view>
+      </view>
+
+      <!-- 教练工作台（多学员汇总工具，非个人数据） -->
+      <view class="prof-section-label">教练工作台</view>
+      <view class="prof-menu">
+        <view class="prof-menu-item" @tap="goPage('/pages/coach/analytics/index')">
+          <text class="prof-menu-icon">📊</text>
+          <text class="prof-menu-text">工作数据</text>
+          <text class="prof-menu-sub">我的学员汇总</text>
+          <text class="prof-menu-arrow">›</text>
+        </view>
+        <view class="prof-menu-item" @tap="goPage('/pages/coach/assessment/index')">
+          <text class="prof-menu-icon">📋</text>
+          <text class="prof-menu-text">评估管理</text>
+          <text class="prof-menu-sub">学员评估任务</text>
           <text class="prof-menu-arrow">›</text>
         </view>
       </view>
@@ -267,6 +271,9 @@ onShow(() => { loadProfile() })
 .prof-menu-icon { font-size: 32rpx; }
 .prof-menu-text { flex: 1; font-size: 28rpx; color: #2C3E50; }
 .prof-menu-arrow { font-size: 28rpx; color: #CCC; }
+
+.prof-section-label { font-size: 22rpx; color: #8E99A4; padding: 8rpx 24rpx 4rpx; font-weight: 500; letter-spacing: 2rpx; }
+.prof-menu-sub { font-size: 20rpx; color: #BDC3C7; margin-left: 4rpx; }
 
 .prof-version { text-align: center; padding: 32rpx; font-size: 24rpx; color: #BDC3C7; }
 
