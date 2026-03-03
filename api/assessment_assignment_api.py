@@ -95,6 +95,10 @@ class ReviewItemUpdate(BaseModel):
     coach_note: Optional[str] = None
 
 
+class RejectRequest(BaseModel):
+    coach_note: Optional[str] = "需修改后重新提交"
+
+
 # ============ 端点 ============
 
 @router.post("/assign")
@@ -564,7 +568,7 @@ async def remind_student(
 @router.post("/{assignment_id}/reject")
 async def reject_assignment(
     assignment_id: int,
-    request: dict,
+    request: RejectRequest,
     db: Session = Depends(get_db),
     current_user=Depends(require_coach_or_admin),
 ):
@@ -578,7 +582,7 @@ async def reject_assignment(
     if assignment.status not in ("completed", "reviewed"):
         raise HTTPException(status_code=400, detail="该评估任务状态不支持退回")
 
-    coach_note = request.get("coach_note", "需修改后重新提交") if isinstance(request, dict) else "需修改后重新提交"
+    coach_note = request.coach_note or "需修改后重新提交"
     assignment.status = "pending"
     assignment.completed_at = None
 
