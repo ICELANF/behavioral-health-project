@@ -477,6 +477,14 @@ try:
 except ImportError as e:
     print(f"[API] 设备REST路由注册失败: {e}")
 
+# 注册健康数据审核队列路由 (WeRun + health_review_queue + supervisor/master dashboards)
+try:
+    from api.health_review_api import router as health_review_router
+    app.include_router(health_review_router)
+    print("[API] 健康审核队列路由已注册")
+except Exception as e:
+    print(f"[API] 健康审核队列路由注册失败: {e}")
+
 # 注册聊天REST路由
 try:
     from api.chat_rest_api import router as chat_rest_router
