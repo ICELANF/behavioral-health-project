@@ -7,23 +7,15 @@
       <view class="risk-nav-action" @tap="refresh">↻</view>
     </view>
 
-    <!-- 风险概览 -->
-    <view class="risk-overview">
-      <view class="risk-stat" v-for="s in riskStats" :key="s.label">
-        <text class="risk-stat-num" :style="{ color: s.color }">{{ s.value }}</text>
-        <text class="risk-stat-label">{{ s.label }}</text>
-      </view>
-    </view>
-
-    <!-- 风险等级Tab -->
-    <view class="risk-tabs">
+    <!-- 统计 + Tab 合并单排 -->
+    <view class="risk-stattabs">
       <view
-        v-for="tab in tabs" :key="tab.key"
-        class="risk-tab" :class="{ 'risk-tab--active': activeTab === tab.key }"
-        @tap="activeTab = tab.key"
+        v-for="t in statTabs" :key="t.key"
+        class="risk-st" :class="{ 'risk-st--active': activeTab === t.key }"
+        @tap="activeTab = t.key"
       >
-        <text>{{ tab.label }}</text>
-        <view v-if="tab.count > 0" class="risk-badge" :style="{ background: tab.color }">{{ tab.count }}</view>
+        <text class="risk-st-num" :style="activeTab === t.key ? {} : { color: t.color }">{{ t.count }}</text>
+        <text class="risk-st-label">{{ t.label }}</text>
       </view>
     </view>
 
@@ -55,7 +47,7 @@
 
       <view v-if="filteredStudents.length === 0" class="risk-empty">
         <text class="risk-empty-icon">🛡️</text>
-        <text class="risk-empty-text">当前无{{ activeTab === 'all' ? '' : activeTab === 'high' ? '高风险' : activeTab === 'medium' ? '中风险' : '待跟进' }}学员</text>
+        <text class="risk-empty-text">当前无{{ statTabs.find(t => t.key === activeTab)?.label || '' }}学员</text>
       </view>
     </scroll-view>
   </view>
@@ -80,18 +72,12 @@ const students = ref<Student[]>([])
 const loading = ref(false)
 const refreshing = ref(false)
 
-const tabs = computed(() => [
-  { key: 'all', label: '全部', count: students.value.length, color: '#5B6B7F' },
-  { key: 'high', label: '高风险', count: students.value.filter(s => s.risk_level >= 3).length, color: '#E74C3C' },
-  { key: 'medium', label: '中风险', count: students.value.filter(s => s.risk_level === 2).length, color: '#E67E22' },
-  { key: 'followup', label: '待跟进', count: students.value.filter(s => (s.days_since || 0) >= 7).length, color: '#3498DB' },
-])
-
-const riskStats = computed(() => [
-  { label: '高风险', value: students.value.filter(s => s.risk_level >= 3).length, color: '#E74C3C' },
-  { label: '中风险', value: students.value.filter(s => s.risk_level === 2).length, color: '#E67E22' },
-  { label: '低风险', value: students.value.filter(s => s.risk_level <= 1).length, color: '#27AE60' },
-  { label: '待跟进', value: students.value.filter(s => (s.days_since || 0) >= 7).length, color: '#3498DB' },
+// 统计 + Tab 合并：单排四格，数字展示 + 筛选器二合一
+const statTabs = computed(() => [
+  { key: 'all',      label: '全部',  color: '#5B6B7F', count: students.value.length },
+  { key: 'high',     label: '高风险', color: '#E74C3C', count: students.value.filter(s => s.risk_level >= 3).length },
+  { key: 'medium',   label: '中风险', color: '#E67E22', count: students.value.filter(s => s.risk_level === 2).length },
+  { key: 'followup', label: '待跟进', color: '#3498DB', count: students.value.filter(s => (s.days_since || 0) >= 7).length },
 ])
 
 const filteredStudents = computed(() => {
@@ -119,8 +105,9 @@ async function loadStudents() {
     students.value = raw.map((s: any) => ({
       id: s.id || s.user_id,
       name: s.name || s.full_name || s.username || '未知',
-      risk_level: s.risk_level ?? s.risk_score ?? 0,
-      stage: s.ttm_stage || s.stage || '',
+      // 兼容字符串 "R3" 和数字 3
+      risk_level: parseInt(String(s.risk_level ?? s.risk_score ?? '0').replace(/\D/g, '') || '0'),
+      stage: s.ttm_stage || s.stage || s.stage_label || '',
       days_since: s.days_since_last_contact ?? s.days_since ?? null,
       risk_factors: s.risk_factors || [],
       has_intervention: s.has_prescription ?? s.has_intervention ?? false,
@@ -136,8 +123,8 @@ async function loadStudents() {
       students.value = (Array.isArray(raw2) ? raw2 : []).map((s: any) => ({
         id: s.id || s.user_id,
         name: s.name || s.full_name || '未知',
-        risk_level: s.risk_level ?? 0,
-        stage: s.ttm_stage || '',
+        risk_level: parseInt(String(s.risk_level ?? '0').replace(/\D/g, '') || '0'),
+        stage: s.ttm_stage || s.stage_label || '',
         days_since: s.days_since_last_contact ?? null,
         risk_factors: [],
         has_intervention: false,
@@ -176,17 +163,16 @@ onMounted(() => { loadStudents() })
 .risk-nav-title { flex: 1; text-align: center; font-size: 34rpx; font-weight: 600; }
 .risk-nav-action { font-size: 36rpx; padding: 16rpx; }
 
-.risk-overview { display: flex; padding: 24rpx; gap: 16rpx; }
-.risk-stat { flex: 1; background: #fff; border-radius: 16rpx; padding: 20rpx 12rpx; text-align: center; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.06); }
-.risk-stat-num { display: block; font-size: 44rpx; font-weight: 700; }
-.risk-stat-label { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
+/* ── 统计+Tab 合并单排 ── */
+.risk-stattabs { display: flex; padding: 16rpx 24rpx 12rpx; gap: 12rpx; }
+.risk-st { flex: 1; background: #fff; border-radius: 14rpx; padding: 18rpx 8rpx 14rpx; text-align: center; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
+.risk-st--active { background: #E74C3C; box-shadow: 0 4rpx 12rpx rgba(231,76,60,0.3); }
+.risk-st-num { display: block; font-size: 36rpx; font-weight: 700; color: #2C3E50; }
+.risk-st--active .risk-st-num { color: #fff; }
+.risk-st-label { display: block; font-size: 20rpx; color: #8E99A4; margin-top: 4rpx; }
+.risk-st--active .risk-st-label { color: rgba(255,255,255,0.85); }
 
-.risk-tabs { display: flex; padding: 0 24rpx; gap: 16rpx; margin-bottom: 16rpx; }
-.risk-tab { display: flex; align-items: center; gap: 8rpx; padding: 12rpx 24rpx; border-radius: 32rpx; background: #fff; font-size: 26rpx; color: #5B6B7F; }
-.risk-tab--active { background: #E74C3C; color: #fff; }
-.risk-badge { min-width: 32rpx; height: 32rpx; border-radius: 16rpx; color: #fff; font-size: 20rpx; display: flex; align-items: center; justify-content: center; padding: 0 8rpx; }
-
-.risk-list { height: calc(100vh - 500rpx); padding: 0 24rpx; }
+.risk-list { height: calc(100vh - 420rpx); padding: 0 24rpx; }
 .risk-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
 .risk-card-header { display: flex; align-items: center; gap: 16rpx; }
 .risk-avatar { width: 72rpx; height: 72rpx; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 28rpx; font-weight: 600; }
