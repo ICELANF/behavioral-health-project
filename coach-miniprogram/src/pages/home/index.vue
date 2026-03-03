@@ -11,25 +11,25 @@
       </view>
       <scroll-view scroll-y class="home-scroll" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
         <view class="home-stats">
-          <view class="home-stat-card" @tap="goPage('/pages/coach/students/index')">
-            <text class="home-stat-icon">👥</text>
-            <text class="home-stat-num">{{ coachStats.clientCount }}</text>
-            <text class="home-stat-label">我的学员</text>
-          </view>
-          <view class="home-stat-card home-stat-card--warn" @tap="goPage('/pages/coach/risk/index')">
-            <text class="home-stat-icon">⚠️</text>
-            <text class="home-stat-num">{{ coachStats.riskCount }}</text>
-            <text class="home-stat-label">风险预警</text>
-          </view>
-          <view class="home-stat-card home-stat-card--blue" @tap="goPage('/pages/coach/push-queue/index')">
-            <text class="home-stat-icon">📤</text>
-            <text class="home-stat-num">{{ coachStats.pendingRx }}</text>
-            <text class="home-stat-label">待审处方</text>
-          </view>
           <view class="home-stat-card home-stat-card--purple" @tap="goPage('/pages/coach/assessment/index')">
             <text class="home-stat-icon">📊</text>
             <text class="home-stat-num">{{ coachStats.pendingAssess }}</text>
             <text class="home-stat-label">待审评估</text>
+          </view>
+          <view class="home-stat-card home-stat-card--blue" @tap="goPage('/pages/coach/flywheel/index')">
+            <text class="home-stat-icon">🤖</text>
+            <text class="home-stat-num">{{ coachStats.pendingAiPlan }}</text>
+            <text class="home-stat-label">待审AI计划</text>
+          </view>
+          <view class="home-stat-card home-stat-card--warn" @tap="goPage('/pages/coach/health-review/index')">
+            <text class="home-stat-icon">🩺</text>
+            <text class="home-stat-num">{{ coachStats.pendingHealthReview }}</text>
+            <text class="home-stat-label">待审健康数据</text>
+          </view>
+          <view class="home-stat-card home-stat-card--green" @tap="goPage('/pages/coach/push-queue/index')">
+            <text class="home-stat-icon">📤</text>
+            <text class="home-stat-num">{{ coachStats.pendingRx }}</text>
+            <text class="home-stat-label">待审处方</text>
           </view>
         </view>
         <view class="home-section">
@@ -435,63 +435,90 @@ function avatarColor(name: string): string {
 }
 
 // ── COACH 数据 ─────────────────────────────────────────
-const coachStats = ref({ clientCount:0, riskCount:0, pendingRx:0, pendingAssess:0 })
+const coachStats = ref({ pendingAssess:0, pendingAiPlan:0, pendingHealthReview:0, pendingRx:0 })
 const todos = ref<any[]>([])
 const activities = ref<any[]>([])
 
 async function loadCoach() {
+  // 学员动态（活跃度展示）
   try {
     const res = await http<any>('/api/v1/coach/dashboard')
-    const ts = res.today_stats || {}
     const students = res.students || []
-    coachStats.value = {
-      clientCount:   ts.total_students ?? students.length ?? 0,
-      riskCount:     ts.alert_students ?? 0,
-      pendingRx:     0,
-      pendingAssess: ts.pending_assessments ?? 0,  // status=completed 等教练审核
-    }
-    activities.value = students.slice(0,10).map((s: any) => ({
+    activities.value = students.slice(0, 10).map((s: any) => ({
       student_name: s.name || s.full_name || s.username || '未知',
-      action_text: s.micro_action_count ? `完成了${s.micro_action_count}个微行动` : (s.days_since_last_contact === 0 ? '今天活跃' : `${s.days_since_last_contact ?? '?'}天未活跃`),
+      action_text: s.micro_action_count
+        ? `完成了${s.micro_action_count}个微行动`
+        : (s.days_since_last_contact === 0 ? '今天活跃' : `${s.days_since_last_contact ?? '?'}天未活跃`),
       time_ago: s.last_active_time || '',
     }))
-  } catch (e) { console.warn('[Home] loadCoach dashboard failed:', e) }
+  } catch (e) { console.warn('[Home] dashboard:', e) }
 
-  // 处方推送待办
-  const rxTodos: any[] = []
-  try {
-    const res = await http<any>('/api/v1/coach/push-queue?status=pending&page_size=10')
-    rxTodos.push(...(res.items || []).map((i: any) => ({
-      id: 'pq_' + i.id,
-      title: i.title || i.content?.slice(0, 30) || '待推送消息',
-      student_name: i.student_name || '',
-      type: 'rx_push', type_label: '处方推送', priority: i.priority || 'normal',
-      url: '/pages/coach/push-queue/index',
-    })))
-    coachStats.value.pendingRx = res.total ?? rxTodos.length
-  } catch (e) { console.warn('[Home] loadCoach push-queue failed:', e) }
-
-  // 评估审核待办（学员已完成→教练待审）
   const assessTodos: any[] = []
+  const aiTodos: any[] = []
+  const healthTodos: any[] = []
+  const rxTodos: any[] = []
+
+  // ① 待审评估 — assessment_assignments status=completed
   try {
     const res = await http<any>('/api/v1/assessment-assignments/coach-list?status=completed')
-    const pending = res.items || res.assignments || (Array.isArray(res) ? res : [])
-    if (pending.length) coachStats.value.pendingAssess = pending.length
-    assessTodos.push(...pending.slice(0, 3).map((a: any) => ({
+    const items = res.items || res.assignments || (Array.isArray(res) ? res : [])
+    coachStats.value.pendingAssess = items.length
+    assessTodos.push(...items.slice(0, 2).map((a: any) => ({
       id: 'assess_' + a.id,
       title: (a.student_name || '学员') + ' 已完成评估，待审核',
       student_name: a.student_name || '',
       type: 'assessment', type_label: '待审评估', priority: 'high',
       url: '/pages/coach/assessment/review?id=' + a.id,
     })))
-  } catch (e) { console.warn('[Home] loadCoach assess-list failed:', e) }
+  } catch (e) { console.warn('[Home] assess-list:', e) }
 
-  // 待审评估高优先排前，处方推送在后
-  todos.value = [...assessTodos, ...rxTodos]
+  // ② 待审AI计划 — coach_review_queue status=pending
+  try {
+    const res = await http<any>('/api/v1/coach/review-queue?status=pending')
+    coachStats.value.pendingAiPlan = res.total_pending ?? (res.items || []).length
+    aiTodos.push(...(res.items || []).slice(0, 2).map((i: any) => ({
+      id: 'ai_' + i.id,
+      title: (i.student_name || '学员') + ' AI跟进计划待审核',
+      student_name: i.student_name || '',
+      type: 'ai_plan', type_label: '待审AI计划', priority: i.priority === 'urgent' ? 'urgent' : 'high',
+      url: '/pages/coach/flywheel/index',
+    })))
+  } catch (e) { console.warn('[Home] review-queue:', e) }
+
+  // ③ 待审健康数据 — health_review_queue reviewer_role=coach
+  try {
+    const res = await http<any>('/api/v1/health-review/queue?reviewer_role=coach')
+    const items = res.items || res.queue || (Array.isArray(res) ? res : [])
+    coachStats.value.pendingHealthReview = res.total ?? items.length
+    healthTodos.push(...items.slice(0, 2).map((i: any) => ({
+      id: 'health_' + i.id,
+      title: (i.student_name || '学员') + ' 健康数据待审核',
+      student_name: i.student_name || '',
+      type: 'health', type_label: '待审健康', priority: i.risk_level === 'medium' ? 'high' : 'normal',
+      url: '/pages/coach/health-review/index',
+    })))
+  } catch (e) { console.warn('[Home] health-review:', e) }
+
+  // ④ 待审处方/推送 — coach_push_queue status=pending
+  try {
+    const res = await http<any>('/api/v1/coach/push-queue?status=pending&page_size=10')
+    coachStats.value.pendingRx = res.total ?? (res.items || []).length
+    rxTodos.push(...(res.items || []).slice(0, 2).map((i: any) => ({
+      id: 'pq_' + i.id,
+      title: i.title || i.content?.slice(0, 30) || '待推送消息',
+      student_name: i.student_name || '',
+      type: 'rx_push', type_label: '待审处方', priority: i.priority || 'normal',
+      url: '/pages/coach/push-queue/index',
+    })))
+  } catch (e) { console.warn('[Home] push-queue:', e) }
+
+  // 今日待办：评估 > AI计划 > 健康数据 > 处方，各取前2
+  todos.value = [...assessTodos, ...aiTodos, ...healthTodos, ...rxTodos]
 }
 
 function handleTodo(item: any) {
-  uni.navigateTo({ url: item.url || '/pages/coach/push-queue/index' })
+  const url = item.url || '/pages/coach/push-queue/index'
+  uni.navigateTo({ url })
 }
 
 // ── GROWER 数据 ────────────────────────────────────────
@@ -639,6 +666,7 @@ onShow(() => { loadData() })
 .home-stat-card--warn::after   { background: #E74C3C; }
 .home-stat-card--blue::after   { background: #3498DB; }
 .home-stat-card--purple::after { background: #9B59B6; }
+.home-stat-card--green::after  { background: #27AE60; }
 .home-stat-icon  { font-size: 40rpx; margin-bottom: 8rpx; }
 .home-stat-num   { font-size: 48rpx; font-weight: 800; color: #2C3E50; }
 .home-stat-label { font-size: 24rpx; color: #8E99A4; margin-top: 4rpx; }
