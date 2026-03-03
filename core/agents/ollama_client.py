@@ -75,7 +75,7 @@ class SyncOllamaClient:
                 "options": {
                     "temperature": 0.7,
                     "top_p": 0.9,
-                    "num_predict": 512,
+                    "num_predict": 1024,
                 },
             }
             resp = self._client.post(
@@ -121,6 +121,6 @@ def get_ollama_client() -> SyncOllamaClient:
         except ImportError:
             import os
             OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
-            OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
+            OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:14b")
         _instance = SyncOllamaClient(base_url=OLLAMA_API_URL, model=OLLAMA_MODEL)
     return _instance

@@ -190,9 +190,19 @@ function viewFullReport() {
 
 async function shareToCoach() {
   const page = getCurrentPages().slice(-1)[0] as any
-  const assignmentId = data.value.assignment_id || page?.options?.id
+  let assignmentId = data.value.assignment_id || page?.options?.id
+
+  // 无 id 时从 my-pending 拿最近一条
   if (!assignmentId) {
-    uni.showToast({ title: '暂无可分享的评估记录', icon: 'none' })
+    try {
+      const res = await http<any>('/api/v1/assessment-assignments/my-pending')
+      const items = res.items || (Array.isArray(res) ? res : [])
+      assignmentId = items[0]?.id
+    } catch (e) { console.warn('[assessment/result] shareToCoach fetch:', e) }
+  }
+
+  if (!assignmentId) {
+    uni.showToast({ title: '暂无可分享的评估', icon: 'none' })
     return
   }
   try {

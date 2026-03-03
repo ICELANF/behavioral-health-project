@@ -184,10 +184,15 @@ async function markAllRead() {
 }
 
 async function adoptSuggestion(sg: any) {
+  const content = (sg.content || '').trim()
+  if (!content) {
+    uni.showToast({ title: 'AI建议内容为空，请手动编辑', icon: 'none' })
+    return
+  }
   try {
     await http('/api/v1/coach/messages', {
       method: 'POST',
-      data: { student_id: sg.student_id, content: sg.content, message_type: 'text', auto_approve: true }
+      data: { student_id: sg.student_id, content, message_type: 'text', auto_approve: true }
     })
     uni.showToast({ title: '消息已发送给学员', icon: 'success' })
   } catch (e) {
@@ -197,7 +202,8 @@ async function adoptSuggestion(sg: any) {
 }
 
 function editSuggestion(sg: any) {
-  uni.navigateTo({ url: '/pages/coach/messages/index?student_id=' + sg.student_id })
+  // 跳转到学员档案督导Tab，在内联Modal中编辑后发送
+  uni.navigateTo({ url: '/pages/coach/students/detail?id=' + sg.student_id + '&tab=supervision' })
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }
