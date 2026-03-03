@@ -229,7 +229,6 @@ function doLogout() {
 }
 
 onShow(() => { loadProfile() })
-onMounted(() => { loadProfile() })
 </script>
 
 <style scoped>

@@ -595,7 +595,6 @@ async function loadData() {
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }
 
 onShow(() => { loadData() })
-onMounted(() => { loadData() })
 </script>
 
 <style scoped>

@@ -263,10 +263,10 @@ async function doReview(action: string) {
           // 通过 → 推送评估结果给学员
           await http(`/api/v1/assessment-assignments/${id}/push`, { method: 'POST', data: {} })
         } else {
-          // 退回 → 重置为 pending 并记录备注（用 review-items PUT 或降级处理）
-          await http(`/api/v1/assessment-assignments/review-items/${id}`, {
-            method: 'PUT',
-            data: { status: 'rejected', coach_note: coachNote.value || '需修改后重新提交' }
+          // 退回 → 重置为 pending，学员可重新完成
+          await http(`/api/v1/assessment-assignments/${id}/reject`, {
+            method: 'POST',
+            data: { coach_note: coachNote.value || '需修改后重新提交' }
           })
         }
         uni.showToast({ title: action === 'approved' ? '已通过并推送' : '已退回', icon: 'success' })
