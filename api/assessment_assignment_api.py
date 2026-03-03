@@ -488,6 +488,79 @@ async def get_coach_assignments(
     return {"assignments": result, "total": len(result)}
 
 
+@router.get("/{assignment_id}/detail")
+async def get_assignment_detail(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """教练查看任意状态的评估详情（含 pending）"""
+    assignment = db.query(AssessmentAssignment).filter(
+        AssessmentAssignment.id == assignment_id,
+        AssessmentAssignment.coach_id == current_user.id,
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="评估任务不存在或无权查看")
+
+    student = db.query(User).filter(User.id == assignment.student_id).first()
+    items = db.query(CoachReviewItem).filter(
+        CoachReviewItem.assignment_id == assignment_id
+    ).all()
+
+    return {
+        "id": assignment.id,
+        "assignment_id": assignment.id,
+        "student_id": assignment.student_id,
+        "student_name": student.full_name or student.username if student else "未知",
+        "scales": assignment.scales,
+        "note": assignment.note,
+        "status": assignment.status,
+        "assigned_at": assignment.created_at.isoformat() if assignment.created_at else None,
+        "completed_at": assignment.completed_at.isoformat() if assignment.completed_at else None,
+        "pipeline_result": assignment.pipeline_result,
+        "review_items": [
+            {
+                "id": item.id,
+                "category": item.category,
+                "domain": item.domain,
+                "original_content": item.original_content,
+                "coach_content": item.coach_content,
+                "status": item.status,
+                "coach_note": item.coach_note,
+            }
+            for item in items
+        ],
+    }
+
+
+@router.post("/{assignment_id}/remind")
+async def remind_student(
+    assignment_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """教练提醒学员完成评估（写入学员通知）"""
+    assignment = db.query(AssessmentAssignment).filter(
+        AssessmentAssignment.id == assignment_id,
+        AssessmentAssignment.coach_id == current_user.id,
+    ).first()
+    if not assignment:
+        raise HTTPException(status_code=404, detail="评估任务不存在")
+    if assignment.status != "pending":
+        raise HTTPException(status_code=400, detail="该评估任务不在待完成状态")
+
+    notif = Notification(
+        user_id=assignment.student_id,
+        title="请完成评估",
+        body=f"您的教练 {current_user.full_name or current_user.username} 提醒您完成行为评估，请尽快操作。",
+        type="assessment_remind",
+        priority="high",
+    )
+    db.add(notif)
+    db.commit()
+    return {"success": True, "message": "提醒已发送"}
+
+
 @router.get("/review-list")
 async def get_review_list(
     db: Session = Depends(get_db),

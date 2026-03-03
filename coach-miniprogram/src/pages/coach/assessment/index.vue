@@ -26,7 +26,7 @@
 
     <!-- 评估列表 -->
     <scroll-view scroll-y class="assess-list" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
-      <view v-for="item in filteredItems" :key="item.id" class="assess-card" @tap="goReview(item)">
+      <view v-for="item in filteredItems" :key="item.id" class="assess-card" @tap="item.status !== 'pending' && goReview(item)">
         <view class="assess-card-header">
           <view class="assess-card-avatar" :style="{ background: avatarColor(item.student_name || item.user_name) }">
             {{ (item.student_name || item.user_name || '?')[0] }}
@@ -399,20 +399,12 @@ async function doAssign() {
 }
 
 async function remindStudent(item: any) {
-  const sid = item.student_id || item.user_id || item.id
   try {
-    await http(`/api/v1/coach/students/${sid}/remind`, {
-      method: 'POST',
-      data: {
-        title: '评估提醒',
-        message: '请尽快完成评估任务',
-        type: 'assessment_remind',
-      }
-    })
-    uni.showToast({ title: '已发送提醒', icon: 'success' })
-  } catch (e) {
+    await http(`/api/v1/assessment-assignments/${item.id}/remind`, { method: 'POST' })
+    uni.showToast({ title: '提醒已发送', icon: 'success' })
+  } catch (e: any) {
     console.warn('[assessment/index] remind:', e)
-    uni.showToast({ title: '提醒发送失败', icon: 'none' })
+    uni.showToast({ title: e?.data?.detail || '提醒发送失败', icon: 'none' })
   }
 }
 

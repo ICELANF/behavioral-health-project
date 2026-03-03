@@ -98,13 +98,20 @@
         <text class="review-note-count">{{ coachNote.length }}/500</text>
       </view>
 
-      <!-- 审核操作 -->
-      <view class="review-actions" v-if="canReview">
+      <!-- 待完成：等待学员 -->
+      <view class="review-actions" v-if="data.status === 'pending'">
+        <view class="review-pending-tag">⏳ 等待学员完成评估</view>
+        <view class="review-btn review-btn-remind" @tap="doRemind">提醒学员</view>
+      </view>
+
+      <!-- 待审核：可操作 -->
+      <view class="review-actions" v-else-if="canReview">
         <view class="review-btn review-btn-reject" @tap="doReview('rejected')">退回修改</view>
         <view class="review-btn review-btn-approve" @tap="doReview('approved')">通过审核</view>
       </view>
 
-      <view class="review-actions" v-else-if="data.status === 'completed' || data.status === 'reviewed'">
+      <!-- 已审核/已推送 -->
+      <view class="review-actions" v-else-if="['reviewed','pushed'].includes(data.status)">
         <view class="review-completed-tag">✅ 评估已完成审核</view>
       </view>
     </scroll-view>
@@ -138,6 +145,7 @@ function statusLabel(s: string): string {
 }
 function formatDate(d: string): string { return d ? d.slice(0, 10) : '-' }
 
+// 可审核：学员已提交结果（completed = 提交待审，reviewed = 已审核但可再操作）
 const canReview = computed(() => ['submitted', 'review', 'completed', 'completed_pending_review'].includes(data.value.status))
 
 const big5Data = computed(() => {
@@ -200,23 +208,41 @@ async function loadData() {
   const id = (getCurrentPages().slice(-1)[0] as any)?.options?.id
   if (!id) { loading.value = false; return }
 
-  // 评估详情端点（仅保留已验证的路径，避免 404）
-  const endpoints = [
-    `/api/v1/assessment-assignments/${id}/result`,
-    `/api/v1/assessment-assignments/${id}`,
-  ]
-  for (const ep of endpoints) {
-    try {
-      const res = await http<any>(ep)
-      data.value = res.result || res.assignment || res || {}
-      // 确保 id 字段存在（result 端点只返回 assignment_id）
-      if (!data.value.id) {
-        data.value.id = data.value.assignment_id || parseInt(id)
-      }
-      break
-    } catch (e) { console.warn('[assessment/review] endpoint:', ep, e); continue }
-  }
+  // 主端点: /detail 适用任意状态（含 pending）
+  try {
+    const res = await http<any>(`/api/v1/assessment-assignments/${id}/detail`)
+    data.value = res || {}
+    if (!data.value.id) data.value.id = parseInt(id)
+    // 将 pipeline_result 展开到顶层，方便 computed 读取
+    if (res.pipeline_result) {
+      const pr = res.pipeline_result
+      if (!data.value.big5) data.value.big5 = pr.profile?.big5 || pr.big5
+      if (!data.value.ttm_stage) data.value.ttm_stage = pr.stage_decision?.to_stage || pr.ttm_stage
+      if (!data.value.suggestions) data.value.suggestions = pr.suggestions
+    }
+    loading.value = false
+    return
+  } catch (e) { console.warn('[assessment/review] detail:', e) }
+
+  // fallback: result 端点（已推送/已审核状态）
+  try {
+    const res2 = await http<any>(`/api/v1/assessment-assignments/${id}/result`)
+    data.value = res2 || {}
+    if (!data.value.id) data.value.id = data.value.assignment_id || parseInt(id)
+  } catch (e) { console.warn('[assessment/review] result:', e) }
+
   loading.value = false
+}
+
+async function doRemind() {
+  const id = data.value.id
+  if (!id) return
+  try {
+    await http(`/api/v1/assessment-assignments/${id}/remind`, { method: 'POST' })
+    uni.showToast({ title: '提醒已发送', icon: 'success' })
+  } catch (e: any) {
+    uni.showToast({ title: e?.data?.detail || '提醒失败', icon: 'none' })
+  }
 }
 
 async function doReview(action: string) {
@@ -321,5 +347,7 @@ onMounted(() => { loadData() })
 .review-btn { flex: 1; text-align: center; padding: 24rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }
 .review-btn-reject { background: #FFF0ED; color: #E74C3C; }
 .review-btn-approve { background: #9B59B6; color: #fff; }
+.review-btn-remind { background: #E67E22; color: #fff; }
 .review-completed-tag { flex: 1; text-align: center; padding: 24rpx; background: #E8F8F0; color: #27AE60; border-radius: 16rpx; font-size: 28rpx; font-weight: 500; }
+.review-pending-tag { flex: 1; text-align: center; padding: 24rpx; background: #FFF8E6; color: #E67E22; border-radius: 16rpx; font-size: 28rpx; font-weight: 500; }
 </style>
