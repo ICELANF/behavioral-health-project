@@ -408,7 +408,7 @@ function detectRole() {
     const raw = uni.getStorageSync('user_info')
     if (raw) {
       const u = typeof raw === 'string' ? JSON.parse(raw) : raw
-      userRole.value = u.role || 'coach'
+      userRole.value = (u.role || 'coach').toLowerCase()
       userName.value = u.full_name || u.display_name || u.username || '用户'
     }
   } catch {}

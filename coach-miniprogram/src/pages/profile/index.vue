@@ -140,7 +140,7 @@ async function loadProfile() {
       const u = typeof stored === 'string' ? JSON.parse(stored) : stored
       userInfo.value = {
         name: u.full_name || u.display_name || u.username || u.nickname || '教练',
-        role_label: u.role === 'coach' ? '健康教练' : u.role === 'admin' ? '管理员' : u.role || '用户',
+        role_label: (u.role||'').toLowerCase() === 'coach' ? '健康教练' : (u.role||'').toLowerCase() === 'admin' ? '管理员' : u.role || '用户',
         student_count: u.student_count || 0,
         total_days: u.total_days || 0,
         total_interventions: u.total_interventions || 0,
@@ -156,7 +156,7 @@ async function loadProfile() {
         ...userInfo.value,
         name: res.full_name || res.display_name || res.username || userInfo.value.name,
         username: res.username || '',
-        role_label: res.role === 'coach' ? '健康教练' : res.role || userInfo.value.role_label,
+        role_label: (res.role||'').toLowerCase() === 'coach' ? '健康教练' : res.role || userInfo.value.role_label,
         student_count: res.student_count ?? userInfo.value.student_count,
       }
     }

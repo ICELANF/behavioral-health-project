@@ -73,7 +73,7 @@ onMounted(() => {
       userInfo.value = {
         username: u.username || '',
         name: u.full_name || u.display_name || u.username || '教练',
-        role_label: u.role === 'coach' ? '健康教练' : u.role || '用户'
+        role_label: (u.role||'').toLowerCase() === 'coach' ? '健康教练' : u.role || '用户'
       }
     }
   } catch {}
