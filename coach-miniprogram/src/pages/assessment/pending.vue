@@ -95,29 +95,26 @@ function normalizeItem(item: any, defaultStatus = 'pending'): any {
 async function loadData() {
   loading.value = true
   try {
-    // my-pending 专属学员端点，优先加载
-    const res = await http<any>('/api/v1/assessment-assignments/my-pending')
+    // my-all 返回学员自己所有评估（含已完成），无权限问题
+    const res = await http<any>('/api/v1/assessment-assignments/my-all')
     const list: any[] = res.assignments || res.items || (Array.isArray(res) ? res : [])
-    allItems.value = list.map(item => normalizeItem(item, 'pending'))
-  } catch { /* 无 pending 任务 */ }
-
-  try {
-    // 已完成结果（状态包含 completed/reviewed）
-    const res = await http<any>('/api/v1/assessment-assignments/review-list')
-    const done: any[] = res.items || res.assignments || (Array.isArray(res) ? res : [])
-    done.forEach(item => {
-      if (!allItems.value.find(a => a.id === item.id)) {
-        allItems.value.push(normalizeItem(item))
-      }
-    })
-  } catch { /* 教练端接口对学员 403，静默跳过 */ }
-
+    allItems.value = list.map(item => normalizeItem(item))
+  } catch {
+    // 降级：仅加载待完成
+    try {
+      const res = await http<any>('/api/v1/assessment-assignments/my-pending')
+      const list: any[] = res.assignments || res.items || (Array.isArray(res) ? res : [])
+      allItems.value = list.map(item => normalizeItem(item, 'pending'))
+    } catch { /* 无评估任务 */ }
+  }
   loading.value = false
 }
 
 async function onRefresh() { refreshing.value = true; allItems.value = []; await loadData(); refreshing.value = false }
 
 function goAssessment(item: any) {
+  // 缓存 assignment 供 do.vue 使用（读取 scales 配置生成对应题目）
+  try { uni.setStorageSync('assignment_' + item.id, JSON.stringify(item)) } catch (e) { /* ignore */ }
   uni.navigateTo({ url: '/pages/assessment/do?id=' + item.id })
 }
 

@@ -632,6 +632,61 @@ def get_activity_records(
     return records
 
 
+class ActivityCreateRequest(BaseModel):
+    """手动录入运动记录"""
+    activity_type: str = Field(..., description="运动类型: walking/running/cycling/swimming/yoga/strength/other")
+    duration_minutes: int = Field(..., ge=1, le=600, description="运动时长(分钟)")
+    start_time: Optional[str] = None
+    calories_burned: Optional[int] = None
+    heart_rate_peak: Optional[int] = None
+    notes: Optional[str] = None
+
+
+@router.post(
+    "/health-data/activity",
+    summary="手动录入运动记录",
+    status_code=201,
+)
+def create_activity_record(
+    body: ActivityCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    start_dt = datetime.utcnow()
+    if body.start_time:
+        try:
+            start_dt = datetime.fromisoformat(body.start_time.replace("Z", "+00:00")).replace(tzinfo=None)
+        except Exception:
+            pass
+    end_dt = start_dt + timedelta(minutes=body.duration_minutes)
+
+    record = WorkoutRecord(
+        user_id=current_user.id,
+        workout_type=body.activity_type,
+        start_time=start_dt,
+        end_time=end_dt,
+        duration_min=body.duration_minutes,
+        calories=body.calories_burned,
+        max_hr=body.heart_rate_peak,
+        notes=body.notes,
+    )
+    db.add(record)
+    db.commit()
+    db.refresh(record)
+
+    logger.info("create_activity | user_id={} | type={} | duration={}min",
+                current_user.id, body.activity_type, body.duration_minutes)
+    return {
+        "id": record.id,
+        "activity_type": record.workout_type,
+        "duration_minutes": record.duration_min,
+        "start_time": record.start_time.isoformat() if record.start_time else None,
+        "calories_burned": record.calories,
+        "heart_rate_peak": record.max_hr,
+        "created_at": record.created_at.isoformat() if record.created_at else None,
+    }
+
+
 # ============================================
 #  Vital Signs Endpoints
 # ============================================

@@ -154,6 +154,26 @@
           <view v-else class="home-empty-hint"><text>📭 今日无任务，教练还未分配</text></view>
         </view>
 
+        <!-- 今日用药提醒 banner -->
+        <view class="home-med-banner" v-if="todayMedReminder" @tap="goPage('/pages/medical/index')">
+          <text class="home-med-icon">💊</text>
+          <view class="home-med-body">
+            <text class="home-med-title">今日用药未记录</text>
+            <text class="home-med-sub">{{ todayMedReminder }}</text>
+          </view>
+          <text class="home-med-arrow">›</text>
+        </view>
+
+        <!-- 体重记录提醒 banner -->
+        <view class="home-weight-banner" v-if="weightDaysSince > 7" @tap="goPage('/pages/health/weight')">
+          <text class="home-weight-icon">⚖️</text>
+          <view class="home-weight-body">
+            <text class="home-weight-title">{{ weightDaysSince >= 999 ? '还未记录过体重' : `已 ${weightDaysSince} 天未记录体重` }}</text>
+            <text class="home-weight-sub">定期测量体重有助于追踪健康变化，点击记录</text>
+          </view>
+          <text class="home-weight-arrow">›</text>
+        </view>
+
         <!-- 待完成评估 -->
         <view class="home-section" v-if="growerPendingAssess > 0">
           <view class="home-assess-banner" @tap="goPage('/pages/assessment/pending')">
@@ -186,6 +206,26 @@
               <view class="home-sc-icon" style="background:#FFF8EE;">📚</view>
               <text class="home-sc-label">学习中心</text>
             </view>
+            <view class="home-shortcut" @tap="goPage('/pages/reflection/index')">
+              <view class="home-sc-icon" style="background:#F5F0FF;">📓</view>
+              <text class="home-sc-label">成长感悟</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/medical/index')">
+              <view class="home-sc-icon" style="background:#F0FFF8;">💊</view>
+              <text class="home-sc-label">理性就医</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/trajectory/index')">
+              <view class="home-sc-icon" style="background:#EEF9EE;">📈</view>
+              <text class="home-sc-label">行为轨迹</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/companions/index')">
+              <view class="home-sc-icon" style="background:#E8F8F0;">💬</view>
+              <text class="home-sc-label">联系教练</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/become-sharer/index')">
+              <view class="home-sc-icon" style="background:#FFF8EE;">🌟</view>
+              <text class="home-sc-label">成为分享者</text>
+            </view>
           </view>
         </view>
 
@@ -203,12 +243,13 @@
         <view class="home-role-badge">分享者</view>
       </view>
       <scroll-view scroll-y class="home-scroll" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
-        <!-- 同道者概览 -->
+
+        <!-- 伙伴概览 -->
         <view class="home-stats">
           <view class="home-stat-card" @tap="goPage('/pages/sharer/mentees')">
-            <text class="home-stat-icon">👤</text>
+            <text class="home-stat-icon">👥</text>
             <text class="home-stat-num">{{ sharerData.menteeCount }}</text>
-            <text class="home-stat-label">我的学员</text>
+            <text class="home-stat-label">我的伙伴</text>
           </view>
           <view class="home-stat-card home-stat-card--blue" @tap="goPage('/pages/sharer/mentees')">
             <text class="home-stat-icon">🔥</text>
@@ -227,14 +268,14 @@
           </view>
         </view>
 
-        <!-- 学员动态 -->
+        <!-- 伙伴动态 -->
         <view class="home-section">
           <view class="home-section-header">
-            <text class="home-section-title">🔔 学员动态</text>
+            <text class="home-section-title">🔔 伙伴动态</text>
             <text class="home-section-more" @tap="goPage('/pages/sharer/mentees')">查看全部 ›</text>
           </view>
           <view v-if="sharerMentees.length > 0">
-            <view v-for="m in sharerMentees.slice(0,5)" :key="m.id" class="home-activity-item">
+            <view v-for="m in sharerMentees.slice(0,3)" :key="m.id" class="home-activity-item">
               <view class="home-activity-avatar" :style="{ background: avatarColor(m.name) }">{{ (m.name||'?')[0] }}</view>
               <view class="home-activity-body">
                 <text class="home-activity-text" style="font-weight:600;">{{ m.name }}</text>
@@ -243,28 +284,134 @@
               <text :style="{ color: m.status === 'active' ? '#27AE60' : '#E74C3C', fontSize: '24rpx' }">{{ m.today_pct || 0 }}%</text>
             </view>
           </view>
-          <view v-else class="home-empty-hint"><text>暂无学员动态</text></view>
+          <view v-else class="home-empty-hint"><text>暂无伙伴动态</text></view>
+        </view>
+
+        <!-- 健康数据快览 -->
+        <view class="home-health-cards">
+          <view class="home-health-card" @tap="goPage('/pages/health/blood-glucose')">
+            <text class="home-health-icon">🩸</text>
+            <text class="home-health-val">{{ growerHealth.glucose || '—' }}</text>
+            <text class="home-health-unit">mmol/L</text>
+            <text class="home-health-label">血糖</text>
+          </view>
+          <view class="home-health-card" @tap="goPage('/pages/health/weight')">
+            <text class="home-health-icon">⚖️</text>
+            <text class="home-health-val">{{ growerHealth.weight || '—' }}</text>
+            <text class="home-health-unit">kg</text>
+            <text class="home-health-label">体重</text>
+          </view>
+          <view class="home-health-card" @tap="goPage('/pages/health/exercise')">
+            <text class="home-health-icon">👟</text>
+            <text class="home-health-val">{{ growerHealth.steps || '—' }}</text>
+            <text class="home-health-unit">步</text>
+            <text class="home-health-label">今日步数</text>
+          </view>
+        </view>
+
+        <!-- 今日任务 -->
+        <view class="home-section">
+          <view class="home-section-header">
+            <text class="home-section-title">📋 今日任务</text>
+            <text class="home-section-more" @tap="goPage('/pages/journey/progress')">全部 ›</text>
+          </view>
+          <view v-if="growerTasks.length > 0">
+            <view v-for="(t, i) in growerTasks.slice(0,4)" :key="i" class="home-task-item">
+              <view class="home-task-check" :class="{ 'home-task-check--done': t.done }" @tap="toggleTask(t)">{{ t.done ? '✓' : '' }}</view>
+              <text class="home-task-text" :class="{ 'home-task-text--done': t.done }">{{ t.title }}</text>
+              <text class="home-task-pts">+{{ t.points || 10 }}分</text>
+            </view>
+            <view class="home-task-progress">
+              <view class="home-task-bar">
+                <view class="home-task-fill" :style="{ width: growerTaskProgress + '%' }"></view>
+              </view>
+              <text class="home-task-pct">{{ growerTaskProgress }}% 完成</text>
+            </view>
+          </view>
+          <view v-else class="home-empty-hint"><text>📭 今日无任务，教练还未分配</text></view>
+        </view>
+
+        <!-- 用药提醒 banner -->
+        <view class="home-med-banner" v-if="todayMedReminder" @tap="goPage('/pages/medical/index')">
+          <text class="home-med-icon">💊</text>
+          <view class="home-med-body">
+            <text class="home-med-title">今日用药未记录</text>
+            <text class="home-med-sub">{{ todayMedReminder }}</text>
+          </view>
+          <text class="home-med-arrow">›</text>
+        </view>
+
+        <!-- 体重记录提醒 banner -->
+        <view class="home-weight-banner" v-if="weightDaysSince > 7" @tap="goPage('/pages/health/weight')">
+          <text class="home-weight-icon">⚖️</text>
+          <view class="home-weight-body">
+            <text class="home-weight-title">{{ weightDaysSince >= 999 ? '还未记录过体重' : `已 ${weightDaysSince} 天未记录体重` }}</text>
+            <text class="home-weight-sub">定期测量体重有助于追踪健康变化，点击记录</text>
+          </view>
+          <text class="home-weight-arrow">›</text>
+        </view>
+
+        <!-- 待完成评估 -->
+        <view class="home-section" v-if="growerPendingAssess > 0">
+          <view class="home-assess-banner" @tap="goPage('/pages/assessment/pending')">
+            <text class="home-assess-icon">📝</text>
+            <view class="home-assess-body">
+              <text class="home-assess-title">您有 {{ growerPendingAssess }} 份评估待完成</text>
+              <text class="home-assess-sub">教练已为您安排评估，完成后获得积分</text>
+            </view>
+            <text class="home-assess-arrow">›</text>
+          </view>
         </view>
 
         <!-- 快捷入口 -->
         <view class="home-section">
           <text class="home-section-title">⚡ 快捷入口</text>
           <view class="home-shortcuts">
+            <!-- 分享者专属 -->
             <view class="home-shortcut" @tap="goPage('/pages/sharer/mentees')">
               <view class="home-sc-icon" style="background:#EEF6FF;">👥</view>
-              <text class="home-sc-label">我的学员</text>
+              <text class="home-sc-label">我的伙伴</text>
             </view>
             <view class="home-shortcut" @tap="goPage('/pages/sharer/share-content')">
               <view class="home-sc-icon" style="background:#F0FFF4;">📝</view>
               <text class="home-sc-label">内容分享</text>
             </view>
-            <view class="home-shortcut" @tap="goPage('/pages/health/index')">
-              <view class="home-sc-icon" style="background:#FFF0F5;">❤️</view>
-              <text class="home-sc-label">我的健康</text>
+            <view class="home-shortcut" @tap="goPage('/pages/case-stories/index')">
+              <view class="home-sc-icon" style="background:#FFF0E6;">🌿</view>
+              <text class="home-sc-label">健康之路</text>
+            </view>
+            <!-- 成长者功能全保留 -->
+            <view class="home-shortcut" @tap="goPage('/pages/health/blood-glucose')">
+              <view class="home-sc-icon" style="background:#FFF0F5;">🩸</view>
+              <text class="home-sc-label">记录血糖</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/food/scan')">
+              <view class="home-sc-icon" style="background:#F0FFF4;">🥗</view>
+              <text class="home-sc-label">记录饮食</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/health/exercise')">
+              <view class="home-sc-icon" style="background:#EEF6FF;">🏃</view>
+              <text class="home-sc-label">运动记录</text>
             </view>
             <view class="home-shortcut" @tap="goPage('/pages/learning/index')">
               <view class="home-sc-icon" style="background:#FFF8EE;">📚</view>
               <text class="home-sc-label">学习中心</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/reflection/index')">
+              <view class="home-sc-icon" style="background:#F5F0FF;">📓</view>
+              <text class="home-sc-label">成长感悟</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/medical/index')">
+              <view class="home-sc-icon" style="background:#F0FFF8;">💊</view>
+              <text class="home-sc-label">理性就医</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/trajectory/index')">
+              <view class="home-sc-icon" style="background:#EEF9EE;">📈</view>
+              <text class="home-sc-label">行为轨迹</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/companions/index')">
+              <view class="home-sc-icon" style="background:#E8F8F0;">💬</view>
+              <text class="home-sc-label">联系教练</text>
             </view>
           </view>
         </view>
@@ -578,6 +725,8 @@ function todoTagBg(type: string): string {
 const growerHealth = ref<any>({ glucose: null, weight: null, steps: null })
 const growerTasks = ref<any[]>([])
 const growerPendingAssess = ref(0)
+const todayMedReminder = ref('')   // 今日未打卡用药提醒文字
+const weightDaysSince = ref(-1)    // -1=未知; 0=今日; 8+=超7天未记录
 
 const growerTaskProgress = computed(() => {
   if (!growerTasks.value.length) return 0
@@ -606,6 +755,34 @@ async function loadGrower() {
     const res = await http<any>('/api/v1/assessment-assignments/my-pending')
     growerPendingAssess.value = (res.items || res.assignments || []).length
   } catch (e) { console.warn('[home/index] my-pending:', e) }
+
+  // 今日用药提醒：reminder_time 已过且今日未打卡
+  try {
+    const medRes = await http<any>('/api/v1/medical/medications?active_only=true')
+    const meds: any[] = medRes.items || medRes.medications || []
+    const now = new Date()
+    const nowMin = now.getHours() * 60 + now.getMinutes()
+    const due = meds.filter((m: any) => {
+      if (!m.reminder_time) return false
+      const parts = (m.reminder_time as string).slice(0, 5).split(':').map(Number)
+      return parts[0] * 60 + parts[1] <= nowMin && !m.taken_today
+    })
+    todayMedReminder.value = due.length
+      ? due.map((m: any) => m.name).join('、') + ' 今日未记录'
+      : ''
+  } catch { todayMedReminder.value = '' }
+  // 体重记录提醒：距上次记录天数
+  try {
+    const vRes = await http<any>('/api/v1/health-data/vitals?data_type=weight&limit=1&days=365')
+    const items: any[] = vRes.items || vRes || []
+    if (items.length) {
+      const lastAt = new Date(items[0].recorded_at)
+      const diffMs = Date.now() - lastAt.getTime()
+      weightDaysSince.value = Math.floor(diffMs / 86400000)
+    } else {
+      weightDaysSince.value = 999  // 从未记录
+    }
+  } catch { weightDaysSince.value = -1 }
 }
 
 async function toggleTask(task: any) {
@@ -675,7 +852,7 @@ async function loadData() {
   detectRole()
   if (userRole.value === 'coach' || userRole.value === 'admin') await loadCoach()
   else if (userRole.value === 'grower')     await loadGrower()
-  else if (userRole.value === 'sharer')     await loadSharer()
+  else if (userRole.value === 'sharer')     { await loadSharer(); await loadGrower() }
   else if (userRole.value === 'supervisor') await loadSupervisor()
   else if (userRole.value === 'master')     await loadMaster()
 }
@@ -784,6 +961,22 @@ onShow(() => { loadData() })
 .home-task-bar  { flex: 1; height: 8rpx; background: #F0F0F0; border-radius: 4rpx; overflow: hidden; }
 .home-task-fill { height: 100%; background: #27AE60; border-radius: 4rpx; }
 .home-task-pct  { font-size: 22rpx; color: #8E99A4; white-space: nowrap; }
+
+/* GROWER 用药提醒 Banner */
+.home-med-banner { display: flex; align-items: center; gap: 16rpx; background: #F0FFF8; border-radius: 12rpx; padding: 20rpx; border-left: 6rpx solid #16a34a; margin: 12rpx 0; }
+.home-med-icon   { font-size: 40rpx; }
+.home-med-body   { flex: 1; }
+.home-med-title  { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.home-med-sub    { display: block; font-size: 22rpx; color: #6b7280; margin-top: 4rpx; }
+.home-med-arrow  { font-size: 36rpx; color: #9ca3af; }
+
+/* GROWER 体重提醒 Banner */
+.home-weight-banner { display: flex; align-items: center; gap: 16rpx; background: #FFF8E1; border-radius: 12rpx; padding: 20rpx; border-left: 6rpx solid #F59E0B; margin: 12rpx 0; }
+.home-weight-icon   { font-size: 40rpx; }
+.home-weight-body   { flex: 1; }
+.home-weight-title  { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.home-weight-sub    { display: block; font-size: 22rpx; color: #6b7280; margin-top: 4rpx; }
+.home-weight-arrow  { font-size: 36rpx; color: #9ca3af; }
 
 /* GROWER 评估 Banner */
 .home-assess-banner { display: flex; align-items: center; gap: 16rpx; background: #FFF8E6; border-radius: 12rpx; padding: 20rpx; border-left: 6rpx solid #E67E22; }

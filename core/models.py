@@ -1772,8 +1772,10 @@ class FoodAnalysis(Base):
     fiber         = Column(Float, nullable=True)
     advice        = Column(Text, nullable=True)
     raw_response  = Column(Text, nullable=True)
-    meal_type     = Column(String(20), nullable=True)
-    created_at    = Column(DateTime, server_default=func.now())
+    meal_type       = Column(String(20), nullable=True)
+    cooking_method  = Column(String(50), nullable=True)
+    is_packaged     = Column(Boolean, default=False, nullable=False)
+    created_at      = Column(DateTime, server_default=func.now())
 
     def __repr__(self):
         return f"<FoodAnalysis(id={self.id}, user={self.user_id}, food={self.food_name})>"

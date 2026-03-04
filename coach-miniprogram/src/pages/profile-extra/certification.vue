@@ -13,7 +13,7 @@
         <view class="cert-level-icon">{{ levelIcon(currentLevel) }}</view>
         <view class="cert-level-info">
           <text class="cert-level-name">{{ levelName(currentLevel) }}</text>
-          <text class="cert-level-desc">当前教练级别</text>
+          <text class="cert-level-desc">当前平台角色</text>
         </view>
         <view class="cert-go-exam" @tap="goExam"><text>参加考试</text></view>
       </view>
@@ -66,12 +66,21 @@ function formatDate(iso: string): string {
 
 async function loadData() {
   loading.value = true
+  // 优先从本地缓存读取角色（避免额外请求）
   try {
-    const [jov, certRes] = await Promise.allSettled([
-      http<any>('/api/v1/journey/overview'),
+    const stored = uni.getStorageSync('user_info')
+    const u = stored ? (typeof stored === 'string' ? JSON.parse(stored) : stored) : null
+    if (u?.role) currentLevel.value = u.role
+  } catch {}
+
+  try {
+    const [meRes, certRes] = await Promise.allSettled([
+      http<any>('/api/v1/auth/me'),
       http<any>('/api/v1/certification/sessions/my'),
     ])
-    if (jov.status === 'fulfilled') currentLevel.value = jov.value?.current_level || 'observer'
+    if (meRes.status === 'fulfilled' && meRes.value?.role) {
+      currentLevel.value = meRes.value.role
+    }
     if (certRes.status === 'fulfilled') {
       certs.value = (certRes.value?.items || []).filter((c: any) => c.passed)
     }

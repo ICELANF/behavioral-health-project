@@ -246,37 +246,21 @@ function loadDraft() {
 }
 
 async function loadQuestions() {
-  const endpoints = [
-    `/api/v1/assessment-assignments/${assessmentId.value}/questions`,
-    `/api/v1/assessment/questions/${assessmentId.value}`,
-    '/api/v1/assessment/questions',
-  ]
-  let questions: any[] = []
-  for (const ep of endpoints) {
-    try {
-      const res = await http<any>(ep)
-      questions = res.questions || res.items || (Array.isArray(res) ? res : [])
-      if (questions.length > 0) break
-    } catch { continue }
-  }
+  // 从缓存读取 assignment 配置（pending.vue 跳转时存入）
+  let scaleKeys: string[] = []
+  try {
+    const stored = uni.getStorageSync('assignment_' + assessmentId.value)
+    if (stored) {
+      const asgn = JSON.parse(stored)
+      const s = asgn.scales
+      scaleKeys = Array.isArray(s) ? s : (s?.scales || [])
+    }
+  } catch (e) { /* ignore */ }
 
-  if (questions.length > 0) {
-    // 按量表分组
-    const grouped: Record<string, any[]> = {}
-    questions.forEach(q => {
-      const g = q.scale || q.group || q.category || 'default'
-      if (!grouped[g]) grouped[g] = []
-      grouped[g].push(q)
-    })
-    groups.value = Object.entries(grouped).map(([key, qs]) => {
-      const sg = scaleGroups.find(s => s.key === key)
-      return { key, name: sg?.name || key, questions: qs }
-    })
-  } else {
-    // 生成模拟题目
-    groups.value = generateDemoQuestions()
-  }
-
+  const allGroups = generateDemoQuestions()
+  // 按 assignment 的量表配置筛选题目分组；无配置则全量展示
+  const filtered = scaleKeys.length ? allGroups.filter(g => scaleKeys.includes(g.key)) : []
+  groups.value = filtered.length ? filtered : allGroups
   loadDraft()
 }
 
@@ -301,29 +285,21 @@ function generateDemoQuestions(): any[] {
   ]
 }
 
-// 将 {gi_qi: value} 格式转换为 SubmitRequest 各量表字段
+// 将答案打包为 custom_answers 格式 → 后端走简化管道，不触发评分引擎
 function buildSubmitPayload(): Record<string, any> {
-  const fieldMap: Record<string, string> = {
-    ttm7: 'ttm7', big5: 'big_five', bpt6: 'bpt6', capacity: 'capacity', spi: 'spi',
-  }
-  const payload: Record<string, any> = {}
+  const custom: Record<string, number> = {}
   groups.value.forEach((g, gi) => {
-    const field = fieldMap[g.key] || 'custom_answers'
-    const scaleAnswers: Record<string, number> = {}
     g.questions.forEach((_: any, qi: number) => {
       const val = answers[`${gi}_${qi}`]
       if (val === undefined || val === null || val === '') return
       let score: number
       if (typeof val === 'boolean') score = val ? 1 : 0
-      else if (Array.isArray(val)) score = val.length   // 多选：选中数量
+      else if (Array.isArray(val)) score = val.length  // 多选：选中数量
       else score = Number(val)
-      scaleAnswers[`q${qi + 1}`] = isNaN(score) ? 0 : score
+      custom[`${g.key}_q${qi + 1}`] = isNaN(score) ? 0 : score
     })
-    if (Object.keys(scaleAnswers).length > 0) {
-      payload[field] = { ...((payload[field] as any) || {}), ...scaleAnswers }
-    }
   })
-  return payload
+  return { custom_answers: custom }
 }
 
 async function submitAssessment() {

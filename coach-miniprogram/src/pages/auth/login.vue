@@ -51,12 +51,23 @@
         <text class="login-page__field-label">密码</text>
         <view class="bhp-input-wrap" :class="{ 'bhp-input-wrap--error': errors.password }">
           <text class="login-page__input-icon">🔒</text>
+          <!-- v-if/v-else 强制销毁重建，否则微信原生 input 不响应 password 动态切换 -->
           <input
+            v-if="showPwd"
             class="bhp-input"
             v-model="form.password"
             placeholder="请输入密码"
             placeholder-class="input-placeholder"
-            :password="!showPwd"
+            :maxlength="50"
+            @blur="validatePassword"
+          />
+          <input
+            v-else
+            class="bhp-input"
+            v-model="form.password"
+            placeholder="请输入密码"
+            placeholder-class="input-placeholder"
+            password
             :maxlength="50"
             @blur="validatePassword"
           />
@@ -130,8 +141,8 @@ async function handleLogin() {
     )
     afterLogin()
   } catch (err: any) {
-    const msg = err?.data?.detail || '账号或密码错误'
-    uni.showToast({ title: msg, icon: 'none' })
+    const msg = err?.data?.detail || '账号或密码错误，请确认后重试'
+    uni.showModal({ title: '登录失败', content: String(msg), showCancel: false, confirmText: '好的' })
   } finally {
     loading.value = false
   }

@@ -808,3 +808,64 @@ async def food_energy_balance(
             "window_days":    window_days,
         },
     }
+
+
+@router.get("/balance/weekly")
+async def food_energy_balance_weekly(
+    current_user: Any = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """7日热量趋势：每日摄入 + 活动消耗 + 净平衡。"""
+    today = date.today()
+
+    # 最近体重用于步数→消耗估算
+    vital_w = db.execute(text("""
+        SELECT weight_kg FROM vital_signs
+        WHERE user_id = :uid AND weight_kg IS NOT NULL
+        ORDER BY recorded_at DESC LIMIT 1
+    """), {"uid": current_user.id}).scalar()
+    weight_for_calc = float(vital_w or 65)
+
+    day_labels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+    days_data = []
+
+    for i in range(6, -1, -1):
+        d = (today - timedelta(days=i)).isoformat()
+        wd = (today - timedelta(days=i)).weekday()  # 0=Mon, 6=Sun
+
+        intake_cal = round(float(db.execute(text("""
+            SELECT COALESCE(SUM(calories), 0)
+            FROM food_analyses
+            WHERE user_id = :uid AND DATE(created_at) = :d
+        """), {"uid": current_user.id, "d": d}).scalar() or 0))
+
+        act = db.execute(text("""
+            SELECT steps, calories_active
+            FROM activity_records
+            WHERE user_id = :uid AND activity_date = :d
+            ORDER BY updated_at DESC LIMIT 1
+        """), {"uid": current_user.id, "d": d}).mappings().first()
+
+        eat = 0
+        if act:
+            if act["calories_active"] and act["calories_active"] > 0:
+                eat = int(act["calories_active"])
+            elif act["steps"] and act["steps"] > 0:
+                eat = round(act["steps"] * weight_for_calc * 0.00065)
+
+        days_data.append({
+            "date": d,
+            "day_label": day_labels[wd],
+            "intake_cal": intake_cal,
+            "eat_cal": eat,
+            "balance": intake_cal - eat,
+            "has_data": intake_cal > 0,
+        })
+
+    logged = [d for d in days_data if d["has_data"]]
+    return {
+        "days": days_data,
+        "weekly_avg_intake":  round(sum(d["intake_cal"] for d in logged) / len(logged)) if logged else 0,
+        "weekly_total_intake": sum(d["intake_cal"] for d in logged),
+        "logged_days": len(logged),
+    }

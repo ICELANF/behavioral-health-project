@@ -66,6 +66,15 @@
         </view>
       </view>
 
+      <!-- 待审核提示横幅 -->
+      <view class="result-pending-notice" v-if="data.status === 'completed' && !data.pushed_at">
+        <text class="result-pending-icon">⏳</text>
+        <view class="result-pending-body">
+          <text class="result-pending-title">评估已提交，等待教练审核</text>
+          <text class="result-pending-desc">教练将在3个工作日内完成审核，届时您将收到通知</text>
+        </view>
+      </view>
+
       <!-- AI 行为处方预览 -->
       <view class="result-section">
         <text class="result-section-title">🤖 AI 行为处方建议</text>
@@ -167,17 +176,28 @@ async function loadData() {
   const page = getCurrentPages().slice(-1)[0] as any
   const id = page?.options?.id
 
-  // ★ 多端点fallback ★
+  // /assessment-assignments/{id}/result 是学员可用的真实端点，优先调用
   const endpoints = id ? [
-    `/api/v1/assessment/results/${id}`,
     `/api/v1/assessment-assignments/${id}/result`,
+    `/api/v1/assessment/results/${id}`,
     `/api/v1/assessment/${id}`,
   ] : ['/api/v1/assessment/profile/me', '/api/v1/assessment/user/latest']
 
   for (const ep of endpoints) {
     try {
       const res = await http<any>(ep)
-      data.value = res.result || res.profile || res || {}
+      // 将嵌套的 profile_summary 字段展开，兼容旧格式
+      const raw: any = res.result || res.profile || res || {}
+      data.value = {
+        ...raw,
+        ...(raw.profile_summary || {}),
+        // TTM 阶段：优先 stage_decision.to_stage，其次 profile_summary.current_stage
+        ttm_stage: raw.stage_decision?.to_stage || raw.ttm_stage || raw.profile_summary?.current_stage || '',
+        // 保留原始字段（供模板使用）
+        status: raw.status,
+        pushed_at: raw.pushed_at,
+        completed_at: raw.completed_at,
+      }
       break
     } catch { continue }
   }
@@ -281,6 +301,12 @@ onMounted(() => { loadData() })
 .result-rx-title { display: block; font-size: 26rpx; color: #2C3E50; font-weight: 500; }
 .result-rx-desc { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 6rpx; line-height: 1.5; }
 .result-rx-placeholder { text-align: center; padding: 40rpx; color: #8E99A4; font-size: 26rpx; }
+
+.result-pending-notice { display: flex; align-items: flex-start; gap: 16rpx; background: #FFF8E1; border-left: 6rpx solid #F59E0B; border-radius: 12rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.result-pending-icon { font-size: 44rpx; flex-shrink: 0; }
+.result-pending-body { flex: 1; }
+.result-pending-title { display: block; font-size: 28rpx; font-weight: 600; color: #92400E; margin-bottom: 4rpx; }
+.result-pending-desc { display: block; font-size: 24rpx; color: #78350F; line-height: 1.5; }
 
 .result-footer { display: flex; gap: 16rpx; padding: 24rpx 0 48rpx; }
 .result-btn { flex: 1; text-align: center; padding: 24rpx 0; border-radius: 16rpx; font-size: 28rpx; font-weight: 600; }

@@ -72,6 +72,29 @@
         <text v-if="balance.empirical" class="fd-balance-empirical">✓ 已结合近期体重变化实测校准</text>
       </view>
 
+      <!-- 本周热量趋势 -->
+      <view v-if="weeklyBalance && weeklyBalance.days" class="fd-weekly-card">
+        <view class="fd-weekly-header">
+          <text class="fd-weekly-title">📅 本周热量趋势</text>
+          <text class="fd-weekly-sub">{{ weeklyBalance.logged_days || 0 }} 天已记录 · 均 {{ weeklyBalance.weekly_avg_intake || 0 }} kcal</text>
+        </view>
+        <view class="fd-weekly-chart">
+          <view v-for="day in weeklyBalance.days" :key="day.date" class="fd-weekly-col">
+            <text class="fd-weekly-cal">{{ day.intake_cal > 0 ? day.intake_cal : '' }}</text>
+            <view class="fd-weekly-bar-wrap">
+              <view
+                class="fd-weekly-bar"
+                :style="{
+                  height: barHeight(day.intake_cal) + 'rpx',
+                  background: day.balance > 200 ? '#E74C3C' : day.balance < -300 ? '#3498DB' : '#27AE60'
+                }"
+              ></view>
+            </view>
+            <text class="fd-weekly-day">{{ day.day_label }}</text>
+          </view>
+        </view>
+      </view>
+
       <!-- 按餐次分组 -->
       <view v-for="meal in mealGroups" :key="meal.type" class="fd-meal-section">
         <view class="fd-meal-header">
@@ -117,11 +140,12 @@ function todayStr(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-const loading      = ref(false)
-const refreshing   = ref(false)
-const selectedDate = ref(todayStr())
-const allItems     = ref<any[]>([])
-const balance      = ref<any>(null)
+const loading        = ref(false)
+const refreshing     = ref(false)
+const selectedDate   = ref(todayStr())
+const allItems       = ref<any[]>([])
+const balance        = ref<any>(null)
+const weeklyBalance  = ref<any>(null)
 
 const displayDate = computed(() => {
   const d = new Date(selectedDate.value)
@@ -230,6 +254,14 @@ function formatTime(t: string): string {
   return t ? new Date(t).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }) : ''
 }
 
+function barHeight(cal: number): number {
+  if (!weeklyBalance.value?.days) return 4
+  const vals = weeklyBalance.value.days.map((d: any) => d.intake_cal as number).filter((v: number) => v > 0)
+  const max = vals.length ? Math.max(...vals) : 1
+  if (!cal || !max) return 4
+  return Math.max(4, Math.round((cal / max) * 120))
+}
+
 async function loadData() {
   loading.value = true
   try {
@@ -243,6 +275,12 @@ async function loadData() {
   try {
     balance.value = await http<any>(`/api/v1/food/balance?date=${selectedDate.value}`)
   } catch { balance.value = null }
+  // 加载本周趋势（仅今天，静默失败）
+  if (selectedDate.value === todayStr()) {
+    try {
+      weeklyBalance.value = await http<any>('/api/v1/food/balance/weekly')
+    } catch { weeklyBalance.value = null }
+  }
 }
 
 function onDateChange(e: any) {
@@ -317,6 +355,21 @@ onMounted(() => loadData())
 .fd-balance-breakdown  { margin-bottom: 8rpx; }
 .fd-balance-sub { font-size: 20rpx; color: #8E99A4; }
 .fd-balance-empirical { display: block; font-size: 20rpx; color: #1565C0; margin-top: 8rpx; }
+
+/* 本周趋势 */
+.fd-weekly-card {
+  margin: 0 24rpx 16rpx; background: #fff; border-radius: 20rpx; padding: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(21,101,192,0.06);
+}
+.fd-weekly-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20rpx; }
+.fd-weekly-title { font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.fd-weekly-sub   { font-size: 20rpx; color: #8E99A4; }
+.fd-weekly-chart { display: flex; align-items: flex-end; gap: 8rpx; height: 160rpx; }
+.fd-weekly-col   { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4rpx; }
+.fd-weekly-cal   { font-size: 16rpx; color: #8E99A4; line-height: 1; }
+.fd-weekly-bar-wrap { flex: 1; display: flex; align-items: flex-end; width: 100%; }
+.fd-weekly-bar   { width: 100%; border-radius: 6rpx 6rpx 0 0; min-height: 4rpx; transition: height 0.3s; }
+.fd-weekly-day   { font-size: 18rpx; color: #8E99A4; margin-top: 4rpx; }
 
 /* 餐次分组 */
 .fd-meal-section { margin: 0 24rpx 16rpx; }

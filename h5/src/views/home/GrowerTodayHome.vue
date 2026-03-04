@@ -8,6 +8,16 @@
       <GlobalSearch />
     </div>
 
+    <!-- ═══ 我的教练卡片 ═══ -->
+    <div class="my-coach-card" v-if="myCoach" @click="messageCoach">
+      <div class="coach-avatar-circle">{{ coachInitial }}</div>
+      <div class="coach-info">
+        <span class="coach-name">{{ myCoach.companion_name || myCoach.name }}</span>
+        <span class="coach-meta">专属教练 · {{ coachLastContact }}</span>
+      </div>
+      <button class="coach-msg-btn" @click.stop="messageCoach">发消息</button>
+    </div>
+
     <!-- ═══ 今日进度环 + 积分 ═══ -->
     <div class="progress-hero">
       <div class="progress-circle">
@@ -112,6 +122,28 @@
       </div>
     </div>
 
+    <!-- ═══ 成为分享者进度 ═══ -->
+    <div class="sharer-progress" @click="router.push('/trajectory')">
+      <div class="sp-header">
+        <span class="sp-title">成为分享者</span>
+        <span class="sp-hint">{{ sharerReadyCount }}/4 · 查看详情 →</span>
+      </div>
+      <div class="sp-chips">
+        <span class="sp-chip" :class="{ done: sharerDims.reflection }">
+          {{ sharerDims.reflection ? '✓' : '·' }} 成长感悟
+        </span>
+        <span class="sp-chip" :class="{ done: sharerDims.growth }">
+          {{ sharerDims.growth ? '✓' : '·' }} 在途成长
+        </span>
+        <span class="sp-chip" :class="{ done: sharerDims.caseStory }">
+          {{ sharerDims.caseStory ? '✓' : '·' }} 案例贡献
+        </span>
+        <span class="sp-chip" :class="{ done: sharerDims.trajectory }">
+          {{ sharerDims.trajectory ? '✓' : '·' }} 行为轨迹
+        </span>
+      </div>
+    </div>
+
     <!-- ═══ 本周趋势 (极简, 不是数据墙) ═══ -->
     <div class="week-glance">
       <h2 class="section-title">本周一览</h2>
@@ -147,7 +179,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import api from '@/api/index'
@@ -183,6 +215,34 @@ function updateCompletionColor() {
   else if (pct >= 50) completionColor.value = '#3b82f6'
   else completionColor.value = '#f59e0b'
 }
+
+// ── 专属教练 ──
+const myCoach = ref<any>(null)
+
+const coachInitial = computed(() => {
+  const n = myCoach.value?.companion_name || myCoach.value?.name || ''
+  return n.charAt(0) || '教'
+})
+
+const coachLastContact = computed(() => {
+  const t = myCoach.value?.last_contact_at || myCoach.value?.updated_at || myCoach.value?.created_at
+  if (!t) return '刚建立联系'
+  const diff = (Date.now() - new Date(t).getTime()) / 1000 / 60
+  if (diff < 60) return `${Math.round(diff)}分钟前联系`
+  if (diff < 1440) return `${Math.round(diff / 60)}小时前联系`
+  return `${Math.round(diff / 1440)}天前联系`
+})
+
+function messageCoach() {
+  const id = myCoach.value?.companion_id || myCoach.value?.id
+  router.push(id ? `/chat?coach_id=${id}` : '/chat')
+}
+
+// ── 成为分享者 四维进度 ──
+const sharerDims = ref({ reflection: false, growth: false, caseStory: false, trajectory: false })
+const sharerReadyCount = computed(() =>
+  Object.values(sharerDims.value).filter(Boolean).length
+)
 
 // ── 教练提示 ──
 const coachTip = ref('')
@@ -296,11 +356,15 @@ function openChat() {
 }
 
 onMounted(async () => {
-  // 并行加载今日任务、目录、教练提示、本周一览
-  const [, tipRes, weekRes] = await Promise.allSettled([
+  // 并行加载所有数据
+  const [, tipRes, weekRes, compRes, journeyRes, reflectRes, trajRes] = await Promise.allSettled([
     loadTodayTasks(),
     api.get('/api/v1/coach-tip/today'),
     api.get('/api/v1/weekly-summary'),
+    api.get('/api/v1/companions'),
+    api.get('/api/v1/journey/overview'),
+    api.get('/api/v1/reflection/stats'),
+    api.get('/api/v1/learning/trajectory', { params: { days: 30 } }),
     loadCatalog(),
   ])
 
@@ -320,10 +384,80 @@ onMounted(async () => {
       status: d.status,
     }))
   }
+
+  // 专属教练（companions 中 type=coach 的第一条）
+  if (compRes.status === 'fulfilled') {
+    const data = compRes.value as any
+    const items: any[] = data.items || (Array.isArray(data) ? data : [])
+    myCoach.value = items.find(
+      (c) => c.companion_type === 'coach' || c.type === 'coach' || c.role === 'coach'
+    ) || null
+  }
+
+  // 成为分享者四维进度
+  const dims = { reflection: false, growth: false, caseStory: false, trajectory: false }
+  if (journeyRes.status === 'fulfilled') {
+    const j = journeyRes.value as any
+    // S2+(contemplation)及以上视为在途成长
+    const stage = j.current_level ?? j.ttm_stage ?? j.stage ?? 0
+    dims.growth = typeof stage === 'number' ? stage >= 2 : parseInt(String(stage).replace(/\D/g,'') || '0') >= 2
+    // 有里程碑达成视为有行为轨迹
+    dims.trajectory = Array.isArray(j.milestones) && j.milestones.some((m: any) => m.achieved)
+  }
+  if (reflectRes.status === 'fulfilled') {
+    const r = reflectRes.value as any
+    dims.reflection = (r.total_entries ?? r.count ?? 0) >= 1
+  }
+  if (trajRes.status === 'fulfilled') {
+    const t = trajRes.value as any
+    dims.trajectory = t.qualifies_for_sharer === true
+  }
+  sharerDims.value = dims
 })
 </script>
 
 <style scoped>
+/* ── 专属教练卡片 ── */
+.my-coach-card {
+  display: flex; align-items: center; gap: 12px;
+  margin: 12px 20px 0; padding: 14px 16px;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  border-radius: 14px; cursor: pointer; transition: transform 0.2s;
+}
+.my-coach-card:active { transform: scale(0.98); }
+.coach-avatar-circle {
+  width: 44px; height: 44px; border-radius: 50%;
+  background: linear-gradient(135deg, #1565c0, #1e88e5);
+  color: #fff; font-size: 18px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.coach-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.coach-name { font-size: 15px; font-weight: 700; color: #1e3a5f; }
+.coach-meta { font-size: 12px; color: #5b7fa6; }
+.coach-msg-btn {
+  background: #1565c0; color: #fff; border: none; border-radius: 8px;
+  padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+  white-space: nowrap;
+}
+.coach-msg-btn:active { opacity: 0.85; }
+
+/* ── 成为分享者进度 ── */
+.sharer-progress {
+  margin: 12px 20px 0; padding: 14px 16px;
+  background: #fff; border-radius: 14px;
+  border: 1px solid #e5e7eb; cursor: pointer; transition: transform 0.2s;
+}
+.sharer-progress:active { transform: scale(0.98); }
+.sp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sp-title { font-size: 14px; font-weight: 700; color: #111827; }
+.sp-hint { font-size: 12px; color: #6b7280; }
+.sp-chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.sp-chip {
+  font-size: 12px; padding: 4px 10px; border-radius: 20px;
+  background: #f3f4f6; color: #9ca3af; font-weight: 500; transition: all 0.3s;
+}
+.sp-chip.done { background: #dcfce7; color: #16a34a; }
+
 /* ── 进度环 + 积分 ── */
 .progress-hero {
   display: flex; align-items: center; justify-content: center;

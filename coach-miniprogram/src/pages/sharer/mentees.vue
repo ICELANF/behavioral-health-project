@@ -2,12 +2,12 @@
   <view class="mt-page">
     <view class="mt-navbar">
       <view class="mt-back" @tap="goBack">←</view>
-      <text class="mt-title">我的学员</text>
+      <text class="mt-title">我的伙伴</text>
       <view style="width:80rpx;"></view>
     </view>
     <scroll-view scroll-y class="mt-scroll" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
       <view class="mt-stat-row">
-        <view class="mt-stat"><text class="mt-stat-num">{{ mentees.length }}</text><text class="mt-stat-label">学员总数</text></view>
+        <view class="mt-stat"><text class="mt-stat-num">{{ mentees.length }}</text><text class="mt-stat-label">伙伴总数</text></view>
         <view class="mt-stat"><text class="mt-stat-num" style="color:#27AE60;">{{ activeCount }}</text><text class="mt-stat-label">今日打卡</text></view>
         <view class="mt-stat"><text class="mt-stat-num" style="color:#E74C3C;">{{ inactiveCount }}</text><text class="mt-stat-label">未打卡</text></view>
       </view>
@@ -34,8 +34,8 @@
 
       <view v-if="!loading && mentees.length === 0" class="mt-empty">
         <text class="mt-empty-icon">👥</text>
-        <text class="mt-empty-text">暂无学员</text>
-        <text class="mt-empty-hint">联系教练了解如何带动同道者</text>
+        <text class="mt-empty-text">暂无伙伴</text>
+        <text class="mt-empty-hint">联系教练了解如何引导成长伙伴</text>
       </view>
       <view style="height:120rpx;"></view>
     </scroll-view>

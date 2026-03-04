@@ -102,7 +102,27 @@
             class="quick-tool-btn"
             @click="$router.push('/reflection')"
           >
-            反思日志
+            成长感悟
+          </van-button>
+          <van-button
+            plain
+            round
+            size="small"
+            icon="orders-o"
+            class="quick-tool-btn"
+            @click="$router.push('/case-stories')"
+          >
+            成长案例
+          </van-button>
+          <van-button
+            plain
+            round
+            size="small"
+            icon="pharmacy-o"
+            class="quick-tool-btn"
+            @click="$router.push('/medical')"
+          >
+            理性就医
           </van-button>
           <van-button
             type="primary"

@@ -15,8 +15,14 @@
       </view>
     </scroll-view>
 
+    <!-- loading -->
+    <view v-if="loading" class="notif-loading">
+      <text class="notif-loading-text">加载中…</text>
+    </view>
+
     <!-- AI建议 Tab -->
-    <scroll-view v-if="activeTab === 'ai'" scroll-y class="notif-list"
+    <scroll-view v-else-if="activeTab === 'ai'" scroll-y class="notif-list"
+      :style="{ height: scrollH }"
       refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
       <view class="notif-ai-hint">AI 根据学员数据自动生成的沟通建议</view>
       <view v-for="(sg, idx) in aiSuggestions" :key="idx" class="notif-ai-card">
@@ -35,6 +41,7 @@
 
     <!-- 通知列表（全部/未读/审核/系统） -->
     <scroll-view v-else scroll-y class="notif-list"
+      :style="{ height: scrollH }"
       refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
       <view v-for="n in filteredItems" :key="n.id"
         class="notif-item" :class="{ 'notif-item--unread': !n.is_read }"
@@ -52,7 +59,7 @@
         </view>
       </view>
 
-      <view v-if="filteredItems.length === 0" class="notif-empty">
+      <view v-if="filteredItems.length === 0 && !loading" class="notif-empty">
         <text class="notif-empty-icon">🔔</text>
         <text class="notif-empty-text">暂无{{ tabLabel }}消息</text>
       </view>
@@ -61,24 +68,62 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { httpReq as http } from '@/api/request'
 
 const activeTab = ref('all')
 const refreshing = ref(false)
+const loading = ref(false)
 const items = ref<any[]>([])
 const aiSuggestions = ref<any[]>([])
 
+// 用 JS 计算 scroll-view 高度，避免 calc(100vh - Xrpx) 在部分微信版本失效
+const scrollH = ref('60vh')
+onMounted(() => {
+  try {
+    const info = uni.getSystemInfoSync()
+    const ratio = info.windowWidth / 750          // px per rpx
+    const headerPx = (80 + 24 + 40) * ratio + info.statusBarHeight  // 约 144rpx + 状态栏
+    const tabsPx   = 70 * ratio                   // 标签栏
+    const h = Math.max(200, info.windowHeight - headerPx - tabsPx - 10)
+    scrollH.value = h + 'px'
+  } catch { scrollH.value = '60vh' }
+})
+
+// 角色检测：只有 coach/admin 才展示 AI建议 + 审核 Tab
+const userRole = (() => {
+  try {
+    const raw = uni.getStorageSync('user_info')
+    if (raw) {
+      const u = typeof raw === 'string' ? JSON.parse(raw) : raw
+      return (u.role || 'grower').toLowerCase()
+    }
+  } catch { /* ignore */ }
+  return 'grower'
+})()
+const isCoach = ['coach', 'admin', 'supervisor', 'master'].includes(userRole)
+
 const unreadCount = computed(() => items.value.filter(n => !n.is_read).length)
 
-const tabs = computed(() => [
-  { key: 'all',    label: '全部',   count: unreadCount.value },
-  { key: 'unread', label: '未读',   count: unreadCount.value },
-  { key: 'ai',     label: 'AI建议', count: aiSuggestions.value.length },
-  { key: 'review', label: '审核',   count: items.value.filter(n => !n.is_read && ['review', 'assessment', 'assessment_remind'].includes(n.type)).length },
-  { key: 'system', label: '系统',   count: items.value.filter(n => !n.is_read && ['system', 'learning'].includes(n.type)).length },
-])
+const tabs = computed(() => {
+  const base = [
+    { key: 'all',    label: '全部', count: unreadCount.value },
+    { key: 'unread', label: '未读', count: unreadCount.value },
+  ]
+  if (isCoach) {
+    base.push(
+      { key: 'ai',     label: 'AI建议', count: aiSuggestions.value.length },
+      { key: 'review', label: '审核',   count: items.value.filter(n => !n.is_read && ['review', 'assessment', 'assessment_remind'].includes(n.type)).length },
+    )
+  } else {
+    base.push(
+      { key: 'coach',  label: '教练消息', count: items.value.filter(n => !n.is_read && ['coach_message', 'assessment_result', 'assessment_remind'].includes(n.type)).length },
+    )
+  }
+  base.push({ key: 'system', label: '系统', count: items.value.filter(n => !n.is_read && ['system', 'learning'].includes(n.type)).length })
+  return base
+})
 
 const tabLabel = computed(() => {
   const m: Record<string, string> = { all: '', unread: '未读', review: '审核', system: '系统' }
@@ -89,6 +134,7 @@ const filteredItems = computed(() => {
   if (activeTab.value === 'all')    return items.value
   if (activeTab.value === 'unread') return items.value.filter(n => !n.is_read)
   if (activeTab.value === 'review') return items.value.filter(n => ['review', 'assessment', 'assessment_remind'].includes(n.type))
+  if (activeTab.value === 'coach')  return items.value.filter(n => ['coach_message', 'assessment_result', 'assessment_remind'].includes(n.type))
   if (activeTab.value === 'system') return items.value.filter(n => ['system', 'learning'].includes(n.type))
   return items.value
 })
@@ -121,6 +167,7 @@ function formatTime(iso: string): string {
 }
 
 async function loadData() {
+  loading.value = true
   // 通知列表（兼容 limit / page_size 两种参数名）
   try {
     const res = await http<any>('/api/v1/notifications?limit=50&page_size=50')
@@ -128,28 +175,32 @@ async function loadData() {
   } catch (e) {
     console.warn('[notifications] load:', e)
     items.value = []
+  } finally {
+    loading.value = false
   }
 
-  // AI建议：取学员列表后逐个拉
-  try {
-    const dash = await http<any>('/api/v1/coach/dashboard')
-    const students = (dash.students || []).slice(0, 5)
-    const results: any[] = []
-    for (const s of students) {
-      try {
-        const res = await http<any>(`/api/v1/coach/messages/ai-suggestions/${s.id || s.user_id}`)
-        const sgs = res.suggestions || res.items || (Array.isArray(res) ? res : [])
-        sgs.forEach((sg: any) => {
-          results.push({
-            student_id: s.id || s.user_id,
-            student_name: s.name || s.full_name || '学员',
-            content: sg.content || sg.text || sg.message || '',
+  // AI建议：仅教练角色加载（避免 grower 触发 403）
+  if (isCoach) {
+    try {
+      const dash = await http<any>('/api/v1/coach/dashboard')
+      const students = (dash.students || []).slice(0, 5)
+      const results: any[] = []
+      for (const s of students) {
+        try {
+          const res = await http<any>(`/api/v1/coach/messages/ai-suggestions/${s.id || s.user_id}`)
+          const sgs = res.suggestions || res.items || (Array.isArray(res) ? res : [])
+          sgs.forEach((sg: any) => {
+            results.push({
+              student_id: s.id || s.user_id,
+              student_name: s.name || s.full_name || '学员',
+              content: sg.content || sg.text || sg.message || '',
+            })
           })
-        })
-      } catch (e) { console.warn('[notifications] ai-suggestions:', e) }
-    }
-    aiSuggestions.value = results
-  } catch (e) { console.warn('[notifications] dashboard for ai:', e) }
+        } catch (e) { console.warn('[notifications] ai-suggestions:', e) }
+      }
+      aiSuggestions.value = results
+    } catch (e) { console.warn('[notifications] dashboard for ai:', e) }
+  }
 }
 
 async function openNotif(n: any) {
@@ -159,12 +210,19 @@ async function openNotif(n: any) {
       n.is_read = true
     } catch (e) { console.warn('[notifications] openNotif:', e) }
   }
-  const links: Record<string, string> = {
+  const coachLinks: Record<string, string> = {
     review: '/pages/coach/assessment/index',
     assessment: '/pages/coach/assessment/index',
     assessment_remind: '/pages/coach/assessment/index',
     learning: '/pages/learning/index',
   }
+  const growerLinks: Record<string, string> = {
+    assessment: '/pages/assessment/pending',
+    assessment_remind: '/pages/assessment/pending',
+    assessment_result: '/pages/assessment/pending',
+    learning: '/pages/learning/index',
+  }
+  const links = isCoach ? coachLinks : growerLinks
   const url = links[n.type]
   if (url) uni.navigateTo({ url }).catch(() => {})
 }
@@ -240,7 +298,11 @@ onShow(() => { loadData() })
   font-size: 18rpx; padding: 2rpx 8rpx; border-radius: 20rpx; min-width: 30rpx; text-align: center;
 }
 
-.notif-list { height: calc(100vh - 280rpx); }
+/* 高度由 JS getSystemInfoSync 动态注入，CSS 不再写 calc(100vh - Xrpx) */
+.notif-list { min-height: 200rpx; }
+
+.notif-loading { display: flex; align-items: center; justify-content: center; padding: 120rpx 0; }
+.notif-loading-text { font-size: 28rpx; color: #8E99A4; }
 
 /* ── 通知列表 ── */
 .notif-item {

@@ -145,17 +145,25 @@ def require_coach_or_admin(current_user: User = Depends(get_current_user)) -> Us
     return current_user
 
 
+_ROLE_ZH = {
+    "observer": "观察者", "grower": "成长者", "sharer": "分享者",
+    "coach": "教练", "promoter": "推广者", "supervisor": "督导",
+    "master": "专家", "admin": "管理员", "institution_admin": "机构管理员",
+}
+
 def require_roles(allowed_roles: List[UserRole]):
     """
     角色白名单依赖工厂 — 返回 Depends 可用的函数
 
     用法: current_user: User = Depends(require_roles([UserRole.ADMIN, UserRole.COACH]))
     """
+    zh_names = "/".join(_ROLE_ZH.get(r.value, r.value) for r in allowed_roles)
+
     def _checker(current_user: User = Depends(get_current_user)) -> User:
         if current_user.role not in allowed_roles:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"需要以下角色之一: {', '.join(r.name for r in allowed_roles)}"
+                detail=f"该功能仅限{zh_names}使用"
             )
         return current_user
     return _checker

@@ -143,3 +143,58 @@ async def upload_avatar(
     db.commit()
 
     return {"url": url, "filename": filename}
+
+
+# ────────────────────────────────────────────────────────────────────────────
+# 媒体文件上传（健康之路 / 成长感悟 通用）
+# ────────────────────────────────────────────────────────────────────────────
+_MEDIA_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "static", "uploads", "media",
+)
+_MEDIA_ALLOWED = {
+    "image/jpeg", "image/png", "image/webp", "image/gif",
+    "video/mp4", "video/quicktime", "video/mpeg",
+    "audio/mpeg", "audio/mp4", "audio/x-m4a",
+}
+_MEDIA_MAX_SIZE = 50 * 1024 * 1024  # 50MB
+
+
+@router.post("/media")
+async def upload_media(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    通用媒体上传（图片/视频/音频）
+
+    - 图片: JPEG/PNG/WebP/GIF，≤5MB
+    - 视频: MP4/MOV，≤50MB
+    - 音频: MP3/M4A，≤10MB
+    - 返回: { url, filename, media_type }
+    """
+    os.makedirs(_MEDIA_DIR, exist_ok=True)
+
+    content_type = file.content_type or ""
+    if content_type not in _MEDIA_ALLOWED:
+        raise HTTPException(400, f"不支持的文件类型: {content_type}")
+
+    data = await file.read()
+    if len(data) > _MEDIA_MAX_SIZE:
+        raise HTTPException(400, "文件超过50MB限制")
+
+    ext_map = {
+        "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
+        "video/mp4": "mp4", "video/quicktime": "mov", "video/mpeg": "mpg",
+        "audio/mpeg": "mp3", "audio/mp4": "m4a", "audio/x-m4a": "m4a",
+    }
+    ext = ext_map.get(content_type, "bin")
+    ts = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    filename = f"{current_user.id}_{ts}_{uuid.uuid4().hex[:8]}.{ext}"
+
+    with open(os.path.join(_MEDIA_DIR, filename), "wb") as f:
+        f.write(data)
+
+    url = f"/api/static/uploads/media/{filename}"
+    media_type = "image" if content_type.startswith("image") else "video" if content_type.startswith("video") else "audio"
+    return {"url": url, "filename": filename, "media_type": media_type}

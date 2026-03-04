@@ -485,6 +485,22 @@ try:
 except Exception as e:
     logger.warning(f"[API] 健康审核队列路由注册失败: {e}")
 
+# 注册就医管理路由 (medications + visits)
+try:
+    from api.medical_api import router as medical_router
+    app.include_router(medical_router)
+    logger.info("[API] 就医管理路由已注册")
+except Exception as e:
+    logger.warning(f"[API] 就医管理路由注册失败: {e}")
+
+# 注册行为轨迹路由
+try:
+    from api.trajectory_api import router as trajectory_router
+    app.include_router(trajectory_router)
+    logger.info("[API] 行为轨迹路由已注册")
+except Exception as e:
+    logger.warning(f"[API] 行为轨迹路由注册失败: {e}")
+
 # 注册聊天REST路由
 try:
     from api.chat_rest_api import router as chat_rest_router
@@ -645,6 +661,14 @@ try:
     logger.info("[API] 图片上传路由已注册")
 except ImportError as e:
     logger.warning(f"[API] 图片上传路由注册失败: {e}")
+
+# 注册健康之路路由
+try:
+    from api.health_journey_api import router as health_journey_router
+    app.include_router(health_journey_router)
+    logger.info("[API] 健康之路路由已注册")
+except ImportError as e:
+    logger.warning(f"[API] 健康之路路由注册失败: {e}")
 
 # 注册食物识别路由
 try:

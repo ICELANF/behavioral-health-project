@@ -68,6 +68,13 @@
         class="content-field"
       />
 
+      <div class="public-toggle-row">
+        <span class="public-toggle-label">
+          {{ form.is_public ? '🌐 公开分享（教练和同伴可见）' : '🔒 仅自己可见' }}
+        </span>
+        <van-switch v-model="form.is_public" size="20px" active-color="#722ed1" />
+      </div>
+
       <div class="editor-actions">
         <van-button plain round size="small" @click="showEditor = false">取消</van-button>
         <van-button
@@ -83,31 +90,63 @@
       </div>
     </div>
 
-    <!-- Section 3: 历史日志 -->
+    <!-- Section 3: 历史日志 + 精华分享 Tab -->
     <div class="section-card">
-      <div class="section-title">历史日志</div>
-      <van-loading v-if="loadingEntries" size="20" />
-      <van-empty v-else-if="!entries.length" description="还没有日志，写下第一篇吧" />
-      <template v-else>
-        <div
-          v-for="entry in entries"
-          :key="entry.id"
-          class="entry-card"
-          @click="viewEntry(entry)"
-        >
-          <div class="entry-header">
-            <span class="entry-title">{{ entry.title || '无标题' }}</span>
-            <van-tag :color="depthColor(entry.depth_level)" size="small" text-color="#fff">
-              {{ depthLabel(entry.depth_level) }}
-            </van-tag>
+      <div class="tab-row">
+        <button class="tab-btn" :class="{ active: activeTab === 'my' }" @click="activeTab = 'my'">我的日志</button>
+        <button class="tab-btn" :class="{ active: activeTab === 'public' }" @click="switchPublicTab">精华分享</button>
+      </div>
+      <div class="section-title" style="display:none">历史日志</div>
+      <!-- 我的日志 -->
+      <template v-if="activeTab === 'my'">
+        <van-loading v-if="loadingEntries" size="20" />
+        <van-empty v-else-if="!entries.length" description="还没有日志，写下第一篇吧" />
+        <template v-else>
+          <div
+            v-for="entry in entries"
+            :key="entry.id"
+            class="entry-card"
+            @click="viewEntry(entry)"
+          >
+            <div class="entry-header">
+              <span class="entry-title">{{ entry.title || '无标题' }}</span>
+              <span class="entry-public-badge" v-if="entry.is_public">公开 · 教练可见</span>
+              <van-tag :color="depthColor(entry.depth_level)" size="small" text-color="#fff">
+                {{ depthLabel(entry.depth_level) }}
+              </van-tag>
+            </div>
+            <div class="entry-preview">{{ entry.content?.slice(0, 60) }}{{ (entry.content?.length || 0) > 60 ? '…' : '' }}</div>
+            <div class="entry-date">{{ formatDate(entry.created_at) }}</div>
           </div>
-          <div class="entry-preview">{{ entry.content?.slice(0, 60) }}{{ (entry.content?.length || 0) > 60 ? '…' : '' }}</div>
-          <div class="entry-date">{{ formatDate(entry.created_at) }}</div>
-        </div>
 
-        <div class="load-more" v-if="hasMore">
-          <van-button plain round size="small" :loading="loadingMore" @click="loadMore">加载更多</van-button>
-        </div>
+          <div class="load-more" v-if="hasMore">
+            <van-button plain round size="small" :loading="loadingMore" @click="loadMore">加载更多</van-button>
+          </div>
+        </template>
+      </template>
+
+      <!-- 精华分享（公开日志社区） -->
+      <template v-if="activeTab === 'public'">
+        <van-loading v-if="loadingPublic" size="20" />
+        <van-empty v-else-if="!publicEntries.length" description="暂无精华分享，成为第一个分享者吧" />
+        <template v-else>
+          <div
+            v-for="entry in publicEntries"
+            :key="entry.id"
+            class="entry-card"
+            @click="viewEntry(entry)"
+          >
+            <div class="entry-header">
+              <span class="entry-title">{{ entry.title || '无标题' }}</span>
+              <van-tag :color="depthColor(entry.depth_level)" size="small" text-color="#fff">
+                {{ depthLabel(entry.depth_level) }}
+              </van-tag>
+            </div>
+            <div class="entry-author" v-if="entry.author_name">{{ entry.author_name }}</div>
+            <div class="entry-preview">{{ entry.content?.slice(0, 80) }}{{ (entry.content?.length || 0) > 80 ? '…' : '' }}</div>
+            <div class="entry-date">{{ formatDate(entry.created_at) }}</div>
+          </div>
+        </template>
       </template>
     </div>
 
@@ -145,13 +184,16 @@ import api from '@/api/index'
 const loadingPrompt = ref(false)
 const loadingEntries = ref(false)
 const loadingMore = ref(false)
+const loadingPublic = ref(false)
 const submitting = ref(false)
 const showEditor = ref(false)
 const showDetail = ref(false)
+const activeTab = ref<'my' | 'public'>('my')
 
 const todayPrompt = ref<any>(null)
 const stats = ref<any>(null)
 const entries = ref<any[]>([])
+const publicEntries = ref<any[]>([])
 const selectedEntry = ref<any>(null)
 const hasMore = ref(false)
 const page = ref(0)
@@ -162,6 +204,7 @@ const form = reactive({
   content: '',
   journal_type: 'freeform' as 'freeform' | 'guided',
   prompt_id: null as string | null,
+  is_public: false,
 })
 
 function depthLabel(depth?: string) {
@@ -189,7 +232,24 @@ function openEditor(prompt: any) {
   form.content = prompt?.content || prompt?.prompt_text || ''
   form.journal_type = prompt ? 'guided' : 'freeform'
   form.prompt_id = prompt?.id || null
+  form.is_public = false
   showEditor.value = true
+}
+
+async function switchPublicTab() {
+  activeTab.value = 'public'
+  if (publicEntries.value.length > 0) return
+  loadingPublic.value = true
+  try {
+    const res: any = await api.get('/api/v1/reflection/entries', {
+      params: { is_public: true, limit: 20 }
+    })
+    publicEntries.value = Array.isArray(res) ? res : (res?.items || [])
+  } catch {
+    publicEntries.value = []
+  } finally {
+    loadingPublic.value = false
+  }
 }
 
 function viewEntry(entry: any) {
@@ -256,6 +316,7 @@ async function submitEntry() {
       content: form.content,
       journal_type: form.journal_type,
       prompt_id: form.prompt_id || undefined,
+      is_public: form.is_public,
     })
     showSuccessToast('日志已保存')
     showEditor.value = false
@@ -352,7 +413,32 @@ onMounted(() => {
   margin-top: 12px;
 }
 
+/* public toggle */
+.public-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-top: 1px solid #f5f5f5; margin-top: 8px;
+}
+.public-toggle-label { font-size: 13px; color: #555; }
+
+/* tabs */
+.tab-row {
+  display: flex; gap: 4px; margin-bottom: 16px;
+  border-bottom: 2px solid #f0f0f0;
+}
+.tab-btn {
+  flex: 1; background: none; border: none; padding: 10px;
+  font-size: 14px; color: #999; cursor: pointer; font-weight: 600;
+  border-bottom: 2px solid transparent; margin-bottom: -2px;
+  transition: all 0.2s;
+}
+.tab-btn.active { color: #722ed1; border-bottom-color: #722ed1; }
+
 /* history */
+.entry-public-badge {
+  font-size: 11px; color: #722ed1; background: #f9f0ff;
+  padding: 1px 6px; border-radius: 4px; margin-right: 4px; flex-shrink: 0;
+}
+.entry-author { font-size: 12px; color: #722ed1; margin-bottom: 4px; }
 .entry-card {
   padding: 12px 0;
   border-bottom: 1px solid #f5f5f5;

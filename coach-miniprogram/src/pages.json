@@ -221,6 +221,13 @@
           "style": {
             "navigationBarTitleText": "收到的邀请"
           }
+        },
+        {
+          "path": "message",
+          "style": {
+            "navigationBarTitleText": "发消息",
+            "navigationStyle": "custom"
+          }
         }
       ]
     },
@@ -481,6 +488,79 @@
           "path": "knowledge",
           "style": {
             "navigationBarTitleText": "知识库管理"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/reflection",
+      "name": "reflection",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "成长感悟",
+            "navigationStyle": "custom"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/case-stories",
+      "name": "case-stories",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "健康之路",
+            "navigationStyle": "custom"
+          }
+        },
+        {
+          "path": "publish",
+          "style": {
+            "navigationBarTitleText": "分享健康之路",
+            "navigationBarBackgroundColor": "#6d28d9",
+            "navigationBarTextStyle": "white"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/medical",
+      "name": "medical",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "理性就医",
+            "navigationStyle": "custom"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/trajectory",
+      "name": "trajectory",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "行为轨迹",
+            "navigationStyle": "custom"
+          }
+        }
+      ]
+    },
+    {
+      "root": "pages/become-sharer",
+      "name": "become-sharer",
+      "pages": [
+        {
+          "path": "index",
+          "style": {
+            "navigationBarTitleText": "成为分享者",
+            "navigationStyle": "custom"
           }
         }
       ]

@@ -1,7 +1,7 @@
 <template>
   <view class="comp-page">
     <view class="comp-header">
-      <text class="comp-title">我的同道者</text>
+      <text class="comp-title">我的支持网络</text>
       <view class="comp-invite-btn" @tap="goInvite">
         <text>+ 邀请</text>
       </view>
@@ -9,6 +9,18 @@
 
     <scroll-view scroll-y class="comp-scroll" refresher-enabled
       @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
+
+      <!-- 我的教练卡 -->
+      <view v-if="myCoach" class="comp-coach-card">
+        <view class="comp-coach-avatar" :style="{ background: avatarColor(myCoach.name) }">
+          {{ (myCoach.name || '教')[0] }}
+        </view>
+        <view class="comp-coach-info">
+          <text class="comp-coach-name">{{ myCoach.name }}</text>
+          <text class="comp-coach-role">🏅 我的教练</text>
+        </view>
+        <view class="comp-coach-msg-btn" @tap="goMessage">💬 发消息</view>
+      </view>
 
       <!-- 邀请通知 -->
       <view v-if="invitationCount > 0" class="comp-notice" @tap="goInvitations">
@@ -56,6 +68,7 @@ const companions = ref<any[]>([])
 const invitationCount = ref(0)
 const refreshing = ref(false)
 const loading = ref(false)
+const myCoach = ref<any>(null)
 
 const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C','#34495E']
 function avatarColor(name: string): string {
@@ -70,10 +83,22 @@ function levelName(key: string): string {
 
 async function loadData() {
   loading.value = true
+  // 我的教练
+  try {
+    const res = await http<any>('/api/v1/companions/my-coach')
+    myCoach.value = res?.coach || null
+  } catch { myCoach.value = null }
+  // 同道者列表
   try {
     const res = await http<any>('/api/v1/companions')
     companions.value = res?.items || []
   } catch { companions.value = [] } finally { loading.value = false }
+}
+
+function goMessage() {
+  const name = encodeURIComponent(myCoach.value?.name || '')
+  const id = myCoach.value?.id || ''
+  uni.navigateTo({ url: `/pages/companions/message?coach_name=${name}&coach_id=${id}` })
 }
 
 function goInvite() { uni.navigateTo({ url: '/pages/companions/invite' }) }
@@ -98,6 +123,14 @@ onMounted(() => { loadData() })
 .comp-invite-btn { background: rgba(255,255,255,0.2); padding: 10rpx 24rpx; border-radius: 12rpx; font-size: 26rpx; }
 
 .comp-scroll { height: calc(100vh - 200rpx); }
+
+/* 教练卡 */
+.comp-coach-card { display: flex; align-items: center; gap: 20rpx; background: linear-gradient(135deg, #EFF6FF 0%, #F0FFF8 100%); margin: 16rpx 24rpx; border-radius: 20rpx; padding: 24rpx; border: 1rpx solid #D1FAE5; }
+.comp-coach-avatar { width: 80rpx; height: 80rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 32rpx; font-weight: 700; flex-shrink: 0; }
+.comp-coach-info { flex: 1; }
+.comp-coach-name { display: block; font-size: 30rpx; font-weight: 700; color: #2C3E50; }
+.comp-coach-role { display: block; font-size: 22rpx; color: #2D8E69; margin-top: 4rpx; }
+.comp-coach-msg-btn { padding: 12rpx 24rpx; background: #2D8E69; color: #fff; border-radius: 10rpx; font-size: 24rpx; white-space: nowrap; }
 
 .comp-notice { display: flex; align-items: center; gap: 12rpx; background: #FFF8E7; padding: 20rpx 32rpx; border-bottom: 1rpx solid #FDE8A8; }
 .comp-notice-icon { font-size: 28rpx; }

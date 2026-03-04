@@ -37,7 +37,7 @@ async function refreshAccessToken(): Promise<string> {
   if (!rt) throw new Error('no refresh token')
   const res: any = await new Promise((resolve, reject) => {
     uni.request({
-      url: `${BASE_URL}/v1/auth/refresh`,
+      url: `${API_HOST}/api/v1/auth/refresh`,
       method: 'POST',
       data: { refresh_token: rt },
       success: (r) => resolve(r),
@@ -125,8 +125,19 @@ function request<T = any>(
 
         const errData = res.data as any
         if (!options.noToast) {
-          const msg = errData?.detail || errData?.message || `请求失败 (${res.statusCode})`
-          uni.showToast({ title: String(msg).slice(0, 30), icon: 'none' })
+          if (res.statusCode === 403) {
+            // 403 不显示技术细节，只给友好提示；原始 detail 留在控制台供调试
+            console.warn('[403]', path, errData?.detail)
+            uni.showModal({
+              title: '该功能暂时不能对你开放',
+              content: '同成长·共健康，让我们共同成长',
+              showCancel: false,
+              confirmText: '好的',
+            })
+          } else {
+            const msg = errData?.detail || errData?.message || `请求失败 (${res.statusCode})`
+            uni.showToast({ title: String(msg).slice(0, 30), icon: 'none' })
+          }
         }
         reject({ statusCode: res.statusCode, data: errData })
       },

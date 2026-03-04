@@ -114,6 +114,12 @@ async def stub_companions(page: int = Query(1), page_size: int = Query(20)):
     return stub_list()
 
 
+@router.get("/companions/invitations")
+async def stub_companion_invitations(page: int = Query(1), page_size: int = Query(20)):
+    """收到的邀请 - stub（必须在 /{companion_id} 之前注册，否则 FastAPI 把 invitations 解析为 int 报 422）"""
+    return stub_list()
+
+
 @router.get("/companions/{companion_id}")
 async def stub_companion_detail(companion_id: int):
     """同伴详情 - stub"""
@@ -124,12 +130,6 @@ async def stub_companion_detail(companion_id: int):
 async def stub_companion_invite():
     """邀请同伴 - stub"""
     return stub_success("invitation sent (stub)")
-
-
-@router.get("/companions/invitations")
-async def stub_companion_invitations(page: int = Query(1), page_size: int = Query(20)):
-    """收到的邀请 - stub"""
-    return stub_list()
 
 
 @router.post("/companions/invitations/{invitation_id}/accept")

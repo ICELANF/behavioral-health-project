@@ -7,6 +7,7 @@
 
 from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Optional
@@ -300,3 +301,201 @@ def companion_dashboard(
     """获取当前用户的同道者全景仪表盘"""
     service = PeerTrackingService(db)
     return service.get_companion_dashboard(current_user.id)
+
+
+# ══════════════════════════════════════════════════════════
+# 成长者「我的教练」支持入口
+# ══════════════════════════════════════════════════════════
+
+from core.models import AssessmentAssignment, Notification
+
+
+@router.get("/my-coach", summary="获取我的教练信息")
+def get_my_coach(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """成长者获取自己分配的教练信息（从 assessment_assignments 取最近一条）"""
+    row = (
+        db.query(AssessmentAssignment)
+        .filter(AssessmentAssignment.student_id == current_user.id)
+        .order_by(AssessmentAssignment.created_at.desc())
+        .first()
+    )
+    if not row or not row.coach_id:
+        return {"coach": None}
+    coach = db.query(User).filter(User.id == row.coach_id).first()
+    if not coach:
+        return {"coach": None}
+    return {
+        "coach": {
+            "id":        coach.id,
+            "name":      coach.full_name or coach.username,
+            "role":      "coach",
+            "avatar":    None,
+        }
+    }
+
+
+class CoachMessageRequest(BaseModel):
+    content: str
+    image_desc: Optional[str] = None   # 图片描述（前端 OCR/识图后附上）
+    voice_text: Optional[str] = None   # 语音转文字结果
+
+
+@router.post("/message-to-coach", summary="向我的教练发送消息")
+def send_message_to_coach(
+    body: CoachMessageRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """成长者向自己的教练发送一条通知消息"""
+    content = (body.content or "").strip()
+    if not content:
+        raise HTTPException(400, "消息内容不能为空")
+
+    # 找教练
+    row = (
+        db.query(AssessmentAssignment)
+        .filter(AssessmentAssignment.student_id == current_user.id)
+        .order_by(AssessmentAssignment.created_at.desc())
+        .first()
+    )
+    if not row or not row.coach_id:
+        raise HTTPException(404, "暂无分配的教练，无法发送消息")
+
+    sender_name = current_user.full_name or current_user.username or "成长者"
+
+    # 附上图片描述/语音文字
+    extras = []
+    if body.image_desc:
+        extras.append(f"[图片：{body.image_desc}]")
+    if body.voice_text:
+        extras.append(f"[语音：{body.voice_text}]")
+    full_content = content + ("\n" + "\n".join(extras) if extras else "")
+
+    notif = Notification(
+        user_id=row.coach_id,
+        title=f"学员 {sender_name} 发来消息",
+        body=full_content,
+        type="coach_message",
+        is_read=False,
+    )
+    db.add(notif)
+    db.commit()
+    return {"status": "sent", "to_coach_id": row.coach_id}
+
+
+@router.post("/ai-draft-message", summary="AI 帮我起草给教练的消息")
+def ai_draft_message(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    分析学员近期健康 + 行为数据，生成给教练的消息草稿。
+    优先调用 Ollama，失败时降级到模板。
+    """
+    uid = current_user.id
+    name = current_user.full_name or current_user.username or "我"
+
+    # ── 收集近期数据上下文 ─────────────────────────────
+    ctx: dict = {}
+
+    # 最近体重
+    w = db.execute(text("""
+        SELECT weight_kg, DATE(recorded_at) AS d
+        FROM vital_signs WHERE user_id=:uid AND weight_kg IS NOT NULL
+        ORDER BY recorded_at DESC LIMIT 1
+    """), {"uid": uid}).mappings().first()
+    if w:
+        ctx["weight"] = f"{w['weight_kg']:.1f}kg（{w['d']}）"
+
+    # 最近血糖
+    g = db.execute(text("""
+        SELECT value, DATE(recorded_at) AS d, meal_context
+        FROM glucose_readings WHERE user_id=:uid
+        ORDER BY recorded_at DESC LIMIT 1
+    """), {"uid": uid}).mappings().first()
+    if g:
+        ctx["glucose"] = f"{g['value']:.1f} mmol/L（{g['d']}，{g['meal_context'] or '未标注'}）"
+
+    # 近7天步数均值
+    steps = db.execute(text("""
+        SELECT ROUND(AVG(steps)) AS avg_steps
+        FROM activity_records
+        WHERE user_id=:uid AND activity_date >= CURRENT_DATE - INTERVAL '7 days'
+          AND steps > 0
+    """), {"uid": uid}).scalar()
+    if steps:
+        ctx["steps"] = f"近7天均 {int(steps)} 步/天"
+
+    # 最近评估 TTM 阶段
+    assess = db.execute(text("""
+        SELECT pipeline_result->>'stage_decision' AS sd,
+               pipeline_result->>'profile_summary' AS ps
+        FROM assessment_assignments
+        WHERE student_id=:uid AND status='completed' AND pipeline_result IS NOT NULL
+        ORDER BY completed_at DESC LIMIT 1
+    """), {"uid": uid}).mappings().first()
+    if assess and assess["ps"]:
+        import json as _json
+        try:
+            ps = _json.loads(assess["ps"])
+            stage = ps.get("current_stage") or ps.get("ttm_stage") or ""
+            if stage:
+                ctx["ttm_stage"] = stage
+        except Exception:
+            pass
+
+    # ── 构建 Prompt ───────────────────────────────────
+    data_lines = []
+    if "weight" in ctx:      data_lines.append(f"体重：{ctx['weight']}")
+    if "glucose" in ctx:     data_lines.append(f"血糖：{ctx['glucose']}")
+    if "steps" in ctx:       data_lines.append(f"运动：{ctx['steps']}")
+    if "ttm_stage" in ctx:   data_lines.append(f"行为阶段：{ctx['ttm_stage']}")
+
+    if not data_lines:
+        data_lines = ["暂无近期健康记录"]
+
+    data_str = "\n".join(data_lines)
+    prompt = (
+        f"你是健康成长学员 {name} 的助手。请根据以下近期健康数据，"
+        f"帮 {name} 起草一段简短的消息发给自己的教练（不超过150字），"
+        f"汇报近况、提出一两个问题或请求建议。语气自然、真诚。\n\n"
+        f"近期数据：\n{data_str}\n\n"
+        f"只输出消息正文，不要任何解释前缀。"
+    )
+
+    draft = ""
+
+    # 尝试调用 Ollama
+    try:
+        import httpx
+        resp = httpx.post(
+            "http://ollama:11434/api/generate",
+            json={"model": "qwen3-coder:latest", "prompt": prompt, "stream": False},
+            timeout=15,
+        )
+        if resp.status_code == 200:
+            draft = resp.json().get("response", "").strip()
+    except Exception as e:
+        logger.warning(f"[ai-draft] Ollama unavailable: {e}")
+
+    # 降级：模板草稿
+    if not draft:
+        parts = [f"教练你好！我是 {name}。"]
+        if "weight" in ctx:
+            parts.append(f"最近体重 {ctx['weight']}。")
+        if "glucose" in ctx:
+            parts.append(f"血糖 {ctx['glucose']}，想了解是否需要调整饮食？")
+        if "steps" in ctx:
+            parts.append(f"运动方面{ctx['steps']}，请问强度是否合适？")
+        if not ctx:
+            parts.append("最近想和您汇报一下近期的健康情况，方便时希望能聊聊。")
+        draft = "".join(parts)
+
+    return {
+        "draft": draft,
+        "context": ctx,
+        "source": "ollama" if "ollama" in draft.lower() or len(draft) > 50 else "template",
+    }

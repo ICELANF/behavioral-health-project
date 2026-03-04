@@ -218,6 +218,35 @@ async def get_my_pending_assignments(
     return {"assignments": result}
 
 
+@router.get("/my-all")
+async def get_all_my_assignments(
+    db: Session = Depends(get_db),
+    current_user=Depends(get_current_user),
+):
+    """学员查看自己所有评估任务（不限状态，包括已完成）"""
+    assignments = db.query(AssessmentAssignment).filter(
+        AssessmentAssignment.student_id == current_user.id,
+    ).order_by(AssessmentAssignment.created_at.desc()).all()
+
+    result = []
+    for a in assignments:
+        coach = db.query(User).filter(User.id == a.coach_id).first()
+        scales_data = a.scales
+        if isinstance(scales_data, list):
+            scales_data = {"scales": scales_data, "question_preset": None, "question_ids": None}
+        result.append({
+            "id": a.id,
+            "status": a.status,
+            "coach_name": coach.full_name or coach.username if coach else "未知教练",
+            "scales": scales_data,
+            "note": a.note,
+            "created_at": a.created_at.isoformat() if a.created_at else None,
+            "completed_at": a.completed_at.isoformat() if a.completed_at else None,
+        })
+
+    return {"assignments": result}
+
+
 @router.post("/{assignment_id}/submit")
 async def submit_assessment(
     assignment_id: int,
@@ -782,6 +811,7 @@ async def get_assignment_result(
         "assignment_id": assignment_id,
         "status": assignment.status,
         "coach_name": coach.full_name or coach.username if coach else "未知",
+        "completed_at": assignment.completed_at.isoformat() if assignment.completed_at else None,
         "pushed_at": assignment.pushed_at.isoformat() if assignment.pushed_at else None,
         "goals": goals,
         "prescriptions": prescriptions,

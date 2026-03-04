@@ -21,7 +21,13 @@ from sqlalchemy import text as sa_text
 from loguru import logger
 
 from core.database import get_db
-from api.dependencies import get_current_user
+from core.models import UserRole
+from api.dependencies import get_current_user, require_roles
+
+# 角色常量（复用）
+_REVIEW_ROLES  = require_roles([UserRole.COACH, UserRole.SUPERVISOR, UserRole.MASTER, UserRole.ADMIN])
+_SUPERVISOR_ROLES = require_roles([UserRole.SUPERVISOR, UserRole.MASTER, UserRole.ADMIN])
+_MASTER_ROLES  = require_roles([UserRole.MASTER, UserRole.ADMIN])
 
 router = APIRouter(prefix="/api/v1", tags=["Health Review & WeRun"])
 
@@ -58,7 +64,7 @@ async def get_review_queue(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=50),
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_REVIEW_ROLES),
 ):
     """获取健康数据审核队列（按角色过滤）"""
     try:
@@ -128,7 +134,7 @@ async def get_review_queue(
 async def approve_review(
     review_id: int,
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_REVIEW_ROLES),
 ):
     """审核通过 — AI分析内容直接推送给学员"""
     return await _update_review_status(review_id, "approved", None, db, current_user)
@@ -139,7 +145,7 @@ async def reject_review(
     review_id: int,
     body: ReviewDecisionRequest = None,
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_REVIEW_ROLES),
 ):
     """退回 — 标记为 rejected，说明原因"""
     note = body.coach_note if body else None
@@ -151,7 +157,7 @@ async def revise_review(
     review_id: int,
     body: ReviewDecisionRequest,
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_REVIEW_ROLES),
 ):
     """修订后发送 — 更新 final_content 然后标记为 approved"""
     try:
@@ -294,7 +300,7 @@ async def sync_werun_data(
 @router.get("/supervisor/dashboard")
 async def supervisor_dashboard(
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_SUPERVISOR_ROLES),
 ):
     """督导工作台概览"""
     try:
@@ -333,7 +339,7 @@ async def supervisor_dashboard(
 @router.get("/supervisor/coaches")
 async def supervisor_coaches(
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_SUPERVISOR_ROLES),
 ):
     """督导管理的教练列表"""
     try:
@@ -351,7 +357,7 @@ async def supervisor_coaches(
 @router.get("/master/dashboard")
 async def master_dashboard(
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_MASTER_ROLES),
 ):
     """专家工作台概览"""
     try:
@@ -391,7 +397,7 @@ async def master_dashboard(
 async def knowledge_items(
     status: Optional[str] = Query("pending_review"),
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_MASTER_ROLES),
 ):
     """知识库条目列表（待审核）"""
     try:
@@ -411,7 +417,7 @@ async def knowledge_items(
 async def publish_knowledge(
     item_id: int,
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_MASTER_ROLES),
 ):
     return {"success": True, "message": "已发布", "id": item_id}
 
@@ -420,7 +426,7 @@ async def publish_knowledge(
 async def reject_knowledge(
     item_id: int,
     db: Session = Depends(get_db),
-    current_user: Any = Depends(get_current_user),
+    current_user: Any = Depends(_MASTER_ROLES),
 ):
     return {"success": True, "message": "已退回", "id": item_id}
 

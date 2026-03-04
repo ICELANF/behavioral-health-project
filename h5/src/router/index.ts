@@ -292,7 +292,31 @@ const router = createRouter({
       path: '/reflection',
       name: 'reflection',
       component: () => import('@/views/Reflection.vue'),
-      meta: { title: '我的反思' }
+      meta: { title: '成长感悟' }
+    },
+    {
+      path: '/case-stories',
+      name: 'case-stories',
+      component: () => import('@/views/CaseStories.vue'),
+      meta: { title: '成长案例' }
+    },
+    {
+      path: '/medical',
+      name: 'medical',
+      component: () => import('@/views/MedicalRecord.vue'),
+      meta: { title: '理性就医' }
+    },
+    {
+      path: '/trajectory',
+      name: 'trajectory',
+      component: () => import('@/views/TrajectoryView.vue'),
+      meta: { title: '我的行为轨迹' }
+    },
+    {
+      path: '/become-sharer',
+      name: 'become-sharer',
+      component: () => import('@/views/BecomeSharer.vue'),
+      meta: { title: '成为分享者' }
     },
     {
       path: '/promotion-progress',

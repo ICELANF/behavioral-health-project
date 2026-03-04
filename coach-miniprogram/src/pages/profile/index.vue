@@ -131,6 +131,9 @@
 import { ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { httpReq as http } from '@/api/request'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
 
 const userInfo = ref<any>({ name: '教练', role_label: '健康教练', username: '' })
 const showEditModal = ref(false)
@@ -197,17 +200,21 @@ async function saveProfile() {
       method: 'PUT',
       data: { full_name: name },
     })
-    userInfo.value.name = res.full_name || name
-    // 同步更新本地缓存
-    const stored = uni.getStorageSync('user_info')
-    if (stored) {
-      const u = typeof stored === 'string' ? JSON.parse(stored) : stored
-      u.full_name = res.full_name || name
-      uni.setStorageSync('user_info', JSON.stringify(u))
-    }
+    const savedName: string = (res && res.full_name) ? res.full_name : name
+    userInfo.value.name = savedName
+    // 同步更新本地缓存（非关键，单独容错）
+    try {
+      const stored = uni.getStorageSync('user_info')
+      if (stored) {
+        const u = typeof stored === 'string' ? JSON.parse(stored) : stored
+        u.full_name = savedName
+        uni.setStorageSync('user_info', JSON.stringify(u))
+      }
+    } catch (e2) { console.warn('[profile] storage sync:', e2) }
     showEditModal.value = false
     uni.showToast({ title: '保存成功', icon: 'success' })
-  } catch {
+  } catch (e) {
+    console.error('[profile] saveProfile error:', e)
     uni.showToast({ title: '保存失败', icon: 'none' })
   } finally {
     saving.value = false
@@ -232,8 +239,7 @@ function doLogout() {
     content: '退出后需要重新登录',
     success: (res) => {
       if (res.confirm) {
-        uni.removeStorageSync('access_token')
-        uni.removeStorageSync('userInfo')
+        userStore.logout()               // 清除 access_token / refresh_token / user_info
         uni.reLaunch({ url: '/pages/auth/login' })
       }
     }

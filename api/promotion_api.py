@@ -431,6 +431,102 @@ async def list_promotion_applications(
         return {"applications": [], "total": 0, "note": str(e)}
 
 
+class SharerApplyRequest(BaseModel):
+    statement: str
+    target_role: Optional[str] = "sharer"
+    dim_ready: Optional[int] = 0
+
+
+async def _ensure_sharer_columns():
+    """确保 promotion_applications 表存在且含 statement / dim_ready 列"""
+    try:
+        from core.database import get_async_db_session
+        from sqlalchemy import text as sa_text
+        async with get_async_db_session() as db:
+            await db.execute(sa_text("""
+                CREATE TABLE IF NOT EXISTS promotion_applications (
+                    id SERIAL PRIMARY KEY,
+                    user_id INTEGER NOT NULL,
+                    from_role VARCHAR(50) DEFAULT 'grower',
+                    to_role VARCHAR(50) DEFAULT 'sharer',
+                    status VARCHAR(20) DEFAULT 'pending',
+                    statement TEXT DEFAULT '',
+                    dim_ready INTEGER DEFAULT 0,
+                    review_comment TEXT DEFAULT '',
+                    reviewer_id INTEGER,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    reviewed_at TIMESTAMPTZ
+                )
+            """))
+            # 兼容旧表：补列
+            for col_sql in [
+                "ALTER TABLE promotion_applications ADD COLUMN IF NOT EXISTS statement TEXT DEFAULT ''",
+                "ALTER TABLE promotion_applications ADD COLUMN IF NOT EXISTS dim_ready INTEGER DEFAULT 0",
+            ]:
+                await db.execute(sa_text(col_sql))
+            await db.commit()
+    except Exception:
+        pass
+
+
+@router.post("/sharer-apply")
+async def sharer_apply(
+    body: SharerApplyRequest,
+    current_user=Depends(get_current_user),
+):
+    """提交成为分享者的申请 — 存入 promotion_applications，待教练审核"""
+    await _ensure_sharer_columns()
+    try:
+        from core.database import get_async_db_session
+        from sqlalchemy import text as sa_text
+        async with get_async_db_session() as db:
+            await db.execute(sa_text("""
+                INSERT INTO promotion_applications
+                    (user_id, from_role, to_role, status, statement, dim_ready, created_at)
+                VALUES
+                    (:uid, 'GROWER', 'SHARER', 'pending', :stmt, :dim, NOW())
+            """), {"uid": current_user.id, "stmt": body.statement.strip(), "dim": body.dim_ready or 0})
+            await db.commit()
+        return {"success": True, "message": "申请已提交，等待教练审核"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/my-history")
+async def my_application_history(
+    current_user=Depends(get_current_user),
+):
+    """获取当前用户自己的晋级申请历史"""
+    await _ensure_sharer_columns()
+    try:
+        from core.database import get_async_db_session
+        from sqlalchemy import text as sa_text
+        async with get_async_db_session() as db:
+            r = await db.execute(sa_text("""
+                SELECT id, from_role, to_role, status, statement,
+                       created_at, reviewed_at, review_comment
+                FROM promotion_applications
+                WHERE user_id = :uid
+                ORDER BY created_at DESC
+                LIMIT 20
+            """), {"uid": current_user.id})
+            items = [
+                {
+                    "id": row["id"],
+                    "from_role": (row.get("from_role") or "grower").lower(),
+                    "to_role": (row.get("to_role") or "sharer").lower(),
+                    "status": row.get("status", "pending"),
+                    "applied_at": str(row.get("created_at", "")),
+                    "reviewed_at": str(row["reviewed_at"]) if row.get("reviewed_at") else None,
+                    "review_comment": row.get("review_comment", ""),
+                }
+                for row in r.mappings()
+            ]
+        return {"items": items, "total": len(items)}
+    except Exception:
+        return {"items": [], "total": 0}
+
+
 class ReviewDecision(BaseModel):
     approved: bool
     reason: Optional[str] = ""
