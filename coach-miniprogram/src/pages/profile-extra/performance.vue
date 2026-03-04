@@ -61,20 +61,25 @@ const today = ref<any>({})
 const refreshing = ref(false)
 
 async function loadData() {
-  try {
-    const dash = await http<any>('/api/v1/coach/dashboard')
-    stats.value = {
-      student_count: dash?.today_stats?.total_students || (dash?.students || []).length || 0,
-      total_interventions: dash?.today_stats?.total_interventions || 0,
-      assessments_reviewed: dash?.today_stats?.assessments_reviewed || 0,
-      total_days: dash?.coach?.total_days || 0,
-    }
-    today.value = {
-      messages: dash?.today_stats?.messages_sent || 0,
-      pending: dash?.today_stats?.pending_followups || 0,
-      alert_count: dash?.today_stats?.alert_students || 0,
-    }
-  } catch (e) { console.warn('[profile-extra/performance] dashboard:', e) }
+  const [perfRes, dashRes] = await Promise.allSettled([
+    http<any>('/api/v1/coach/performance'),
+    http<any>('/api/v1/coach/dashboard'),
+  ])
+  const perf = perfRes.status === 'fulfilled' ? perfRes.value : {}
+  const dash = dashRes.status === 'fulfilled' ? dashRes.value : {}
+  const riskDist = perf?.risk_distribution || {}
+  const high = (riskDist.high || 0) + (riskDist.critical || 0)
+  stats.value = {
+    student_count: perf?.total_students || dash?.today_stats?.total_students || (dash?.students || []).length || 0,
+    total_interventions: Math.round((perf?.avg_adherence_rate || 0) * (perf?.total_students || 0)) || dash?.today_stats?.total_interventions || 0,
+    assessments_reviewed: dash?.today_stats?.assessments_reviewed || 0,
+    total_days: dash?.coach?.total_days || 0,
+  }
+  today.value = {
+    messages: dash?.today_stats?.messages_sent || 0,
+    pending: dash?.today_stats?.pending_followups || 0,
+    alert_count: high || dash?.today_stats?.alert_students || 0,
+  }
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }

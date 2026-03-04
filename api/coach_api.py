@@ -2165,3 +2165,72 @@ def _guess_pack(scales: list, packs: dict) -> str:
         if score > best_score:
             best, best_score = pk, score
     return best
+
+
+# ─────────────────────────────────────────────────────────────
+#  Analytics: 教练数据分析面板支撑端点
+# ─────────────────────────────────────────────────────────────
+
+@router.get("/analytics/weekly-trend")
+def coach_analytics_weekly_trend(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """近7天每日微行动完成数（教练名下学员合计）"""
+    from sqlalchemy import text as sa_text
+    try:
+        rows = db.execute(sa_text("""
+            SELECT DATE(mal.completed_at) AS day, COUNT(*) AS cnt
+            FROM micro_action_logs mal
+            JOIN micro_action_tasks mat ON mat.id = mal.task_id
+            JOIN users u ON u.id = mat.user_id
+            WHERE u.coach_id = :coach_id
+              AND mal.completed_at >= NOW() - INTERVAL '7 days'
+            GROUP BY day ORDER BY day
+        """), {"coach_id": current_user.id}).fetchall()
+
+        # 建 7 天索引，缺的天填 0
+        today = datetime.utcnow().date()
+        daily: dict[str, int] = {}
+        for i in range(7):
+            d = (today - timedelta(days=6 - i)).isoformat()
+            daily[d] = 0
+        for r in rows:
+            k = str(r[0])
+            if k in daily:
+                daily[k] = int(r[1])
+
+        labels = ["一", "二", "三", "四", "五", "六", "日"]
+        trend = []
+        for idx, (date_str, cnt) in enumerate(daily.items()):
+            dow = datetime.fromisoformat(date_str).weekday()   # 0=Mon
+            trend.append({"date": date_str, "label": labels[dow], "count": cnt})
+        return {"trend": trend}
+    except Exception as e:
+        logger.warning(f"[coach/analytics/weekly-trend] {e}")
+        return {"trend": [{"date": "", "label": l, "count": 0} for l in ["一", "二", "三", "四", "五", "六", "日"]]}
+
+
+@router.get("/analytics/push-funnel")
+def coach_analytics_push_funnel(
+    db: Session = Depends(get_db),
+    current_user=Depends(require_coach_or_admin),
+):
+    """推送漏斗：已发送 / 已通过 / 已完成 数量"""
+    from sqlalchemy import text as sa_text
+    try:
+        r = db.execute(sa_text("""
+            SELECT
+                COUNT(*) FILTER (WHERE status IN ('pending','approved','completed','rejected')) AS sent,
+                COUNT(*) FILTER (WHERE status IN ('approved','completed'))                     AS approved,
+                COUNT(*) FILTER (WHERE status = 'completed')                                  AS completed
+            FROM coach_schema.coach_push_queue
+            WHERE coach_id = :coach_id
+        """), {"coach_id": current_user.id}).fetchone()
+        sent      = int(r[0] or 0) if r else 0
+        approved  = int(r[1] or 0) if r else 0
+        completed = int(r[2] or 0) if r else 0
+        return {"sent": sent, "approved": approved, "completed": completed}
+    except Exception as e:
+        logger.warning(f"[coach/analytics/push-funnel] {e}")
+        return {"sent": 0, "approved": 0, "completed": 0}

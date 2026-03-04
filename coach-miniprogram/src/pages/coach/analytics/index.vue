@@ -153,12 +153,17 @@ const workloadItems = computed(() => {
   ]
 })
 
+const weeklyTrend = ref<{date:string;label:string;count:number}[]>([])
 const activityTrend = computed(() => {
-  const days = ['一', '二', '三', '四', '五', '六', '日']
-  return days.map((d, i) => {
-    const val = Math.floor(Math.random() * 80) + 20
-    return { label: d, height: val * 2, color: i === new Date().getDay() - 1 ? '#3498DB' : '#D5E8D4' }
-  })
+  const todayDow = (new Date().getDay() + 6) % 7  // 0=Mon
+  const source = weeklyTrend.value.length === 7 ? weeklyTrend.value
+    : ['一','二','三','四','五','六','日'].map(l => ({ date: '', label: l, count: 0 }))
+  const maxCnt = Math.max(...source.map(d => d.count), 1)
+  return source.map((d, i) => ({
+    label: d.label,
+    height: Math.round((d.count / maxCnt) * 160) + 20,
+    color: i === todayDow ? '#3498DB' : '#D5E8D4',
+  }))
 })
 
 const riskDistribution = computed(() => {
@@ -180,8 +185,10 @@ const ttmDistribution = computed(() => {
   const colors = ['#E74C3C', '#E67E22', '#F1C40F', '#3498DB', '#27AE60']
   const total = students.value.length || 1
   return stages.map((stage, i) => {
-    const count = students.value.filter(s => s.ttm_stage === stage || s.stage === stage).length
-    return { stage, count, percent: Math.round(count / total * 100) || (i === 3 ? 40 : 15), color: colors[i] }
+    const count = students.value.filter(s =>
+      s.ttm_stage === stage || s.stage === stage || s.stage_label === stage
+    ).length
+    return { stage, count, percent: Math.round(count / total * 100), color: colors[i] }
   })
 })
 
@@ -189,12 +196,14 @@ const actionCompleted = ref(0)
 const actionTotal = ref(0)
 const actionRate = computed(() => actionTotal.value > 0 ? Math.round(actionCompleted.value / actionTotal.value * 100) : 0)
 
+const funnelRaw = ref({ sent: 0, approved: 0, completed: 0 })
 const funnelData = computed(() => {
-  const sent = 10, approved = 8, completed = 5
+  const { sent, approved, completed } = funnelRaw.value
+  const base = sent || 1
   return [
     { label: '已发送', value: sent, percent: 100, color: '#3498DB' },
-    { label: '已通过', value: approved, percent: Math.round(approved / sent * 100), color: '#27AE60' },
-    { label: '已完成', value: completed, percent: Math.round(completed / sent * 100), color: '#2ECC71' },
+    { label: '已通过', value: approved, percent: Math.round(approved / base * 100), color: '#27AE60' },
+    { label: '已完成', value: completed, percent: Math.round(completed / base * 100), color: '#2ECC71' },
   ]
 })
 
@@ -203,7 +212,7 @@ const activityRanking = computed(() => {
   return students.value
     .map(s => ({
       name: s.name || s.full_name || '未知',
-      score: s.activity_score || s.micro_action_count || Math.floor(Math.random() * 20),
+      score: s.activity_score || s.micro_action_7d?.completed || s.micro_action_count || 0,
       percent: 0,
     }))
     .sort((a, b) => b.score - a.score)
@@ -228,6 +237,14 @@ async function loadData() {
     actionTotal.value = res2.total || 0
     actionCompleted.value = res2.completed || 0
   } catch (e) { console.warn('[coach/analytics/index] today:', e) }
+  try {
+    const trend = await http<any>('/api/v1/coach/analytics/weekly-trend')
+    if (Array.isArray(trend?.trend)) weeklyTrend.value = trend.trend
+  } catch { /* silent */ }
+  try {
+    const funnel = await http<any>('/api/v1/coach/analytics/push-funnel')
+    if (funnel) funnelRaw.value = { sent: funnel.sent || 0, approved: funnel.approved || 0, completed: funnel.completed || 0 }
+  } catch { /* silent */ }
 }
 
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }

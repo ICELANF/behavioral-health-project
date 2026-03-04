@@ -325,15 +325,25 @@ async def supervisor_dashboard(
                 "SELECT COUNT(*) FROM health_review_queue WHERE reviewer_role='supervisor' AND status='approved' AND reviewed_at >= CURRENT_DATE"
             )).scalar() or 0
 
+        promo_pending = 0
+        try:
+            promo_pending = db.execute(sa_text("""
+                SELECT COUNT(*) FROM promotion_applications
+                WHERE review_stage='L2' AND status='pending'
+            """)).scalar() or 0
+        except Exception:
+            pass
+
         return {
             "coach_count": int(coach_count),
             "pending_review": int(pending),
             "high_risk_count": int(high_risk),
             "approved_today": int(approved_today),
+            "pending_promotion": int(promo_pending),
         }
     except Exception as e:
         logger.warning(f"[Supervisor] dashboard failed: {e}")
-        return {"coach_count": 0, "pending_review": 0, "high_risk_count": 0, "approved_today": 0}
+        return {"coach_count": 0, "pending_review": 0, "high_risk_count": 0, "approved_today": 0, "pending_promotion": 0}
 
 
 @router.get("/supervisor/coaches")
@@ -393,20 +403,37 @@ async def master_dashboard(
         return {"critical_count": 0, "ai_pending": 0, "knowledge_pending": 0, "reviewed_today": 0}
 
 
+def _ensure_knowledge_status_col(db: Session):
+    """按需补 review_status 列（首次调用时建列）"""
+    try:
+        db.execute(sa_text(
+            "ALTER TABLE knowledge_chunks ADD COLUMN IF NOT EXISTS "
+            "review_status VARCHAR(20) DEFAULT 'pending_review'"
+        ))
+        db.commit()
+    except Exception:
+        db.rollback()
+
+
 @router.get("/knowledge/items")
 async def knowledge_items(
     status: Optional[str] = Query("pending_review"),
     db: Session = Depends(get_db),
     current_user: Any = Depends(_MASTER_ROLES),
 ):
-    """知识库条目列表（待审核）"""
+    """知识库条目列表（按 review_status 过滤）"""
     try:
-        rows = db.execute(sa_text("""
-            SELECT kc.id, kc.title, kc.category, kc.created_at,
-                   'pending_review' AS status
+        _ensure_knowledge_status_col(db)
+        where = "WHERE kc.review_status = :status" if status and status != "all" else ""
+        params = {"status": status} if status and status != "all" else {}
+        rows = db.execute(sa_text(f"""
+            SELECT kc.id, kc.doc_title AS title, kc.domain_id AS category,
+                   kc.created_at, kc.review_status AS status
             FROM knowledge_chunks kc
-            LIMIT 20
-        """)).mappings().all()
+            {where}
+            ORDER BY kc.created_at DESC
+            LIMIT 50
+        """), params).mappings().all()
         return {"items": [dict(r) for r in rows], "total": len(rows)}
     except Exception as e:
         logger.warning(f"[Knowledge] items failed: {e}")
@@ -419,6 +446,42 @@ async def publish_knowledge(
     db: Session = Depends(get_db),
     current_user: Any = Depends(_MASTER_ROLES),
 ):
+    _ensure_knowledge_status_col(db)
+    # 更新 DB 状态
+    db.execute(sa_text(
+        "UPDATE knowledge_chunks SET review_status='published' WHERE id=:id"
+    ), {"id": item_id})
+    db.commit()
+
+    # 写入 Qdrant（失败不阻断）
+    try:
+        row = db.execute(sa_text(
+            "SELECT doc_title, content, domain_id FROM knowledge_chunks WHERE id=:id"
+        ), {"id": item_id}).fetchone()
+        if row:
+            import httpx
+            resp = httpx.post(
+                "http://localhost:11434/api/embeddings",
+                json={"model": "mxbai-embed-large:latest", "prompt": row[1] or row[0] or ""},
+                timeout=30,
+            )
+            vec = resp.json().get("embedding", [])
+            if vec:
+                from qdrant_client import QdrantClient
+                from qdrant_client.models import PointStruct
+                qc = QdrantClient(host="localhost", port=6333)
+                qc.upsert("bhp_knowledge", points=[PointStruct(
+                    id=item_id,
+                    vector=vec,
+                    payload={
+                        "title": row[0] or "",
+                        "category": row[2] or "",
+                        "source": "knowledge_chunks",
+                    },
+                )])
+    except Exception as e:
+        logger.warning(f"[Knowledge] qdrant upsert skipped: {e}")
+
     return {"success": True, "message": "已发布", "id": item_id}
 
 
@@ -428,6 +491,11 @@ async def reject_knowledge(
     db: Session = Depends(get_db),
     current_user: Any = Depends(_MASTER_ROLES),
 ):
+    _ensure_knowledge_status_col(db)
+    db.execute(sa_text(
+        "UPDATE knowledge_chunks SET review_status='rejected' WHERE id=:id"
+    ), {"id": item_id})
+    db.commit()
     return {"success": True, "message": "已退回", "id": item_id}
 
 

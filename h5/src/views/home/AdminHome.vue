@@ -120,8 +120,8 @@ const ROLE_COLORS: Record<string, string> = {
 }
 const ROLE_LABELS: Record<string, string> = {
   observer: '观察员', grower: '成长者', sharer: '分享者',
-  coach: '教练', promoter: '促进师', supervisor: '督导',
-  master: '大师', admin: '管理员',
+  coach: '行为健康教练', promoter: '行为健康促进师', supervisor: '行为健康促进师',
+  master: '行为健康大师', admin: '管理员',
 }
 
 function openAdminPortal() {
@@ -132,21 +132,21 @@ function openAdminPortal() {
 
 onMounted(async () => {
   const [statsRes, healthRes] = await Promise.allSettled([
-    api.get('/api/v1/admin/analytics/overview'),
-    api.get('/api/v1/admin/system-health'),
+    api.get('/api/v1/analytics/admin/overview'),
+    api.get('/api/v1/system/health'),
   ])
 
   if (statsRes.status === 'fulfilled') {
     const d = statsRes.value as any
     stats.value = {
       totalUsers: d.total_users ?? 0,
-      activeToday: d.active_today ?? 0,
+      activeToday: d.active_users ?? d.active_today ?? 0,
       newToday: d.new_today ?? 0,
-      alertCount: d.alert_count ?? 0,
+      alertCount: d.high_risk_count ?? d.alert_count ?? 0,
     }
 
-    // 角色分布
-    const dist = d.role_distribution || d.roles || {}
+    // 角色分布：后端返回 level_distribution（中文key）或 role_distribution
+    const dist = d.role_distribution || d.roles || d.level_distribution || {}
     const total = Object.values(dist).reduce((s: number, n: any) => s + (Number(n) || 0), 0) || 1
     roleDistribution.value = Object.entries(dist).map(([role, count]) => ({
       role,
@@ -159,7 +159,15 @@ onMounted(async () => {
 
   if (healthRes.status === 'fulfilled') {
     const d = healthRes.value as any
-    if (d.services) {
+    // 后端返回 {status, checks:{database,redis,route_modules}} 格式
+    if (d.checks) {
+      const statusMap: Record<string, string> = { healthy: 'ok', unhealthy: 'error', degraded: 'warn' }
+      healthItems.value = Object.entries(d.checks).map(([key, val]: [string, any]) => ({
+        label: ({ database: '数据库', redis: 'Redis', route_modules: '路由模块' } as any)[key] || key,
+        status: statusMap[String(val)] || (val === 'healthy' ? 'ok' : 'warn'),
+        statusText: val === 'healthy' ? '正常' : val === 'unhealthy' ? '异常' : '警告',
+      }))
+    } else if (d.services) {
       healthItems.value = (d.services || []).map((s: any) => ({
         label: s.name || s.label || '',
         status: s.status || 'ok',

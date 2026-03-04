@@ -466,7 +466,44 @@ async def run_agent(
     except Exception as e:
         logger.warning(f"SafetyPipeline input filter degraded: {e}")
 
-    output = _run_agent_task(req, tenant_ctx=tenant_ctx)
+    # ── coach_flywheel 专属处理: CoachCopilotAgent ──
+    if req.agent_type == "coach_flywheel":
+        try:
+            from core.agents.v4_agents import CoachCopilotAgent
+            from core.agents.base import AgentInput
+            _task_id = str(uuid.uuid4())[:8]
+            _copilot = CoachCopilotAgent()
+            _input = AgentInput(
+                user_id=int(req.user_id),
+                message=req.expected_output or req.context.get("query", "飞轮分析"),
+                context=req.context,
+            )
+            _result = _copilot.process(_input)
+            output = {
+                "task_id": _task_id,
+                "agent_id": "coach-flywheel-agent",
+                "agent_type": "coach_flywheel",
+                "output_type": "flywheel_coaching",
+                "confidence": _result.confidence if hasattr(_result, "confidence") else 0.85,
+                "suggestions": [
+                    {"id": f"fw-{_task_id}-{i}", "type": "flywheel", "priority": 8, "text": r}
+                    for i, r in enumerate(_result.recommendations if hasattr(_result, "recommendations") else [])
+                ],
+                "risk_flags": getattr(_result, "risk_flags", []),
+                "need_human_review": False,
+                "agents_used": ["coach_flywheel"],
+                "metadata": {
+                    "model_version": "coach-copilot-v4",
+                    "llm_enhanced": True,
+                    **(getattr(_result, "metadata", None) or {}),
+                },
+                "created_at": datetime.now().isoformat(),
+            }
+        except Exception as _e:
+            logger.warning(f"[coach_flywheel] CoachCopilotAgent failed: {_e}, using MasterAgent")
+            output = _run_agent_task(req, tenant_ctx=tenant_ctx)
+    else:
+        output = _run_agent_task(req, tenant_ctx=tenant_ctx)
 
     # ── SafetyPipeline L4: 输出过滤 ──
     try:
