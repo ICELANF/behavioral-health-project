@@ -175,3 +175,8 @@ curl http://localhost:8000/api/v1/system/agents/health
 5. docker-compose.yml 服务名是 app, 不是 bhp_v3_api
 6. docker-compose.app.yaml 默认不启动, 会抢占 80/8000 端口
 7. 复制命令时不要带 PS D:\...> 提示符前缀
+
+## 知识库规范
+
+所有KI文件的生成和校验必须遵循 `docs/BHP知识库建设及管理规则_完整版_v4.0.md`
+向量维度统一为 **1024维**（mxbai-embed-large:latest），不使用768维。
