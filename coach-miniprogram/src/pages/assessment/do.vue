@@ -108,7 +108,13 @@
       <view class="do-bottom-btns">
         <view class="do-btn do-btn-prev" v-if="canPrev" @tap="prevQuestion">← 上一题</view>
         <view class="do-btn do-btn-next" v-if="canNext" @tap="nextQuestion">下一题 →</view>
-        <view class="do-btn do-btn-submit" v-if="isLastQuestion && allAnswered" @tap="submitAssessment">提交评估 ✓</view>
+        <!-- 最后一题：始终显示提交按钮；有未答题时点击跳转到第一个未答题 -->
+        <view
+          class="do-btn"
+          :class="allAnswered ? 'do-btn-submit' : 'do-btn-submit-warn'"
+          v-if="isLastQuestion"
+          @tap="submitAssessment"
+        >{{ allAnswered ? '提交评估 ✓' : `提交 (还有${unansweredCount}题)` }}</view>
       </view>
     </view>
   </view>
@@ -164,6 +170,17 @@ const allAnswered = computed(() => {
     })
   })
   return total > 0 && answered >= total
+})
+
+const unansweredCount = computed(() => {
+  let count = 0
+  groups.value.forEach((g, gi) => {
+    g.questions.forEach((_: any, qi: number) => {
+      const v = answers[`${gi}_${qi}`]
+      if (v === undefined || v === null || v === '') count++
+    })
+  })
+  return count
 })
 
 const timerText = computed(() => {
@@ -310,6 +327,22 @@ function buildSubmitPayload(): Record<string, any> {
 }
 
 async function submitAssessment() {
+  // 有未答题：跳到第一题提示
+  if (!allAnswered.value) {
+    let found = false
+    for (let gi = 0; gi < groups.value.length && !found; gi++) {
+      for (let qi = 0; qi < groups.value[gi].questions.length && !found; qi++) {
+        const v = answers[`${gi}_${qi}`]
+        if (v === undefined || v === null || v === '') {
+          currentGroupIndex.value = gi
+          currentQuestionIndex.value = qi
+          found = true
+          uni.showToast({ title: `第${gi + 1}组第${qi + 1}题还没回答`, icon: 'none', duration: 2000 })
+        }
+      }
+    }
+    return
+  }
   uni.showModal({
     title: '确认提交',
     content: '提交后不可修改，确认提交评估？',
@@ -411,4 +444,5 @@ onUnmounted(() => { if (timerInterval) clearInterval(timerInterval) })
 .do-btn-prev { background: #F0F0F0; color: #5B6B7F; }
 .do-btn-next { background: #9B59B6; color: #fff; }
 .do-btn-submit { background: #27AE60; color: #fff; }
+.do-btn-submit-warn { background: #E65100; color: #fff; }
 </style>
