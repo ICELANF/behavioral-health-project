@@ -19,16 +19,37 @@
             <text class="wt-current-unit">BMI</text>
           </view>
           <view class="wt-current-item">
-            <text class="wt-current-val" style="color:#3498DB;">{{ latest.body_fat ?? '—' }}</text>
+            <text class="wt-current-val" style="color:#FFF8E1;">{{ latest.body_fat ?? '—' }}</text>
             <text class="wt-current-unit">% 体脂</text>
           </view>
         </view>
         <text class="wt-current-status" :style="{ color: bmiColor }">{{ bmiLabel }}</text>
       </view>
 
+      <!-- 穿戴设备同步（智能秤） -->
+      <view class="wt-device-card">
+        <text class="wt-device-title">📡 穿戴设备</text>
+        <view v-if="scaleDevice" class="wt-device-row" @tap="syncFromScale">
+          <text class="wt-device-icon-text">⚖️</text>
+          <view class="wt-device-info-col">
+            <text class="wt-device-name">{{ scaleDevice.manufacturer || '智能体重秤' }}</text>
+            <text class="wt-device-hint">{{ syncing ? '同步中…' : '点击同步体重·体成分数据' }}</text>
+          </view>
+          <text class="wt-device-arrow">{{ syncing ? '…' : '同步 ›' }}</text>
+        </view>
+        <view v-else class="wt-device-row wt-device-row--add" @tap="goDeviceBind">
+          <text class="wt-device-icon-text">＋</text>
+          <view class="wt-device-info-col">
+            <text class="wt-device-name">绑定智能体重秤</text>
+            <text class="wt-device-hint">支持小米体脂秤、PICOOC、Withings 等</text>
+          </view>
+          <text class="wt-device-arrow">›</text>
+        </view>
+      </view>
+
       <!-- 录入 -->
       <view class="wt-entry-card">
-        <text class="wt-entry-title">📝 录入数据</text>
+        <text class="wt-entry-title">📝 手动录入</text>
         <view class="wt-fields">
           <view class="wt-field">
             <text class="wt-field-label">体重 (kg) *</text>
@@ -66,8 +87,8 @@
               <text class="wt-hist-date">{{ formatDate(item.recorded_at || item.measured_at) }}</text>
             </view>
             <view class="wt-hist-right">
-              <text v-if="item.bmi" class="wt-hist-tag" :style="{ background: bmiBg(item.bmi) }">BMI {{ item.bmi?.toFixed(1) }}</text>
-              <text v-if="item.body_fat_percentage" class="wt-hist-tag" style="background:#EEF6FF; color:#3498DB;">体脂 {{ item.body_fat_percentage?.toFixed(1) }}%</text>
+              <text v-if="item.bmi" class="wt-hist-tag" :style="{ background: bmiBg(item.bmi), color: bmiTagColor(item.bmi) }">BMI {{ item.bmi?.toFixed(1) }}</text>
+              <text v-if="item.body_fat_percentage" class="wt-hist-tag" style="background:#E3F2FD; color:#1565C0;">体脂 {{ item.body_fat_percentage?.toFixed(1) }}%</text>
             </view>
           </view>
         </view>
@@ -77,10 +98,10 @@
       <!-- 体成分指标说明 -->
       <view class="wt-ref-card">
         <text class="wt-ref-title">📋 BMI 参考</text>
-        <view class="wt-ref-row"><view class="wt-ref-dot" style="background:#3498DB;"></view><text>&lt; 18.5 偏瘦</text></view>
+        <view class="wt-ref-row"><view class="wt-ref-dot" style="background:#1E88E5;"></view><text>&lt; 18.5 偏瘦</text></view>
         <view class="wt-ref-row"><view class="wt-ref-dot" style="background:#27AE60;"></view><text>18.5 — 23.9 正常</text></view>
-        <view class="wt-ref-row"><view class="wt-ref-dot" style="background:#E67E22;"></view><text>24.0 — 27.9 超重</text></view>
-        <view class="wt-ref-row"><view class="wt-ref-dot" style="background:#E74C3C;"></view><text>≥ 28.0 肥胖</text></view>
+        <view class="wt-ref-row"><view class="wt-ref-dot" style="background:#E65100;"></view><text>24.0 — 27.9 超重</text></view>
+        <view class="wt-ref-row"><view class="wt-ref-dot" style="background:#B71C1C;"></view><text>≥ 28.0 肥胖</text></view>
       </view>
 
       <view style="height:120rpx;"></view>
@@ -94,37 +115,74 @@ import { httpReq as http } from '@/api/request'
 
 const form = ref({ weight: '', height: '', body_fat: '', muscle_mass: '', visceral_fat: '' })
 const submitting = ref(false)
+const syncing = ref(false)
 const latest = ref<any>({})
 const history = ref<any[]>([])
+const scaleDevice = ref<any>(null)
 
 const bmiColor = computed(() => {
   const b = latest.value.bmi
-  if (!b) return '#8E99A4'
-  if (b < 18.5) return '#3498DB'
-  if (b < 24) return '#27AE60'
-  if (b < 28) return '#E67E22'
-  return '#E74C3C'
+  if (!b) return '#fff'
+  if (b < 18.5) return '#90CAF9'
+  if (b < 24)  return '#A5D6A7'
+  if (b < 28)  return '#FFCC80'
+  return '#EF9A9A'
 })
 const bmiLabel = computed(() => {
   const b = latest.value.bmi
   if (!b) return '—'
   if (b < 18.5) return '偏瘦'
-  if (b < 24) return '正常体重'
-  if (b < 28) return '超重'
+  if (b < 24)   return '正常体重'
+  if (b < 28)   return '超重'
   return '肥胖'
 })
 
 function bmiBg(bmi: number): string {
-  if (!bmi) return '#F5F6FA'
-  if (bmi < 18.5) return '#EEF6FF'
-  if (bmi < 24) return '#E8F8F0'
-  if (bmi < 28) return '#FFF4E6'
-  return '#FFF0ED'
+  if (!bmi)    return '#F5F6FA'
+  if (bmi < 18.5) return '#E3F2FD'
+  if (bmi < 24)   return '#E8F5E9'
+  if (bmi < 28)   return '#FFF3E0'
+  return '#FFEBEE'
+}
+function bmiTagColor(bmi: number): string {
+  if (!bmi)    return '#8E99A4'
+  if (bmi < 18.5) return '#1565C0'
+  if (bmi < 24)   return '#2E7D32'
+  if (bmi < 28)   return '#E65100'
+  return '#B71C1C'
 }
 
 function formatDate(t: string): string {
   if (!t) return ''
   return new Date(t).toLocaleDateString('zh-CN', { month:'numeric', day:'numeric' })
+}
+
+async function loadDevices() {
+  try {
+    const res = await http<any>('/api/v1/devices')
+    const devs: any[] = res.devices || res.items || (Array.isArray(res) ? res : [])
+    scaleDevice.value = devs.find(d => d.device_type === 'smart_scale' && d.status === 'active')
+      ?? devs.find(d => d.device_type === 'smart_scale')
+      ?? null
+  } catch { /* silent */ }
+}
+
+async function syncFromScale() {
+  if (!scaleDevice.value || syncing.value) return
+  syncing.value = true
+  try {
+    await http(`/api/v1/devices/${scaleDevice.value.device_id}/sync`, { method: 'PUT', data: {} })
+    uni.showToast({ title: '同步成功', icon: 'success' })
+    await loadData()
+  } catch {
+    uni.showToast({ title: '同步失败，请检查设备连接', icon: 'none' })
+  } finally {
+    syncing.value = false
+  }
+}
+
+function goDeviceBind() {
+  uni.navigateTo({ url: '/pages/health/device-bind' })
 }
 
 async function loadData() {
@@ -136,7 +194,7 @@ async function loadData() {
       const l = items[0]
       latest.value = {
         weight: l.weight?.toFixed(1),
-        bmi: l.bmi?.toFixed(1),
+        bmi:    l.bmi?.toFixed(1),
         body_fat: l.body_fat_percentage?.toFixed(1),
       }
     }
@@ -151,13 +209,10 @@ async function submitWeight() {
   if (submitting.value) return
   submitting.value = true
   try {
-    const payload: any = {
-      weight: w,
-      recorded_at: new Date().toISOString(),
-    }
-    if (form.value.height) payload.height = parseFloat(form.value.height)
-    if (form.value.body_fat) payload.body_fat_percentage = parseFloat(form.value.body_fat)
-    if (form.value.muscle_mass) payload.muscle_mass = parseFloat(form.value.muscle_mass)
+    const payload: any = { weight: w, recorded_at: new Date().toISOString() }
+    if (form.value.height)       payload.height = parseFloat(form.value.height)
+    if (form.value.body_fat)     payload.body_fat_percentage = parseFloat(form.value.body_fat)
+    if (form.value.muscle_mass)  payload.muscle_mass = parseFloat(form.value.muscle_mass)
     if (form.value.visceral_fat) payload.visceral_fat_level = parseInt(form.value.visceral_fat)
     await http('/api/v1/health-data/vitals', { method: 'POST', data: payload })
     form.value = { weight: '', height: '', body_fat: '', muscle_mass: '', visceral_fat: '' }
@@ -176,22 +231,33 @@ function goBack() {
   else uni.navigateTo({ url: '/pages/health/index' })
 }
 
-onMounted(() => loadData())
+onMounted(() => { loadData(); loadDevices() })
 </script>
 
 <style scoped>
-.wt-page { min-height: 100vh; background: #F5F6FA; }
-.wt-navbar { display: flex; align-items: center; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: linear-gradient(135deg, #1A5276 0%, #2980B9 100%); color: #fff; }
+.wt-page { min-height: 100vh; background: #F0F7FF; }
+.wt-navbar { display: flex; align-items: center; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: linear-gradient(135deg, #1565C0 0%, #1E88E5 100%); color: #fff; }
 .wt-back  { font-size: 40rpx; padding: 16rpx; }
 .wt-title { flex: 1; text-align: center; font-size: 34rpx; font-weight: 600; }
 .wt-scroll { height: calc(100vh - 180rpx); }
 
-.wt-current-card { margin: 24rpx; background: linear-gradient(135deg, #1A5276, #2980B9); border-radius: 20rpx; padding: 32rpx; color: #fff; }
+.wt-current-card { margin: 24rpx; background: linear-gradient(135deg, #1565C0, #1E88E5); border-radius: 20rpx; padding: 32rpx; color: #fff; }
 .wt-current-row  { display: flex; justify-content: space-around; margin-bottom: 16rpx; }
 .wt-current-item { text-align: center; }
 .wt-current-val  { display: block; font-size: 48rpx; font-weight: 700; }
 .wt-current-unit { display: block; font-size: 20rpx; opacity: 0.8; margin-top: 4rpx; }
 .wt-current-status { display: block; text-align: center; font-size: 26rpx; font-weight: 600; }
+
+/* 穿戴设备区 */
+.wt-device-card { margin: 0 24rpx 24rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
+.wt-device-title { display: block; font-size: 26rpx; font-weight: 600; color: #2C3E50; margin-bottom: 16rpx; }
+.wt-device-row { display: flex; align-items: center; gap: 16rpx; background: #E3F2FD; border-radius: 12rpx; padding: 20rpx; }
+.wt-device-row--add { background: #FFF3E0; }
+.wt-device-icon-text { font-size: 40rpx; flex-shrink: 0; }
+.wt-device-info-col { flex: 1; }
+.wt-device-name { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.wt-device-hint { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
+.wt-device-arrow { font-size: 28rpx; color: #E65100; font-weight: 700; flex-shrink: 0; }
 
 .wt-entry-card { margin: 0 24rpx 24rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
 .wt-entry-title { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; margin-bottom: 20rpx; }
@@ -199,8 +265,8 @@ onMounted(() => loadData())
 .wt-field { width: calc(50% - 8rpx); }
 .wt-field-label { display: block; font-size: 22rpx; color: #8E99A4; margin-bottom: 8rpx; }
 .wt-field-input { width: 100%; background: #F5F6FA; border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 26rpx; box-sizing: border-box; }
-.wt-submit-btn { margin-top: 20rpx; background: #2980B9; color: #fff; text-align: center; padding: 26rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }
-.wt-submit-btn--loading { background: #9EC4DB; }
+.wt-submit-btn { margin-top: 20rpx; background: #E65100; color: #fff; text-align: center; padding: 26rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }
+.wt-submit-btn--loading { background: #FFCC80; color: #E65100; }
 
 .wt-history-card { margin: 0 24rpx 24rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
 .wt-history-title { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; margin-bottom: 16rpx; }

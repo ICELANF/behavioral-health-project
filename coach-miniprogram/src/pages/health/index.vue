@@ -182,8 +182,8 @@ onMounted(() => loadData())
 </script>
 
 <style scoped>
-.hi-page { min-height: 100vh; background: #F5F6FA; }
-.hi-navbar { display: flex; align-items: center; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: linear-gradient(135deg, #27AE60 0%, #2ECC71 100%); color: #fff; }
+.hi-page { min-height: 100vh; background: #F0F7FF; }
+.hi-navbar { display: flex; align-items: center; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: linear-gradient(135deg, #1565C0 0%, #1E88E5 100%); color: #fff; }
 .hi-nav-back { font-size: 40rpx; padding: 16rpx; }
 .hi-nav-title { flex: 1; text-align: center; font-size: 34rpx; font-weight: 600; }
 .hi-nav-action { font-size: 26rpx; padding: 8rpx 16rpx; background: rgba(255,255,255,0.2); border-radius: 8rpx; }
@@ -192,7 +192,7 @@ onMounted(() => loadData())
 .hi-summary { margin: 24rpx; background: #fff; border-radius: 20rpx; padding: 24rpx; }
 .hi-sum-row { display: flex; gap: 16rpx; margin-bottom: 16rpx; }
 .hi-sum-row:last-child { margin-bottom: 0; }
-.hi-sum-item { flex: 1; background: #F8FFF8; border-radius: 16rpx; padding: 20rpx; display: flex; flex-direction: column; align-items: center; text-align: center; }
+.hi-sum-item { flex: 1; background: #F0F7FF; border-radius: 16rpx; padding: 20rpx; display: flex; flex-direction: column; align-items: center; text-align: center; }
 .hi-sum-icon  { font-size: 32rpx; margin-bottom: 8rpx; }
 .hi-sum-val   { font-size: 40rpx; font-weight: 700; color: #2C3E50; }
 .hi-sum-unit  { font-size: 18rpx; color: #8E99A4; }

@@ -604,7 +604,7 @@ async function loadGrower() {
   } catch (e) { console.warn('[home/index] today:', e) }
   try {
     const res = await http<any>('/api/v1/assessment-assignments/my-pending')
-    growerPendingAssess.value = (res.items || res.assignments || []).filter((a: any) => ['pending','assigned'].includes(a.status)).length
+    growerPendingAssess.value = (res.items || res.assignments || []).length
   } catch (e) { console.warn('[home/index] my-pending:', e) }
 }
 

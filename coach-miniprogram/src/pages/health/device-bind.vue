@@ -190,7 +190,7 @@ onMounted(() => loadDevices())
 
 <style scoped>
 .db-page { min-height: 100vh; background: #F5F6FA; }
-.db-navbar { display: flex; align-items: center; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: linear-gradient(135deg, #1B2631 0%, #2C3E50 100%); color: #fff; }
+.db-navbar { display: flex; align-items: center; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: linear-gradient(135deg, #1565C0 0%, #1E88E5 100%); color: #fff; }
 .db-back  { font-size: 40rpx; padding: 16rpx; }
 .db-title { flex: 1; text-align: center; font-size: 34rpx; font-weight: 600; }
 .db-scroll { height: calc(100vh - 180rpx); }
@@ -231,6 +231,6 @@ onMounted(() => loadDevices())
 .db-modal-actions { display: flex; gap: 20rpx; margin-top: 32rpx; }
 .db-modal-btn { flex: 1; text-align: center; padding: 26rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }
 .db-modal-btn--cancel  { background: #F0F0F0; color: #5B6B7F; }
-.db-modal-btn--confirm { background: #2C3E50; color: #fff; }
+.db-modal-btn--confirm { background: #E65100; color: #fff; }
 .db-modal-btn--loading { background: #8E99A4; }
 </style>

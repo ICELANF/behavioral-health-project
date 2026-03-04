@@ -12,7 +12,7 @@ import base64
 import time
 import asyncio
 from datetime import datetime, date, timedelta
-from typing import Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
 from fastapi import APIRouter, Depends, File, Form, UploadFile, HTTPException, Query
@@ -20,7 +20,6 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from loguru import logger
-from typing import Any, Dict, List
 
 from core.database import get_db, get_db_session
 from core.models import FoodAnalysis, DailyTask, TaskCheckin
@@ -37,7 +36,7 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".bmp"}
 
 FOOD_ANALYSIS_PROMPT = """你是一位专业营养师。请分析图片中的食物，以JSON格式返回：
-{
+{{
   "food_name": "食物名称，多个用逗号分隔",
   "calories": 估算总热量(kcal数字),
   "protein": 蛋白质(g数字),
@@ -45,11 +44,25 @@ FOOD_ANALYSIS_PROMPT = """你是一位专业营养师。请分析图片中的食
   "carbs": 碳水化合物(g数字),
   "fiber": 膳食纤维(g数字),
   "foods": [
-    {"name": "单个食物", "portion": "估算份量", "calories": 热量数字}
+    {{"name": "单个食物", "portion": "估算份量", "calories": 热量数字}}
   ],
   "advice": "针对该餐的营养建议，100字以内"
-}
-只返回JSON，不要其他文字。"""
+}}
+只返回JSON，不要其他文字。{cooking_hint}"""
+
+PACKAGED_FOOD_PROMPT = """你是一位专业营养师。请从图片中的食品营养成分表标签读取数值，以JSON格式返回：
+{{
+  "food_name": "产品名称（若可见）",
+  "calories": 每份或每100g热量(kcal数字),
+  "protein": 蛋白质(g数字),
+  "fat": 脂肪(g数字),
+  "carbs": 碳水化合物(g数字),
+  "fiber": 膳食纤维(g数字，若有),
+  "serving_size": "每份重量（如有）",
+  "source": "label",
+  "advice": "根据标签成分的营养建议，50字以内"
+}}
+数据来自标签，请精确读取，不要估算。只返回JSON，不要其他文字。"""
 
 
 def _parse_llm_response(text: str) -> dict:
@@ -380,56 +393,65 @@ class NutritionInfo(BaseModel):
 
 
 class FoodRecordRequest(BaseModel):
-    food_name:   str
-    meal_type:   Optional[str] = None     # 早餐|上午点心|午餐|下午点心|晚餐|夜宵
-    image_url:   Optional[str] = None
-    nutrition:   Optional[NutritionInfo] = None
-    recorded_at: Optional[str] = None     # ISO8601，不传则取服务器时间
+    food_name:       str
+    meal_type:       Optional[str] = None
+    image_url:       Optional[str] = None
+    nutrition:       Optional[NutritionInfo] = None
+    recorded_at:     Optional[str] = None
+    cooking_method:  Optional[str] = None
+    is_packaged:     bool = False
 
 
 @router.post("/analyze")
 async def analyze_food_image(
     image: UploadFile = File(...),
     meal_type: Optional[str] = Form(None),
+    cooking_method: Optional[str] = Form(None),
+    is_packaged: bool = Form(False),
     current_user: Any = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """
     食物图片 AI 分析（小程序 food/scan.vue 调用）
-    返回格式：{food_name, nutrition:{calories,carbs,protein,fat}, advice}
+    - is_packaged=true 时使用营养标签专用 Prompt，精确读取数值
+    - cooking_method 传入时告知 AI 烹饪方式以提升热量估算精度
+    返回：{food_name, nutrition:{calories,carbs,protein,fat,fiber}, advice, source}
     """
-    # 验证文件类型
     ext = os.path.splitext(image.filename or "photo.jpg")[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         ext = ".jpg"
-
     contents = await image.read()
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="图片不能超过 5MB")
 
-    # 保存图片
     ts = int(time.time())
-    short_uuid = uuid.uuid4().hex[:8]
-    filename = f"{current_user.id}_{ts}_{short_uuid}{ext}"
-    filepath = os.path.join(FOOD_IMAGE_DIR, filename)
-    with open(filepath, "wb") as f:
+    filename = f"{current_user.id}_{ts}_{uuid.uuid4().hex[:8]}{ext}"
+    with open(os.path.join(FOOD_IMAGE_DIR, filename), "wb") as f:
         f.write(contents)
     image_url = f"/api/static/uploads/food_images/{filename}"
 
-    # 调用 VLM
+    # 选择 Prompt
+    if is_packaged:
+        prompt = PACKAGED_FOOD_PROMPT
+    else:
+        cooking_hint = (
+            f"\n烹饪方式：{cooking_method}，请据此调整热量估算（如炸/煎会增加油脂吸收）。"
+            if cooking_method else ""
+        )
+        prompt = FOOD_ANALYSIS_PROMPT.format(cooking_hint=cooking_hint)
+
     parsed: dict = {}
     try:
         b64_data = base64.b64encode(contents).decode("utf-8")
         from core.vlm_service import VLMService
         vlm = VLMService()
-        result = await vlm.analyze_image(b64_data, FOOD_ANALYSIS_PROMPT, temperature=0.3)
+        result = await vlm.analyze_image(b64_data, prompt, temperature=0.3)
         raw_text = result.get("text", "")
         parsed = _parse_llm_response(raw_text) if raw_text else {}
-        logger.info(f"[Food/analyze] VLM provider: {result.get('provider')}")
+        logger.info(f"[Food/analyze] VLM provider: {result.get('provider')}, packaged={is_packaged}, cooking={cooking_method}")
     except Exception as e:
         logger.warning(f"[Food/analyze] VLM 不可用: {e}")
 
-    # 写入数据库
     try:
         record = FoodAnalysis(
             user_id=current_user.id,
@@ -443,6 +465,8 @@ async def analyze_food_image(
             advice=parsed.get("advice"),
             raw_response=json.dumps(parsed, ensure_ascii=False),
             meal_type=meal_type,
+            cooking_method=cooking_method,
+            is_packaged=is_packaged,
         )
         db.add(record)
         db.commit()
@@ -452,12 +476,16 @@ async def analyze_food_image(
         db.rollback()
 
     return {
-        "food_name": parsed.get("food_name") or "未能识别",
+        "food_name":     parsed.get("food_name") or "未能识别",
+        "cooking_method": cooking_method,
+        "is_packaged":   is_packaged,
+        "source":        "label" if is_packaged else "ai_estimate",
         "nutrition": {
             "calories": parsed.get("calories"),
             "carbs":    parsed.get("carbs"),
             "protein":  parsed.get("protein"),
             "fat":      parsed.get("fat"),
+            "fiber":    parsed.get("fiber"),
         },
         "advice":    parsed.get("advice") or "",
         "image_url": image_url,
@@ -487,6 +515,8 @@ async def save_food_record(
             carbs=nut.carbs,
             fiber=nut.fiber,
             meal_type=body.meal_type,
+            cooking_method=body.cooking_method,
+            is_packaged=body.is_packaged,
             advice=None,
             raw_response=None,
         )
@@ -570,3 +600,211 @@ async def food_diary(
         logger.warning(f"[Food/diary] query failed: {e}")
         return {"items": [], "date": target_date,
                 "total_calories": 0, "total_carbs": 0, "total_protein": 0, "total_fat": 0}
+
+
+# ─────────────────────────────────────────────────────────────
+# 热量平衡审计  GET /api/v1/food/balance
+# 算法优先级：
+#   TDEE = 经验法(体重变化+饮食记录) > Katch-McArdle(有体脂率) > Mifflin-St Jeor > 参考值
+#   EAT  = 设备直接值 > 步数公式 > 手动运动MET > 0
+# ─────────────────────────────────────────────────────────────
+
+def _calc_age(birth: Any) -> int:
+    if not birth:
+        return 35
+    if isinstance(birth, str):
+        birth = datetime.fromisoformat(birth.replace("Z", "+00:00"))
+    today = date.today()
+    return today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
+
+
+def _balance_label(balance: float) -> str:
+    if balance > 500:   return "显著盈余，建议增加运动"
+    if balance > 200:   return "轻微盈余"
+    if balance > -200:  return "基本平衡"
+    if balance > -500:  return "轻微亏缺"
+    return "显著亏缺，注意营养补充"
+
+
+MET_MAP = {
+    "walking": 3.5, "running": 8.3, "cycling": 6.8,
+    "swimming": 5.8, "strength": 3.5, "yoga": 2.5,
+    "dance": 4.8, "stairs": 8.0, "other": 4.0,
+}
+
+
+@router.get("/balance")
+async def food_energy_balance(
+    date_str: Optional[str] = Query(None, alias="date", description="YYYY-MM-DD，默认今日"),
+    window_days: int = Query(30, ge=7, le=90, description="经验TDEE计算窗口（天）"),
+    current_user: Any = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    当日热量平衡审计。
+
+    返回字段：
+    - intake: 今日饮食摄入汇总
+    - expenditure: {bmr, neat, eat, tef, total, eat_source}
+    - balance: 摄入 - 支出（正=盈余，负=亏缺）
+    - tdee_empirical: 经验TDEE（若有足够历史数据）
+    - confidence: low/medium/high
+    """
+    target_date = date_str or date.today().isoformat()
+
+    # ── 1. 今日摄入 ──────────────────────────────────────
+    intake_row = db.execute(text("""
+        SELECT COALESCE(SUM(calories), 0) AS cal,
+               COALESCE(SUM(carbs),    0) AS carbs,
+               COALESCE(SUM(protein),  0) AS protein,
+               COALESCE(SUM(fat),      0) AS fat
+        FROM food_analyses
+        WHERE user_id = :uid AND DATE(created_at) = :d
+    """), {"uid": current_user.id, "d": target_date}).mappings().first()
+    intake_cal = round(float(intake_row["cal"] or 0))
+
+    # ── 2. 用户体征 ───────────────────────────────────────
+    vital = db.execute(text("""
+        SELECT weight_kg, body_fat_percent, muscle_mass_kg
+        FROM vital_signs
+        WHERE user_id = :uid AND weight_kg IS NOT NULL
+        ORDER BY recorded_at DESC LIMIT 1
+    """), {"uid": current_user.id}).mappings().first()
+
+    profile   = getattr(current_user, "profile", None) or {}
+    weight    = float((vital and vital["weight_kg"]) or profile.get("weight") or 65)
+    body_fat  = float(vital["body_fat_percent"]) if vital and vital["body_fat_percent"] else None
+    height    = float(profile.get("height") or 170)
+    gender    = (getattr(current_user, "gender", None) or profile.get("gender", "male") or "male").lower()
+    age       = _calc_age(getattr(current_user, "date_of_birth", None))
+
+    # ── 3. BMR ───────────────────────────────────────────
+    if body_fat is not None:
+        lbm = weight * (1 - body_fat / 100)
+        bmr = round(370 + 21.6 * lbm)
+        bmr_method = "katch_mcardle"
+    elif weight and height and age:
+        if gender in ("male", "m", "男"):
+            bmr = round(10 * weight + 6.25 * height - 5 * age + 5)
+        else:
+            bmr = round(10 * weight + 6.25 * height - 5 * age - 161)
+        bmr_method = "mifflin_st_jeor"
+    else:
+        bmr = 1600 if gender in ("male", "m", "男") else 1300
+        bmr_method = "reference_value"
+
+    # ── 4. 经验 TDEE（体重趋势 + 饮食记录） ─────────────
+    window_start = (date.fromisoformat(target_date) - timedelta(days=window_days)).isoformat()
+
+    weight_pts = db.execute(text("""
+        SELECT DATE(recorded_at) AS d, AVG(weight_kg) AS w
+        FROM vital_signs
+        WHERE user_id = :uid AND weight_kg IS NOT NULL
+          AND DATE(recorded_at) BETWEEN :s AND :e
+        GROUP BY DATE(recorded_at) ORDER BY d
+    """), {"uid": current_user.id, "s": window_start, "e": target_date}).mappings().all()
+
+    intake_hist = db.execute(text("""
+        SELECT DATE(created_at) AS d, SUM(calories) AS cal
+        FROM food_analyses
+        WHERE user_id = :uid AND calories IS NOT NULL
+          AND DATE(created_at) BETWEEN :s AND :e
+        GROUP BY DATE(created_at) ORDER BY d
+    """), {"uid": current_user.id, "s": window_start, "e": target_date}).mappings().all()
+
+    empirical_tdee: Optional[float] = None
+    empirical_note = ""
+    if len(weight_pts) >= 3 and len(intake_hist) >= 7:
+        w0 = float(weight_pts[0]["w"])
+        w1 = float(weight_pts[-1]["w"])
+        span = (date.fromisoformat(str(weight_pts[-1]["d"])) -
+                date.fromisoformat(str(weight_pts[0]["d"]))).days
+        avg_intake = sum(float(r["cal"]) for r in intake_hist) / len(intake_hist)
+        if span > 0:
+            # 1kg 混合体组织 ≈ 7700 kcal
+            daily_energy_from_weight = (w1 - w0) * 7700 / span
+            empirical_tdee = avg_intake - daily_energy_from_weight
+            empirical_note = (
+                f"经验法：{len(intake_hist)}天饮食记录 + "
+                f"{len(weight_pts)}次体重测量，窗口{span}天"
+            )
+            logger.info(f"[Food/balance] empirical TDEE={empirical_tdee:.0f}, "
+                        f"avg_intake={avg_intake:.0f}, weight_delta={w1-w0:.2f}kg/{span}d")
+
+    # ── 5. 今日活动消耗（EAT） ────────────────────────────
+    act = db.execute(text("""
+        SELECT steps, calories_total, calories_active
+        FROM activity_records
+        WHERE user_id = :uid AND activity_date = :d
+        ORDER BY updated_at DESC LIMIT 1
+    """), {"uid": current_user.id, "d": target_date}).mappings().first()
+
+    eat = 0
+    eat_source = "none"
+    if act:
+        if act["calories_active"] and act["calories_active"] > 0:
+            eat = int(act["calories_active"])
+            eat_source = "device"
+        elif act["steps"] and act["steps"] > 0:
+            eat = round(act["steps"] * weight * 0.00065)
+            eat_source = "steps_formula"
+
+
+    # ── 6. NEAT + TEF ────────────────────────────────────
+    neat = round(bmr * 0.25)
+    tef  = round(intake_cal * 0.10)
+
+    # ── 7. 今日总支出 ─────────────────────────────────────
+    tdee_today = bmr + neat + eat + tef
+
+    # ── 8. 参考 TDEE（经验 > 公式）──────────────────────
+    ref_tdee = round(empirical_tdee) if (empirical_tdee and 800 < empirical_tdee < 5000) \
+               else round(bmr * 1.45)
+    ref_tdee_method = empirical_note if empirical_tdee else f"BMR({bmr_method})×1.45"
+
+    # ── 9. 平衡 ──────────────────────────────────────────
+    balance = intake_cal - tdee_today
+
+    # ── 10. 置信度 ────────────────────────────────────────
+    score = 0
+    if empirical_tdee:                   score += 40
+    if body_fat is not None:             score += 20
+    elif weight and height and age < 80: score += 10
+    if eat_source in ("device", "steps_formula"):  score += 20
+    elif eat_source == "manual_exercise_met":       score += 10
+    if len(intake_hist) >= 14:  score += 20
+    elif len(intake_hist) >= 7: score += 10
+    confidence = "high" if score >= 70 else "medium" if score >= 35 else "low"
+
+    return {
+        "date": target_date,
+        "intake": {
+            "calories": intake_cal,
+            "carbs":    round(float(intake_row["carbs"] or 0), 1),
+            "protein":  round(float(intake_row["protein"] or 0), 1),
+            "fat":      round(float(intake_row["fat"] or 0), 1),
+        },
+        "expenditure": {
+            "bmr":        bmr,
+            "bmr_method": bmr_method,
+            "neat":       neat,
+            "eat":        eat,
+            "eat_source": eat_source,
+            "tef":        tef,
+            "total":      tdee_today,
+        },
+        "tdee_reference":        ref_tdee,
+        "tdee_reference_method": ref_tdee_method,
+        "balance":       balance,
+        "balance_label": _balance_label(balance),
+        "confidence":    confidence,
+        "confidence_score": score,
+        "empirical": {
+            "available":      empirical_tdee is not None,
+            "tdee":           round(empirical_tdee) if empirical_tdee else None,
+            "note":           empirical_note,
+            "food_days":      len(intake_hist),
+            "weight_records": len(weight_pts),
+            "window_days":    window_days,
+        },
+    }

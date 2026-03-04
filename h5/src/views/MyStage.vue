@@ -92,17 +92,29 @@
           </div>
         </div>
 
-        <!-- 重新评估 -->
-        <van-button
-          type="primary"
-          block
-          round
-          plain
-          class="reassess-btn"
-          @click="$router.push('/behavior-assessment')"
-        >
-          重新评估
-        </van-button>
+        <!-- 快捷工具 -->
+        <div class="quick-tools">
+          <van-button
+            plain
+            round
+            size="small"
+            icon="edit"
+            class="quick-tool-btn"
+            @click="$router.push('/reflection')"
+          >
+            反思日志
+          </van-button>
+          <van-button
+            type="primary"
+            round
+            plain
+            size="small"
+            class="quick-tool-btn"
+            @click="$router.push('/behavior-assessment')"
+          >
+            重新评估
+          </van-button>
+        </div>
       </template>
 
       <!-- 未评估 -->
@@ -620,8 +632,14 @@ onMounted(() => {
   font-size: $font-size-sm;
 }
 
-.reassess-btn {
+.quick-tools {
+  display: flex;
+  gap: 10px;
   margin-top: $spacing-lg;
+  flex-wrap: wrap;
+}
+.quick-tool-btn {
+  flex: 1;
 }
 
 .empty-state {

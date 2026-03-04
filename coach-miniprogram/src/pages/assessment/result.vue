@@ -196,7 +196,7 @@ async function shareToCoach() {
   if (!assignmentId) {
     try {
       const res = await http<any>('/api/v1/assessment-assignments/my-pending')
-      const items = res.items || (Array.isArray(res) ? res : [])
+      const items = res.assignments || res.items || (Array.isArray(res) ? res : [])
       assignmentId = items[0]?.id
     } catch (e) { console.warn('[assessment/result] shareToCoach fetch:', e) }
   }

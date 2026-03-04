@@ -42,6 +42,27 @@
         <text style="color:#27AE60;">点击同步</text>
       </view>
 
+      <!-- 穿戴设备（手表/手环）同步 -->
+      <view class="ex-device-card">
+        <text class="ex-device-title">📡 穿戴设备</text>
+        <view v-if="watchDevice" class="ex-device-row" @tap="syncFromWatch">
+          <text class="ex-device-icon-text">{{ watchDevice.device_type === 'smartwatch' ? '⌚' : '📿' }}</text>
+          <view class="ex-device-info-col">
+            <text class="ex-device-name">{{ watchDevice.manufacturer || '智能手表/手环' }}</text>
+            <text class="ex-device-hint">{{ syncingWatch ? '同步中…' : '点击同步运动·心率·睡眠数据' }}</text>
+          </view>
+          <text class="ex-device-arrow">{{ syncingWatch ? '…' : '同步 ›' }}</text>
+        </view>
+        <view v-else class="ex-device-row ex-device-row--add" @tap="goDeviceBind">
+          <text class="ex-device-icon-text">＋</text>
+          <view class="ex-device-info-col">
+            <text class="ex-device-name">绑定智能手表 / 手环</text>
+            <text class="ex-device-hint">支持 Apple Watch、华为、小米手环、Fitbit 等</text>
+          </view>
+          <text class="ex-device-arrow">›</text>
+        </view>
+      </view>
+
       <!-- 手动录入运动 -->
       <view class="ex-entry-card">
         <text class="ex-entry-title">🏃 手动录入运动</text>
@@ -111,6 +132,8 @@ const todayCalories = ref<number|null>(null)
 const todayMinutes = ref<number|null>(null)
 const history = ref<any[]>([])
 const werunAuthed = ref(false)
+const watchDevice = ref<any>(null)
+const syncingWatch = ref(false)
 
 const stepsColor = computed(() => {
   const v = todaySteps.value
@@ -151,6 +174,32 @@ async function loadData() {
   } catch (e) { console.warn('[health/exercise] activity?limit=20:', e) }
   // 检查 WeRun 授权状态
   werunAuthed.value = !!uni.getStorageSync('werun_authed')
+  // 加载穿戴设备
+  try {
+    const res = await http<any>('/api/v1/devices')
+    const devs: any[] = res.devices || res.items || (Array.isArray(res) ? res : [])
+    watchDevice.value = devs.find(d => ['smartwatch','fitness_band'].includes(d.device_type) && d.status === 'active')
+      ?? devs.find(d => ['smartwatch','fitness_band'].includes(d.device_type))
+      ?? null
+  } catch { /* silent */ }
+}
+
+async function syncFromWatch() {
+  if (!watchDevice.value || syncingWatch.value) return
+  syncingWatch.value = true
+  try {
+    await http(`/api/v1/devices/${watchDevice.value.device_id}/sync`, { method: 'PUT', data: {} })
+    uni.showToast({ title: '同步成功', icon: 'success' })
+    await loadData()
+  } catch {
+    uni.showToast({ title: '同步失败，请检查设备连接', icon: 'none' })
+  } finally {
+    syncingWatch.value = false
+  }
+}
+
+function goDeviceBind() {
+  uni.navigateTo({ url: '/pages/health/device-bind' })
 }
 
 function authorizeWeRun() {
@@ -277,8 +326,19 @@ onMounted(() => loadData())
 .ex-field-label  { display: block; font-size: 22rpx; color: #8E99A4; margin-bottom: 8rpx; }
 .ex-field-input  { width: 100%; background: #F5F6FA; border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 26rpx; box-sizing: border-box; }
 .ex-field-picker { background: #F5F6FA; border-radius: 12rpx; padding: 16rpx 20rpx; font-size: 26rpx; color: #2C3E50; }
-.ex-submit-btn { background: #27AE60; color: #fff; text-align: center; padding: 26rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }
-.ex-submit-btn--loading { background: #A9DFBF; }
+.ex-submit-btn { background: #E65100; color: #fff; text-align: center; padding: 26rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }
+.ex-submit-btn--loading { background: #FFCC80; color: #E65100; }
+
+/* 穿戴设备区 */
+.ex-device-card { margin: 0 24rpx 24rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
+.ex-device-title { display: block; font-size: 26rpx; font-weight: 600; color: #2C3E50; margin-bottom: 16rpx; }
+.ex-device-row { display: flex; align-items: center; gap: 16rpx; background: #E3F2FD; border-radius: 12rpx; padding: 20rpx; }
+.ex-device-row--add { background: #FFF3E0; }
+.ex-device-icon-text { font-size: 40rpx; flex-shrink: 0; }
+.ex-device-info-col { flex: 1; }
+.ex-device-name { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.ex-device-hint { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
+.ex-device-arrow { font-size: 28rpx; color: #E65100; font-weight: 700; flex-shrink: 0; }
 
 .ex-history-card { margin: 0 24rpx 24rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
 .ex-history-title { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; margin-bottom: 16rpx; }

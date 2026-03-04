@@ -51,6 +51,21 @@ export const companionApi = {
 }
 
 /**
+ * 同道匹配 API
+ */
+export const peerMatchingApi = {
+  recommend(params?: { top_n?: number; mentor_role?: string }) {
+    return api.get('/api/v1/peer-matching/recommend', { params })
+  },
+  accept(data: { mentor_id: number }) {
+    return api.post('/api/v1/peer-matching/accept', data)
+  },
+  myPeer() {
+    return api.get('/api/v1/peer-matching/my-peer')
+  },
+}
+
+/**
  * 晋级系统 API
  */
 export const promotionApi = {

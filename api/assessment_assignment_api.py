@@ -208,6 +208,7 @@ async def get_my_pending_assignments(
             scales_data = {"scales": scales_data, "question_preset": None, "question_ids": None}
         result.append({
             "id": a.id,
+            "status": a.status,
             "coach_name": coach.full_name or coach.username if coach else "未知教练",
             "scales": scales_data,
             "note": a.note,

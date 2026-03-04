@@ -16,6 +16,27 @@
         <text class="bg-latest-time">{{ latestTime }}</text>
       </view>
 
+      <!-- 穿戴设备同步 -->
+      <view class="bg-device-card">
+        <text class="bg-device-title">📡 穿戴设备</text>
+        <view v-if="glucoseDevice" class="bg-device-row" @tap="syncFromDevice">
+          <text class="bg-device-icon-text">{{ glucoseDevice.device_type === 'cgm' ? '📡' : '🔬' }}</text>
+          <view class="bg-device-info-col">
+            <text class="bg-device-name">{{ glucoseDevice.manufacturer || glucoseDevice.device_type }}</text>
+            <text class="bg-device-hint">{{ syncing ? '同步中…' : '点击从设备同步最新血糖' }}</text>
+          </view>
+          <text class="bg-device-arrow">{{ syncing ? '…' : '同步 ›' }}</text>
+        </view>
+        <view v-else class="bg-device-row bg-device-row--add" @tap="goDeviceBind">
+          <text class="bg-device-icon-text">＋</text>
+          <view class="bg-device-info-col">
+            <text class="bg-device-name">绑定血糖仪 / CGM</text>
+            <text class="bg-device-hint">支持 Abbott Libre、Dexcom G6、家用血糖仪等</text>
+          </view>
+          <text class="bg-device-arrow">›</text>
+        </view>
+      </view>
+
       <!-- 手动录入 -->
       <view class="bg-entry-card">
         <text class="bg-entry-title">📝 手动录入</text>
@@ -69,9 +90,9 @@
       <view class="bg-ref-card">
         <text class="bg-ref-title">📋 参考范围</text>
         <view class="bg-ref-row"><view class="bg-ref-dot" style="background:#27AE60;"></view><text>空腹正常: 3.9 — 6.1 mmol/L</text></view>
-        <view class="bg-ref-row"><view class="bg-ref-dot" style="background:#3498DB;"></view><text>餐后2h正常: ≤ 7.8 mmol/L</text></view>
-        <view class="bg-ref-row"><view class="bg-ref-dot" style="background:#E67E22;"></view><text>餐后2h偏高: 7.8 — 10.0</text></view>
-        <view class="bg-ref-row"><view class="bg-ref-dot" style="background:#E74C3C;"></view><text>高血糖: > 10.0 mmol/L</text></view>
+        <view class="bg-ref-row"><view class="bg-ref-dot" style="background:#1E88E5;"></view><text>餐后2h正常: ≤ 7.8 mmol/L</text></view>
+        <view class="bg-ref-row"><view class="bg-ref-dot" style="background:#E65100;"></view><text>餐后2h偏高: 7.8 — 10.0</text></view>
+        <view class="bg-ref-row"><view class="bg-ref-dot" style="background:#B71C1C;"></view><text>高血糖: > 10.0 mmol/L</text></view>
       </view>
 
       <view style="height:120rpx;"></view>
@@ -89,17 +110,19 @@ const rangeOpts = [{ key:'7d', label:'7天' }, { key:'30d', label:'30天' }]
 const range = ref('7d')
 const form = ref({ value: '', note: '' })
 const submitting = ref(false)
+const syncing = ref(false)
 const history = ref<any[]>([])
 const latestGlucose = ref<number|null>(null)
 const latestTime = ref('')
+const glucoseDevice = ref<any>(null)
 
 const latestColor = computed(() => glucoseColor(latestGlucose.value ?? 0))
 const latestStatus = computed(() => glucoseLabel(latestGlucose.value ?? 0))
 
 function glucoseColor(v: number): string {
   if (!v) return '#8E99A4'
-  if (v < 3.9 || v > 10) return '#E74C3C'
-  if (v > 7.8) return '#E67E22'
+  if (v < 3.9 || v > 10) return '#B71C1C'
+  if (v > 7.8) return '#E65100'
   return '#27AE60'
 }
 function glucoseLabel(v: number): string {
@@ -112,6 +135,34 @@ function glucoseLabel(v: number): string {
 function formatTime(t: string): string {
   if (!t) return ''
   return new Date(t).toLocaleString('zh-CN', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' })
+}
+
+async function loadDevices() {
+  try {
+    const res = await http<any>('/api/v1/devices')
+    const devs: any[] = res.devices || res.items || (Array.isArray(res) ? res : [])
+    glucoseDevice.value = devs.find(d => ['cgm','glucometer'].includes(d.device_type) && d.status === 'active')
+      ?? devs.find(d => ['cgm','glucometer'].includes(d.device_type))
+      ?? null
+  } catch { /* silent */ }
+}
+
+async function syncFromDevice() {
+  if (!glucoseDevice.value || syncing.value) return
+  syncing.value = true
+  try {
+    await http(`/api/v1/devices/${glucoseDevice.value.device_id}/sync`, { method: 'PUT', data: {} })
+    uni.showToast({ title: '同步成功', icon: 'success' })
+    await loadHistory()
+  } catch {
+    uni.showToast({ title: '同步失败，请检查设备连接', icon: 'none' })
+  } finally {
+    syncing.value = false
+  }
+}
+
+function goDeviceBind() {
+  uni.navigateTo({ url: '/pages/health/device-bind' })
 }
 
 async function loadHistory() {
@@ -162,22 +213,40 @@ function goBack() {
   else uni.navigateTo({ url: '/pages/health/index' })
 }
 
-onMounted(() => loadHistory())
+onMounted(() => { loadHistory(); loadDevices() })
 </script>
 
 <style scoped>
-.bg-page { min-height: 100vh; background: #F5F6FA; }
-.bg-navbar { display: flex; align-items: center; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: linear-gradient(135deg, #C0392B 0%, #E74C3C 100%); color: #fff; }
+/* ── 色板 ──
+   医学蓝主色:  #1565C0 → #1E88E5
+   暖橙 CTA:    #E65100
+   危险红:      #B71C1C
+   警告橙:      #E65100
+   正常绿:      #27AE60
+*/
+.bg-page { min-height: 100vh; background: #F0F7FF; }
+.bg-navbar { display: flex; align-items: center; padding: 8rpx 24rpx; padding-top: calc(88rpx + env(safe-area-inset-top)); background: linear-gradient(135deg, #1565C0 0%, #1E88E5 100%); color: #fff; }
 .bg-back  { font-size: 40rpx; padding: 16rpx; }
 .bg-title { flex: 1; text-align: center; font-size: 34rpx; font-weight: 600; }
 .bg-scroll { height: calc(100vh - 180rpx); }
 
-.bg-latest-card { margin: 24rpx; background: linear-gradient(135deg, #C0392B, #E74C3C); border-radius: 20rpx; padding: 40rpx; text-align: center; color: #fff; }
-.bg-latest-label { display: block; font-size: 24rpx; opacity: 0.8; margin-bottom: 12rpx; }
-.bg-latest-val   { display: block; font-size: 80rpx; font-weight: 800; }
-.bg-latest-unit  { display: block; font-size: 24rpx; opacity: 0.7; }
+.bg-latest-card { margin: 24rpx; background: linear-gradient(135deg, #1565C0, #1E88E5); border-radius: 20rpx; padding: 40rpx; text-align: center; color: #fff; }
+.bg-latest-label  { display: block; font-size: 24rpx; opacity: 0.85; margin-bottom: 12rpx; }
+.bg-latest-val    { display: block; font-size: 80rpx; font-weight: 800; color: #fff; }
+.bg-latest-unit   { display: block; font-size: 24rpx; opacity: 0.75; }
 .bg-latest-status { display: block; font-size: 28rpx; font-weight: 600; margin-top: 8rpx; }
-.bg-latest-time  { display: block; font-size: 22rpx; opacity: 0.7; margin-top: 8rpx; }
+.bg-latest-time   { display: block; font-size: 22rpx; opacity: 0.7; margin-top: 8rpx; }
+
+/* 穿戴设备区 */
+.bg-device-card { margin: 0 24rpx 24rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
+.bg-device-title { display: block; font-size: 26rpx; font-weight: 600; color: #2C3E50; margin-bottom: 16rpx; }
+.bg-device-row { display: flex; align-items: center; gap: 16rpx; background: #E3F2FD; border-radius: 12rpx; padding: 20rpx; }
+.bg-device-row--add { background: #FFF3E0; }
+.bg-device-icon-text { font-size: 40rpx; flex-shrink: 0; }
+.bg-device-info-col { flex: 1; }
+.bg-device-name { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; }
+.bg-device-hint { display: block; font-size: 22rpx; color: #8E99A4; margin-top: 4rpx; }
+.bg-device-arrow { font-size: 28rpx; color: #E65100; font-weight: 700; flex-shrink: 0; }
 
 .bg-entry-card { margin: 0 24rpx 24rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
 .bg-entry-title { display: block; font-size: 28rpx; font-weight: 600; color: #2C3E50; margin-bottom: 20rpx; }
@@ -186,15 +255,15 @@ onMounted(() => loadHistory())
 .bg-field-label  { display: block; font-size: 22rpx; color: #8E99A4; margin-bottom: 8rpx; }
 .bg-field-input  { width: 100%; background: #F5F6FA; border-radius: 12rpx; padding: 18rpx 20rpx; font-size: 28rpx; box-sizing: border-box; }
 .bg-field-picker { background: #F5F6FA; border-radius: 12rpx; padding: 18rpx 20rpx; font-size: 28rpx; color: #2C3E50; }
-.bg-submit-btn { margin-top: 8rpx; background: #E74C3C; color: #fff; text-align: center; padding: 26rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }
-.bg-submit-btn--loading { background: #F9A8A8; }
+.bg-submit-btn { margin-top: 8rpx; background: #E65100; color: #fff; text-align: center; padding: 26rpx 0; border-radius: 16rpx; font-size: 30rpx; font-weight: 600; }
+.bg-submit-btn--loading { background: #FFCC80; color: #E65100; }
 
 .bg-history-card { margin: 0 24rpx 24rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; }
 .bg-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20rpx; }
 .bg-history-title { font-size: 28rpx; font-weight: 600; color: #2C3E50; }
 .bg-tab-row { display: flex; gap: 8rpx; }
 .bg-tab { padding: 8rpx 20rpx; border-radius: 20rpx; font-size: 22rpx; color: #8E99A4; background: #F5F6FA; }
-.bg-tab--active { background: #E74C3C; color: #fff; }
+.bg-tab--active { background: #1565C0; color: #fff; }
 
 .bg-hist-item { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 0; border-bottom: 1rpx solid #F8F8F8; }
 .bg-hist-item:last-child { border-bottom: none; }

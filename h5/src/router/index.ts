@@ -289,6 +289,12 @@ const router = createRouter({
       meta: { title: '我的同道者' }
     },
     {
+      path: '/reflection',
+      name: 'reflection',
+      component: () => import('@/views/Reflection.vue'),
+      meta: { title: '我的反思' }
+    },
+    {
       path: '/promotion-progress',
       name: 'promotion-progress',
       component: () => import('@/views/PromotionProgress.vue'),
