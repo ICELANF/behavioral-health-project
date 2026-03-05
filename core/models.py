@@ -1052,6 +1052,10 @@ class BehavioralProfile(Base):
     # 风险标�: ["dropout_risk", "relapse_risk"]
     risk_flags = Column(JSON, nullable=True)
 
+    # ====== 用户关注点（填空题 + 语音情感） ======
+    concerns = Column(JSON, nullable=True)  # {"worry":"...", "confusion":"...", "desire":"...", "aversion":"..."}
+    voice_emotions = Column(JSON, nullable=True)  # {"worry":"anxious", "desire":"hopeful", ...}
+
     # ====== 去诊�化展� ======
     friendly_stage_name = Column(String(50), nullable=True)  # "探索�"
     friendly_stage_desc = Column(Text, nullable=True)  # 面向用户的阶段描�
@@ -3351,6 +3355,7 @@ class AssessmentSession(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(String(15), nullable=False, server_default=sa_text("'in_progress'"))
+    entry_type = Column(String(20), nullable=False, server_default=sa_text("'self'"))
     completed_batches = Column(JSON)
     pending_batches = Column(JSON)
     total_questions_answered = Column(Integer, server_default=sa_text("0"))

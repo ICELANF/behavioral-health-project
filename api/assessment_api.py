@@ -13,7 +13,7 @@ from datetime import datetime
 from loguru import logger
 
 from core.database import get_db
-from core.models import Assessment, User, TriggerRecord
+from core.models import Assessment, User, TriggerRecord, BehavioralProfile
 from api.dependencies import get_current_user
 
 # 创建路由器
@@ -371,10 +371,36 @@ def submit_assessment(
             completed_at=datetime.utcnow(),
         )
 
+        # 将 concerns 存入 assessment.context
+        user_concerns = data.get("concerns")  # {"worry":"...", "confusion":"...", ...}
+        voice_emotions = data.get("voiceEmotions")  # {"worry":"anxious", ...}
+        if user_concerns or voice_emotions:
+            assessment.context = {
+                **(assessment.context or {}),
+                "concerns": user_concerns,
+                "voice_emotions": voice_emotions,
+            }
+
         db.add(assessment)
 
         # 更新用户最后评估时间
         current_user.last_assessment_date = datetime.utcnow()
+
+        # 同步 concerns 到 behavioral_profile（长期画像）
+        if user_concerns:
+            bp = db.query(BehavioralProfile).filter(
+                BehavioralProfile.user_id == current_user.id
+            ).first()
+            if bp:
+                bp.concerns = user_concerns
+                bp.voice_emotions = voice_emotions
+            else:
+                bp = BehavioralProfile(
+                    user_id=current_user.id,
+                    concerns=user_concerns,
+                    voice_emotions=voice_emotions,
+                )
+                db.add(bp)
 
         db.commit()
         db.refresh(assessment)
