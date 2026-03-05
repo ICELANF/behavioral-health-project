@@ -102,6 +102,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor } from '@/utils/studentUtils'
 
 const coach = ref<any>({})
 const ts = ref<any>({})
@@ -133,13 +134,6 @@ const tools = [
   { icon: '📡', label: '直播中心', url: '/pages/coach/live/index', bg: '#FFF8EE' },
   { icon: '💬', label: '学员会话', url: '/pages/coach/messages/index', bg: '#F5F0FF' },
 ]
-
-const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0; for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
 
 function stageName(s: string): string {
   const m: Record<string,string> = { S1:'准备期', S2:'行动期', S3:'维持期', S4:'深化期', contemplation:'沉思期', preparation:'准备期', action:'行动期', maintenance:'维持期' }

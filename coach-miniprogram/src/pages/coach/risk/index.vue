@@ -56,6 +56,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { riskColor } from '@/utils/studentUtils'
 
 interface Student {
   id: number
@@ -87,14 +88,6 @@ const filteredStudents = computed(() => {
   if (activeTab.value === 'followup') return students.value.filter(s => (s.days_since || 0) >= 7)
   return students.value
 })
-
-function riskColor(level: number): string {
-  if (level >= 4) return '#C0392B'
-  if (level >= 3) return '#E74C3C'
-  if (level >= 2) return '#E67E22'
-  if (level >= 1) return '#F1C40F'
-  return '#27AE60'
-}
 
 async function loadStudents() {
   loading.value = true

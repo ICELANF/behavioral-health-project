@@ -47,6 +47,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor } from '@/utils/studentUtils'
 
 const list = ref<any[]>([])
 const myRank = ref(0)
@@ -54,12 +55,7 @@ const myPoints = ref(0)
 const refreshing = ref(false)
 const loading = ref(false)
 
-const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0; for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
+
 function levelName(k: string) { return { observer:'观察者', grower:'成长者', sharer:'分享者' }[k] || (k || '') }
 
 async function loadData() {

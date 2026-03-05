@@ -121,6 +121,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor } from '@/utils/studentUtils'
 
 const loading = ref(true)
 const data = ref<any>({})
@@ -128,13 +129,6 @@ const coachNote = ref('')
 
 const ttmStages = ['前意向', '意向', '准备', '行动', '维持', '终止']
 const tagColors = ['#3498DB', '#E67E22', '#27AE60', '#9B59B6', '#E74C3C', '#1ABC9C']
-const AVATAR_COLORS = ['#3498DB', '#E67E22', '#27AE60', '#9B59B6', '#E74C3C', '#1ABC9C']
-
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let hash = 0; for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
 function statusColor(s: string): string {
   const map: Record<string, string> = { pending: '#E67E22', assigned: '#E67E22', in_progress: '#3498DB', submitted: '#9B59B6', review: '#9B59B6', completed: '#27AE60', reviewed: '#27AE60', approved: '#27AE60', rejected: '#E74C3C' }
   return map[s] || '#8E99A4'

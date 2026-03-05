@@ -57,6 +57,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor } from '@/utils/studentUtils'
 
 const loading = ref(false)
 const refreshing = ref(false)
@@ -64,13 +65,6 @@ const items = ref<any[]>([])
 const processingIds = ref<Set<string>>(new Set())
 const doneToday = ref(0)
 
-const colorPool = ['#9B59B6', '#E74C3C', '#7D3C98', '#C0392B', '#8E44AD', '#6C3483']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0
-  for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
 
 function formatDate(t: string): string {
   return t ? new Date(t).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''

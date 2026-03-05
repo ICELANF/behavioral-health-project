@@ -49,8 +49,13 @@
         </view>
       </view>
 
+      <!-- Loading 指示器 -->
+      <view v-if="dataLoading" class="detail-loading">
+        <text class="detail-loading-text">加载中...</text>
+      </view>
+
       <!-- 概览 Tab -->
-      <template v-if="activeTab === 'overview'">
+      <template v-if="!dataLoading && activeTab === 'overview'">
         <view class="detail-card">
           <text class="detail-card-title">健康指标</text>
           <view class="detail-metric-grid">
@@ -72,7 +77,7 @@
       </template>
 
       <!-- 行为记录 Tab — 仅此学员的行为数据 -->
-      <template v-if="activeTab === 'behavior'">
+      <template v-if="!dataLoading && activeTab === 'behavior'">
         <view class="detail-card" v-for="(log, idx) in behaviorLogs" :key="idx">
           <view class="detail-log-header">
             <text class="detail-log-type" :style="{ color: logColor(log.type) }">{{ log.type_label }}</text>
@@ -84,7 +89,7 @@
       </template>
 
       <!-- 督导记录 Tab — 仅此学员的督导互动 -->
-      <template v-if="activeTab === 'supervision'">
+      <template v-if="!dataLoading && activeTab === 'supervision'">
         <view class="detail-card" v-for="(note, idx) in supervisionNotes" :key="idx">
           <view class="detail-note-header">
             <text class="detail-note-date">{{ note.date }}</text>
@@ -100,7 +105,7 @@
       </template>
 
       <!-- 健康数据 Tab — 此学员个人各类生理数据汇总 -->
-      <template v-if="activeTab === 'health'">
+      <template v-if="!dataLoading && activeTab === 'health'">
         <view class="detail-card">
           <text class="detail-card-title">个人健康数据</text>
           <view class="health-stat-grid">
@@ -360,10 +365,12 @@ import { onLoad } from '@dcloudio/uni-app'
 import { httpReq as http } from '@/api/request'
 import { SCALES_REGISTRY, SCALE_PACKS, estimateTime, loadSurveyTools } from '@/utils/assessmentTools'
 import type { ToolDef } from '@/utils/assessmentTools'
+import { avatarColor, parseRisk, riskColor, riskBg } from '@/utils/studentUtils'
 
 const studentId = ref(0)
 const activeTab = ref('overview')
 const refreshing = ref(false)
+const dataLoading = ref(false)
 const student = ref<any>({})
 const behaviorLogs = ref<any[]>([])
 const supervisionNotes = ref<any[]>([])
@@ -545,12 +552,6 @@ const weekActions = computed(() => {
   })
 })
 
-function riskColor(level: number | string): string {
-  const n = typeof level === 'string' ? parseInt(level.replace(/\D/g, '')) : (level || 0)
-  if (n >= 3) return '#E74C3C'
-  if (n >= 2) return '#E67E22'
-  return '#27AE60'
-}
 
 function logColor(type: string): string {
   const m: Record<string, string> = { checkin: '#27AE60', mood: '#9B59B6', meal: '#E67E22', exercise: '#3498DB', medication: '#E74C3C' }
@@ -566,6 +567,7 @@ function glucoseColor(val: number | null | undefined): string {
 
 async function loadData() {
   if (!studentId.value) return
+  dataLoading.value = true
 
   // 主数据：dashboard 学员列表（含 health_data / micro_action_7d）
   try {
@@ -627,6 +629,8 @@ async function loadData() {
     const nRes = await http<any>('/api/v1/coach/students/' + studentId.value + '/notes')
     supervisionNotes.value = nRes.items || []
   } catch { supervisionNotes.value = [] }
+
+  dataLoading.value = false
 }
 
 async function submitNote() {
@@ -840,12 +844,14 @@ onLoad((opts: any) => {
 .modal-btn--confirm { background: #2D8E69; color: #fff; }
 .modal-btn--submitting { background: #8DC9B3; }
 
+.detail-loading { display: flex; align-items: center; justify-content: center; padding: 120rpx 0; }
+.detail-loading-text { font-size: 28rpx; color: #8E99A4; }
 .detail-empty { text-align: center; padding: 60rpx; font-size: 26rpx; color: #8E99A4; }
 
 /* ── AI 通用按钮 ── */
 .ai-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12rpx; }
 .ai-btn { padding: 8rpx 20rpx; background: linear-gradient(135deg, #1a7a50, #27AE60); color: #fff; border-radius: 10rpx; font-size: 24rpx; font-weight: 600; }
-.ai-btn--loading { background: #8DC9B3; }
+.ai-btn--loading { background: #8DC9B3; pointer-events: none; opacity: 0.7; }
 
 /* ── AI 建议展示框（持久显示，不会自动消失） ── */
 .ai-suggestion-box {

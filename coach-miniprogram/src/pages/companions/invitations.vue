@@ -35,17 +35,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor } from '@/utils/studentUtils'
 
 const invitations = ref<any[]>([])
 const refreshing = ref(false)
 const loading = ref(false)
 
-const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0; for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
 
 function formatTime(iso: string): string {
   if (!iso) return ''
@@ -58,8 +53,7 @@ function formatTime(iso: string): string {
 async function loadData() {
   loading.value = true
   try {
-    // companions/{id} routing conflict workaround: load from companions with status=pending
-    const res = await http<any>('/api/v1/companions?status=pending_invitation')
+    const res = await http<any>('/api/v1/companions/pending-invitations')
     invitations.value = res?.items || []
   } catch { invitations.value = [] } finally { loading.value = false }
 }

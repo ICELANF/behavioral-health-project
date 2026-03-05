@@ -50,6 +50,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor, parseRisk, riskColor, riskBg } from '@/utils/studentUtils'
 
 interface Student {
   id: number
@@ -108,33 +109,6 @@ function toggleSort() {
   const order: Array<'risk'|'name'|'active'> = ['risk', 'name', 'active']
   const idx = order.indexOf(sortBy.value)
   sortBy.value = order[(idx + 1) % order.length]
-}
-
-const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C','#34495E']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
-
-// Parse risk level from string ("R3") or number (3) → number
-function parseRisk(v: any): number {
-  if (typeof v === 'number') return v
-  if (typeof v === 'string') { const n = parseInt(v.replace(/\D/g, '')); return isNaN(n) ? 0 : n }
-  return 0
-}
-
-function riskColor(level: number): string {
-  if (level >= 3) return '#C0392B'
-  if (level >= 2) return '#E67E22'
-  if (level >= 1) return '#F39C12'
-  return '#27AE60'
-}
-function riskBg(level: number): string {
-  if (level >= 3) return '#FDEDEC'
-  if (level >= 2) return '#FEF5E7'
-  if (level >= 1) return '#FEFCE8'
-  return '#E8F8F0'
 }
 
 async function loadStudents() {

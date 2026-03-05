@@ -32,6 +32,21 @@
             <text class="home-stat-label">待审处方</text>
           </view>
         </view>
+
+        <!-- 第二行：晋级申请 + 内容投稿 -->
+        <view class="home-stats" style="margin-top:0;">
+          <view class="home-stat-card" style="border-left:4rpx solid #9B59B6;" @tap="goPage('/pages/coach/promotion/index')">
+            <text class="home-stat-icon">🎖</text>
+            <text class="home-stat-num">{{ coachStats.pendingPromotion }}</text>
+            <text class="home-stat-label">待审晋级</text>
+          </view>
+          <view class="home-stat-card" style="border-left:4rpx solid #1ABC9C;" @tap="goPage('/pages/coach/contributions/index')">
+            <text class="home-stat-icon">✍️</text>
+            <text class="home-stat-num">{{ coachStats.pendingContributions }}</text>
+            <text class="home-stat-label">待审投稿</text>
+          </view>
+        </view>
+
         <view class="home-section">
           <view class="home-section-header">
             <text class="home-section-title">📌 今日待办</text>
@@ -372,13 +387,17 @@
               <view class="home-sc-icon" style="background:#EEF6FF;">👥</view>
               <text class="home-sc-label">我的伙伴</text>
             </view>
-            <view class="home-shortcut" @tap="goPage('/pages/sharer/share-content')">
-              <view class="home-sc-icon" style="background:#F0FFF4;">📝</view>
-              <text class="home-sc-label">内容分享</text>
-            </view>
             <view class="home-shortcut" @tap="goPage('/pages/case-stories/index')">
               <view class="home-sc-icon" style="background:#FFF0E6;">🌿</view>
               <text class="home-sc-label">健康之路</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/sharer/share-content')">
+              <view class="home-sc-icon" style="background:#E8F8F0;">✍️</view>
+              <text class="home-sc-label">我的投稿</text>
+            </view>
+            <view class="home-shortcut" @tap="goPage('/pages/companions/invitations')">
+              <view class="home-sc-icon" style="background:#F5EEFF;">📩</view>
+              <text class="home-sc-label">同道邀请</text>
             </view>
             <!-- 成长者功能全保留 -->
             <view class="home-shortcut" @tap="goPage('/pages/health/blood-glucose')">
@@ -405,9 +424,10 @@
               <view class="home-sc-icon" style="background:#F0FFF8;">💊</view>
               <text class="home-sc-label">理性就医</text>
             </view>
+            <!-- 分享者：同路由 /trajectory/index，角色感知内部渲染教练晋级进度 -->
             <view class="home-shortcut" @tap="goPage('/pages/trajectory/index')">
-              <view class="home-sc-icon" style="background:#EEF9EE;">📈</view>
-              <text class="home-sc-label">行为轨迹</text>
+              <view class="home-sc-icon" style="background:#EDE9FE;">🎯</view>
+              <text class="home-sc-label">教练之道</text>
             </view>
             <view class="home-shortcut" @tap="goPage('/pages/companions/index')">
               <view class="home-sc-icon" style="background:#E8F8F0;">💬</view>
@@ -426,7 +446,7 @@
           <text class="home-hello">{{ greetText }}</text>
           <text class="home-name">{{ userName }}</text>
         </view>
-        <view class="home-role-badge">督导</view>
+        <view class="home-role-badge">行为健康促进师</view>
       </view>
       <scroll-view scroll-y class="home-scroll" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
         <view class="home-stats">
@@ -438,12 +458,12 @@
           <view class="home-stat-card home-stat-card--warn" @tap="goPage('/pages/supervisor/review-queue')">
             <text class="home-stat-icon">🔍</text>
             <text class="home-stat-num">{{ supervisorData.pendingReview }}</text>
-            <text class="home-stat-label">待审核</text>
+            <text class="home-stat-label">待审健康</text>
           </view>
-          <view class="home-stat-card home-stat-card--warn" @tap="goPage('/pages/supervisor/review-queue')">
-            <text class="home-stat-icon">⚠️</text>
-            <text class="home-stat-num">{{ supervisorData.highRisk }}</text>
-            <text class="home-stat-label">高风险学员</text>
+          <view class="home-stat-card" style="border-left:4rpx solid #8e24aa;" @tap="goPage('/pages/supervisor/promotion/index')">
+            <text class="home-stat-icon">🎖</text>
+            <text class="home-stat-num">{{ supervisorData.pendingPromotion }}</text>
+            <text class="home-stat-label">待复核晋级</text>
           </view>
           <view class="home-stat-card home-stat-card--blue">
             <text class="home-stat-icon">✅</text>
@@ -460,11 +480,11 @@
             </view>
             <view class="home-shortcut" @tap="goPage('/pages/supervisor/review-queue')">
               <view class="home-sc-icon" style="background:#FFF0E6;">🔍</view>
-              <text class="home-sc-label">审核队列</text>
+              <text class="home-sc-label">健康审核</text>
             </view>
-            <view class="home-shortcut" @tap="goPage('/pages/coach/analytics/index')">
-              <view class="home-sc-icon" style="background:#F0FFF4;">📈</view>
-              <text class="home-sc-label">数据分析</text>
+            <view class="home-shortcut" @tap="goPage('/pages/supervisor/promotion/index')">
+              <view class="home-sc-icon" style="background:#F3E5F5;">🎖</view>
+              <text class="home-sc-label">晋级复核</text>
             </view>
             <view class="home-shortcut" @tap="goPage('/pages/notifications/index')">
               <view class="home-sc-icon" style="background:#FFF8EE;">🔔</view>
@@ -483,7 +503,7 @@
           <text class="home-hello">{{ greetText }}</text>
           <text class="home-name">{{ userName }}</text>
         </view>
-        <view class="home-role-badge">专家</view>
+        <view class="home-role-badge">行为健康大师</view>
       </view>
       <scroll-view scroll-y class="home-scroll" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
         <view class="home-stats">
@@ -502,6 +522,11 @@
             <text class="home-stat-num">{{ masterData.knowledgePending }}</text>
             <text class="home-stat-label">知识待发布</text>
           </view>
+          <view class="home-stat-card" style="border-left:4rpx solid #b8860b;" @tap="goPage('/pages/master/promotion/index')">
+            <text class="home-stat-icon">👑</text>
+            <text class="home-stat-num">{{ masterData.pendingPromotion }}</text>
+            <text class="home-stat-label">待终审晋级</text>
+          </view>
           <view class="home-stat-card">
             <text class="home-stat-icon">✅</text>
             <text class="home-stat-num">{{ masterData.reviewedToday }}</text>
@@ -515,9 +540,9 @@
               <view class="home-sc-icon" style="background:#FFF2F2;">🚨</view>
               <text class="home-sc-label">危急审核</text>
             </view>
-            <view class="home-shortcut" @tap="goPage('/pages/master/dashboard')">
-              <view class="home-sc-icon" style="background:#EEF6FF;">🤖</view>
-              <text class="home-sc-label">AI分析</text>
+            <view class="home-shortcut" @tap="goPage('/pages/master/promotion/index')">
+              <view class="home-sc-icon" style="background:#FFF8DC;">👑</view>
+              <text class="home-sc-label">晋级终审</text>
             </view>
             <view class="home-shortcut" @tap="goPage('/pages/master/knowledge')">
               <view class="home-sc-icon" style="background:#F5F0FF;">📚</view>
@@ -539,6 +564,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import { httpReq as http } from '@/api/request'
+import { avatarColor, parseRisk } from '@/utils/studentUtils'
 
 // ── 通用 ──────────────────────────────────────────────
 const userRole = ref('coach')
@@ -576,21 +602,15 @@ function priorityColor(p: string): string {
   const m: Record<string,string> = { urgent:'#E74C3C', high:'#E67E22', normal:'#3498DB', low:'#27AE60' }
   return m[p] || '#8E99A4'
 }
-const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C','#34495E']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
 
 // ── COACH 数据 ─────────────────────────────────────────
-const coachStats = ref({ pendingAssess:0, pendingAiPlan:0, pendingHealthReview:0, pendingRx:0 })
+const coachStats = ref({ pendingAssess:0, pendingAiPlan:0, pendingHealthReview:0, pendingRx:0, pendingPromotion:0, pendingContributions:0 })
 const todos = ref<any[]>([])
 const activities = ref<any[]>([])
 
 async function loadCoach() {
   // ─── 并行加载全部数据源 ──────────────────────────────────────
-  const [dashRes, assessRes, aiRes, healthRes, rxRes, learningRes, examRes] =
+  const [dashRes, assessRes, aiRes, healthRes, rxRes, learningRes, examRes, promoRes, contribRes] =
     await Promise.allSettled([
       http<any>('/api/v1/coach/dashboard'),
       http<any>('/api/v1/assessment-assignments/coach-list?status=completed'),
@@ -599,6 +619,8 @@ async function loadCoach() {
       http<any>('/api/v1/coach/push-queue?status=pending&page_size=20'),
       http<any>('/api/v1/learning/my?status=in_progress&limit=3'),
       http<any>('/api/v1/certification/exams'),
+      http<any>('/api/v1/promotion/applications?status=pending'),
+      http<any>('/api/v1/contributions/review/pending'),
     ])
 
   const ok = <T>(r: PromiseSettledResult<T>, fallback: T): T =>
@@ -611,6 +633,8 @@ async function loadCoach() {
   const rxD       = ok(rxRes,       {} as any)
   const learningD = ok(learningRes, {} as any)
   const examD     = ok(examRes,     {} as any)
+  const promoD    = ok(promoRes,    {} as any)
+  const contribD  = ok(contribRes,  {} as any)
 
   // ─── 学员动态 ─────────────────────────────────────────────────
   const students: any[] = dash.students || []
@@ -628,10 +652,12 @@ async function loadCoach() {
   const healthItems: any[] = healthD.items || healthD.queue || (Array.isArray(healthD) ? healthD : [])
   const rxItems:     any[] = rxD.items || []
 
-  coachStats.value.pendingAssess       = assessItems.length
-  coachStats.value.pendingAiPlan       = aiD.total_pending ?? aiItems.length
-  coachStats.value.pendingHealthReview = healthD.total ?? healthItems.length
-  coachStats.value.pendingRx           = rxD.total ?? rxItems.length
+  coachStats.value.pendingAssess        = assessItems.length
+  coachStats.value.pendingAiPlan        = aiD.total_pending ?? aiItems.length
+  coachStats.value.pendingHealthReview  = healthD.total ?? healthItems.length
+  coachStats.value.pendingRx            = rxD.total ?? rxItems.length
+  coachStats.value.pendingPromotion     = promoD.total ?? (promoD.applications || []).length
+  coachStats.value.pendingContributions = contribD.total ?? (contribD.data || []).length
 
   // ─── 今日待办（三方案合并） ────────────────────────────────────
   const todoList: any[] = []
@@ -651,9 +677,7 @@ async function loadCoach() {
   students
     .map((s: any) => ({
       ...s,
-      _rl: typeof s.risk_level === 'string'
-        ? parseInt(s.risk_level.replace(/\D/g, '')) || 0
-        : (s.risk_level || 0),
+      _rl: parseRisk(s.risk_level),
     }))
     .filter(s => s._rl >= 3 || (s.days_since_last_contact ?? 0) >= 3)
     .sort((a, b) => b._rl - a._rl)
@@ -818,33 +842,51 @@ async function loadSharer() {
 }
 
 // ── SUPERVISOR 数据 ────────────────────────────────────
-const supervisorData = ref({ coachCount:0, pendingReview:0, highRisk:0, approvedToday:0 })
+const supervisorData = ref({ coachCount:0, pendingReview:0, highRisk:0, approvedToday:0, pendingPromotion:0 })
 
 async function loadSupervisor() {
-  try {
-    const res = await http<any>('/api/v1/supervisor/dashboard')
+  const [dashRes, promoRes] = await Promise.allSettled([
+    http<any>('/api/v1/supervisor/dashboard'),
+    http<any>('/api/v1/promotion/applications?status=pending'),
+  ])
+  if (dashRes.status === 'fulfilled') {
+    const res = dashRes.value
     supervisorData.value = {
-      coachCount:    res.coach_count ?? 0,
-      pendingReview: res.pending_review ?? 0,
-      highRisk:      res.high_risk_count ?? 0,
-      approvedToday: res.approved_today ?? 0,
+      coachCount:       res.coach_count ?? 0,
+      pendingReview:    res.pending_review ?? 0,
+      highRisk:         res.high_risk_count ?? 0,
+      approvedToday:    res.approved_today ?? 0,
+      pendingPromotion: 0,
     }
-  } catch (e) { console.warn('[home/index] dashboard:', e) }
+  }
+  if (promoRes.status === 'fulfilled') {
+    const apps = (promoRes.value as any).applications || []
+    supervisorData.value.pendingPromotion = apps.filter((a: any) => a.review_stage === 'L2').length
+  }
 }
 
 // ── MASTER 数据 ────────────────────────────────────────
-const masterData = ref({ critical:0, aiPending:0, knowledgePending:0, reviewedToday:0 })
+const masterData = ref({ critical:0, aiPending:0, knowledgePending:0, reviewedToday:0, pendingPromotion:0 })
 
 async function loadMaster() {
-  try {
-    const res = await http<any>('/api/v1/master/dashboard')
+  const [dashRes, promoRes] = await Promise.allSettled([
+    http<any>('/api/v1/master/dashboard'),
+    http<any>('/api/v1/promotion/applications?status=pending'),
+  ])
+  if (dashRes.status === 'fulfilled') {
+    const res = dashRes.value
     masterData.value = {
-      critical:        res.critical_count ?? 0,
-      aiPending:       res.ai_pending ?? 0,
+      critical:         res.critical_count ?? 0,
+      aiPending:        res.ai_pending ?? 0,
       knowledgePending: res.knowledge_pending ?? 0,
-      reviewedToday:   res.reviewed_today ?? 0,
+      reviewedToday:    res.reviewed_today ?? 0,
+      pendingPromotion: 0,
     }
-  } catch (e) { console.warn('[home/index] dashboard:', e) }
+  }
+  if (promoRes.status === 'fulfilled') {
+    const apps = (promoRes.value as any).applications || []
+    masterData.value.pendingPromotion = apps.filter((a: any) => a.review_stage === 'L3').length
+  }
 }
 
 // ── 主加载 ─────────────────────────────────────────────

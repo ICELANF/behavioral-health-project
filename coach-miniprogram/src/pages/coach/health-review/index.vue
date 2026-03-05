@@ -49,6 +49,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor } from '@/utils/studentUtils'
 
 const loading = ref(false)
 const refreshing = ref(false)
@@ -56,14 +57,6 @@ const items = ref<any[]>([])
 const processingIds = ref<Set<string>>(new Set())
 const approvedToday = ref(0)
 const rejectedToday = ref(0)
-
-const colorPool = ['#2D8E69', '#27AE60', '#1ABC9C', '#16A085', '#0E6655', '#148F77']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0
-  for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
 
 function riskLabel(level: string): string {
   const m: Record<string, string> = { critical: '危急', high: '高风险', medium: '中风险', low: '低风险' }

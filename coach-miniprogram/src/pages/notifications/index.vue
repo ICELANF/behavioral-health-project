@@ -42,7 +42,8 @@
     <!-- 通知列表（全部/未读/审核/系统） -->
     <scroll-view v-else scroll-y class="notif-list"
       :style="{ height: scrollH }"
-      refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
+      refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing"
+      @scrolltolower="loadMore">
       <view v-for="n in filteredItems" :key="n.id"
         class="notif-item" :class="{ 'notif-item--unread': !n.is_read }"
         @tap="openNotif(n)">
@@ -63,6 +64,13 @@
         <text class="notif-empty-icon">🔔</text>
         <text class="notif-empty-text">暂无{{ tabLabel }}消息</text>
       </view>
+
+      <view v-if="loadingMore" class="notif-load-more">
+        <text class="notif-load-more-text">加载更多...</text>
+      </view>
+      <view v-else-if="!hasMore && filteredItems.length > 0" class="notif-load-more">
+        <text class="notif-load-more-text">已加载全部消息</text>
+      </view>
     </scroll-view>
   </view>
 </template>
@@ -75,8 +83,12 @@ import { httpReq as http } from '@/api/request'
 const activeTab = ref('all')
 const refreshing = ref(false)
 const loading = ref(false)
+const loadingMore = ref(false)
 const items = ref<any[]>([])
 const aiSuggestions = ref<any[]>([])
+const pageNum = ref(1)
+const PAGE_SIZE = 30
+const hasMore = ref(true)
 
 // 用 JS 计算 scroll-view 高度，避免 calc(100vh - Xrpx) 在部分微信版本失效
 const scrollH = ref('60vh')
@@ -166,17 +178,27 @@ function formatTime(iso: string): string {
   return (d.getMonth() + 1) + '/' + d.getDate()
 }
 
-async function loadData() {
-  loading.value = true
-  // 通知列表（兼容 limit / page_size 两种参数名）
+async function loadData(reset = true) {
+  if (reset) {
+    loading.value = true
+    pageNum.value = 1
+    hasMore.value = true
+  }
   try {
-    const res = await http<any>('/api/v1/notifications?limit=50&page_size=50')
-    items.value = res.items || res.notifications || (Array.isArray(res) ? res : [])
+    const res = await http<any>(`/api/v1/notifications?limit=${PAGE_SIZE}&page_size=${PAGE_SIZE}&page=${pageNum.value}`)
+    const batch = res.items || res.notifications || (Array.isArray(res) ? res : [])
+    if (reset) {
+      items.value = batch
+    } else {
+      items.value = [...items.value, ...batch]
+    }
+    hasMore.value = batch.length >= PAGE_SIZE
   } catch (e) {
     console.warn('[notifications] load:', e)
-    items.value = []
+    if (reset) items.value = []
   } finally {
     loading.value = false
+    loadingMore.value = false
   }
 
   // AI建议：仅教练角色加载（避免 grower 触发 403）
@@ -264,6 +286,13 @@ function editSuggestion(sg: any) {
   uni.navigateTo({ url: '/pages/coach/students/detail?id=' + sg.student_id + '&tab=supervision' })
 }
 
+async function loadMore() {
+  if (loadingMore.value || !hasMore.value) return
+  loadingMore.value = true
+  pageNum.value++
+  await loadData(false)
+}
+
 async function onRefresh() { refreshing.value = true; await loadData(); refreshing.value = false }
 
 onShow(() => { loadData() })
@@ -340,4 +369,6 @@ onShow(() => { loadData() })
 .notif-empty { text-align: center; padding: 120rpx 0; }
 .notif-empty-icon { display: block; font-size: 80rpx; margin-bottom: 16rpx; }
 .notif-empty-text { font-size: 28rpx; color: #8E99A4; }
+.notif-load-more { text-align: center; padding: 24rpx 0 40rpx; }
+.notif-load-more-text { font-size: 24rpx; color: #BDC3C7; }
 </style>

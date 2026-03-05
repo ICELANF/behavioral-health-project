@@ -47,7 +47,9 @@
           </view>
           <!-- 待审核：快捷操作 -->
           <view v-if="['submitted','review','completed','completed_pending_review'].includes(item.status)" class="assess-card-actions">
-            <view class="assess-action-btn assess-action-ai" @tap.stop="openAiReport(item)">
+            <view class="assess-action-btn assess-action-ai"
+              :class="{ 'assess-action-ai--loading': aiLoadingId === item.id }"
+              @tap.stop="openAiReport(item)">
               {{ aiLoadingId === item.id ? '解读中…' : '🤖 AI解读' }}
             </view>
             <view class="assess-action-btn assess-action-review" @tap.stop="goReview(item)">查看评估</view>
@@ -274,6 +276,7 @@ import { ref, computed, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
 import { SCALES_REGISTRY, SCALE_PACKS, estimateTime, SCALE_NAME_MAP, loadSurveyTools } from '@/utils/assessmentTools'
 import type { ToolDef } from '@/utils/assessmentTools'
+import { avatarColor, parseRisk, riskBg } from '@/utils/studentUtils'
 
 const activeTab = ref('all')
 const searchText = ref('')
@@ -373,16 +376,6 @@ const statTabs = computed(() => [
   { key: 'completed', label: '已完成', color: '#27AE60', count: assignments.value.filter(a => ['reviewed', 'pushed'].includes(a.status)).length },
 ])
 
-function parseRisk(r: any): number {
-  return parseInt(String(r ?? '0').replace(/\D/g, '') || '0')
-}
-function riskBg(r: any): string {
-  const n = parseRisk(r)
-  if (n >= 4) return '#E74C3C'
-  if (n === 3) return '#E67E22'
-  if (n === 2) return '#F39C12'
-  return '#27AE60'
-}
 function formatStudentSub(s: any): string {
   const days = s.days_since_last_contact ?? s.days_no_contact ?? null
   const stage = s.stage_label || s.stage || ''
@@ -456,13 +449,6 @@ const filteredItems = computed(() => {
   })
 })
 
-const AVATAR_COLORS = ['#3498DB', '#E67E22', '#27AE60', '#9B59B6', '#E74C3C', '#1ABC9C', '#F39C12', '#2980B9']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length]
-}
 
 function statusColor(s: string): string {
   const map: Record<string, string> = {
@@ -647,6 +633,7 @@ onMounted(() => { loadData() })
 .assess-action-review { background: #9B59B6; color: #fff; }
 .assess-action-remind { background: #F0F0F0; color: #E67E22; }
 .assess-action-ai { background: linear-gradient(135deg, #1a7a50, #27AE60); color: #fff; }
+.assess-action-ai--loading { opacity: 0.6; pointer-events: none; }
 
 /* ── AI 解读底部弹窗 ── */
 .assess-ai-sheet { max-height: 88vh; display: flex; flex-direction: column; }
@@ -731,7 +718,7 @@ onMounted(() => { loadData() })
 
 /* ── AI 量表建议 ── */
 .assess-ai-suggest-btn { padding: 8rpx 20rpx; background: linear-gradient(135deg, #1a7a50, #27AE60); color: #fff; border-radius: 10rpx; font-size: 24rpx; font-weight: 600; }
-.assess-ai-suggest-btn--loading { background: #8DC9B3; }
+.assess-ai-suggest-btn--loading { background: #8DC9B3; pointer-events: none; }
 .assess-pack-row { display: flex; gap: 10rpx; flex-wrap: wrap; margin-bottom: 12rpx; }
 .assess-pack-chip { padding: 8rpx 22rpx; border-radius: 28rpx; font-size: 24rpx; background: #F0F0F0; color: #5B6B7F; }
 .assess-pack-chip--active { background: #9B59B6; color: #fff; }

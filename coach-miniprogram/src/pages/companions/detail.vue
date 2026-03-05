@@ -57,18 +57,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor } from '@/utils/studentUtils'
 
 const companion = ref<any>(null)
 const loading = ref(false)
 let companionId = 0
 
-const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0; for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
-function levelName(k: string) { return { observer:'观察者', grower:'成长者', sharer:'分享者', guide:'向导者', master:'大师' }[k] || (k || '成长者') }
+
+function levelName(k: string) { return { observer:'观察员', grower:'成长者', sharer:'分享者', coach:'行为健康教练', promoter:'行为健康促进师', supervisor:'行为健康促进师', master:'行为健康大师' }[k] || (k || '成长者') }
 
 onMounted(async () => {
   const pages = getCurrentPages()

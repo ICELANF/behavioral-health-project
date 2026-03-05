@@ -56,17 +56,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor } from '@/utils/studentUtils'
 
 const searchText = ref('')
 const message = ref('我邀请你成为我的同道者，一起健康成长！')
 const searchResults = ref<any[]>([])
 
-const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0; for (const c of name) h = c.charCodeAt(0) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
+
 function levelName(k: string) { return { observer:'观察者', grower:'成长者', sharer:'分享者' }[k] || (k || '用户') }
 
 async function searchUser() {

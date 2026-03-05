@@ -63,6 +63,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { httpReq as http } from '@/api/request'
+import { avatarColor } from '@/utils/studentUtils'
 
 const companions = ref<any[]>([])
 const invitationCount = ref(0)
@@ -70,15 +71,9 @@ const refreshing = ref(false)
 const loading = ref(false)
 const myCoach = ref<any>(null)
 
-const colorPool = ['#3498DB','#E74C3C','#27AE60','#9B59B6','#E67E22','#1ABC9C','#34495E']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
-  return colorPool[Math.abs(h) % colorPool.length]
-}
 
 function levelName(key: string): string {
-  return { observer: '观察者', grower: '成长者', sharer: '分享者', guide: '向导者', master: '大师' }[key] || (key || '成长者')
+  return { observer: '观察员', grower: '成长者', sharer: '分享者', coach: '行为健康教练', promoter: '行为健康促进师', supervisor: '行为健康促进师', master: '行为健康大师' }[key] || (key || '成长者')
 }
 
 async function loadData() {

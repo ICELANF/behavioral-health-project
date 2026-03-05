@@ -352,6 +352,7 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import { httpReq as http } from '@/api/request'
+import { avatarColor, parseRisk, riskBg, riskColorText } from '@/utils/studentUtils'
 
 // 当前激活的内容Tab（generate/pending/approved/rejected）
 const activeTab = ref('pending')
@@ -441,22 +442,6 @@ const priorityStudents = computed(() =>
   studentList.value.filter(s => s.risk_level >= 2).slice(0, 3)
 )
 
-const AVATAR_COLORS = ['#3498DB', '#E67E22', '#27AE60', '#9B59B6', '#E74C3C', '#1ABC9C']
-function avatarColor(name: string): string {
-  if (!name) return '#8E99A4'
-  let h = 0; for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
-  return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length]
-}
-function riskColorText(level: number): string {
-  if (level >= 3) return '#E74C3C'
-  if (level >= 2) return '#E67E22'
-  return '#27AE60'
-}
-function riskBg(level: number): string {
-  if (level >= 3) return '#FFF0F0'
-  if (level >= 2) return '#FFF8F0'
-  return '#F0FFF4'
-}
 function typeColor(t: string): string {
   const map: Record<string, string> = { rx_push: '#3498DB', prescription: '#9B59B6', assessment: '#E67E22' }
   return map[t] || '#5B6B7F'
@@ -467,15 +452,22 @@ function dataTypeLabel(t: string): string {
 }
 
 async function loadData() {
-  // 步骤0：数据采集 — 健康审核队列（教练侧中风险）
-  try {
-    const res = await http<any>('/api/v1/health-review/queue?reviewer_role=coach')
+  const results = await Promise.allSettled([
+    http<any>('/api/v1/health-review/queue?reviewer_role=coach'),
+    http<any>('/api/v1/coach/review-queue'),
+    http<any>('/api/v1/coach/stats/today'),
+    http<any>('/api/v1/coach/dashboard'),
+  ])
+
+  // 步骤0：数据采集 — 健康审核队列
+  if (results[0].status === 'fulfilled') {
+    const res = results[0].value
     dataItems.value = res.items || res.queue || []
-  } catch { dataItems.value = [] }
+  } else { dataItems.value = [] }
 
   // 步骤2：审核队列
-  try {
-    const res = await http<any>('/api/v1/coach/review-queue')
+  if (results[1].status === 'fulfilled') {
+    const res = results[1].value
     const all = res.items || res.queue || (Array.isArray(res) ? res : [])
     pendingItems.value = all
       .filter((i: any) => !['approved', 'rejected'].includes(i.status))
@@ -484,38 +476,35 @@ async function loadData() {
     rejectedItems.value = all.filter((i: any) => i.status === 'rejected')
     approvedCount.value = approvedItems.value.length
     rejectedCount.value = rejectedItems.value.length
-  } catch {
-    try {
-      const r2 = await http<any>('/api/v1/coach-push/pending?page_size=50')
-      pendingItems.value = (r2.items || []).map((i: any) => ({ ...i, _expanded: false, _done: '' }))
-    } catch { pendingItems.value = [] }
+  } else {
+    pendingItems.value = []
+    approvedItems.value = []
+    rejectedItems.value = []
   }
 
   // 步骤2：今日统计补充
-  try {
-    const res = await http<any>('/api/v1/coach/stats/today')
+  if (results[2].status === 'fulfilled') {
+    const res = results[2].value
     if (res.approved) approvedCount.value = res.approved
     if (res.rejected) rejectedCount.value = res.rejected
-  } catch (e) { console.warn('[flywheel] today stats:', e) }
+  }
 
   // 步骤3：推送执行历史（使用已通过的审核记录替代）
   pushItems.value = approvedItems.value
 
   // 学员列表（按风险降序）
-  try {
-    const res = await http<any>('/api/v1/coach/dashboard')
+  if (results[3].status === 'fulfilled') {
+    const res = results[3].value
     studentList.value = (res.students || [])
       .map((s: any) => ({
         id: s.id || s.user_id,
         name: s.name || s.full_name || '未知',
         stage_label: s.stage_label || s.stage || '',
         day_index: s.day_index,
-        risk_level: typeof s.risk_level === 'string'
-          ? parseInt(s.risk_level.replace(/\D/g, '')) || 0
-          : (s.risk_level || 0),
+        risk_level: parseRisk(s.risk_level),
       }))
       .sort((a: any, b: any) => b.risk_level - a.risk_level)
-  } catch { studentList.value = [] }
+  } else { studentList.value = [] }
 }
 
 async function approveItem(item: any) {
