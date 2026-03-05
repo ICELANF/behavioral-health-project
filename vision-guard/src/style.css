@@ -1,0 +1,100 @@
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: var(--bg);
+  font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app {
+  max-width: 390px;
+  margin: 0 auto;
+  min-height: 100vh;
+  position: relative;
+  background: var(--bg);
+}
+
+/* -- Shared card -- */
+.card {
+  background: var(--card);
+  border-radius: 18px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-weight: 600;
+}
+.chip--teal { background: var(--teal-l); color: var(--teal); }
+.chip--amber { background: var(--amber-l); color: var(--amber); }
+.chip--green { background: var(--green-l); color: var(--green); }
+
+/* -- Button -- */
+.btn-main {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  background: var(--grad-teal);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all .2s;
+}
+.btn-main:active { transform: scale(.98); opacity: .9; }
+.btn-main:disabled { opacity: .4; cursor: not-allowed; }
+
+.btn-outline {
+  padding: 11px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1.5px solid var(--border-m);
+  background: var(--teal-l);
+  color: var(--teal);
+  cursor: pointer;
+  transition: all .15s;
+}
+.btn-outline:active { transform: scale(.97); }
+
+/* -- Animations -- */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fu { animation: fadeUp .32s ease both; }
+.fu-1 { animation-delay: .05s; }
+.fu-2 { animation-delay: .10s; }
+.fu-3 { animation-delay: .15s; }
+
+/* -- Risk banners -- */
+.risk-banner {
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.risk-banner--normal { background: var(--green-l); border: 1px solid #A8E6CF; }
+.risk-banner--watch  { background: #FFF3CD; border: 1px solid #FFD54F; }
+.risk-banner--alert  { background: var(--red-l); border: 1px solid #EF9A9A; }

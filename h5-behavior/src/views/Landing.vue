@@ -29,17 +29,27 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAssessmentStore } from '@/stores/assessment'
 import { DOORS } from '@/data/doors'
 
 const router = useRouter()
+const route = useRoute()
 const store = useAssessmentStore()
 
 function enterDoor(key: string) {
   store.setDoor(key)
   router.push('/concern')
 }
+
+// 支持从 H5 主站跳入时携带 ?door=symptom 自动进入流程
+onMounted(() => {
+  const door = route.query.door as string
+  if (door && DOORS.some(d => d.key === door)) {
+    enterDoor(door)
+  }
+})
 </script>
 
 <style scoped>

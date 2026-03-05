@@ -202,11 +202,20 @@ const selectPain = (pain: typeof painPoints[0]) => {
   selectedPain.value = selectedPain.value === pain.id ? null : pain.id
 }
 
+// 痛点 → h5-behavior 门(door)映射
+const painDoorMap: Record<string, string> = {
+  sleep: 'symptom', glucose: 'risk', weight: 'symptom',
+  procrastination: 'growth', mood: 'growth', stress: 'growth',
+}
+
 const startAssessment = () => {
-  if (selectedPain.value) {
-    router.push(`/behavior-assessment?focus=${selectedPain.value}`)
+  // h5-behavior: 生产环境同域 /behavior/#/ ，开发期跨端口 3003
+  const door = selectedPain.value ? painDoorMap[selectedPain.value] || '' : ''
+  const hash = door ? `#/?door=${door}` : '#/'
+  if (import.meta.env.PROD) {
+    window.location.href = `${window.location.origin}/behavior/${hash}`
   } else {
-    router.push('/behavior-assessment')
+    window.location.href = `http://localhost:3003/behavior/home/today${hash}`
   }
 }
 
