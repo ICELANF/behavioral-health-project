@@ -914,8 +914,13 @@ async def trial_chat(
             del _trial_chat_counts[d]
 
     try:
-        result = await AgentGateway.call_cloud_llm(body.message)
-        answer = result.get("response", "抱歉，我暂时无法回答这个问题。")
+        from core.llm_client import get_llm_client
+        llm = get_llm_client()
+        llm_resp = llm.chat(
+            system=AgentGateway._get_system_prompt(),
+            user=body.message,
+        )
+        answer = llm_resp.content if llm_resp.success else "抱歉，我暂时无法回答这个问题。"
     except Exception:
         answer = "服务暂时不可用，请稍后重试。"
 
@@ -970,9 +975,10 @@ async def dispatch_request(
             "conversation_id": result.get("conversation_id")
         }
     else:
-        # 直接调用本地模型 + RAG 知识库增强
+        # 通过 UnifiedLLMClient 路由 (cloud_first / local_first 由环境变量决定)
         from sqlalchemy.orm import Session as DBSession
         from core.database import SessionLocal
+        from core.llm_client import get_llm_client
 
         db = SessionLocal()
         rag_data = None
@@ -987,12 +993,14 @@ async def dispatch_request(
                 base_system_prompt=AgentGateway._get_system_prompt(),
             )
 
-            # 用 RAG 增强后的 prompt 调用 Ollama
-            result = await AgentGateway.call_cloud_llm(
-                prompt=message,
-                system_prompt=enhanced.system_prompt,
+            # 通过统一客户端路由 (自动按 LLM_ROUTE_STRATEGY 选择云/本地)
+            llm = get_llm_client()
+            llm_resp = llm.chat(
+                system=enhanced.system_prompt,
+                user=message,
             )
-            answer = result.get("response", "")
+            answer = llm_resp.content if llm_resp.success else "抱歉，服务暂时不可用，请稍后重试。"
+            source = f"{llm_resp.provider} ({llm_resp.model})" if llm_resp.success else "fallback"
 
             # 包装引用数据
             rag_data = enhanced.wrap_response(answer)
@@ -1010,14 +1018,19 @@ async def dispatch_request(
         except Exception as e:
             logger_main = logging.getLogger("api.main")
             logger_main.warning(f"RAG 增强失败, 回退直接调用: {e}")
-            result = await AgentGateway.call_cloud_llm(message)
-            answer = result.get("response", "")
+            llm = get_llm_client()
+            llm_resp = llm.chat(
+                system=AgentGateway._get_system_prompt(),
+                user=message,
+            )
+            answer = llm_resp.content if llm_resp.success else "服务暂时不可用，请稍后重试。"
+            source = f"{llm_resp.provider} ({llm_resp.model})" if llm_resp.success else "fallback"
         finally:
             db.close()
 
         resp = {
             "status": "success",
-            "source": "Ollama Local",
+            "source": source,
             "answer": rag_data["text"] if rag_data else answer,
         }
         if rag_data:

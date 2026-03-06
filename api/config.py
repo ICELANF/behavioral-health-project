@@ -29,6 +29,9 @@ CLOUD_LLM_MODEL = os.getenv("CLOUD_LLM_MODEL", "deepseek-chat")
 LLM_ROUTE_STRATEGY = os.getenv("LLM_ROUTE_STRATEGY", "cloud_first")
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2048"))
 
+# ── Embedding 配置 ──
+EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "ollama")   # ollama / dashscope
+
 # ── 安全模块配置 (V005) ──
 SAFETY_ENABLED = os.getenv("SAFETY_ENABLED", "true").lower() in ("true", "1", "yes")
 SAFETY_LOG_PII = os.getenv("SAFETY_LOG_PII", "false").lower() in ("true", "1", "yes")

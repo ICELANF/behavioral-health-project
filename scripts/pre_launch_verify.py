@@ -834,7 +834,7 @@ def mt05_external_services(cfg: VerifyConfig):
         if IN_DOCKER:
             import socket
             redis_host = os.environ.get("REDIS_HOST", "redis")
-            redis_pass = os.environ.get("REDIS_PASSWORD", "difyai123456")
+            redis_pass = os.environ.get("REDIS_PASSWORD", "")
             redis_hosts = [redis_host, "dify-redis-1", "localhost"]
             for rh in redis_hosts:
                 try:

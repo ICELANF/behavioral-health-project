@@ -67,6 +67,12 @@ docker-compose.yaml     → Dify Stack (独立AI平台)
 7. **JSON edits via Node only** — PowerShell破坏中文编码
 8. **Docker: only docker-compose.yml runs by default** — app.yaml按需启动
 9. **Git commit after each phase** — 便于回退
+10. **docker compose restart ≠ 重载 env** — 改 .env.bhp 后必须 `--force-recreate`，不能用 `restart`
+11. **配置存在 ≠ 代码读取** — 新增 env var 后必须 `grep os.getenv` 确认代码真的用了它
+12. **alembic "无输出" ≠ 表已创建** — 迁移后必须 `\dt schema.*` 验证表存在
+13. **LLM 路由必须经 UnifiedLLMClient** — 不得绕过 LLM_ROUTE_STRATEGY 直调 Ollama
+14. **EMBEDDING_PROVIDER 可切换** — ollama(本地) / dashscope(生产)，EmbeddingService 自动路由
+15. **API Key 不进聊天/commit/issue** — 一旦暴露立即轮换
 
 ## Branch Strategy
 
@@ -152,9 +158,13 @@ cd D:\behavioral-health-project\coach-miniprogram
 npm run dev:mp-weixin
 # → 微信开发者工具导入 dist\dev\mp-weixin
 
-# 后端 (Docker)
+# 后端 (Docker) — 修改代码后
 cd D:\behavioral-health-project
-docker-compose -f docker-compose.yml restart app   # 服务名是 app
+docker-compose -f docker-compose.yml up -d --force-recreate app   # 重建容器
+
+# 修改 .env.bhp 后 — 必须 force-recreate (restart 不重载 env_file!)
+docker-compose -f docker-compose.yml up -d --force-recreate app
+docker-compose -f docker-compose.yml exec app env | grep <关键字>   # 验证
 
 # 修改JSON用node
 node fix-routes.js
@@ -176,7 +186,32 @@ curl http://localhost:8000/api/v1/system/agents/health
 6. docker-compose.app.yaml 默认不启动, 会抢占 80/8000 端口
 7. 复制命令时不要带 PS D:\...> 提示符前缀
 
+## 环境变量管理
+
+```
+.env.example          # 提交 Git，仅含 KEY 名称 + 说明
+.env.bhp              # 本地开发，含真实本地值 (gitignored)
+.env.bhp (服务器)     # 生产值，从 .env.bhp.prod.example 复制修改
+```
+
+**新增环境变量三步走**：写入 .env.bhp → 检查 docker-compose.yml 透传 → `--force-recreate` 后 `exec app env` 验证
+
+**LLM/Embedding 路由配置**：
+- `LLM_ROUTE_STRATEGY`: cloud_first(生产) / local_first(本地开发)
+- `EMBEDDING_PROVIDER`: dashscope(生产) / ollama(本地开发)
+- 代码入口: `core/llm_client.py:UnifiedLLMClient`, `core/knowledge/embedding_service.py:EmbeddingService`
+
+## 上线前 Checklist
+
+- [ ] LLM 路由经 UnifiedLLMClient，不直调 Ollama
+- [ ] 新迁移在本地 DB 验证通过，`\dt schema.*` 确认表存在
+- [ ] .env.bhp.prod.example 更新了新增 KEY
+- [ ] docker-compose.yml environment 透传了新 env var
+- [ ] 使用 `--force-recreate`（不用 restart）
+- [ ] 部署后 health check + alembic current 验证
+- [ ] 日志无敏感信息（API Key / 密码）
+
 ## 知识库规范
 
 所有KI文件的生成和校验必须遵循 `docs/BHP知识库建设及管理规则_完整版_v4.0.md`
-向量维度统一为 **1024维**（mxbai-embed-large:latest），不使用768维。
+向量维度统一为 **1024维**（mxbai-embed-large:latest / text-embedding-v3），不使用768维。

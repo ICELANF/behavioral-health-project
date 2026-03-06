@@ -27,6 +27,14 @@ services:
       - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:14b}
       - OLLAMA_EMBED_MODEL=${OLLAMA_EMBED_MODEL:-mxbai-embed-large:latest}
       - EMBEDDING_DIMENSION=${EMBEDDING_DIMENSION:-1024}
+      - EMBEDDING_PROVIDER=${EMBEDDING_PROVIDER:-ollama}
+      - CLOUD_LLM_PROVIDER=${CLOUD_LLM_PROVIDER:-}
+      - CLOUD_LLM_API_KEY=${CLOUD_LLM_API_KEY:-}
+      - CLOUD_LLM_BASE_URL=${CLOUD_LLM_BASE_URL:-}
+      - CLOUD_LLM_MODEL=${CLOUD_LLM_MODEL:-}
+      - LLM_ROUTE_STRATEGY=${LLM_ROUTE_STRATEGY:-cloud_first}
+      - LLM_MAX_TOKENS=${LLM_MAX_TOKENS:-2048}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy
