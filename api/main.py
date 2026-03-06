@@ -376,7 +376,7 @@ async def global_exception_handler(request, exc: Exception):
     return JSONResponse(status_code=500, content={"error": "InternalServerError", "message": "服务器内部错误", "detail": detail})
 
 # --- 配置中心 (从 api.config 集中读取) ---
-from api.config import DIFY_API_URL, DIFY_API_KEY, OLLAMA_API_URL, OLLAMA_MODEL
+from api.config import DIFY_API_URL, DIFY_API_KEY, OLLAMA_API_URL, OLLAMA_MODEL, CLOUD_LLM_API_KEY, CLOUD_LLM_BASE_URL, CLOUD_LLM_MODEL, LLM_ROUTE_STRATEGY
 
 # --- 生产级中间件 (CORS白名单 + 安全头 + 日志 + 限流 + Sentry) ---
 from core.middleware import setup_production_middleware
@@ -807,6 +807,40 @@ class AgentGateway:
         except Exception as e:
             return {"response": f"服务暂时不可用：{str(e)}"}
 
+
+    @staticmethod
+    async def call_cloud_llm(prompt: str, system_prompt: str = ""):
+        """调用云端 LLM (DashScope/千问 OpenAI兼容接口)"""
+        if not system_prompt:
+            system_prompt = AgentGateway._get_system_prompt()
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        payload = {
+            "model": CLOUD_LLM_MODEL,
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 1000,
+        }
+        headers = {
+            "Authorization": f"Bearer {CLOUD_LLM_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.post(
+                    f"{CLOUD_LLM_BASE_URL}/chat/completions",
+                    json=payload,
+                    headers=headers,
+                )
+                data = response.json()
+                answer = data["choices"][0]["message"]["content"]
+                return {"response": answer}
+        except httpx.TimeoutException:
+            return {"response": "抱歉，服务响应超时，请稍后重试。"}
+        except Exception as e:
+            return {"response": f"服务暂时不可用：{str(e)}"}
 # --- API 路由 ---
 
 # ── 匿名体验聊天 (AI 健康向导, 无需 JWT, IP 限频) ──
@@ -839,7 +873,7 @@ async def trial_chat(
             del _trial_chat_counts[d]
 
     try:
-        result = await AgentGateway.call_ollama_direct(body.message)
+        result = await AgentGateway.call_cloud_llm(body.message)
         answer = result.get("response", "抱歉，我暂时无法回答这个问题。")
     except Exception:
         answer = "服务暂时不可用，请稍后重试。"
@@ -893,7 +927,7 @@ async def dispatch_request(
             )
 
             # 用 RAG 增强后的 prompt 调用 Ollama
-            result = await AgentGateway.call_ollama_with_prompt(
+            result = await AgentGateway.call_cloud_llm(
                 prompt=message,
                 system_prompt=enhanced.system_prompt,
             )
@@ -915,7 +949,7 @@ async def dispatch_request(
         except Exception as e:
             logger_main = logging.getLogger("api.main")
             logger_main.warning(f"RAG 增强失败, 回退直接调用: {e}")
-            result = await AgentGateway.call_ollama_direct(message)
+            result = await AgentGateway.call_cloud_llm(message)
             answer = result.get("response", "")
         finally:
             db.close()
