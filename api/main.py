@@ -2494,6 +2494,13 @@ try:
 except ImportError as e:
     logger.info(f"[API] S4 FAILED: {e}")
 
+try:
+    from api.phone_auth_api import router as phone_auth_router
+    app.include_router(phone_auth_router)
+    logger.info("[API] 手机号认证API已注册")
+except Exception as e:
+    logger.warning(f"[API] 手机号认证API加载失败: {e}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)

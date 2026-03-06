@@ -144,7 +144,7 @@ async def phone_register(req: PhoneRegisterRequest, db: Session = Depends(get_db
             ) VALUES (
                 :username, :email, :phone, NULL,
                 :nickname, true, true,
-                'observer', 'S0', 'G0',
+                'OBSERVER', 'S0', 'G0',
                 0, now(), now()
             ) RETURNING id, username, phone, nickname, role, current_stage
         """), {
