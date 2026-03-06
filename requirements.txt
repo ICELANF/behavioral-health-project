@@ -100,3 +100,4 @@ qrcode[pil]>=7.4
 joblib==1.5.3
 tqdm==4.67.3
 typing-extensions==4.15.0
+alibabacloud-dysmsapi20170525
