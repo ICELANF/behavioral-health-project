@@ -15,8 +15,8 @@ import sqlalchemy as sa
 from datetime import datetime
 
 # revision identifiers
-revision = '063_phone_auth'
-down_revision = '061_add_concerns_to_behavioral_profiles'
+revision = '063'
+down_revision = '061'
 branch_labels = None
 depends_on = None
 
