@@ -2575,6 +2575,13 @@ try:
 except Exception as e:
     logger.warning(f"[API] 手机号认证API加载失败: {e}")
 
+try:
+    from api.personality_matrix_api import router as personality_matrix_router
+    app.include_router(personality_matrix_router)
+    logger.info("[API] 动机x人格处方矩阵API已注册")
+except Exception as e:
+    logger.warning(f"[API] 动机x人格处方矩阵API加载失败: {e}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
