@@ -365,7 +365,7 @@ app = FastAPI(
 )
 
 # FIX-02: 全局异常处理脱敏
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc: Exception):
@@ -841,6 +841,47 @@ class AgentGateway:
             return {"response": "抱歉，服务响应超时，请稍后重试。"}
         except Exception as e:
             return {"response": f"服务暂时不可用：{str(e)}"}
+
+    @staticmethod
+    async def call_cloud_llm_stream(prompt: str, system_prompt: str = ""):
+        """流式调用 DashScope，逐 chunk yield"""
+        if not system_prompt:
+            system_prompt = AgentGateway._get_system_prompt()
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({"role": "user", "content": prompt})
+        payload = {
+            "model": CLOUD_LLM_MODEL,
+            "messages": messages,
+            "temperature": 0.7,
+            "max_tokens": 1000,
+            "stream": True,
+        }
+        headers = {
+            "Authorization": f"Bearer {CLOUD_LLM_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            async with client.stream(
+                "POST",
+                f"{CLOUD_LLM_BASE_URL}/chat/completions",
+                json=payload, headers=headers,
+            ) as response:
+                async for line in response.aiter_lines():
+                    if not line.startswith("data:"):
+                        continue
+                    data_str = line[5:].strip()
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                        delta = chunk["choices"][0]["delta"].get("content", "")
+                        if delta:
+                            yield delta
+                    except Exception:
+                        continue
+
 # --- API 路由 ---
 
 # ── 匿名体验聊天 (AI 健康向导, 无需 JWT, IP 限频) ──
@@ -884,6 +925,26 @@ async def trial_chat(
         "remaining": remaining,
         "trial": True,
     }
+
+@app.post("/api/v1/chat/trial/stream")
+async def trial_chat_stream(body: TrialChatRequest, request: Request):
+    """匿名体验聊天 — 流式 SSE 输出"""
+    client_ip = request.client.host if request.client else "unknown"
+    today = datetime.now().strftime("%Y-%m-%d")
+    if _trial_chat_counts[today][client_ip] >= 10:
+        raise HTTPException(status_code=429, detail="今日体验次数已用完")
+    _trial_chat_counts[today][client_ip] += 1
+
+    async def generate():
+        try:
+            async for chunk in AgentGateway.call_cloud_llm_stream(body.message):
+                yield f"data: {json.dumps({'delta': chunk}, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
 
 @app.post("/api/v1/dispatch")
 async def dispatch_request(

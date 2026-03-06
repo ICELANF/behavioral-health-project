@@ -217,6 +217,51 @@ function clearPendingImage() {
   pendingImageUrl.value = ''
 }
 
+async function sendMessageStream(text: string) {
+  if (!text.trim() || isLoading.value) return
+
+  chatStore.messages.push({ id: 'msg_' + Date.now(), role: 'user', content: text, timestamp: Date.now() })
+  inputText.value = ''
+  chatStore.isLoading = true
+
+  const aiMsg = reactive({ id: 'msg_' + (Date.now() + 1), role: 'assistant', content: '', timestamp: Date.now() })
+  chatStore.messages.push(aiMsg)
+  scrollToBottom()
+
+  const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+  try {
+    const res = await fetch(`${BASE}/api/v1/chat/trial/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    })
+
+    const reader = res.body!.getReader()
+    const decoder = new TextDecoder()
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const lines = decoder.decode(value).split('\n')
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue
+        const data = line.slice(5).trim()
+        if (data === '[DONE]') break
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed.delta) aiMsg.content += parsed.delta
+        } catch { /* ignore */ }
+      }
+      scrollToBottom()
+    }
+  } catch {
+    aiMsg.content = '服务暂时不可用，请稍后重试。'
+  } finally {
+    chatStore.isLoading = false
+  }
+}
+
 async function sendMessage() {
   const text = inputText.value.trim()
   const hasImage = !!pendingImage.value
@@ -227,11 +272,11 @@ async function sendMessage() {
   if (hasImage) {
     await sendImageMessage(text)
   } else {
-    inputText.value = ''
-    // 匿名体验 vs 已登录
+    // 匿名体验用流式，已登录走原逻辑
     if (chatStore.isAnonymous) {
-      await chatStore.sendTrialMessage(text)
+      await sendMessageStream(text)
     } else {
+      inputText.value = ''
       await chatStore.sendMessage(text)
     }
   }
