@@ -95,11 +95,26 @@
         <text class="login-page__register-link" @tap="goRegister">立即注册</text>
       </view>
 
+      <!-- 手机号登录入口 -->
+      <view class="login-page__divider" style="margin-top: 16rpx;">
+        <view class="login-page__divider-line"></view>
+        <text class="login-page__divider-text">或</text>
+        <view class="login-page__divider-line"></view>
+      </view>
+      <view class="login-page__phone-entry flex-center" @tap="showPhoneAuth = true">
+        <text class="login-page__phone-text">手机号验证码登录 / 注册</text>
+      </view>
+
     </view>
 
     <!-- 底部版权 -->
     <text class="login-page__footer">北京康润普科信息技术有限公司</text>
 
+    <PhoneAuthPopup
+      v-model:visible="showPhoneAuth"
+      default-tab="login"
+      @success="handlePhoneSuccess"
+    />
   </view>
 </template>
 
@@ -108,8 +123,19 @@ import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import authApi from '@/api/auth'
 import { wechatLogin, isMiniprogram } from '@/utils/wechat'
+import PhoneAuthPopup from '@/components/PhoneAuthPopup.vue'
 
 const userStore = useUserStore()
+const showPhoneAuth = ref(false)
+
+function handlePhoneSuccess(user: Record<string, any>) {
+  const tokens = {
+    access_token:  uni.getStorageSync('access_token'),
+    refresh_token: uni.getStorageSync('refresh_token'),
+  }
+  userStore.setAuth(tokens, user as any)
+  afterLogin()
+}
 const loading   = ref(false)
 const showPwd   = ref(false)
 
@@ -236,6 +262,16 @@ onMounted(() => {
 .login-page__footer {
   position: absolute; bottom: 40rpx;
   font-size: 22rpx; color: var(--text-tertiary);
+}
+
+.login-page__phone-entry {
+  padding: 16rpx 0 8rpx;
+  cursor: pointer;
+}
+.login-page__phone-text {
+  font-size: 28rpx;
+  color: var(--bhp-primary-500);
+  font-weight: 500;
 }
 
 .input-placeholder { color: var(--text-tertiary); font-size: 28rpx; }
