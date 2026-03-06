@@ -21,7 +21,18 @@
 
       <!-- 欢迎卡片 -->
       <div class="welcome-card card">
-        <div class="welcome-header" @click="router.push('/profile')">
+        <!-- 未登录：登录横幅 -->
+        <div v-if="!userStore.isLoggedIn" class="login-banner" @click="showAuthDialog = true">
+          <van-icon name="user-circle-o" size="40" color="#40916c" />
+          <div class="login-banner-text">
+            <p class="login-banner-title">登录行健平台</p>
+            <p class="login-banner-sub">登录后解锁个性化健康管理</p>
+          </div>
+          <van-button type="primary" size="small" color="#40916c" round>立即登录</van-button>
+        </div>
+
+        <!-- 已登录：原有 header -->
+        <div v-else class="welcome-header" @click="router.push('/profile')">
           <van-icon name="user-circle-o" size="48" color="#1989fa" />
           <div class="welcome-text">
             <h2>你好，{{ userStore.name }}</h2>
@@ -254,6 +265,11 @@
     </div>
 
     <TabBar />
+    <PhoneAuthDialog
+      v-model:visible="showAuthDialog"
+      default-tab="login"
+      @success="handleAuthSuccess"
+    />
   </div>
 </template>
 
@@ -266,11 +282,25 @@ import { useChatStore } from '@/stores/chat'
 import TabBar from '@/components/common/TabBar.vue'
 import TaskCard from '@/components/chat/TaskCard.vue'
 import StageHeader from '@/components/stage/StageHeader.vue'
+import PhoneAuthDialog from '@/components/PhoneAuthDialog.vue'
 import api from '@/api/index'
 
 const router = useRouter()
 const userStore = useUserStore()
 const chatStore = useChatStore()
+
+// ---- 登录弹窗 ----
+const showAuthDialog = ref(false)
+
+function handleAuthSuccess(user: Record<string, any>) {
+  // PhoneAuthDialog 已存 token 到 localStorage，同步到 store
+  const tokens = {
+    access_token:  localStorage.getItem('access_token') || '',
+    refresh_token: localStorage.getItem('refresh_token') || '',
+  }
+  userStore.setAuth(tokens, user)
+  router.push('/')
+}
 
 function goToChat(expertId: string) {
   chatStore.setCurrentExpert(expertId)
@@ -395,6 +425,21 @@ onUnmounted(() => { if (refreshTimer) clearInterval(refreshTimer) })
 @import '@/styles/variables.scss';
 
 .welcome-card {
+  .login-banner {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 0 16px;
+    cursor: pointer;
+    &:active { opacity: 0.8; }
+
+    .login-banner-text {
+      flex: 1;
+      .login-banner-title { font-size: 16px; font-weight: 600; color: #1a1a1a; margin: 0 0 2px; }
+      .login-banner-sub   { font-size: 12px; color: $text-color-secondary; margin: 0; }
+    }
+  }
+
   .welcome-header {
     display: flex;
     align-items: center;

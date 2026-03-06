@@ -54,6 +54,9 @@ export const useUserStore = defineStore('user', () => {
   watch(role, (val) => localStorage.setItem('bhp_user_role', val))
   watch(growthPoints, (val) => localStorage.setItem('bhp_user_growth_points', String(val)))
 
+  // 登录态
+  const isLoggedIn = computed(() => !!localStorage.getItem('access_token') && !!userId.value)
+
   // 计算属性
   const efficacyLevel = computed(() => {
     if (efficacyScore.value < 20) return 'low'
@@ -80,6 +83,18 @@ export const useUserStore = defineStore('user', () => {
 
   function updateWearableData(data: Partial<WearableData>) {
     wearableData.value = { ...wearableData.value, ...data }
+  }
+
+  function setAuth(
+    tokens: { access_token: string; refresh_token: string },
+    user: Record<string, any>
+  ) {
+    localStorage.setItem('access_token', tokens.access_token)
+    localStorage.setItem('refresh_token', tokens.refresh_token)
+    localStorage.setItem('user_info', JSON.stringify(user))
+    if (user.id) userId.value = String(user.id)
+    if (user.nickname || user.username) name.value = user.nickname || user.username
+    if (user.role) role.value = user.role
   }
 
   function setUserInfo(info: Partial<UserState> & { avatar?: string; role?: string; growth_points?: number }) {
@@ -128,6 +143,8 @@ export const useUserStore = defineStore('user', () => {
     efficacyLevel,
     efficacyColor,
     efficacyText,
+    isLoggedIn,
+    setAuth,
     setEfficacyScore,
     updateWearableData,
     setUserInfo,
