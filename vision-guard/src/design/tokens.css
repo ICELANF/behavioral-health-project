@@ -1,0 +1,32 @@
+:root {
+  /* VisionGuard Palette — teal/nature eye-care theme */
+  --teal: #0D7377;
+  --teal-m: #14A085;
+  --teal-l: #E8F8F5;
+  --sky: #48CAE4;
+  --sky-l: #90E0EF;
+  --amber: #F4A261;
+  --amber-l: #FFFBEB;
+  --red: #E76F51;
+  --red-l: #FDECEA;
+  --green: #2D9E6B;
+  --green-l: #D4F5E7;
+  --gold: #F9C74F;
+  --gold-l: #FFFDE7;
+
+  --bg: #F0F9F8;
+  --card: #FFFFFF;
+  --ink: #1A2E2C;
+  --sub: #5A7A78;
+  --border: #C8E8E5;
+  --border-m: #B8E0DA;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 4px rgba(13,115,119,.06);
+  --shadow-md: 0 2px 12px rgba(13,115,119,.08);
+  --shadow-lg: 0 4px 24px rgba(13,115,119,.12);
+
+  /* Gradients */
+  --grad-teal: linear-gradient(135deg, var(--teal) 0%, var(--teal-m) 100%);
+  --grad-header: linear-gradient(135deg, #0D7377 0%, #14A085 100%);
+}
