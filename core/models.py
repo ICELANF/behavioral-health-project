@@ -1919,14 +1919,11 @@ class KnowledgeChunk(Base):
     content = Column(Text, nullable=False)
     chunk_index = Column(Integer, nullable=False)
 
-    # 旧列 768 维 (保留, 蓝绿迁移期间不删)
+    # 1024 维 (mxbai-embed-large / text-embedding-v3)
     if Vector is not None:
-        embedding = Column(Vector(768), nullable=True)
+        embedding = Column(Vector(1024), nullable=True)
     else:
         embedding = Column(JSON, nullable=True)
-
-    # 新列 1024 维 (mxbai-embed-large, 蓝绿迁移目标列)
-    embedding_1024 = Column(Text, nullable=True)
 
     chunk_metadata = Column("metadata", JSON, nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
