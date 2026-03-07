@@ -19,6 +19,7 @@ declare module 'vue' {
     MotivationCard: typeof import('./src/components/home/MotivationCard.vue')['default']
     NotificationBell: typeof import('./src/components/common/NotificationBell.vue')['default']
     PageShell: typeof import('./src/components/common/PageShell.vue')['default']
+    PhoneAuthDialog: typeof import('./src/components/PhoneAuthDialog.vue')['default']
     ProfileEditor: typeof import('./src/components/profile/ProfileEditor.vue')['default']
     QuickInputHub: typeof import('./src/components/health/QuickInputHub.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']

@@ -161,7 +161,7 @@
           </div>
           <div class="dev-role-btn" @click="quickLogin('supervisor')">
             <div class="dev-role-icon" style="background:#f3e5f5;color:#8e24aa">L4</div>
-            <span>督导</span>
+            <span>促进师(督)</span>
           </div>
           <div class="dev-role-btn" @click="quickLogin('master')">
             <div class="dev-role-icon" style="background:#fff8e1;color:#f9a825">L5</div>
@@ -289,8 +289,8 @@ const professionalRoles: RoleItem[] = [
     levelLabel: 'L4',
     levelBg: '#f3e5f5',
     levelColor: '#8e24aa',
-    name: '督导',
-    desc: '督导教练实践，确保服务质量',
+    name: '行为健康促进师',
+    desc: '督导教练实践，促进健康理念传播',
     actionText: '登录',
     actionClass: 'role-action--login',
     target: '/login',

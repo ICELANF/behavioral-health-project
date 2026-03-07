@@ -133,6 +133,21 @@ function showToast(msg: NotificationMessage) {
   })
 }
 
+// Staff 后台：覆盖移动端宽度限制
+watch(
+  () => route.path,
+  (path) => {
+    const app = document.getElementById('app')
+    if (!app) return
+    if (path.startsWith('/staff')) {
+      app.classList.add('staff-mode')
+    } else {
+      app.classList.remove('staff-mode')
+    }
+  },
+  { immediate: true }
+)
+
 // 监听路由变化：登录后连接，登出后断开
 watch(
   () => route.path,
@@ -169,5 +184,16 @@ html {
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
   overflow-y: auto;
   position: relative;
+}
+
+/* Staff 后台网页版：解除移动端宽度限制 */
+#app.staff-mode {
+  max-width: 100vw;
+  width: 100%;
+  margin: 0;
+  box-shadow: none;
+  background: #f3f4f6;
+  overflow: hidden;
+  min-height: 100vh;
 }
 </style>

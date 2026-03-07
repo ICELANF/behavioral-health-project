@@ -93,8 +93,8 @@ import api from '@/api/index'
 import storage from '@/utils/storage'
 
 const ROLE_MAP: Record<string, string> = {
-  admin: '管理员', coach: '健康教练', grower: '成长者',
-  observer: '观察员', supervisor: '督导', promoter: '推广者', master: '大师'
+  admin: '管理员', coach: '行为健康教练', grower: '成长者', sharer: '分享者',
+  observer: '观察员', supervisor: '行为健康促进师', promoter: '行为健康促进师', master: '行为健康大师'
 }
 
 // 每日配色方案 (14天循环)

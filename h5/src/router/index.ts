@@ -425,6 +425,64 @@ const router = createRouter({
       component: () => import('@/views/WechatCallback.vue'),
       meta: { title: '微信登录', public: true }
     },
+    // ── Staff Login (独立页，不嵌套在 StaffLayout 内) ──
+    {
+      path: '/staff/login',
+      component: () => import('@/views/staff/StaffLogin.vue'),
+      meta: { public: true }
+    },
+    // ── Staff Web (PC 后台网页版) ──
+    {
+      path: '/staff',
+      component: () => import('@/layouts/StaffLayout.vue'),
+      meta: { requiresStaff: true },
+      children: [
+        {
+          path: '',
+          redirect: () => {
+            const authUser = storage.getAuthUser()
+            const r = ((authUser?.role) || 'coach').toLowerCase()
+            const roleMap: Record<string, string> = {
+              coach: '/staff/coach/dashboard',
+              promoter: '/staff/supervisor/dashboard',
+              supervisor: '/staff/supervisor/dashboard',
+              master: '/staff/master/dashboard',
+              admin: '/staff/admin/overview',
+            }
+            return roleMap[r] || '/staff/coach/dashboard'
+          }
+        },
+        // Coach
+        { path: 'coach/dashboard',     component: () => import('@/views/staff/coach/Dashboard.vue') },
+        { path: 'coach/students',      component: () => import('@/views/staff/coach/Students.vue') },
+        { path: 'coach/assessment',    component: () => import('@/views/staff/coach/Assessment.vue') },
+        { path: 'coach/flywheel',      component: () => import('@/views/staff/coach/Flywheel.vue') },
+        { path: 'coach/push-queue',    component: () => import('@/views/staff/coach/PushQueue.vue') },
+        { path: 'coach/health-review', component: () => import('@/views/staff/coach/HealthReview.vue') },
+        { path: 'coach/risk',          component: () => import('@/views/staff/coach/Risk.vue') },
+        { path: 'coach/analytics',     component: () => import('@/views/staff/coach/Analytics.vue') },
+        { path: 'coach/promotion',     component: () => import('@/views/staff/coach/Promotion.vue') },
+        // Supervisor
+        { path: 'supervisor/dashboard',    component: () => import('@/views/staff/supervisor/Dashboard.vue') },
+        { path: 'supervisor/coaches',      component: () => import('@/views/staff/supervisor/Coaches.vue') },
+        { path: 'supervisor/review-queue', component: () => import('@/views/staff/supervisor/ReviewQueue.vue') },
+        { path: 'supervisor/promotion',    component: () => import('@/views/staff/supervisor/Promotion.vue') },
+        // Master
+        { path: 'master/dashboard',       component: () => import('@/views/staff/master/Dashboard.vue') },
+        { path: 'master/critical-review', component: () => import('@/views/staff/master/CriticalReview.vue') },
+        { path: 'master/knowledge',       component: () => import('@/views/staff/master/Knowledge.vue') },
+        { path: 'master/promotion',       component: () => import('@/views/staff/master/Promotion.vue') },
+        // Admin
+        { path: 'admin/overview',   component: () => import('@/views/staff/admin/Overview.vue') },
+        { path: 'admin/users',      component: () => import('@/views/staff/admin/Users.vue') },
+        { path: 'admin/content',    component: () => import('@/views/staff/admin/Content.vue') },
+        { path: 'admin/coaches',    component: () => import('@/views/staff/admin/Coaches.vue') },
+        { path: 'admin/promotions', component: () => import('@/views/staff/admin/Promotions.vue') },
+        { path: 'admin/reports',    component: () => import('@/views/staff/admin/Reports.vue') },
+        { path: 'admin/config',     component: () => import('@/views/staff/admin/Config.vue') },
+        { path: 'admin/logs',       component: () => import('@/views/staff/admin/Logs.vue') },
+      ]
+    },
     {
       path: '/:pathMatch(.*)*',
       redirect: '/'
@@ -446,8 +504,20 @@ router.back = () => {
 }
 
 // 路由守卫 - 未登录访问需认证页面 → 跳转门户页
+const STAFF_ROLES = new Set(['coach', 'promoter', 'supervisor', 'master', 'admin'])
+
 router.beforeEach((to, _from, next) => {
   const token = storage.getToken()
+
+  // Staff routes: 需要登录 + staff角色
+  if (to.matched.some(r => r.meta?.requiresStaff)) {
+    if (!token) { next({ path: '/staff/login', replace: true }); return }
+    const authUser = storage.getAuthUser()
+    const role = ((authUser?.role) || '').toLowerCase()
+    if (!STAFF_ROLES.has(role)) { next({ path: '/portal', replace: true }); return }
+    next(); return
+  }
+
   if (!to.meta?.public && !token) {
     next({ path: '/portal', replace: true })
   } else {

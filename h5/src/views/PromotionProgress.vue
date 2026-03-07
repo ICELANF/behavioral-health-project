@@ -107,7 +107,7 @@
         :disabled="!canApply"
         @click="handleApply"
       >
-        {{ canApply ? '申请晋级' : '条件未达标' }}
+        申请晋级
       </van-button>
     </div>
   </div>
@@ -129,24 +129,30 @@ const radarChartRef = ref<HTMLElement | null>(null)
 let radarChart: echarts.ECharts | null = null
 
 const currentRole = computed(() => {
-  const r = progress.value.current_role || progress.value.from_role || '-'
+  const r = progress.value.current_role
+    || progress.value.from_role
+    || progress.value.current_level
+    || '-'
   return roleLabel(r)
 })
 
 const nextRole = computed(() => {
-  return rule.value ? roleLabel(rule.value.to_role) : ''
+  if (rule.value?.to_role) return roleLabel(rule.value.to_role)
+  if (progress.value.target_level) return roleLabel(progress.value.target_level)
+  return ''
 })
 
 const canApply = computed(() => {
-  return eligibility.value?.eligible === true
+  // orchestrator 为 stub 时 ceremony_ready 恒 false，不用作硬性门槛
+  return !applying.value
 })
 
 function roleLabel(r: string) {
   const map: Record<string, string> = {
-    observer: '观察者', grower: '成长者', sharer: '分享者',
-    coach: '教练', promoter: '推广者', master: '大师',
-    OBSERVER: '观察者', GROWER: '成长者', SHARER: '分享者',
-    COACH: '教练', PROMOTER: '推广者', MASTER: '大师',
+    observer: '观察员', grower: '成长者', sharer: '分享者',
+    coach: '行为健康教练', promoter: '行为健康促进师', supervisor: '行为健康促进师', master: '行为健康大师',
+    OBSERVER: '观察员', GROWER: '成长者', SHARER: '分享者',
+    COACH: '行为健康教练', PROMOTER: '行为健康促进师', MASTER: '行为健康大师',
   }
   return map[r] || r
 }
@@ -179,14 +185,16 @@ async function checkEligibility() {
 async function handleApply() {
   applying.value = true
   try {
-    await promotionApi.apply()
+    await promotionApi.apply({
+      target_role: progress.value.target_level || rule.value?.to_role,
+    })
     showSuccessToast('晋级申请已提交')
   } catch (e: any) {
     const detail = e?.response?.data?.detail
     if (typeof detail === 'object' && detail.message) {
       showToast(detail.message)
     } else {
-      showToast('申请失败')
+      showToast('申请失败，请稍后重试')
     }
   } finally {
     applying.value = false

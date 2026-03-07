@@ -156,7 +156,7 @@
           </div>
           <div class="role-btn" @click="quickLogin('supervisor')">
             <div class="role-icon" style="background:#f3e5f5;color:#8e24aa">L4</div>
-            <span class="role-name">督导</span>
+            <span class="role-name">促进师(督)</span>
           </div>
           <div class="role-btn" @click="quickLogin('master')">
             <div class="role-icon" style="background:#fff8e1;color:#f9a825">L5</div>
@@ -247,7 +247,7 @@ const demoAccounts: Record<string, { password: string; label: string }> = isDev 
   sharer:     { password: 'Sharer@2026',     label: '分享者' },
   coach:      { password: 'Coach@2026',      label: '教练' },
   promoter:   { password: 'Promoter@2026',   label: '促进师' },
-  supervisor: { password: 'Supervisor@2026', label: '督导' },
+  supervisor: { password: 'Supervisor@2026', label: '促进师(督)' },
   master:     { password: 'Master@2026',     label: '大师' },
   admin:      { password: 'Admin@2026',      label: '管理员' },
 } : {}

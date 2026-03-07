@@ -85,7 +85,7 @@ export const promotionApi = {
   },
 
   /** 提交晋级申请 */
-  apply() {
-    return api.post('/api/v1/promotion/apply')
+  apply(data?: { statement?: string; target_role?: string; dim_ready?: number }) {
+    return api.post('/api/v1/promotion/apply', data ?? {})
   },
 }
