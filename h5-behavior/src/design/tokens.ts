@@ -1,0 +1,31 @@
+/** Design System — BehaviorOS light warm theme */
+export const D = {
+  bg:      '#F7F5F0',
+  bgM:     '#EFECE5',
+  bgL:     '#E5E2DC',
+  ink:     '#1A2E35',
+  inkM:    '#2A3E45',
+  inkL:    '#3A5060',
+  teal:    '#00B8A0',
+  tealD:   '#007A6A',
+  tealL:   '#D0F5F0',
+  amber:   '#F5A623',
+  amberD:  '#C47B00',
+  amberL:  '#FFF4DC',
+  indigo:  '#4C6EF5',
+  indigoD: '#2F4FD4',
+  indigoL: '#EEF2FF',
+  rose:    '#F56565',
+  roseL:   '#FFF0F0',
+  gold:    '#D4A017',
+  sage:    '#06D6A0',
+  text:    '#3A5560',
+  sub:     '#5A7882',
+  muted:   '#94A8B0',
+  card:    '#FFFFFF',
+  cardB:   '#F5F3EE',
+  border:  'rgba(0,0,0,0.07)',
+  borderM: 'rgba(0,0,0,0.12)',
+} as const
+
+export type DesignTokens = typeof D

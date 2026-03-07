@@ -1,0 +1,16 @@
+import { createApp } from 'vue'
+import { createPinia } from 'pinia'
+import App from './App.vue'
+import router from './router'
+import '@/design/tokens.css'
+import './style.css'
+
+// session_id init
+if (!localStorage.getItem('session_id')) {
+  localStorage.setItem('session_id', crypto.randomUUID())
+}
+
+const app = createApp(App)
+app.use(createPinia())
+app.use(router)
+app.mount('#app')
