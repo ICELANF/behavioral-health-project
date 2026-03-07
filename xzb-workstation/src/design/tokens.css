@@ -1,0 +1,78 @@
+:root {
+  /* XZB Brand - Deep teal + warm gold accents */
+  --xzb-primary: #1A6B5A;
+  --xzb-primary-l: #E8F5F0;
+  --xzb-primary-d: #0F4A3E;
+  --xzb-gold: #C8A55A;
+  --xzb-gold-l: #FDF6E3;
+  --xzb-amber: #E8A838;
+  --xzb-red: #D94E4E;
+  --xzb-green: #2E9E6B;
+  --xzb-blue: #3B82F6;
+  --xzb-purple: #7C5CFC;
+
+  --ink: #1A2332;
+  --sub: #6B7B8F;
+  --border: #E8EDF2;
+  --border-m: #D1D9E0;
+  --bg: #F4F6F8;
+  --card: #FFFFFF;
+
+  --grad-header: linear-gradient(135deg, #1A6B5A, #0F4A3E);
+  --grad-gold: linear-gradient(135deg, #C8A55A, #A68B42);
+
+  --radius: 14px;
+  --radius-sm: 10px;
+  --shadow-card: 0 2px 12px rgba(26,107,90,0.08);
+  --shadow-float: 0 8px 32px rgba(26,107,90,0.12);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, 'PingFang SC', 'Helvetica Neue', sans-serif; background: var(--bg); color: var(--ink); }
+
+.card {
+  background: var(--card); border-radius: var(--radius);
+  padding: 16px; box-shadow: var(--shadow-card);
+}
+.card-title {
+  font-size: 14px; font-weight: 700; color: var(--ink);
+  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+}
+.chip {
+  font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 600;
+}
+.chip--teal { background: var(--xzb-primary-l); color: var(--xzb-primary); }
+.chip--gold { background: var(--xzb-gold-l); color: var(--xzb-gold); }
+.chip--red { background: #FEE; color: var(--xzb-red); }
+.chip--blue { background: #EEF4FF; color: var(--xzb-blue); }
+
+.btn-main {
+  background: var(--grad-header); color: white; border: none;
+  padding: 12px 20px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+  transition: opacity .2s;
+}
+.btn-main:active { opacity: .85; }
+.btn-main:disabled { opacity: .4; cursor: not-allowed; }
+
+.btn-outline {
+  background: white; color: var(--xzb-primary); border: 1.5px solid var(--xzb-primary);
+  padding: 10px 16px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+
+.btn-gold {
+  background: var(--grad-gold); color: white; border: none;
+  padding: 12px 20px; border-radius: var(--radius-sm);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+}
+
+/* Fade-up animation */
+.fu { animation: fadeUp .5s ease both; }
+.fu-1 { animation-delay: .08s; }
+.fu-2 { animation-delay: .16s; }
+.fu-3 { animation-delay: .24s; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
