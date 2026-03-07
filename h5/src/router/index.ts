@@ -393,6 +393,25 @@ const router = createRouter({
       component: () => import('@/views/v3/Register.vue'),
       meta: { public: true }
     },
+    // ── 归心 Phase 1 (动机→画像→处方) ──
+    {
+      path: '/v3/motivation-quiz',
+      name: 'motivation-quiz',
+      component: () => import('@/views/v3/MotivationQuiz.vue'),
+      meta: { title: '动机与人格评估' }
+    },
+    {
+      path: '/v3/profile-card',
+      name: 'profile-card',
+      component: () => import('@/views/v3/ProfileCard.vue'),
+      meta: { title: '我的行为画像' }
+    },
+    {
+      path: '/v3/prescription-card',
+      name: 'prescription-card',
+      component: () => import('@/views/v3/PrescriptionCard.vue'),
+      meta: { title: '行为处方' }
+    },
     // ── VisionGuard 视力行为保护 ──
     {
       path: '/vision/daily',

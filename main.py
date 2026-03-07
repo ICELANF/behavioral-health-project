@@ -329,6 +329,16 @@ try:
 except ImportError as e:
     logger.warning(f"[copilot] CoachCopilot 路由加载失败: {e}")
 
+# ============================================
+# [guixin] 归心 API (Phase 1)
+# ============================================
+try:
+    from api.guixin_api import router as guixin_router
+    app.include_router(guixin_router)
+    logger.info("[guixin] 归心API路由已加载")
+except ImportError as e:
+    logger.warning(f"[guixin] 归心API路由加载失败: {e}")
+
 # 启动行为引擎配置监控（热重载）
 try:
     from services.logic_engine import start_config_watcher
