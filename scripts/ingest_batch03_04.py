@@ -14,10 +14,11 @@ import urllib.request
 import urllib.error
 
 # ── 配置 ──
-QDRANT_URL = "http://localhost:6333"
+QDRANT_URL = os.getenv("QDRANT_URL", "http://qdrant:6333")
 COLLECTION = "bhp_knowledge"
-OLLAMA_URL = "http://localhost:11434/api/embed"
-EMBED_MODEL = "mxbai-embed-large"
+DASHSCOPE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings"
+EMBED_MODEL = "text-embedding-v3"
+DASHSCOPE_KEY = os.getenv("CLOUD_LLM_API_KEY", "")
 VECTOR_DIM = 1024
 CHUNK_SIZE = 512       # v4.0: ~512字符
 CHUNK_OVERLAP = 50
@@ -71,11 +72,12 @@ def get_embedding(text: str, retries: int = 3) -> list:
     payload = json.dumps({"model": EMBED_MODEL, "input": text}, ensure_ascii=False).encode("utf-8")
     for attempt in range(retries):
         try:
-            req = urllib.request.Request(OLLAMA_URL, data=payload,
-                                        headers={"Content-Type": "application/json"})
+            req = urllib.request.Request(DASHSCOPE_URL, data=payload,
+                                        headers={"Content-Type": "application/json",
+                                                 "Authorization": f"Bearer {DASHSCOPE_KEY}"})
             with urllib.request.urlopen(req, timeout=120) as resp:
                 result = json.loads(resp.read().decode("utf-8"))
-            return result["embeddings"][0]
+            return result["data"][0]["embedding"]
         except (urllib.error.HTTPError, urllib.error.URLError) as e:
             if attempt < retries - 1:
                 print(f"    Retry {attempt+1}: {e}")

@@ -49,10 +49,11 @@ class DirectOllamaEmbedder:
     """直接调用 Ollama REST API, 绕过 EmbeddingService httpx 兼容性问题"""
     def __init__(self):
         import httpx
-        self.model = os.getenv("OLLAMA_EMBED_MODEL", "mxbai-embed-large:latest")
-        self.base_url = os.getenv("OLLAMA_API_URL", "http://localhost:11434")
+        self.model = os.getenv("DASHSCOPE_EMBED_MODEL", "text-embedding-v3")
+        self.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings"
         self.expected_dim = EMBEDDING_DIM
-        self.provider = "ollama-direct"
+        self.provider = "dashscope"
+        self.api_key = os.getenv("CLOUD_LLM_API_KEY", "")
         self._client = httpx.Client(timeout=120.0)
 
     def embed_batch(self, texts: list) -> list:
@@ -60,11 +61,12 @@ class DirectOllamaEmbedder:
         for text in texts:
             try:
                 resp = self._client.post(
-                    f"{self.base_url}/api/embeddings",
-                    json={"model": self.model, "prompt": text},
+                    self.base_url,
+                    headers={"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"},
+                    json={"model": self.model, "input": text},
                 )
                 resp.raise_for_status()
-                vec = resp.json().get("embedding", [])
+                vec = resp.json().get("data", [{}])[0].get("embedding", [])
                 results.append(vec if len(vec) == self.expected_dim else [])
             except Exception as e:
                 print(f"      Embed error: {e}")
@@ -81,12 +83,13 @@ def get_embedder():
     import httpx
     try:
         resp = httpx.post(
-            f"{embedder.base_url}/api/embeddings",
-            json={"model": embedder.model, "prompt": "test"},
+            embedder.base_url,
+            headers={"Authorization": f"Bearer {embedder.api_key}", "Content-Type": "application/json"},
+            json={"model": embedder.model, "input": "test"},
             timeout=30,
         )
         resp.raise_for_status()
-        dim = len(resp.json().get("embedding", []))
+        dim = len(resp.json().get("data", [{}])[0].get("embedding", []))
         print(f"  Embedding: {embedder.model} @ {embedder.base_url}, dim={dim}")
     except Exception as e:
         print(f"  Embedding test failed: {e}")

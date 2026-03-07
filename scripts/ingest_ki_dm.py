@@ -24,15 +24,16 @@ from datetime import datetime
 # 配置区 · 按实际环境修改
 # ─────────────────────────────────────────────
 
-QDRANT_HOST = "localhost"
+QDRANT_HOST = os.getenv("QDRANT_HOST", "qdrant")
 QDRANT_PORT = 6333
 COLLECTION_NAME = "bhp_knowledge"  # 与平台contract registry一致
 
 # Embedding模型（1024dim）
 # 选项1: Ollama本地模型（推荐：bge-m3 输出1024dim）
-EMBEDDING_PROVIDER = "ollama"
-OLLAMA_HOST = "http://localhost:11434"
-OLLAMA_EMBED_MODEL = "mxbai-embed-large"  # 项目标准: 1024dim
+EMBEDDING_PROVIDER = "dashscope"
+DASHSCOPE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings"
+DASHSCOPE_KEY = os.getenv("CLOUD_LLM_API_KEY", "")
+DASHSCOPE_MODEL = "text-embedding-v3"  # 项目标准: 1024dim
 
 # 选项2: 若使用其他embedding服务，在此切换
 # EMBEDDING_PROVIDER = "openai"  # 需要设置 OPENAI_API_KEY
@@ -168,28 +169,21 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
     return [c for c in chunks if c.strip()]
 
 
-def get_embedding_ollama(text: str) -> list[float]:
-    """使用Ollama获取embedding向量（1024dim）"""
+
+def get_embedding(text: str) -> list[float]:
+    """DashScope text-embedding-v3 1024dim"""
     import urllib.request
-    # mxbai-embed-large context = 512 tokens; Chinese ≈ 1.5 tokens/char
     text = text[:340].replace("\x00", "")
-    payload = json.dumps({"model": OLLAMA_EMBED_MODEL, "input": text}, ensure_ascii=False).encode("utf-8")
+    payload = json.dumps({"model": DASHSCOPE_MODEL, "input": text}, ensure_ascii=False).encode("utf-8")
     req = urllib.request.Request(
-        f"{OLLAMA_HOST}/api/embed",
+        DASHSCOPE_URL,
         data=payload,
-        headers={"Content-Type": "application/json"},
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {DASHSCOPE_KEY}"},
     )
     with urllib.request.urlopen(req, timeout=120) as resp:
         result = json.loads(resp.read().decode("utf-8"))
-    return result["embeddings"][0]
+    return result["data"][0]["embedding"]
 
-
-def get_embedding(text: str) -> list[float]:
-    """统一embedding入口，根据EMBEDDING_PROVIDER路由"""
-    if EMBEDDING_PROVIDER == "ollama":
-        return get_embedding_ollama(text)
-    else:
-        raise ValueError(f"不支持的embedding provider: {EMBEDDING_PROVIDER}")
 
 
 # ─────────────────────────────────────────────
@@ -263,7 +257,7 @@ def ingest_file(client, file_meta: dict) -> int:
                 print(f"  [警告] 向量维度不匹配: 期望{VECTOR_SIZE}, 实际{len(vector)}")
                 # 若模型输出不是1024dim，给出提示
                 if len(vector) == 768:
-                    print(f"  [提示] 检测到768dim输出，请确认OLLAMA_EMBED_MODEL配置")
+                    print(f"  [提示] 检测到768dim输出，请确认DASHSCOPE_MODEL配置")
 
             # 构建payload
             payload = {
@@ -340,7 +334,7 @@ def generate_ingestion_report(total_points: int) -> None:
         "ingest_time": datetime.now().isoformat(),
         "collection": COLLECTION_NAME,
         "vector_dim": VECTOR_SIZE,
-        "embed_model": OLLAMA_EMBED_MODEL,
+        "embed_model": DASHSCOPE_MODEL,
         "chunk_size": CHUNK_SIZE,
         "chunk_overlap": CHUNK_OVERLAP,
         "files_processed": len(KI_FILES),
@@ -363,7 +357,7 @@ def main():
     print("BHP知识库向量入库脚本 v1.0")
     print(f"集合: {COLLECTION_NAME} | 维度: {VECTOR_SIZE}dim")
     print(f"切片: {CHUNK_SIZE}字符 / 重叠: {CHUNK_OVERLAP}字符")
-    print(f"Embedding: {EMBEDDING_PROVIDER} / {OLLAMA_EMBED_MODEL}")
+    print(f"Embedding: {EMBEDDING_PROVIDER} / {DASHSCOPE_MODEL}")
     print("=" * 60)
 
     # 连接Qdrant
