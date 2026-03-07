@@ -124,7 +124,7 @@ class EmbeddingService:
         try:
             from core.knowledge.embedding_service import EmbeddingService as OllamaEmbed
             self._ollama = OllamaEmbed()
-            self._dim = 768
+            self._dim = 1024
         except Exception as e:
             raise RuntimeError(
                 f"无可用的 Embedding 后端. "
@@ -132,13 +132,13 @@ class EmbeddingService:
             )
 
     def embed(self, text: str) -> List[float]:
-        """单条文本 → 768维向量"""
+        """单条文本 → 1024维向量 (mxbai-embed-large)"""
         if self._st_model is not None:
             vec = self._st_model.encode(text, normalize_embeddings=True)
             return vec.tolist()
         if self._ollama is not None:
             return self._ollama.embed_query(text)
-        return [0.0] * 768
+        return [0.0] * 1024
 
     def embed_batch(self, texts: List[str]) -> List[List[float]]:
         """批量向量化"""
@@ -147,7 +147,7 @@ class EmbeddingService:
             return [v.tolist() for v in vecs]
         if self._ollama is not None:
             return self._ollama.embed_batch(texts)
-        return [[0.0] * 768 for _ in texts]
+        return [[0.0] * 1024 for _ in texts]
 
 
 __all__ = ["SmartChunker", "ChunkItem", "EmbeddingService"]
