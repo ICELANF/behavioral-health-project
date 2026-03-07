@@ -1,0 +1,554 @@
+# ============================================================
+# Tier 3-5+ Agents 检索映射
+# behavior_rx / weight / cardiac_rehab / trust_guide /
+# onboarding / health_assistant / habit_tracker /
+# xzb_expert / vision / journey_companion /
+# growth_reflection / coach_copilot /
+# BehaviorRx专家(x4)
+# version: v3.0.0
+# ============================================================
+
+# ── behavior_rx (BehaviorRxAgent, priority=2) ────────────────
+agent_id: behavior_rx
+agent_class: BehaviorRxAgent
+tier: 3
+priority: 2
+notes: "铁律：所有处方必须进入coach_review_queue，禁止直接推送"
+
+retrieval_rules:
+
+  - rule_id: BXRX-R001
+    name: 行为处方六要素生成
+    trigger_condition:
+      signal: rx_generation_triggered
+    retrieval_query: "行为处方六要素 BCT策略 改变阶段处方匹配"
+    target_ki: [KI-CD-008, KI-BCT-FOGG-001, KI-LEARN-ILL-001]
+    expected_output: 基于六要素的结构化行为处方
+    priority: P0
+
+  - rule_id: BXRX-R002
+    name: 高血压行为处方
+    trigger_condition:
+      signal: diagnosis_htn
+    retrieval_query: "高血压生活方式干预 行为改变 限盐运动减压综合"
+    target_ki: [KI-HTN-002, KI-HTN-003, KI-HTN-007, KI-HTN-008, KI-CD-008]
+    expected_output: 高血压综合行为处方（饮食+运动+压力管理）
+    priority: P0
+
+  - rule_id: BXRX-R003
+    name: 高脂血症行为处方
+    trigger_condition:
+      signal: diagnosis_hlp
+    retrieval_query: "高脂血症生活方式干预 饮食运动行为处方"
+    target_ki: [KI-HLP-002, KI-HLP-005, KI-HLP-007, KI-CD-008]
+    expected_output: 高脂血症综合行为处方
+    priority: P0
+
+  - rule_id: BXRX-R004
+    name: 减重行为处方
+    trigger_condition:
+      signal: diagnosis_obesity
+    retrieval_query: "肥胖生活方式干预 减重行为处方 综合干预"
+    target_ki: [KI-OBE-003, KI-OBE-005, KI-OBE-006, KI-CD-008]
+    expected_output: 减重综合行为处方（热量+运动+行为规范）
+    priority: P0
+
+  - rule_id: BXRX-R005
+    name: 戒烟戒酒处方
+    trigger_condition:
+      keywords_any: ["戒烟","戒酒","抽烟","喝酒","成瘾","依赖","控制不住"]
+    retrieval_query: "成瘾行为干预 戒断处方 替代行为 复发预防"
+    target_ki: [KI-PSYCH-BURG-002, KI-BCT-FOGG-001, KI-OBE-009]
+    expected_output: 成瘾行为干预处方 + 复发应对计划
+    priority: P0
+
+  - rule_id: BXRX-R006
+    name: 文化适配处方调整
+    trigger_condition:
+      signal: cultural_profile_detected
+    retrieval_query: "文化因素行为处方 中国情境 饮食文化 地域习惯"
+    target_ki: [KI-CULT-HUM-001, KI-HTN-009, KI-HLP-008]
+    expected_output: 文化适配版处方内容
+    priority: P1
+
+
+---
+# ── weight (WeightAgent, priority=2) ────────────────────────
+agent_id: weight
+agent_class: WeightAgent
+tier: 3
+priority: 2
+
+retrieval_rules:
+
+  - rule_id: WT-R001
+    name: 成人减重方案
+    trigger_condition:
+      keywords_any: ["减肥","减重","体重","肥胖","BMI","腰围","体脂"]
+    retrieval_query: "成人肥胖判定 减重方案 能量控制 运动综合"
+    target_ki: [KI-OBE-001, KI-OBE-003, KI-OBE-004, KI-OBE-006, KI-OBE-008]
+    expected_output: 个性化减重综合方案
+    priority: P0
+
+  - rule_id: WT-R002
+    name: 减重心理支持
+    trigger_condition:
+      keywords_any: ["减了又胖","减肥失败","反弹","控制不住","体重焦虑","和体重的关系"]
+    retrieval_query: "减重心理 体重循环 身体意象 可持续减重 自我效能"
+    target_ki: [KI-PSYCH-BURG-002, KI-LEARN-ILL-003, KI-OBE-008]
+    expected_output: 减重心理支持框架 + 可持续行为策略
+    priority: P0
+
+  - rule_id: WT-R003
+    name: 代谢综合征管理
+    trigger_condition:
+      keywords_any: ["代谢综合征","腹型肥胖","三高加肥胖","腰围超标","内脏脂肪"]
+    retrieval_query: "代谢综合征 腹型肥胖 综合干预 血压血脂血糖"
+    target_ki: [KI-OBE-001, KI-HTN-002, KI-HLP-002, KI-OBE-003]
+    expected_output: 代谢综合征综合管理方案
+    priority: P0
+
+  - rule_id: WT-R004
+    name: 儿童体重管理
+    trigger_condition:
+      keywords_any: ["孩子胖","儿童肥胖","孩子减肥","青少年体重","孩子BMI"]
+    retrieval_query: "儿童青少年肥胖 判定标准 减重方案 家庭干预"
+    target_ki: [KI-COB-001, KI-COB-003, KI-COB-004, KI-COB-008]
+    expected_output: 儿童体重管理方案（含家长参与）
+    priority: P0
+
+  - rule_id: WT-R005
+    name: 限酒与减重
+    trigger_condition:
+      keywords_any: ["喝酒胖","酒精热量","啤酒肚","饮酒减肥","戒酒减重"]
+    retrieval_query: "限酒减重 酒精热量 饮酒体重"
+    target_ki: [KI-OBE-009]
+    expected_output: 限酒减重行为处方
+    priority: P1
+
+
+---
+# ── cardiac_rehab (CardiacRehabAgent, priority=1) ───────────
+agent_id: cardiac_rehab
+agent_class: CardiacRehabAgent
+tier: 3
+priority: 1
+
+retrieval_rules:
+
+  - rule_id: CARD-R001
+    name: 心血管综合康复
+    trigger_condition:
+      keywords_any: ["心脏病","冠心病","心梗","支架","搭桥","心血管","心脏康复"]
+    retrieval_query: "心血管康复 高血压高脂血症综合干预 心脏病生活方式"
+    target_ki: [KI-HTN-007, KI-HLP-007, KI-T2DR-005]
+    expected_output: 心脏康复综合处方（含运动禁忌与监测）
+    priority: P0
+
+  - rule_id: CARD-R002
+    name: 血压血脂双管理
+    trigger_condition:
+      keywords_any: ["高血压高血脂","血压血脂都高","心血管风险","预防心脏病"]
+    retrieval_query: "高血压高脂血症并发 综合干预 心血管风险管理"
+    target_ki: [KI-HTN-002, KI-HTN-007, KI-HLP-002, KI-HLP-007]
+    expected_output: 血压血脂双靶点综合干预方案
+    priority: P0
+
+  - rule_id: CARD-R003
+    name: 心血管情志管理
+    trigger_condition:
+      keywords_any: ["心脏不好情绪","焦虑心脏","A型人格","脾气大心脏","压力心脏"]
+    retrieval_query: "情绪心血管 A型人格 压力心脏病 TCM心主神明"
+    target_ki: [KI-HTN-008, KI-CD-010, KI-NEIJING-005]
+    expected_output: 情绪-心血管关联解释 + 情志管理方案
+    priority: P1
+
+
+---
+# ── trust_guide (TrustGuideAgent, priority=3) ───────────────
+agent_id: trust_guide
+agent_class: TrustGuideAgent
+tier: 3
+priority: 3
+
+retrieval_rules:
+
+  - rule_id: TRUST-R001
+    name: 信任建立
+    trigger_condition:
+      ttm_stage: [S0, S1]
+      keywords_any: ["你们可信吗","数据安全","隐私","AI靠谱吗","平台安全"]
+    retrieval_query: "健康平台信任 AI健康 数据保护 专业性说明"
+    target_ki: [KI-LM-COMP-002, KI-CULT-HUM-001]
+    expected_output: 信任建立话术 + 专业性背书
+    priority: P0
+
+  - rule_id: TRUST-R002
+    name: 指南权威性说明
+    trigger_condition:
+      keywords_any: ["这个可靠吗","有科学依据吗","是真的吗","哪里来的","指南说的吗"]
+    retrieval_query: "临床指南 循证医学 T1证据 权威来源"
+    target_ki: [KI-HTN-001, KI-HLP-001, KI-OBE-001]
+    expected_output: 循证依据说明（引用指南来源）
+    priority: P0
+
+
+---
+# ── onboarding (OnboardingGuideAgent, priority=3) ───────────
+agent_id: onboarding
+agent_class: OnboardingGuideAgent
+tier: 4
+priority: 3
+
+retrieval_rules:
+
+  - rule_id: ONB-R001
+    name: 新用户风险认知激活
+    trigger_condition:
+      signal: new_user_onboarding
+      ttm_stage: [S0]
+    retrieval_query: "慢性病流行病学 高血压高脂肥胖可干预 平台价值"
+    target_ki: [KI-HTN-001, KI-HLP-001, KI-OBE-001, KI-CD-009]
+    expected_output: 简洁有力的风险说明 + 平台价值主张
+    priority: P0
+
+  - rule_id: ONB-R002
+    name: 文化适配引导
+    trigger_condition:
+      signal: new_user_onboarding
+    retrieval_query: "中国用户健康行为 文化适配 本土化表达"
+    target_ki: [KI-CULT-HUM-001]
+    expected_output: 文化共鸣的引导话语
+    priority: P1
+
+
+---
+# ── health_assistant (HealthAssistantAgent, priority=4) ─────
+agent_id: health_assistant
+agent_class: HealthAssistantAgent
+tier: 4
+priority: 4
+
+retrieval_rules:
+
+  - rule_id: HA-R001
+    name: 通用健康问答
+    trigger_condition:
+      keywords_any: ["是什么","什么意思","正常吗","危险吗","需要注意什么"]
+    retrieval_query: "健康基础知识 慢性病常识 健康问答"
+    target_ki: [KI-HTN-001, KI-HLP-001, KI-OBE-001, KI-COB-001]
+    expected_output: 通俗化健康知识解答
+    priority: P0
+
+  - rule_id: HA-R002
+    name: 监测指标解读
+    trigger_condition:
+      keywords_any: ["血压多少正常","血脂正常值","BMI怎么算","这个指标正常吗"]
+    retrieval_query: "血压正常范围 血脂指标 BMI判定 监测标准"
+    target_ki: [KI-HTN-001, KI-HTN-010, KI-HLP-001, KI-HLP-010, KI-OBE-001, KI-OBE-008]
+    expected_output: 指标解读 + 行动建议
+    priority: P0
+
+
+---
+# ── habit_tracker (HabitTrackerAgent, priority=4) ───────────
+agent_id: habit_tracker
+agent_class: HabitTrackerAgent
+tier: 4
+priority: 4
+
+retrieval_rules:
+
+  - rule_id: HT-R001
+    name: 习惯打卡强化
+    trigger_condition:
+      keywords_any: ["打卡","记录","坚持","今天做了","完成了","习惯养成"]
+    retrieval_query: "习惯形成 行为强化 打卡动机 自我监测"
+    target_ki: [KI-BCT-FOGG-001, KI-OBE-008, KI-HTN-010]
+    expected_output: 习惯强化反馈 + 进步可视化
+    priority: P0
+
+  - rule_id: HT-R002
+    name: 习惯断裂恢复
+    trigger_condition:
+      keywords_any: ["忘记了","中断了","没坚持","断了几天","重新开始"]
+    retrieval_query: "习惯恢复 行为中断 重启策略 不完美习惯"
+    target_ki: [KI-BCT-FOGG-001, KI-PSYCH-BURG-002]
+    expected_output: 习惯中断正常化 + 重启策略
+    priority: P0
+
+
+---
+# ── xzb_expert (XZBExpertAgent, priority=1) ─────────────────
+agent_id: xzb_expert
+agent_class: XZBExpertAgent
+tier: 5
+priority: 1
+notes: "专家级：仅引用T1证据，输出精准简洁有据"
+
+retrieval_rules:
+
+  - rule_id: XZB-R001
+    name: 高血压临床循证
+    trigger_condition:
+      keywords_any: ["指南怎么说","证据","临床标准","研究证明","血压多少应该干预"]
+    retrieval_query: "高血压临床指南 循证标准 血压干预阈值"
+    target_ki: [KI-HTN-001, KI-HTN-002, KI-HTN-003, KI-HTN-010]
+    retrieval_filter: {evidence_tier_min: T1}
+    expected_output: 指南级循证回答 + 来源标注
+    priority: P0
+
+  - rule_id: XZB-R002
+    name: 高脂血症临床循证
+    trigger_condition:
+      keywords_any: ["血脂指南","胆固醇目标值","甘油三酯标准","降脂证据"]
+    retrieval_query: "高脂血症临床指南 血脂目标值 降脂循证"
+    target_ki: [KI-HLP-001, KI-HLP-009, KI-HLP-010]
+    retrieval_filter: {evidence_tier_min: T1}
+    expected_output: 指南级循证回答
+    priority: P0
+
+  - rule_id: XZB-R003
+    name: 教练方法论支撑
+    trigger_condition:
+      keywords_any: ["如何引导","教练方法","动机访谈","强力提问","如何帮助学员"]
+    retrieval_query: "ICF教练能力 动机访谈 行为改变技术"
+    target_ki: [KI-LM-COMP-002, KI-ACLM-006]
+    expected_output: 教练技术指导 + 问句示例
+    priority: P0
+
+  - rule_id: XZB-R004
+    name: 东西方整合视角
+    trigger_condition:
+      keywords_any: ["中西医结合","传统和现代","TCM和指南","哪个更好"]
+    retrieval_query: "中西医整合 TCM生活方式医学 互补优势"
+    target_ki: [KI-HTN-006, KI-HLP-006, KI-NEIJING-003, KI-CULT-HUM-001]
+    expected_output: 中西互补整合回答
+    priority: P1
+
+
+---
+# ── vision (VisionGuideAgent, priority=3) ───────────────────
+agent_id: vision
+agent_class: VisionGuideAgent
+tier: 5
+priority: 3
+notes: "VisionGuard独立模块，KI库暂无视力专项，使用行为理论KI支撑"
+
+retrieval_rules:
+
+  - rule_id: VIS-R001
+    name: 视力行为处方
+    trigger_condition:
+      keywords_any: ["视力","近视","眼睛","护眼","用眼","屏幕时间","户外活动视力"]
+    retrieval_query: "视力健康行为 用眼习惯 户外活动近视 屏幕管理"
+    target_ki: [KI-BCT-FOGG-001, KI-CD-008]
+    expected_output: 视力健康行为处方（户外+用眼行为+营养）
+    priority: P0
+    notes: "TODO：建立KI-VISION-001专项知识块"
+
+  - rule_id: VIS-R002
+    name: 儿童视力与肥胖关联
+    trigger_condition:
+      keywords_any: ["孩子近视","儿童视力","青少年眼睛","学生用眼"]
+    retrieval_query: "儿童视力健康 户外运动近视防控 营养视力"
+    target_ki: [KI-COB-008, KI-COB-009]
+    expected_output: 儿童视力-运动-睡眠综合方案
+    priority: P1
+
+
+---
+# ── journey_companion (JourneyCompanionAgent) ───────────────
+agent_id: journey_companion
+agent_class: JourneyCompanionAgent
+tier: 5
+registration_status: unregistered
+
+retrieval_rules:
+
+  - rule_id: JOUR-R001
+    name: 旅程里程碑确认
+    trigger_condition:
+      keywords_any: ["这段旅程","我走到哪了","还有多远","里程碑","阶段","旅程"]
+    retrieval_query: "改变旅程 TTM阶段意义 里程碑 旅程陪伴"
+    target_ki: [KI-LEARN-ILL-002, KI-LEARN-ILL-004]
+    expected_output: 旅程位置确认 + 下一里程碑引导
+    priority: P0
+
+  - rule_id: JOUR-R002
+    name: 同伴效应激活
+    trigger_condition:
+      keywords_any: ["有没有人和我一样","同道者","找伴","一起改变","社群"]
+    retrieval_query: "社群实践 同伴学习 社会支持 共同体"
+    target_ki: [KI-ACLM-007, KI-LEARN-ILL-004, KI-COB-010]
+    expected_output: 同伴连接引导 + 社群参与建议
+    priority: P1
+
+
+---
+# ── growth_reflection (GrowthReflectionAgent) ───────────────
+agent_id: growth_reflection
+agent_class: GrowthReflectionAgent
+tier: 5
+registration_status: unregistered
+
+retrieval_rules:
+
+  - rule_id: GR-R001
+    name: 成长反思深化
+    trigger_condition:
+      ttm_stage: [S4, S5, S6]
+      keywords_any: ["复盘","反思","回顾","成长","我学到了","总结这段时间"]
+    retrieval_query: "经验反思 成长叙事 Kolb循环 成就识别"
+    target_ki: [KI-LEARN-ILL-002, KI-LEARN-ILL-004]
+    expected_output: 结构化成长反思框架
+    priority: P0
+
+  - rule_id: GR-R002
+    name: 自我效能强化
+    trigger_condition:
+      keywords_any: ["做到了","没想到自己能","比以前好","进步了","坚持下来了"]
+    retrieval_query: "自我效能强化 成就归因 内在动机 成功经验"
+    target_ki: [KI-LEARN-ILL-003, KI-LEARN-ILL-004, KI-OBE-008]
+    expected_output: 成就确认话术 + 效能强化反馈
+    priority: P0
+
+
+---
+# ── coach_copilot (CoachCopilotAgent) ───────────────────────
+agent_id: coach_copilot
+agent_class: CoachCopilotAgent
+tier: 5
+registration_status: unregistered
+notes: "飞轮AI，R-3问题待修复：coach_flywheel无专属分支"
+
+retrieval_rules:
+
+  - rule_id: CC-R001
+    name: 教练督导方法论
+    trigger_condition:
+      keywords_any: ["怎么引导","如何回应","这个学员","教练技术","督导","如何帮助"]
+    retrieval_query: "ICF教练能力 倾听技术 强力提问 教练对话 MI动机访谈"
+    target_ki: [KI-LM-COMP-002, KI-ACLM-006]
+    expected_output: 教练对话框架 + 提问技术
+    priority: P0
+
+  - rule_id: CC-R002
+    name: 临床干预方案支撑
+    trigger_condition:
+      keywords_any: ["怎么给这个学员处方","高血压学员怎么干预","高血脂方案","减重方案"]
+    retrieval_query: "高血压高脂肥胖综合干预方案 教练实操"
+    target_ki: [KI-HTN-002, KI-HLP-002, KI-OBE-003, KI-CD-008]
+    expected_output: 教练视角的干预方案建议
+    priority: P0
+
+  - rule_id: CC-R003
+    name: 阶段推进策略
+    trigger_condition:
+      keywords_any: ["学员停滞","怎么推进","S2卡住了","阶段不动","学员不进展"]
+    retrieval_query: "TTM阶段推进 卡点分析 行为改变策略"
+    target_ki: [KI-PSYCH-BURG-002, KI-LEARN-ILL-003, KI-BCT-FOGG-001]
+    expected_output: 阶段卡点分析 + 推进策略工具箱
+    priority: P0
+
+
+---
+# ══ Tier 5+ BehaviorRx 专家（4个）══════════════════════════
+
+# ── behavior_coach (BehaviorCoachAgent) ─────────────────────
+agent_id: behavior_coach
+agent_class: BehaviorCoachAgent
+tier: "5+"
+
+retrieval_rules:
+
+  - rule_id: BC-R001
+    name: 综合行为改变策略
+    trigger_condition:
+      signal: complex_behavior_change_case
+    retrieval_query: "行为改变 BCT 144策略矩阵 复杂干预"
+    target_ki: [KI-CD-008, KI-BCT-FOGG-001, KI-LEARN-ILL-001, KI-PSYCH-BURG-002]
+    expected_output: 多策略综合行为改变方案
+    priority: P0
+
+  - rule_id: BC-R002
+    name: 依从性行为设计
+    trigger_condition:
+      keywords_any: ["依从性差","不配合","不执行","执行率低","做不到"]
+    retrieval_query: "依从性 行为障碍 执行意图 环境设计 提醒系统"
+    target_ki: [KI-BCT-FOGG-001, KI-PSYCH-BURG-002, KI-CD-008]
+    expected_output: 依从性提升策略组合
+    priority: P0
+
+
+---
+# ── metabolic_expert (MetabolicExpertAgent) ─────────────────
+agent_id: metabolic_expert
+agent_class: MetabolicExpertAgent
+tier: "5+"
+
+retrieval_rules:
+
+  - rule_id: ME-R001
+    name: 代谢风险综合评估
+    trigger_condition:
+      signal: complex_metabolic_case
+    retrieval_query: "代谢综合征 高血压高脂肥胖综合评估 心血管风险"
+    target_ki: [KI-HTN-001, KI-HLP-001, KI-OBE-001, KI-HLP-009]
+    expected_output: 代谢风险分层报告 + 优先干预建议
+    priority: P0
+
+  - rule_id: ME-R002
+    name: 个性化代谢干预
+    trigger_condition:
+      keywords_any: ["个性化","特殊情况","我和别人不一样","合并症多"]
+    retrieval_query: "不同类型高脂血症个性化 代谢综合征分型 个体化干预"
+    target_ki: [KI-HLP-009, KI-OBE-001, KI-OBE-002, KI-HTN-009]
+    expected_output: 个性化代谢干预方案
+    priority: P0
+
+
+---
+# ── cardiac_expert (CardiacExpertAgent) ─────────────────────
+agent_id: cardiac_expert
+agent_class: CardiacExpertAgent
+tier: "5+"
+
+retrieval_rules:
+
+  - rule_id: CE-R001
+    name: 心血管专家级干预
+    trigger_condition:
+      signal: complex_cardiac_case
+    retrieval_query: "高血压心血管风险 高脂血症动脉硬化 心脏病预防 综合干预"
+    target_ki: [KI-HTN-007, KI-HLP-007, KI-T2DR-005]
+    retrieval_filter: {evidence_tier_min: T1}
+    expected_output: 心血管专家级干预方案（循证）
+    priority: P0
+
+
+---
+# ── adherence_expert (AdherenceExpertAgent) ─────────────────
+agent_id: adherence_expert
+agent_class: AdherenceExpertAgent
+tier: "5+"
+
+retrieval_rules:
+
+  - rule_id: AE-R001
+    name: 依从性专项评估与干预
+    trigger_condition:
+      signal: low_adherence_detected
+    retrieval_query: "自我管理 监测依从性 高血压依从 血脂监测依从"
+    target_ki: [KI-HTN-010, KI-HLP-010, KI-OBE-008, KI-BCT-FOGG-001]
+    expected_output: 依从性专项评估报告 + 针对性干预策略
+    priority: P0
+
+  - rule_id: AE-R002
+    name: 儿童依从性（家长参与）
+    trigger_condition:
+      signal: child_low_adherence
+    retrieval_query: "儿童依从性 家长参与 心理社会支持 习惯养成儿童"
+    target_ki: [KI-COB-010, KI-COB-005, KI-BCT-FOGG-001]
+    expected_output: 儿童+家长协同依从性提升方案
+    priority: P0

@@ -1,0 +1,511 @@
+# ============================================================
+# Tier 1-2 Agents 检索映射
+# crisis / glucose / sleep / stress / mental /
+# nutrition / exercise / motivation / tcm
+# version: v3.0.0
+# ============================================================
+
+# ── crisis (CrisisAgent, priority=0) ────────────────────────
+agent_id: crisis
+agent_class: CrisisAgent
+tier: 1
+priority: 0
+
+retrieval_rules:
+
+  - rule_id: CRISIS-R001
+    name: 心理危机识别
+    trigger_condition:
+      keywords_any: ["不想活了","活着没意思","自杀","自伤","崩溃","消失","撑不住了"]
+    retrieval_query: "心理危机干预 自杀预防 情绪支持"
+    target_ki: [KI-PSYCH-BURG-002]
+    expected_output: 危机干预话术 + 立即转介
+    priority: P0
+    notes: "最高优先级，触发安全四层管道，不等KI检索直接响应"
+
+  - rule_id: CRISIS-R002
+    name: 慢病绝望干预
+    trigger_condition:
+      keywords_any: ["得了糖尿病活不下去","慢性病绝望","治不好了","放弃治疗","没有未来"]
+    retrieval_query: "慢性病心理创伤 疾病适应 希望重建"
+    target_ki: [KI-PSYCH-BURG-002, KI-CD-009]
+    expected_output: 慢病接受框架 + 希望重建话术
+    priority: P0
+
+  - rule_id: CRISIS-R003
+    name: 血糖急症处理
+    trigger_condition:
+      keywords_any: ["低血糖","血糖很高","手抖","出冷汗","意识模糊","晕了"]
+    retrieval_query: "低血糖急症处理 血糖危机应对"
+    target_ki: [KI-DM-CGM-003, KI-DM-CGM-004]
+    expected_output: 急症应对指导（引导立即就医）
+    priority: P0
+
+
+---
+# ── glucose (GlucoseAgent, priority=1) ──────────────────────
+agent_id: glucose
+agent_class: GlucoseAgent
+tier: 2
+priority: 1
+
+retrieval_rules:
+
+  - rule_id: GLU-R001
+    name: 血糖监测方法咨询
+    trigger_condition:
+      keywords_any: ["怎么监测血糖","血糖仪","CGM","扫描式","监测频率","什么时候测"]
+    retrieval_query: "血糖监测方法 CGM SMBG HbA1c 选择原则"
+    target_ki: [KI-DM-CGM-001, KI-DM-CGM-003]
+    expected_output: 个体化监测方案 + 设备选择指南
+    priority: P0
+
+  - rule_id: GLU-R002
+    name: CGM数据解读
+    trigger_condition:
+      signal: cgm_data_received
+      keywords_any: ["血糖数据","TIR","波动","达标","时间在范围内"]
+    retrieval_query: "TIR目标值 CGM波动解读 血糖达标"
+    target_ki: [KI-DM-CGM-003, KI-DM-CGM-004]
+    expected_output: 数据解读报告 + 干预建议
+    priority: P0
+
+  - rule_id: GLU-R003
+    name: 糖尿病逆转咨询
+    trigger_condition:
+      ttm_stage: [S0, S1]
+      keywords_any: ["能逆转吗","能停药吗","治好了","不用吃药","糖尿病逆转"]
+    retrieval_query: "T2D逆转标准 生活方式逆转证据 临床缓解"
+    target_ki: [KI-ACLM-001, KI-CD-009]
+    expected_output: 逆转可能性循证说明 + 路径概述
+    priority: P0
+
+  - rule_id: GLU-R004
+    name: 高血压合并血糖异常
+    trigger_condition:
+      keywords_any: ["高血压","血压高","血糖血压都高","合并症"]
+    retrieval_query: "高血压血糖合并管理 代谢综合征 综合干预"
+    target_ki: [KI-HTN-002, KI-HTN-007, KI-DM-CGM-001]
+    expected_output: 合并症综合管理方案
+    priority: P1
+
+  - rule_id: GLU-R005
+    name: 血脂血糖合并
+    trigger_condition:
+      keywords_any: ["血脂高","胆固醇","甘油三酯","血脂血糖","代谢综合征"]
+    retrieval_query: "高脂血症血糖合并 代谢综合征 综合饮食干预"
+    target_ki: [KI-HLP-002, KI-HLP-007, KI-DM-CGM-001]
+    expected_output: 血糖血脂双管齐下方案
+    priority: P1
+
+
+---
+# ── sleep (SleepAgent, priority=2) ──────────────────────────
+agent_id: sleep
+agent_class: SleepAgent
+tier: 2
+priority: 2
+
+retrieval_rules:
+
+  - rule_id: SLEEP-R001
+    name: 睡眠干预处方
+    trigger_condition:
+      keywords_any: ["睡不好","失眠","熬夜","入睡困难","早醒","多梦","睡眠质量差"]
+    retrieval_query: "睡眠干预 睡眠卫生 昼夜节律 慢病睡眠改善"
+    target_ki: [KI-ACLM-005, KI-HTN-008, KI-OBE-007]
+    expected_output: 睡眠干预处方（作息+环境+行为三维）
+    priority: P0
+
+  - rule_id: SLEEP-R002
+    name: 肥胖相关睡眠问题
+    trigger_condition:
+      keywords_any: ["睡眠呼吸暂停","打鼾","睡眠胖","越睡越胖"]
+    retrieval_query: "睡眠肥胖关联 睡眠呼吸暂停 体重睡眠"
+    target_ki: [KI-OBE-007, KI-ACLM-005]
+    expected_output: 肥胖-睡眠恶性循环解释 + 干预处方
+    priority: P0
+
+  - rule_id: SLEEP-R003
+    name: 节气睡眠调适
+    trigger_condition:
+      keywords_any: ["换季睡眠","冬天睡多","夏天睡不着","节气","季节睡眠"]
+    retrieval_query: "节气睡眠 冬藏春生 TCM睡眠节律"
+    target_ki: [KI-NEIJING-008, KI-NEIJING-003]
+    expected_output: 时令睡眠调养方案
+    priority: P1
+
+  - rule_id: SLEEP-R004
+    name: 儿童睡眠与肥胖
+    trigger_condition:
+      keywords_any: ["孩子睡眠","孩子睡不够","青少年作息","学生熬夜"]
+    retrieval_query: "儿童青少年睡眠管理 作息肥胖 屏幕时间"
+    target_ki: [KI-COB-009]
+    expected_output: 儿童睡眠管理方案
+    priority: P1
+
+
+---
+# ── stress (StressAgent, priority=2) ────────────────────────
+# ⚠️ 注意：domain是"stress"，不是"emotion"
+agent_id: stress
+agent_class: StressAgent
+tier: 2
+priority: 2
+
+retrieval_rules:
+
+  - rule_id: STRESS-R001
+    name: 压力与血压关联
+    trigger_condition:
+      keywords_any: ["压力大血压高","情绪血压","焦虑血压","压力高血压"]
+    retrieval_query: "心理压力高血压 情绪血压 压力管理高血压"
+    target_ki: [KI-HTN-008, KI-CD-010]
+    expected_output: 压力-血压通路解释 + 压力管理处方
+    priority: P0
+
+  - rule_id: STRESS-R002
+    name: 放松技术处方
+    trigger_condition:
+      keywords_any: ["怎么放松","冥想","呼吸练习","正念","瑜伽","减压","放松方法"]
+    retrieval_query: "放松技术 冥想 呼吸 渐进式肌肉放松 正念"
+    target_ki: [KI-CD-010, KI-NEIJING-005]
+    expected_output: 结构化放松处方（技术+频率+时长）
+    priority: P0
+
+  - rule_id: STRESS-R003
+    name: TCM情志五行
+    trigger_condition:
+      keywords_any: ["情志","肝气郁结","心火旺","思虑过多","五志","怒伤肝"]
+    retrieval_query: "七情致病 情志五行 脏腑情志 TCM情绪干预"
+    target_ki: [KI-NEIJING-005]
+    expected_output: TCM情志框架 + 五行调摄处方
+    priority: P1
+
+  - rule_id: STRESS-R004
+    name: 情绪性进食
+    trigger_condition:
+      keywords_any: ["情绪化进食","心情不好就吃","管不住嘴","暴食","用吃来安慰"]
+    retrieval_query: "情绪性进食 食物情绪 饮食行为干预"
+    target_ki: [KI-OBE-005, KI-LEARN-ILL-003]
+    expected_output: 情绪性进食识别 + 替代行为设计
+    priority: P1
+
+  - rule_id: STRESS-R005
+    name: 压力与肥胖
+    trigger_condition:
+      keywords_any: ["压力胖","皮质醇","焦虑胖","应激肥胖","压力增重"]
+    retrieval_query: "压力皮质醇 应激肥胖 HPA轴 情绪代谢"
+    target_ki: [KI-OBE-003, KI-CD-010]
+    expected_output: 压力-代谢通路解释 + 综合干预
+    priority: P1
+
+
+---
+# ── mental (MentalHealthAgent, priority=2) ──────────────────
+agent_id: mental
+agent_class: MentalHealthAgent
+tier: 2
+priority: 2
+
+retrieval_rules:
+
+  - rule_id: MENTAL-R001
+    name: 改变阻力心理支持
+    trigger_condition:
+      ttm_stage: [S0, S1]
+      keywords_any: ["没用","做不到","不相信","太难了","放弃","又失败了"]
+    retrieval_query: "行为改变阻力 心理障碍 动机不足 慢性病抵触"
+    target_ki: [KI-PSYCH-BURG-002, KI-LEARN-ILL-003]
+    pending_ki: [KI-BCT-MI-001]
+    expected_output: 阻力应对框架 + 动机重构话术
+    priority: P0
+
+  - rule_id: MENTAL-R002
+    name: 慢病心理适应
+    trigger_condition:
+      keywords_any: ["接受不了","为什么是我","不公平","慢性病焦虑","害怕","担心"]
+    retrieval_query: "慢性病心理适应 疾病接受 心理韧性 适应性应对"
+    target_ki: [KI-PSYCH-BURG-002, KI-LEARN-ILL-003]
+    expected_output: 慢病接受框架 + 心理支持话术
+    priority: P0
+
+  - rule_id: MENTAL-R003
+    name: 儿童心理与社会支持
+    trigger_condition:
+      keywords_any: ["孩子心理","孩子自卑","被嘲笑","儿童肥胖心理","青少年自尊"]
+    retrieval_query: "儿童青少年心理支持 肥胖儿童心理 社会适应 自尊"
+    target_ki: [KI-COB-010]
+    expected_output: 儿童心理支持方案 + 家庭干预建议
+    priority: P0
+
+  - rule_id: MENTAL-R004
+    name: 身份认同与成长
+    trigger_condition:
+      ttm_stage: [S4, S5]
+      keywords_any: ["我变了","以前的我","现在不一样了","我是一个","成为"]
+    retrieval_query: "身份认同 自我效能 习惯内化 成长叙事"
+    target_ki: [KI-LEARN-ILL-004]
+    expected_output: 身份强化话术 + 成长叙事引导
+    priority: P0
+    notes: "S4→S5转折关键节点"
+
+
+---
+# ── nutrition (NutritionAgent, priority=3) ──────────────────
+agent_id: nutrition
+agent_class: NutritionAgent
+tier: 2
+priority: 3
+
+retrieval_rules:
+
+  - rule_id: NUTR-R001
+    name: 高血压饮食处方
+    trigger_condition:
+      signal: diagnosis_htn OR
+      keywords_any: ["高血压吃什么","降压饮食","DASH","限盐","低钠"]
+    retrieval_query: "高血压食养 限钠增钾 DASH饮食 降压食物"
+    target_ki: [KI-HTN-002, KI-HTN-003, KI-HTN-004, KI-HTN-005]
+    expected_output: 高血压个性化饮食处方
+    priority: P0
+
+  - rule_id: NUTR-R002
+    name: 高脂血症饮食处方
+    trigger_condition:
+      signal: diagnosis_hlp OR
+      keywords_any: ["高血脂吃什么","降脂饮食","胆固醇饮食","甘油三酯饮食"]
+    retrieval_query: "高脂血症食养 降脂食物 烹饪方式 血脂饮食"
+    target_ki: [KI-HLP-002, KI-HLP-003, KI-HLP-004, KI-HLP-005]
+    expected_output: 高脂血症个性化饮食处方
+    priority: P0
+
+  - rule_id: NUTR-R003
+    name: 减重饮食处方
+    trigger_condition:
+      signal: diagnosis_obesity OR
+      keywords_any: ["减肥吃什么","减重饮食","低卡饮食","控制热量","代餐"]
+    retrieval_query: "肥胖食养 能量控制 减重食物选择 科学进餐"
+    target_ki: [KI-OBE-003, KI-OBE-004, KI-OBE-005, KI-ACLM-004]
+    expected_output: 减重饮食处方（热量目标+食物选择+进餐规范）
+    priority: P0
+
+  - rule_id: NUTR-R004
+    name: 儿童营养处方
+    trigger_condition:
+      signal: user_is_parent_of_child OR
+      keywords_any: ["孩子吃什么","儿童饮食","青少年营养","孩子减肥","学生饮食"]
+    retrieval_query: "儿童青少年饮食 营养补充 减重食物 特殊膳食"
+    target_ki: [KI-COB-003, KI-COB-004, KI-COB-005, KI-COB-006, KI-COB-007]
+    expected_output: 儿童个性化营养处方
+    priority: P0
+
+  - rule_id: NUTR-R005
+    name: 时令饮食（TCM双轨）
+    trigger_condition:
+      keywords_any: ["这个季节","节气","应季","温补","清热","祛湿","时令"]
+    retrieval_query: "节气饮食 五脏时令 藏气法时 中医食养"
+    target_ki: [KI-NEIJING-006, KI-NEIJING-003]
+    expected_output: 时令饮食建议（循证+TCM双轨）
+    priority: P1
+
+  - rule_id: NUTR-R006
+    name: 中医辨证食养
+    trigger_condition:
+      keywords_any: ["中医饮食","体质食养","辨证饮食","阴虚饮食","痰湿饮食"]
+    retrieval_query: "中医辨证食养 体质饮食 高血压TCM食养 高脂血症TCM"
+    target_ki: [KI-HTN-006, KI-HLP-006, KI-OBE-002]
+    expected_output: 体质辨证饮食处方
+    priority: P1
+
+  - rule_id: NUTR-R007
+    name: 限酒干预
+    trigger_condition:
+      keywords_any: ["喝酒","饮酒","戒酒","酒精","限酒","白酒啤酒"]
+    retrieval_query: "限酒减重 饮酒血压 酒精血脂 戒酒行为"
+    target_ki: [KI-OBE-009, KI-HLP-007]
+    expected_output: 限酒干预处方 + 替代行为设计
+    priority: P1
+
+
+---
+# ── exercise (ExerciseAgent, priority=3) ────────────────────
+agent_id: exercise
+agent_class: ExerciseAgent
+tier: 2
+priority: 3
+
+retrieval_rules:
+
+  - rule_id: EX-R001
+    name: 高血压运动处方
+    trigger_condition:
+      signal: diagnosis_htn OR
+      keywords_any: ["高血压运动","降压锻炼","血压运动","高血压可以运动吗"]
+    retrieval_query: "高血压运动处方 有氧运动降压 运动强度血压"
+    target_ki: [KI-HTN-007, KI-T2DR-005]
+    expected_output: 高血压个性化运动处方（FITT原则）
+    priority: P0
+
+  - rule_id: EX-R002
+    name: 高脂血症运动处方
+    trigger_condition:
+      signal: diagnosis_hlp OR
+      keywords_any: ["高血脂运动","降脂锻炼","血脂运动","运动降胆固醇"]
+    retrieval_query: "高脂血症运动 降脂有氧 运动血脂改善"
+    target_ki: [KI-HLP-007, KI-T2DR-005]
+    expected_output: 高脂血症运动处方
+    priority: P0
+
+  - rule_id: EX-R003
+    name: 肥胖运动处方
+    trigger_condition:
+      signal: diagnosis_obesity OR
+      keywords_any: ["减肥运动","减重锻炼","肥胖运动","怎么运动减脂"]
+    retrieval_query: "肥胖运动处方 减重有氧 抗阻训练肥胖 运动能量消耗"
+    target_ki: [KI-OBE-006, KI-T2DR-005, KI-ACLM-003]
+    expected_output: 减重运动处方（有氧+抗阻组合）
+    priority: P0
+
+  - rule_id: EX-R004
+    name: 儿童运动处方
+    trigger_condition:
+      signal: user_is_parent_of_child OR
+      keywords_any: ["孩子运动","儿童锻炼","青少年体育","孩子减肥运动"]
+    retrieval_query: "儿童青少年运动处方 肥胖儿童运动 体力活动"
+    target_ki: [KI-COB-008]
+    expected_output: 儿童个性化运动处方
+    priority: P0
+
+  - rule_id: EX-R005
+    name: 运动阻力化解
+    trigger_condition:
+      keywords_any: ["不想动","懒","没时间运动","运动太累","坚持不了","膝盖不好","怕受伤"]
+    retrieval_query: "运动动机 运动阻力 低强度启动 久坐干预"
+    target_ki: [KI-BCT-FOGG-001, KI-PSYCH-BURG-002]
+    expected_output: 运动阻力分析 + 最小运动启动方案
+    priority: P1
+
+  - rule_id: EX-R006
+    name: 节气运动调适
+    trigger_condition:
+      keywords_any: ["冬天运动","夏天运动","换季锻炼","节气养生运动"]
+    retrieval_query: "节气运动 季节性锻炼 春生夏长 TCM运动养生"
+    target_ki: [KI-NEIJING-003, KI-NEIJING-008]
+    expected_output: 时令运动调养方案
+    priority: P2
+
+
+---
+# ── motivation (MotivationAgent, priority=3) ────────────────
+agent_id: motivation
+agent_class: MotivationAgent
+tier: 2
+priority: 3
+
+retrieval_rules:
+
+  - rule_id: MOTIV-R001
+    name: 前意图期唤醒（S0→S1）
+    trigger_condition:
+      ttm_stage: [S0]
+      keywords_any: ["无所谓","没关系","以后再说","先这样吧","不想改变"]
+    retrieval_query: "前意图期觉察激活 健康风险意识 改变动机唤醒"
+    target_ki: [KI-CD-009, KI-HTN-001, KI-HLP-001, KI-OBE-001]
+    expected_output: 觉察触发内容 + 风险-收益框架
+    priority: P0
+    notes: "用临床流行病学数据（HTN/HLP/OBE-001）触发风险认知"
+
+  - rule_id: MOTIV-R002
+    name: 意图→行动跨越（S1→S2）
+    trigger_condition:
+      ttm_stage: [S1]
+      keywords_any: ["想改变","打算","准备","考虑","应该","想试试"]
+    retrieval_query: "意图行动 行为计划 实施意图 if-then 第一步"
+    target_ki: [KI-BCT-FOGG-001, KI-CD-008, KI-LEARN-ILL-002]
+    expected_output: 意图转化行动的具体计划工具
+    priority: P0
+
+  - rule_id: MOTIV-R003
+    name: 动机维持（S2-S3）
+    trigger_condition:
+      ttm_stage: [S2, S3]
+      keywords_any: ["坚持不下去","快放弃了","没动力","懈怠","效果不明显"]
+    retrieval_query: "动机维持 自我效能 进步追踪 内在动机 小胜利"
+    target_ki: [KI-LEARN-ILL-003, KI-BCT-FOGG-001]
+    fallback_ki: [KI-ACLM-006]
+    expected_output: 动机维持策略 + 小胜利识别框架
+    priority: P0
+
+  - rule_id: MOTIV-R004
+    name: 监测动机强化
+    trigger_condition:
+      keywords_any: ["监测有用吗","记录有什么用","为什么要测","坚持记录"]
+    retrieval_query: "自我监测动机 血压监测依从 血糖监测行为 记录强化"
+    target_ki: [KI-HTN-010, KI-HLP-010, KI-OBE-008, KI-DM-CGM-001]
+    expected_output: 监测行为强化框架 + 记录价值说明
+    priority: P1
+
+
+---
+# ── tcm (TCMWellnessAgent, priority=4) ──────────────────────
+agent_id: tcm
+agent_class: TCMWellnessAgent
+tier: 2
+priority: 4
+
+retrieval_rules:
+
+  - rule_id: TCM-R001
+    name: 高血压中医辨证
+    trigger_condition:
+      keywords_any: ["高血压体质","高血压中医","肝阳上亢","阴虚阳亢","肝肾阴虚","中医降压"]
+    retrieval_query: "高血压中医辨证 食养调理 体质高血压"
+    target_ki: [KI-HTN-006]
+    expected_output: 高血压TCM辨证食养方案
+    priority: P0
+
+  - rule_id: TCM-R002
+    name: 高脂血症中医辨证
+    trigger_condition:
+      keywords_any: ["高血脂中医","血脂体质","痰浊血瘀","中医降脂","血脂调理"]
+    retrieval_query: "高脂血症中医辨证 痰浊 血瘀 食养降脂"
+    target_ki: [KI-HLP-006]
+    expected_output: 高脂血症TCM辨证食养方案
+    priority: P0
+
+  - rule_id: TCM-R003
+    name: 肥胖中医辨证
+    trigger_condition:
+      keywords_any: ["肥胖中医","痰湿体质","虚胖","浮肿","喝水都胖","湿气重","中医减肥"]
+    retrieval_query: "肥胖中医辨证 痰湿 脾虚 中医减重"
+    target_ki: [KI-OBE-002, KI-HLP-006]
+    expected_output: 肥胖TCM辨证调理方案
+    priority: P0
+
+  - rule_id: TCM-R004
+    name: 儿童肥胖中医辨证
+    trigger_condition:
+      keywords_any: ["孩子中医","儿童体质","小孩痰湿","青少年中医减肥"]
+    retrieval_query: "儿童青少年肥胖中医 辨证分型 体质调理"
+    target_ki: [KI-COB-002]
+    expected_output: 儿童肥胖TCM辨证方案
+    priority: P0
+
+  - rule_id: TCM-R005
+    name: 四季节气养生
+    trigger_condition:
+      keywords_any: ["春天养生","夏天养生","秋天养生","冬天养生","节气","四季调摄"]
+    retrieval_query: "四气调神 节气养生 季节调摄 春夏秋冬"
+    target_ki: [KI-NEIJING-003, KI-NEIJING-008]
+    expected_output: 当季养生重点 + 行为调整建议
+    priority: P0
+
+  - rule_id: TCM-R006
+    name: 地域食养适配
+    trigger_condition:
+      keywords_any: ["北方人","南方人","西北","东北","地域饮食","当地习惯","水土"]
+    retrieval_query: "地域食养 高血压季节地域 高脂血症地域 文化饮食"
+    target_ki: [KI-HTN-009, KI-HLP-008, KI-CULT-HUM-001]
+    expected_output: 地域×文化适配的养生方案
+    priority: P1

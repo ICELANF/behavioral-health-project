@@ -1,0 +1,470 @@
+# ============================================================
+# BehaviorOS Agent x KI 三元检索映射 主索引
+# version: v3.1.0  KI-CD-LIFESTYLE-* 全部替换为 KI-CD-009/010
+# updated: 2026-03-05
+# ============================================================
+# KI总计: 65个 (45 active + 20 active_unverified)
+# Agent总计: 25个 (21注册 + 4未注册)
+# 变更: KI-CD-LIFESTYLE-001→KI-CD-009, KI-CD-LIFESTYLE-003→KI-CD-010
+#        KI-CD-LIFESTYLE-002 已删除(幽灵引用)
+#        KI-CD-009/010 status升级为active(文档已建: 慢性病行为干预核心库_KI-CD.md)
+# ============================================================
+
+ki_registry:
+  KI-HTN-001:
+    title: 高血压定义与流行病学
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HTN-002:
+    title: 高血压食养核心原则
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HTN-003:
+    title: 限钠增钾操作指南
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HTN-004:
+    title: DASH饮食模式
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HTN-005:
+    title: 高血压食物选择与禁忌
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HTN-006:
+    title: 高血压中医辨证食养
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HTN-007:
+    title: 高血压运动处方
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HTN-008:
+    title: 高血压心理与睡眠管理
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HTN-009:
+    title: 高血压地域与季节食养调适
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HTN-010:
+    title: 高血压家庭血压监测
+    domain: HTN
+    tier: T1
+    status: active
+  KI-HLP-001:
+    title: 高脂血症定义与流行病学
+    domain: HLP
+    tier: T1
+    status: active
+  KI-HLP-002:
+    title: 高脂血症食养核心原则
+    domain: HLP
+    tier: T1
+    status: active
+  KI-HLP-003:
+    title: 降脂关键营养素与功能食物
+    domain: HLP
+    tier: T1
+    status: active
+  KI-HLP-004:
+    title: 高脂血症食物选择指南
+    domain: HLP
+    tier: T1
+    status: active
+  KI-HLP-005:
+    title: 高脂血症烹饪与进餐指南
+    domain: HLP
+    tier: T1
+    status: active
+  KI-HLP-006:
+    title: 高脂血症中医辨证食养
+    domain: HLP
+    tier: T1
+    status: active
+  KI-HLP-007:
+    title: 高脂血症运动与生活方式
+    domain: HLP
+    tier: T1
+    status: active
+  KI-HLP-008:
+    title: 高脂血症地域与季节食养
+    domain: HLP
+    tier: T1
+    status: active
+  KI-HLP-009:
+    title: 不同类型高脂血症个性化食养策略
+    domain: HLP
+    tier: T1
+    status: active
+  KI-HLP-010:
+    title: 高脂血症血脂监测与自我管理
+    domain: HLP
+    tier: T1
+    status: active
+  KI-OBE-001:
+    title: 成人肥胖判定标准与分型
+    domain: OBE
+    tier: T1
+    status: active
+  KI-OBE-002:
+    title: 肥胖的中医辨证分型
+    domain: OBE
+    tier: T1
+    status: active
+  KI-OBE-003:
+    title: 肥胖能量控制核心原则
+    domain: OBE
+    tier: T1
+    status: active
+  KI-OBE-004:
+    title: 减重食物选择指南
+    domain: OBE
+    tier: T1
+    status: active
+  KI-OBE-005:
+    title: 科学进餐行为规范
+    domain: OBE
+    tier: T1
+    status: active
+  KI-OBE-006:
+    title: 肥胖患者运动处方
+    domain: OBE
+    tier: T1
+    status: active
+  KI-OBE-007:
+    title: 睡眠与作息对肥胖的影响
+    domain: OBE
+    tier: T1
+    status: active
+  KI-OBE-008:
+    title: 安全减重目标与自我监测
+    domain: OBE
+    tier: T1
+    status: active
+  KI-OBE-009:
+    title: 限酒与减重
+    domain: OBE
+    tier: T1
+    status: active
+  KI-COB-001:
+    title: 儿童青少年肥胖判定标准与分型
+    domain: COB
+    tier: T1
+    status: active
+  KI-COB-002:
+    title: 儿童青少年肥胖的中医辨证分型
+    domain: COB
+    tier: T1
+    status: active
+  KI-COB-003:
+    title: 儿童青少年肥胖能量控制原则
+    domain: COB
+    tier: T1
+    status: active
+  KI-COB-004:
+    title: 儿童青少年食物选择指南
+    domain: COB
+    tier: T1
+    status: active
+  KI-COB-005:
+    title: 儿童青少年科学进餐行为规范
+    domain: COB
+    tier: T1
+    status: active
+  KI-COB-006:
+    title: 儿童青少年营养补充指南
+    domain: COB
+    tier: T1
+    status: active
+  KI-COB-007:
+    title: 儿童青少年特殊膳食应对
+    domain: COB
+    tier: T1
+    status: active
+  KI-COB-008:
+    title: 儿童青少年运动处方
+    domain: COB
+    tier: T1
+    status: active
+  KI-COB-009:
+    title: 儿童青少年睡眠与作息管理
+    domain: COB
+    tier: T1
+    status: active
+  KI-COB-010:
+    title: 儿童青少年心理与社会支持
+    domain: COB
+    tier: T1
+    status: active
+  KI-CD-008:
+    title: 行为处方六要素
+    domain: CD
+    tier: T2
+    status: active
+  KI-T2DR-005:
+    title: 运动处方T2D逆转域
+    domain: T2DR
+    tier: T1
+    status: active
+  KI-BCT-FOGG-001:
+    title: Fogg行为模型
+    domain: BCT
+    tier: T2
+    status: active_unverified
+  KI-NEIJING-003:
+    title: 四气调神季节行为调适
+    domain: TCM
+    tier: T2
+    status: active_unverified
+  KI-NEIJING-005:
+    title: 情志致病与调摄
+    domain: TCM
+    tier: T2
+    status: active_unverified
+  KI-NEIJING-006:
+    title: 藏气法时饮食调养
+    domain: TCM
+    tier: T2
+    status: active_unverified
+  KI-NEIJING-008:
+    title: 24节气与生活节律
+    domain: TCM
+    tier: T2
+    status: active_unverified
+  KI-LM-COMP-002:
+    title: ICF教练核心能力框架
+    domain: COACHING
+    tier: T2
+    status: active
+    source: kb_theory/KI-COACH-ICF-COMPETENCY-2024.md
+  KI-PSYCH-BURG-002:
+    title: 行为改变阻力心理机制
+    domain: PSYCH
+    tier: T2
+    status: active_unverified
+  KI-TCM-CONSTIT-001:
+    title: 中医九体质辨识与行为调适
+    domain: TCM
+    tier: T1
+    status: active
+    source: kb_tcm/KI-TCM-CONSTITUTION-chapters1-6.md
+  KI-CD-009:
+    title: 生活方式审计操作框架（Lifestyle Audit）
+    domain: CD
+    tier: T3
+    status: active
+    source: kb_clinical/慢性病行为干预核心库_KI-CD.md
+    replaces: [KI-CD-LIFESTYLE-001, KI-CD-LIFESTYLE-002]
+  KI-CD-010:
+    title: ACLM生活方式干预核心原则（六大支柱）
+    domain: CD
+    tier: T1
+    status: active
+    source: kb_clinical/慢性病行为干预核心库_KI-CD.md
+    replaces: [KI-CD-LIFESTYLE-003]
+  KI-CULT-HUM-001:
+    title: 文化人文因素与健康行为
+    domain: CULT
+    tier: T2
+    status: active_unverified
+  KI-LEARN-ILL-001:
+    title: 全视角学习理论三维框架
+    domain: LEARN
+    tier: T2
+    status: active_unverified
+  KI-LEARN-ILL-002:
+    title: 行动学习与经验循环
+    domain: LEARN
+    tier: T2
+    status: active_unverified
+  KI-LEARN-ILL-003:
+    title: 情绪与学习动机自我效能
+    domain: LEARN
+    tier: T2
+    status: active_unverified
+  KI-LEARN-ILL-004:
+    title: 社会文化学习与身份认同
+    domain: LEARN
+    tier: T2
+    status: active_unverified
+  KI-ACLM-001:
+    title: ACLM T2D干预总论
+    domain: T2DR
+    tier: T1
+    status: active_unverified
+  KI-ACLM-003:
+    title: 运动处方T2D逆转
+    domain: T2DR
+    tier: T1
+    status: active_unverified
+  KI-ACLM-004:
+    title: WFPB饮食框架
+    domain: NUTR
+    tier: T1
+    status: active_unverified
+  KI-ACLM-005:
+    title: 睡眠干预与代谢健康
+    domain: SLEEP
+    tier: T1
+    status: active_unverified
+  KI-ACLM-006:
+    title: HWC健康教练方法论
+    domain: COACHING
+    tier: T1
+    status: active_unverified
+  KI-ACLM-007:
+    title: 社会支持系统慢病逆转
+    domain: T2DR
+    tier: T1
+    status: active_unverified
+  KI-DM-CGM-001:
+    title: 血糖监测方法总览
+    domain: DM
+    tier: T1
+    status: active_unverified
+  KI-DM-CGM-003:
+    title: CGM临床应用规范
+    domain: DM
+    tier: T1
+    status: active_unverified
+  KI-DM-CGM-004:
+    title: TIR目标值与达标策略
+    domain: DM
+    tier: T1
+    status: active_unverified
+agent_registry:
+  crisis:
+    class: CrisisAgent
+    priority: 0
+    tier: 1
+    registered: true
+  glucose:
+    class: GlucoseAgent
+    priority: 1
+    tier: 2
+    registered: true
+  sleep:
+    class: SleepAgent
+    priority: 2
+    tier: 2
+    registered: true
+  stress:
+    class: StressAgent
+    priority: 2
+    tier: 2
+    registered: true
+  mental:
+    class: MentalHealthAgent
+    priority: 2
+    tier: 2
+    registered: true
+  nutrition:
+    class: NutritionAgent
+    priority: 3
+    tier: 2
+    registered: true
+  exercise:
+    class: ExerciseAgent
+    priority: 3
+    tier: 2
+    registered: true
+  motivation:
+    class: MotivationAgent
+    priority: 3
+    tier: 2
+    registered: true
+  tcm:
+    class: TCMWellnessAgent
+    priority: 4
+    tier: 2
+    registered: true
+  behavior_rx:
+    class: BehaviorRxAgent
+    priority: 2
+    tier: 3
+    registered: true
+  weight:
+    class: WeightAgent
+    priority: 2
+    tier: 3
+    registered: true
+  cardiac_rehab:
+    class: CardiacRehabAgent
+    priority: 1
+    tier: 3
+    registered: true
+  trust_guide:
+    class: TrustGuideAgent
+    priority: 3
+    tier: 3
+    registered: true
+  onboarding:
+    class: OnboardingGuideAgent
+    priority: 3
+    tier: 4
+    registered: true
+  health_assistant:
+    class: HealthAssistantAgent
+    priority: 4
+    tier: 4
+    registered: true
+  habit_tracker:
+    class: HabitTrackerAgent
+    priority: 4
+    tier: 4
+    registered: true
+  xzb_expert:
+    class: XZBExpertAgent
+    priority: 1
+    tier: 5
+    registered: true
+  vision:
+    class: VisionGuideAgent
+    priority: 3
+    tier: 5
+    registered: true
+  journey_companion:
+    class: JourneyCompanionAgent
+    priority: 0
+    tier: 5
+    registered: false
+  growth_reflection:
+    class: GrowthReflectionAgent
+    priority: 0
+    tier: 5
+    registered: false
+  coach_copilot:
+    class: CoachCopilotAgent
+    priority: 0
+    tier: 5
+    registered: false
+  behavior_coach:
+    class: BehaviorCoachAgent
+    priority: 0
+    tier: 5+
+    registered: true
+  metabolic_expert:
+    class: MetabolicExpertAgent
+    priority: 0
+    tier: 5+
+    registered: true
+  cardiac_expert:
+    class: CardiacExpertAgent
+    priority: 0
+    tier: 5+
+    registered: true
+  adherence_expert:
+    class: AdherenceExpertAgent
+    priority: 0
+    tier: 5+
+    registered: true
