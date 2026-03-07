@@ -198,7 +198,19 @@ class BehavioralProfileService:
         if ttm7_result:
             profile.stage_stability = StageStability.SEMI_STABLE
 
-        # 10. 溯源
+        # 10. P+M 缓存 (从大五/concerns计算)
+        if big5_result and profile.big5_scores:
+            try:
+                from core.personality_matrix import classify_personality
+                raw_scores = {
+                    dim: data.get("score", 0) if isinstance(data, dict) else 0
+                    for dim, data in profile.big5_scores.items()
+                }
+                profile.personality_archetype = classify_personality(raw_scores)
+            except Exception as e:
+                logger.warning(f"P-type classify failed: user={user_id} {e}")
+
+        # 11. 溯源
         if assessment_id:
             profile.last_assessment_id = assessment_id
 

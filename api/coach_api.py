@@ -1728,9 +1728,9 @@ def ai_prescription_draft(
     ).first()
     stage = (profile.current_stage or "S1") if profile else "S1"
     domains = []
-    if profile and profile.dominant_domains:
-        domains = (profile.dominant_domains if isinstance(profile.dominant_domains, list)
-                   else [profile.dominant_domains])
+    if profile and profile.primary_domains:
+        domains = (profile.primary_domains if isinstance(profile.primary_domains, list)
+                   else [profile.primary_domains])
 
     # 2. 最近完成的评估结果
     latest_aa = db.query(AssessmentAssignment).filter(
@@ -1887,9 +1887,9 @@ def ai_message_draft(
     ).first()
     stage = (profile.current_stage or "S1") if profile else "S1"
     domains = []
-    if profile and profile.dominant_domains:
-        domains = (profile.dominant_domains if isinstance(profile.dominant_domains, list)
-                   else [profile.dominant_domains])
+    if profile and profile.primary_domains:
+        domains = (profile.primary_domains if isinstance(profile.primary_domains, list)
+                   else [profile.primary_domains])
 
     student_user = db.query(User).filter(User.id == student_id).first()
     student_name = (student_user.full_name or student_user.username or "学员") if student_user else "学员"
@@ -1979,9 +1979,9 @@ def ai_assessment_suggestion(
     ).first()
     stage = (profile.current_stage or "S1") if profile else "S1"
     domains = []
-    if profile and profile.dominant_domains:
-        domains = (profile.dominant_domains if isinstance(profile.dominant_domains, list)
-                   else [profile.dominant_domains])
+    if profile and profile.primary_domains:
+        domains = (profile.primary_domains if isinstance(profile.primary_domains, list)
+                   else [profile.primary_domains])
 
     # 最近完成的评估类型
     recent_assessments = db.query(AssessmentAssignment).filter(

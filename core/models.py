@@ -1063,7 +1063,11 @@ class BehavioralProfile(Base):
     # ====== �近评估ID (用于��) ======
     last_assessment_id = Column(String(50), nullable=True)
 
-    # ====== 时间� ======
+    # ====== P+M 缓存 ======
+    personality_archetype = Column(String(10), nullable=True)  # P1-P5
+    motivation_type = Column(String(10), nullable=True)  # M1-M5
+
+    # ====== 时间戳 ======
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=datetime.utcnow, nullable=False)
 
