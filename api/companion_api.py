@@ -155,17 +155,63 @@ def invite_mentee(
         mentee_id=mentee_id,
         mentor_role=mentor_role,
         mentee_role=mentee_role_str,
-        status=CompanionStatus.ACTIVE.value,
+        status=CompanionStatus.PENDING.value,  # 等待对方接受
     )
     db.add(cr)
     db.commit()
     db.refresh(cr)
 
+    return {"message": "邀请已发送，等待对方接受", "id": str(cr.id), "mentee_id": mentee_id}
+
+
+@router.get("/pending-invitations")
+def list_pending_invitations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """列出我收到的待处理邀请（我是 mentee 且 status=pending）"""
+    relations = db.query(CompanionRelation).filter(
+        CompanionRelation.mentee_id == current_user.id,
+        CompanionRelation.status == CompanionStatus.PENDING.value,
+    ).order_by(CompanionRelation.started_at.desc()).all()
+
+    result = []
+    for cr in relations:
+        mentor = db.query(User).filter(User.id == cr.mentor_id).first()
+        result.append({
+            "id": str(cr.id),
+            "mentor_id": cr.mentor_id,
+            "from_name": mentor.full_name or mentor.username if mentor else "用户",
+            "mentor_role": cr.mentor_role,
+            "created_at": str(cr.started_at) if cr.started_at else None,
+        })
+    return {"items": result, "total": len(result)}
+
+
+@router.post("/invitations/{invitation_id}/accept")
+def accept_invitation(
+    invitation_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """接受同道邀请 — 当前用户必须是 mentee"""
+    cr = db.query(CompanionRelation).filter(
+        CompanionRelation.id == invitation_id,
+        CompanionRelation.mentee_id == current_user.id,
+        CompanionRelation.status == CompanionStatus.PENDING.value,
+    ).first()
+    if not cr:
+        raise HTTPException(404, "邀请不存在或已处理")
+
+    cr.status = CompanionStatus.ACTIVE.value
+    cr.state_changed_at = datetime.utcnow()
+    db.commit()
+
     try:
         from core.models import PointTransaction
         db.add(PointTransaction(
-            user_id=current_user.id,
-            action="companion_add",
+            user_id=cr.mentor_id,
+            action="companion_accepted",
             point_type="contribution",
             amount=3,
         ))
@@ -173,7 +219,30 @@ def invite_mentee(
     except Exception as e:
         logger.warning(f"积分记录失败: {e}")
 
-    return {"message": "带教关系已建立", "id": str(cr.id), "mentee_id": mentee_id}
+    return {"message": "已接受邀请，带教关系已建立", "id": str(cr.id)}
+
+
+@router.post("/invitations/{invitation_id}/reject")
+def reject_invitation(
+    invitation_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """拒绝同道邀请 — 当前用户必须是 mentee"""
+    cr = db.query(CompanionRelation).filter(
+        CompanionRelation.id == invitation_id,
+        CompanionRelation.mentee_id == current_user.id,
+        CompanionRelation.status == CompanionStatus.PENDING.value,
+    ).first()
+    if not cr:
+        raise HTTPException(404, "邀请不存在或已处理")
+
+    cr.status = CompanionStatus.DROPPED.value
+    cr.state_changed_at = datetime.utcnow()
+    cr.dissolve_reason = "rejected_by_mentee"
+    db.commit()
+
+    return {"message": "已拒绝邀请", "id": str(cr.id)}
 
 
 # ─── Admin / Coach endpoints ───
@@ -499,3 +568,54 @@ def ai_draft_message(
         "context": ctx,
         "source": "ollama" if "ollama" in draft.lower() or len(draft) > 50 else "template",
     }
+
+
+@router.get("")
+def list_companions(
+    status: Optional[str] = Query(None, description="active|pending|graduated"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    GET /companions — 聚合当前用户的全部同道关系（带教的 + 被带教的）。
+    前端 companions/index.vue 使用。
+    """
+    q_mentor = db.query(CompanionRelation).filter(
+        CompanionRelation.mentor_id == current_user.id
+    )
+    q_mentee = db.query(CompanionRelation).filter(
+        CompanionRelation.mentee_id == current_user.id
+    )
+    if status:
+        q_mentor = q_mentor.filter(CompanionRelation.status == status)
+        q_mentee = q_mentee.filter(CompanionRelation.status == status)
+
+    items = []
+    for cr in q_mentor.order_by(CompanionRelation.started_at.desc()).all():
+        peer = db.query(User).filter(User.id == cr.mentee_id).first()
+        items.append({
+            "id": str(cr.id),
+            "peer_id": cr.mentee_id,
+            "peer_name": (peer.full_name or peer.username) if peer else "用户",
+            "peer_role": cr.mentee_role,
+            "relation": "mentor",
+            "status": cr.status,
+            "quality_score": float(cr.quality_score) if cr.quality_score else None,
+            "started_at": str(cr.started_at) if cr.started_at else None,
+            "graduated_at": str(cr.graduated_at) if cr.graduated_at else None,
+        })
+    for cr in q_mentee.order_by(CompanionRelation.started_at.desc()).all():
+        peer = db.query(User).filter(User.id == cr.mentor_id).first()
+        items.append({
+            "id": str(cr.id),
+            "peer_id": cr.mentor_id,
+            "peer_name": (peer.full_name or peer.username) if peer else "用户",
+            "peer_role": cr.mentor_role,
+            "relation": "mentee",
+            "status": cr.status,
+            "quality_score": float(cr.quality_score) if cr.quality_score else None,
+            "started_at": str(cr.started_at) if cr.started_at else None,
+            "graduated_at": str(cr.graduated_at) if cr.graduated_at else None,
+        })
+
+    return {"items": items, "total": len(items)}

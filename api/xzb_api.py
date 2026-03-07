@@ -177,12 +177,47 @@ def get_dashboard(
         ))
     ).scalar() or 0
 
+    # 活跃求助者 (近30天有对话)
+    from datetime import timedelta
+    cutoff = datetime.utcnow() - timedelta(days=30)
+    active_seekers = db.execute(
+        select(sqlfunc.count(sqlfunc.distinct(XZBConversation.seeker_id))).where(and_(
+            XZBConversation.expert_id == expert.id,
+            XZBConversation.created_at >= cutoff,
+        ))
+    ).scalar() or 0
+
+    # 最近对话
+    recent_convs = db.execute(
+        select(XZBConversation).where(XZBConversation.expert_id == expert.id)
+        .order_by(XZBConversation.created_at.desc()).limit(5)
+    ).scalars().all()
+
+    # 知识库健康度
+    total_k = db.execute(
+        select(sqlfunc.count(XZBKnowledge.id)).where(and_(
+            XZBKnowledge.expert_id == expert.id, XZBKnowledge.is_active == True,  # noqa: E712
+        ))
+    ).scalar() or 0
+    confirmed_k = db.execute(
+        select(sqlfunc.count(XZBKnowledge.id)).where(and_(
+            XZBKnowledge.expert_id == expert.id,
+            XZBKnowledge.is_active == True, XZBKnowledge.expert_confirmed == True,  # noqa: E712
+        ))
+    ).scalar() or 0
+    health_score = round(confirmed_k / total_k, 2) if total_k > 0 else 0.0
+
     return {
         "pending_knowledge_confirmations": pending_k,
         "pending_rx_reviews": pending_rx,
-        "active_seekers": 0,
-        "knowledge_health_score": 0.85,
-        "recent_conversations": [],
+        "active_seekers": active_seekers,
+        "knowledge_health_score": health_score,
+        "recent_conversations": [
+            {"id": str(c.id), "seeker_id": c.seeker_id, "summary": c.summary,
+             "rx_triggered": c.rx_triggered, "expert_intervened": c.expert_intervened,
+             "created_at": c.created_at.isoformat() if c.created_at else None}
+            for c in recent_convs
+        ],
     }
 
 
@@ -243,6 +278,24 @@ def create_knowledge(
         expires_at=req.expires_at, expert_confirmed=True,
     )
     db.add(knowledge)
+    db.flush()
+
+    # 实时向量化 — 不用等隔夜 Job
+    try:
+        from core.knowledge.embedding_service import EmbeddingService
+        if req.content and len(req.content.strip()) >= 10:
+            svc = EmbeddingService()
+            vec = svc.embed_query(req.content)
+            svc.close()
+            if vec:
+                from sqlalchemy import text as sa_text
+                vec_str = "[" + ",".join(str(v) for v in vec) + "]"
+                db.execute(sa_text(
+                    "UPDATE xzb_knowledge SET vector_embedding_1024 = CAST(:vec AS vector(1024)) WHERE id = :kid"
+                ), {"vec": vec_str, "kid": str(knowledge.id)})
+    except Exception:
+        pass  # 静默失败，Job 38 会补上
+
     db.commit()
     return {"id": str(knowledge.id), "status": "created"}
 
@@ -599,3 +652,330 @@ def comment_on_post(
     db.add(comment)
     db.commit()
     return {"id": str(comment.id), "status": "created"}
+
+
+# ═══════════════════════════════════════════════
+# §7.6 求助者管理 API (5 端点)
+# ═══════════════════════════════════════════════
+
+@router.get("/seekers", summary="求助者列表（该专家的全部服务对象）")
+def list_seekers(
+    expert: XZBExpertProfile = Depends(get_current_expert),
+    db: Session = Depends(get_db),
+) -> Dict:
+    """通过 xzb_conversations 汇聚该专家的所有求助者"""
+    rows = db.execute(
+        select(
+            XZBConversation.seeker_id,
+            sqlfunc.count(XZBConversation.id).label("conv_count"),
+            sqlfunc.max(XZBConversation.created_at).label("last_conv_at"),
+            sqlfunc.bool_or(XZBConversation.rx_triggered).label("has_rx"),
+        ).where(XZBConversation.expert_id == expert.id)
+        .group_by(XZBConversation.seeker_id)
+        .order_by(sqlfunc.max(XZBConversation.created_at).desc())
+    ).all()
+
+    seeker_ids = [r.seeker_id for r in rows]
+    users_map: Dict[int, Any] = {}
+    if seeker_ids:
+        users = db.execute(
+            select(User).where(User.id.in_(seeker_ids))
+        ).scalars().all()
+        users_map = {u.id: u for u in users}
+
+    items = []
+    for r in rows:
+        u = users_map.get(r.seeker_id)
+        items.append({
+            "seeker_id": r.seeker_id,
+            "name": u.full_name or u.username if u else f"用户{r.seeker_id}",
+            "conv_count": r.conv_count,
+            "last_conv_at": r.last_conv_at.isoformat() if r.last_conv_at else None,
+            "has_rx": r.has_rx or False,
+            "stage": getattr(u, "current_stage", None) if u else None,
+            "adherence_rate": getattr(u, "adherence_rate", None) if u else None,
+        })
+
+    return {"items": items, "total": len(items)}
+
+
+@router.get("/seekers/{seeker_id}/detail", summary="求助者详情")
+def get_seeker_detail(
+    seeker_id: int,
+    expert: XZBExpertProfile = Depends(get_current_expert),
+    db: Session = Depends(get_db),
+) -> Dict:
+    user = db.execute(select(User).where(User.id == seeker_id)).scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "用户不存在")
+
+    # 对话统计
+    conv_count = db.execute(
+        select(sqlfunc.count(XZBConversation.id)).where(and_(
+            XZBConversation.expert_id == expert.id,
+            XZBConversation.seeker_id == seeker_id,
+        ))
+    ).scalar() or 0
+
+    # 处方统计
+    rx_count = db.execute(
+        select(sqlfunc.count(XZBRxFragment.id)).where(and_(
+            XZBRxFragment.expert_id == expert.id,
+            XZBRxFragment.seeker_id == seeker_id,
+        ))
+    ).scalar() or 0
+
+    profile = user.profile if hasattr(user, "profile") and user.profile else {}
+
+    return {
+        "seeker_id": user.id,
+        "name": user.full_name or user.username,
+        "gender": getattr(user, "gender", None),
+        "stage": getattr(user, "current_stage", None),
+        "adherence_rate": getattr(user, "adherence_rate", None),
+        "health_competency": getattr(user, "health_competency_level", None),
+        "trust_score": getattr(user, "trust_score", None),
+        "chronic_conditions": profile.get("chronic_conditions", []) if isinstance(profile, dict) else [],
+        "goals": profile.get("goals", []) if isinstance(profile, dict) else [],
+        "conv_count": conv_count,
+        "rx_count": rx_count,
+        "created_at": user.created_at.isoformat() if hasattr(user, "created_at") and user.created_at else None,
+    }
+
+
+@router.get("/seekers/{seeker_id}/conversations", summary="某求助者的对话列表")
+def list_seeker_conversations(
+    seeker_id: int,
+    page: int = 1, page_size: int = 20,
+    expert: XZBExpertProfile = Depends(get_current_expert),
+    db: Session = Depends(get_db),
+) -> Dict:
+    convs = db.execute(
+        select(XZBConversation).where(and_(
+            XZBConversation.expert_id == expert.id,
+            XZBConversation.seeker_id == seeker_id,
+        )).order_by(XZBConversation.created_at.desc())
+        .offset((page - 1) * page_size).limit(page_size)
+    ).scalars().all()
+
+    return {
+        "items": [
+            {"id": str(c.id), "summary": c.summary, "rx_triggered": c.rx_triggered,
+             "expert_intervened": c.expert_intervened, "knowledge_mined": c.knowledge_mined,
+             "ttm_stage": c.ttm_stage_at_start,
+             "created_at": c.created_at.isoformat() if c.created_at else None,
+             "ended_at": c.ended_at.isoformat() if c.ended_at else None}
+            for c in convs
+        ],
+        "page": page,
+    }
+
+
+@router.get("/conversations", summary="专家全部对话列表")
+def list_expert_conversations(
+    page: int = 1, page_size: int = 20,
+    expert: XZBExpertProfile = Depends(get_current_expert),
+    db: Session = Depends(get_db),
+) -> Dict:
+    convs = db.execute(
+        select(XZBConversation).where(XZBConversation.expert_id == expert.id)
+        .order_by(XZBConversation.created_at.desc())
+        .offset((page - 1) * page_size).limit(page_size)
+    ).scalars().all()
+
+    # 批量获取求助者名称
+    seeker_ids = list(set(c.seeker_id for c in convs))
+    users_map: Dict[int, Any] = {}
+    if seeker_ids:
+        users = db.execute(select(User).where(User.id.in_(seeker_ids))).scalars().all()
+        users_map = {u.id: u for u in users}
+
+    return {
+        "items": [
+            {"id": str(c.id), "seeker_id": c.seeker_id,
+             "seeker_name": (users_map.get(c.seeker_id).full_name or users_map.get(c.seeker_id).username)
+                if users_map.get(c.seeker_id) else f"用户{c.seeker_id}",
+             "summary": c.summary, "rx_triggered": c.rx_triggered,
+             "expert_intervened": c.expert_intervened,
+             "created_at": c.created_at.isoformat() if c.created_at else None}
+            for c in convs
+        ],
+        "page": page,
+    }
+
+
+@router.get("/seekers/{seeker_id}/health-summary", summary="求助者健康数据摘要（代理）")
+def get_seeker_health_summary(
+    seeker_id: int,
+    expert: XZBExpertProfile = Depends(get_current_expert),
+    db: Session = Depends(get_db),
+) -> Dict:
+    """代理查询求助者的健康数据摘要，需验证专家有该求助者的对话记录"""
+    has_relation = db.execute(
+        select(sqlfunc.count(XZBConversation.id)).where(and_(
+            XZBConversation.expert_id == expert.id,
+            XZBConversation.seeker_id == seeker_id,
+        ))
+    ).scalar() or 0
+    if not has_relation:
+        raise HTTPException(403, "无权查看该用户的健康数据")
+
+    # 查询健康数据表 (graceful fallback)
+    summary: Dict[str, Any] = {"seeker_id": seeker_id, "has_data": False}
+    try:
+        from sqlalchemy import text as sa_text
+        # 最近血糖
+        glucose = db.execute(sa_text("""
+            SELECT value, recorded_at FROM health_glucose
+            WHERE user_id = :uid ORDER BY recorded_at DESC LIMIT 7
+        """), {"uid": seeker_id}).fetchall()
+        if glucose:
+            summary["has_data"] = True
+            summary["glucose"] = [{"value": float(g.value), "time": g.recorded_at.isoformat()} for g in glucose]
+
+        # 最近体重
+        weight = db.execute(sa_text("""
+            SELECT weight_kg, recorded_at FROM health_vitals
+            WHERE user_id = :uid AND weight_kg IS NOT NULL
+            ORDER BY recorded_at DESC LIMIT 7
+        """), {"uid": seeker_id}).fetchall()
+        if weight:
+            summary["has_data"] = True
+            summary["weight"] = [{"value": float(w.weight_kg), "time": w.recorded_at.isoformat()} for w in weight]
+
+        # 最近睡眠
+        sleep = db.execute(sa_text("""
+            SELECT duration_min, quality_score, recorded_at FROM health_sleep
+            WHERE user_id = :uid ORDER BY recorded_at DESC LIMIT 7
+        """), {"uid": seeker_id}).fetchall()
+        if sleep:
+            summary["has_data"] = True
+            summary["sleep"] = [{"duration": s.duration_min, "quality": s.quality_score,
+                                 "time": s.recorded_at.isoformat()} for s in sleep]
+    except Exception:
+        pass  # 表不存在时静默
+
+    return summary
+
+
+# ═══════════════════════════════════════════════
+# §7.7 常见问题库 FAQ API (4 端点)
+# ═══════════════════════════════════════════════
+
+class FAQCreateRequest(BaseModel):
+    question: str = Field(..., min_length=5)
+    answer: str = Field(..., min_length=10)
+    domain: str = "general"
+    tags: List[str] = []
+    linked_rx_template_id: Optional[UUID] = None
+
+
+@router.get("/faq", summary="常见问题列表")
+def list_faq(
+    domain: Optional[str] = None,
+    page: int = 1, page_size: int = 20,
+    expert: XZBExpertProfile = Depends(get_current_expert),
+    db: Session = Depends(get_db),
+) -> Dict:
+    """FAQ 存储在 xzb_knowledge 表中, type='faq', content 为 JSON {question, answer}"""
+    filters = [XZBKnowledge.expert_id == expert.id, XZBKnowledge.type == "faq",
+               XZBKnowledge.is_active == True]  # noqa: E712
+    if domain:
+        filters.append(XZBKnowledge.tags.contains([domain]))
+
+    items = db.execute(
+        select(XZBKnowledge).where(and_(*filters))
+        .order_by(XZBKnowledge.usage_count.desc())
+        .offset((page - 1) * page_size).limit(page_size)
+    ).scalars().all()
+
+    results = []
+    import json
+    for k in items:
+        try:
+            qa = json.loads(k.content) if isinstance(k.content, str) else k.content
+        except (json.JSONDecodeError, TypeError):
+            qa = {"question": k.content[:100] if k.content else "", "answer": k.content or ""}
+        results.append({
+            "id": str(k.id), "question": qa.get("question", ""),
+            "answer": qa.get("answer", ""), "domain": (k.tags or ["general"])[0],
+            "tags": k.tags, "usage_count": k.usage_count,
+            "linked_rx_template_id": None,
+        })
+
+    return {"items": results, "total": len(results)}
+
+
+@router.post("/faq", summary="新建常见问题")
+def create_faq(
+    req: FAQCreateRequest,
+    expert: XZBExpertProfile = Depends(get_current_expert),
+    db: Session = Depends(get_db),
+) -> Dict:
+    import json
+    content_json = json.dumps({"question": req.question, "answer": req.answer}, ensure_ascii=False)
+    knowledge = XZBKnowledge(
+        expert_id=expert.id, type="faq", content=content_json,
+        evidence_tier="expert_opinion", source="expert_manual",
+        tags=[req.domain] + req.tags, expert_confirmed=True,
+    )
+    db.add(knowledge)
+    db.flush()
+
+    # 实时向量化
+    try:
+        from core.knowledge.embedding_service import EmbeddingService
+        svc = EmbeddingService()
+        vec = svc.embed_query(f"{req.question} {req.answer}")
+        svc.close()
+        if vec:
+            from sqlalchemy import text as sa_text
+            vec_str = "[" + ",".join(str(v) for v in vec) + "]"
+            db.execute(sa_text(
+                "UPDATE xzb_knowledge SET vector_embedding_1024 = CAST(:vec AS vector(1024)) WHERE id = :kid"
+            ), {"vec": vec_str, "kid": str(knowledge.id)})
+    except Exception:
+        pass
+
+    db.commit()
+    return {"id": str(knowledge.id), "status": "created"}
+
+
+@router.put("/faq/{faq_id}", summary="更新常见问题")
+def update_faq(
+    faq_id: UUID,
+    req: FAQCreateRequest,
+    expert: XZBExpertProfile = Depends(get_current_expert),
+    db: Session = Depends(get_db),
+) -> Dict:
+    import json
+    k = db.execute(
+        select(XZBKnowledge).where(and_(
+            XZBKnowledge.id == faq_id, XZBKnowledge.expert_id == expert.id,
+            XZBKnowledge.type == "faq",
+        ))
+    ).scalar_one_or_none()
+    if not k:
+        raise HTTPException(404, "FAQ不存在")
+    k.content = json.dumps({"question": req.question, "answer": req.answer}, ensure_ascii=False)
+    k.tags = [req.domain] + req.tags
+    k.vector_embedding = None  # 标记待重新嵌入
+    k.updated_at = datetime.utcnow()
+    db.commit()
+    return {"status": "updated"}
+
+
+@router.delete("/faq/{faq_id}", summary="删除常见问题")
+def delete_faq(
+    faq_id: UUID,
+    expert: XZBExpertProfile = Depends(get_current_expert),
+    db: Session = Depends(get_db),
+) -> Dict:
+    db.execute(
+        update(XZBKnowledge)
+        .where(and_(XZBKnowledge.id == faq_id, XZBKnowledge.expert_id == expert.id,
+                     XZBKnowledge.type == "faq"))
+        .values(is_active=False, updated_at=datetime.utcnow())
+    )
+    db.commit()
+    return {"status": "deleted"}

@@ -1467,7 +1467,7 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
                     rows = db.execute(sa_text("""
                         SELECT id, content FROM xzb_knowledge
                         WHERE is_active = TRUE AND expert_confirmed = TRUE
-                          AND vector_embedding IS NULL
+                          AND vector_embedding_1024 IS NULL
                         LIMIT 100
                     """)).fetchall()
 
@@ -1499,7 +1499,7 @@ def setup_scheduler() -> "AsyncIOScheduler | None":
                             vec_str = "[" + ",".join(str(v) for v in vec) + "]"
                             db.execute(sa_text("""
                                 UPDATE xzb_knowledge
-                                SET vector_embedding = CAST(:vec AS vector)
+                                SET vector_embedding_1024 = CAST(:vec AS vector(1024))
                                 WHERE id = :kid
                             """), {"vec": vec_str, "kid": str(kid)})
                             embedded_count += 1

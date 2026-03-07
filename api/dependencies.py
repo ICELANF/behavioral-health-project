@@ -146,9 +146,9 @@ def require_coach_or_admin(current_user: User = Depends(get_current_user)) -> Us
 
 
 _ROLE_ZH = {
-    "observer": "观察者", "grower": "成长者", "sharer": "分享者",
-    "coach": "教练", "promoter": "推广者", "supervisor": "督导",
-    "master": "专家", "admin": "管理员", "institution_admin": "机构管理员",
+    "observer": "观察员", "grower": "成长者", "sharer": "分享者",
+    "coach": "行为健康教练", "promoter": "行为健康促进师", "supervisor": "行为健康促进师",
+    "master": "行为健康大师", "admin": "管理员", "institution_admin": "机构管理员",
 }
 
 def require_roles(allowed_roles: List[UserRole]):

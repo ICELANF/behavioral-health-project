@@ -126,22 +126,7 @@ async def stub_companion_detail(companion_id: int):
     return stub_object({"id": companion_id, "name": "Companion (stub)", "status": "active"})
 
 
-@router.post("/companions/invite")
-async def stub_companion_invite():
-    """邀请同伴 - stub"""
-    return stub_success("invitation sent (stub)")
-
-
-@router.post("/companions/invitations/{invitation_id}/accept")
-async def stub_invitation_accept(invitation_id: int):
-    """接受邀请 - stub"""
-    return stub_success("accepted (stub)")
-
-
-@router.post("/companions/invitations/{invitation_id}/reject")
-async def stub_invitation_reject(invitation_id: int):
-    """拒绝邀请 - stub"""
-    return stub_success("rejected (stub)")
+# 注：/companions/invite, /companions/invitations/{id}/accept|reject 已由 companion_api.py 真实实现
 
 
 # ═══════════════════════════════════════════════════════

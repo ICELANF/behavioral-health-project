@@ -434,3 +434,39 @@ def get_stage_config(current_user: User = Depends(get_current_user)):
             for i, s in enumerate(STAGE_ORDER)
         ],
     }
+
+
+# ── 16. GET /promotion/history — 晋级申请历史 ─────────────────
+
+@router.get("/promotion/history")
+def get_promotion_history(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """获取当前用户晋级申请历史（对齐前端字段）"""
+    from sqlalchemy import text as sa_text
+    try:
+        rows = db.execute(sa_text("""
+            SELECT id, to_role, status, statement, review_stage,
+                   review_comment, created_at, reviewed_at
+            FROM promotion_applications
+            WHERE user_id = :uid
+            ORDER BY created_at DESC
+            LIMIT 20
+        """), {"uid": current_user.id}).mappings().all()
+        items = [
+            {
+                "id": row["id"],
+                "target_level": (row.get("to_role") or "").lower(),
+                "status": row.get("status", "pending"),
+                "review_stage": row.get("review_stage") or "L1",
+                "reason": row.get("statement") or "",
+                "review_comment": row.get("review_comment") or "",
+                "created_at": str(row.get("created_at") or ""),
+                "reviewed_at": str(row["reviewed_at"]) if row.get("reviewed_at") else None,
+            }
+            for row in rows
+        ]
+        return {"items": items, "total": len(items)}
+    except Exception:
+        return {"items": [], "total": 0}

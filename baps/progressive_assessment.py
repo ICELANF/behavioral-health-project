@@ -197,6 +197,7 @@ class AssessmentSession(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     status = Column(String(15), nullable=False, default="in_progress")
+    entry_type = Column(String(20), nullable=False, default="self")
     # 进度
     completed_batches = Column(JSON, default=list)      # ["B1_TTM7_CORE", "B2_SPI_QUICK"]
     pending_batches = Column(JSON, default=list)
@@ -339,7 +340,7 @@ class AdaptiveRecommender:
 # 会话管理
 # ══════════════════════════════════════════════
 
-def get_or_create_session(db: Session, user_id: int) -> AssessmentSession:
+def get_or_create_session(db: Session, user_id: int, entry_type: str = "self") -> AssessmentSession:
     """获取活跃会话或创建新会话"""
     session = (
         db.query(AssessmentSession)
@@ -362,6 +363,7 @@ def get_or_create_session(db: Session, user_id: int) -> AssessmentSession:
     now = datetime.now()
     session = AssessmentSession(
         user_id=user_id,
+        entry_type=entry_type,
         status="in_progress",
         completed_batches=[],
         pending_batches=[b["batch_id"] for b in ASSESSMENT_BATCHES],
