@@ -13,11 +13,9 @@ services:
     env_file:
       - path: .env.bhp
         required: false
-      - path: .env
-        required: false
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
+      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
+      - REDIS_URL=redis://redis:6379/0
       - QDRANT_URL=http://qdrant:6333
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=.
@@ -68,9 +66,9 @@ services:
       timeout: 15s
       retries: 3
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
+      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
       - PYTHONPATH=.
     depends_on:
       - redis
@@ -145,9 +143,9 @@ services:
       timeout: 10s
       retries: 3
     environment:
-      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db}
-      - REDIS_URL=${REDIS_URL:-redis://redis:6379/0}
-      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/1}
+      - DATABASE_URL=postgresql+asyncpg://bhp_user:bhp_password@db:5432/bhp_db
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
       - PYTHONPATH=.
     depends_on:
       - redis
