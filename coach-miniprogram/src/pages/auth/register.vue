@@ -245,7 +245,7 @@ const roles = [
   },
   {
     key: 'coach',
-    name: '健康教练',
+    name: '行为健康教练',
     icon: '👨‍🏫',
     desc: '专业指导学员实现行为改变',
     color: '#2D8E69',

@@ -25,6 +25,10 @@
           <text class="sv-stat-num" style="color:#27AE60;">{{ stats.approved_today || 0 }}</text>
           <text class="sv-stat-label">今日审批</text>
         </view>
+        <view class="sv-stat-card" style="min-width:100%;" @tap="navTo('/pages/supervisor/promotion/index')">
+          <text class="sv-stat-num" style="color:#8E24AA;">{{ stats.pending_promotion || 0 }}</text>
+          <text class="sv-stat-label">待复核晋级 ›</text>
+        </view>
       </view>
 
       <!-- 快捷入口 -->
@@ -60,6 +64,16 @@
           </view>
           <text class="sv-shortcut-arrow">›</text>
         </view>
+        <view class="sv-shortcut-item" @tap="navTo('/pages/supervisor/promotion/index')">
+          <view class="sv-shortcut-icon" style="background:#F3E5F5;">
+            <text style="color:#8E24AA; font-size:40rpx;">🏅</text>
+          </view>
+          <view class="sv-shortcut-info">
+            <text class="sv-shortcut-name">晋级复核</text>
+            <text class="sv-shortcut-desc">{{ stats.pending_promotion || 0 }} 条待复核</text>
+          </view>
+          <text class="sv-shortcut-arrow">›</text>
+        </view>
       </view>
 
       <view style="height:120rpx;"></view>
@@ -77,6 +91,7 @@ const stats = ref({
   pending_review: 0,
   high_risk_count: 0,
   approved_today: 0,
+  pending_promotion: 0,
 })
 
 async function loadData() {
@@ -87,6 +102,7 @@ async function loadData() {
       pending_review: res.pending_review || 0,
       high_risk_count: res.high_risk_count || 0,
       approved_today: res.approved_today || 0,
+      pending_promotion: res.pending_promotion || 0,
     }
   } catch {
     // API not yet implemented — keep zero defaults

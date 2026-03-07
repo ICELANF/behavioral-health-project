@@ -53,8 +53,8 @@ const currentLevel = ref('observer')
 const refreshing = ref(false)
 const loading = ref(false)
 
-const levelIcons: Record<string, string> = { observer:'👁', grower:'🌱', sharer:'🤝', guide:'🧭', master:'⭐' }
-const levelNames: Record<string, string> = { observer:'观察者', grower:'成长者', sharer:'分享者', guide:'向导者', master:'大师' }
+const levelIcons: Record<string, string> = { observer:'👁', grower:'🌱', sharer:'🤝', coach:'🎯', promoter:'🏅', supervisor:'🏅', master:'👑' }
+const levelNames: Record<string, string> = { observer:'观察员', grower:'成长者', sharer:'分享者', coach:'行为健康教练', promoter:'行为健康促进师', supervisor:'行为健康促进师', master:'行为健康大师' }
 function levelIcon(k: string) { return levelIcons[k] || '🌱' }
 function levelName(k: string) { return levelNames[k] || k }
 

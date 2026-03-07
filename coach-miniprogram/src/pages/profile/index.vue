@@ -67,6 +67,18 @@
           <text class="prof-menu-sub">学员评估任务</text>
           <text class="prof-menu-arrow">›</text>
         </view>
+        <view class="prof-menu-item" @tap="goPage('/pages/coach/promotion/index')">
+          <text class="prof-menu-icon">🎖</text>
+          <text class="prof-menu-text">晋级申请审核</text>
+          <text class="prof-menu-sub">成长者→分享者申请</text>
+          <text class="prof-menu-arrow">›</text>
+        </view>
+        <view class="prof-menu-item" @tap="goPage('/pages/coach/contributions/index')">
+          <text class="prof-menu-icon">✍️</text>
+          <text class="prof-menu-text">内容投稿审核</text>
+          <text class="prof-menu-sub">学员投稿的经验分享</text>
+          <text class="prof-menu-arrow">›</text>
+        </view>
       </view>
 
       <!-- 系统 -->
@@ -135,7 +147,7 @@ import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
 
-const userInfo = ref<any>({ name: '教练', role_label: '健康教练', username: '' })
+const userInfo = ref<any>({ name: '教练', role_label: '行为健康教练', username: '' })
 const showEditModal = ref(false)
 const saving = ref(false)
 const editForm = ref({ full_name: '' })
@@ -147,7 +159,7 @@ async function loadProfile() {
       const u = typeof stored === 'string' ? JSON.parse(stored) : stored
       userInfo.value = {
         name: u.full_name || u.display_name || u.username || u.nickname || '教练',
-        role_label: (u.role||'').toLowerCase() === 'coach' ? '健康教练' : (u.role||'').toLowerCase() === 'admin' ? '管理员' : u.role || '用户',
+        role_label: ({ coach:'行为健康教练', promoter:'行为健康促进师', supervisor:'行为健康促进师', master:'行为健康大师', admin:'管理员', sharer:'分享者', grower:'成长者', observer:'观察员' } as Record<string,string>)[(u.role||'').toLowerCase()] || u.role || '用户',
         learning_credits: 0,
         joined_days: 0,
         cert_count: 0,
@@ -166,7 +178,7 @@ async function loadProfile() {
         ...userInfo.value,
         name: res.full_name || res.display_name || res.username || userInfo.value.name,
         username: res.username || '',
-        role_label: (res.role||'').toLowerCase() === 'coach' ? '健康教练' : res.role || userInfo.value.role_label,
+        role_label: ({ coach:'行为健康教练', promoter:'行为健康促进师', supervisor:'行为健康促进师', master:'行为健康大师', admin:'管理员', sharer:'分享者', grower:'成长者', observer:'观察员' } as Record<string,string>)[(res.role||'').toLowerCase()] || res.role || userInfo.value.role_label,
         joined_days: joinedDays,
       }
     }

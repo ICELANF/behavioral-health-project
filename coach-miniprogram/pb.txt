@@ -1,126 +1,131 @@
-CRITICAL 问题修复计划                                                                                                │
-│                                                                                                                      │
-│ Context                                                                                                              │
-│                                                                                                                      │
-│ 自检报告发现 3 个 CRITICAL 级别问题：                                                                                │
-│ 1. C1: api/request.ts 硬编码 localhost:8000，生产环境非coach页面全断                                                 │
-│ 2. C2: 3+ 个 coach 端点路径与后端不匹配 (404)                                                                        │
-│ 3. C3: Crisis agent 请求体字段不匹配                                                                                 │
-│                                                                                                                      │
-│ ---                                                                                                                  │
-│ C1: 统一 HTTP 模块（消除双模块冲突）                                                                                 │
-│                                                                                                                      │
-│ 问题                                                                                                                 │
-│                                                                                                                      │
-│ - src/api/request.ts — 硬编码 BASE_URL = 'http://localhost:8000/api'，被 30 个文件引用                               │
-│ - src/utils/request.ts — 使用 config/env.ts（环境感知），被 11 个 coach 页面引用                                     │
-│ - 两者 API 签名不同、401 处理不同                                                                                    │
-│                                                                                                                      │
-│ 方案：修改 api/request.ts，让它引用 config/env.ts                                                                    │
-│                                                                                                                      │
-│ 只改一行，不动任何消费方代码：                                                                                       │
-│                                                                                                                      │
-│ // src/api/request.ts 第 8 行                                                                                        │
-│ - const BASE_URL = 'http://localhost:8000/api'                                                                       │
-│ + import { BASE_URL } from '@/config/env'                                                                            │
-│                                                                                                                      │
-│ 理由：                                                                                                               │
-│ - api/request.ts 功能更完善（token refresh queue、PATCH 支持、noToast 选项）                                         │
-│ - 30 个文件依赖它，改一行比改 30 个文件安全                                                                          │
-│ - 不影响 utils/request.ts 的消费方（coach 页面）                                                                     │
-│                                                                                                                      │
-│ 文件变更                                                                                                             │
-│                                                                                                                      │
-│ - src/api/request.ts — 第 8 行改 import                                                                              │
-│                                                                                                                      │
-│ ---                                                                                                                  │
-│ C2: Coach API 路径对齐                                                                                               │
-│                                                                                                                      │
-│ 问题与修复映射                                                                                                       │
-│                                                                                                                      │
-│ ┌──────────────────┬──────────────────────────────┬──────────────────────────────────┬───────────────────────────┐   │
-│ │       页面       │          小程序调用          │           后端实际路由           │         修复方式          │   │
-│ ├──────────────────┼──────────────────────────────┼──────────────────────────────────┼───────────────────────────┤   │
-│ │                  │                              │                                  │ 改为调 /v1/coach/students │   │
-│ │ risk/index.vue   │ GET /v1/coach/risk-alerts    │ 无此路由。实际: GET /v1/coach/st │  获取学员+风险等级，或调  │   │
-│ │                  │                              │ udents/{id}/risk-history         │ /v1/analytics/coach/risk- │   │
-│ │                  │                              │                                  │ trend                     │   │
-│ ├──────────────────┼──────────────────────────────┼──────────────────────────────────┼───────────────────────────┤   │
-│ │ risk/index.vue   │ POST /v1/coach/risk-alerts/{ │ 无此路由                         │ 标记为占位，暂用本地状态  │   │
-│ │                  │ id}/resolve                  │                                  │ 切换                      │   │
-│ ├──────────────────┼──────────────────────────────┼──────────────────────────────────┼───────────────────────────┤   │
-│ │ messages/index.v │ GET /v1/coach/conversations  │ 无此路由。实际: GET              │ 改路径                    │   │
-│ │ ue               │                              │ /v1/coach/students-with-messages │                           │   │
-│ ├──────────────────┼──────────────────────────────┼──────────────────────────────────┼───────────────────────────┤   │
-│ │ analytics/index. │ GET /v1/coach/analytics/week │ 实际: GET                        │ 改路径                    │   │
-│ │ vue              │ -trend                       │ /v1/analytics/coach/risk-trend   │                           │   │
-│ ├──────────────────┼──────────────────────────────┼──────────────────────────────────┼───────────────────────────┤   │
-│ │ live/index.vue   │ GET /v1/coach/lives          │ 无此路由（R3 grower flywheel，非 │ 改为 mock 数据            │   │
-│ │                  │                              │  coach）                         │                           │   │
-│ ├──────────────────┼──────────────────────────────┼──────────────────────────────────┼───────────────────────────┤   │
-│ │ live/index.vue   │ POST                         │ 无此路由                         │ 改为 mock                 │   │
-│ │                  │ /v1/coach/lives/{id}/reserve │                                  │                           │   │
-│ ├──────────────────┼──────────────────────────────┼──────────────────────────────────┼───────────────────────────┤   │
-│ │ assessment/index │ GET                          │ 需用 /v1/assessment-assignments/ │                           │   │
-│ │ .vue             │ /v1/assessment-assignments   │ review-list 或 /v1/assessment-as │ 改路径                    │   │
-│ │                  │ (无参数)                     │ signments/pushed-list            │                           │   │
-│ ├──────────────────┼──────────────────────────────┼──────────────────────────────────┼───────────────────────────┤   │
-│ │ assessment/index │ POST                         │ 实际: POST /v1/assessment-assign │ 改路径                    │   │
-│ │ .vue             │ /v1/assessment/assignments   │ ments/assign                     │                           │   │
-│ ├──────────────────┼──────────────────────────────┼──────────────────────────────────┼───────────────────────────┤   │
-│ │ flywheel/index.v │ POST /v1/agent/run (body:    │ 实际需要 agent_type + user_id    │ 已正确，但 input 应改为   │   │
-│ │ ue               │ {agent_type, user_id,        │ (必填)                           │ context                   │   │
-│ │                  │ input})                      │                                  │                           │   │
-│ └──────────────────┴──────────────────────────────┴──────────────────────────────────┴───────────────────────────┘   │
-│                                                                                                                      │
-│ 文件变更                                                                                                             │
-│                                                                                                                      │
-│ - src/pages/coach/risk/index.vue — 改用 /v1/coach/students + risk_level 筛选                                         │
-│ - src/pages/coach/messages/index.vue — /v1/coach/conversations → /v1/coach/students-with-messages                    │
-│ - src/pages/coach/analytics/index.vue — /v1/coach/analytics/week-trend → /v1/analytics/coach/risk-trend              │
-│ - src/pages/coach/live/index.vue — 无后端路由，改为静态 mock                                                         │
-│ - src/pages/coach/assessment/index.vue — 修复列表+分配路径                                                           │
-│ - src/pages/coach/flywheel/index.vue — agent/run body 对齐 (input → context)                                         │
-│                                                                                                                      │
-│ ---                                                                                                                  │
-│ C3: Crisis Agent 请求体对齐                                                                                          │
-│                                                                                                                      │
-│ 问题                                                                                                                 │
-│                                                                                                                      │
-│ POST /v1/agent/run 需要 agent_type(必填) + user_id(必填)，但 flywheel 页面发送的是 {agent_type, user_id, input}。    │
-│                                                                                                                      │
-│ 后端 schema:                                                                                                         │
-│ class AgentRunRequest(BaseModel):                                                                                    │
-│     agent_type: str       # 必填                                                                                     │
-│     user_id: str          # 必填                                                                                     │
-│     context: Dict = {}    # 可选                                                                                     │
-│     expected_output: str = "analysis"                                                                                │
-│     priority: str = "normal"                                                                                         │
-│     coach_id: Optional[str] = None                                                                                   │
-│                                                                                                                      │
-│ 修复                                                                                                                 │
-│                                                                                                                      │
-│ flywheel/index.vue 中 agent/run 调用 — input 字段名改为 context，确保 user_id 是字符串类型。                         │
-│                                                                                                                      │
-│ 文件变更                                                                                                             │
-│                                                                                                                      │
-│ - src/pages/coach/flywheel/index.vue — agent/run 请求体字段名修正                                                    │
-│                                                                                                                      │
-│ ---                                                                                                                  │
-│ 附带清理（顺手做）                                                                                                   │
-│                                                                                                                      │
-│ - 删除死代码 src/api/coach.ts（74行，无人引用）                                                                      │
-│                                                                                                                      │
-│ ---                                                                                                                  │
-│ 验证步骤                                                                                                             │
-│                                                                                                                      │
-│ 1. npm run build:mp-weixin 编译无报错                                                                                │
-│ 2. Coach 登录后逐页检查：                                                                                            │
-│   - Dashboard → 200                                                                                                  │
-│   - Students → 200                                                                                                   │
-│   - Messages → 200（改用 students-with-messages）                                                                    │
-│   - Analytics → 200（改用 analytics/coach/risk-trend）                                                               │
-│   - Risk → 200（改用 students + risk 筛选）                                                                          │
-│   - Assessment → 200（改用 review-list）                                                                             │
-│   - Flywheel → agent/run 请求成功                                                                                    │
-│ 3. 非coach页面（home/learning/exam）在 dev 模式下仍然正常（BASE_URL 不变）
+后端改动（api/main.py）
+在 call_cloud_llm 之后新增一个流式方法 + 流式端点：
+新增 call_cloud_llm_stream()
+python@staticmethod
+async def call_cloud_llm_stream(prompt: str, system_prompt: str = ""):
+    """流式调用 DashScope，逐 chunk yield"""
+    if not system_prompt:
+        system_prompt = AgentGateway._get_system_prompt()
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+    payload = {
+        "model": CLOUD_LLM_MODEL,
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 1000,
+        "stream": True,
+    }
+    headers = {
+        "Authorization": f"Bearer {CLOUD_LLM_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        async with client.stream(
+            "POST",
+            f"{CLOUD_LLM_BASE_URL}/chat/completions",
+            json=payload, headers=headers,
+        ) as response:
+            async for line in response.aiter_lines():
+                if not line.startswith("data:"):
+                    continue
+                data_str = line[5:].strip()
+                if data_str == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(data_str)
+                    delta = chunk["choices"][0]["delta"].get("content", "")
+                    if delta:
+                        yield delta
+                except Exception:
+                    continue
+新增 /api/v1/chat/trial/stream 端点
+紧跟 trial_chat 之后加：
+python@app.post("/api/v1/chat/trial/stream")
+async def trial_chat_stream(body: TrialChatRequest, request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    today = datetime.now().strftime("%Y-%m-%d")
+    if _trial_chat_counts[today][client_ip] >= 10:
+        raise HTTPException(status_code=429, detail="今日体验次数已用完")
+    _trial_chat_counts[today][client_ip] += 1
+
+    async def generate():
+        try:
+            async for chunk in AgentGateway.call_cloud_llm_stream(body.message):
+                yield f"data: {json.dumps({'delta': chunk}, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")
+在文件顶部 import 区确认有：
+pythonfrom fastapi.responses import StreamingResponse
+import json  # 一般已有
+
+前端改动（Chat.vue）
+找到 sendTrialMessage 或 sendMessage 的调用处，新增一个流式发送函数替换它：
+typescript// 在 script setup 里新增
+async function sendMessageStream(text: string) {
+  if (!text.trim() || sending.value) return
+
+  // 添加用户消息
+  messages.value.push({ role: 'user', content: text, id: Date.now() })
+  inputText.value = ''
+  sending.value = true
+
+  // 添加空的 AI 消息占位
+  const aiMsg = reactive({ role: 'assistant', content: '', id: Date.now() + 1 })
+  messages.value.push(aiMsg)
+
+  const BASE = import.meta.env.VITE_API_BASE_URL ?? ''
+  try {
+    const res = await fetch(`${BASE}/api/v1/chat/trial/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text }),
+    })
+
+    const reader = res.body!.getReader()
+    const decoder = new TextDecoder()
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+
+      const lines = decoder.decode(value).split('\n')
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue
+        const data = line.slice(5).trim()
+        if (data === '[DONE]') break
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed.delta) aiMsg.content += parsed.delta
+        } catch { /* ignore */ }
+      }
+    }
+  } catch (e) {
+    aiMsg.content = '服务暂时不可用，请稍后重试。'
+  } finally {
+    sending.value = false
+  }
+}
+然后把原来调用 chatStore.sendTrialMessage(text) 的地方改为 sendMessageStream(text)。
+
+上线步骤
+bash# 本地改完后推送
+git add api/main.py h5/src/views/Chat.vue
+git commit -m "feat: LLM 流式输出 SSE，trial/stream 端点"
+git push origin stabilize-from-sprint1
+
+# 服务器
+cd /data/behavioral-health-project
+git pull origin stabilize-from-sprint1
+docker compose up -d --force-recreate app
+
+# H5 本地重新构建上传
+cd h5 && npx vite build
+# scp dist 上传（同之前流程）
+
+把 api/main.py 的 call_cloud_llm 和 trial_chat 部分贴给 Claude Code 执行，或者自己按上面改，改完告诉我验证结果。

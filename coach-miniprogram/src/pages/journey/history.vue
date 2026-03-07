@@ -37,7 +37,7 @@ const records = ref<any[]>([])
 const refreshing = ref(false)
 const loading = ref(false)
 
-const levels: Record<string, string> = { observer:'观察者', grower:'成长者', sharer:'分享者', guide:'向导者', master:'大师' }
+const levels: Record<string, string> = { observer:'观察员', grower:'成长者', sharer:'分享者', coach:'行为健康教练', promoter:'行为健康促进师', supervisor:'行为健康促进师', master:'行为健康大师' }
 function levelName(k: string) { return levels[k] || k }
 function statusLabel(s: string) { return { pending:'审核中', approved:'已批准', rejected:'已驳回' }[s] || s }
 

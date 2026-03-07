@@ -339,6 +339,22 @@
           "style": {
             "navigationBarTitleText": "健康数据审核"
           }
+        },
+        {
+          "path": "promotion/index",
+          "style": {
+            "navigationBarTitleText": "晋级申请审核",
+            "navigationBarBackgroundColor": "#9B59B6",
+            "navigationBarTextStyle": "white"
+          }
+        },
+        {
+          "path": "contributions/index",
+          "style": {
+            "navigationBarTitleText": "内容投稿审核",
+            "navigationBarBackgroundColor": "#1ABC9C",
+            "navigationBarTextStyle": "white"
+          }
         }
       ]
     },
@@ -465,6 +481,15 @@
           "style": {
             "navigationBarTitleText": "健康数据审核"
           }
+        },
+        {
+          "path": "promotion/index",
+          "style": {
+            "navigationBarTitleText": "晋级复核（L2）",
+            "navigationBarBackgroundColor": "#8e24aa",
+            "navigationBarTextStyle": "white",
+            "navigationStyle": "custom"
+          }
         }
       ]
     },
@@ -475,7 +500,7 @@
         {
           "path": "dashboard",
           "style": {
-            "navigationBarTitleText": "专家工作台"
+            "navigationBarTitleText": "行为健康大师工作台"
           }
         },
         {
@@ -488,6 +513,15 @@
           "path": "knowledge",
           "style": {
             "navigationBarTitleText": "知识库管理"
+          }
+        },
+        {
+          "path": "promotion/index",
+          "style": {
+            "navigationBarTitleText": "晋级终审（L3）",
+            "navigationBarBackgroundColor": "#b8860b",
+            "navigationBarTextStyle": "white",
+            "navigationStyle": "custom"
           }
         }
       ]

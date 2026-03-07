@@ -14,7 +14,7 @@
         </view>
         <view class="set-item">
           <text class="set-item-label">角色</text>
-          <text class="set-item-value">{{ userInfo.role_label || '健康教练' }}</text>
+          <text class="set-item-value">{{ userInfo.role_label || '行为健康教练' }}</text>
         </view>
       </view>
 
@@ -73,7 +73,7 @@ onMounted(() => {
       userInfo.value = {
         username: u.username || '',
         name: u.full_name || u.display_name || u.username || '教练',
-        role_label: (u.role||'').toLowerCase() === 'coach' ? '健康教练' : u.role || '用户'
+        role_label: ({ coach:'行为健康教练', promoter:'行为健康促进师', supervisor:'行为健康促进师', master:'行为健康大师', admin:'管理员', sharer:'分享者', grower:'成长者', observer:'观察员' } as Record<string,string>)[(u.role||'').toLowerCase()] || u.role || '用户'
       }
     }
   } catch (e) { console.warn('[profile-extra/settings] operation:', e) }

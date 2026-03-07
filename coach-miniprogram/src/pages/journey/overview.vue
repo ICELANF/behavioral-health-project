@@ -69,11 +69,12 @@ const overview = ref<any>({ current_level: 'observer', next_level: 'grower', pro
 const refreshing = ref(false)
 
 const levels = [
-  { key: 'observer',  name: '观察者', icon: '👁', desc: '了解行为健康基础知识' },
-  { key: 'grower',    name: '成长者', icon: '🌱', desc: '掌握健康促进基本技能' },
-  { key: 'sharer',    name: '分享者', icon: '🤝', desc: '能够指导他人健康改变' },
-  { key: 'guide',     name: '向导者', icon: '🧭', desc: '具备专业教练能力' },
-  { key: 'master',    name: '大师',   icon: '⭐', desc: '行为健康领域专家' },
+  { key: 'observer',  name: '观察员',         icon: '👁',  desc: '了解行为健康基础知识' },
+  { key: 'grower',    name: '成长者',         icon: '🌱',  desc: '掌握健康促进基本技能' },
+  { key: 'sharer',    name: '分享者',         icon: '🤝',  desc: '能够带领他人改变健康行为' },
+  { key: 'coach',     name: '行为健康教练',   icon: '🎯',  desc: '具备专业行为健康教练能力' },
+  { key: 'promoter',  name: '行为健康促进师', icon: '🏅',  desc: '督导教练并传播健康理念' },
+  { key: 'master',    name: '行为健康大师',   icon: '👑',  desc: '行为健康领域权威专家' },
 ]
 
 const levelOrder = levels.map(l => l.key)
