@@ -102,3 +102,4 @@ tqdm==4.67.3
 typing-extensions==4.15.0
 alibabacloud-dysmsapi20170525>=2.0.0
 alibabacloud-tea-openapi>=0.3.0
+qdrant-client>=1.7.0
